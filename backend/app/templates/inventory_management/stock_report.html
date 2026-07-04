@@ -164,6 +164,21 @@ tfoot td{
     border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:8px 4px; white-space: nowrap;
     transition: background 0.3s ease, border-color 0.3s ease;
 }
+#summaryTable thead th {
+    padding: 3px 2px !important;
+    font-size: 9.5px !important;
+    font-weight: 900 !important;
+}
+#summaryTable tbody td {
+    padding: 2px 2px !important;
+    font-size: 9.5px !important;
+    line-height: 1.05 !important;
+}
+#summaryTable tfoot td {
+    padding: 3px 2px !important;
+    font-size: 9.5px !important;
+    font-weight: 900 !important;
+}
 
 #confirmModal{ position:fixed; inset:0; background:rgba(0,0,0,0.5); display:none; align-items:center; justify-content:center; z-index:6000; backdrop-filter: blur(2px); }
 .modal-content{ background:var(--card-bg); padding:20px; border-radius:6px; width:300px; text-align:center; box-shadow:0 10px 25px rgba(0,0,0,0.3); border: 1px solid var(--border); color: var(--primary); }
@@ -203,27 +218,83 @@ tfoot td{
     background: var(--row-hover);
     color: var(--primary);
 }
+.summary-group-company td {
+    background: #dbeafe !important;
+    color: #1e3a8a !important;
+    border-top: 2px solid #2563eb !important;
+}
+.summary-group-location td {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+    border-top: 1px solid #22c55e !important;
+}
+.summary-group-freezer td {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-top: 1px solid #f59e0b !important;
+}
+.summary-group-company td:nth-child(2) { padding-left: 8px; }
+.summary-group-location td:nth-child(2) { padding-left: 18px; }
+.summary-group-freezer td:nth-child(2) { padding-left: 30px; }
+#summaryTbody tr:not(.summary-group-company):not(.summary-group-location):not(.summary-group-freezer) td:nth-child(2) {
+    text-align: left;
+    padding-left: 36px !important;
+}
+.combo-glaze {
+    display: inline-block;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+    border-radius: 3px;
+    padding: 0 4px;
+    font-weight: 900;
+}
 
 /* ================= KPI AGEING GRID ================= */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 15px;
-    margin-bottom: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
 }
 .kpi-card {
     cursor: pointer;
     background: var(--card-bg);
-    padding: 15px;
-    border-radius: 6px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    padding: 6px 8px !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
     display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
     transition: all 0.3s ease;
     border-top: 1px solid var(--border);
     border-right: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
+}
+.kpi-card > div:last-child {
+    display: none !important;
+    align-items: baseline !important;
+    justify-content: flex-start !important;
+    margin-top: 0 !important;
+}
+.kpi-card > div:first-child,
+.kpi-card > div:last-child {
+    flex: 0 0 auto !important;
+}
+.kpi-card h5 {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    color: var(--primary) !important;
+    font-weight: 900 !important;
+    white-space: nowrap !important;
+}
+.kpi-card span {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
 }
 
 /* ================= PRINT ENGINE ================= */
@@ -248,12 +319,12 @@ tfoot td{
     
     /* Mobile KPI 2 per row & compact padding */
     .kpi-grid {
-        grid-template-columns: repeat(2, 1fr) !important;
-        gap: 8px !important;
-        margin-bottom: 10px !important;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+        gap: 5px !important;
+        margin-bottom: 5px !important;
     }
     .kpi-card {
-        padding: 8px 10px !important;
+        padding: 5px 6px !important;
     }
     .kpi-card h5 {
         font-size: 8px !important;
@@ -277,10 +348,13 @@ tfoot td{
     }
     
     table { display: table !important; min-width: 2100px !important; }
+    #summaryTable { min-width: 0 !important; width: max-content !important; }
     thead { display: table-header-group !important; }
     tbody { display: table-row-group !important; }
     tr { display: table-row !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
     td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; border-bottom: 1px solid var(--border) !important; width: auto !important; }
+    #summaryTable th { padding: 2px 1px !important; font-size: 8.5px !important; }
+    #summaryTable td { padding: 1px 1px !important; font-size: 8.5px !important; line-height: 1.05 !important; }
     
     td::before { content: "" !important; display: none !important; }
     tfoot { display: table-footer-group !important; }
@@ -354,31 +428,31 @@ tfoot td{
     <!-- Stock Ageing KPI Cards Grid -->
     <div class="kpi-grid no-print">
         <div class="kpi-card clickable-card" id="card_age_30" onclick="filterByAgeRange(0, 30, this)" style="border-left: 5px solid var(--success);">
-            <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">0 - 30 Days</h5></div>
+            <div><h5 id="label_age_30" style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">0 - 30 Days (0 KG)</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_30" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
         <div class="kpi-card clickable-card" id="card_age_90" onclick="filterByAgeRange(31, 90, this)" style="border-left: 5px solid #eab308;">
-            <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">31 - 90 Days</h5></div>
+            <div><h5 id="label_age_90" style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">31 - 90 Days (0 KG)</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_90" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
         <div class="kpi-card clickable-card" id="card_age_150" onclick="filterByAgeRange(91, 150, this)" style="border-left: 5px solid #ea580c;">
-            <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">91 - 150 Days</h5></div>
+            <div><h5 id="label_age_150" style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">91 - 150 Days (0 KG)</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_150" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
         <div class="kpi-card clickable-card" id="card_age_300" onclick="filterByAgeRange(151, 300, this)" style="border-left: 5px solid #ef4444;">
-            <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">151 - 300 Days</h5></div>
+            <div><h5 id="label_age_300" style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">151 - 300 Days (0 KG)</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_300" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
         </div>
         <div class="kpi-card clickable-card" id="card_age_above" onclick="filterByAgeRange(301, 999999, this)" style="border-left: 5px solid #7f1d1d;">
-            <div><h5 style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">300+ Days</h5></div>
+            <div><h5 id="label_age_above" style="margin:0; font-size:10px; color:var(--text-muted); text-transform: uppercase; font-weight:700;">300+ Days (0 KG)</h5></div>
             <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:8px;">
                 <span id="qty_age_above" style="font-size:16px; font-weight:800; color:var(--primary);">0 KG</span>
             </div>
@@ -405,7 +479,7 @@ tfoot td{
                     <th style="width:100px">Location</th>
                     <th style="width:100px">PO #</th>
                     <th style="width:100px">Production For</th>
-                    <th style="width:100px">Production At</th>
+                    <th style="width:100px">Unit</th>
                     <th style="width:80px">Freezer</th>
                     <th style="width:100px">Pack Style</th>
                     <th style="width:120px">Variety</th>
@@ -470,31 +544,19 @@ tfoot td{
     <div class="table-wrap" id="summaryWrap">
         <table id="summaryTable" style="min-width: 1500px;">
             <thead>
-                <tr>
-                    <th style="width:45px">#</th>
-                    <th style="width:180px">Production For</th>
-                    <th style="width:180px">Production At</th>
-                    <th style="width:120px">Freezer</th>
-                    <th style="width:180px">Pack Style</th>
-                    <th style="width:180px">Variety</th>
-                    <th style="width:100px">Glaze</th>
-                    <th style="width:100px">Grade</th>
-                    <th style="width:110px" class="qty-col">Total MC</th>
-                    <th style="width:110px" class="qty-col">Total Loose</th>
-                    <th style="width:130px" class="qty-col">Total Qty (KG)</th>
-                    <th style="width:100px">Ageing (Max)</th>
+                <tr id="summaryHeadRow">
+                    <th style="width:34px">#</th>
+                    <th style="width:176px">Product Description</th>
+                    <th style="width:71px" class="qty-col">Total Qty (KG)</th>
                 </tr>
             </thead>
             <tbody id="summaryTbody">
                 <!-- Javascript populated -->
             </tbody>
             <tfoot>
-                <tr>
-                    <td colspan="8" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
-                    <td id="sum_tot_mc" class="qty-col">0</td>
-                    <td id="sum_tot_lse" class="qty-col">0</td>
+                <tr id="summaryFootRow">
+                    <td id="summaryGrandLabel" colspan="2" style="text-align:right">GRAND TOTALS (STOCK IN HAND):</td>
                     <td id="sum_tot_qty" class="qty-col">0.00</td>
-                    <td></td>
                 </tr>
             </tfoot>
         </table>
@@ -606,6 +668,39 @@ function switchTab(tab) {
 const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const fmtInt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[ch]));
+}
+
+function addQty(target, grade, qty) {
+    if (!target.gradeQty[grade]) target.gradeQty[grade] = 0;
+    target.gradeQty[grade] += qty;
+    target.totalQty += qty;
+}
+
+function buildSummaryTableHeader(gradeColumns) {
+    const headRow = document.getElementById("summaryHeadRow");
+    const footRow = document.getElementById("summaryFootRow");
+    const summaryTable = document.getElementById("summaryTable");
+    const fixedHeads = `
+        <th style="width:34px">#</th>
+        <th style="width:176px">Product Description</th>
+    `;
+    headRow.innerHTML = fixedHeads + gradeColumns.map(g => `<th style="width:56px" class="qty-col">${escapeHtml(g)}</th>`).join("") + `<th style="width:71px" class="qty-col">Total Qty (KG)</th>`;
+    footRow.innerHTML = `
+        <td colspan="2" style="text-align:right; font-weight:900;">GRAND TOTALS (STOCK IN HAND):</td>
+        ${gradeColumns.map(g => `<td class="qty-col" data-summary-grade="${escapeHtml(g)}" style="font-weight:900;">0.00</td>`).join("")}
+        <td id="sum_tot_qty" class="qty-col" style="font-weight:900;">0.00</td>
+    `;
+    summaryTable.style.minWidth = `${210 + (gradeColumns.length * 56) + 71}px`;
+}
+
 function applyFilters() {
     if(allRows.length === 0) return;
 
@@ -621,8 +716,9 @@ function applyFilters() {
     let mcT=0, lsT=0, qtyT=0, visibleCount=0;
     let filteredRows = [];
 
-    // Grouping map for the summary table
+    // Matrix grouping for the first tab: Company -> Unit -> Freezer -> Product Description, grades as columns.
     let summaryGroups = {};
+    let gradeSet = new Set((lookups.grades_list || []).filter(Boolean));
     
     // Age cards accumulators
     let cardQty30 = 0, cardQty90 = 0, cardQty150 = 0, cardQty300 = 0, cardQtyAbove = 0;
@@ -633,7 +729,7 @@ function applyFilters() {
         const type = r.cells[4].innerText;
         const brand = r.cells[5].innerText.toLowerCase();
         const spec = r.cells[6].innerText.toLowerCase();
-        const loc = r.cells[7].innerText.toLowerCase();
+        const loc = r.cells[10].innerText.toLowerCase();
         const var_ = r.cells[13].innerText.toLowerCase();
 
         let ok = true;
@@ -685,40 +781,52 @@ function applyFilters() {
                 filteredRows.push(r);
 
                 // Grouping calculations for unique combinations (hierarchical):
-                const prodFor = r.cells[9].innerText.trim() || "N/A";
-                const prodAt = r.cells[10].innerText.trim() || "N/A";
+                const company = r.cells[9].innerText.trim() || "N/A";
+                const location = r.cells[10].innerText.trim() || "N/A";
                 const freezer = r.cells[11].innerText.trim() || "N/A";
                 const packStyle = r.cells[12].innerText.trim() || "N/A";
                 const variety = r.cells[13].innerText.trim() || "N/A";
                 const glaze = r.cells[14].innerText.trim() || "N/A";
                 const grade = r.cells[15].innerText.trim() || "N/A";
+                gradeSet.add(grade);
 
-                if (!summaryGroups[prodFor]) summaryGroups[prodFor] = {};
-                if (!summaryGroups[prodFor][prodAt]) summaryGroups[prodFor][prodAt] = {};
+                if (!summaryGroups[company]) summaryGroups[company] = { gradeQty: {}, totalQty: 0, locations: {} };
+                if (!summaryGroups[company].locations[location]) summaryGroups[company].locations[location] = { gradeQty: {}, totalQty: 0, freezers: {} };
+                if (!summaryGroups[company].locations[location].freezers[freezer]) summaryGroups[company].locations[location].freezers[freezer] = { gradeQty: {}, totalQty: 0, combos: {} };
 
-                const itemKey = `${freezer}#${packStyle}#${variety}#${glaze}#${grade}`;
-                if (!summaryGroups[prodFor][prodAt][itemKey]) {
-                    summaryGroups[prodFor][prodAt][itemKey] = {
-                        freezer, packStyle, variety, glaze, grade,
-                        mc: 0, loose: 0, qty: 0, maxAge: 0
+                const freezerNode = summaryGroups[company].locations[location].freezers[freezer];
+                const itemKey = `${variety}#${glaze}#${packStyle}`;
+                if (!freezerNode.combos[itemKey]) {
+                    freezerNode.combos[itemKey] = {
+                        variety, glaze, packStyle,
+                        gradeQty: {}, totalQty: 0
                     };
                 }
-                summaryGroups[prodFor][prodAt][itemKey].mc += mcVal * sign;
-                summaryGroups[prodFor][prodAt][itemKey].loose += looseVal * sign;
-                summaryGroups[prodFor][prodAt][itemKey].qty += netQty;
-                if (ageInDays > summaryGroups[prodFor][prodAt][itemKey].maxAge) {
-                    summaryGroups[prodFor][prodAt][itemKey].maxAge = ageInDays;
-                }
+
+                addQty(summaryGroups[company], grade, netQty);
+                addQty(summaryGroups[company].locations[location], grade, netQty);
+                addQty(freezerNode, grade, netQty);
+                addQty(freezerNode.combos[itemKey], grade, netQty);
             } else { r.style.display = "none"; }
         } else { r.style.display = "none"; }
     });
 
     // Update dynamic card UI elements
-    document.getElementById("qty_age_30").innerText = fmtInt.format(cardQty30) + " KG";
-    document.getElementById("qty_age_90").innerText = fmtInt.format(cardQty90) + " KG";
-    document.getElementById("qty_age_150").innerText = fmtInt.format(cardQty150) + " KG";
-    document.getElementById("qty_age_300").innerText = fmtInt.format(cardQty300) + " KG";
-    document.getElementById("qty_age_above").innerText = fmtInt.format(cardQtyAbove) + " KG";
+    const age30Text = fmtInt.format(cardQty30) + " KG";
+    const age90Text = fmtInt.format(cardQty90) + " KG";
+    const age150Text = fmtInt.format(cardQty150) + " KG";
+    const age300Text = fmtInt.format(cardQty300) + " KG";
+    const ageAboveText = fmtInt.format(cardQtyAbove) + " KG";
+    document.getElementById("label_age_30").innerText = `0 - 30 Days (${age30Text})`;
+    document.getElementById("label_age_90").innerText = `31 - 90 Days (${age90Text})`;
+    document.getElementById("label_age_150").innerText = `91 - 150 Days (${age150Text})`;
+    document.getElementById("label_age_300").innerText = `151 - 300 Days (${age300Text})`;
+    document.getElementById("label_age_above").innerText = `300+ Days (${ageAboveText})`;
+    document.getElementById("qty_age_30").innerText = age30Text;
+    document.getElementById("qty_age_90").innerText = age90Text;
+    document.getElementById("qty_age_150").innerText = age150Text;
+    document.getElementById("qty_age_300").innerText = age300Text;
+    document.getElementById("qty_age_above").innerText = ageAboveText;
 
     filteredRows.forEach((row, index) => {
         row.querySelector(".slno").innerText = filteredRows.length - index;
@@ -729,105 +837,86 @@ function applyFilters() {
     document.getElementById("tot_lse").innerText = lsT;
     document.getElementById("tot_qty").innerText = qtyT.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 
-    // Populate Summary Table with sub-totals and totals
+    // Populate Summary Matrix Table with sub-totals and totals
     const summaryTbody = document.getElementById("summaryTbody");
     summaryTbody.innerHTML = "";
     let summaryIndex = 1;
-    let sumTotMc = 0, sumTotLse = 0, sumTotQty = 0;
+    let sumTotQty = 0;
+    let grandGradeQty = {};
+
+    const gradeColumns = [...gradeSet].filter(Boolean).sort((a, b) => String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" }));
+    buildSummaryTableHeader(gradeColumns);
+
+    const gradeCells = (node, strong = false) => gradeColumns.map(g => {
+        const value = Number(node.gradeQty?.[g] || 0);
+        return `<td class="qty-col" style="${strong ? 'font-weight:800;' : ''}">${Math.abs(value) > 0.001 ? value.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}) : ""}</td>`;
+    }).join("");
+
+    const totalCell = (value, weight = 800) => `<td class="qty-col" style="color:var(--accent); font-weight:${weight};">${value.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>`;
+    const comboCell = (group) => {
+        const parts = [];
+        if (group.variety && group.variety !== "N/A") parts.push(escapeHtml(group.variety));
+        if (group.glaze && group.glaze !== "N/A") parts.push(`<span class="combo-glaze">${escapeHtml(group.glaze)}</span>`);
+        if (group.packStyle && group.packStyle !== "N/A") parts.push(escapeHtml(group.packStyle));
+        const comboText = parts.join(" / ") || "N/A";
+        const comboTotal = Number(group.totalQty || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+        return `${comboText} <strong>(${comboTotal} KG)</strong>`;
+    };
+
+    const groupHeaderRow = (label, node, levelClass) => {
+        const tr = document.createElement("tr");
+        const headerTotal = Number(node.totalQty || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+        tr.className = `summary-group-${levelClass}`;
+        tr.style.background = levelClass === "company" ? "var(--row-hover)" : "var(--header-bg)";
+        tr.style.fontWeight = levelClass === "company" ? "900" : "800";
+        tr.style.borderTop = levelClass === "company" ? "2px solid var(--accent)" : "1px solid var(--border)";
+        tr.innerHTML = `
+            <td></td>
+            <td style="text-align:left; text-transform:uppercase;">${escapeHtml(label)} (${headerTotal} KG)</td>
+            ${gradeCells(node, true)}
+            ${totalCell(node.totalQty, levelClass === "company" ? 900 : 800)}
+        `;
+        summaryTbody.appendChild(tr);
+    };
 
     const sortedCompanies = Object.keys(summaryGroups).sort();
-    sortedCompanies.forEach(prodFor => {
-        let companyMc = 0, companyLoose = 0, companyQty = 0;
-        let hasVisibleCompanyData = false;
-
-        const sortedPlants = Object.keys(summaryGroups[prodFor]).sort();
-        sortedPlants.forEach(prodAt => {
-            let plantMc = 0, plantLoose = 0, plantQty = 0;
-            let hasVisiblePlantData = false;
-
-            const sortedItems = Object.keys(summaryGroups[prodFor][prodAt]).sort();
-            sortedItems.forEach(itemKey => {
-                const group = summaryGroups[prodFor][prodAt][itemKey];
-                // Only show combinations with non-zero quantity or MC
-                if (Math.abs(group.qty) > 0.01 || Math.abs(group.mc) > 0.01) {
-                    plantMc += group.mc;
-                    plantLoose += group.loose;
-                    plantQty += group.qty;
-                    hasVisiblePlantData = true;
-
-                    let ageColor = "var(--success)";
-                    if (group.maxAge > 90) ageColor = "var(--danger)";
-                    else if (group.maxAge > 30) ageColor = "#ea580c";
-
+    sortedCompanies.forEach(company => {
+        const companyNode = summaryGroups[company];
+        groupHeaderRow(`Company: ${company}`, companyNode, "company");
+        const sortedLocations = Object.keys(companyNode.locations).sort();
+        sortedLocations.forEach(location => {
+            const locationNode = companyNode.locations[location];
+            groupHeaderRow(`Unit: ${location}`, locationNode, "location");
+            const sortedFreezers = Object.keys(locationNode.freezers).sort();
+            sortedFreezers.forEach(freezer => {
+                const freezerNode = locationNode.freezers[freezer];
+                groupHeaderRow(`Freezer: ${freezer}`, freezerNode, "freezer");
+                const sortedCombos = Object.keys(freezerNode.combos).sort();
+                sortedCombos.forEach(itemKey => {
+                    const group = freezerNode.combos[itemKey];
+                    if (Math.abs(group.totalQty) <= 0.01) return;
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
                         <td>${summaryIndex++}</td>
-                        <td><strong>${prodFor}</strong></td>
-                        <td><strong>${prodAt}</strong></td>
-                        <td>${group.freezer}</td>
-                        <td>${group.packStyle}</td>
-                        <td>${group.variety}</td>
-                        <td>${group.glaze}</td>
-                        <td>${group.grade}</td>
-                        <td class="qty-col">${group.mc.toLocaleString()}</td>
-                        <td class="qty-col">${group.loose.toLocaleString()}</td>
-                        <td class="qty-col" style="color:var(--accent); font-weight:800;">${group.qty.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                        <td style="color:${ageColor}; font-weight:800; text-align:center;">${group.maxAge} D</td>
+                        <td>${comboCell(group)}</td>
+                        ${gradeCells(group)}
+                        ${totalCell(group.totalQty)}
                     `;
                     summaryTbody.appendChild(tr);
-                }
+                });
             });
-
-            if (hasVisiblePlantData) {
-                companyMc += plantMc;
-                companyLoose += plantLoose;
-                companyQty += plantQty;
-                hasVisibleCompanyData = true;
-
-                // Render Plant Subtotal Row
-                const plantSubTr = document.createElement("tr");
-                plantSubTr.style.background = "var(--header-bg)";
-                plantSubTr.style.fontWeight = "bold";
-                plantSubTr.style.fontSize = "9px";
-                plantSubTr.innerHTML = `
-                    <td></td>
-                    <td><strong>${prodFor}</strong></td>
-                    <td colspan="6" style="text-align:right; font-style:italic;">Sub-Total (Plant: ${prodAt}):</td>
-                    <td class="qty-col">${plantMc.toLocaleString()}</td>
-                    <td class="qty-col">${plantLoose.toLocaleString()}</td>
-                    <td class="qty-col" style="color:var(--accent); font-weight:800;">${plantQty.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                    <td></td>
-                `;
-                summaryTbody.appendChild(plantSubTr);
-            }
         });
-
-        if (hasVisibleCompanyData) {
-            sumTotMc += companyMc;
-            sumTotLse += companyLoose;
-            sumTotQty += companyQty;
-
-            // Render Company Total Row
-            const compTotalTr = document.createElement("tr");
-            compTotalTr.style.background = "var(--row-hover)";
-            compTotalTr.style.fontWeight = "800";
-            compTotalTr.style.fontSize = "9.5px";
-            compTotalTr.style.borderTop = "1px solid var(--accent)";
-            compTotalTr.style.borderBottom = "1px solid var(--accent)";
-            compTotalTr.innerHTML = `
-                <td></td>
-                <td colspan="7" style="text-align:right; font-weight:800; text-transform:uppercase;">TOTAL (Company: ${prodFor}):</td>
-                <td class="qty-col">${companyMc.toLocaleString()}</td>
-                <td class="qty-col">${companyLoose.toLocaleString()}</td>
-                <td class="qty-col" style="color:var(--accent); font-weight:900;">${companyQty.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                <td></td>
-            `;
-            summaryTbody.appendChild(compTotalTr);
-        }
+        sumTotQty += companyNode.totalQty;
+        gradeColumns.forEach(g => {
+            if (!grandGradeQty[g]) grandGradeQty[g] = 0;
+            grandGradeQty[g] += Number(companyNode.gradeQty[g] || 0);
+        });
     });
 
-    document.getElementById("sum_tot_mc").innerText = sumTotMc.toLocaleString();
-    document.getElementById("sum_tot_lse").innerText = sumTotLse.toLocaleString();
+    document.querySelectorAll("#summaryFootRow [data-summary-grade]").forEach((cell, index) => {
+        const g = gradeColumns[index];
+        if (cell) cell.innerText = (grandGradeQty[g] || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    });
     document.getElementById("sum_tot_qty").innerText = sumTotQty.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
 }
 
@@ -994,7 +1083,7 @@ function fillFilters() {
         sets.batch.add(r.cells[2].innerText.trim());
         sets.brand.add(r.cells[5].innerText.trim());
         sets.species.add(r.cells[6].innerText.trim());
-        sets.loc.add(r.cells[7].innerText.trim());
+        sets.loc.add(r.cells[10].innerText.trim());
         sets.variety.add(r.cells[13].innerText.trim());
     });
     Object.keys(sets).forEach(k => {

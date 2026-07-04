@@ -723,6 +723,22 @@ textarea {
   perspective: 1100px;
 }
 
+.login-only-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: clamp(18px, 4vw, 48px);
+}
+
+.login-only-shell .auth-panel {
+  position: static;
+  width: min(100%, 460px);
+}
+
+.login-only-shell .form-side {
+  transform: none;
+}
+
 .form-side {
   width: 100%;
   padding: 28px;
@@ -1549,349 +1565,81 @@ button:disabled {
 </head>
 <body>
 <div class="site-shell">
-  <header class="site-nav">
-    <a class="brand" href="#top" aria-label="BKNR ERP home">
-      <span class="brand-mark">BK</span>
-      <span class="brand-copy">
-        <strong>BKNR ERP</strong>
-        <span>Seafood Enterprise Workspace</span>
-      </span>
-    </a>
-    <nav class="nav-links" aria-label="Website navigation">
-      <a href="#modules">Modules</a>
-      <a href="#screens">Screenshots</a>
-      <a href="#automation">Automation</a>
-      <a href="#photos">Photos</a>
-      <a href="#controls">Controls</a>
-      <a href="#implementation">Workflow</a>
-    </nav>
-    <a class="nav-action" href="#login">Login</a>
-  </header>
-
-  <main id="top">
-    <section class="hero">
-      <div class="hero-copy">
-        <p class="eyebrow">ERP for seafood operations</p>
-        <h1>BKNR ERP brings factory, inventory, finance, HR, billing, and export work into one controlled system.</h1>
-        <p class="hero-lead">
-          A professional operating platform for seafood businesses that need daily production visibility, stock discipline,
-          finance control, auto billing, contractor/vendor tracking, salary generation, and document-ready export workflows from one secure login.
-        </p>
-        <div class="hero-actions">
-          <a class="primary-link" href="#login">Open Login</a>
-          <a class="secondary-link" href="#screens">View Screenshots</a>
-        </div>
-        <div class="metric-row" aria-label="BKNR ERP highlights">
-          <div class="metric"><strong>12+</strong><span>core business areas connected in one workspace</span></div>
-          <div class="metric"><strong>Auto</strong><span>requirements, bills, salaries, and documents generated from entries</span></div>
-          <div class="metric"><strong>Live</strong><span>floor balance, inventory, HR, finance, and sales dashboards</span></div>
-          <div class="metric"><strong>Reports</strong><span>production, stock, sales, costing, payroll, and export reports ready</span></div>
+  <main class="login-only-shell">
+    <aside class="auth-panel" id="login">
+      <div class="form-side">
+        <div class="form-brand">
+          <a class="brand" href="#login" aria-label="BKNR ERP login">
+            <span class="brand-mark">BK</span>
+            <span class="brand-copy">
+              <strong>BKNR ERP</strong>
+              <span>Account Access</span>
+            </span>
+          </a>
+          <span class="form-badge">Secure</span>
         </div>
 
-        <div class="product-stage" aria-label="BKNR ERP animated dashboard preview">
-          <div class="command-deck">
-            <div class="deck-shell">
-              <div class="deck-top">
-                <span class="dots"><span></span><span></span><span></span></span>
-                <span class="deck-status">Live control room</span>
-              </div>
-              <div class="deck-content">
-                <aside class="deck-rail">
-                  <div class="deck-logo">BKNR ERP</div>
-                  <div class="rail-line"></div>
-                  <div class="rail-line"></div>
-                  <div class="rail-line"></div>
-                  <div class="rail-line"></div>
-                  <div class="rail-line"></div>
-                </aside>
-                <div class="deck-main">
-                  <div class="deck-head">
-                    <h3>Seafood Processing Command Center</h3>
-                    <span class="deck-chip">Auto Sync</span>
-                  </div>
-                  <div class="deck-kpis">
-                    <div class="deck-kpi"><strong>14.8T</strong><span>Live production</span></div>
-                    <div class="deck-kpi"><strong>99.9%</strong><span>Stock accuracy</span></div>
-                    <div class="deck-kpi"><strong>36</strong><span>Active batches</span></div>
-                  </div>
-                  <div class="deck-chart">
-                    <span></span><span></span><span></span><span></span><span></span><span></span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div class="float-card one"><b>Cold Storage</b><span>72% capacity tracked</span></div>
-            <div class="float-card two"><b>Finance</b><span>Voucher queue ready</span></div>
-          </div>
+        <div id="registerBox" class="card">
+          <h2>Company Registration</h2>
+          <div class="form-group"><label>Company Name</label><input id="company_name" type="text" required></div>
+          <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required></div>
+          <div class="form-group"><label>Designation</label><input id="designation" type="text" required></div>
+          <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
+          <div class="form-group"><label>Email Address</label><input id="email" type="email" required></div>
+          <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" required></textarea></div>
+          <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
+          <div id="regErr" class="msg error"></div>
+          <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
         </div>
-      </div>
 
-      <aside class="auth-panel" id="login">
-        <div class="form-side">
-          <div class="form-brand">
-            <div>
-              <strong>Account Access</strong>
-              <span>Login, register, OTP, and recovery</span>
-            </div>
-            <span class="form-badge">Secure</span>
+        <div id="otpBox" class="card">
+          <h2>OTP Verification</h2>
+          <div class="form-group">
+            <label>Enter OTP</label>
+            <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" required>
           </div>
+          <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
+          <div id="otpErr" class="msg error"></div>
+        </div>
 
-          <div id="registerBox" class="card">
-            <h2>Company Registration</h2>
-            <div class="form-group"><label>Company Name</label><input id="company_name" type="text" required></div>
-            <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required></div>
-            <div class="form-group"><label>Designation</label><input id="designation" type="text" required></div>
-            <div class="form-group"><label>Phone Number</label><input id="mobile" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
-            <div class="form-group"><label>Email Address</label><input id="email" type="email" required></div>
-            <div class="form-group"><label>Company Address</label><textarea id="address" rows="2" required></textarea></div>
-            <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
-            <div id="regErr" class="msg error"></div>
-            <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
-          </div>
+        <div id="passBox" class="card">
+          <h2>Set Login Password</h2>
+          <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20" required></div>
+          <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" required></div>
+          <button id="btn-pass" onclick="savePassword()">Save Password</button>
+          <div id="passErr" class="msg error"></div>
+          <div id="passOk" class="msg success"></div>
+        </div>
 
-          <div id="otpBox" class="card">
-            <h2>OTP Verification</h2>
+        <div id="loginBox" class="card">
+          <h2>Login</h2>
+          <form id="loginForm" onsubmit="doLogin(event)">
+            <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" autocomplete="organization" required></div>
+            <div class="form-group"><label>Email</label><input id="login_email" type="email" autocomplete="email" required></div>
             <div class="form-group">
-              <label>Enter OTP</label>
-              <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" required>
-            </div>
-            <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
-            <div id="otpErr" class="msg error"></div>
-          </div>
-
-          <div id="passBox" class="card">
-            <h2>Set Login Password</h2>
-            <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20" required></div>
-            <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" required></div>
-            <button id="btn-pass" onclick="savePassword()">Save Password</button>
-            <div id="passErr" class="msg error"></div>
-            <div id="passOk" class="msg success"></div>
-          </div>
-
-          <div id="loginBox" class="card">
-            <h2>Login</h2>
-            <form id="loginForm" onsubmit="doLogin(event)">
-              <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" autocomplete="organization" required></div>
-              <div class="form-group"><label>Email</label><input id="login_email" type="email" autocomplete="email" required></div>
-              <div class="form-group">
-                <label for="login_pwd">Password</label>
-                <div class="password-field">
-                  <input id="login_pwd" type="password" maxlength="20" autocomplete="current-password" required>
-                  <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">Show</button>
-                </div>
-              </div>
-              <button id="btn-login" type="submit">Login</button>
-            </form>
-            <div id="loginErr" class="msg error"></div>
-            <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
-          </div>
-
-          <div id="forgotBox" class="card">
-            <h2>Password Recovery</h2>
-            <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
-            <button id="btn-forgot" onclick="sendResetLink()">Send Reset Link</button>
-            <div id="forgotErr" class="msg error"></div>
-            <div id="forgotOk" class="msg success"></div>
-            <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
-          </div>
-        </div>
-      </aside>
-    </section>
-
-    <section class="section" id="modules">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Complete ERP coverage</p>
-          <h2>All daily departments get one consistent workspace.</h2>
-          <p class="section-text">BKNR ERP is arranged around real factory workflows, so teams can enter transactions, review dashboards, create bills, generate salary, and produce reports without moving between disconnected sheets.</p>
-        </div>
-        <div class="module-grid">
-          <article class="module-card"><span class="tag">Processing</span><h3>Factory operations</h3><p>Gate entry, RM purchasing, de-heading, grading, peeling, soaking, production, and re-process movement.</p></article>
-          <article class="module-card"><span class="tag">Inventory</span><h3>Stock and orders</h3><p>Stock entry, pending orders, cold storage holding, general store, inventory costing, and sales dispatch.</p></article>
-          <article class="module-card"><span class="tag">Finance</span><h3>Auto billing</h3><p>Electricity, diesel, purchase, packaging, logistics, QA, expenses, vendor payments, receipts, and ledgers.</p></article>
-          <article class="module-card"><span class="tag">HRMS</span><h3>Attendance and salary</h3><p>Staff registration, shifts, attendance, advances, increments, payroll master, and monthly salary sheets.</p></article>
-          <article class="module-card"><span class="tag">Reports</span><h3>Automatic reports</h3><p>Production, grading, peeling, soaking, floor balance, pending orders, sales, storage, and costing reports.</p></article>
-          <article class="module-card"><span class="tag">Export</span><h3>Shipment documents</h3><p>Export shipment, commercial invoice, packing list, container stuffing, shipping bill, BL, and health certificate.</p></article>
-          <article class="module-card"><span class="tag">Masters</span><h3>Setup controls</h3><p>Suppliers, vendors, contractors, buyers, species, grades, yields, freezers, packing styles, and HSN setup.</p></article>
-          <article class="module-card"><span class="tag">Dashboards</span><h3>Live control room</h3><p>Processing, inventory, HR, costing, finance, and Tally-style dashboards for daily management review.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section feature-band" id="screens">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">App screenshots and screen previews</p>
-          <h2>A clear visual workspace for office, floor, stores, accounts, and HR teams.</h2>
-          <p class="section-text">The interface keeps dashboards, KPI cards, table lines, filters, forms, and document views visually consistent across all modules.</p>
-        </div>
-        <div class="screenshot-grid">
-          <article class="screenshot-card large">
-            <img src="/static/bknr-app-preview.svg" alt="BKNR ERP app preview screenshot">
-            <div class="screenshot-caption"><strong>BKNR ERP workspace</strong><span>App identity, install-ready preview, and secure enterprise access.</span></div>
-          </article>
-          <div class="mini-stack">
-            <article class="screenshot-card">
-              <img src="/static/screenshot.png" alt="BKNR ERP mobile preview screenshot">
-              <div class="screenshot-caption"><strong>Mobile-ready preview</strong><span>Responsive access for quick review and field checks.</span></div>
-            </article>
-            <article class="screenshot-card">
-              <div class="product-shot">
-                <div class="mock-main">
-                  <div class="mock-head"><h3>Inventory View</h3><div class="mock-pill"></div></div>
-                  <div class="mock-kpis"><div class="mock-kpi"></div><div class="mock-kpi"></div><div class="mock-kpi"></div></div>
-                  <div class="mock-chart"><span></span><span></span><span></span><span></span><span></span></div>
-                </div>
-              </div>
-              <div class="screenshot-caption"><strong>Dashboard pattern</strong><span>KPI, chart, and table surfaces designed for fast scanning.</span></div>
-            </article>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="operations">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Operations screens</p>
-          <h2>Processing, floor balance, inventory, sales, and reports work like one connected flow.</h2>
-          <p class="section-text">These app-style screen previews are based on the modules inside the ERP: entries feed dashboards, requirements, floor balance, sales reports, contractor bills, vendor bills, and salary sheets.</p>
-        </div>
-        <div class="app-screen-grid">
-          <article class="app-screen-card">
-            <div class="app-window">
-              <div class="app-window-top"><span class="app-window-title">Processing Dashboard</span><span class="app-window-pill"></span></div>
-              <div class="screen-kpis"><span></span><span></span><span></span></div>
-              <div class="screen-bars"><span></span><span></span><span></span><span></span><span></span></div>
-            </div>
-            <div class="app-screen-copy"><strong>Live processing control</strong><span>Gate entry, RM purchasing, de-heading, grading, peeling, soaking, and production entries become dashboard KPIs and floor movement.</span></div>
-          </article>
-          <article class="app-screen-card">
-            <div class="app-window">
-              <div class="app-window-top"><span class="app-window-title">Floor Balance Tracker</span><span class="app-window-pill"></span></div>
-              <div class="screen-table">
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
+              <label for="login_pwd">Password</label>
+              <div class="password-field">
+                <input id="login_pwd" type="password" maxlength="20" autocomplete="current-password" required>
+                <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">Show</button>
               </div>
             </div>
-            <div class="app-screen-copy"><strong>Automatic floor balance</strong><span>Raw material in, grading, de-heading, peeling, soaking, re-process, and production outputs are grouped into live floor balance by batch, count, species, variety, and location.</span></div>
-          </article>
-          <article class="app-screen-card">
-            <div class="app-window">
-              <div class="app-window-top"><span class="app-window-title">Sales and Inventory Reports</span><span class="app-window-pill"></span></div>
-              <div class="screen-kpis"><span></span><span></span><span></span></div>
-              <div class="screen-table">
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
-                <div class="screen-row"><span></span><span></span><span></span></div>
-              </div>
-            </div>
-            <div class="app-screen-copy"><strong>Sales and stock visibility</strong><span>Stock entry, cold storage, pending orders, sales dispatch, floor balance value, and inventory costing come together for dispatch and business review.</span></div>
-          </article>
+            <button id="btn-login" type="submit">Login</button>
+          </form>
+          <div id="loginErr" class="msg error"></div>
+          <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
         </div>
-      </div>
-    </section>
 
-    <section class="section feature-band" id="automation">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Automation inside your ERP</p>
-          <h2>Manual repeat work is reduced wherever the app already has enough data.</h2>
-          <p class="section-text">The system uses processing entries, masters, stock, attendance, and finance data to automatically calculate requirements, bills, balances, reports, and salary values.</p>
-        </div>
-        <div class="automation-grid">
-          <article class="automation-card"><b>Auto requirements</b><h3>Production requirement engine</h3><p>Pending orders are matched with existing stock, packing styles, grade mappings, HOSO/HLSO yields, glazes, and freezer data to calculate pending production, HLSO requirement, HOSO requirement, stock MC, and referral stock.</p></article>
-          <article class="automation-card"><b>Auto floor</b><h3>Live floor balance</h3><p>Factory movements update floor stock by location, production-for, batch, source type, species, variety, and count, so management can see where material is still available.</p></article>
-          <article class="automation-card"><b>Auto bills</b><h3>Contractor and vendor bills</h3><p>De-heading and peeling reports can generate contractor monthly bills, while finance captures vendor invoices, logistics, diesel, electricity, QA, purchase, packaging, and other expenses.</p></article>
-          <article class="automation-card"><b>Auto salary</b><h3>Salary processing</h3><p>Employee master, attendance, paid days, OT, advance, adjustment, TDS, and deductions flow into calculated salary, gross salary, net payable, and monthly salary sheets.</p></article>
-          <article class="automation-card"><b>Auto documents</b><h3>Export paperwork</h3><p>Commercial invoices can feed packing lists, container stuffing, shipping bills, bills of lading, health certificates, and supporting documents through auto-fill flows.</p></article>
-          <article class="automation-card"><b>Auto reports</b><h3>Business reports</h3><p>Processing, inventory, sales, pending orders, storage cost, floor balance value, periodic summary, batch summary, GST, ledgers, receivables, and payables are available from entered transactions.</p></article>
+        <div id="forgotBox" class="card">
+          <h2>Password Recovery</h2>
+          <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
+          <button id="btn-forgot" onclick="sendResetLink()">Send Reset Link</button>
+          <div id="forgotErr" class="msg error"></div>
+          <div id="forgotOk" class="msg success"></div>
+          <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
         </div>
       </div>
-    </section>
-
-    <section class="section" id="photos">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Real-world industry visuals</p>
-          <h2>The website now connects ERP screens with real seafood, cold chain, export, and finance work.</h2>
-          <p class="section-text">These photos support the story of the app: factory processing, cold storage control, export logistics, and back-office accounting.</p>
-        </div>
-        <div class="photo-grid">
-          <article class="photo-card tall">
-            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4c/Halteyri04.jpg/1024px-Halteyri04.jpg" alt="Seafood processing factory production line">
-            <div class="photo-copy"><strong>Seafood processing floor</strong><span>Processing entries, contractor work, yield tracking, and floor balances are designed for real factory movement.</span></div>
-          </article>
-          <article class="photo-card">
-            <img src="https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=1200&q=80" alt="Export logistics containers">
-            <div class="photo-copy"><strong>Export logistics</strong><span>Shipment records, commercial invoices, packing lists, container stuffing, shipping bills, and BL workflows stay connected.</span></div>
-          </article>
-          <article class="photo-card">
-            <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=1200&q=80" alt="Finance accounting and billing workspace">
-            <div class="photo-copy"><strong>Finance and billing</strong><span>Vendor bills, receipts, ledgers, bank transactions, salary processing, and expense vouchers are handled in one place.</span></div>
-          </article>
-          <article class="photo-card">
-            <img src="https://images.unsplash.com/photo-1581093450021-4a7360e9a9d4?auto=format&fit=crop&w=1200&q=80" alt="Cold storage warehouse operations">
-            <div class="photo-copy"><strong>Cold chain and stock</strong><span>Inventory, cold storage holding, pending orders, stock reports, sales dispatch, and costing give stock discipline.</span></div>
-          </article>
-          <article class="photo-card">
-            <img src="https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=1200&q=80" alt="Office team working with business software">
-            <div class="photo-copy"><strong>Management dashboard</strong><span>Processing, HR, inventory, costing, finance, and Tally-style dashboards help daily decisions.</span></div>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="controls">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Control and visibility</p>
-          <h2>Built for day closing, audit clarity, and management review.</h2>
-          <p class="section-text">The platform focuses on clean data entry, company-wise access, report consistency, automatic calculations, and operational traceability.</p>
-        </div>
-        <div class="feature-grid">
-          <article class="feature-card"><div class="feature-icon">01</div><h3>Company login</h3><p>Each company account uses its own company ID, users, permissions, and session flow.</p></article>
-          <article class="feature-card"><div class="feature-icon">02</div><h3>Live dashboards</h3><p>Processing, inventory, costing, finance, and HR dashboards help management check status quickly.</p></article>
-          <article class="feature-card"><div class="feature-icon">03</div><h3>Operational reports</h3><p>Daily and period reports are structured around production, stock, finance, and attendance needs.</p></article>
-          <article class="feature-card"><div class="feature-icon">04</div><h3>Document readiness</h3><p>Export documents and supporting forms are kept together for shipment preparation.</p></article>
-          <article class="feature-card"><div class="feature-icon">05</div><h3>Master discipline</h3><p>Centralized masters keep grades, varieties, suppliers, buyers, freezers, and packing styles consistent.</p></article>
-          <article class="feature-card"><div class="feature-icon">06</div><h3>Responsive access</h3><p>The ERP is designed for desktop operations and responsive review on smaller screens.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="section feature-band" id="implementation">
-      <div class="section-inner">
-        <div class="section-head">
-          <p class="section-kicker">Workflow</p>
-          <h2>From setup to daily reporting in a structured flow.</h2>
-        </div>
-        <div class="timeline">
-          <article class="timeline-step"><b>1</b><h3>Company setup</h3><p>Register the company, verify OTP, set password, and receive the company ID.</p></article>
-          <article class="timeline-step"><b>2</b><h3>Master entry</h3><p>Configure suppliers, buyers, grades, varieties, packing styles, locations, and criteria.</p></article>
-          <article class="timeline-step"><b>3</b><h3>Daily transactions</h3><p>Teams enter purchasing, processing, stock, finance, HR, export, sales, and commercial bill transactions.</p></article>
-          <article class="timeline-step"><b>4</b><h3>Auto review</h3><p>Requirements, floor balances, reports, bills, salary sheets, dashboards, and documents are generated from the same ERP data.</p></article>
-        </div>
-      </div>
-    </section>
-
-    <section class="cta">
-      <div class="cta-inner">
-        <div>
-          <h2>Ready to access BKNR ERP?</h2>
-          <p>Use your company ID, email, and password to open the workspace. New companies can register from the same login panel.</p>
-        </div>
-        <a href="#login">Go to Login</a>
-      </div>
-    </section>
+    </aside>
   </main>
-
-  <footer class="site-footer">
-    BKNR ERP - Enterprise workspace for seafood processing, inventory, finance, HR, reports, and exports.
-  </footer>
 </div>
 
 <script>
