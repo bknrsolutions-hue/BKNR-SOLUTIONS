@@ -4,10 +4,13 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
+import random
+import json
 
 from app.database import get_db
-from app.database.models.users import User, Company
+from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password
+from app.routers.auth import send_email, get_ist_time
 
 # ==========================================================
 # CONFIG & INITIALIZATION PARAMETERS
@@ -82,9 +85,13 @@ def check_dashboard_access(request: Request):
 def add_user_page(request: Request, db: Session = Depends(get_db)):
     logged_email = request.session.get("email")
     company_code = request.session.get("company_code")   # example: BKNR5647
+    logged_role = request.session.get("role")
 
     if not logged_email or not company_code:
         return RedirectResponse("/", status_code=302)
+
+    if logged_role != "admin":
+        return RedirectResponse("/home?msg=Access Denied", status_code=302)
 
     # Company Wise Data Filter configuration boundary schema mapping
     company = db.query(Company).filter(
@@ -123,10 +130,12 @@ def save_user(
     password: str = Form("123456"),
     role: str = Form("user"),
     access: list[str] = Form([]),
+    data_management_access: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
-    if not company_code:
+    logged_role = request.session.get("role")
+    if not company_code or logged_role != "admin":
         return RedirectResponse("/", status_code=302)
 
     # Company wise multi-tenant schema isolation validation checks mapping logic block execution sequences
@@ -152,14 +161,48 @@ def save_user(
         password=hash_password(password if password else "123456"),
         role=role,
         permissions=permissions_csv,
-        is_verified=True,
+        data_management_access=(data_management_access == "true"),
+        is_verified=False,
+        is_active=True,
         created_at=ist_now()
     )
 
     db.add(new_user)
     db.commit()
 
-    response = RedirectResponse("/admin/add_user?msg=User Saved", status_code=302)
+    # Generate OTP for email verification
+    otp = str(random.randint(1000, 9999))
+    db.query(OTPTable).filter(OTPTable.email == email).delete()
+    db.add(OTPTable(
+        email=email,
+        otp=otp,
+        extra=json.dumps({"company_code": company.company_code}),
+        is_used=False,
+        created_at=get_ist_time()
+    ))
+    db.commit()
+    
+    # Send email with credentials and OTP
+    subject = "BKNR ERP – Account Verification Required"
+    body_html = f"""
+    <h3>Welcome to BKNR ERP, {full_name}!</h3>
+    <p>An administrator has created your profile under company <b>{company.company_name}</b> (ID: <b>{company.company_code}</b>).</p>
+    <p>Your login credentials are:</p>
+    <ul>
+      <li><b>Email:</b> {email}</li>
+      <li><b>Password:</b> {password if password else '123456'}</li>
+    </ul>
+    <p>Please log in to the portal and enter the following 4-digit verification OTP when prompted:</p>
+    <h2>{otp}</h2>
+    """
+    try:
+        send_email(email, subject, body_html)
+    except Exception as e:
+        print(f"EMAIL ERROR: {e}")
+        
+    print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {email}: {otp}\n")
+
+    response = RedirectResponse("/admin/add_user?msg=User Saved. Verification email sent.", status_code=302)
     return apply_no_cache_headers(response)
 
 
@@ -177,10 +220,12 @@ def edit_user(
     password: str = Form(None), # Optional field in frontend UI
     role: str = Form(...),
     access: list[str] = Form([]),
+    data_management_access: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
-    if not company_code:
+    logged_role = request.session.get("role")
+    if not company_code or logged_role != "admin":
         return RedirectResponse("/", status_code=302)
 
     company = db.query(Company).filter(Company.company_code == company_code).first()
@@ -221,6 +266,7 @@ def edit_user(
     user.mobile = mobile
     user.role = role
     user.permissions = ",".join(access)
+    user.data_management_access = (data_management_access == "true")
 
     # If the operator specified a new pass string, inject security layer overhead
     if password and password.strip() != "":
@@ -232,19 +278,24 @@ def edit_user(
 
 
 # ==========================================================
-# DELETE USER TERMINATION
+# DISABLE DELETE AND TOGGLE USER ACTIVE STATE
 # ==========================================================
 @router.post("/delete_user/{uid}")
-def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
+def delete_user(uid: int, request: Request):
+    return RedirectResponse("/admin/add_user?msg=Deletion is disabled. Use active/inactive toggle.", status_code=302)
+
+@router.post("/toggle_user/{uid}")
+def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
-    if not company_code:
+    logged_role = request.session.get("role")
+    if not company_code or logged_role != "admin":
         return RedirectResponse("/", status_code=302)
 
     company = db.query(Company).filter(Company.company_code == company_code).first()
     if not company:
         return RedirectResponse("/", status_code=302)
 
-    # Strict enterprise database mapping check filter alignment
+    # Find user profile inside target company scope
     user = db.query(User).filter(
         User.id == uid,
         User.company_id == company.id
@@ -253,10 +304,11 @@ def delete_user(uid: int, request: Request, db: Session = Depends(get_db)):
     if not user:
         return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
 
-    db.delete(user)
+    user.is_active = not getattr(user, "is_active", True)
     db.commit()
 
-    response = RedirectResponse("/admin/add_user?msg=User Deleted", status_code=302)
+    status_str = "Activated" if user.is_active else "Deactivated"
+    response = RedirectResponse(f"/admin/add_user?msg=User {status_str} Successfully", status_code=302)
     return apply_no_cache_headers(response)
 
 

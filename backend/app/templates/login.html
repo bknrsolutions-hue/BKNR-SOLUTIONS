@@ -2,38 +2,46 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP | Seafood Processing ERP Software for Inventory, Finance, HR and Exports</title>
+<title>ERP | Seafood Processing ERP Software for Inventory, Finance, HR and Exports</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="BKNR ERP is cloud ERP software for seafood processors, covering raw material purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation.">
-<meta name="keywords" content="seafood ERP, shrimp processing ERP, fish processing software, inventory ERP, cold storage ERP, export documentation software, finance ERP, HR payroll ERP, BKNR ERP">
-<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-<meta name="author" content="BKNR ERP">
+
+
+<!-- SEO data -->
+<meta name="description" content="BKNR ERP is cloud ERP software for seafood processors, covering raw material purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation." />
+<meta name="keywords" content="seafood ERP, shrimp processing ERP, fish processing software, inventory ERP, cold storage ERP, export documentation software, finance ERP, HR payroll ERP, BKNR ERP" />
+<meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
+<meta name="author" content="BKNR ERP" />
+<!-- end -->
+<meta name="description" content="ERP is cloud ERP software for seafood processors, covering raw material purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation.">
+<meta name="keywords" content="seafood ERP, shrimp processing ERP, fish processing software, inventory ERP, cold storage ERP, export documentation software, finance ERP, HR payroll ERP, ERP">
+<!-- <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+<meta name="author" content="ERP"> -->
 <link rel="canonical" href="https://bknrerp.in/">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
 <link rel="apple-touch-icon" href="/static/icon-512.png">
 <meta name="theme-color" content="#0f172a">
 <meta property="og:type" content="website">
-<meta property="og:title" content="BKNR ERP | Seafood Processing ERP Software">
+<meta property="og:title" content="ERP | Seafood Processing ERP Software">
 <meta property="og:description" content="Manage seafood purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation in one ERP platform.">
 <meta property="og:url" content="https://bknrerp.in/">
-<meta property="og:site_name" content="BKNR ERP">
+<meta property="og:site_name" content="ERP">
 <meta property="og:image" content="https://bknrerp.in/static/screenshot.png">
 <meta property="og:locale" content="en_IN">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="BKNR ERP | Seafood Processing ERP Software">
+<meta name="twitter:title" content="ERP | Seafood Processing ERP Software">
 <meta name="twitter:description" content="Cloud ERP for seafood processing, inventory, finance, HR, billing, reports, and export documentation.">
 <meta name="twitter:image" content="https://bknrerp.in/static/screenshot.png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "BKNR ERP",
+  "name": "ERP",
   "applicationCategory": "BusinessApplication",
   "operatingSystem": "Web",
   "url": "https://bknrerp.in/",
   "image": "https://bknrerp.in/static/screenshot.png",
-  "description": "BKNR ERP is cloud ERP software for seafood processors, covering purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation.",
+  "description": "ERP is cloud ERP software for seafood processors, covering purchasing, production, cold storage, inventory, finance, HR, billing, reports, and export documentation.",
   "offers": {
     "@type": "Offer",
     "price": "0",
@@ -41,7 +49,7 @@
   },
   "publisher": {
     "@type": "Organization",
-    "name": "BKNR ERP",
+    "name": "ERP",
     "url": "https://bknrerp.in/",
     "logo": "https://bknrerp.in/static/icon-512.png"
   }
@@ -1569,10 +1577,10 @@ button:disabled {
     <aside class="auth-panel" id="login">
       <div class="form-side">
         <div class="form-brand">
-          <a class="brand" href="#login" aria-label="BKNR ERP login">
+          <a class="brand" href="#login" aria-label="ERP login">
             <span class="brand-mark">BK</span>
             <span class="brand-copy">
-              <strong>BKNR ERP</strong>
+              <strong>ERP</strong>
               <span>Account Access</span>
             </span>
           </a>
@@ -1750,7 +1758,12 @@ async function verifyOTP() {
     btn.disabled = false;
 
     if (res.ok) {
-      showBox("passBox");
+      if (data.user_exists) {
+        alert("Email verified successfully! You can now log in.");
+        showBox("loginBox");
+      } else {
+        showBox("passBox");
+      }
     } else {
       otpErr.innerHTML = data.detail || "Invalid OTP";
       otpErr.style.display = "block";
@@ -1841,14 +1854,30 @@ async function doLogin(event) {
     if (res.ok) {
       window.location.replace(data.next_page || "/home");
     } else {
-      loginErr.innerHTML = data.detail || "Invalid credentials";
-      loginErr.style.display = "block";
+      if (res.status === 403 && data.status === "unverified") {
+        regEmail = document.getElementById("login_email").value.trim().toLowerCase();
+        loginErr.innerHTML = data.detail || "Email not verified. Redirecting to OTP verification...";
+        loginErr.style.display = "block";
+        loginErr.style.background = "#ecfdf5";
+        loginErr.style.color = "#166534";
+        loginErr.style.border = "1px solid rgba(22, 101, 52, 0.08)";
+        setTimeout(() => showBox("otpBox"), 2000);
+      } else {
+        loginErr.innerHTML = data.detail || "Invalid credentials";
+        loginErr.style.display = "block";
+        loginErr.style.background = "#fef2f2";
+        loginErr.style.color = "#991b1b";
+        loginErr.style.border = "1px solid rgba(153, 27, 27, 0.08)";
+      }
     }
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
     loginErr.innerHTML = "Server connection failed.";
     loginErr.style.display = "block";
+    loginErr.style.background = "#fef2f2";
+    loginErr.style.color = "#991b1b";
+    loginErr.style.border = "1px solid rgba(153, 27, 27, 0.08)";
   }
 }
 

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>COLD STORE LOCATIONS | BKNR ERP</title>
+<title>COLD STORE LOCATIONS | ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,7 +24,7 @@
 </div>
 
 <form onsubmit="submitLocation(event)" id="locationForm">
-  <div class="form-container" id="formSection">
+  <div class="form-container" id="formSection" style="display:none;">
     
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-warehouse"></i> Location Profile</div>
@@ -86,7 +86,7 @@
             {% endif %}
         </div>
 
-        <div class="menu-container" id="threeDotsMenu">
+        <div class="menu-container" id="threeDotsMenu" style="display: none;">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
             <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
@@ -137,14 +137,14 @@
   <table id="dataTable">
     <thead>
       <tr>
-        <th style="width:50px;">ID</th>
-        <th>Location Name</th>
-        <th>Production For</th>
-        <th>Production At</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Email</th>
-        <th>Company ID</th>
+        <th class="col-xs">ID</th>
+        <th class="col-md">Location Name</th>
+        <th class="col-md">Production For</th>
+        <th class="col-md">Production At</th>
+        <th class="col-sm">Date</th>
+        <th class="col-sm">Time</th>
+        <th class="col-lg">Email</th>
+        <th class="col-sm">Company ID</th>
       </tr>
     </thead>
     <tbody>
@@ -153,14 +153,14 @@
           data-prodfor="{{ row.production_for if row.production_for else '' }}" data-prodat="{{ row.production_at if row.production_at else '' }}"
           data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
           onclick="selectRowOrCard(this)">
-        <td>{{ row.id }}</td>
-        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.coldstore_location }}</td>
-        <td style="font-weight:600; color:var(--text);">{{ row.production_for if row.production_for else '' }}</td>
-        <td><span style="font-size:10px; font-weight:800; background:#f1f5f9; padding:4px 8px; border-radius:4px; color:var(--primary);">{{ row.production_at if row.production_at else '' }}</span></td>
-        <td style="color: #475569;">{{ row.date if row.date else '' }}</td>
-        <td style="color: #64748b;">{{ row.time if row.time else '' }}</td>
-        <td style="color: #0284c7; font-size: 11px;">{{ row.email if row.email else '' }}</td>
-        <td>{{ row.company_id }}</td>
+        <td class="cell-number"><b>{{ row.id }}</b></td>
+        <td class="cell-text text-left" style="font-weight:700;color:var(--accent);">{{ row.coldstore_location }}</td>
+        <td class="cell-text">{{ row.production_for if row.production_for else '' }}</td>
+        <td class="cell-text"><span style="font-size:10px; font-weight:800; background:var(--border); padding:4px 8px; border-radius:4px; color:var(--accent);">{{ row.production_at if row.production_at else '' }}</span></td>
+        <td class="cell-text" style="color: var(--text-muted);">{{ row.date if row.date else '' }}</td>
+        <td class="cell-text" style="color: var(--text-muted);">{{ row.time if row.time else '' }}</td>
+        <td class="cell-text text-left" style="text-transform: none; color: var(--accent); font-size: 11px;">{{ row.email if row.email else '' }}</td>
+        <td class="cell-number">{{ row.company_id }}</td>
       </tr>
       {% endfor %}
     </tbody>

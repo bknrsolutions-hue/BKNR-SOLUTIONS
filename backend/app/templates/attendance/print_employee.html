@@ -151,7 +151,7 @@
     <table class="header-table">
         <tr>
             <td>
-                <div class="company-name">{{ company.company_name if company else 'BKNR SOLUTIONS' }}</div>
+                <div class="company-name">{{ company.company_name if company else 'SOLUTIONS' }}</div>
                 <div class="company-address">{{ company.address if company else 'Main Office Address, State, India' }}</div>
                 <div class="record-title">EMPLOYEE MASTER RECORD</div>
             </td>
@@ -258,7 +258,7 @@
     </table>
 
     <div class="footer">
-        This is a system-generated document for <b>{{ company.company_name if company else 'BKNR ERP' }}</b>. 
+        This is a system-generated document for <b>{{ company.company_name if company else 'ERP' }}</b>. 
         Record ID: {{ e.id }} | Created: {{ e.created_at.strftime('%d-%m-%Y %H:%M') if e.created_at else '-' }}
     </div>
 </div>

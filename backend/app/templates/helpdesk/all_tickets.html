@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Admin Helpdesk | BKNR ERP</title>
+<title>Admin Helpdesk | ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -338,7 +338,7 @@ async function fetchMessages(ticketId, userEmail) {
             data.messages.forEach(m => {
                 const isAdmin = (m.sender_type === "ADMIN" || m.sender_type === "SUPPORT");
                 const msgClass = isAdmin ? "msg-admin" : "msg-user";
-                const senderName = isAdmin ? "BKNR Support" : userEmail;
+                const senderName = isAdmin ? "Support" : userEmail;
                 const icon = isAdmin ? '<i class="fa-solid fa-headset"></i>' : '<i class="fa-regular fa-user"></i>';
                 
                 chatBox.innerHTML += `
@@ -434,7 +434,7 @@ async function sendAdminReply() {
     const tempId = 'temp-' + Date.now();
     chatBox.innerHTML += `
         <div class="msg msg-admin" id="${tempId}" style="opacity: 0.7;">
-            <span class="msg-sender"><i class="fa-solid fa-headset"></i> BKNR Support</span>
+            <span class="msg-sender"><i class="fa-solid fa-headset"></i> Support</span>
             <div style="word-break: break-word;">${message || "Sending file..."}</div>
             <span class="msg-time">${nowTime} <i class="fa-solid fa-spinner fa-spin" style="margin-left:2px; font-size:9px;"></i></span>
         </div>

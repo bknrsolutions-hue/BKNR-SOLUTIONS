@@ -22,7 +22,7 @@ table { width: 100%; border-collapse: collapse; }
 <body>
 <table class="header">
   <tr>
-    <td><div class="company">BKNR SOLUTIONS</div><div>Exporter / Manufacturer</div><div>Company: {{ company_id }} | India</div></td>
+    <td><div class="company">SOLUTIONS</div><div>Exporter / Manufacturer</div><div>Company: {{ company_id }} | India</div></td>
     <td><div class="doc-title">{{ title }}</div><div class="meta"><b>{{ document_no }}</b><br>Date: {{ document_date or generated_at.date() }}<br>Generated: {{ generated_at.strftime('%d-%b-%Y %H:%M UTC') }}</div></td>
   </tr>
 </table>
@@ -35,7 +35,7 @@ table { width: 100%; border-collapse: collapse; }
 </table>
 
 <div class="section">Declaration and Control</div>
-<div class="declaration">We certify that the particulars shown above are true and correct according to the records maintained in BKNR ERP. The document must be checked against the buyer contract, customs filing, carrier document, statutory certificate, and latest approved revision before external use.</div>
+<div class="declaration">We certify that the particulars shown above are true and correct according to the records maintained in ERP. The document must be checked against the buyer contract, customs filing, carrier document, statutory certificate, and latest approved revision before external use.</div>
 
 <table class="signatures"><tr><td>Prepared By<br><small>Export Documentation</small></td><td>Checked By<br><small>Compliance / Logistics</small></td><td>Authorised Signatory<br><small>Company Seal</small></td></tr></table>
 <div class="control">CONTROLLED ERP COPY | Document ID: {{ doc_type|upper }}-{{ record.id }} | Verify latest revision before use</div>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <title>{{ request.session.get('company_name', 'Enterprise ERP') }} - Workspace</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="company-name" content="{{ request.session.get('company_name', 'BKNR ERP') }}">
+<meta name="company-name" content="{{ request.session.get('company_name', 'ERP') }}">
 <meta name="robots" content="noindex,nofollow">
 
 <link rel="manifest" href="/static/manifest.json">
@@ -21,7 +21,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-    window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'BKNR ERP')|tojson }};
+    window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'ERP')|tojson }};
     const savedTheme = localStorage.getItem("theme") || "dark";
     document.documentElement.setAttribute("data-theme", savedTheme);
 </script>

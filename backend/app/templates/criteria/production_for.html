@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>PRODUCTION FOR – COSTING MASTER | BKNR ERP</title>
+<title>PRODUCTION FOR – COSTING MASTER | ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -13,6 +13,47 @@
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<style>
+/* Glaze Input Grid Layout */
+.glaze-row {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.glaze-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.glaze-cell span {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-align: center;
+}
+.glaze-cell input {
+  width: 100% !important;
+  text-align: center;
+  padding: 6px 4px !important;
+  font-size: 11px !important;
+}
+
+@media (max-width: 900px) {
+  .glaze-row {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+@media (max-width: 500px) {
+  .glaze-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
 </head>
 
 <body>
@@ -22,12 +63,12 @@
       <h2>Production For – Costing Master</h2>
       <p>Freezer & Glaze wise costing structure templates</p>
   </div>
-  <div class="header-badge">BKNR ERP</div>
+  <div class="header-badge">ERP</div>
 </div>
 
 <!-- FORM AREA -->
 <form id="costingForm" onsubmit="saveRecord(event)">
-  <div class="form-container" id="formSection">
+  <div class="form-container" id="formSection" style="display:none;">
     
     <div class="form-grid">
       <div class="form-title-inner"><i class="fa-solid fa-calculator"></i> Production Base Parameters</div>
@@ -108,7 +149,7 @@
         </div>
 
         <!-- RIGHT INLINE 3-DOT MENU -->
-        <div class="menu-container" id="threeDotsMenu">
+        <div class="menu-container" id="threeDotsMenu" style="display: none;">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
             <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Record</div>

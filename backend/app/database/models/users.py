@@ -55,6 +55,8 @@ class User(Base):
     working_at = Column(String(255), index=True)
 
     is_verified = Column(Boolean, default=False)
+    is_active = Column(Boolean, default=True, server_default="true")
+    data_management_access = Column(Boolean, default=False, server_default="false")
     created_at = Column(DateTime, default=datetime.utcnow)
 
     # 🌟 NEW MULTI-TENANT SEGMENTATION TEXT COLUMNS (FOR JSON STORAGE)

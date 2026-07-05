@@ -545,7 +545,7 @@ const rawData = [
     {% endfor %}
 ];
 
-const companyName = "{{ company_name | default('BKNR ERP') }}";
+const companyName = "{{ company_name | default('ERP') }}";
 
 let activeAgeMin = 0;
 let activeAgeMax = 999999;
@@ -1377,7 +1377,7 @@ function printBill() {
         </div>
         <div style="text-align:right; font-size:11px; color:#475569;">
             Printed: ${new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}<br>
-            <span style="font-size:9px; opacity:0.6;">BKNR ERP — Cold Storage Module</span>
+            <span style="font-size:9px; opacity:0.6;">ERP — Cold Storage Module</span>
         </div>
     </div>
     ${billsHtml}

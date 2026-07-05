@@ -1169,3 +1169,61 @@ a[href*="criteria/setup/next"],
     padding-top: 10px;
     border-top: 1px solid var(--border);
 }
+
+
+/* ==========================================================
+   11. GLOBAL TABLE HEADER & TOTAL ROW HIGHLIGHTS (LIGHT/DARK)
+   ========================================================== */
+
+/* --- DARK MODE (DEFAULT) --- */
+thead th, thead th *, 
+.table-wrap thead th, .table-container thead th {
+    background-color: #1e3a8a !important; /* Royal Navy Blue */
+    background: #1e3a8a !important;
+    color: #ffffff !important; /* Clear White contrast */
+    border-bottom: 2px solid #2563eb !important;
+}
+
+tfoot td, 
+.grand-total-row, .grand-total-row td, 
+.subtotal-row, .subtotal-row td, 
+.card-subtotal-row, .card-subtotal-row td, 
+.sum-total-row, .sum-total-row td, 
+.total-row, .total-row td {
+    background-color: #172554 !important; /* Deep Midnight Blue */
+    background: #172554 !important;
+    color: #38bdf8 !important; /* Electric Sky Blue text contrast */
+    font-weight: 800 !important;
+    border-top: 1.5px solid #2563eb !important;
+    border-bottom: 2.5px double #2563eb !important;
+}
+
+/* --- LIGHT MODE --- */
+html[data-theme="light"] thead th,
+html[data-theme="light"] thead th *,
+html[data-theme="light"] .table-wrap thead th,
+html[data-theme="light"] .table-container thead th {
+    background-color: #dbeafe !important; /* Soft Light Blue */
+    background: #dbeafe !important;
+    color: #1e3a8a !important; /* Royal Blue text contrast */
+    border-bottom: 2px solid #3b82f6 !important;
+}
+
+html[data-theme="light"] tfoot td,
+html[data-theme="light"] .grand-total-row,
+html[data-theme="light"] .grand-total-row td,
+html[data-theme="light"] .subtotal-row,
+html[data-theme="light"] .subtotal-row td,
+html[data-theme="light"] .card-subtotal-row,
+html[data-theme="light"] .card-subtotal-row td,
+html[data-theme="light"] .sum-total-row,
+html[data-theme="light"] .sum-total-row td,
+html[data-theme="light"] .total-row,
+html[data-theme="light"] .total-row td {
+    background-color: #bfdbfe !important; /* Soft Highlight Blue */
+    background: #bfdbfe !important;
+    color: #1e40af !important; /* Premium Indigo text contrast */
+    font-weight: 800 !important;
+    border-top: 1.5px solid #3b82f6 !important;
+    border-bottom: 2.5px double #3b82f6 !important;
+}

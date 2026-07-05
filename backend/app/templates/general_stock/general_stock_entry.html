@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="utf-8">
-  <title>GENERAL STOCK | BKNR ERP</title>
+  <title>GENERAL STOCK | ERP</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
@@ -615,7 +615,7 @@
 
   <!-- 🔥 FORM (HIDDEN BY DEFAULT) 🔥 -->
   <form id="generalStockForm" action="/general_stock/entry" method="post" onsubmit="return validateForm(event)">
-    <div class="form-container" id="formSection">
+    <div class="form-container" id="formSection" style="display:none;">
       <div class="form-grid">
         <div class="form-title-inner"><i class="fa-solid fa-boxes-stacked"></i> Stock Allocation Info</div>
 
@@ -1085,7 +1085,7 @@
       const d = selectedElement.dataset;
       const w = window.open("", "_blank");
       w.document.write("<style>body{font-family:sans-serif; padding:20px; color:#333;}</style>");
-      w.document.write("<h2>BKNR ERP - Stock Entry Log</h2><hr>");
+      w.document.write("<h2>ERP - Stock Entry Log</h2><hr>");
       w.document.write(`<p><b>GRN Number:</b> ${d.grn}</p>`);
       w.document.write(`<p><b>Item Profile:</b> ${d.item}</p>`);
       w.document.write(`<p><b>Movement:</b> ${d.move}</p>`);

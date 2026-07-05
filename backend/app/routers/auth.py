@@ -122,8 +122,16 @@ def verify_otp(data: OTPReq, db: Session = Depends(get_db)):
     if not rec or get_ist_time() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN): 
         raise HTTPException(400, "OTP expired or invalid")
     rec.is_used = True
+    
+    # If the user already exists, mark them as verified!
+    user = db.query(User).filter(User.email == data.email).first()
+    user_exists = False
+    if user:
+        user.is_verified = True
+        user_exists = True
+        
     db.commit()
-    return {"message": "OTP verified"}
+    return {"message": "OTP verified", "user_exists": user_exists}
 
 @router.post("/set-password")
 def set_password(data: PasswordReq, db: Session = Depends(get_db)):
@@ -175,6 +183,35 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
+
+    # 1. Check active status
+    if not getattr(user, "is_active", True):
+        raise HTTPException(400, "Account has been deactivated. Please contact your administrator.")
+
+    # 2. Check verification status
+    if not getattr(user, "is_verified", False):
+        otp = str(random.randint(1000, 9999))
+        db.query(OTPTable).filter(OTPTable.email == user.email).delete()
+        db.add(OTPTable(
+            email=user.email,
+            otp=otp,
+            extra=json.dumps({"company_code": company.company_code}),
+            is_used=False,
+            created_at=get_ist_time()
+        ))
+        db.commit()
+        
+        try:
+            send_email(user.email, "BKNR ERP – Email Verification OTP", f"<h2>Your verification OTP is: {otp}</h2>")
+        except Exception as e:
+            print(f"EMAIL ERROR: {e}")
+            
+        print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {user.email}: {otp}\n")
+        
+        return JSONResponse(
+            status_code=403,
+            content={"status": "unverified", "detail": "Email not verified. A verification OTP has been sent to your email."}
+        )
 
     # Bypass Setup Logic
     activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")

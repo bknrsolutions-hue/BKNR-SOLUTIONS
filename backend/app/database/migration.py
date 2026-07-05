@@ -57,6 +57,31 @@ def run_migration():
                         print(f"  ❌ Error adding column '{col_name}': {e}")
                 else:
                     print(f"  ✔ Column '{col_name}' already exists in table '{table}'.")
+        
+        # Check users table
+        print("Checking table: users")
+        res = conn.execute(text("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users';
+        """))
+        existing_user_columns = {row[0] for row in res.fetchall()}
+        
+        user_migrations = [
+            ("is_active", "BOOLEAN DEFAULT TRUE"),
+            ("data_management_access", "BOOLEAN DEFAULT FALSE")
+        ]
+        
+        for col_name, col_type in user_migrations:
+            if col_name not in existing_user_columns:
+                print(f"  -> Adding column '{col_name}' ({col_type}) to table 'users'")
+                try:
+                    conn.execute(text(f"ALTER TABLE users ADD COLUMN {col_name} {col_type};"))
+                    print(f"  ✔ Column '{col_name}' added successfully to users table.")
+                except Exception as e:
+                    print(f"  ❌ Error adding column '{col_name}' to users table: {e}")
+            else:
+                print(f"  ✔ Column '{col_name}' already exists in table 'users'.")
                     
     print("Migration completed successfully!")
 

@@ -13,7 +13,7 @@
         syncThemeFromParent();
     </script>
 <meta charset="utf-8">
-<title>COLD STORAGE MASTER – BKNR ERP</title>
+<title>COLD STORAGE MASTER – ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -163,9 +163,16 @@ textarea { resize: none; height: 34px; }
 .menu-item:hover { background: #f1f5f9; color: var(--accent); }
 
 /* ================= COMPACT TABLE AREA ================= */
-.table-wrap{
-    background: var(--card-bg) !important;
-} width: 96%; max-width: 1400px; margin: 0 auto 20px; background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); overflow-x: auto; display: block; }
+.table-wrap {
+  width: 96%;
+  max-width: 1400px;
+  margin: 0 auto 20px;
+  background: var(--card-bg) !important;
+  border-radius: 8px;
+  border: 1px solid var(--border) !important;
+  overflow-x: auto;
+  display: block;
+}
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 th, td { padding: 6px 8px; font-size: 11px; border-bottom: 1px solid #f1f5f9; text-align: center; white-space: nowrap; }
 th { background: #f8fafc; color: #475569; font-weight: 700; text-transform: uppercase; font-size: 9px; letter-spacing: 0.3px; border-bottom: 1px solid var(--border); }
@@ -182,9 +189,9 @@ tr.selected { background: #eff6ff !important; }
 .card-val { font-weight: 600; color: var(--text); text-align: right; word-break: break-word; }
 
 @media(max-width: 1024px){
-  .table-wrap{
-    background: var(--card-bg) !important;
-} display: none !important; }
+  .table-wrap {
+    display: none !important;
+  }
   .mobile-card-list { display: block !important; }
 }
 </style>
@@ -199,12 +206,12 @@ tr.selected { background: #eff6ff !important; }
   <div class="header-titles">
       <h2>Cold Storage Master</h2>
   </div>
-  <div style="font-size:10px; font-weight:700; color: var(--muted)">BKNR ERP</div>
+  <div style="font-size:10px; font-weight:700; color: var(--muted)">ERP</div>
 </div>
 
 <!-- FORM AREA -->
 <form id="csMasterForm" action="/inventory/cold_storage/save" method="POST">
-  <div class="form-container" id="formSection">
+  <div class="form-container" id="formSection" style="display:none;">
     <div class="grid">
       
       <div class="form-title-inner grid-title-full"><i class="fa-solid fa-snowflake"></i> Warehouse Core Parameters</div>
@@ -301,7 +308,7 @@ tr.selected { background: #eff6ff !important; }
         </div>
 
         <!-- RIGHT INLINE 3-DOT MENU -->
-        <div class="menu-container" id="threeDotsMenu">
+        <div class="menu-container" id="threeDotsMenu" style="display: none;">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
             <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Parameters</div>
@@ -359,31 +366,31 @@ tr.selected { background: #eff6ff !important; }
     <table id="dataTable">
       <thead>
         <tr>
-          <th style="width:50px;">ID</th>
-          <th>Storage Cluster Name</th>
-          <th>Type Engine</th>
-          <th>Contact Custodian</th>
-          <th>Total Capacity (MC)</th>
-          <th>Rent Cycle</th>
-          <th>Base Rate / MC</th>
-          <th>Loading Tariff</th>
-          <th>Handling Overhead</th>
-          <th>Pipeline Status</th>
+          <th class="col-xs">ID</th>
+          <th class="col-md">Storage Cluster Name</th>
+          <th class="col-sm">Type Engine</th>
+          <th class="col-md">Contact Custodian</th>
+          <th class="col-sm">Total Capacity (MC)</th>
+          <th class="col-sm">Rent Cycle</th>
+          <th class="col-sm">Base Rate / MC</th>
+          <th class="col-sm">Loading Tariff</th>
+          <th class="col-sm">Handling Overhead</th>
+          <th class="col-sm">Pipeline Status</th>
         </tr>
       </thead>
       <tbody>
         {% for row in today_data %}
         <tr data-id="{{ row.id }}" data-json='{{ row | tojson }}' onclick="selectRowOrCard(this)">
-          <td>#{{ row.id }}</td>
-          <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.storage_name }}</td>
-          <td>{{ row.storage_type }}</td>
-          <td style="text-align:left;">{{ row.contact_person }} <small style="color:var(--muted)">({{ row.contact_number }})</small></td>
-          <td style="font-weight:600;">{{ row.total_capacity_mc }}</td>
-          <td><span style="font-weight:700; color:#475569;">{{ row.rent_type if row.rent_type else 'N/A' }}</span></td>
-          <td>₹{{ row.rate_per_mc_per_month }}</td>
-          <td>₹{{ row.loading_unloading_charges }}</td>
-          <td>₹{{ row.handling_charges }}</td>
-          <td>
+          <td class="cell-number">#{{ row.id }}</td>
+          <td class="cell-text text-left" style="font-weight:700;color:var(--accent);">{{ row.storage_name }}</td>
+          <td class="cell-text">{{ row.storage_type }}</td>
+          <td class="cell-text text-left">{{ row.contact_person }} <small style="color:var(--muted)">({{ row.contact_number }})</small></td>
+          <td class="cell-number" style="font-weight:600;">{{ row.total_capacity_mc }}</td>
+          <td class="cell-text"><span style="font-weight:700; color:#475569;">{{ row.rent_type if row.rent_type else 'N/A' }}</span></td>
+          <td class="cell-number">₹{{ row.rate_per_mc_per_month }}</td>
+          <td class="cell-number">₹{{ row.loading_unloading_charges }}</td>
+          <td class="cell-number">₹{{ row.handling_charges }}</td>
+          <td class="cell-text">
             <span style="padding:4px 8px; border-radius:4px; font-size:10px; font-weight:700;
                   background: {{ '#dcfce7' if row.is_active == 'ACTIVE' else '#fee2e2' }}; 
                   color: {{ '#166534' if row.is_active == 'ACTIVE' else '#991b1b' }};">
