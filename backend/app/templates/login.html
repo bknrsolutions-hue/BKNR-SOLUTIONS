@@ -1615,6 +1615,7 @@ button:disabled {
           </div>
           <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
           <div id="otpErr" class="msg error"></div>
+          <div id="otpOk" class="msg success"></div>
         </div>
 
         <div id="passBox" class="card">
@@ -1795,8 +1796,14 @@ async function verifyOTP() {
 
     if (res.ok) {
       if (data.user_exists) {
-        alert("Email verified successfully! You can now log in.");
-        showBox("loginBox");
+        // Show inline success — no native alert() to avoid Telugu OS dialog chrome
+        otpErr.style.display = "none";
+        const otpOk = document.getElementById("otpOk");
+        if (otpOk) {
+          otpOk.innerHTML = "Email verified. Redirecting to login...";
+          otpOk.style.display = "block";
+        }
+        setTimeout(() => showBox("loginBox"), 2500);
       } else {
         showBox("passBox");
       }

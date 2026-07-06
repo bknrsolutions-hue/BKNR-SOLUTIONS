@@ -68,11 +68,57 @@
 
 /* Desktop table and row overrides to coordinate selected highlighting states with master layout */
 tr.clickable-user-row.selected-row td { background: var(--row-selected) !important; }
+
+/* Force table always visible and horizontally scrollable on mobile */
+@media (max-width: 1024px) {
+  html, body {
+    overflow-x: hidden;
+  }
+  .table-wrap {
+    display: block !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .mobile-card-list { display: none !important; }
+  #tableSection table,
+  .table-wrap table {
+    min-width: 620px !important;
+    width: max-content !important;
+    table-layout: auto !important;
+  }
+  .actions { flex-direction: row !important; }
+  .btn { width: auto !important; min-width: unset !important; }
+}
 </style>
 <link rel="stylesheet" href="/static/css/bknr-masters.css">
 <link rel="stylesheet" href="/static/css/global-loader.css">
 <link rel="stylesheet" href="/static/css/bknr-standard.css">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<!-- Mobile scroll override — must be AFTER all CSS imports to win specificity -->
+<style>
+@media (max-width: 1024px) {
+  html, body { overflow-x: hidden; }
+  .table-wrap {
+    display: block !important;
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    -webkit-overflow-scrolling: touch !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+  .mobile-card-list { display: none !important; }
+  #tableSection table, .table-wrap table {
+    min-width: 620px !important;
+    width: max-content !important;
+    table-layout: auto !important;
+  }
+  .actions { flex-direction: row !important; }
+  .btn { width: auto !important; min-width: unset !important; }
+}
+</style>
 </head>
 <body>
 
@@ -382,10 +428,43 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
       </div>
 
       <div class="actions">
-        <button type="submit" id="submitFormBtn" class="btn btn-primary"><i class="fa-solid fa-check"></i> SAVE USER</button>
+        <button type="button" id="submitFormBtn" class="btn btn-primary" onclick="submitUserForm()"><i class="fa-solid fa-check"></i> SAVE USER</button>
         <button type="button" class="btn btn-clear" onclick="closeFormSection()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
       </div>
     </form>
+  </div>
+
+  <!-- ========== OTP VERIFICATION MODAL ========== -->
+  <div id="addUserOtpOverlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:99999; align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); border:1px solid var(--border); border-radius:16px; padding:36px 32px; max-width:420px; width:90%; box-shadow:0 24px 60px rgba(0,0,0,0.25); text-align:center; position:relative;">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <i class="fa-solid fa-shield-halved" style="color:#fff;font-size:22px;"></i>
+      </div>
+      <h3 style="margin:0 0 8px;font-size:18px;font-weight:800;color:var(--text);">Verify New User</h3>
+      <p id="otpSentToMsg" style="margin:0 0 22px;font-size:13px;color:var(--text-muted);line-height:1.6;">An OTP has been sent to the user's email.</p>
+
+      <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;">
+        <input id="addUserOtpInput" type="text" maxlength="6" inputmode="numeric" placeholder="Enter 6-digit OTP"
+          style="text-align:center;font-size:22px;font-weight:800;letter-spacing:8px;padding:14px 18px;width:200px;border:2px solid var(--accent);border-radius:10px;background:var(--bg);color:var(--text);outline:none;">
+      </div>
+
+      <p id="addUserOtpError" style="color:#ef4444;font-size:13px;font-weight:600;margin:0 0 14px;display:none;"></p>
+
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button id="verifyAddUserOtpBtn" class="btn btn-primary" onclick="verifyAddUserOtp()" style="min-width:130px;">
+          <i class="fa-solid fa-check"></i> Verify & Save
+        </button>
+        <button class="btn btn-clear" onclick="cancelAddUserOtp()" style="min-width:100px;">
+          <i class="fa-solid fa-xmark"></i> Cancel
+        </button>
+      </div>
+
+      <div style="margin-top:18px;">
+        <button onclick="resendAddUserOtp()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;text-decoration:underline;">
+          <i class="fa-solid fa-rotate-right"></i> Resend OTP
+        </button>
+      </div>
+    </div>
   </div>
 
   <div class="table-header-bar">
@@ -465,6 +544,149 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
 <form id="nativeDeleteForm" method="post" style="display:none;"></form>
 
 <script>
+let _pendingAddUserEmail = null;
+
+async function submitUserForm() {
+  const form = document.getElementById('userMainForm');
+  const action = form.action || '/admin/add_user';
+
+  // If editing (edit_user_id set), do native form POST
+  const userId = document.getElementById('edit_user_id').value;
+  if (userId) {
+    form.submit();
+    return;
+  }
+
+  // Validate
+  const requiredFields = ['f_name','f_designation','f_email','f_mobile'];
+  for (const fid of requiredFields) {
+    const el = document.getElementById(fid);
+    if (!el || !el.value.trim()) {
+      el && el.focus();
+      Swal.fire({ icon:'warning', title:'Missing Field', text:'Please fill all required fields.', confirmButtonColor:'var(--accent)' });
+      return;
+    }
+  }
+
+  // Build FormData
+  const formData = new FormData(form);
+  // Make sure data_management_access is included
+  const dmChk = document.getElementById('f_data_management_access');
+  if (dmChk && !dmChk.checked) {
+    formData.set('data_management_access', 'false');
+  } else if (dmChk && dmChk.checked) {
+    formData.set('data_management_access', 'true');
+  }
+
+  const btn = document.getElementById('submitFormBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Sending OTP...';
+
+  try {
+    const resp = await fetch('/admin/add_user', { method:'POST', body: formData });
+    const data = await resp.json();
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> SAVE USER';
+
+    if (data.status === 'otp_required') {
+      _pendingAddUserEmail = data.email;
+      document.getElementById('otpSentToMsg').textContent = `OTP sent to ${data.email}. Enter it below to complete user creation.`;
+      document.getElementById('addUserOtpInput').value = '';
+      document.getElementById('addUserOtpError').style.display = 'none';
+      const overlay = document.getElementById('addUserOtpOverlay');
+      overlay.style.display = 'flex';
+    } else {
+      Swal.fire({ icon:'error', title:'Error', text: data.msg || 'Something went wrong.', confirmButtonColor:'var(--accent)' });
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> SAVE USER';
+    Swal.fire({ icon:'error', title:'Network Error', text: 'Could not reach server. Try again.', confirmButtonColor:'var(--accent)' });
+  }
+}
+
+async function verifyAddUserOtp() {
+  const otp = document.getElementById('addUserOtpInput').value.trim();
+  if (!otp || otp.length < 4) {
+    showOtpError('Please enter the OTP sent to the email.');
+    return;
+  }
+
+  const btn = document.getElementById('verifyAddUserOtpBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Verifying...';
+
+  const formData = new FormData();
+  formData.append('email', _pendingAddUserEmail);
+  formData.append('otp', otp);
+
+  try {
+    const resp = await fetch('/admin/verify_add_user_otp', { method:'POST', body: formData });
+    const data = await resp.json();
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify & Save';
+
+    if (data.status === 'success') {
+      document.getElementById('addUserOtpOverlay').style.display = 'none';
+      _pendingAddUserEmail = null;
+      Swal.fire({
+        icon:'success', title:'User Created!', text: data.msg,
+        confirmButtonColor:'var(--accent)'
+      }).then(() => { window.location.reload(); });
+    } else {
+      showOtpError(data.msg || 'Verification failed.');
+    }
+  } catch(e) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-check"></i> Verify & Save';
+    showOtpError('Network error. Please try again.');
+  }
+}
+
+async function resendAddUserOtp() {
+  if (!_pendingAddUserEmail) return;
+  const formData = new FormData();
+  formData.append('email', _pendingAddUserEmail);
+
+  try {
+    const resp = await fetch('/admin/resend_add_user_otp', { method:'POST', body: formData });
+    const data = await resp.json();
+    if (data.status === 'success') {
+      showOtpError('');
+      document.getElementById('addUserOtpInput').value = '';
+      document.getElementById('otpSentToMsg').textContent = data.msg;
+    } else {
+      showOtpError(data.msg || 'Could not resend OTP.');
+    }
+  } catch(e) {
+    showOtpError('Network error. Please try again.');
+  }
+}
+
+function cancelAddUserOtp() {
+  document.getElementById('addUserOtpOverlay').style.display = 'none';
+  _pendingAddUserEmail = null;
+}
+
+function showOtpError(msg) {
+  const el = document.getElementById('addUserOtpError');
+  if (!msg) { el.style.display = 'none'; return; }
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+// Allow pressing Enter inside OTP input
+document.addEventListener('DOMContentLoaded', () => {
+  const otpInput = document.getElementById('addUserOtpInput');
+  if (otpInput) {
+    otpInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') verifyAddUserOtp();
+    });
+  }
+});
+
 // Watch for dynamic theme changes instantly without reload
 const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {

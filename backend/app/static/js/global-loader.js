@@ -4,6 +4,11 @@
 // ======================================================
 
 (function () {
+    // Guard: only initialize once per browsing context (prevents double spinner
+    // when both menu.html parent and child iframe pages include this script)
+    if (window.__bknrLoaderInit) return;
+    window.__bknrLoaderInit = true;
+
     let activeRequests = 0;
     let showTimer = null;
 

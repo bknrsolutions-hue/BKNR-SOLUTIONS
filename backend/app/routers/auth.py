@@ -174,7 +174,11 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
 
     existing_user = db.query(User).filter(or_(User.email == data.email, User.mobile == data.mobile)).first()
     if existing_user:
-        raise HTTPException(status_code=400, detail="User already registered.")
+        if existing_user.password:
+            raise HTTPException(status_code=400, detail="User already registered.")
+        else:
+            db.delete(existing_user)
+            db.commit()
     
     otp = str(random.randint(1000, 9999))
     extra_data = data.model_dump() if hasattr(data, "model_dump") else data.dict()
@@ -225,8 +229,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
     if not company:
         company = Company(company_name=extra["company_name"], address=extra["address"], email=extra["email"], company_code=new_company_code, is_active=False)
         db.add(company)
-        db.commit()
-        db.refresh(company)
+        db.flush()
 
     # 🟢 Upsert User
     user = db.query(User).filter(User.email == extra["email"]).first()
@@ -237,14 +240,16 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         user.company_id = company.id
         user.password = hash_password(data.password)
         user.is_verified = True
-    db.commit()
+    db.flush()
 
     # 🌱 Seed default masters for new company
     try:
         seed_default_masters(db, company.company_code, email=extra.get("email", "system@bknr.com"))
+        db.commit()
     except Exception as e:
         db.rollback()
         print(f"SEED MASTERS ERROR: {e}")
+        raise HTTPException(500, detail=f"Database setup failed during master seeding: {e}")
 
     try:
         send_email(
