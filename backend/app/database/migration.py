@@ -88,7 +88,9 @@ def run_migration():
         
         user_migrations = [
             ("is_active", "BOOLEAN DEFAULT TRUE"),
-            ("data_management_access", "BOOLEAN DEFAULT FALSE")
+            ("data_management_access", "BOOLEAN DEFAULT FALSE"),
+            ("ui_colors", "TEXT"),
+            ("current_session_id", "VARCHAR")
         ]
         
         for col_name, col_type in user_migrations:
