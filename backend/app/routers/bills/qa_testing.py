@@ -241,12 +241,12 @@ def delete_qa_log(expense_id: int, request: Request, db: Session = Depends(get_d
         try:
             db.add(AuditLog(
                 table_name="qa_testing_logs", record_id=entry.id, company_id=company_code,
-                field_name="DELETE", old_value=f"Batch: {entry.batch_no}", new_value="DELETED",
+                field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
-            db.delete(entry)
+            entry.is_cancelled = True
             db.commit()
-            return {"success": True, "message": "QA testing charges dropped successfully!"}
+            return {"success": True, "message": "QA testing charges cancelled successfully!"}
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)

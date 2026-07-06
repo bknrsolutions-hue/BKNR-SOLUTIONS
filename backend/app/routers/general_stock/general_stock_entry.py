@@ -50,7 +50,8 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
     # ఈరోజు ఎంటర్ చేసిన డేటా
     today = ist_now().date()
     today_data = db.query(GeneralStock).filter(
-        GeneralStock.date == today, 
+        GeneralStock.date == today,
+        GeneralStock.is_cancelled != True, 
         func.upper(func.trim(GeneralStock.company_id)) == comp_code
     ).order_by(GeneralStock.id.desc()).all()
 
@@ -201,7 +202,7 @@ def delete_stock(request: Request, id: int, db: Session = Depends(get_db)):
         func.upper(func.trim(GeneralStock.company_id)) == comp_code
     ).first()
     if row:
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         return {"status": "success"}
     raise HTTPException(status_code=404, detail="Record not found")

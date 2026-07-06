@@ -54,6 +54,7 @@ class CustomerReceivable(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 class VendorPayment(Base):
@@ -94,6 +95,7 @@ class VendorPayment(Base):
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_date = Column(Date, nullable=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 class BankTransaction(Base):
@@ -118,6 +120,7 @@ class BankTransaction(Base):
     created_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 class ExpenseVoucher(Base):
@@ -145,6 +148,7 @@ class ExpenseVoucher(Base):
     remarks = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # ─── JOURNAL ENTRY DOUBLE ENTRY HEADER-LINE ARCHITECTURE ───
@@ -165,6 +169,7 @@ class JournalEntry(Base):
     created_by = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
+    is_cancelled = Column(Boolean, default=False)
 
     lines = relationship("JournalEntryLine", back_populates="header", cascade="all, delete-orphan")
 
@@ -243,6 +248,7 @@ class PaymentReceipt(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=True, index=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 class BuyerAgingSummary(Base):

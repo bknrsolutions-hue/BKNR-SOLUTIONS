@@ -409,10 +409,10 @@ async def delete_gate_row(request: Request, payload: dict = Body(...), db: Sessi
     if row:
         db.add(AuditLog(
             table_name="gate_entry", record_id=row.id, company_id=company_id, 
-            field_name="DELETE", old_value="Gate Entry Record", new_value="DELETED", 
+            field_name="is_cancelled", old_value="False", new_value="True", 
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         return {"status": "success"}
     return {"status": "error"}

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Boolean
 from app.database import Base
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -16,6 +16,7 @@ class ElectricityLog(Base):
     closing_kwh = Column(Float)
     unit_rate = Column(Float)
     total_cost = Column(Float)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # =========================================================================
@@ -50,6 +51,7 @@ class DieselLog(Base):
     net_val = Column(Float, default=0.0)    # Total Amount (Including Tax)
 
     email = Column(String(150), index=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # =========================================================================
@@ -90,6 +92,7 @@ class PurchaseInvoice(Base):
     supplier_ledger_id = Column(Integer, nullable=True)       # FK → ledger_masters.id (Supplier A/c)
     input_gst_ledger_id = Column(Integer, nullable=True)      # FK → ledger_masters.id (Input GST A/c)
     gst_register_id = Column(Integer, nullable=True)          # FK → gst_register.id (auto-populated)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # =========================================================================
@@ -130,6 +133,7 @@ class ContainerLog(Base):
     vendor_ledger_id = Column(Integer, nullable=True)
     input_gst_ledger_id = Column(Integer, nullable=True)
     gst_register_id = Column(Integer, nullable=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # =========================================================================
@@ -157,6 +161,7 @@ class QATestingLog(Base):
     lab_ledger_id = Column(Integer, nullable=True) # Assuming lab is a vendor
     input_gst_ledger_id = Column(Integer, nullable=True)
     gst_register_id = Column(Integer, nullable=True)
+    is_cancelled = Column(Boolean, default=False)
 
 
 # =========================================================================
@@ -184,3 +189,4 @@ class OtherExpense(Base):
     expense_ledger_id = Column(Integer, nullable=True)
     cash_or_bank_ledger_id = Column(Integer, nullable=True)
     gst_register_id = Column(Integer, nullable=True)
+    is_cancelled = Column(Boolean, default=False)

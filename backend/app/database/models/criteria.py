@@ -2,14 +2,29 @@ from sqlalchemy import (
     Column, Integer, String, Float, Date, Time, 
     UniqueConstraint, ForeignKey, DateTime
 )
-from datetime import datetime
+from datetime import date as date_type, datetime
+from sqlalchemy.types import TypeDecorator
 from app.database import Base
+
+
+class ISODate(TypeDecorator):
+    impl = Date
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value in (None, ""):
+            return None
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date_type):
+            return value
+        return date_type.fromisoformat(str(value))
 
 # =========================================================
 # COMMON COLUMNS (META DATA)
 # =========================================================
 class metacolumns:
-    date = Column(String(50))
+    date = Column(ISODate)
     time = Column(String(50))
     email = Column(String(255))
     company_id = Column(String(50), index=True)  # Example: BKNR9879

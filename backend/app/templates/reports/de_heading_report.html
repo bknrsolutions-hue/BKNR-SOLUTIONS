@@ -328,7 +328,7 @@ tfoot td{ background:var(--table-header-bg); font-weight:800; font-size:9px; bor
             {% endif %}
             {% if can_delete %}
             <hr>
-            <div onclick="askConfirm('delete_row')" style="color:var(--danger)">🗑 Delete Record</div>
+            <div onclick="askConfirm('cancel_row')" style="color:var(--danger)">🗑 Cancel Record</div>
             {% endif %}
         </div>
     </div>
@@ -537,22 +537,22 @@ document.getElementById("btnYes").onclick = async () => {
         if(!contractor || !month) return alert("Select Month & Contractor!");
         window.location.href = `${baseUrl}/contractor_monthly_bill?month=${month}&contractor=${encodeURIComponent(contractor)}&ids=${ids}&download=true`;
     }
-    else if (currentAction === 'delete_row' && selectedRow) {
+    else if (currentAction === 'cancel_row' && selectedRow) {
         const confirmDelete = await Swal.fire({
-            title: 'Confirm Delete?',
-            text: 'Are you sure you want to delete this record permanently?',
+            title: 'Confirm Cancellation?',
+            text: 'Are you sure you want to cancel this record?',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            confirmButtonText: 'Yes, Delete it!',
+            confirmButtonText: 'Yes, Cancel it!',
             cancelButtonText: 'Cancel'
         });
         if (!confirmDelete.isConfirmed) return;
         const res = await fetch(`${baseUrl}/delete`, { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
         if(res.ok) {
-            Swal.fire({ icon: 'success', title: 'Deleted!', timer: 800, showConfirmButton: false }).then(() => location.reload());
+            Swal.fire({ icon: 'success', title: 'Cancelled!', timer: 800, showConfirmButton: false }).then(() => location.reload());
         } else {
-            Swal.fire('Error', 'Delete Failed!', 'error');
+            Swal.fire('Error', 'Cancellation Failed!', 'error');
         }
     }
 };

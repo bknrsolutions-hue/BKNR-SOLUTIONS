@@ -15,7 +15,26 @@ TABLES = [
     "peeling",
     "soaking",
     "production",
-    "stock_entry"
+    "stock_entry",
+    "electricity_logs",
+    "diesel_logs",
+    "purchase_invoices",
+    "container_logs",
+    "qa_testing_logs",
+    "other_expenses",
+    "general_stock",
+    "customer_receivables",
+    "vendor_payments",
+    "bank_transactions",
+    "expense_vouchers",
+    "journal_entries",
+    "payment_receipts",
+    "gst_register",
+    "fixed_asset_masters",
+    "export_incentive_register",
+    "lc_tracking",
+    "salary_processing",
+    "production_cost_allocations"
 ]
 
 COLUMNS = [

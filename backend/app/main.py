@@ -132,6 +132,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
         if not request.session.get("email"):
             return RedirectResponse("/", status_code=303)
 
+        # SINGLE ACTIVE SESSION CHECK
+        session_id = request.session.get("session_id")
+        if session_id:
+            from app.database.models.users import User
+            db = SessionLocal()
+            try:
+                user = db.query(User).filter(User.email == email).first()
+                if user and getattr(user, "current_session_id", None) != session_id:
+                    request.session.clear()
+                    return RedirectResponse("/", status_code=303)
+            except Exception as e:
+                logger.error("Active session validation error: %s", e)
+            finally:
+                db.close()
+
         company_code = request.session.get("company_code")
         request.session["setup_completed"] = True
 

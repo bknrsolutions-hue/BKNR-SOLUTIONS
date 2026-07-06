@@ -309,8 +309,8 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
     company_id = request.session.get("company_code")
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if row:
-        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="DELETE", old_value="DeHeading Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)))
-        db.delete(row); db.commit()
+        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)))
+        row.is_cancelled = True; db.commit()
         refresh_floor_balance(db, company_id)
         return {"status": "success"}
     return {"status": "error"}

@@ -326,10 +326,10 @@ async def delete_grading(request: Request, db: Session = Depends(get_db)):
     if row:
         db.add(AuditLog(
             table_name="grading", record_id=row.id, company_id=company_id,
-            field_name="DELETE", old_value="Record", new_value="Deleted",
+            field_name="is_cancelled", old_value="False", new_value="True",
             edited_by=user_email, edited_at=datetime.utcnow()
         ))
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         return {"status": "success"}
     

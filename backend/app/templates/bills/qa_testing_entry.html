@@ -199,7 +199,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
                 <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Excel</div>
                 <hr style="border:0; border-top:1px solid var(--border); margin:4px 0;">
-                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Delete Entry</div>
+                <div class="menu-item delete-item" onclick="cancelSelected()"><i class="fa-solid fa-trash-can" style="color:var(--danger)"></i> Cancel Entry</div>
             </div>
         </div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW TESTING ENTRY</button>
@@ -493,7 +493,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         } catch(e) { Swal.fire("Error", "Server pipe drop exception context.", "error"); }
     }
 
-    async function deleteSelected() {
+    async function cancelSelected() {
         if (!globalSelectedId) return;
         const resDecision = await Swal.fire({
             title: "Drop testing record?", text: "This pipeline node trace will be dropped permanently from transaction storage context structure.", icon: "warning", showCancelButton: true
@@ -501,7 +501,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire({ icon:'success', title:'Deleted successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                if(res.ok) Swal.fire({ icon:'success', title:'Cancelled successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
             } catch(e) { Swal.fire("Error", "Interceptor node failure dropping transaction trace row index reference.", "error"); }
         }
     }

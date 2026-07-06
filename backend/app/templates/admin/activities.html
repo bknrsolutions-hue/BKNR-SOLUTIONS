@@ -195,6 +195,14 @@ tr:hover { background: var(--bg-color); }
                     </div>
                     <div class="stat-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
                 </div>
+
+                <div class="stat-card" onclick="fetchRealKpi('Pending Approvals', 'pending_approvals')" style="border-color: var(--warning);">
+                    <div class="stat-info">
+                        <h4 style="color: var(--warning);">Pending Approvals</h4>
+                        <h2 id="pendingApprovalsCount">{{ stats.pending_approvals if stats else '0' }}</h2>
+                    </div>
+                    <div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);"><i class="fa-solid fa-user-clock"></i></div>
+                </div>
             </div>
 
             <!-- KPI REAL RENDER SCREEN BLOCK -->
@@ -275,6 +283,128 @@ window.onload = function() {
     
     // Silent initial fetch loading data automatically onto layout area
     fetchRealKpi('User Login Activity', 'active', true);
+    
+    // Check for pending approvals to display the popup modal
+    setTimeout(checkPendingApprovals, 1000);
+}
+
+// Check for pending approvals and show popup
+async function checkPendingApprovals() {
+    try {
+        const response = await fetch('/admin/api/kpi_data/pending_approvals');
+        const result = await response.json();
+        if (result.success && result.data && result.data.length > 0) {
+            let listHtml = '<div style="max-height: 300px; overflow-y: auto; text-align: left; font-size: 13px;">';
+            result.data.forEach(c => {
+                listHtml += `
+                    <div style="border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; margin-bottom: 10px; background: rgba(59, 130, 246, 0.05); color: var(--primary-text);">
+                        <strong>Company:</strong> ${c.company_name} (ID: ${c.company_id})<br>
+                        <strong>Email:</strong> ${c.email}<br>
+                        <strong>Address:</strong> ${c.address}<br>
+                        <strong>Registered:</strong> ${c.login_date} ${c.login_time}<br>
+                        <div style="margin-top: 8px; text-align: right;">
+                            <button onclick="approveCompanyDirect('${c.company_id}')" class="btn-clear" style="background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-right: 4px; border: none; cursor: pointer;">Approve</button>
+                            <button onclick="rejectCompanyDirect('${c.company_id}')" class="btn-clear" style="background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; border: none; cursor: pointer;">Reject</button>
+                        </div>
+                    </div>
+                `;
+            });
+            listHtml += '</div>';
+
+            Swal.fire({
+                title: 'Pending Company Approvals',
+                html: listHtml,
+                icon: 'info',
+                background: 'var(--panel-bg)',
+                color: 'var(--primary-text)',
+                confirmButtonText: 'Close',
+                confirmButtonColor: 'var(--accent)'
+            });
+        }
+    } catch (e) {
+        console.error("Error checking pending approvals:", e);
+    }
+}
+
+// Approve / Reject Company actions
+async function approveCompany(companyCode) {
+    const confirm = await Swal.fire({
+        title: 'Approve Company?',
+        text: `Are you sure you want to approve company ${companyCode}?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--success)',
+        cancelButtonColor: 'var(--secondary-text)',
+        confirmButtonText: 'Yes, Approve'
+    });
+
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Processing...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        try {
+            const res = await fetch(`/admin/approve_company/${companyCode}`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                Swal.fire('Approved!', data.message, 'success');
+                fetchRealKpi('Pending Approvals', 'pending_approvals', true);
+                updatePendingCount();
+            } else {
+                Swal.fire('Error', data.error || 'Failed to approve company', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Connection failed', 'error');
+        }
+    }
+}
+
+async function rejectCompany(companyCode) {
+    const confirm = await Swal.fire({
+        title: 'Reject Company?',
+        text: `Are you sure you want to reject and delete company ${companyCode}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--secondary-text)',
+        confirmButtonText: 'Yes, Reject'
+    });
+
+    if (confirm.isConfirmed) {
+        Swal.fire({ title: 'Processing...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+        try {
+            const res = await fetch(`/admin/reject_company/${companyCode}`, { method: 'POST' });
+            const data = await res.json();
+            if (res.ok && data.success) {
+                Swal.fire('Rejected', data.message, 'success');
+                fetchRealKpi('Pending Approvals', 'pending_approvals', true);
+                updatePendingCount();
+            } else {
+                Swal.fire('Error', data.error || 'Failed to reject company', 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Connection failed', 'error');
+        }
+    }
+}
+
+// Direct action helpers (for the Swal onload popup)
+window.approveCompanyDirect = async function(companyCode) {
+    Swal.close();
+    await approveCompany(companyCode);
+}
+
+window.rejectCompanyDirect = async function(companyCode) {
+    Swal.close();
+    await rejectCompany(companyCode);
+}
+
+async function updatePendingCount() {
+    try {
+        const response = await fetch('/admin/api/kpi_data/pending_approvals');
+        const result = await response.json();
+        if (result.success) {
+            const count = result.data ? result.data.length : 0;
+            document.getElementById('pendingApprovalsCount').innerText = count;
+        }
+    } catch(e) {}
 }
 
 // ================= ASYNC RUNTIME DATA DISPATCH ENGINE =================
@@ -304,6 +434,34 @@ async function fetchRealKpi(title, type, isSilent = false) {
         const tbody = document.getElementById('kpiTableBody');
         tbody.innerHTML = ""; 
 
+        // Update headers dynamically
+        const theadRow = document.querySelector("#kpiDataBlock table thead tr");
+        if (type === 'pending_approvals') {
+            theadRow.innerHTML = `
+                <th>Company ID</th>
+                <th>Company Name</th>
+                <th>Registered Date</th>
+                <th>Registered Time</th>
+                <th>Address</th>
+                <th>Email</th>
+                <th>Mobile Number</th>
+                <th>Status</th>
+                <th>Actions</th>
+            `;
+        } else {
+            theadRow.innerHTML = `
+                <th>Company ID</th>
+                <th>Company Name</th>
+                <th>Login Date</th>
+                <th>Login Time</th>
+                <th>Logout Time</th>
+                <th>Email</th>
+                <th>Mobile Number</th>
+                <th>Login Hours</th>
+                <th>Status</th>
+            `;
+        }
+
         if (!result.data || result.data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="8" style="color:var(--secondary-text); padding:20px;">No operational metrics logged under this criteria.</td></tr>`;
             return;
@@ -321,32 +479,61 @@ async function fetchRealKpi(title, type, isSilent = false) {
                     finalDataToRender.push(row);
                 }
             });
+        } else if (type === 'active' || type === 'registrations' || type === 'new_month') {
+            // 🛠️ Group by unique company_id
+            const seenCompanies = new Set();
+            result.data.forEach(row => {
+                if (!seenCompanies.has(row.company_id)) {
+                    seenCompanies.add(row.company_id);
+                    finalDataToRender.push(row);
+                }
+            });
         } else {
-            // 🛠️ Active Companies (or default log) -> Displays all raw logs/activities chronologically
+            // Displays all raw logs/activities chronologically
             finalDataToRender = result.data;
         }
 
         finalDataToRender.forEach(row => {
-            let statusStyle = "background: rgba(59, 130, 246, 0.1); color: var(--accent);";
-            
-            if (row.status === "OPEN" || row.status === "Inactive" || row.status === "Offline") {
-                statusStyle = "background: rgba(239, 68, 68, 0.1); color: var(--danger);";
-            } else if (row.status === "Active" || row.status === "RESOLVED" || row.status === "Online" || row.status === "New") {
-                statusStyle = "background: rgba(16, 185, 129, 0.1); color: var(--success);";
-            }
+            if (type === 'pending_approvals') {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="company-badge">${row.company_id || '--'}</span></td>
+                        <td style="color: var(--primary-text); font-weight: 700;">${row.company_name || '--'}</td>
+                        <td style="color: var(--secondary-text); font-size:12px;">${row.login_date}</td>
+                        <td style="color: var(--secondary-text); font-size:12px;">${row.login_time}</td>
+                        <td style="color: var(--secondary-text); font-size:12px; font-weight: 700; white-space: normal; text-align: left;">${row.address || '--'}</td>
+                        <td style="text-align: center; color: var(--accent); font-weight: 700;">${row.email}</td>
+                        <td style="text-align: center; color: var(--primary-text); font-weight: 700;">${row.mobile || '--'}</td>
+                        <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; background: rgba(245, 158, 11, 0.1); color: var(--warning);">Pending</span></td>
+                        <td>
+                            <button onclick="approveCompany('${row.company_id}')" class="btn-clear" style="background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; margin-right: 4px; border: none; cursor: pointer;">Approve</button>
+                            <button onclick="rejectCompany('${row.company_id}')" class="btn-clear" style="background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; border: none; cursor: pointer;">Reject</button>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                let statusStyle = "background: rgba(59, 130, 246, 0.1); color: var(--accent);";
+                
+                if (row.status === "OPEN" || row.status === "Inactive" || row.status === "Offline") {
+                    statusStyle = "background: rgba(239, 68, 68, 0.1); color: var(--danger);";
+                } else if (row.status === "Active" || row.status === "RESOLVED" || row.status === "Online" || row.status === "New") {
+                    statusStyle = "background: rgba(16, 185, 129, 0.1); color: var(--success);";
+                }
 
-            tbody.innerHTML += `
-                <tr>
-                    <td><span class="company-badge">${row.company_id || '--'}</span></td>
-                    <td style="color: var(--primary-text); font-weight: 700;">${row.company_name || '--'}</td>
-                    <td style="color: var(--secondary-text); font-size:12px;">${row.login_date}</td>
-                    <td style="color: var(--secondary-text); font-size:12px;">${row.login_time}</td>
-                    <td style="color: var(--secondary-text); font-size:12px; font-weight: 700;">${row.logout_time || '--'}</td>
-                    <td style="text-align: center; color: var(--accent); font-weight: 700;">${row.email}</td>
-                    <td style="color: var(--primary-text); font-weight: 700;"><i class="fa-regular fa-clock" style="margin-right:4px; font-size:11px;"></i> ${row.login_hours}</td>
-                    <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; ${statusStyle}">${row.status}</span></td>
-                </tr>
-            `;
+                tbody.innerHTML += `
+                    <tr>
+                        <td><span class="company-badge">${row.company_id || '--'}</span></td>
+                        <td style="color: var(--primary-text); font-weight: 700;">${row.company_name || '--'}</td>
+                        <td style="color: var(--secondary-text); font-size:12px;">${row.login_date}</td>
+                        <td style="color: var(--secondary-text); font-size:12px;">${row.login_time}</td>
+                        <td style="color: var(--secondary-text); font-size:12px; font-weight: 700;">${row.logout_time || '--'}</td>
+                        <td style="text-align: center; color: var(--accent); font-weight: 700;">${row.email}</td>
+                        <td style="text-align: center; color: var(--primary-text); font-weight: 700;">${row.mobile || '--'}</td>
+                        <td style="color: var(--primary-text); font-weight: 700;"><i class="fa-regular fa-clock" style="margin-right:4px; font-size:11px;"></i> ${row.login_hours}</td>
+                        <td><span style="padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 800; ${statusStyle}">${row.status}</span></td>
+                    </tr>
+                `;
+            }
         });
 
     } catch (error) {

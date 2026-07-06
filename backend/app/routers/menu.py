@@ -15,6 +15,7 @@ from app.database.models.inventory_management import sales_dispatch, stock_entry
 from app.database.models.attendance import DailyAttendance
 from app.database.models.helpdesk import SupportTicket, EventNotification, CompanyAnnouncement
 from app.database.models.criteria import buyers, suppliers
+from app.database.models.users import User
 from datetime import date
 
 router = APIRouter(prefix="/menu", tags=["Menu"])
@@ -22,7 +23,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 @router.get("/", response_class=HTMLResponse)
-async def menu_page(request: Request):
+async def menu_page(request: Request, db: Session = Depends(get_db)):
     """
     Loads the main dashboard menu.
     Validates session → redirects to login if expired.
@@ -31,14 +32,24 @@ async def menu_page(request: Request):
     # ---- Read session values ----
     company_name = request.session.get("company_name")
     user_name = request.session.get("user_name")
+    email = request.session.get("email")
 
     # ---- Session expired or invalid ----
-    if not company_name or not user_name:
+    if not company_name or not user_name or not email:
         # Clear session completely
         request.session.clear()
 
         # Redirect to login
         return RedirectResponse(url="/auth/login", status_code=302)
+
+    # Fetch user's custom colors from database
+    ui_colors = None
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        if user and user.ui_colors:
+            ui_colors = user.ui_colors
+    except Exception:
+        pass
 
     # ---- Render menu page ----
     return templates.TemplateResponse(
@@ -46,7 +57,8 @@ async def menu_page(request: Request):
         {
             "request": request,
             "company_name": company_name,
-            "user_name": user_name
+            "user_name": user_name,
+            "ui_colors": ui_colors
         }
     )
 

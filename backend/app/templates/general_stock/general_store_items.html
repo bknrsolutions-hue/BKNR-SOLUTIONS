@@ -196,7 +196,7 @@ tr.selected { background: #1e3a8a !important; border-left: 4px solid var(--accen
       <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
       <div id="dropdownMenu">
         <div onclick="editRow()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
-        <div onclick="deleteRow()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
+        <div onclick="cancelRow()" class="menu-item" style="color:var(--danger);"><i class="fa-solid fa-trash"></i> Delete</div>
         <div onclick="printRow()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
         <div onclick="exportPDF()" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
         <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
@@ -299,7 +299,7 @@ function editRow(){
 }
 
 /* Delete Selected Entry Controller */
-async function deleteRow(){
+async function cancelRow(){
   if(!selectedElement) return;
   
   Swal.fire({
@@ -308,7 +308,7 @@ async function deleteRow(){
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: 'var(--danger)',
-    confirmButtonText: 'Yes, delete it!'
+    confirmButtonText: 'Yes, cancel it!'
   }).then(async (result) => {
     if (result.isConfirmed) {
       const item = selectedElement.dataset.item;
@@ -317,7 +317,7 @@ async function deleteRow(){
       if(res.ok) {
           location.reload();
       } else {
-          Swal.fire({icon: 'error', title: 'Delete execution failed'});
+          Swal.fire({icon: 'error', title: 'Cancellation failed'});
       }
     }
   });

@@ -214,8 +214,8 @@ def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     comp_code = request.session.get("company_code")
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
     if row:
-        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="DELETE", old_value="Record", new_value="DELETED", edited_by=request.session.get("email"), edited_at=ist_now()))
-        db.delete(row); db.commit()
+        db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="is_cancelled", old_value="False", new_value="True", edited_by=request.session.get("email"), edited_at=ist_now()))
+        row.is_cancelled = True; db.commit()
         refresh_floor_balance(db, comp_code)
         return {"status": "deleted"}
     return {"status": "error"}

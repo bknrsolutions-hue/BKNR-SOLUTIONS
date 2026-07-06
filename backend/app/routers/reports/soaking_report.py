@@ -255,7 +255,7 @@ async def delete_soaking_row(request: Request, payload: dict = Body(...), db: Se
     ).first()
     
     if row:
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         refresh_floor_balance(db, company_id)
         return {"status": "success"}

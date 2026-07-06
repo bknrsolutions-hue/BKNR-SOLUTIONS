@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Shrimp app logo</title>
+  <defs>
+    <radialGradient id="bubble" cx="34%" cy="23%" r="82%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.42" stop-color="#effbff"/>
+      <stop offset="0.67" stop-color="#c8effc"/>
+      <stop offset="0.83" stop-color="#63ccf1"/>
+      <stop offset="1" stop-color="#0b9fdd"/>
+    </radialGradient>
+    <linearGradient id="shellLine" x1="135" y1="118" x2="357" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#050505"/>
+      <stop offset="0.62" stop-color="#050505"/>
+      <stop offset="1" stop-color="#050505" stop-opacity="0.52"/>
+    </linearGradient>
+    <filter id="softShadow" x="-15%" y="-15%" width="130%" height="130%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#0ea5e9" flood-opacity="0.13"/>
+    </filter>
+  </defs>
+
+  <rect width="512" height="512" rx="88" fill="#ffffff"/>
+
+  <g filter="url(#softShadow)">
+    <circle cx="248" cy="284" r="172" fill="url(#bubble)"/>
+    <path d="M91 286c16-91 91-159 184-166 54-4 108 11 149 44" fill="none" stroke="#b7dbfa" stroke-width="12" stroke-linecap="round" opacity="0.9"/>
+  </g>
+
+  <g fill="none" stroke="url(#shellLine)" stroke-linecap="round" stroke-linejoin="round">
+    <g stroke-width="8">
+      <path d="M178 111c31 19 78 16 129 1 66-19 128-7 164 41 19 26 19 59 0 83"/>
+      <path d="M172 136c35 24 84 21 135 5 61-19 120-7 154 36 15 19 18 43 6 62"/>
+      <path d="M125 260c16-75 73-116 159-116 45 0 76 11 103 23 37 17 75 22 113 18-24 24-58 38-103 43"/>
+      <path d="M306 147c-25 30-25 100 5 127 34 30 92 9 111-38"/>
+      <path d="M248 150c-25 27-27 88-4 115 29 34 82 16 99-20"/>
+      <path d="M199 162c-27 24-33 76-13 103 23 29 65 23 84 0"/>
+      <path d="M162 192c-33 23-48 64-30 90 19 28 59 22 76 3"/>
+      <path d="M128 256c-20 31-20 71 8 87 28 16 65 3 80-17"/>
+      <path d="M139 343c0 34 28 62 67 57 25-4 50-18 80-22"/>
+      <path d="M188 399c22 36 63 54 90 46 17-5 14-26-10-40"/>
+      <path d="M227 386c38 20 79 14 98 1 14-10 2-31-27-31"/>
+    </g>
+
+    <g stroke-width="7" opacity="0.7">
+      <path d="M230 265c18 14 29 36 33 62"/>
+      <path d="M254 257c22 16 37 43 42 77"/>
+      <path d="M281 250c25 17 45 49 50 87"/>
+      <path d="M309 240c31 18 58 58 61 101"/>
+      <path d="M340 232c35 18 67 60 74 106"/>
+    </g>
+
+    <g stroke-width="7">
+      <path d="M397 229c23-2 43-7 62-18"/>
+      <path d="M389 258c19 3 39 0 59-9"/>
+      <path d="M352 238c24 10 40 23 52 43"/>
+    </g>
+  </g>
+
+  <circle cx="350" cy="168" r="19" fill="#17181b"/>
+  <circle cx="357" cy="161" r="6" fill="#ffffff"/>
+</svg>

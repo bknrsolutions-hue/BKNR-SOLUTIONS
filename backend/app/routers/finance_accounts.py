@@ -592,7 +592,7 @@ def ledger_master_delete(log_id: int, request: Request, db: Session = Depends(ge
 def customer_receivable_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code).order_by(desc(CustomerReceivable.invoice_date)).all()
+    history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code, CustomerReceivable.is_cancelled != True).order_by(desc(CustomerReceivable.invoice_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE", AccountGroup.group_type == "ASSET").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/customer_receivable.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -656,10 +656,10 @@ def customer_receivable_delete(log_id: int, request: Request, db: Session = Depe
     entry = db.query(CustomerReceivable).filter(CustomerReceivable.id == log_id, CustomerReceivable.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "customer_receivables", entry.id, comp_code, "DELETE", f"Invoice: {entry.invoice_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "customer_receivables", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Receivable deleted successfully"}
+        return {"success": True, "message": "Receivable cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 @router.get("/customer_receivables", response_class=JSONResponse)
@@ -667,7 +667,7 @@ def get_customer_receivables_history(request: Request, db: Session = Depends(get
     comp_code = request.session.get("company_code")
     if not comp_code:
         return JSONResponse(status_code=401, content={"success": False, "message": "Unauthorized"})
-    history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code).order_by(desc(CustomerReceivable.invoice_date)).all()
+    history = db.query(CustomerReceivable).filter(CustomerReceivable.company_id == comp_code, CustomerReceivable.is_cancelled != True).order_by(desc(CustomerReceivable.invoice_date)).all()
     history_data = [
         {
             "id": row.id,
@@ -692,7 +692,7 @@ def get_customer_receivables_history(request: Request, db: Session = Depends(get
 def vendor_payment_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code).order_by(desc(VendorPayment.bill_date)).all()
+    history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code, VendorPayment.is_cancelled != True).order_by(desc(VendorPayment.bill_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE", AccountGroup.group_type == "LIABILITY").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/vendor_payment.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -758,10 +758,10 @@ def vendor_payment_delete(log_id: int, request: Request, db: Session = Depends(g
     entry = db.query(VendorPayment).filter(VendorPayment.id == log_id, VendorPayment.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "vendor_payments", entry.id, comp_code, "DELETE", f"Bill: {entry.bill_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "vendor_payments", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Vendor bill deleted successfully"}
+        return {"success": True, "message": "Vendor bill cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 @router.get("/vendor_payments", response_class=JSONResponse)
@@ -769,7 +769,7 @@ def get_vendor_payments_history(request: Request, db: Session = Depends(get_db))
     comp_code = request.session.get("company_code")
     if not comp_code:
         return JSONResponse(status_code=401, content={"success": False, "message": "Unauthorized"})
-    history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code).order_by(desc(VendorPayment.bill_date)).all()
+    history = db.query(VendorPayment).filter(VendorPayment.company_id == comp_code, VendorPayment.is_cancelled != True).order_by(desc(VendorPayment.bill_date)).all()
     history_data = [
         {
             "id": row.id,
@@ -794,7 +794,7 @@ def get_vendor_payments_history(request: Request, db: Session = Depends(get_db))
 def bank_transaction_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(BankTransaction).filter(BankTransaction.company_id == comp_code).order_by(desc(BankTransaction.transaction_date)).all()
+    history = db.query(BankTransaction).filter(BankTransaction.company_id == comp_code, BankTransaction.is_cancelled != True).order_by(desc(BankTransaction.transaction_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/bank_transaction.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -870,10 +870,10 @@ def bank_transaction_delete(log_id: int, request: Request, db: Session = Depends
     entry = db.query(BankTransaction).filter(BankTransaction.id == log_id, BankTransaction.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "bank_transactions", entry.id, comp_code, "DELETE", f"Ref: {entry.reference_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "bank_transactions", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Transaction trace deleted successfully"}
+        return {"success": True, "message": "Transaction trace cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -898,7 +898,7 @@ def expense_voucher_entry(request: Request, db: Session = Depends(get_db)):
         ExpenseVoucher.total_amount,
         ExpenseVoucher.payment_mode,
         ExpenseVoucher.status,
-    ).filter(ExpenseVoucher.company_id == comp_code).order_by(desc(ExpenseVoucher.voucher_date)).all()
+    ).filter(ExpenseVoucher.company_id == comp_code, ExpenseVoucher.is_cancelled != True).order_by(desc(ExpenseVoucher.voucher_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).join(AccountGroup).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/expense_voucher.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -966,10 +966,10 @@ def expense_voucher_delete(log_id: int, request: Request, db: Session = Depends(
     entry = db.query(ExpenseVoucher).filter(ExpenseVoucher.id == log_id, ExpenseVoucher.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "expense_vouchers", entry.id, comp_code, "DELETE", f"Voucher: {entry.voucher_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "expense_vouchers", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Voucher deleted successfully"}
+        return {"success": True, "message": "Voucher cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -980,7 +980,7 @@ def expense_voucher_delete(log_id: int, request: Request, db: Session = Depends(
 def journal_entry_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(JournalEntry).filter(JournalEntry.company_id == comp_code).order_by(desc(JournalEntry.entry_date)).all()
+    history = db.query(JournalEntry).filter(JournalEntry.company_id == comp_code, JournalEntry.is_cancelled != True).order_by(desc(JournalEntry.entry_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/journal_entry.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -1063,10 +1063,10 @@ def journal_entry_delete(log_id: int, request: Request, db: Session = Depends(ge
     entry = db.query(JournalEntry).filter(JournalEntry.id == log_id, JournalEntry.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "journal_entries", entry.id, comp_code, "DELETE", f"Journal: {entry.entry_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "journal_entries", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Journal Entry deleted successfully"}
+        return {"success": True, "message": "Journal Entry cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -1077,7 +1077,7 @@ def journal_entry_delete(log_id: int, request: Request, db: Session = Depends(ge
 def payment_receipt_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code).order_by(desc(PaymentReceipt.entry_date)).all()
+    history = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code, PaymentReceipt.is_cancelled != True).order_by(desc(PaymentReceipt.entry_date)).all()
     ledgers = db.query(LedgerMaster).options(joinedload(LedgerMaster.group)).filter(LedgerMaster.company_id == comp_code, LedgerMaster.status == "ACTIVE").order_by(LedgerMaster.ledger_name).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/payment_receipt.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -1150,10 +1150,10 @@ def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(
     entry = db.query(PaymentReceipt).filter(PaymentReceipt.id == log_id, PaymentReceipt.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "payment_receipts", entry.id, comp_code, "DELETE", f"Receipt: {entry.receipt_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "payment_receipts", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Receipt deleted successfully"}
+        return {"success": True, "message": "Receipt cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -1257,7 +1257,7 @@ def item_accounting_link_delete(log_id: int, request: Request, db: Session = Dep
 def export_incentive_register_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ExportIncentiveRegister).filter(ExportIncentiveRegister.company_id == comp_code).all()
+    history = db.query(ExportIncentiveRegister).filter(ExportIncentiveRegister.company_id == comp_code, ExportIncentiveRegister.is_cancelled != True).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/export_incentive_register.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -1287,10 +1287,10 @@ def export_incentive_register_delete(log_id: int, request: Request, db: Session 
     email = request.session.get("email")
     entry = db.query(ExportIncentiveRegister).filter(ExportIncentiveRegister.id == log_id, ExportIncentiveRegister.company_id == comp_code).first()
     if entry:
-        write_audit(db, "export_incentive_register", entry.id, comp_code, "DELETE", f"Incentive: {entry.incentive_type} Inv: {entry.invoice_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "export_incentive_register", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Incentive record deleted successfully"}
+        return {"success": True, "message": "Incentive record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -1301,7 +1301,7 @@ def export_incentive_register_delete(log_id: int, request: Request, db: Session 
 def lc_tracking_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(LCTracking).filter(LCTracking.company_id == comp_code).all()
+    history = db.query(LCTracking).filter(LCTracking.company_id == comp_code, LCTracking.is_cancelled != True).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     return templates.TemplateResponse(request=request, name="finance_accounts/lc_tracking.html", context={"history": history, "ledgers": ledgers, "company_id": comp_code})
 
@@ -1333,10 +1333,10 @@ def lc_tracking_delete(log_id: int, request: Request, db: Session = Depends(get_
     email = request.session.get("email")
     entry = db.query(LCTracking).filter(LCTracking.id == log_id, LCTracking.company_id == comp_code).first()
     if entry:
-        write_audit(db, "lc_tracking", entry.id, comp_code, "DELETE", f"LC: {entry.lc_number}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "lc_tracking", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "LC record deleted successfully"}
+        return {"success": True, "message": "LC record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -1832,10 +1832,10 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     email = request.session.get("email")
     entry = db.query(SalaryProcessing).filter(SalaryProcessing.id == log_id, SalaryProcessing.company_id == comp_code).first()
     if entry:
-        write_audit(db, "salary_processing", entry.id, comp_code, "DELETE", f"Emp: {entry.employee_name} Month: {entry.month_year}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "salary_processing", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Salary record deleted successfully"}
+        return {"success": True, "message": "Salary record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -1846,7 +1846,7 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
 def production_cost_allocation_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.company_id == comp_code).all()
+    history = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.company_id == comp_code, ProductionCostAllocation.is_cancelled != True).all()
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     from app.database.models.enterprise_finance import CostCenter
     cost_centers = db.query(CostCenter).filter(CostCenter.company_id == comp_code).all()
@@ -1880,10 +1880,10 @@ def production_cost_allocation_delete(log_id: int, request: Request, db: Session
     email = request.session.get("email")
     entry = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.id == log_id, ProductionCostAllocation.company_id == comp_code).first()
     if entry:
-        write_audit(db, "production_cost_allocations", entry.id, comp_code, "DELETE", f"Batch: {entry.batch_number}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "production_cost_allocations", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Production cost allocation deleted successfully"}
+        return {"success": True, "message": "Production cost allocation cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -2004,10 +2004,10 @@ def gst_register_delete(log_id: int, request: Request, db: Session = Depends(get
             voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.journal_id, VoucherHeader.company_id == comp_code).first()
             if voucher:
                 db.delete(voucher)
-        write_audit(db, "gst_register", entry.id, comp_code, "DELETE", f"Invoice: {entry.invoice_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "gst_register", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "GST entry deleted successfully"}
+        return {"success": True, "message": "GST entry cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 @router.post("/gstr_filing/save")
@@ -2132,10 +2132,10 @@ def fixed_assets_delete(log_id: int, request: Request, db: Session = Depends(get
             voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.purchase_journal_id, VoucherHeader.company_id == comp_code).first()
             if voucher:
                 db.delete(voucher)
-        write_audit(db, "fixed_asset_masters", entry.id, comp_code, "DELETE", f"Asset: {entry.asset_code}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "fixed_asset_masters", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        entry.is_cancelled = True
         db.commit()
-        return {"success": True, "message": "Fixed asset deleted successfully"}
+        return {"success": True, "message": "Fixed asset cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 @router.post("/fixed_assets/run_depreciation")

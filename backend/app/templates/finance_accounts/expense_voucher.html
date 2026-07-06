@@ -103,7 +103,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="dropdownMenu">
-                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+                <div class="menu-item delete-item" onclick="cancelSelected()"><i class="fa-solid fa-trash-can"></i> Cancel Entry</div>
             </div>
         </div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW VOUCHER</button>
@@ -262,13 +262,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }
 
-    async function deleteSelected() {
+    async function cancelSelected() {
         if (!globalSelectedId) return;
-        const confirmDelete = await Swal.fire({ title: "Delete Expense Voucher?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        const confirmDelete = await Swal.fire({ title: "Cancel Expense Voucher?", text: "Are you sure?", icon: "warning", showCancelButton: true });
         if(confirmDelete.isConfirmed) {
             try {
                 const res = await fetch(`/finance_accounts/expense_voucher/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire("Deleted", "Voucher removed", "success").then(() => location.reload());
+                if(res.ok) Swal.fire("Cancelled", "Voucher removed", "success").then(() => location.reload());
             } catch(e) { Swal.fire("Error", "Server error", "error"); }
         }
     }

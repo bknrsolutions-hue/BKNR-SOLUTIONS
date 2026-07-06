@@ -58,7 +58,7 @@ def electricity_entry_page(
     # 🔹 Fetching production units for the dropdown
     units = (
         db.query(production_at)
-        .filter(production_at.company_id == company_code)
+        .filter(production_at.company_id == company_code, ElectricityLog.is_cancelled != True)
         .order_by(production_at.production_at)
         .all()
     )
@@ -82,7 +82,8 @@ def electricity_entry_page(
             )
             .join(production_at, ElectricityLog.unit_id == production_at.id)
             .filter(
-                production_at.company_id == company_code,
+                production_at.company_id == company_code, ElectricityLog.is_cancelled != True,
+                ElectricityLog.is_cancelled != True,
                 ElectricityLog.reading_date >= start_date,
                 ElectricityLog.reading_date <= end_date
             )
@@ -252,12 +253,12 @@ def delete_electricity_log(log_id: int, request: Request, db: Session = Depends(
         try:
             db.add(AuditLog(
                 table_name="electricity_logs", record_id=entry.id, company_id=comp_code,
-                field_name="DELETE", old_value=f"Cost: {entry.total_cost}", new_value="DELETED",
+                field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
-            db.delete(entry)
+            entry.is_cancelled = True
             db.commit()
-            return {"success": True, "message": "Electricity log entry destroyed successfully"}
+            return {"success": True, "message": "Electricity log entry cancelled successfully"}
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)
@@ -277,7 +278,7 @@ def export_electricity_excel(request: Request, db: Session = Depends(get_db)):
     history = (
         db.query(ElectricityLog, production_at.production_at.label("location_name"))
         .join(production_at, ElectricityLog.unit_id == production_at.id)
-        .filter(production_at.company_id == company_code)
+        .filter(production_at.company_id == company_code, ElectricityLog.is_cancelled != True)
         .order_by(desc(ElectricityLog.reading_date), desc(ElectricityLog.id))
         .all()
     )
@@ -379,7 +380,8 @@ def electricity_monthly_summary(year: int, month: int, request: Request, db: Ses
         db.query(ElectricityLog)
         .join(production_at, ElectricityLog.unit_id == production_at.id)
         .filter(
-            production_at.company_id == company_code,
+            production_at.company_id == company_code, ElectricityLog.is_cancelled != True,
+                ElectricityLog.is_cancelled != True,
             ElectricityLog.reading_date.between(start_date, end_date)
         )
         .all()

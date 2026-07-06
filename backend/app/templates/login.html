@@ -18,8 +18,8 @@
 <meta name="author" content="ERP"> -->
 <link rel="canonical" href="https://bknrerp.in/">
 <link rel="manifest" href="/static/manifest.json">
-<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
-<link rel="apple-touch-icon" href="/static/icon-512.png">
+<link rel="icon" href="/static/favicon.ico">
+<link rel="apple-touch-icon" href="/static/pwa-icon-192.png">
 <meta name="theme-color" content="#0f172a">
 <meta property="og:type" content="website">
 <meta property="og:title" content="ERP | Seafood Processing ERP Software">
@@ -51,28 +51,30 @@
     "@type": "Organization",
     "name": "ERP",
     "url": "https://bknrerp.in/",
-    "logo": "https://bknrerp.in/static/icon-512.png"
+    "logo": "https://bknrerp.in/static/pwa-icon-512.png"
   }
 }
 </script>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
 <style>
 :root {
-  --ink: #0f172a;
-  --muted: #536173;
-  --soft: #eef6ff;
-  --paper: #ffffff;
-  --line: #cbd5e1;
-  --navy: #082f57;
-  --blue: #0f5fa8;
-  --cyan: #13a8d8;
-  --green: #0f8f6b;
-  --amber: #b7791f;
-  --rose: #b42345;
-  --shadow: 0 20px 55px rgba(15, 23, 42, 0.12);
-  --shadow-soft: 0 12px 32px rgba(15, 23, 42, 0.08);
-  --focus: rgba(15, 95, 168, 0.24);
+  --bg-app: #eef6ff;
+  --surface-panel: rgba(255, 255, 255, 0.98);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-tertiary: #94a3b8;
+  --border-light: rgba(15, 23, 42, 0.08);
+  --border-highlight: rgba(15, 23, 42, 0.12);
+  --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.04);
+  --radius-panel: 16px;
+  --radius-element: 8px;
+  --corp-dash: #3b82f6;
+  --corp-fin: #10b981;
+  --input-bg: #ffffff;
+  --input-border: rgba(15, 23, 42, 0.14);
   --error-bg: #fef2f2;
   --error-text: #991b1b;
   --success-bg: #ecfdf5;
@@ -90,12 +92,9 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: "Inter", Arial, sans-serif;
-  color: #e8f2ff;
-  background:
-    linear-gradient(135deg, rgba(19, 168, 216, 0.12), transparent 34%),
-    linear-gradient(225deg, rgba(15, 143, 107, 0.14), transparent 32%),
-    #070b13;
+  font-family: "Plus Jakarta Sans", Arial, sans-serif;
+  color: var(--text-primary);
+  background: var(--bg-app);
   overflow-x: hidden;
 }
 
@@ -122,10 +121,10 @@ textarea {
   inset: 0;
   z-index: -2;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
   background-size: 42px 42px;
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.92), transparent 82%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 82%);
 }
 
 .site-shell::after {
@@ -135,8 +134,9 @@ textarea {
   z-index: -1;
   pointer-events: none;
   background:
-    linear-gradient(100deg, transparent 0 32%, rgba(19, 168, 216, 0.12) 44%, transparent 56% 100%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.05), transparent 36%);
+    radial-gradient(circle at 20% 20%, rgba(59, 130, 246, 0.13), transparent 32%),
+    radial-gradient(circle at 78% 78%, rgba(16, 185, 129, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.5), transparent 46%);
 }
 
 .site-nav {
@@ -169,22 +169,22 @@ textarea {
   flex: 0 0 auto;
   border-radius: 12px;
   color: #ffffff;
-  background: linear-gradient(135deg, #0f172a, var(--blue) 58%, var(--green));
+  background: linear-gradient(135deg, #0f172a, var(--corp-dash) 58%, var(--corp-fin));
   font-weight: 900;
-  box-shadow: 0 10px 28px rgba(19, 168, 216, 0.28);
+  box-shadow: 0 10px 28px rgba(59, 130, 246, 0.28);
 }
 
 .brand-copy strong {
   display: block;
   font-size: 1rem;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .brand-copy span {
   display: block;
   margin-top: 2px;
-  color: #7dd3fc;
+  color: var(--text-secondary);
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -735,12 +735,12 @@ textarea {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  padding: clamp(18px, 4vw, 48px);
+  padding: 16px;
 }
 
 .login-only-shell .auth-panel {
   position: static;
-  width: min(100%, 460px);
+  width: min(100%, 430px);
 }
 
 .login-only-shell .form-side {
@@ -749,11 +749,11 @@ textarea {
 
 .form-side {
   width: 100%;
-  padding: 28px;
-  border: 1px solid rgba(203, 213, 225, 0.22);
-  border-radius: 18px;
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.9), rgba(8, 47, 87, 0.72));
-  box-shadow: 0 34px 90px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255, 255, 255, 0.09);
+  padding: 24px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-panel);
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-float);
   backdrop-filter: blur(20px);
   transform: rotateY(4deg);
   transform-style: preserve-3d;
@@ -763,31 +763,34 @@ textarea {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 22px;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .form-brand strong {
   display: block;
-  font-size: 1.08rem;
+  font-size: 1rem;
   font-weight: 900;
-  color: #ffffff;
+  color: var(--text-primary);
 }
 
 .form-brand span {
   display: block;
   margin-top: 4px;
-  color: #b7c7dc;
-  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
   font-weight: 700;
 }
 
 .form-badge {
-  padding: 7px 9px;
-  border-radius: 7px;
-  color: #065f46;
-  background: #d1fae5;
-  font-size: 0.7rem;
+  padding: 6px 8px;
+  border-radius: var(--radius-element);
+  color: #047857;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.18);
+  font-size: 0.68rem;
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -804,9 +807,9 @@ textarea {
 }
 
 h2 {
-  margin: 0 0 18px;
-  color: #ffffff;
-  font-size: 1.42rem;
+  margin: 0 0 16px;
+  color: var(--text-primary);
+  font-size: 1.15rem;
   font-weight: 900;
   letter-spacing: 0;
 }
@@ -814,27 +817,28 @@ h2 {
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 13px;
+  gap: 7px;
+  margin-bottom: 12px;
 }
 
 label {
-  color: #dbeafe;
-  font-size: 0.78rem;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
   font-weight: 800;
+  letter-spacing: 0.02em;
 }
 
 input,
 textarea {
   width: 100%;
-  min-height: 42px;
-  padding: 10px 12px;
-  border: 1px solid rgba(203, 213, 225, 0.22);
-  border-radius: 10px;
-  color: #ffffff;
-  background: rgba(2, 6, 23, 0.36);
-  font-size: 0.9rem;
-  font-weight: 500;
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-element);
+  color: var(--text-primary);
+  background: var(--input-bg);
+  font-size: 0.86rem;
+  font-weight: 600;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
@@ -845,9 +849,9 @@ textarea {
 input:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--blue);
-  background: rgba(2, 6, 23, 0.55);
-  box-shadow: 0 0 0 4px rgba(19, 168, 216, 0.18);
+  border-color: rgba(59, 130, 246, 0.7);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.16);
 }
 
 .password-field {
@@ -868,59 +872,62 @@ textarea:focus {
   padding: 0;
   transform: translateY(-50%);
   border: 0;
-  border-radius: 8px;
-  color: #a7f3d0;
-  background: rgba(15, 143, 107, 0.18);
+  border-radius: var(--radius-element);
+  color: #047857;
+  background: rgba(16, 185, 129, 0.1);
   box-shadow: none;
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 900;
 }
 
 .password-toggle:hover,
 .password-toggle:focus-visible {
-  background: #bfdbfe;
+  color: #1d4ed8;
+  background: #dbeafe;
   transform: translateY(-50%);
 }
 
 button {
   width: 100%;
-  min-height: 44px;
+  min-height: 42px;
   margin-top: 4px;
-  padding: 11px 14px;
-  border: none;
-  border-radius: 10px;
+  padding: 10px 14px;
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: var(--radius-element);
   color: #ffffff;
-  background: linear-gradient(135deg, var(--blue), var(--green));
-  box-shadow: 0 16px 30px rgba(13, 148, 136, 0.28);
+  background: var(--corp-dash);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.18);
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 900;
-  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 button:hover {
-  background: linear-gradient(135deg, #0b74bc, #0f9f78);
+  background: #2563eb;
+  border-color: rgba(37, 99, 235, 0.28);
   transform: translateY(-1px);
-  box-shadow: 0 16px 28px rgba(8, 47, 87, 0.24);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.2);
 }
 
 button:disabled {
   background: #94a3b8;
+  border-color: rgba(148, 163, 184, 0.28);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
 .link {
-  margin-top: 16px;
-  color: #b7c7dc;
+  margin-top: 14px;
+  color: var(--text-secondary);
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   font-weight: 700;
 }
 
 .link span {
-  color: #7dd3fc;
+  color: #93c5fd;
   cursor: pointer;
   font-weight: 900;
 }
@@ -932,10 +939,10 @@ button:disabled {
 .msg {
   display: none;
   margin-top: 12px;
-  padding: 10px;
-  border-radius: 7px;
+  padding: 10px 12px;
+  border-radius: var(--radius-element);
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
   line-height: 1.45;
   font-weight: 800;
 }
@@ -1637,6 +1644,17 @@ button:disabled {
           <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
         </div>
 
+        <div id="loginOtpBox" class="card" style="display:none;">
+          <h2>Login OTP Verification</h2>
+          <div class="form-group">
+            <label>Enter OTP sent to your email</label>
+            <input id="login_otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" required>
+          </div>
+          <button id="btn-login-otp" onclick="verifyLoginOTP()">Verify & Login</button>
+          <div id="loginOtpErr" class="msg error"></div>
+          <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
+        </div>
+
         <div id="forgotBox" class="card">
           <h2>Password Recovery</h2>
           <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" required></div>
@@ -1652,7 +1670,28 @@ button:disabled {
 
 <script>
 const BASE = "/auth";
-let regEmail = "";
+let regEmail = sessionStorage.getItem("bknr_reg_email") || "";
+
+async function readResponse(res, fallbackMessage) {
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      data = { detail: text };
+    }
+  }
+  if (!res.ok && !data.detail) data.detail = fallbackMessage;
+  return data;
+}
+
+function getErrorMessage(data, fallbackMessage) {
+  const detail = data && data.detail;
+  if (Array.isArray(detail) && detail.length) return detail[0].msg || fallbackMessage;
+  if (typeof detail === "string" && detail.trim()) return detail.replace(/\n/g, "<br>");
+  return fallbackMessage;
+}
 
 function togglePasswordVisibility() {
   const input = document.getElementById("login_pwd");
@@ -1711,25 +1750,22 @@ async function sendOTP() {
       })
     });
 
-    const data = await res.json();
+    const data = await readResponse(res, "Registration failed");
     btn.innerHTML = originalText;
     btn.disabled = false;
 
     if (res.ok) {
       regEmail = emailInput.toLowerCase();
+      sessionStorage.setItem("bknr_reg_email", regEmail);
       showBox("otpBox");
     } else {
-      let errorMsg = "Registration failed";
-      if (data.detail) {
-        errorMsg = Array.isArray(data.detail) ? data.detail[0].msg : data.detail;
-      }
-      regErr.innerHTML = errorMsg;
+      regErr.innerHTML = getErrorMessage(data, "Registration failed");
       regErr.style.display = "block";
     }
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
-    regErr.innerHTML = "Server connection failed.";
+    regErr.innerHTML = error.message || "Server connection failed.";
     regErr.style.display = "block";
   }
 }
@@ -1748,12 +1784,12 @@ async function verifyOTP() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        email: regEmail,
+        email: regEmail || sessionStorage.getItem("bknr_reg_email") || "",
         otp: document.getElementById("otp").value.trim()
       })
     });
 
-    const data = await res.json();
+    const data = await readResponse(res, "Invalid OTP");
     btn.innerHTML = originalText;
     btn.disabled = false;
 
@@ -1765,13 +1801,13 @@ async function verifyOTP() {
         showBox("passBox");
       }
     } else {
-      otpErr.innerHTML = data.detail || "Invalid OTP";
+      otpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
       otpErr.style.display = "block";
     }
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
-    otpErr.innerHTML = "Server connection failed.";
+    otpErr.innerHTML = error.message || "Server connection failed.";
     otpErr.style.display = "block";
   }
 }
@@ -1792,6 +1828,13 @@ async function savePassword() {
     return;
   }
 
+  regEmail = regEmail || sessionStorage.getItem("bknr_reg_email") || "";
+  if (!regEmail) {
+    passErr.innerHTML = "OTP session expired. Please register again and verify OTP.";
+    passErr.style.display = "block";
+    return;
+  }
+
   const originalText = btn.innerHTML;
   btn.innerHTML = "Saving...";
   btn.disabled = true;
@@ -1806,22 +1849,23 @@ async function savePassword() {
       })
     });
 
-    const data = await res.json();
+    const data = await readResponse(res, "Failed to set password");
     btn.innerHTML = originalText;
     btn.disabled = false;
 
     if (res.ok) {
-      passOk.innerHTML = `Account created. Company ID: <b>${data.company_id}</b><br>Please use this ID to login.`;
+      sessionStorage.removeItem("bknr_reg_email");
+      passOk.innerHTML = `Account registered. Company ID: <b>${data.company_id}</b><br>Pending approval by Super Admin. You will be able to log in once approved.`;
       passOk.style.display = "block";
-      setTimeout(() => showBox("loginBox"), 5000);
+      setTimeout(() => showBox("loginBox"), 8000);
     } else {
-      passErr.innerHTML = data.detail || "Failed to set password";
+      passErr.innerHTML = getErrorMessage(data, "Failed to set password");
       passErr.style.display = "block";
     }
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
-    passErr.innerHTML = "Server connection failed.";
+    passErr.innerHTML = error.message || "Server connection failed.";
     passErr.style.display = "block";
   }
 }
@@ -1847,23 +1891,30 @@ async function doLogin(event) {
       })
     });
 
-    const data = await res.json();
+    const data = await readResponse(res, "Invalid credentials");
     btn.innerHTML = originalText;
     btn.disabled = false;
 
     if (res.ok) {
-      window.location.replace(data.next_page || "/home");
+      if (data.status === "otp_required") {
+        loginEmail = document.getElementById("login_email").value.trim().toLowerCase();
+        loginCompanyId = document.getElementById("login_company_id").value.trim();
+        showBox("loginOtpBox");
+      } else {
+        window.location.replace(data.next_page || "/home");
+      }
     } else {
       if (res.status === 403 && data.status === "unverified") {
         regEmail = document.getElementById("login_email").value.trim().toLowerCase();
-        loginErr.innerHTML = data.detail || "Email not verified. Redirecting to OTP verification...";
+        sessionStorage.setItem("bknr_reg_email", regEmail);
+        loginErr.innerHTML = getErrorMessage(data, "Email not verified. Redirecting to OTP verification...");
         loginErr.style.display = "block";
         loginErr.style.background = "#ecfdf5";
         loginErr.style.color = "#166534";
         loginErr.style.border = "1px solid rgba(22, 101, 52, 0.08)";
         setTimeout(() => showBox("otpBox"), 2000);
       } else {
-        loginErr.innerHTML = data.detail || "Invalid credentials";
+        loginErr.innerHTML = getErrorMessage(data, "Invalid credentials");
         loginErr.style.display = "block";
         loginErr.style.background = "#fef2f2";
         loginErr.style.color = "#991b1b";
@@ -1873,11 +1924,52 @@ async function doLogin(event) {
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
-    loginErr.innerHTML = "Server connection failed.";
+    loginErr.innerHTML = error.message || "Server connection failed.";
     loginErr.style.display = "block";
     loginErr.style.background = "#fef2f2";
     loginErr.style.color = "#991b1b";
     loginErr.style.border = "1px solid rgba(153, 27, 27, 0.08)";
+  }
+}
+
+let loginEmail = "";
+let loginCompanyId = "";
+
+async function verifyLoginOTP() {
+  const loginOtpErr = document.getElementById("loginOtpErr");
+  const btn = document.getElementById("btn-login-otp");
+  loginOtpErr.style.display = "none";
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Verifying...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/verify-login-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_id: loginCompanyId,
+        email: loginEmail,
+        otp: document.getElementById("login_otp").value.trim()
+      })
+    });
+
+    const data = await readResponse(res, "Invalid OTP");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      window.location.replace(data.next_page || "/home");
+    } else {
+      loginOtpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
+      loginOtpErr.style.display = "block";
+    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    loginOtpErr.innerHTML = error.message || "Server connection failed.";
+    loginOtpErr.style.display = "block";
   }
 }
 
@@ -1901,7 +1993,7 @@ async function sendResetLink() {
       })
     });
 
-    const data = await res.json();
+    const data = await readResponse(res, "Failed to send reset link");
     btn.innerHTML = originalText;
     btn.disabled = false;
 
@@ -1909,13 +2001,13 @@ async function sendResetLink() {
       forgotOk.innerHTML = "Reset link sent to your email";
       forgotOk.style.display = "block";
     } else {
-      forgotErr.innerHTML = data.detail || "Failed to send reset link";
+      forgotErr.innerHTML = getErrorMessage(data, "Failed to send reset link");
       forgotErr.style.display = "block";
     }
   } catch (error) {
     btn.innerHTML = originalText;
     btn.disabled = false;
-    forgotErr.innerHTML = "Server connection failed.";
+    forgotErr.innerHTML = error.message || "Server connection failed.";
     forgotErr.style.display = "block";
   }
 }

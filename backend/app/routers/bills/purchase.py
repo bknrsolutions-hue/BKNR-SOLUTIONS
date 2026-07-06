@@ -94,7 +94,8 @@ def purchase_entry_page(
         invoice_history = (
             db.query(PurchaseInvoice)
             .filter(
-                PurchaseInvoice.company_id == company_id,
+                PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True,
+                PurchaseInvoice.is_cancelled != True,
                 PurchaseInvoice.invoice_date >= start_date,
                 PurchaseInvoice.invoice_date <= end_date
             )
@@ -161,7 +162,7 @@ async def save_purchase_invoice(
     try:
         duplicate = db.query(PurchaseInvoice).filter(
             PurchaseInvoice.invoice_no == payload.invoice_no.strip(),
-            PurchaseInvoice.company_id == company_id
+            PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
         ).first()
 
         if duplicate:
@@ -242,7 +243,7 @@ async def update_purchase_invoice(
     try:
         invoice = db.query(PurchaseInvoice).filter(
             PurchaseInvoice.id == inv_id,
-            PurchaseInvoice.company_id == company_id
+            PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
         ).first()
 
         if not invoice:
@@ -331,19 +332,19 @@ def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db))
 
     invoice = db.query(PurchaseInvoice).filter(
         PurchaseInvoice.id == inv_id,
-        PurchaseInvoice.company_id == company_id
+        PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
     ).first()
 
     if invoice:
         try:
             db.add(AuditLog(
                 table_name="purchase_invoice", record_id=invoice.id, company_id=company_id,
-                field_name="DELETE", old_value=invoice.invoice_no, new_value="DELETED",
+                field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=ist_now() # 🟢 Synced onto IST timeline
             ))
-            db.delete(invoice)
+            invoice.is_cancelled = True
             db.commit()
-            return {"success": True, "message": "Record deleted successfully"}
+            return {"success": True, "message": "Record cancelled successfully"}
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)
@@ -361,7 +362,7 @@ def export_purchase_excel(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/", status_code=302)
 
     invoices = db.query(PurchaseInvoice).filter(
-        PurchaseInvoice.company_id == company_id
+        PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
     ).order_by(desc(PurchaseInvoice.invoice_date)).all()
 
     all_vendors = db.query(vendors).filter(vendors.company_id == company_id).all()
@@ -460,7 +461,7 @@ def export_invoice_pdf(inv_id: int, request: Request, db: Session = Depends(get_
         return RedirectResponse("/", status_code=302)
         
     invoice = db.query(PurchaseInvoice).filter(
-        PurchaseInvoice.id == inv_id, PurchaseInvoice.company_id == company_id
+        PurchaseInvoice.id == inv_id, PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
     ).first()
     
     if not invoice:
@@ -494,7 +495,7 @@ def print_individual_invoice(inv_id: int, request: Request, db: Session = Depend
         return RedirectResponse("/", status_code=302)
 
     invoice = db.query(PurchaseInvoice).filter(
-        PurchaseInvoice.id == inv_id, PurchaseInvoice.company_id == company_id
+        PurchaseInvoice.id == inv_id, PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
     ).first()
 
     if not invoice:

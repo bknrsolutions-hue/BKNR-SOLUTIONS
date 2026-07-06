@@ -1,0 +1,356 @@
+/* Customizer Override styles: active only when data-ui-customizer-active="true" is set on html */
+
+html[data-ui-customizer-active="true"] .sidebar {
+  background: var(--ui-sidebar-bg, var(--surface-panel)) !important;
+  color: var(--ui-sidebar-text, var(--text-primary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .app-header {
+  background: var(--ui-header-bg, var(--glass-bg)) !important;
+  color: var(--ui-header-text, var(--text-primary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .iframe-wrapper,
+html[data-ui-customizer-active="true"] .module-shell,
+html[data-ui-customizer-active="true"] .dashboard,
+html[data-ui-customizer-active="true"] .dashboard-container,
+html[data-ui-customizer-active="true"] .main-workspace,
+html[data-ui-customizer-active="true"] body {
+  background-color: var(--ui-dashboard-bg, var(--bg-app, var(--slate-bg))) !important;
+  color: var(--ui-dashboard-text, var(--text-primary, var(--text-main))) !important;
+}
+
+html[data-ui-customizer-active="true"] .module-rail {
+  background: var(--ui-sidebar-bg, var(--card-bg, var(--surface-panel))) !important;
+  color: var(--ui-sidebar-text, var(--text-main, var(--text-primary))) !important;
+  border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 18%, transparent) !important;
+}
+
+/* Base text color overrides */
+html[data-ui-customizer-active="true"] .sidebar .brand-title,
+html[data-ui-customizer-active="true"] .sidebar .brand-title span,
+html[data-ui-customizer-active="true"] .sidebar .footer-powered,
+html[data-ui-customizer-active="true"] .sidebar .pillar-title,
+html[data-ui-customizer-active="true"] .sidebar .pillar-title span,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text span,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item div,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item span,
+html[data-ui-customizer-active="true"] .sidebar .close-sidebar-btn,
+html[data-ui-customizer-active="true"] .sidebar .close-sidebar-btn i,
+html[data-ui-customizer-active="true"] .module-rail .rail-link,
+html[data-ui-customizer-active="true"] .module-rail .rail-title,
+html[data-ui-customizer-active="true"] .module-rail .rail-brand {
+  color: var(--ui-sidebar-text, var(--text-primary)) !important;
+}
+
+/* Logos & Branding keep the Accent Color */
+html[data-ui-customizer-active="true"] .sidebar .brand-title i,
+html[data-ui-customizer-active="true"] .sidebar .footer-powered i {
+  color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+/* Sidebar Muted elements */
+html[data-ui-customizer-active="true"] .sidebar .brand-subtitle,
+html[data-ui-customizer-active="true"] .sidebar .footer-quote,
+html[data-ui-customizer-active="true"] .sidebar .pillar-chevron,
+html[data-ui-customizer-active="true"] .sidebar .corp-role,
+html[data-ui-customizer-active="true"] .sidebar .kpi-badge,
+html[data-ui-customizer-active="true"] .module-rail .rail-subtitle {
+  color: var(--ui-sidebar-muted, var(--text-tertiary)) !important;
+}
+
+/* Sidebar default menu icons are muted/hierarchical */
+html[data-ui-customizer-active="true"] .sidebar .pillar-title i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item i {
+  color: var(--ui-sidebar-muted, var(--text-tertiary)) !important;
+}
+
+/* Sidebar divider lines */
+html[data-ui-customizer-active="true"] .sidebar .pillar-block,
+html[data-ui-customizer-active="true"] .sidebar .menu-wrapper,
+html[data-ui-customizer-active="true"] .sidebar .sidebar-brand,
+html[data-ui-customizer-active="true"] .sidebar .sidebar-footer,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text,
+html[data-ui-customizer-active="true"] .sidebar .pillar-title,
+html[data-ui-customizer-active="true"] .module-rail {
+  border-color: color-mix(in srgb, var(--ui-sidebar-text, #0f172a) 16%, transparent) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar .submenu-item-row,
+html[data-ui-customizer-active="true"] .sidebar .reports-container,
+html[data-ui-customizer-active="true"] .sidebar .menu-wrapper {
+  background: transparent !important;
+}
+
+/* Card background block in sidebar menu items */
+html[data-ui-customizer-active="true"] .sidebar .submenu-item,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text,
+html[data-ui-customizer-active="true"] .sidebar .pillar-title {
+  background: var(--ui-sidebar-card-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 88%, var(--ui-sidebar-text, #ffffff) 12%)) !important;
+  color: var(--ui-sidebar-card-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar .submenu-item *,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text *,
+html[data-ui-customizer-active="true"] .sidebar .pillar-title * {
+  color: inherit !important;
+}
+
+/* Hover & Active states */
+html[data-ui-customizer-active="true"] .sidebar .pillar-title:hover,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text:hover,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item:hover,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item.active {
+  background: var(--ui-sidebar-card-hover-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 78%, var(--ui-sidebar-text, #ffffff) 22%)) !important;
+  color: var(--ui-sidebar-card-hover-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+}
+
+/* Icons highlight when active/hovered */
+html[data-ui-customizer-active="true"] .sidebar .pillar-title:hover i,
+html[data-ui-customizer-active="true"] .sidebar .pillar-block.open > .pillar-title i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-text:hover i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-heading-block.open > .submenu-heading-text i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item:hover i,
+html[data-ui-customizer-active="true"] .sidebar .submenu-item.active i {
+  color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar .kpi-badge {
+  background: var(--ui-sidebar-card-hover-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 74%, var(--ui-sidebar-text, #ffffff) 26%)) !important;
+  color: var(--ui-sidebar-card-hover-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+}
+
+/* Header customization rules */
+html[data-ui-customizer-active="true"] .app-header .header-premium-title,
+html[data-ui-customizer-active="true"] .app-header .header-brand-title-box,
+html[data-ui-customizer-active="true"] .app-header .corp-name,
+html[data-ui-customizer-active="true"] .app-header .corp-profile-btn,
+html[data-ui-customizer-active="true"] .app-header .hamburger-trigger-btn,
+html[data-ui-customizer-active="true"] .app-header .header-home-btn,
+html[data-ui-customizer-active="true"] .app-header .mobile-top-menu-btn,
+html[data-ui-customizer-active="true"] .app-header .icon-action-btn,
+html[data-ui-customizer-active="true"] .app-header .icon-action-btn i,
+html[data-ui-customizer-active="true"] .app-header .hamburger-trigger-btn i,
+html[data-ui-customizer-active="true"] .app-header .header-home-btn i,
+html[data-ui-customizer-active="true"] .app-header .global-search-container input {
+  color: var(--ui-header-text, var(--text-primary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .app-header .header-premium-subtitle,
+html[data-ui-customizer-active="true"] .app-header .corp-role,
+html[data-ui-customizer-active="true"] .app-header .corp-info,
+html[data-ui-customizer-active="true"] .app-header .global-search-container i,
+html[data-ui-customizer-active="true"] .app-header .cmd-k-hint {
+  color: var(--ui-header-muted, var(--text-tertiary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .app-header .header-brand-title-box {
+  border-left-color: var(--ui-accent, var(--corp-ops, #ea580c)) !important;
+}
+
+html[data-ui-customizer-active="true"] .app-header .corp-avatar {
+  background: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ui-header-text, #0f172a) 18%, transparent);
+}
+
+html[data-ui-customizer-active="true"] .app-header .hamburger-trigger-btn,
+html[data-ui-customizer-active="true"] .app-header .header-home-btn,
+html[data-ui-customizer-active="true"] .app-header .mobile-top-menu-btn,
+html[data-ui-customizer-active="true"] .app-header .icon-action-btn,
+html[data-ui-customizer-active="true"] .app-header .corp-profile-btn {
+  border-color: color-mix(in srgb, var(--ui-header-text, #0f172a) 18%, transparent) !important;
+}
+
+html[data-ui-customizer-active="true"] .app-header .hamburger-trigger-btn:hover,
+html[data-ui-customizer-active="true"] .app-header .header-home-btn:hover,
+html[data-ui-customizer-active="true"] .app-header .mobile-top-menu-btn:hover,
+html[data-ui-customizer-active="true"] .app-header .icon-action-btn:hover,
+html[data-ui-customizer-active="true"] .app-header .corp-profile-btn:hover,
+html[data-ui-customizer-active="true"] .app-header .corp-profile-btn.active {
+  background: color-mix(in srgb, var(--ui-header-text, #0f172a) 10%, transparent) !important;
+}
+
+/* Dashboard overrides */
+html[data-ui-customizer-active="true"] .dashboard > .section-head,
+html[data-ui-customizer-active="true"] .dashboard-container > .section-head {
+  color: var(--ui-dashboard-text, var(--text-main, var(--text-primary))) !important;
+}
+
+html[data-ui-customizer-active="true"] .dashboard > .section-head .section-head-line,
+html[data-ui-customizer-active="true"] .dashboard-container > .section-head .section-head-line {
+  border-color: var(--ui-dashboard-muted, var(--border-color, var(--border-light))) !important;
+}
+
+html[data-ui-customizer-active="true"] .dashboard > .section-subtitle,
+html[data-ui-customizer-active="true"] .dashboard-container > .section-subtitle {
+  color: var(--ui-dashboard-muted, var(--text-muted, var(--text-secondary))) !important;
+}
+
+html[data-ui-customizer-active="true"] .rail-link:hover,
+html[data-ui-customizer-active="true"] .rail-link.active,
+html[data-ui-customizer-active="true"] .submenu-item.active,
+html[data-ui-customizer-active="true"] .submenu-item:hover {
+  border-color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+html[data-ui-customizer-active="true"] .module-rail .rail-link {
+  background: var(--ui-sidebar-card-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 88%, var(--ui-sidebar-text, #ffffff) 12%)) !important;
+  color: var(--ui-sidebar-card-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+  border-color: color-mix(in srgb, var(--ui-sidebar-text, #0f172a) 16%, transparent) !important;
+}
+
+html[data-ui-customizer-active="true"] .module-rail .rail-link i {
+  color: var(--ui-sidebar-muted, var(--text-tertiary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .module-rail .rail-link:hover,
+html[data-ui-customizer-active="true"] .module-rail .rail-link.active {
+  background: var(--ui-sidebar-card-hover-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 78%, var(--ui-sidebar-text, #ffffff) 22%)) !important;
+  color: var(--ui-sidebar-card-hover-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+}
+
+html[data-ui-customizer-active="true"] .module-rail .rail-link:hover i,
+html[data-ui-customizer-active="true"] .module-rail .rail-link.active i {
+  color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar-menu {
+  background: var(--ui-sidebar-bg, var(--card-bg, var(--surface-panel))) !important;
+  color: var(--ui-sidebar-text, var(--text-main, var(--text-primary))) !important;
+  border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 18%, transparent) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link {
+  background: var(--ui-sidebar-card-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 88%, var(--ui-sidebar-text, #ffffff) 12%)) !important;
+  color: var(--ui-sidebar-card-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+  border: 1px solid transparent !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link i {
+  color: var(--ui-sidebar-muted, var(--text-tertiary)) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link:hover,
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link.active {
+  background: var(--ui-sidebar-card-hover-bg, color-mix(in srgb, var(--ui-sidebar-bg, transparent) 78%, var(--ui-sidebar-text, #ffffff) 22%)) !important;
+  color: var(--ui-sidebar-card-hover-text, var(--ui-sidebar-text, var(--text-primary))) !important;
+  border-color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link:hover i,
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link.active i {
+  color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+}
+
+
+/* Color Console Styles (always active, no prefix required) */
+.color-console {
+  width: 330px;
+  gap: 14px;
+  padding: 16px;
+}
+
+.color-console-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.color-console-title strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.color-console-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.color-field {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-element, 8px);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="light"] .color-field {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.color-field span {
+  display: block;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.color-field small {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.color-field input[type="color"] {
+  width: 44px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.color-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.color-action-btn {
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.color-save-btn {
+  background: var(--ui-accent, var(--corp-dash, #2563eb));
+  color: #ffffff;
+  border-color: transparent;
+}
+
+.color-reset-btn {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.color-swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+
+.color-swatch {
+  height: 26px;
+  border-radius: 7px;
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+}

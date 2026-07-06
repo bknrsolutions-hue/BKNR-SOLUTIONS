@@ -115,7 +115,8 @@ def container_entry_page(
             query = db.query(ContainerLog, vendors.name.label("v_name")).join(
                 vendors, ContainerLog.vendor_id == vendors.id
             ).filter(
-                ContainerLog.company_id == comp_code,
+                ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True,
+                ContainerLog.is_cancelled != True,
                 ContainerLog.date >= start_date,
                 ContainerLog.date <= end_date
             )
@@ -132,7 +133,7 @@ def container_entry_page(
             if not container_history:
                 fb_query = db.query(ContainerLog, vendors.name.label("v_name")).join(
                     vendors, ContainerLog.vendor_id == vendors.id
-                ).filter(ContainerLog.company_id == comp_code)
+                ).filter(ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True)
                 
                 if g_loc_clean and g_loc_clean != "ALL":
                     fb_query = fb_query.filter(func.upper(func.trim(ContainerLog.production_at)) == g_loc_clean)
@@ -235,7 +236,7 @@ async def update_container_log(
     try:
         entry = db.query(ContainerLog).filter(
             ContainerLog.id == log_id,
-            ContainerLog.company_id == comp_code
+            ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True
         ).first()
 
         if not entry:
@@ -321,19 +322,19 @@ def delete_container_log(
 
     log_entry = db.query(ContainerLog).filter(
         ContainerLog.id == log_id,
-        ContainerLog.company_id == comp_code
+        ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True
     ).first()
 
     if log_entry:
         try:
             db.add(AuditLog(
                 table_name="container_logistics", record_id=log_entry.id, company_id=comp_code,
-                field_name="DELETE", old_value=log_entry.container_no, new_value="DELETED",
+                field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
-            db.delete(log_entry)
+            log_entry.is_cancelled = True
             db.commit()
-            return {"status": "success", "success": True, "message": "Record deleted successfully"}
+            return {"status": "success", "success": True, "message": "Record cancelled successfully"}
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)
@@ -352,7 +353,7 @@ def export_container_excel(request: Request, db: Session = Depends(get_db)):
 
     logs = db.query(ContainerLog, vendors.name.label("v_name")).join(
         vendors, ContainerLog.vendor_id == vendors.id
-    ).filter(ContainerLog.company_id == comp_code).order_by(ContainerLog.id.desc()).all()
+    ).filter(ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True).order_by(ContainerLog.id.desc()).all()
 
     wb = openpyxl.Workbook()
     ws = wb.active

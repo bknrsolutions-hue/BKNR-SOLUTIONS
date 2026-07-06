@@ -389,6 +389,7 @@ class ExportIncentiveRegister(Base):
     remarks = Column(String(255), nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False)
 
     receivable_ledger = relationship('LedgerMaster', foreign_keys=[receivable_ledger_id])
     income_ledger = relationship('LedgerMaster', foreign_keys=[income_ledger_id])
@@ -457,6 +458,7 @@ class LCTracking(Base):
     remarks = Column(Text, nullable=True)
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False)
     modified_at = Column(DateTime, nullable=True)
 
     customer_ledger = relationship('LedgerMaster', foreign_keys=[customer_ledger_id])
@@ -540,6 +542,7 @@ class SalaryProcessing(Base):
 
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False)
 
     salary_journal = relationship('VoucherHeader', foreign_keys=[salary_journal_id])
     payment_journal = relationship('VoucherHeader', foreign_keys=[payment_journal_id])
@@ -600,6 +603,7 @@ class ProductionCostAllocation(Base):
 
     created_by = Column(String(100), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False)
     modified_at = Column(DateTime, nullable=True)
 
     wip_ledger = relationship('LedgerMaster', foreign_keys=[wip_ledger_id])

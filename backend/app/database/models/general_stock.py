@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, Time
+from sqlalchemy import Column, Integer, String, Float, Date, Time, Boolean
 from app.database import Base
 from datetime import datetime
 from app.utils.timezone import ist_now
@@ -24,6 +24,7 @@ class GeneralStock(Base):
 
     email = Column(String)
     company_id = Column(String(50), index=True)
+    is_cancelled = Column(Boolean, default=False)
 # ================ 2) GENERAL STORE ITEMS MASTER (SEPARATE TABLE) ================
 class GeneralStoreItems(Base):
     __tablename__ = "general_store_items"

@@ -474,10 +474,10 @@ async def delete_peeling(
     if row:
         db.add(AuditLog(
             table_name="peeling", record_id=row.id, company_id=comp_code, 
-            field_name="DELETE", old_value="Peeling Record", new_value="DELETED", 
+            field_name="is_cancelled", old_value="False", new_value="True", 
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         refresh_floor_balance(db, comp_code)
         return {"status": "success"}

@@ -307,10 +307,10 @@ def delete_production(request: Request, payload: dict = Body(...), db: Session =
     if row:
         db.add(AuditLog(
             table_name="production", record_id=row.id, company_id=comp_code,
-            field_name="DELETE", old_value="Record", new_value="Deleted",
+            field_name="is_cancelled", old_value="False", new_value="True",
             edited_by=user_email, edited_at=datetime.utcnow()
         ))
-        db.delete(row)
+        row.is_cancelled = True
         db.commit()
         return {"status": "success"}
     return {"status": "error", "message": "Record not found"}

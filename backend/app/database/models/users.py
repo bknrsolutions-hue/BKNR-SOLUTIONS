@@ -1,7 +1,12 @@
 from sqlalchemy.orm import relationship
 from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, Text
 from datetime import datetime
+from zoneinfo import ZoneInfo
 from app.database import Base
+
+
+def ist_now_naive():
+    return datetime.now(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
 
 
 # =================== COMPANY MODEL ===================
@@ -22,7 +27,7 @@ class Company(Base):
     parent_company_id = Column(Integer, ForeignKey("companies.id"), nullable=True)
 
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=ist_now_naive)
 
     # relationships
     users = relationship("User", back_populates="company")
@@ -57,11 +62,13 @@ class User(Base):
     is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True, server_default="true")
     data_management_access = Column(Boolean, default=False, server_default="false")
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=ist_now_naive)
 
     # 🌟 NEW MULTI-TENANT SEGMENTATION TEXT COLUMNS (FOR JSON STORAGE)
     allowed_units = Column(Text, nullable=True)     # Stores JSON array of unit strings
     allowed_companies = Column(Text, nullable=True) # Stores JSON array of company strings
+    ui_colors = Column(Text, nullable=True)         # Stores JSON of user color preferences
+    current_session_id = Column(String, nullable=True) # Unique ID of current active login session
 
     # relationships
     company = relationship("Company", back_populates="users")
@@ -79,7 +86,7 @@ class OTPTable(Base):
     extra = Column(String)  # ✅ required field
     is_used = Column(Boolean, default=False)
 
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=ist_now_naive)
 
 
 # =================== NEW: USER LOGIN ACTIVITY MODEL ===================
@@ -90,7 +97,7 @@ class UserLoginActivity(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
     
-    login_at = Column(DateTime, default=datetime.utcnow)
+    login_at = Column(DateTime, default=ist_now_naive)
     logout_at = Column(DateTime, nullable=True)
     
     # Session computation helper text column (e.g., "4.5 Hrs" or "Active Now")

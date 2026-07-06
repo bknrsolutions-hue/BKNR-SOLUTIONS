@@ -104,6 +104,7 @@ async def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     today = ist_now().date()
     today_data = db.query(GeneralStock).filter(
         GeneralStock.company_id == company_id,
+        GeneralStock.is_cancelled != True,
         GeneralStock.date == today
     ).order_by(GeneralStock.id.desc()).all()
 
@@ -175,9 +176,9 @@ async def delete_stock_entry(request: Request, entry_id: int, db: Session = Depe
     entry = db.query(GeneralStock).filter(GeneralStock.id == entry_id, GeneralStock.company_id == company_id).first()
     
     if entry:
-        db.delete(entry)
+        entry.is_cancelled = True
         db.commit()
-        return JSONResponse(status_code=200, content={"message": "Deleted"})
+        return JSONResponse(status_code=200, content={"message": "Cancelled"})
     return JSONResponse(status_code=404, content={"message": "Not Found"})
 
 @router.get("/api/item_details")
@@ -234,7 +235,7 @@ async def general_stock_report(
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
-    query = db.query(GeneralStock)
+    query = db.query(GeneralStock).filter(GeneralStock.is_cancelled != True)
 
     # Company Filter
     if company_id:

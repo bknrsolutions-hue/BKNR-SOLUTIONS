@@ -107,7 +107,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
     Safe to call multiple times — skips if already exists (idempotent).
     """
     from datetime import datetime
-    now_date = str(datetime.now().date())
+    now_date = datetime.now().date()
     now_time = str(datetime.now().time().strftime('%H:%M:%S'))
 
     def already_exists(model, unique_field, value):
@@ -186,7 +186,11 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
             changed = True
 
     if changed:
-        db.commit()
+        try:
+            db.commit()
+        except Exception:
+            db.rollback()
+            raise
         print(f"✅ Default masters seeded for company: {company_code}")
     else:
         print(f"ℹ️  Default masters already exist for: {company_code} — skipped.")

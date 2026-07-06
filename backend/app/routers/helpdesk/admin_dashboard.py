@@ -8,6 +8,8 @@ import logging
 from app.database import get_db
 from app.database.models.helpdesk import SupportTicket, TicketMessage
 from app.database.models.users import User, Company, UserLoginActivity
+from app.routers.auth import professional_email_html, send_email
+from app.utils.timezone import ist_now
 
 # Logger Setup
 logger = logging.getLogger("admin_dashboard")
@@ -34,7 +36,7 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
         # కుడివైపు లైవ్ హెల్ప్‌డెస్క్ ఫీడ్ కోసం లాస్ట్ 100 మెసేజ్‌లు
         latest_messages = db.query(TicketMessage).order_by(TicketMessage.sent_at.desc()).limit(100).all()
 
-        today = date.today()
+        today = ist_now().date()
         yesterday = today - timedelta(days=1)  # Midnight rollover protection
         first_day_this_month = today.replace(day=1)
 
@@ -67,12 +69,16 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
         # KPI 5: Open Tickets
         open_tickets = db.query(SupportTicket).filter(SupportTicket.status == "OPEN").count()
 
+        # KPI 6: Pending Approvals
+        pending_approvals = db.query(Company).filter(Company.is_active == False).count()
+
         stats = {
             "total_registrations": total_registrations,
             "today_active": today_active,
             "active_users": active_users,
             "new_this_month": new_this_month,
-            "open_tickets": open_tickets
+            "open_tickets": open_tickets,
+            "pending_approvals": pending_approvals
         }
 
         return request.app.state.templates.TemplateResponse(
@@ -94,7 +100,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
     if not is_admin(request):
         return JSONResponse(status_code=403, content={"success": False, "error": "Access Denied"})
 
-    today = date.today()
+    today = ist_now().date()
     yesterday = today - timedelta(days=1)
     first_day_this_month = today.replace(day=1)
     response_payload = []
@@ -126,6 +132,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                         "login_time": act.login_at.strftime("%I:%M %p"),
                         "logout_time": act.logout_at.strftime("%I:%M %p") if act.logout_at else "--",
                         "email": user.email,
+                        "mobile": user.mobile or "--",
                         "login_hours": act.session_hours,
                         "status": "Online" if act.session_hours == "Active Now" else "Offline"
                     })
@@ -134,6 +141,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
         elif kpi_type == "registrations":
             companies = db.query(Company).order_by(Company.created_at.desc()).all()
             for c in companies:
+                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
                     "company_name": c.company_name,
@@ -141,6 +149,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
                     "logout_time": "--",
                     "email": c.email,
+                    "mobile": admin_user.mobile if admin_user else "--",
                     "login_hours": "--",
                     "status": "Active" if c.is_active else "Inactive"
                 })
@@ -152,6 +161,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
             ).order_by(Company.created_at.desc()).all()
             
             for c in new_companies:
+                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
                     "company_name": c.company_name,
@@ -159,6 +169,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
                     "logout_time": "--",
                     "email": c.email,
+                    "mobile": admin_user.mobile if admin_user else "--",
                     "login_hours": "0.0 Hrs",
                     "status": "New"
                 })
@@ -177,6 +188,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     except:
                         comp = None
 
+                admin_user = db.query(User).filter(User.email == t.user_email).first()
                 response_payload.append({
                     "company_id": comp.company_code if comp else f"ID: {t.company_id}",
                     "company_name": comp.company_name if comp else "Unknown Entity",
@@ -184,8 +196,26 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "login_time": t.created_at.strftime("%I:%M %p") if t.created_at else "--",
                     "logout_time": "--",
                     "email": t.user_email,
+                    "mobile": admin_user.mobile if admin_user else "--",
                     "login_hours": "In-Ticket",
                     "status": t.status
+                })
+
+        # CASE E: PENDING APPROVALS
+        elif kpi_type == "pending_approvals":
+            pending = db.query(Company).filter(Company.is_active == False).order_by(Company.created_at.desc()).all()
+            for c in pending:
+                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
+                response_payload.append({
+                    "company_id": c.company_code,
+                    "company_name": c.company_name,
+                    "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
+                    "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
+                    "logout_time": "--",
+                    "email": c.email,
+                    "mobile": admin_user.mobile if admin_user else "--",
+                    "address": c.address or "--",
+                    "status": "Pending"
                 })
 
         return JSONResponse(content={"success": True, "data": response_payload})
@@ -193,3 +223,61 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
     except Exception as e:
         logger.error(f"KPI Data JSON API Exception: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+
+@router.post("/approve_company/{company_code}")
+async def approve_company(company_code: str, request: Request, db: Session = Depends(get_db)):
+    if not is_admin(request):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Access Denied"})
+    
+    comp = db.query(Company).filter(Company.company_code == company_code).first()
+    if not comp:
+        return JSONResponse(status_code=404, content={"success": False, "error": "Company not found"})
+        
+    comp.is_active = True
+    db.commit()
+    admin_user = db.query(User).filter(User.company_id == comp.id, User.role == "admin").first()
+    recipient = admin_user.email if admin_user and admin_user.email else comp.email
+    approved_at = ist_now().strftime("%d-%m-%Y %I:%M %p IST")
+
+    if recipient:
+        try:
+            send_email(
+                recipient,
+                "BKNR ERP - Account Approved",
+                professional_email_html(
+                    title="Your BKNR ERP account is approved",
+                    intro=f"{comp.company_name} has been approved and your ERP access is now active.",
+                    content_html=f"""
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:14px;">
+                        <tr>
+                          <td style="padding:12px;background:#f8fbff;border:1px solid #dbeafe;border-radius:8px;">
+                            <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;">Company ID</div>
+                            <div style="font-size:24px;font-weight:800;color:#1d4ed8;margin-top:4px;">{comp.company_code}</div>
+                          </td>
+                        </tr>
+                      </table>
+                      <p style="margin:14px 0 0;color:#475569;font-size:14px;line-height:1.6;"><strong>Approved At:</strong> {approved_at}</p>
+                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in to BKNR ERP using your registered email and password.</p>
+                    """,
+                    note="If you have trouble logging in, please contact BKNR ERP support."
+                )
+            )
+        except Exception as e:
+            logger.error(f"Approval confirmation email failed for {recipient}: {e}")
+
+    return {"success": True, "message": f"Company {comp.company_name} approved successfully!"}
+
+
+@router.post("/reject_company/{company_code}")
+async def reject_company(company_code: str, request: Request, db: Session = Depends(get_db)):
+    if not is_admin(request):
+        return JSONResponse(status_code=403, content={"success": False, "error": "Access Denied"})
+    
+    comp = db.query(Company).filter(Company.company_code == company_code).first()
+    if not comp:
+        return JSONResponse(status_code=404, content={"success": False, "error": "Company not found"})
+        
+    db.delete(comp) # delete the company record if rejected (or we can set is_active = False, but deletion is clean registration rejection)
+    db.commit()
+    return {"success": True, "message": f"Company {comp.company_name} rejected successfully!"}

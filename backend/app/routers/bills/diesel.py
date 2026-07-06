@@ -69,7 +69,7 @@ def diesel_entry_page(
     # 🔹 Production Locations List
     locations = (
         db.query(production_at)
-        .filter(production_at.company_id == company_code)
+        .filter(production_at.company_id == company_code, DieselLog.is_cancelled != True)
         .order_by(production_at.production_at)
         .all()
     )
@@ -85,7 +85,8 @@ def diesel_entry_page(
             db.query(DieselLog, production_at.production_at.label("location_name"))
             .join(production_at, DieselLog.unit_id == production_at.id)
             .filter(
-                production_at.company_id == company_code,
+                production_at.company_id == company_code, DieselLog.is_cancelled != True,
+                DieselLog.is_cancelled != True,
                 DieselLog.log_date >= start_date,
                 DieselLog.log_date <= end_date
             )
@@ -279,12 +280,12 @@ def delete_diesel_log(log_id: int, request: Request, db: Session = Depends(get_d
         try:
             db.add(AuditLog(
                 table_name="diesel_logs", record_id=log_entry.id, company_id=comp_code,
-                field_name="DELETE", old_value=f"Type: {log_entry.type}", new_value="DELETED",
+                field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
-            db.delete(log_entry)
+            log_entry.is_cancelled = True
             db.commit()
-            return {"success": True, "message": "Diesel record destroyed successfully"}
+            return {"success": True, "message": "Diesel record cancelled successfully"}
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)
@@ -304,7 +305,7 @@ def export_diesel_excel(request: Request, db: Session = Depends(get_db)):
     history = (
         db.query(DieselLog, production_at.production_at.label("location_name"))
         .join(production_at, DieselLog.unit_id == production_at.id)
-        .filter(production_at.company_id == company_code)
+        .filter(production_at.company_id == company_code, DieselLog.is_cancelled != True)
         .order_by(desc(DieselLog.log_date), desc(DieselLog.id))
         .all()
     )

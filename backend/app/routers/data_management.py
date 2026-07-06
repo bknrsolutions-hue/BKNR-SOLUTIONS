@@ -52,6 +52,9 @@ from app.database.models.criteria import brands, purposes, production_at, produc
 from app.database.models.attendance import EmployeeRegistration, DailyAttendance, EmployeeIncrement, EmployeeStatutoryMaster, EmployeeSalaryAdvance
 
 router = APIRouter()
+SENDER_EMAIL = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
+SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "BKNR ERP")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 # =====================================================
 # 🟢 2. GLOBAL DICTIONARY FOR DYNAMIC IMPORT
@@ -100,6 +103,55 @@ def log_data_action(comp_code, action_type, module_name, status, message):
     logs.append(log_entry)
     with open(HISTORY_LOG_FILE, "w") as f:
         json.dump(logs, f, indent=4)
+
+def build_security_otp_email(otp: str, action: str, module: str, company_code: str):
+    action_label = str(action or "").replace("_", " ").title()
+    module_label = str(module or "").replace("_", " ").title()
+    html = f"""
+    <!doctype html>
+    <html>
+    <body style="margin:0;padding:0;background:#eef6ff;font-family:Arial,Helvetica,sans-serif;color:#1f2937;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#eef6ff;padding:24px 12px;">
+        <tr>
+          <td align="center">
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #dbeafe;border-radius:12px;overflow:hidden;">
+              <tr>
+                <td style="padding:18px 22px;background:#f8fbff;border-bottom:1px solid #e5eefb;">
+                  <div style="font-size:18px;font-weight:800;color:#1d4ed8;">BKNR ERP</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:4px;">Data management security verification</div>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:24px 22px;">
+                  <h2 style="margin:0 0 12px;font-size:20px;color:#0f172a;">Security OTP required</h2>
+                  <p style="margin:0 0 18px;color:#475569;font-size:14px;line-height:1.6;">An OTP was requested for a protected data-management action.</p>
+                  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-bottom:18px;">
+                    <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;width:36%;">Action</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;font-weight:700;">{action_label}</td></tr>
+                    <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Module</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{module_label}</td></tr>
+                    <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Company</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{company_code}</td></tr>
+                  </table>
+                  <div style="padding:18px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;text-align:center;">
+                    <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;">Verification Code</div>
+                    <div style="font-size:32px;font-weight:800;color:#1d4ed8;letter-spacing:6px;margin-top:6px;">{otp}</div>
+                  </div>
+                  <p style="margin:14px 0 0;color:#64748b;font-size:13px;line-height:1.6;">Share this code only with an authorized admin. If you did not request this action, contact support immediately.</p>
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:16px 22px;background:#f8fbff;border-top:1px solid #e5eefb;color:#64748b;font-size:12px;line-height:1.6;">
+                  Sent by <strong>{SENDER_NAME}</strong> from {SENDER_EMAIL}<br>
+                  For support, contact {SUPPORT_EMAIL}. This is an automated email.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+    """
+    text = f"BKNR ERP security OTP: {otp}\nAction: {action_label}\nModule: {module_label}\nCompany: {company_code}\nSupport: {SUPPORT_EMAIL}"
+    return html, text
 
 
 # =====================================================
@@ -181,22 +233,22 @@ async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depe
 
     SMTP_SERVER = "smtp.gmail.com"
     SMTP_PORT = 587
-    SENDER_EMAIL = "bknr.solutions@gmail.com"  
     SENDER_PASSWORD = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
     sent_count = 0
 
     try:
+        html_body, text_body = build_security_otp_email(otp, payload.action, payload.module, comp_code)
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
         server.login(SENDER_EMAIL, SENDER_PASSWORD)
         for email_id in authorized_emails:
             try:
                 msg = MIMEMultipart()
-                msg['From'] = SENDER_EMAIL
+                msg['From'] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
                 msg['To'] = email_id
-                msg['Subject'] = f"🔒 SECURITY GATEWAY: OTP for {payload.action.upper()}"
-                body = f"OTP: {otp}\nModule: {payload.module.upper()}\nCompany: {comp_code}"
-                msg.attach(MIMEText(body, 'plain'))
+                msg['Subject'] = f"BKNR ERP - Security OTP for {str(payload.action).upper()}"
+                msg.attach(MIMEText(text_body, 'plain'))
+                msg.attach(MIMEText(html_body, 'html'))
                 server.send_message(msg)
                 sent_count += 1
             except: pass

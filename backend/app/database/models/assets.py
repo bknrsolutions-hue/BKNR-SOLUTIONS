@@ -19,6 +19,7 @@ class FixedAssetMaster(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String(50), index=True, nullable=False)
+    is_cancelled = Column(Boolean, default=False)
 
     # --- Identity ---
     asset_code = Column(String(20), nullable=False, index=True)

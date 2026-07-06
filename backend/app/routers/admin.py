@@ -10,7 +10,7 @@ import json
 from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password
-from app.routers.auth import send_email, get_ist_time
+from app.routers.auth import get_ist_time, professional_email_html, send_email
 
 # ==========================================================
 # CONFIG & INITIALIZATION PARAMETERS
@@ -184,17 +184,22 @@ def save_user(
     
     # Send email with credentials and OTP
     subject = "BKNR ERP – Account Verification Required"
-    body_html = f"""
-    <h3>Welcome to BKNR ERP, {full_name}!</h3>
-    <p>An administrator has created your profile under company <b>{company.company_name}</b> (ID: <b>{company.company_code}</b>).</p>
-    <p>Your login credentials are:</p>
-    <ul>
-      <li><b>Email:</b> {email}</li>
-      <li><b>Password:</b> {password if password else '123456'}</li>
-    </ul>
-    <p>Please log in to the portal and enter the following 4-digit verification OTP when prompted:</p>
-    <h2>{otp}</h2>
-    """
+    body_html = professional_email_html(
+        title=f"Welcome to BKNR ERP, {full_name}",
+        intro=f"An administrator has created your profile under {company.company_name}. Please use the details below to sign in and verify your email.",
+        content_html=f"""
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-bottom:18px;">
+            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;width:36%;">Company ID</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;font-weight:700;">{company.company_code}</td></tr>
+            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{email}</td></tr>
+            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Temporary Password</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{password if password else '123456'}</td></tr>
+          </table>
+          <div style="padding:18px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;text-align:center;">
+            <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;">Verification Code</div>
+            <div style="font-size:32px;font-weight:800;color:#1d4ed8;letter-spacing:6px;margin-top:6px;">{otp}</div>
+          </div>
+        """,
+        note="Please change your password after your first successful login."
+    )
     try:
         send_email(email, subject, body_html)
     except Exception as e:
@@ -308,6 +313,29 @@ def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     status_str = "Activated" if user.is_active else "Deactivated"
+    if user.is_active:
+        activated_at = ist_now().strftime("%d-%m-%Y %I:%M %p IST")
+        try:
+            send_email(
+                user.email,
+                "BKNR ERP - User Access Activated",
+                professional_email_html(
+                    title="Your BKNR ERP access is active",
+                    intro=f"Your user profile under {company.company_name} has been activated by your administrator.",
+                    content_html=f"""
+                      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-top:14px;">
+                        <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;width:36%;">Company ID</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;font-weight:700;">{company.company_code}</td></tr>
+                        <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{user.email}</td></tr>
+                      </table>
+                      <p style="margin:14px 0 0;color:#475569;font-size:14px;line-height:1.6;"><strong>Activated At:</strong> {activated_at}</p>
+                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in and continue your assigned ERP work.</p>
+                    """,
+                    note="If you did not expect this activation, please contact your company administrator."
+                )
+            )
+        except Exception as e:
+            print(f"USER ACTIVATION EMAIL ERROR: {e}")
+
     response = RedirectResponse(f"/admin/add_user?msg=User {status_str} Successfully", status_code=302)
     return apply_no_cache_headers(response)
 
