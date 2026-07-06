@@ -72,7 +72,15 @@ export default function AuthContainer({ handleLoginSuccess }) {
       if (res.ok) {
         handleLoginSuccess();
       } else {
-        setLoginError(data.detail || 'Invalid Credentials');
+        if (res.status === 403 && data.status === 'unverified') {
+          setRegEmailSuccess(email.trim().toLowerCase());
+          setLoginError('Email not verified. Redirecting to OTP verification...');
+          setTimeout(() => {
+            showBox('otp');
+          }, 2000);
+        } else {
+          setLoginError(data.detail || 'Invalid Credentials');
+        }
       }
     } catch (err) {
       setLoginError('Server connection failed.');
@@ -139,7 +147,12 @@ export default function AuthContainer({ handleLoginSuccess }) {
       });
       const data = await res.json();
       if (res.ok) {
-        showBox('password');
+        if (data.user_exists) {
+          alert("Email verified successfully! You can now log in.");
+          showBox('login');
+        } else {
+          showBox('password');
+        }
       } else {
         setOtpError(data.detail || 'Invalid OTP');
       }
