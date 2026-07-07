@@ -134,12 +134,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # PUBLIC URLS BYPASS
         if path in exact_paths or any(path.startswith(p) for p in prefix_paths):
-            # Maintenance mode check for login page (non-admin visitors)
+            # Maintenance check on login page — non-logged-in visitors see maintenance page
             if path == "/" and not request.session.get("email"):
                 try:
                     db = SessionLocal()
-                    from app.services.maintenance import is_maintenance_mode, get_maintenance_message
-                    if is_maintenance_mode(db):
+                    from app.services.maintenance import is_maintenance_active, get_maintenance_message
+                    if is_maintenance_active(db):
                         msg = get_maintenance_message(db)
                         db.close()
                         from fastapi.templating import Jinja2Templates as _J2T
@@ -158,6 +158,27 @@ class AuthMiddleware(BaseHTTPMiddleware):
         # LOGIN CHECK
         if not request.session.get("email"):
             return RedirectResponse("/", status_code=303)
+
+        # MAINTENANCE MODE CHECK (for logged-in users on protected routes)
+        try:
+            db = SessionLocal()
+            from app.services.maintenance import is_maintenance_active, can_bypass, get_maintenance_message
+            if is_maintenance_active(db):
+                role = request.session.get("role", "")
+                if not can_bypass(db, role):
+                    msg = get_maintenance_message(db)
+                    db.close()
+                    from fastapi.templating import Jinja2Templates as _J2T
+                    _t = _J2T(directory="app/templates")
+                    return _t.TemplateResponse(
+                        request=request,
+                        name="maintenance.html",
+                        context={"message": msg},
+                        status_code=503,
+                    )
+            db.close()
+        except Exception:
+            pass
 
         # SINGLE ACTIVE SESSION CHECK
         session_id = request.session.get("session_id")
@@ -522,6 +543,83 @@ async def home_page(request: Request):
 
 @application.get("/health")
 def health():
-    return {"status": "ok", "service": "BKNR_ERP"} # Reload Trigger 8
+    return {"status": "ok", "service": "BKNR_ERP"}  # Reload Trigger 8
+
+
+@application.get("/api/version")
+def api_version():
+    """
+    Returns current deployed version.
+    Used by release.sh health check after deploy.
+    Public endpoint — no auth required.
+    """
+    db = SessionLocal()
+    try:
+        from app.database.models.system_settings import SystemVersion
+        current = db.query(SystemVersion).filter(SystemVersion.is_current == True).first()
+        history = db.query(SystemVersion).order_by(SystemVersion.id.desc()).limit(5).all()
+        return {
+            "version": current.version if current else "unknown",
+            "release_date": current.release_date.isoformat() if current and current.release_date else None,
+            "description": current.description if current else None,
+            "history": [
+                {"version": v.version, "release_date": v.release_date.isoformat() if v.release_date else None,
+                 "description": v.description, "is_current": v.is_current}
+                for v in history
+            ],
+            "environment": ENVIRONMENT,
+            "service": "BKNR_ERP",
+        }
+    except Exception as e:
+        logger.error("api/version error: %s", e)
+        return {"version": "unknown", "environment": ENVIRONMENT, "service": "BKNR_ERP"}
+    finally:
+        db.close()
+
+
+@application.post("/admin/version/record")
+def record_version(request: Request, payload: dict = Body(default={})):
+    """
+    Record a new release version in system_versions table.
+    Called by release.sh after successful deploy.
+    Requires admin role.
+    """
+    if request.session.get("role") not in ("admin", "super_admin"):
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+    version = payload.get("version", "").strip()
+    description = payload.get("description", "")
+    if not version:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="version required")
+
+    db = SessionLocal()
+    try:
+        from app.database.models.system_settings import SystemVersion
+        # Mark all existing versions as not current
+        db.query(SystemVersion).update({"is_current": False})
+        # Insert new version
+        existing = db.query(SystemVersion).filter(SystemVersion.version == version).first()
+        if existing:
+            existing.is_current = True
+            existing.description = description
+            existing.released_by = request.session.get("email", "admin")
+        else:
+            db.add(SystemVersion(
+                version=version,
+                description=description,
+                released_by=request.session.get("email", "admin"),
+                is_current=True,
+            ))
+        db.commit()
+        return {"status": "ok", "version": version}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "detail": str(e)}
+    finally:
+        db.close()
+
+
 # ASGI entrypoint for Render
 app = application
