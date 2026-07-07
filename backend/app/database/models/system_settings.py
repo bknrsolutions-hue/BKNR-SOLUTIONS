@@ -37,3 +37,31 @@ class SystemVersion(Base):
 
     def __repr__(self):
         return f"<SystemVersion v{self.version} current={self.is_current}>"
+
+
+class DeploymentAuditLog(Base):
+    """
+    Immutable audit log — one row per deployment-related action.
+    Records: release, maintenance toggle, lock acquire/release.
+
+    Example row:
+        action      = "release"
+        version     = "1.2.3"
+        actor       = "admin@bknr.in"
+        git_commit  = "9c8ab32"
+        result      = "success"
+        detail      = "Deploy confirmed via /api/version"
+    """
+    __tablename__ = "deployment_audit_log"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    timestamp  = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    action     = Column(String(50),  nullable=False)   # "release" | "maintenance_on" | "maintenance_off" | "lock_acquire" | "lock_release"
+    version    = Column(String(20),  nullable=True)    # "1.2.3"
+    actor      = Column(String(200), nullable=True)    # email
+    git_commit = Column(String(40),  nullable=True)    # short SHA
+    result     = Column(String(20),  nullable=True)    # "success" | "failure" | "rollback"
+    detail     = Column(Text,        nullable=True)    # free-text notes
+
+    def __repr__(self):
+        return f"<AuditLog [{self.action}] v{self.version} by {self.actor} → {self.result}>"

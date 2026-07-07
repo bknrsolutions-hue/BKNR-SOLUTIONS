@@ -16,14 +16,16 @@ class FeatureFlag(Base):
     """Global feature flag — applies to all tenants unless overridden."""
     __tablename__ = "feature_flags"
 
-    flag_key = Column(String(100), primary_key=True)          # e.g. "new_recon_table"
-    description = Column(Text, nullable=True)                  # human-readable description
-    is_enabled = Column(Boolean, default=False, nullable=False) # global default
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    flag_key     = Column(String(100), primary_key=True)           # e.g. "new_recon_table"
+    description  = Column(Text, nullable=True)                     # human-readable description
+    is_enabled   = Column(Boolean, default=False, nullable=False)  # global default
+    introduced_in = Column(String(20), nullable=True)              # e.g. "1.0.2" — version when flag was added
+    removed_in    = Column(String(20), nullable=True)              # e.g. "2.0.0" — version when feature was retired
+    created_at   = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at   = Column(DateTime(timezone=True), onupdate=func.now())
 
     def __repr__(self):
-        return f"<FeatureFlag {self.flag_key}={self.is_enabled}>"
+        return f"<FeatureFlag {self.flag_key}={self.is_enabled} introduced={self.introduced_in}>"
 
 
 class TenantFeatureAccess(Base):

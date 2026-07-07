@@ -129,8 +129,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        exact_paths = ["/", "/health", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
+        exact_paths = ["/", "/health", "/health/live", "/health/ready", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
         prefix_paths = ["/auth/", "/static/", "/create-all", "/admin/maintenance"]
+
+        # Check deployment token header bypass
+        deploy_token = request.headers.get("X-Deploy-Token")
+        expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
+        is_deploy_call = bool(
+            deploy_token and deploy_token == expected_token
+            and (path.startswith("/admin/deploy") or path == "/admin/version/record" or path.startswith("/admin/maintenance"))
+        )
+
+        if is_deploy_call:
+            return await call_next(request)
 
         # PUBLIC URLS BYPASS
         if path in exact_paths or any(path.startswith(p) for p in prefix_paths):
@@ -309,6 +320,7 @@ from app.routers.advanced_seafood_router import router as advanced_seafood_route
 from app.routers.export_documents import router as export_documents_router
 from app.routers.admin_feature_flags import router as feature_flags_router
 from app.routers.admin_maintenance import router as maintenance_router
+from app.routers.admin_deploy import router as deploy_router
 
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
@@ -339,6 +351,7 @@ application.include_router(advanced_seafood_router, prefix="/api")
 application.include_router(export_documents_router, prefix="/export_documents")
 application.include_router(feature_flags_router)
 application.include_router(maintenance_router)
+application.include_router(deploy_router)
 
 
 # =====================================================
@@ -542,8 +555,74 @@ async def home_page(request: Request):
 
 
 @application.get("/health")
-def health():
-    return {"status": "ok", "service": "BKNR_ERP"}  # Reload Trigger 8
+@application.get("/health/live")
+def health_live():
+    """Liveness check - is server running?"""
+    return {"status": "alive", "service": "BKNR_ERP"}
+
+
+@application.get("/health/ready")
+def health_ready():
+    """
+    Readiness check - checks backend dependencies like Database, Redis and Storage.
+    """
+    status = {
+        "status": "ready",
+        "database": "down",
+        "redis": "skipped",
+        "storage": "ok",
+        "service": "BKNR_ERP",
+    }
+    healthy = True
+
+    # 1. Database Check
+    db = None
+    try:
+        db = SessionLocal()
+        from sqlalchemy import text
+        db.execute(text("SELECT 1"))
+        status["database"] = "ok"
+    except Exception as e:
+        logger.error("Readiness check: database check failed: %s", e)
+        status["database"] = "down"
+        healthy = False
+    finally:
+        if db:
+            db.close()
+
+    # 2. Redis Check
+    try:
+        from app.services.cache import _client
+        client = _client()
+        if client:
+            client.ping()
+            status["redis"] = "ok"
+    except Exception as e:
+        logger.error("Readiness check: redis check failed: %s", e)
+        status["redis"] = "down"
+        healthy = False
+
+    # 3. Storage Check
+    try:
+        uploads_dir = "uploads"
+        if not os.path.exists(uploads_dir):
+            os.makedirs(uploads_dir, exist_ok=True)
+        # Test writeability
+        test_file = os.path.join(uploads_dir, ".health_test")
+        with open(test_file, "w") as f:
+            f.write("test")
+        os.remove(test_file)
+        status["storage"] = "ok"
+    except Exception as e:
+        logger.error("Readiness check: storage check failed: %s", e)
+        status["storage"] = "down"
+        healthy = False
+
+    if not healthy:
+        status["status"] = "not_ready"
+        return JSONResponse(status, status_code=503)
+
+    return status
 
 
 @application.get("/api/version")
@@ -584,7 +663,11 @@ def record_version(request: Request, payload: dict = Body(default={})):
     Called by release.sh after successful deploy.
     Requires admin role.
     """
-    if request.session.get("role") not in ("admin", "super_admin"):
+    deploy_token = request.headers.get("X-Deploy-Token")
+    expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
+    is_deploy_call = bool(deploy_token and deploy_token == expected_token)
+
+    if not is_deploy_call and request.session.get("role") not in ("admin", "super_admin"):
         from fastapi import HTTPException
         raise HTTPException(status_code=403, detail="Admin access required")
 
@@ -595,8 +678,10 @@ def record_version(request: Request, payload: dict = Body(default={})):
         raise HTTPException(status_code=400, detail="version required")
 
     db = SessionLocal()
+    actor = request.headers.get("X-Deploy-Actor", "release_script") if is_deploy_call else request.session.get("email", "admin")
     try:
         from app.database.models.system_settings import SystemVersion
+        from app.services.deployment import audit
         # Mark all existing versions as not current
         db.query(SystemVersion).update({"is_current": False})
         # Insert new version
@@ -604,14 +689,16 @@ def record_version(request: Request, payload: dict = Body(default={})):
         if existing:
             existing.is_current = True
             existing.description = description
-            existing.released_by = request.session.get("email", "admin")
+            existing.released_by = actor
         else:
             db.add(SystemVersion(
                 version=version,
                 description=description,
-                released_by=request.session.get("email", "admin"),
+                released_by=actor,
                 is_current=True,
             ))
+        # Log version record action to deployment audit log
+        audit(db, action="release", actor=actor, version=version, result="success", detail=description)
         db.commit()
         return {"status": "ok", "version": version}
     except Exception as e:
