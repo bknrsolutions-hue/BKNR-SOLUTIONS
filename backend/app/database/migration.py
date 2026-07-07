@@ -54,6 +54,16 @@ TABLE_COLUMNS = {
 def run_migration():
     print("Starting database schema migration...")
     
+    # Auto-create all metadata tables (e.g. system_settings, feature_flags, etc) if they do not exist
+    try:
+        import app.database.models.feature_flags
+        import app.database.models.system_settings
+        from app.database import Base
+        Base.metadata.create_all(bind=engine)
+        print("  ✔ Table creation check: completed successfully.")
+    except Exception as e:
+        print(f"  ❌ Error checking/creating tables: {e}")
+
     with engine.begin() as conn:
         for table in TABLES:
             print(f"Checking table: {table}")
