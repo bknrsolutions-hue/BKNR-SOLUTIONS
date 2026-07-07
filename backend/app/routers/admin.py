@@ -359,3 +359,43 @@ def dashboard_analytics_view(request: Request, current_session: dict = Depends(c
         context={"company_code": current_session.get("company_code")}
     )
     return apply_no_cache_headers(response)
+
+
+@router.get("/system_settings", response_class=HTMLResponse)
+def system_settings_view(
+    request: Request, 
+    current_session: dict = Depends(check_dashboard_access), 
+    db: Session = Depends(get_db)
+):
+    logged_role = request.session.get("role")
+    if logged_role not in ("admin", "super_admin"):
+        return RedirectResponse("/home?msg=Access Denied", status_code=302)
+
+    from app.services.maintenance import get_maintenance_level, get_maintenance_message
+    from app.services.deployment import get_lock_status, get_audit_log
+    from app.database.models.feature_flags import FeatureFlag, TenantFeatureAccess
+
+    m_level = get_maintenance_level(db)
+    m_msg = get_maintenance_message(db)
+    lock_state = get_lock_status(db)
+    audit_logs = get_audit_log(db, limit=20)
+    
+    # Feature Flags
+    flags = db.query(FeatureFlag).all()
+    tenant_overrides = db.query(TenantFeatureAccess).all()
+
+    response = templates.TemplateResponse(
+        request=request,
+        name="admin/system_settings.html",
+        context={
+            "request": request,
+            "company_code": current_session.get("company_code"),
+            "maintenance_level": m_level,
+            "maintenance_message": m_msg,
+            "lock_status": lock_state,
+            "audit_logs": audit_logs,
+            "feature_flags": flags,
+            "tenant_overrides": tenant_overrides,
+        }
+    )
+    return apply_no_cache_headers(response)
