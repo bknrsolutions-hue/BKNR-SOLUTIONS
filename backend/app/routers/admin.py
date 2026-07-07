@@ -367,8 +367,8 @@ def system_settings_view(
     current_session: dict = Depends(check_dashboard_access), 
     db: Session = Depends(get_db)
 ):
-    logged_role = request.session.get("role")
-    if logged_role not in ("admin", "super_admin"):
+    logged_email = request.session.get("email")
+    if logged_email != "bknr.solutions@gmail.com":
         return RedirectResponse("/home?msg=Access Denied", status_code=302)
 
     from app.services.maintenance import get_maintenance_level, get_maintenance_message
