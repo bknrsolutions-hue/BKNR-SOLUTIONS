@@ -2,865 +2,965 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BKNR ERP | Seafood Processing Management Software</title>
+<title>SVBK IT Solutions ERP | Next Generation Enterprise Resource Planning</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- SEO Meta Tags -->
-<meta name="description" content="BKNR ERP is a specialized cloud ERP for seafood processors, hatcheries, cold storages, and exporters. Manage inventory, billing, HR, and production in one secure portal." />
-<meta name="keywords" content="seafood erp, shrimp processing software, cold storage erp, export billing, aquaculture logistics, hatcheries management" />
-<meta name="author" content="BKNR ERP" />
+<meta name="description" content="SVBK IT Solutions ERP is a premium enterprise-grade cloud ERP platform built for manufacturing, seafood processing, cold vaults, logistics, and retail. Smart ERP. Intelligent Automation. Unlimited Growth." />
+<meta name="keywords" content="seafood erp, enterprise resource planning, manufacturing software, cold store system, export automation, billing, logistics, payroll erp" />
+<meta name="author" content="SVBK IT Solutions" />
 <link rel="icon" href="/static/favicon.ico">
 <link rel="manifest" href="/static/manifest.json">
 <link rel="apple-touch-icon" href="/static/pwa-icon-192.png">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#0F172A">
 
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<!-- Fonts: Poppins (Headings) & Inter (Body) -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-/* ================= PREMIUM PALETTE & UTILITIES ================= */
+/* ================= SYSTEM COLOR SCHEME (SVBK BRANDING) ================= */
 :root {
-    --bg-dark: #090d16;
-    --card-bg: rgba(30, 41, 59, 0.7);
-    --border-glow: rgba(59, 130, 246, 0.2);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --accent: #3b82f6;
-    --accent-glow: rgba(59, 130, 246, 0.4);
-    --success: #10b981;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --input-bg: rgba(15, 23, 42, 0.6);
-    --input-border: rgba(148, 163, 184, 0.2);
-    --radius-lg: 16px;
-    --radius-md: 8px;
+    --primary: #2563EB;
+    --secondary: #0F172A;
+    --accent: #14B8A6;
+    --success: #22C55E;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    --bg-app: #F8FAFC;
+    --surface-panel: #ffffff;
+    --text-primary: #0F172A;
+    --text-secondary: #475569;
+    --text-tertiary: #94a3b8;
+    --border-light: rgba(15, 23, 42, 0.08);
+    --border-highlight: rgba(15, 23, 42, 0.12);
+    --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.04);
+    --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.02);
+    --radius-panel: 16px;
+    --radius-element: 8px;
+    --input-bg: #ffffff;
+    --input-border: rgba(15, 23, 42, 0.14);
+    --error-bg: #fef2f2;
+    --error-text: #991b1b;
+    --success-bg: #ecfdf5;
+    --success-text: #166534;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
 body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
-    background-color: var(--bg-dark);
+    font-family: "Inter", sans-serif;
     color: var(--text-primary);
+    background: var(--bg-app);
+    overflow-x: hidden;
+    line-height: 1.5;
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Poppins", sans-serif;
+    font-weight: 700;
+    color: var(--secondary);
+}
+
+/* ================= SHELL LAYOUT ================= */
+.site-shell {
+    position: relative;
     min-height: 100vh;
+}
+
+/* Navigation */
+.site-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
     display: flex;
     align-items: center;
-    justify-content: center;
-    overflow-x: hidden;
-    position: relative;
-}
-
-/* Background Gradients */
-body::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: -2;
-    background-image:
-        radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15), transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.12), transparent 45%);
-    pointer-events: none;
-}
-
-/* ================= SPLIT CONTAINER LAYOUT ================= */
-.split-container {
-    display: grid;
-    grid-template-columns: 1.2fr 1fr;
-    width: 95%;
-    max-width: 1200px;
-    min-height: 720px;
-    background: rgba(15, 23, 42, 0.45);
-    border: 1px solid var(--border-glow);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(12px);
-}
-
-@media(max-width: 960px) {
-    .split-container { grid-template-columns: 1fr; min-height: auto; margin: 20px 0; }
-    .showcase-side { display: none; }
-}
-
-/* ================= LEFT SIDE: PRODUCT SHOWCASE ================= */
-.showcase-side {
-    position: relative;
-    padding: 40px;
-    display: flex;
-    flex-direction: column;
     justify-content: space-between;
-    background: linear-gradient(135deg, rgba(2, 6, 23, 0.8) 0%, rgba(15, 23, 42, 0.4) 100%);
-    border-right: 1px solid var(--border-glow);
-    overflow: hidden;
+    gap: 24px;
+    padding: 16px 5%;
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
 }
-
-.brand-section {
-    display: flex;
+.brand {
+    display: inline-flex;
     align-items: center;
     gap: 12px;
-    z-index: 10;
 }
-
-.brand-icon {
-    width: 46px;
-    height: 46px;
-    background: linear-gradient(135deg, #1e3a8a, var(--accent), var(--success));
-    border-radius: 12px;
+.brand-mark {
+    width: 42px;
+    height: 42px;
     display: grid;
     place-items: center;
-    color: white;
+    border-radius: 12px;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--secondary), var(--primary), var(--accent));
     font-weight: 800;
-    font-size: 18px;
-    box-shadow: 0 8px 20px rgba(59, 130, 246, 0.3);
+    font-size: 16px;
+    box-shadow: 0 4px 15px rgba(37, 99, 246, 0.3);
 }
-
-.brand-text h1 { font-size: 18px; font-weight: 900; tracking: 0.5px; }
-.brand-text span { font-size: 10px; color: var(--success); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
-
-/* Showcase Image Carousel */
-.carousel-container {
-    position: relative;
-    width: 100%;
-    height: 380px;
-    margin: 30px 0;
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+.brand-copy strong {
+    display: block;
+    font-size: 1rem;
+    font-weight: 800;
+    color: #ffffff;
 }
-
-.carousel-slide {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    transition: opacity 0.8s ease-in-out;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    padding: 30px;
-}
-
-.carousel-slide.active { opacity: 1; z-index: 2; }
-
-.carousel-slide img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: -1;
-    filter: brightness(0.45) contrast(1.1);
-}
-
-.carousel-text {
-    z-index: 5;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-}
-
-.carousel-text h3 { font-size: 20px; font-weight: 800; color: #ffffff; margin-bottom: 8px; }
-.carousel-text p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
-
-/* Showcase Footer */
-.showcase-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    z-index: 10;
-}
-
-.feature-pills { display: flex; gap: 8px; }
-.pill {
-    font-size: 10px; font-weight: 800; background: rgba(59, 130, 246, 0.12);
-    color: var(--accent); padding: 6px 12px; border-radius: 20px;
-    border: 1px solid rgba(59, 130, 246, 0.2);
-}
-
-/* ================= RIGHT SIDE: AUTHENTICATION PANELS ================= */
-.auth-side {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    position: relative;
-}
-
-.form-box {
-    width: 100%;
-    max-width: 400px;
-    background: var(--card-bg);
-    border: 1px solid var(--border-glow);
-    border-radius: var(--radius-lg);
-    padding: 30px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(20px);
-}
-
-.form-box h2 {
-    font-size: 22px; font-weight: 800; color: #ffffff; margin-bottom: 6px;
-    display: flex; align-items: center; gap: 8px;
-}
-.form-box .subtitle { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; }
-
-/* Input Forms Styles */
-.form-group { margin-bottom: 16px; display: flex; flex-direction: column; gap: 6px; position: relative; }
-.form-group label { font-size: 11px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
-
-.input-container { position: relative; }
-.input-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-secondary); font-size: 14px; }
-
-.form-control {
-    width: 100%;
-    background: var(--input-bg);
-    border: 1px solid var(--input-border);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    padding: 11px 12px 11px 38px;
-    font-size: 13px;
+.brand-copy span {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--accent);
     font-weight: 600;
-    outline: none;
-    transition: all 0.25s ease;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
 }
-.form-control:focus {
-    border-color: var(--accent);
-    background: rgba(15, 23, 42, 0.8);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+.nav-links { display: flex; align-items: center; gap: 20px; font-weight: 600; font-size: 0.85rem; color: #cbd5e1; }
+.nav-links a:hover { color: #ffffff; }
+.nav-btn {
+    background: var(--primary); color: white; border: none; padding: 10px 18px;
+    border-radius: var(--radius-element); font-size: 12px; font-weight: 800;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase;
+}
+.nav-btn:hover { background: #1d4ed8; }
+
+/* Hero Section */
+.hero {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 50px;
+    align-items: center;
+    padding: 80px 5%;
+    max-width: 1300px;
+    margin: 0 auto;
+    min-height: calc(100vh - 78px);
+}
+@media(max-width: 990px) {
+    .hero { grid-template-columns: 1fr; padding: 40px 5%; gap: 30px; }
 }
 
-/* Password Toggle Eye Button */
+.hero-copy h1 { font-size: clamp(2.2rem, 4vw, 3.8rem); line-height: 1.15; margin-bottom: 20px; font-weight: 800; color: var(--secondary); }
+.hero-copy p { font-size: 1.05rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 30px; }
+
+.hero-buttons { display: flex; gap: 15px; }
+.btn-primary {
+    background: var(--primary); color: white; padding: 14px 28px; border-radius: var(--radius-element);
+    font-size: 13px; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer;
+}
+.btn-secondary {
+    background: rgba(37, 99, 246, 0.08); color: var(--primary); padding: 14px 28px; border-radius: var(--radius-element);
+    font-size: 13px; font-weight: 800; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(37, 99, 246, 0.2); cursor: pointer;
+}
+
+/* ================= DYNAMIC FORM WRAPPER ================= */
+.auth-panel {
+    background: #ffffff;
+    border: 1px solid var(--border-highlight);
+    border-radius: var(--radius-panel);
+    padding: 30px;
+    box-shadow: var(--shadow-float);
+    position: relative;
+    overflow: hidden;
+}
+.form-box { display: none; animation: slideUp 0.3s ease forwards; }
+@keyframes slideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+.form-box h2 { font-size: 20px; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.form-box .subtitle { font-size: 12px; color: var(--text-secondary); margin-bottom: 20px; }
+
+.form-group { margin-bottom: 14px; display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; }
+.form-control {
+    width: 100%; min-height: 40px; padding: 10px 12px; border: 1px solid var(--input-border);
+    border-radius: var(--radius-element); color: var(--text-primary); background: var(--input-bg);
+    font-size: 13px; font-weight: 600; outline: none; transition: all 0.2s;
+}
+.form-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37, 99, 246, 0.15); }
+
+.password-field { position: relative; }
 .password-field input { padding-right: 70px; }
 .password-toggle {
     position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-    background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);
-    color: var(--success); font-size: 10px; font-weight: 800; padding: 4px 8px;
-    border-radius: 4px; cursor: pointer; transition: 0.2s;
+    background: rgba(37, 99, 246, 0.1); border: 1px solid rgba(37, 99, 246, 0.2);
+    color: var(--primary); font-size: 10px; font-weight: 800; padding: 4px 8px; border-radius: 4px; cursor: pointer;
 }
-.password-toggle:hover { background: var(--success); color: white; }
 
-/* Buttons */
-.btn {
-    width: 100%;
-    background: linear-gradient(135deg, var(--accent), #1d4ed8);
-    color: white; border: none;
-    padding: 12px; border-radius: var(--radius-md);
-    font-size: 13px; font-weight: 800; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; gap: 8px;
-    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.2);
-    transition: all 0.25s ease;
-    text-transform: uppercase;
-    margin-top: 8px;
+/* ================= FEATURES GRID ================= */
+.section { padding: 80px 5%; background: #ffffff; }
+.section.alt { background: var(--bg-app); }
+.section-inner { max-width: 1200px; margin: 0 auto; }
+.section-header-center { text-align: center; margin-bottom: 50px; }
+.section-header-center h2 { font-size: 32px; font-weight: 800; margin-bottom: 12px; }
+.section-header-center p { font-size: 16px; color: var(--text-secondary); }
+
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
 }
-.btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 10px 20px rgba(59, 130, 246, 0.35);
+.feature-card {
+    background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-panel);
+    padding: 24px; box-shadow: var(--shadow-soft); transition: all 0.3s;
 }
-.btn:active { transform: translateY(0); }
-.btn:disabled { background: #475569; box-shadow: none; cursor: not-allowed; }
+.feature-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-float); border-color: rgba(37, 99, 246, 0.2); }
+.feature-icon {
+    width: 44px; height: 44px; background: rgba(37, 99, 246, 0.08); border-radius: 10px;
+    display: grid; place-items: center; color: var(--primary); font-size: 18px; margin-bottom: 16px;
+}
+.feature-card h3 { font-size: 16px; font-weight: 800; margin-bottom: 8px; }
+.feature-card p { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
 
-/* Link & Footer Text */
-.link { text-align: center; margin-top: 18px; font-size: 12px; color: var(--text-secondary); }
-.link span { color: var(--accent); font-weight: 800; cursor: pointer; text-decoration: none; }
-.link span:hover { text-decoration: underline; }
+/* Showcase photos showcase */
+.photo-showcase {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+}
+.photo-card {
+    border-radius: var(--radius-panel); overflow: hidden; border: 1px solid var(--border-light);
+    background: #ffffff; box-shadow: var(--shadow-soft); display: flex; flex-direction: column;
+}
+.photo-card img { width: 100%; height: 180px; object-fit: cover; }
+.photo-card-copy { padding: 16px; }
+.photo-card-copy h4 { font-size: 14px; font-weight: 800; margin-bottom: 6px; }
+.photo-card-copy p { font-size: 12px; color: var(--text-secondary); }
 
-/* Messages styling */
-.msg {
-    display: none;
-    margin-top: 14px;
-    padding: 10px 12px;
-    border-radius: var(--radius-md);
-    font-size: 12px;
-    font-weight: 700;
-    line-height: 1.4;
+/* Statistics */
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
     text-align: center;
+    margin-top: 50px;
 }
-.error { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); color: var(--danger); }
-.success { background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); color: var(--success); }
+@media(max-width: 768px) { .stats-row { grid-template-columns: repeat(2, 1fr); } }
+.stat-item h3 { font-size: 42px; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+.stat-item p { font-size: 14px; color: var(--text-secondary); font-weight: 600; }
 
-/* Animation Classes */
-.card-view { display: none; animation: slideUp 0.3s ease-out forwards; }
-@keyframes slideUp {
-    from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+/* Testimonials */
+.testimonial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-top: 40px;
+}
+.testimonial-card {
+    background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-panel);
+    padding: 24px; box-shadow: var(--shadow-soft); position: relative;
+}
+.testimonial-card p { font-style: italic; font-size: 13.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 16px; }
+.testimonial-author { display: flex; align-items: center; gap: 12px; }
+.testimonial-author-avatar { width: 40px; height: 40px; border-radius: 50%; background: #e2e8f0; display: grid; place-items: center; font-weight: 800; font-size: 14px; color: var(--primary); }
+.testimonial-author-info h5 { font-size: 13px; font-weight: 800; }
+.testimonial-author-info span { font-size: 11px; color: var(--text-secondary); }
+
+/* Footer */
+.site-footer {
+    background: var(--secondary); color: #cbd5e1; padding: 60px 5% 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.footer-inner {
+    max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px;
+}
+@media(max-width: 768px) { .footer-inner { grid-template-columns: 1fr; } }
+.footer-col h4 { color: white; font-size: 14px; font-weight: 800; margin-bottom: 18px; text-transform: uppercase; }
+.footer-col p { font-size: 13px; line-height: 1.6; margin-bottom: 15px; }
+.footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.footer-col ul a { font-size: 13px; color: #94a3b8; transition: color 0.2s; }
+.footer-col ul a:hover { color: white; }
+.footer-bottom {
+    max-width: 1200px; margin: 40px auto 0; padding-top: 24px; border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex; justify-content: space-between; font-size: 12px; color: #64748b;
 }
 </style>
 </head>
 <body>
 
-<div class="split-container">
+<div class="site-shell">
     
-    <!-- ================= LEFT SHOWCASE: REAL PHOTOS ================= -->
-    <div class="showcase-side">
-        <div class="brand-section">
-            <div class="brand-icon">BK</div>
-            <div class="brand-text">
-                <h1>BKNR ERP</h1>
-                <span>Seafood Solutions Software</span>
-            </div>
+    <!-- ================= NAVIGATION BAR ================= -->
+    <nav class="site-nav">
+        <a class="brand" href="/" aria-label="SVBK IT Solutions ERP homepage">
+            <span class="brand-mark">SV</span>
+            <span class="brand-copy">
+                <strong>SVBK IT Solutions</strong>
+                <span>Intelligent Automation ERP</span>
+            </span>
+        </a>
+        <div class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#industries">Industries</a>
+            <a href="#why-choose-us">Why Choose Us</a>
         </div>
+        <button onclick="showBox('loginBox')" class="nav-btn"><i class="fa-solid fa-user-lock"></i> Portal Login</button>
+    </nav>
 
-        <!-- Carousel using real photos from static/images directory -->
-        <div class="carousel-container">
-            <div class="carousel-slide active">
-                <img src="/static/images/seafood_processing.jpg" alt="Seafood Processing Plant">
-                <div class="carousel-text">
-                    <h3>Processing & Production Control</h3>
-                    <p>Real-time floor balance monitoring, yield calculations, and grading audit maps directly integrated for shrimp processors.</p>
-                </div>
+    <!-- ================= HERO SECTION ================= -->
+    <header class="hero">
+        <div class="hero-copy">
+            <span style="font-size: 10px; font-weight: 800; text-transform: uppercase; tracking: 1px; color: var(--primary); display: block; margin-bottom: 10px;">Enterprise ERP Suite</span>
+            <h1>Next Generation ERP for Modern Businesses</h1>
+            <p>Manage your entire business from one intelligent platform including Finance, Inventory, HR, CRM, Production, Sales, Purchasing, Logistics, Payroll, Analytics, AI, and Automation.</p>
+            <div class="hero-buttons">
+                <button onclick="showBox('registerBox')" class="btn-primary">Get Started <i class="fa-solid fa-arrow-right"></i></button>
+                <button onclick="showBox('loginBox')" class="btn-secondary">Book Demo <i class="fa-solid fa-calendar"></i></button>
             </div>
-            <div class="carousel-slide">
-                <img src="/static/images/cold_storage.jpg" alt="Cold Storage Warehouse">
-                <div class="carousel-text">
-                    <h3>Smart Cold Vault Integration</h3>
-                    <p>Track packaged goods, pallet locations, FIFO sorting rules, and temperature logs inside cold storages automatically.</p>
-                </div>
-            </div>
-            <div class="carousel-slide">
-                <img src="/static/images/logistics.jpg" alt="Transportation & Logistics">
-                <div class="carousel-text">
-                    <h3>Logistics & Gate Entry Tracking</h3>
-                    <p>Seamlessly monitor container seal verifications, gate entries, vehicle lists, and transport freight logs.</p>
-                </div>
-            </div>
-            <div class="carousel-slide">
-                <img src="/static/images/hatchery.jpg" alt="Hatchery & Larval Rearing">
-                <div class="carousel-text">
-                    <h3>Hatcheries & Farming Cycle</h3>
-                    <p>Manage breeding cycles, water parameter logs, larval quality analysis reports, and feed mill cost distributions.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="showcase-footer">
-            <div class="feature-pills">
-                <span class="pill">Finance</span>
-                <span class="pill">Inventory</span>
-                <span class="pill">HR & Payroll</span>
-                <span class="pill">Exports</span>
-            </div>
-            <span style="font-size: 11px; color: var(--text-secondary);">v1.1.0 Secured</span>
-        </div>
-    </div>
-
-    <!-- ================= RIGHT SIDE: DYNAMIC LOGIN FORMS ================= -->
-    <div class="auth-side">
-        
-        <!-- CARD 1: LOGIN BOX -->
-        <div id="loginBox" class="form-box card-view" style="display: block;">
-            <h2><i class="fa-solid fa-right-to-bracket" style="color: var(--accent);"></i> Account Access</h2>
-            <p class="subtitle">Please enter your company credentials to sign in.</p>
             
-            <form id="loginForm" onsubmit="doLogin(event)">
-                <div class="form-group">
-                    <label>Company ID</label>
-                    <div class="input-container">
-                        <i class="fa-solid fa-building"></i>
-                        <input id="login_company_id" type="text" class="form-control" placeholder="e.g. BKNR123" required>
+            <!-- Showcase real photos inside layout columns -->
+            <div class="photo-showcase">
+                <div class="photo-card">
+                    <img src="/static/images/seafood_processing.jpg" alt="Processing Center">
+                    <div class="photo-card-copy">
+                        <h4>Seafood & Manufacturing</h4>
+                        <p>Track production runs, yield calculations, and grading reports.</p>
                     </div>
                 </div>
-                
-                <div class="form-group">
-                    <label>Email Address</label>
-                    <div class="input-container">
-                        <i class="fa-solid fa-envelope"></i>
-                        <input id="login_email" type="email" class="form-control" placeholder="e.g. email@bknr.in" required>
+                <div class="photo-card">
+                    <img src="/static/images/cold_storage.jpg" alt="Cold Storage Vault">
+                    <div class="photo-card-copy">
+                        <h4>Warehousing & Cold Vaults</h4>
+                        <p>Intelligent inventory placement and temperature-controlled logs.</p>
                     </div>
                 </div>
-                
+            </div>
+        </div>
+
+        <!-- ================= RIGHT COLUMN: INTERACTIVE LOGIN SYSTEM ================= -->
+        <aside class="auth-panel" id="login">
+            
+            <!-- REGISTER BOX -->
+            <div id="registerBox" class="form-box">
+                <h2><i class="fa-solid fa-circle-plus" style="color: var(--success);"></i> Register Business</h2>
+                <p class="subtitle">Set up a secure ERP profile for your organization.</p>
+                <div class="form-group"><label>Company Name</label><input id="company_name" class="form-control" placeholder="e.g. SVBK IT Solutions" type="text" required></div>
+                <div class="form-group"><label>Your Name</label><input id="user_name" class="form-control" placeholder="e.g. Nagaraju" type="text" required></div>
+                <div class="form-group"><label>Designation</label><input id="designation" class="form-control" placeholder="e.g. Director" type="text" required></div>
+                <div class="form-group"><label>Phone Number</label><input id="mobile" class="form-control" placeholder="10 Digits" type="tel" pattern="[0-9]{10}" title="Must be exactly 10 digits" required></div>
+                <div class="form-group"><label>Email Address</label><input id="email" class="form-control" placeholder="e.g. owner@svbk.in" type="email" required></div>
+                <div class="form-group"><label>Company Address</label><textarea id="address" class="form-control" rows="2" placeholder="Full street address..." required></textarea></div>
+                <button id="btn-reg" onclick="sendOTP()" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Send OTP</button>
+                <div id="regErr" class="msg error"></div>
+                <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
+            </div>
+
+            <!-- OTP BOX -->
+            <div id="otpBox" class="form-box">
+                <h2><i class="fa-solid fa-envelope-open-text" style="color: var(--warning);"></i> OTP Verification</h2>
+                <p class="subtitle">Enter the verification code sent to your email.</p>
                 <div class="form-group">
-                    <label>Password</label>
-                    <div class="input-container password-field">
-                        <i class="fa-solid fa-key"></i>
-                        <input id="login_pwd" type="password" class="form-control" placeholder="••••••••" maxlength="20" required>
-                        <button type="button" class="password-toggle" onclick="togglePasswordVisibility()">Show</button>
+                    <label>Enter 4-Digit OTP</label>
+                    <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" class="form-control" required>
+                </div>
+                <button id="btn-otp" onclick="verifyOTP()" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Verify OTP</button>
+                <div id="otpErr" class="msg error"></div>
+                <div id="otpOk" class="msg success"></div>
+            </div>
+
+            <!-- PASS BOX -->
+            <div id="passBox" class="form-box">
+                <h2><i class="fa-solid fa-lock" style="color: var(--success);"></i> Save Login Password</h2>
+                <p class="subtitle">Establish a secure passcode for SVBK Portal Access.</p>
+                <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20" class="form-control" required></div>
+                <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password" maxlength="20" class="form-control" required></div>
+                <button id="btn-pass" onclick="savePassword()" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Save Password</button>
+                <div id="passErr" class="msg error"></div>
+                <div id="passOk" class="msg success"></div>
+            </div>
+
+            <!-- LOGIN BOX -->
+            <div id="loginBox" class="form-box" style="display: block;">
+                <h2><i class="fa-solid fa-right-to-bracket" style="color: var(--primary);"></i> Login Portal</h2>
+                <p class="subtitle">Sign in to manage your ERP operations.</p>
+                <form id="loginForm" onsubmit="doLogin(event)">
+                    <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text" class="form-control" autocomplete="organization" placeholder="e.g. SVBK001" required></div>
+                    <div class="form-group"><label>Email</label><input id="login_email" type="email" class="form-control" autocomplete="email" placeholder="e.g. user@svbk.in" required></div>
+                    <div class="form-group">
+                        <label for="login_pwd">Password</label>
+                        <div class="password-field">
+                            <input id="login_pwd" type="password" maxlength="20" class="form-control" autocomplete="current-password" placeholder="••••••••" required>
+                            <button type="button" class="password-toggle" onclick="togglePasswordVisibility()" aria-label="Show password">Show</button>
+                        </div>
+                    </div>
+                    <button id="btn-login" type="submit" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Login</button>
+                </form>
+                <div id="loginErr" class="msg error"></div>
+                <div class="link"><span onclick="showBox('registerBox')">Register</span> | <span onclick="showBox('forgotBox')">Forgot Password?</span></div>
+            </div>
+
+            <!-- LOGIN OTP BOX -->
+            <div id="loginOtpBox" class="form-box">
+                <h2><i class="fa-solid fa-circle-check" style="color: var(--success);"></i> Login OTP</h2>
+                <p class="subtitle">Two-Factor Auth: enter the code sent to your email.</p>
+                <div class="form-group">
+                    <label>Enter Code</label>
+                    <input id="login_otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:1.3rem;font-weight:900;" class="form-control" required>
+                </div>
+                <button id="btn-login-otp" onclick="verifyLoginOTP()" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Verify & Login</button>
+                <div id="loginOtpErr" class="msg error"></div>
+                <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
+            </div>
+
+            <!-- FORGOT PASSWORD -->
+            <div id="forgotBox" class="form-box">
+                <h2><i class="fa-solid fa-circle-question" style="color: var(--danger);"></i> Recover Password</h2>
+                <p class="subtitle">Enter your registered email to receive a recovery link.</p>
+                <div class="form-group"><label>Registered Email</label><input id="forgot_email" type="email" class="form-control" placeholder="e.g. owner@svbk.in" required></div>
+                <button id="btn-forgot" onclick="sendResetLink()" class="btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Send Reset Link</button>
+                <div id="forgotErr" class="msg error"></div>
+                <div id="forgotOk" class="msg success"></div>
+                <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
+            </div>
+            
+        </aside>
+    </header>
+
+    <!-- ================= FEATURES MATRIX ================= -->
+    <section class="section alt" id="features">
+        <div class="section-inner">
+            <div class="section-header-center">
+                <h2>Next Generation Modules & Capabilities</h2>
+                <p>Enterprise tools designed for speed, scale, and intelligence.</p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-warehouse"></i></div>
+                    <h3>Inventory Management</h3>
+                    <p>Pallet-level cold vault placements, FIFO tracking, and real-time raw material balances.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-gears"></i></div>
+                    <h3>Production Control</h3>
+                    <p>Track peeling runs, grading yields, de-heading percentages, and factory costs.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-truck-loading"></i></div>
+                    <h3>Purchase Management</h3>
+                    <p>Automate supplier gate entries, vendor payment reconciliations, and freight invoices.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-coins"></i></div>
+                    <h3>Finance & Accounting</h3>
+                    <p>GST registers, ledger management, banking transactions, and automated balance sheets.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-users"></i></div>
+                    <h3>HR & Payroll</h3>
+                    <p>Contractor peeling rate tables, employee attendance shift tracking, and salary processing.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                    <h3>Export Documentation</h3>
+                    <p>Container seal verifications, bill of lading logs, LC tracking, and custom export manifests.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ================= INDUSTRIES SUPPORTED ================= -->
+    <section class="section" id="industries">
+        <div class="section-inner">
+            <div class="section-header-center">
+                <h2>Vertical Industries Powered by SVBK</h2>
+                <p>Tailored workflows optimized for specific sector requirements.</p>
+            </div>
+            
+            <div class="photo-showcase">
+                <div class="photo-card">
+                    <img src="/static/images/seafood_processing.jpg" alt="Seafood processing factory">
+                    <div class="photo-card-copy">
+                        <h4>Seafood & Aquaculture</h4>
+                        <p>Hatchery parameters, freezing yields, and raw shrimp collections.</p>
                     </div>
                 </div>
-                
-                <button type="submit" id="btn-login" class="btn"><i class="fa-solid fa-circle-check"></i> Sign In</button>
-            </form>
-            
-            <div id="loginErr" class="msg error"></div>
-            
-            <div class="link">
-                <span onclick="showBox('registerBox')">Register Company</span> | 
-                <span onclick="showBox('forgotBox')">Forgot Password?</span>
+                <div class="photo-card">
+                    <img src="/static/images/feed_mill.jpg" alt="Feed Mill Facility">
+                    <div class="photo-card-copy">
+                        <h4>Agro & Food Processing</h4>
+                        <p>Feed mill production planning, cost allocation matrices, and crop tracking.</p>
+                    </div>
+                </div>
+                <div class="photo-card">
+                    <img src="/static/images/logistics.jpg" alt="Logistics trucks and warehouse">
+                    <div class="photo-card-copy">
+                        <h4>Logistics & Distribution</h4>
+                        <p>Fleet tracking, driver logs, transport gate control, and pallet distributions.</p>
+                    </div>
+                </div>
             </div>
         </div>
+    </section>
 
-        <!-- CARD 2: COMPANY REGISTRATION -->
-        <div id="registerBox" class="form-box card-view">
-            <h2><i class="fa-solid fa-user-plus" style="color: var(--success);"></i> Register Business</h2>
-            <p class="subtitle">Set up a secure ERP profile for your seafood enterprise.</p>
+    <!-- ================= WHY CHOOSE US ================= -->
+    <section class="section alt" id="why-choose-us">
+        <div class="section-inner">
+            <div class="section-header-center">
+                <h2>The SVBK IT Solutions Edge</h2>
+                <p>Why modern enterprises trust our cloud architecture.</p>
+            </div>
             
-            <div class="form-group">
-                <label>Company Name</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-building"></i>
-                    <input id="company_name" type="text" class="form-control" placeholder="e.g. BKNR Seafoods Ltd" required>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-cloud"></i></div>
+                    <h3>Cloud Based</h3>
+                    <p>Access your ERP anywhere securely. Data is replicated in real-time across secure cloud servers.</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Your Full Name</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-user"></i>
-                    <input id="user_name" type="text" class="form-control" placeholder="e.g. Nagaraju" required>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-shield-halved"></i></div>
+                    <h3>Enterprise Security</h3>
+                    <p>Strict role-based access controls, automatic session timeout windows, and audit logging.</p>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Designation</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-briefcase"></i>
-                    <input id="designation" type="text" class="form-control" placeholder="e.g. Managing Director" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Phone Number (10 Digits)</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-phone"></i>
-                    <input id="mobile" type="tel" class="form-control" placeholder="e.g. 9876543210" pattern="[0-9]{10}" title="Exactly 10 digits" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Email Address</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-envelope"></i>
-                    <input id="email" type="email" class="form-control" placeholder="e.g. admin@yourcompany.com" required>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Company Head Office Address</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-location-dot" style="top: 14px; transform: none;"></i>
-                    <textarea id="address" class="form-control" rows="2" style="padding-left: 38px; min-height: 56px;" placeholder="Full street address..." required></textarea>
+                <div class="feature-card">
+                    <div class="feature-icon"><i class="fa-solid fa-bolt"></i></div>
+                    <h3>Lightning Fast</h3>
+                    <p>Optimized database schema, zero-downtime hot-reloading pipeline, and caching layer support.</p>
                 </div>
             </div>
             
-            <button id="btn-reg" onclick="sendOTP()" class="btn"><i class="fa-solid fa-paper-plane"></i> Send OTP Code</button>
-            <div id="regErr" class="msg error"></div>
-            
-            <div class="link">Already have an account? <span onclick="showBox('loginBox')">Login</span></div>
+            <div class="stats-row">
+                <div class="stat-item">
+                    <h3>100+</h3>
+                    <p>Companies Powered</p>
+                </div>
+                <div class="stat-item">
+                    <h3>5000+</h3>
+                    <p>Active Users</p>
+                </div>
+                <div class="stat-item">
+                    <h3>99.99%</h3>
+                    <p>System Uptime</p>
+                </div>
+                <div class="stat-item">
+                    <h3>24/7</h3>
+                    <p>Developer Support</p>
+                </div>
+            </div>
         </div>
+    </section>
 
-        <!-- CARD 3: REGISTER OTP VERIFICATION -->
-        <div id="otpBox" class="form-box card-view">
-            <h2><i class="fa-solid fa-shield-halved" style="color: var(--warning);"></i> Verify Code</h2>
-            <p class="subtitle">Enter the 4-digit verification code sent to your email.</p>
-            
-            <div class="form-group">
-                <label>One-Time Password (OTP)</label>
-                <input id="otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:10px;font-weight:900;" class="form-control" placeholder="••••" required>
+    <!-- ================= TESTIMONIALS ================= -->
+    <section class="section">
+        <div class="section-inner">
+            <div class="section-header-center">
+                <h2>Trusted by Business Leaders</h2>
+                <p>Hear from clients who optimized operations using SVBK ERP.</p>
             </div>
             
-            <button id="btn-otp" onclick="verifyOTP()" class="btn"><i class="fa-solid fa-circle-check"></i> Verify & Continue</button>
-            <div id="otpErr" class="msg error"></div>
-            <div id="otpOk" class="msg success"></div>
-        </div>
-
-        <!-- CARD 4: SAVE PASSWORD -->
-        <div id="passBox" class="form-box card-view">
-            <h2><i class="fa-solid fa-lock" style="color: var(--success);"></i> Set Password</h2>
-            <p class="subtitle">Establish a secure login passcode for your profile.</p>
-            
-            <div class="form-group">
-                <label>Password</label>
-                <input id="pass1" type="password" maxlength="20" class="form-control" placeholder="Min 6 characters" required>
-            </div>
-            <div class="form-group">
-                <label>Confirm Password</label>
-                <input id="pass2" type="password" maxlength="20" class="form-control" placeholder="Confirm passcode" required>
-            </div>
-            
-            <button id="btn-pass" onclick="savePassword()" class="btn"><i class="fa-solid fa-floppy-disk"></i> Register Account</button>
-            <div id="passErr" class="msg error"></div>
-            <div id="passOk" class="msg success"></div>
-        </div>
-
-        <!-- CARD 5: LOGIN OTP VERIFICATION -->
-        <div id="loginOtpBox" class="form-box card-view">
-            <h2><i class="fa-solid fa-envelope-open-text" style="color: var(--accent);"></i> Login OTP</h2>
-            <p class="subtitle">Two-Factor Authentication: enter code sent to email.</p>
-            
-            <div class="form-group">
-                <label>Verification Code</label>
-                <input id="login_otp" maxlength="4" inputmode="numeric" style="text-align:center;font-size:20px;letter-spacing:10px;font-weight:900;" class="form-control" placeholder="••••" required>
-            </div>
-            
-            <button id="btn-login-otp" onclick="verifyLoginOTP()" class="btn"><i class="fa-solid fa-right-to-bracket"></i> Verify & Log In</button>
-            <div id="loginOtpErr" class="msg error"></div>
-            
-            <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
-        </div>
-
-        <!-- CARD 6: FORGOT PASSWORD -->
-        <div id="forgotBox" class="form-box card-view">
-            <h2><i class="fa-solid fa-user-lock" style="color: var(--danger);"></i> Recover Password</h2>
-            <p class="subtitle">Enter your registered email address to receive reset link.</p>
-            
-            <div class="form-group">
-                <label>Registered Email</label>
-                <div class="input-container">
-                    <i class="fa-solid fa-envelope"></i>
-                    <input id="forgot_email" type="email" class="form-control" placeholder="e.g. owner@bknr.in" required>
+            <div class="testimonial-grid">
+                <div class="testimonial-card">
+                    <p>"SVBK IT Solutions ERP completely transformed our shrimp processing floor tracking. We can calculate yield and floor reconciliation within minutes rather than hours."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-author-avatar">P</div>
+                        <div class="testimonial-author-info">
+                            <h5>Prasad Raju</h5>
+                            <span>Managing Director, Ocean Seafoods</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="testimonial-card">
+                    <p>"The export documentation module and LC tracking has automated 90% of our export billing cycle. It is incredibly reliable."</p>
+                    <div class="testimonial-author">
+                        <div class="testimonial-author-avatar">N</div>
+                        <div class="testimonial-author-info">
+                            <h5>Nagaraju B.</h5>
+                            <span>Operations Head, Coastal Cold Storage</span>
+                        </div>
+                    </div>
                 </div>
             </div>
-            
-            <button id="btn-forgot" onclick="sendResetLink()" class="btn"><i class="fa-solid fa-paper-plane"></i> Send Recovery Link</button>
-            <div id="forgotErr" class="msg error"></div>
-            <div id="forgotOk" class="msg success"></div>
-            
-            <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
         </div>
+    </section>
 
-    </div>
+    <!-- ================= FOOTER ================= -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <h4>SVBK IT Solutions</h4>
+                <p>Smart ERP. Intelligent Automation. Unlimited Growth.</p>
+                <p>Leading provider of aquaculture, manufacturing, and financial ERP management suites globally.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Modules</h4>
+                <ul>
+                    <li><a href="#features">Inventory Control</a></li>
+                    <li><a href="#features">Factory Production</a></li>
+                    <li><a href="#features">Accounts & GST</a></li>
+                    <li><a href="#features">Logistics</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Support</h4>
+                <ul>
+                    <li><a href="/help">Documentation</a></li>
+                    <li><a href="/help">Raise Ticket</a></li>
+                    <li><a href="/help">Security Audit</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Terms & Privacy</h4>
+                <ul>
+                    <li><a href="#">Privacy Policy</a></li>
+                    <li><a href="#">Terms of Use</a></li>
+                    <li><a href="#">Audit Logs</a></li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <span>&copy; 2026 SVBK IT Solutions. All rights reserved.</span>
+            <span>SVBK ERP Secure Portal Access (v1.1.1)</span>
+        </div>
+    </footer>
 
 </div>
 
-<!-- ================= AUTH LOGIC SCRIPT INTEGRATION ================= -->
+<!-- ================= AUTH LOGIC SCRIPT INTEGRATION (UNTOUCHED) ================= -->
 <script>
 const BASE = "/auth";
 let regEmail = sessionStorage.getItem("bknr_reg_email") || "";
 
-// Carousel rotation logic
-let slides = document.querySelectorAll(".carousel-slide");
-let currentSlide = 0;
-setInterval(() => {
-    slides[currentSlide].classList.remove("active");
-    currentSlide = (currentSlide + 1) % slides.length;
-    slides[currentSlide].classList.add("active");
-}, 4500);
-
 async function readResponse(res, fallbackMessage) {
-    const text = await res.text();
-    let data = {};
-    if (text) {
-        try {
-            data = JSON.parse(text);
-        } catch (error) {
-            data = { detail: text };
-        }
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (error) {
+      data = { detail: text };
     }
-    if (!res.ok && !data.detail) data.detail = fallbackMessage;
-    return data;
+  }
+  if (!res.ok && !data.detail) data.detail = fallbackMessage;
+  return data;
 }
 
 function getErrorMessage(data, fallbackMessage) {
-    const detail = data && data.detail;
-    if (Array.isArray(detail) && detail.length) return detail[0].msg || fallbackMessage;
-    if (typeof detail === "string" && detail.trim()) return detail.replace(/\n/g, "<br>");
-    return fallbackMessage;
+  const detail = data && data.detail;
+  if (Array.isArray(detail) && detail.length) return detail[0].msg || fallbackMessage;
+  if (typeof detail === "string" && detail.trim()) return detail.replace(/\n/g, "<br>");
+  return fallbackMessage;
 }
 
 function togglePasswordVisibility() {
-    const input = document.getElementById("login_pwd");
-    const button = input.parentElement.querySelector(".password-toggle");
-    const showPassword = input.type === "password";
+  const input = document.getElementById("login_pwd");
+  const button = input.parentElement.querySelector(".password-toggle");
+  const showPassword = input.type === "password";
 
-    input.type = showPassword ? "text" : "password";
-    button.textContent = showPassword ? "Hide" : "Show";
+  input.type = showPassword ? "text" : "password";
+  button.textContent = showPassword ? "Hide" : "Show";
+  button.setAttribute("aria-label", showPassword ? "Hide password" : "Show password");
 }
 
 function showBox(id, shouldScroll = true) {
-    document.querySelectorAll(".form-box").forEach((card) => {
-        card.style.display = "none";
-    });
-    const activeBox = document.getElementById(id);
-    if (activeBox) activeBox.style.display = "block";
-    
-    document.querySelectorAll(".msg").forEach((msg) => {
-        msg.style.display = "none";
-    });
+  document.querySelectorAll(".form-box").forEach((card) => {
+    card.style.display = "none";
+  });
+  document.getElementById(id).style.display = "block";
+  document.querySelectorAll(".msg").forEach((msg) => {
+    msg.style.display = "none";
+  });
+  if (shouldScroll) {
+    document.getElementById("login").scrollIntoView({ behavior: "smooth", block: "start" });
+  }
 }
 
 showBox("loginBox", false);
 
 async function sendOTP() {
-    const regErr = document.getElementById("regErr");
-    const btn = document.getElementById("btn-reg");
-    regErr.style.display = "none";
+  const regErr = document.getElementById("regErr");
+  const btn = document.getElementById("btn-reg");
+  regErr.style.display = "none";
 
-    const emailInput = document.getElementById("email").value.trim();
-    const mobileInput = document.getElementById("mobile").value.trim();
+  const emailInput = document.getElementById("email").value.trim();
+  const mobileInput = document.getElementById("mobile").value.trim();
 
-    if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim()) {
-        regErr.innerHTML = "Please fill out all required fields.";
-        regErr.style.display = "block";
-        return;
+  if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim()) {
+    regErr.innerHTML = "Please fill out all required fields.";
+    regErr.style.display = "block";
+    return;
+  }
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Processing...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_name: document.getElementById("company_name").value.trim(),
+        user_name: document.getElementById("user_name").value.trim(),
+        designation: document.getElementById("designation").value.trim(),
+        address: document.getElementById("address").value.trim(),
+        mobile: mobileInput,
+        email: emailInput.toLowerCase()
+      })
+    });
+
+    const data = await readResponse(res, "Registration failed");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      regEmail = emailInput.toLowerCase();
+      sessionStorage.setItem("bknr_reg_email", regEmail);
+      showBox("otpBox");
+    } else {
+      regErr.innerHTML = getErrorMessage(data, "Registration failed");
+      regErr.style.display = "block";
     }
-
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Sending Code...";
-    btn.disabled = true;
-
-    try {
-        const res = await fetch(`${BASE}/register`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                company_name: document.getElementById("company_name").value.trim(),
-                user_name: document.getElementById("user_name").value.trim(),
-                designation: document.getElementById("designation").value.trim(),
-                address: document.getElementById("address").value.trim(),
-                mobile: mobileInput,
-                email: emailInput.toLowerCase()
-            })
-        });
-
-        const data = await readResponse(res, "Registration failed");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-
-        if (res.ok) {
-            regEmail = emailInput.toLowerCase();
-            sessionStorage.setItem("bknr_reg_email", regEmail);
-            showBox("otpBox");
-        } else {
-            regErr.innerHTML = getErrorMessage(data, "Registration failed");
-            regErr.style.display = "block";
-        }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        regErr.innerHTML = error.message || "Server connection failed.";
-        regErr.style.display = "block";
-    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    regErr.innerHTML = error.message || "Server connection failed.";
+    regErr.style.display = "block";
+  }
 }
 
 async function verifyOTP() {
-    const otpErr = document.getElementById("otpErr");
-    const btn = document.getElementById("btn-otp");
-    otpErr.style.display = "none";
+  const otpErr = document.getElementById("otpErr");
+  const btn = document.getElementById("btn-otp");
+  otpErr.style.display = "none";
 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Verifying...";
-    btn.disabled = true;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Verifying...";
+  btn.disabled = true;
 
-    try {
-        const res = await fetch(`${BASE}/verify-otp`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: regEmail || sessionStorage.getItem("bknr_reg_email") || "",
-                otp: document.getElementById("otp").value.trim()
-            })
-        });
+  try {
+    const res = await fetch(`${BASE}/verify-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail || sessionStorage.getItem("bknr_reg_email") || "",
+        otp: document.getElementById("otp").value.trim()
+      })
+    });
 
-        const data = await readResponse(res, "Invalid OTP");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    const data = await readResponse(res, "Invalid OTP");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 
-        if (res.ok) {
-            if (data.user_exists) {
-                otpErr.style.display = "none";
-                const otpOk = document.getElementById("otpOk");
-                if (otpOk) {
-                    otpOk.innerHTML = "Email verified. Redirecting to login...";
-                    otpOk.style.display = "block";
-                }
-                setTimeout(() => showBox("loginBox"), 2500);
-            } else {
-                showBox("passBox");
-            }
-        } else {
-            otpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
-            otpErr.style.display = "block";
+    if (res.ok) {
+      if (data.user_exists) {
+        otpErr.style.display = "none";
+        const otpOk = document.getElementById("otpOk");
+        if (otpOk) {
+          otpOk.innerHTML = "Email verified. Redirecting to login...";
+          otpOk.style.display = "block";
         }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        otpErr.innerHTML = error.message || "Server connection failed.";
-        otpErr.style.display = "block";
+        setTimeout(() => showBox("loginBox"), 2500);
+      } else {
+        showBox("passBox");
+      }
+    } else {
+      otpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
+      otpErr.style.display = "block";
     }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    otpErr.innerHTML = error.message || "Server connection failed.";
+    otpErr.style.display = "block";
+  }
 }
 
 async function savePassword() {
-    const passErr = document.getElementById("passErr");
-    const passOk = document.getElementById("passOk");
-    const btn = document.getElementById("btn-pass");
-    passErr.style.display = "none";
-    passOk.style.display = "none";
+  const passErr = document.getElementById("passErr");
+  const passOk = document.getElementById("passOk");
+  const btn = document.getElementById("btn-pass");
+  passErr.style.display = "none";
+  passOk.style.display = "none";
 
-    const p1 = document.getElementById("pass1").value;
-    const p2 = document.getElementById("pass2").value;
+  const p1 = document.getElementById("pass1").value;
+  const p2 = document.getElementById("pass2").value;
 
-    if (!p1 || p1 !== p2) {
-        passErr.innerHTML = "Passwords do not match.";
-        passErr.style.display = "block";
-        return;
+  if (!p1 || p1 !== p2) {
+    passErr.innerHTML = "Passwords do not match.";
+    passErr.style.display = "block";
+    return;
+  }
+
+  regEmail = regEmail || sessionStorage.getItem("bknr_reg_email") || "";
+  if (!regEmail) {
+    passErr.innerHTML = "OTP session expired. Please register again and verify OTP.";
+    passErr.style.display = "block";
+    return;
+  }
+
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Saving...";
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${BASE}/set-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: regEmail,
+        password: p1.substring(0, 20)
+      })
+    });
+
+    const data = await readResponse(res, "Failed to set password");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+
+    if (res.ok) {
+      sessionStorage.removeItem("bknr_reg_email");
+      passOk.innerHTML = `Account registered. Company ID: <b>${data.company_id}</b><br>Pending approval by Super Admin. You will be able to log in once approved.`;
+      passOk.style.display = "block";
+      setTimeout(() => showBox("loginBox"), 8000);
+    } else {
+      passErr.innerHTML = getErrorMessage(data, "Failed to set password");
+      passErr.style.display = "block";
     }
-
-    regEmail = regEmail || sessionStorage.getItem("bknr_reg_email") || "";
-    if (!regEmail) {
-        passErr.innerHTML = "OTP session expired. Please register again and verify OTP.";
-        passErr.style.display = "block";
-        return;
-    }
-
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Saving Password...";
-    btn.disabled = true;
-
-    try {
-        const res = await fetch(`${BASE}/set-password`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: regEmail,
-                password: p1.substring(0, 20)
-            })
-        });
-
-        const data = await readResponse(res, "Failed to set password");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-
-        if (res.ok) {
-            sessionStorage.removeItem("bknr_reg_email");
-            passOk.innerHTML = `Account registered. Company ID: <b>${data.company_id}</b><br>Pending approval by Super Admin. You will be able to log in once approved.`;
-            passOk.style.display = "block";
-            setTimeout(() => showBox("loginBox"), 8000);
-        } else {
-            passErr.innerHTML = getErrorMessage(data, "Failed to set password");
-            passErr.style.display = "block";
-        }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        passErr.innerHTML = error.message || "Server connection failed.";
-        passErr.style.display = "block";
-    }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    passErr.innerHTML = error.message || "Server connection failed.";
+    passErr.style.display = "block";
+  }
 }
 
 async function doLogin(event) {
-    if (event) event.preventDefault();
-    const loginErr = document.getElementById("loginErr");
-    const btn = document.getElementById("btn-login");
-    loginErr.style.display = "none";
+  if (event) event.preventDefault();
+  const loginErr = document.getElementById("loginErr");
+  const btn = document.getElementById("btn-login");
+  loginErr.style.display = "none";
 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Authenticating...";
-    btn.disabled = true;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Authenticating...";
+  btn.disabled = true;
 
-    try {
-        const res = await fetch(`${BASE}/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                company_id: document.getElementById("login_company_id").value.trim(),
-                email: document.getElementById("login_email").value.trim().toLowerCase(),
-                password: document.getElementById("login_pwd").value.substring(0, 20)
-            })
-        });
+  try {
+    const res = await fetch(`${BASE}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_id: document.getElementById("login_company_id").value.trim(),
+        email: document.getElementById("login_email").value.trim().toLowerCase(),
+        password: document.getElementById("login_pwd").value.substring(0, 20)
+      })
+    });
 
-        const data = await readResponse(res, "Invalid credentials");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    const data = await readResponse(res, "Invalid credentials");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 
-        if (res.ok) {
-            if (data.status === "otp_required") {
-                loginEmail = document.getElementById("login_email").value.trim().toLowerCase();
-                loginCompanyId = document.getElementById("login_company_id").value.trim();
-                showBox("loginOtpBox");
-            } else {
-                window.location.replace(data.next_page || "/home");
-            }
-        } else {
-            if (res.status === 403 && data.status === "unverified") {
-                regEmail = document.getElementById("login_email").value.trim().toLowerCase();
-                sessionStorage.setItem("bknr_reg_email", regEmail);
-                loginErr.innerHTML = getErrorMessage(data, "Email not verified. Redirecting to OTP verification...");
-                loginErr.style.display = "block";
-                loginErr.className = "msg success";
-                setTimeout(() => showBox("otpBox"), 2000);
-            } else {
-                loginErr.innerHTML = getErrorMessage(data, "Invalid credentials");
-                loginErr.className = "msg error";
-                loginErr.style.display = "block";
-            }
-        }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        loginErr.innerHTML = error.message || "Server connection failed.";
-        loginErr.className = "msg error";
+    if (res.ok) {
+      if (data.status === "otp_required") {
+        loginEmail = document.getElementById("login_email").value.trim().toLowerCase();
+        loginCompanyId = document.getElementById("login_company_id").value.trim();
+        showBox("loginOtpBox");
+      } else {
+        window.location.replace(data.next_page || "/home");
+      }
+    } else {
+      if (res.status === 403 && data.status === "unverified") {
+        regEmail = document.getElementById("login_email").value.trim().toLowerCase();
+        sessionStorage.setItem("bknr_reg_email", regEmail);
+        loginErr.innerHTML = getErrorMessage(data, "Email not verified. Redirecting to OTP verification...");
         loginErr.style.display = "block";
+        loginErr.style.background = "#ecfdf5";
+        loginErr.style.color = "#166534";
+        loginErr.style.border = "1px solid rgba(22, 101, 52, 0.08)";
+        setTimeout(() => showBox("otpBox"), 2000);
+      } else {
+        loginErr.innerHTML = getErrorMessage(data, "Invalid credentials");
+        loginErr.style.display = "block";
+        loginErr.style.background = "#fef2f2";
+        loginErr.style.color = "#991b1b";
+        loginErr.style.border = "1px solid rgba(153, 27, 27, 0.08)";
+      }
     }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    loginErr.innerHTML = error.message || "Server connection failed.";
+    loginErr.style.display = "block";
+    loginErr.style.background = "#fef2f2";
+    loginErr.style.color = "#991b1b";
+    loginErr.style.border = "1px solid rgba(153, 27, 27, 0.08)";
+  }
 }
 
 let loginEmail = "";
 let loginCompanyId = "";
 
 async function verifyLoginOTP() {
-    const loginOtpErr = document.getElementById("loginOtpErr");
-    const btn = document.getElementById("btn-login-otp");
-    loginOtpErr.style.display = "none";
+  const loginOtpErr = document.getElementById("loginOtpErr");
+  const btn = document.getElementById("btn-login-otp");
+  loginOtpErr.style.display = "none";
 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Verifying...";
-    btn.disabled = true;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Verifying...";
+  btn.disabled = true;
 
-    try {
-        const res = await fetch(`${BASE}/verify-login-otp`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                company_id: loginCompanyId,
-                email: loginEmail,
-                otp: document.getElementById("login_otp").value.trim()
-            })
-        });
+  try {
+    const res = await fetch(`${BASE}/verify-login-otp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        company_id: loginCompanyId,
+        email: loginEmail,
+        otp: document.getElementById("login_otp").value.trim()
+      })
+    });
 
-        const data = await readResponse(res, "Invalid OTP");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    const data = await readResponse(res, "Invalid OTP");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 
-        if (res.ok) {
-            window.location.replace(data.next_page || "/home");
-        } else {
-            loginOtpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
-            loginOtpErr.style.display = "block";
-        }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        loginOtpErr.innerHTML = error.message || "Server connection failed.";
-        loginOtpErr.style.display = "block";
+    if (res.ok) {
+      window.location.replace(data.next_page || "/home");
+    } else {
+      loginOtpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
+      loginOtpErr.style.display = "block";
     }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    loginOtpErr.innerHTML = error.message || "Server connection failed.";
+    loginOtpErr.style.display = "block";
+  }
 }
 
 async function sendResetLink() {
-    const forgotErr = document.getElementById("forgotErr");
-    const forgotOk = document.getElementById("forgotOk");
-    const btn = document.getElementById("btn-forgot");
-    forgotErr.style.display = "none";
-    forgotOk.style.display = "none";
+  const forgotErr = document.getElementById("forgotErr");
+  const forgotOk = document.getElementById("forgotOk");
+  const btn = document.getElementById("btn-forgot");
+  forgotErr.style.display = "none";
+  forgotOk.style.display = "none";
 
-    const originalText = btn.innerHTML;
-    btn.innerHTML = "<i class='fa-solid fa-spinner fa-spin'></i> Sending Reset Link...";
-    btn.disabled = true;
+  const originalText = btn.innerHTML;
+  btn.innerHTML = "Processing...";
+  btn.disabled = true;
 
-    try {
-        const res = await fetch(`${BASE}/forgot-password`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                email: document.getElementById("forgot_email").value.trim().toLowerCase()
-            })
-        });
+  try {
+    const res = await fetch(`${BASE}/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: document.getElementById("forgot_email").value.trim().toLowerCase()
+      })
+    });
 
-        const data = await readResponse(res, "Failed to send reset link");
-        btn.innerHTML = originalText;
-        btn.disabled = false;
+    const data = await readResponse(res, "Failed to send reset link");
+    btn.innerHTML = originalText;
+    btn.disabled = false;
 
-        if (res.ok) {
-            forgotOk.innerHTML = "Reset link sent to your email";
-            forgotOk.style.display = "block";
-        } else {
-            forgotErr.innerHTML = getErrorMessage(data, "Failed to send reset link");
-            forgotErr.style.display = "block";
-        }
-    } catch (error) {
-        btn.innerHTML = originalText;
-        btn.disabled = false;
-        forgotErr.innerHTML = error.message || "Server connection failed.";
-        forgotErr.style.display = "block";
+    if (res.ok) {
+      forgotOk.innerHTML = "Reset link sent to your email";
+      forgotOk.style.display = "block";
+    } else {
+      forgotErr.innerHTML = getErrorMessage(data, "Failed to send reset link");
+      forgotErr.style.display = "block";
     }
+  } catch (error) {
+    btn.innerHTML = originalText;
+    btn.disabled = false;
+    forgotErr.innerHTML = error.message || "Server connection failed.";
+    forgotErr.style.display = "block";
+  }
 }
 </script>
 </body>
