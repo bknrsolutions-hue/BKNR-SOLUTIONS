@@ -77,9 +77,10 @@ def gs_items(request: Request):
     return render_page(request, "general_stock/general_store_items.html")
 
 
-@router.get("/general_stock/report")
-def gs_report(request: Request):
-    return render_page(request, "general_stock/general_stock_report.html")
+# General stock report is loaded dynamically from general_stock_report.py
+# @router.get("/general_stock/report")
+# def gs_report(request: Request):
+#     return render_page(request, "general_stock/general_stock_report.html")
 
 
 # ------------------- Attendance -------------------
