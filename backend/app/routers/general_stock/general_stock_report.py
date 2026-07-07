@@ -15,7 +15,7 @@ router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
 
 @router.get("/items", response_class=HTMLResponse)
 async def items_master_page(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
@@ -37,7 +37,7 @@ async def add_item_master(
     db: Session = Depends(get_db)
 ):
     user_email = request.session.get("email")
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return JSONResponse(status_code=401, content={"message": "Unauthorized"})
 
@@ -67,7 +67,7 @@ async def add_item_master(
 
 @router.post("/items/delete/{item_name}/{unit_name}")
 async def delete_item_master(request: Request, item_name: str, unit_name: str, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     item = db.query(GeneralStoreItems).filter(
         GeneralStoreItems.company_id == company_id,
         GeneralStoreItems.item_name == item_name,
@@ -87,7 +87,7 @@ async def delete_item_master(request: Request, item_name: str, unit_name: str, d
 
 @router.get("/entry", response_class=HTMLResponse)
 async def stock_entry_page(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
@@ -134,7 +134,7 @@ async def save_stock_entry(
     db: Session = Depends(get_db)
 ):
     user_email = request.session.get("email")
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     
     if not company_id:
         return RedirectResponse("/", status_code=302)
@@ -172,7 +172,7 @@ async def save_stock_entry(
 
 @router.post("/entry/delete/{entry_id}")
 async def delete_stock_entry(request: Request, entry_id: int, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     entry = db.query(GeneralStock).filter(GeneralStock.id == entry_id, GeneralStock.company_id == company_id).first()
     
     if entry:
@@ -183,7 +183,7 @@ async def delete_stock_entry(request: Request, entry_id: int, db: Session = Depe
 
 @router.get("/api/item_details")
 async def get_item_details(item_name: str, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     
     master = db.query(GeneralStoreItems).filter(
         GeneralStoreItems.company_id == company_id,
@@ -208,7 +208,7 @@ async def get_item_details(item_name: str, request: Request, db: Session = Depen
 
 @router.get("/api/get_item_grns")
 async def get_item_grns(request: Request, item_name: str, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     req_item_name = item_name.strip().upper()
     
     grns = db.query(GeneralStock.grn_number).filter(
@@ -231,7 +231,7 @@ async def general_stock_report(
     fy: str = "",
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
