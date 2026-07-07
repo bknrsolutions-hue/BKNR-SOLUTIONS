@@ -49,6 +49,21 @@ TABLE_COLUMNS = {
     "gate_entry": [
         ("driver_name", "VARCHAR(255)"),
     ],
+    "customer_receivables": [
+        ("journal_id", "INTEGER"),
+    ],
+    "bank_transactions": [
+        ("journal_id", "INTEGER"),
+    ],
+    "expense_vouchers": [
+        ("journal_id", "INTEGER"),
+    ],
+    "journal_entries": [
+        ("journal_id", "INTEGER"),
+    ],
+    "payment_receipts": [
+        ("journal_id", "INTEGER"),
+    ],
 }
 
 def run_migration():
