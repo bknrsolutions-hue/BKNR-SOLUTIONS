@@ -24,6 +24,9 @@ def _role(request: Request) -> str:
     expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
     if deploy_token and deploy_token == expected_token:
         return "super_admin"
+    # Allow owner email to bypass and act as super_admin
+    if request.session.get("email") == "bknr.solutions@gmail.com":
+        return "super_admin"
     return request.session.get("role", "")
 
 

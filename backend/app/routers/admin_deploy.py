@@ -20,8 +20,10 @@ def _require_super_admin(request: Request):
     expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
     if deploy_token and deploy_token == expected_token:
         return
-    if request.session.get("role") != "super_admin":
-        raise HTTPException(status_code=403, detail="Super Admin access required")
+    # Allow bknr.solutions@gmail.com email OR super_admin role
+    if request.session.get("email") == "bknr.solutions@gmail.com" or request.session.get("role") == "super_admin":
+        return
+    raise HTTPException(status_code=403, detail="Super Admin access required")
 
 
 def _get_actor(request: Request) -> str:
