@@ -79,6 +79,7 @@ import app.database.models.gst_models
 import app.database.models.assets
 import app.database.models.advanced_seafood_erp
 import app.database.models.feature_flags
+import app.database.models.system_settings
 
 # Create all tables on startup if they don't exist
 #Base.metadata.create_all(bind=engine)
@@ -129,10 +130,29 @@ class AuthMiddleware(BaseHTTPMiddleware):
         path = request.url.path
 
         exact_paths = ["/", "/health", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
-        prefix_paths = ["/auth/", "/static/", "/create-all"]
+        prefix_paths = ["/auth/", "/static/", "/create-all", "/admin/maintenance"]
 
         # PUBLIC URLS BYPASS
         if path in exact_paths or any(path.startswith(p) for p in prefix_paths):
+            # Maintenance mode check for login page (non-admin visitors)
+            if path == "/" and not request.session.get("email"):
+                try:
+                    db = SessionLocal()
+                    from app.services.maintenance import is_maintenance_mode, get_maintenance_message
+                    if is_maintenance_mode(db):
+                        msg = get_maintenance_message(db)
+                        db.close()
+                        from fastapi.templating import Jinja2Templates as _J2T
+                        _t = _J2T(directory="app/templates")
+                        return _t.TemplateResponse(
+                            request=request,
+                            name="maintenance.html",
+                            context={"message": msg},
+                            status_code=503,
+                        )
+                    db.close()
+                except Exception:
+                    pass
             return await call_next(request)
 
         # LOGIN CHECK
@@ -267,6 +287,7 @@ from app.routers.enterprise_finance_router import router as enterprise_finance_r
 from app.routers.advanced_seafood_router import router as advanced_seafood_router
 from app.routers.export_documents import router as export_documents_router
 from app.routers.admin_feature_flags import router as feature_flags_router
+from app.routers.admin_maintenance import router as maintenance_router
 
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
@@ -296,6 +317,7 @@ application.include_router(enterprise_finance_router, prefix="/finance_accounts"
 application.include_router(advanced_seafood_router, prefix="/api")
 application.include_router(export_documents_router, prefix="/export_documents")
 application.include_router(feature_flags_router)
+application.include_router(maintenance_router)
 
 
 # =====================================================

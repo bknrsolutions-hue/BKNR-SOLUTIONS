@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Maintenance — BKNR ERP</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            color: #f1f5f9;
+            padding: 1.5rem;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 1.5rem;
+            padding: 3rem 2.5rem;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+            backdrop-filter: blur(12px);
+            animation: fadeUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .icon {
+            font-size: 4rem;
+            margin-bottom: 1.5rem;
+            animation: spin 3s linear infinite;
+            display: inline-block;
+        }
+
+        @keyframes spin {
+            0%   { transform: rotate(0deg); }
+            25%  { transform: rotate(15deg); }
+            50%  { transform: rotate(0deg); }
+            75%  { transform: rotate(-15deg); }
+            100% { transform: rotate(0deg); }
+        }
+
+        .brand {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: #6366f1;
+            margin-bottom: 0.75rem;
+        }
+
+        h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 1rem;
+            line-height: 1.3;
+        }
+
+        .msg {
+            font-size: 1rem;
+            color: #94a3b8;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .status-bar {
+            background: rgba(99,102,241,0.12);
+            border: 1px solid rgba(99,102,241,0.25);
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #f59e0b;
+            animation: pulse 1.5s ease infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        .status-text {
+            font-size: 0.9rem;
+            color: #cbd5e1;
+            text-align: left;
+        }
+
+        .refresh-note {
+            font-size: 0.8rem;
+            color: #475569;
+        }
+
+        .countdown {
+            color: #6366f1;
+            font-weight: 600;
+        }
+
+        .divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 1.5rem 0;
+        }
+
+        .admin-link {
+            font-size: 0.8rem;
+            color: #334155;
+            text-decoration: none;
+        }
+
+        .admin-link:hover { color: #6366f1; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="icon">⚙️</div>
+        <div class="brand">BKNR ERP</div>
+        <h1>Scheduled Maintenance</h1>
+        <p class="msg">{{ message }}</p>
+
+        <div class="status-bar">
+            <div class="dot"></div>
+            <div class="status-text">
+                Our team is working on improvements.<br>
+                The system will be back shortly.
+            </div>
+        </div>
+
+        <p class="refresh-note">
+            This page will auto-refresh in <span class="countdown" id="timer">60</span>s
+        </p>
+
+        <div class="divider"></div>
+        <a href="/" class="admin-link">Admin login →</a>
+    </div>
+
+    <script>
+        // Countdown + auto refresh
+        let secs = 60;
+        const el = document.getElementById('timer');
+        const interval = setInterval(() => {
+            secs--;
+            el.textContent = secs;
+            if (secs <= 0) {
+                clearInterval(interval);
+                location.reload();
+            }
+        }, 1000);
+    </script>
+</body>
+</html>
