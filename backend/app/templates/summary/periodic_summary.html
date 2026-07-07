@@ -734,25 +734,23 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         {% set parts = item.split("||") %}
                         {% set s_match = parts[0] %}
                         {% set v_match = parts[1] %}
-                        {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, p_diff=0.0, total_prod_diff=0.0) %}
+                    {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0) %}
                         {% if v_match == "HOSO" or v_match == "FRESH" %}
-                            {% for r in rows.deheading %}{% if r.species|upper|trim == s_match %}{% set ns.di = ns.di + (r.hoso_qty|default(0)|float) %}{% set ns.do = ns.do + (r.hlso_qty|default(0)|float) %}{% set ns.d_diff = ns.d_diff + (r.diff_qty|default(0)|float) %}{% endif %}{% endfor %}
+                            {% for r in rows.deheading %}{% if r.species|upper|trim == s_match %}{% set ns.di = ns.di + (r.hoso_qty|default(0)|float) %}{% set ns.do = ns.do + (r.hlso_qty|default(0)|float) %}{% set ns.d_diff = ns.d_diff + (r.diff_qty|default(0)|float) %}{% set ns.d_expected = ns.d_expected + (r.hoso_qty|default(0)|float * (r.target_yield_percent|default(0)|float / 100)) %}{% endif %}{% endfor %}
                         {% endif %}
-                        {% for r in rows.peeling %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.pi = ns.pi + (r.hlso_qty|default(0)|float) %}{% set ns.po = ns.po + (r.peeled_qty|default(0)|float) %}{% set ns.p_diff = ns.p_diff + (r.diff_qty|default(0)|float if r.diff_qty else (r.hlso_qty|float - r.peeled_qty|float)) %}{% endif %}{% endfor %}
-                        {% for r in rows.soaking %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.si = ns.si + (r.in_qty|default(0)|float - r.rejection_qty|default(0)|float) %}{% endif %}{% endfor %}
-                        {% for r in rows.production %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.pro = ns.pro + (r.production_qty|default(0)|float) %}{% endif %}{% endfor %}
-                        {% for k, v in subtotals.items() %}{% if k[2]|upper|trim == s_match and k[3]|upper|trim == v_match %}{% set ns.total_prod_diff = ns.total_prod_diff + (v.get('diff_qty', 0)|float) %}{% endif %}{% endfor %}
+                        {% for r in rows.peeling %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.pi = ns.pi + (r.hlso_qty|default(0)|float) %}{% set ns.po = ns.po + (r.peeled_qty|default(0)|float) %}{% set ns.p_diff = ns.p_diff + (r.diff_qty|default(0)|float) %}{% set ns.p_expected = ns.p_expected + (r.hlso_qty|default(0)|float * (r.target_yield_percent|default(0)|float / 100)) %}{% endif %}{% endfor %}
+                        {% for k, v in subtotals.items() %}{% if k[2]|upper|trim == s_match and k[3]|upper|trim == v_match %}{% set ns.si = ns.si + (v.get('soaking_in', 0)|float) %}{% set ns.pro = ns.pro + (v.get('prod_qty', 0)|float) %}{% set ns.total_prod_diff = ns.total_prod_diff + (v.get('diff_qty', 0)|float) %}{% endif %}{% endfor %}
                         
                         {% set tot_recon.di = tot_recon.di + ns.di %}{% set tot_recon.do = tot_recon.do + ns.do %}{% set tot_recon.pi = tot_recon.pi + ns.pi %}{% set tot_recon.po = tot_recon.po + ns.po %}{% set tot_recon.si = tot_recon.si + ns.si %}{% set tot_recon.pro = tot_recon.pro + ns.pro %}
-                        <tr>
+                        <tr style="border-bottom: 1px solid var(--border);">
                             <td class="text-left" style="font-weight: 800;">{{ s_match }}</td>
                             <td><span class="tag">{{ v_match }}</span></td>
                             <td class="text-right">{{ "%.2f"|format(ns.di) }}</td><td class="text-right">{{ "%.2f"|format(ns.do) }}</td>
-                            <td class="text-right">{% if ns.di > 0 %}{{ "%.2f"|format((ns.do / ns.di) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.d_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.d_diff) }}</span>)</td>
+                            <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('deheading', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Deheading rows">{% if ns.di > 0 %}{% set d_act = (ns.do / ns.di) * 100 %}{% set d_dpct = (ns.d_diff / ns.di) * 100 %}{{ "%.2f"|format(d_act) }}%<br><small style="color: {{ 'var(--success)' if d_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if d_dpct >= 0 else "" }}{{ "%.2f"|format(d_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.d_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.d_diff >= 0 else "" }}{{ "%.2f"|format(ns.d_diff) }}</small>{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% endif %}</td>
                             <td class="text-right">{{ "%.2f"|format(ns.pi) }}</td><td class="text-right">{{ "%.2f"|format(ns.po) }}</td>
-                            <td class="text-right">{% if ns.pi > 0 %}{{ "%.2f"|format((ns.po / ns.pi) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.p_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.p_diff) }}</span>)</td>
+                            <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('peeling', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Peeling rows">{% if ns.pi > 0 %}{% set p_act = (ns.po / ns.pi) * 100 %}{% set p_dpct = (ns.p_diff / ns.pi) * 100 %}{{ "%.2f"|format(p_act) }}%<br><small style="color: {{ 'var(--success)' if p_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if p_dpct >= 0 else "" }}{{ "%.2f"|format(p_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.p_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.p_diff >= 0 else "" }}{{ "%.2f"|format(ns.p_diff) }}</small>{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% endif %}</td>
                             <td class="text-right">{{ "%.2f"|format(ns.si) }}</td><td class="text-right">{{ "%.2f"|format(ns.pro) }}</td>
-                            <td class="text-right">{% if ns.si > 0 %}{{ "%.2f"|format((ns.pro / ns.si) * 100) }}%{% else %}0%{% endif %} (<span style="color: {{ 'var(--success)' if ns.total_prod_diff >= 0 else 'var(--danger)' }}; font-weight:800;">{{ "%.2f"|format(ns.total_prod_diff) }}</span>)</td>
+                            <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('production', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Production rows">{% if ns.si > 0 %}{% set pr_act = (ns.pro / ns.si) * 100 %}{% set pr_dpct = (ns.total_prod_diff / ns.si) * 100 %}{{ "%.2f"|format(pr_act) }}%<br><small style="color: {{ 'var(--success)' if pr_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if pr_dpct >= 0 else "" }}{{ "%.2f"|format(pr_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.total_prod_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.total_prod_diff >= 0 else "" }}{{ "%.2f"|format(ns.total_prod_diff) }}</small>{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% endif %}</td>
                         </tr>
                     {% endfor %}
                     {% if grouping %}
@@ -882,7 +880,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             {% set deh_ns.hoso=0.0 %}{% set deh_ns.hlso=0.0 %}{% set deh_ns.amt=0.0 %}
                         {% endif %}
                         {% set deh_ns.curr = r.contractor %}{% set deh_ns.hoso = deh_ns.hoso + (r.hoso_qty|default(0)|float) %}{% set deh_ns.hlso = deh_ns.hlso + (r.hlso_qty|default(0)|float) %}{% set deh_ns.amt = deh_ns.amt + (r.amount|default(0)|float) %}
-                    <tr>
+                    <tr class="deh-row" data-species="{{ r.species|upper|trim }}" data-variety="HOSO">
                         <td class="sl-no">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ r.batch_number }}</td><td class="text-left" style="font-weight:800;">{{ r.contractor }}</td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.peeling_at }}</td><td>{{ r.production_for }}</td><td>{{ r.species }}</td><td><span class="tag">HOSO</span></td><td class="text-right">{{ r.hoso_qty }}</td><td class="qty-cell">{{ r.hlso_qty }}</td><td class="text-right">{{ r.yield_percent }}%</td><td class="text-right">{{ r.target_yield_percent }}%</td><td class="text-right">{{ r.diff_qty }}</td><td class="text-right">{{ r.rate_per_kg }}</td><td class="money-cell">₹ {{ "{:,.2f}".format(r.amount|float) }}</td><td>{{ r.email }}</td>
                     </tr>
                     {% if loop.last %}<tr class="subtotal-row contractor-subtotal"><td colspan="9" class="text-right">SUBTOTAL ({{ deh_ns.curr }}):</td><td class="text-right">{{ "%.2f"|format(deh_ns.hoso) }}</td><td class="qty-cell">{{ "%.2f"|format(deh_ns.hlso) }}</td><td>{% if deh_ns.hoso > 0 %}{{ "%.2f"|format((deh_ns.hlso/deh_ns.hoso)*100) }}%{% else %}0%{% endif %}</td><td colspan="3"></td><td class="money-cell">₹ {{ "{:,.2f}".format(deh_ns.amt) }}</td><td></td></tr>{% endif %}
@@ -938,7 +936,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             {% set pel_ns.hlso=0.0 %}{% set pel_ns.peeled=0.0 %}{% set pel_ns.amt=0.0 %}
                         {% endif %}
                         {% set pel_ns.curr = r.contractor_name %}{% set pel_ns.hlso = pel_ns.hlso + (r.hlso_qty|default(0)|float) %}{% set pel_ns.peeled = pel_ns.peeled + (r.peeled_qty|default(0)|float) %}{% set pel_ns.amt = pel_ns.amt + (r.amount|default(0)|float) %}
-                    <tr>
+                    <tr class="pel-row" data-species="{{ r.species|upper|trim }}" data-variety="{{ (r.variety_name or r.variety)|upper|trim }}">
                         <td class="sl-no">{{ loop.index }}</td><td><b style="color:var(--accent-blue);">{{ r.batch_number }}</b></td><td class="text-left" style="font-weight:800;">{{ r.contractor_name }}</td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.peeling_at }}</td><td>{{ r.production_for }}</td><td>{{ r.species }}</td><td><b>{{ r.hlso_count }}</b></td><td><span class="tag">{{ r.variety_name }}</span></td><td class="text-right">{{ r.hlso_qty }}</td><td class="qty-cell">{{ r.peeled_qty }}</td><td class="text-right">{{ r.yield_percent }}%</td><td class="text-right">{{ r.target_yield_percent }}%</td><td class="text-right">{{ r.diff_qty }}</td><td class="text-right">{{ r.diff_percent }}%</td><td class="text-right">{{ r.rate }}</td><td class="money-cell">₹ {{ "{:,.2f}".format(r.amount|float) }}</td><td>{{ r.email }}</td>
                     </tr>
                     {% if loop.last %}<tr class="subtotal-row contractor-subtotal"><td colspan="10" class="text-right">SUBTOTAL ({{ pel_ns.curr }}):</td><td class="text-right">{{ "%.2f"|format(pel_ns.hlso) }}</td><td class="qty-cell">{{ "%.2f"|format(pel_ns.peeled) }}</td><td>{% if pel_ns.hlso > 0 %}{{ "%.2f"|format((pel_ns.peeled/pel_ns.hlso)*100) }}%{% else %}0%{% endif %}</td><td colspan="4"></td><td class="money-cell">₹ {{ "{:,.2f}".format(pel_ns.amt) }}</td><td></td></tr>{% endif %}
@@ -967,7 +965,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             {% set soak_ns.in_q = 0.0 %}{% set soak_ns.rej = 0.0 %}
                         {% endif %}
                         {% set soak_ns.curr = item_combo %}{% set soak_ns.in_q = soak_ns.in_q + (r.in_qty|default(0)|float) %}{% set soak_ns.rej = soak_ns.rej + (r.rejection_qty|default(0)|float) %}
-                    <tr>
+                    <tr class="prod-row" data-species="{{ r.species|upper|trim }}" data-variety="{{ (r.variety_name or r.variety)|upper|trim }}">
                         <td class="sl-no">{{ loop.index }}</td><td style="font-weight:800; color:var(--accent-blue);">{{ r.batch_number }}</td><td><span class="tag">{{ r.variety_name }}</span></td><td>{{ r.date }}</td><td>{{ r.time }}</td><td>{{ r.species }}</td><td><b>{{ r.in_count }}</b></td><td>{{ r.sintex_number }}</td><td>{{ r.chemical_name }}</td><td>{{ r.chemical_percent }}%</td><td>{{ r.chemical_qty }}</td><td>{{ r.salt_percent }}%</td><td>{{ r.salt_qty }}</td><td class="qty-cell">{{ r.in_qty }}</td><td class="text-right" style="color:var(--danger); font-weight:800;">{{ r.rejection_qty }}</td><td>{{ r.rejection_for or '-' }}</td><td>{{ r.status }}</td><td>{{ r.production_at }}</td><td>{{ r.production_for }}</td><td>{{ r.email }}</td>
                     </tr>
                     {% if loop.last %}<tr class="subtotal-row"><td colspan="13" class="text-right">SUBTOTAL ({{ soak_ns.curr }}):</td><td class="qty-cell">{{ "%.2f"|format(soak_ns.in_q) }}</td><td class="text-right" style="color:var(--danger); font-weight:800;">{{ "%.2f"|format(soak_ns.rej) }}</td><td colspan="5"></td></tr>{% endif %}
@@ -1024,7 +1022,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             </tr>
                         {% endif %}
 
-                        <tr>
+                        <tr class="prod-row" data-species="{{ r.species|upper|trim }}" data-variety="{{ (r.variety_name or r.variety)|upper|trim }}">
                             <td class="sl-no">{{ loop.index }}</td>
                             <td>{{ r.date }}</td>
                             <td>{{ r.time }}</td>
@@ -1311,7 +1309,7 @@ const periodicChartPoints = {};
 const periodicHiddenSeries = {};
 let periodicActiveFilter = null;
 const PERIODIC_STATE_KEY = 'periodicReportViewState';
-const PERIODIC_SERIES_COLORS = ['#ef4444', '#f59e0b', '#2563eb', '#10b981', '#8b5cf6', '#14b8a6', '#f97316', '#64748b'];
+const PERIODIC_SERIES_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#2563eb', '#8b5cf6', '#14b8a6', '#f97316', '#64748b'];
 
 function getActiveSectionId() {
     return document.querySelector('.section-card.active-section .toggle-content')?.id || 'sec-close-floor';
@@ -2377,6 +2375,94 @@ window.addEventListener('resize', () => {
     const active = document.querySelector('.section-card.active-section .toggle-content');
     if (active) renderPeriodicFlowChart(active.id);
 });
+// Interactive Reconciliation Details Filtering
+function filterReconDetails(stage, species, variety) {
+    let targetSectionId = '';
+    let rowClass = '';
+    
+    if (stage === 'deheading') {
+        targetSectionId = 'sec-deh';
+        rowClass = 'deh-row';
+    } else if (stage === 'peeling') {
+        targetSectionId = 'sec-pel';
+        rowClass = 'pel-row';
+    } else if (stage === 'production') {
+        targetSectionId = 'sec-prod';
+        rowClass = 'prod-row';
+    }
+    
+    // If periodic report, open section (collapsible)
+    if (typeof openSection === 'function') {
+        openSection(targetSectionId);
+    } else {
+        // If processing summary, make sure it is visible
+        const contentEl = document.getElementById(targetSectionId);
+        if (contentEl) contentEl.style.display = 'block';
+    }
+    
+    // Filter rows of stage
+    const rows = document.querySelectorAll('.' + rowClass);
+    rows.forEach(row => {
+        const rowSpecies = row.getAttribute('data-species') || '';
+        const rowVariety = row.getAttribute('data-variety') || '';
+        if (rowSpecies.toUpperCase().trim() === species.toUpperCase().trim() &&
+            rowVariety.toUpperCase().trim() === variety.toUpperCase().trim()) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Hide subtotal and extra rows that don't match
+    const subtotalRows = document.querySelectorAll('.' + stage + '-subtotal, .subtotal-row, .contractor-subtotal');
+    subtotalRows.forEach(row => {
+        row.style.display = 'none';
+    });
+
+    // Scroll to the first visible element or wrapper
+    const tableWrap = document.getElementById(targetSectionId) || document.querySelector('.' + rowClass)?.closest('.table-wrap');
+    if (tableWrap) {
+        tableWrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Show indicator button in the section title
+        let resetBtnId = stage + '-filter-reset';
+        let resetBtn = document.getElementById(resetBtnId);
+        if (!resetBtn) {
+            const sectionTitle = tableWrap.previousElementSibling;
+            if (sectionTitle) {
+                const targetContainer = sectionTitle.querySelector('.section-header-left') || sectionTitle;
+                resetBtn = document.createElement('span');
+                resetBtn.id = resetBtnId;
+                resetBtn.className = 'no-print';
+                resetBtn.style.cssText = 'background:var(--orange); color:white; padding:2px 6px; border-radius:4px; font-size:8.5px; margin-left:10px; cursor:pointer; font-weight:700; text-transform:uppercase; display:inline-block; vertical-align:middle;';
+                resetBtn.onclick = function(e) {
+                    e.stopPropagation();
+                    clearReconFilter(stage, rowClass);
+                };
+                targetContainer.appendChild(resetBtn);
+            }
+        }
+        if (resetBtn) {
+            resetBtn.style.display = 'inline-block';
+            resetBtn.innerHTML = `Filtered: ${species} ${variety} <i class="fas fa-times"></i>`;
+        }
+    }
+}
+
+function clearReconFilter(stage, rowClass) {
+    const rows = document.querySelectorAll('.' + rowClass);
+    rows.forEach(row => {
+        row.style.display = '';
+    });
+    const subtotalRows = document.querySelectorAll('.' + stage + '-subtotal, .subtotal-row, .contractor-subtotal');
+    subtotalRows.forEach(row => {
+        row.style.display = '';
+    });
+    const resetBtn = document.getElementById(stage + '-filter-reset');
+    if (resetBtn) {
+        resetBtn.style.display = 'none';
+    }
+}
 </script>
 <script src="/static/js/global-loader.js"></script>
 </body>

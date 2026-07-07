@@ -20,7 +20,13 @@ os.environ["TZ"] = "Asia/Kolkata"
 # =====================================================
 # 🚀 1. APP INIT - HOT RELOAD TRIGGER 12
 # =====================================================
-application = FastAPI(title="BKNR ERP", version="1.0.0")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+application = FastAPI(
+    title="BKNR ERP",
+    version="1.0.0",
+    docs_url="/docs" if ENVIRONMENT != "production" else None,   # hide docs in prod
+    redoc_url=None,
+)
 
 # =====================================================
 # 📊 LOGGING
@@ -72,6 +78,7 @@ import app.database.models.enterprise_finance
 import app.database.models.gst_models
 import app.database.models.assets
 import app.database.models.advanced_seafood_erp
+import app.database.models.feature_flags
 
 # Create all tables on startup if they don't exist
 #Base.metadata.create_all(bind=engine)
@@ -181,7 +188,7 @@ application.add_middleware(AuthMiddleware)
 # Middle: Runs SECOND on request (Creates session context)
 application.add_middleware(
     SessionMiddleware,
-    secret_key="bknr_secret_key_2026",
+    secret_key=os.getenv("SESSION_SECRET_KEY", "bknr_secret_key_2026_dev_only"),
     session_cookie="bknr_session",
     max_age=60 * 60 * 8  # 8 Hours
 )
@@ -259,6 +266,7 @@ from app.routers.finance_accounts import router as finance_accounts_router
 from app.routers.enterprise_finance_router import router as enterprise_finance_router
 from app.routers.advanced_seafood_router import router as advanced_seafood_router
 from app.routers.export_documents import router as export_documents_router
+from app.routers.admin_feature_flags import router as feature_flags_router
 
 # రూటర్లను ఇంక్లూడ్ చేయడం
 application.include_router(auth_router)
@@ -287,6 +295,7 @@ application.include_router(finance_accounts_router, prefix="/finance_accounts")
 application.include_router(enterprise_finance_router, prefix="/finance_accounts")
 application.include_router(advanced_seafood_router, prefix="/api")
 application.include_router(export_documents_router, prefix="/export_documents")
+application.include_router(feature_flags_router)
 
 
 # =====================================================

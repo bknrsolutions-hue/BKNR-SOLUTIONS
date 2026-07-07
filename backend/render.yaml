@@ -1,0 +1,61 @@
+services:
+  # ============================================================
+  # PRODUCTION SERVICE — main branch
+  # URL: https://bknrerp.in  (custom domain via Render dashboard)
+  # ============================================================
+  - type: web
+    name: bknr-erp-production
+    runtime: python
+    branch: main
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    plan: standard                   # match your current Render plan
+    region: singapore                # match your region
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false                  # paste from Render Dashboard → PostgreSQL (production)
+      - key: REDIS_URL
+        sync: false                  # paste from Render Dashboard → Redis (production)
+      - key: PUBLIC_SITE_URL
+        value: https://bknrerp.in
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+
+  # ============================================================
+  # STAGING SERVICE — staging branch
+  # URL: https://staging-bknrerp.onrender.com
+  # ============================================================
+  - type: web
+    name: bknr-erp-staging
+    runtime: python
+    branch: staging
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    plan: starter                    # cheaper plan OK for staging
+    region: singapore
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: DATABASE_URL
+        sync: false                  # paste from Render Dashboard → PostgreSQL (staging — SEPARATE DB)
+      - key: REDIS_URL
+        sync: false
+      - key: PUBLIC_SITE_URL
+        value: https://staging-bknrerp.onrender.com
+      - key: SESSION_SECRET_KEY
+        generateValue: true
+
+# ============================================================
+# NEXT STEPS (Manual in Render Dashboard):
+# 1. Create PostgreSQL instance: bknr-erp-db-staging
+# 2. Paste its Internal Database URL → bknr-erp-staging → DATABASE_URL
+# 3. Create Redis instance for staging (optional, reuse prod if needed)
+# ============================================================
