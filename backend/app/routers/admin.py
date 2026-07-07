@@ -47,7 +47,13 @@ def check_dashboard_access(request: Request):
     # Validation rules mapping check loop execution timestamps definitions
     last_activity_str = session_data.get("last_activity")
     try:
-        last_activity = datetime.fromisoformat(last_activity_str)
+        from zoneinfo import ZoneInfo
+        try:
+            # Support float timestamps stored by login routes
+            val = float(last_activity_str)
+            last_activity = datetime.fromtimestamp(val, ZoneInfo("Asia/Kolkata"))
+        except (ValueError, TypeError):
+            last_activity = datetime.fromisoformat(last_activity_str)
     except Exception:
         request.session.clear()
         raise HTTPException(status_code=401, detail="Session verification metadata encryption mismatch sequence detected.")
