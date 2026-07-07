@@ -162,6 +162,26 @@ class ForgotReq(BaseModel):
 
 # ================= ROUTES =================
 
+@router.get("/login", response_class=HTMLResponse)
+def get_login(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request}
+    )
+
+@router.get("/register", response_class=HTMLResponse)
+def get_register(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request}
+    )
+
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
     clean_name = data.company_name.strip()
