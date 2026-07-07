@@ -205,7 +205,7 @@ input:checked + .slider:before { transform: translateX(22px); }
                         Locked by: <code style="color: var(--purple);">{{ lock_status.locked_by }}</code><br>
                         Locked at: <code style="color: var(--cyan);">{{ lock_status.locked_at }}</code>
                     </div>
-                {% else lock_status.locked %}
+                {% else %}
                     <p><i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 4px;"></i> Pipeline lock is currently free. Deployment scripts can run safely.</p>
                 {% endif %}
             </div>
