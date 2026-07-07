@@ -6,8 +6,8 @@ from app.utils.timezone import ist_now
 from app.database import get_db
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 
-# Prefix ఇక్కడ ఇచ్చాం కాబట్టి కింద routes లో మళ్ళీ ఇవ్వాల్సిన అవసరం లేదు
-router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
+# Prefix and tags configuration
+router = APIRouter(tags=["GENERAL STOCK"])
 
 # ============================================================
 # 1. ITEMS MASTER LOGIC

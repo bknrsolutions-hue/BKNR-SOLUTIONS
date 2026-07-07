@@ -1,4 +1,4 @@
-const CACHE_NAME = "bknr-erp-v12";
+const CACHE_NAME = "bknr-erp-v13";
 const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",

@@ -169,7 +169,7 @@ def get_login(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"request": request}
+        context={"request": request, "show_login": True}
     )
 
 @router.get("/register", response_class=HTMLResponse)
@@ -179,7 +179,7 @@ def get_register(request: Request):
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"request": request}
+        context={"request": request, "show_login": True}
     )
 
 @router.post("/register")
@@ -573,4 +573,3 @@ def save_ui_colors(request: Request, data: UIColorsRequest, db: Session = Depend
         })
     db.commit()
     return {"success": True, "message": "UI colors saved to database successfully"}
-

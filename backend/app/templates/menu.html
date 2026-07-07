@@ -1014,6 +1014,56 @@ function launchCmdApp(url, title) {
 }
 
 // ROUTING & IFRAME
+const COMING_SOON_ROUTE_PREFIXES = [
+    '/finance_accounts',
+    '/export_documents',
+    '/api/electricity',
+    '/api/diesel',
+    '/api/purchase',
+    '/api/container',
+    '/api/qa',
+    '/api/expenses'
+];
+
+const COMING_SOON_ROUTE_MATCHES = [
+    '/dashboard/finance_dashboard',
+    '/dashboard/costing_dashboard',
+    '/finance_accounts/tally_dashboard',
+    '/tally_dashboard'
+];
+
+function isComingSoonModule(url) {
+    if (!url || url === '#') return false;
+    try {
+        const path = new URL(url, window.location.origin).pathname;
+        return COMING_SOON_ROUTE_MATCHES.includes(path) ||
+            COMING_SOON_ROUTE_PREFIXES.some(prefix => path.startsWith(prefix));
+    } catch(e) {
+        return false;
+    }
+}
+
+function showComingSoonModulePopup(title = '') {
+    const moduleName = title || 'This module';
+    const message = `${moduleName} will be available after few days.`;
+    toggleSidebar(false);
+    document.querySelectorAll('.dropdown-console').forEach(el => el.classList.remove('show'));
+    const qa = document.getElementById('qaPanel');
+    if (qa) qa.classList.remove('open');
+
+    if (window.Swal) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Available after few days',
+            html: `<div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${message}<br>Finance, Accounts and Export Documents pages are temporarily locked.</div>`,
+            confirmButtonText: 'OK',
+            confirmButtonColor: 'var(--corp-dash)'
+        });
+    } else {
+        alert(message);
+    }
+}
+
 function broadcastUniversalFilters() { 
     const pFor = document.getElementById("global_production_for").value;
     const pLoc = document.getElementById("global_plant_location").value;
@@ -1056,6 +1106,12 @@ function broadcastUniversalFilters() {
 
 function loadPage(url, element, customTitle = null) {
     if(url === '#') return;
+
+    if (isComingSoonModule(url)) {
+        const label = customTitle || (element ? element.innerText.trim() : 'This module');
+        showComingSoonModulePopup(label);
+        return;
+    }
     
     // Track page visit for dynamic frequently visited menu list
     trackPageVisit(url);
