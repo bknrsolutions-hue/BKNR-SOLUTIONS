@@ -27,7 +27,7 @@ templates = Jinja2Templates(directory="app/templates")
 BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 SENDER_EMAIL = os.getenv("SMTP_EMAIL", os.getenv("BREVO_SENDER_EMAIL", "bknr.solutions@gmail.com"))
-SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "BKNR ERP"))
+SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "SVBK"))
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 OTP_EXPIRY_MIN = 10
@@ -70,7 +70,7 @@ def send_email(to_email: str, subject: str, html: str):
         print(f"SMTP EMAIL ERROR: {e}")
         raise HTTPException(500, f"Email sending failed: {e}")
 
-def professional_email_html(title: str, intro: str, content_html: str, note: str = "", header_title: str = "BKNR ERP") -> str:
+def professional_email_html(title: str, intro: str, content_html: str, note: str = "", header_title: str = "SVBK") -> str:
     note_html = f"<p style='margin:14px 0 0;color:#64748b;font-size:13px;line-height:1.6;'>{note}</p>" if note else ""
     return f"""
     <!doctype html>
@@ -96,7 +96,7 @@ def professional_email_html(title: str, intro: str, content_html: str, note: str
               </tr>
               <tr>
                 <td style="padding:16px 22px;background:#f8fbff;border-top:1px solid #e5eefb;color:#64748b;font-size:12px;line-height:1.6;">
-                  Sent by <strong>BKNR ERP</strong> from {SENDER_EMAIL}<br>
+                  Sent by <strong>SVBK</strong> from {SENDER_EMAIL}<br>
                   For support, contact {SUPPORT_EMAIL}. This is an automated email.
                 </td>
               </tr>
@@ -108,7 +108,7 @@ def professional_email_html(title: str, intro: str, content_html: str, note: str
     </html>
     """
 
-def otp_email_html(otp: str, purpose: str, header_title: str = "BKNR ERP") -> str:
+def otp_email_html(otp: str, purpose: str, header_title: str = "SVBK") -> str:
     return professional_email_html(
         title=purpose,
         intro="Use the verification code below to continue. Do not share this code with anyone.",
@@ -124,7 +124,7 @@ def otp_email_html(otp: str, purpose: str, header_title: str = "BKNR ERP") -> st
 
 def reset_password_email_html(reset_link: str) -> str:
     return professional_email_html(
-        title="Reset your BKNR ERP password",
+        title="Reset your SVBK password",
         intro="We received a request to reset your password. Use the secure link below to create a new password.",
         content_html=f"""
           <div style="margin:20px 0;">
@@ -207,7 +207,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     db.commit()
 
     try:
-        send_email(data.email, "BKNR ERP - Verification Code", otp_email_html(otp, "Verify your BKNR ERP email"))
+        send_email(data.email, "SVBK - Verification Code", otp_email_html(otp, "Verify your SVBK email"))
     except Exception as e:
         print(f"EMAIL ERROR: {e}")
     
@@ -274,9 +274,9 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
     try:
         send_email(
             company.email,
-            "BKNR ERP - Account Created",
+            "SVBK - Account Created",
             professional_email_html(
-                title="Your BKNR ERP account has been created",
+                title="Your SVBK account has been created",
                 intro="Your company account is ready. Please keep the company ID below for login and admin access.",
                 content_html=f"""
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:14px;">
@@ -327,7 +327,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         db.commit()
         
         try:
-            send_email(user.email, "BKNR ERP - Email Verification Code", otp_email_html(otp, "Verify your BKNR ERP login"))
+            send_email(user.email, "SVBK - Email Verification Code", otp_email_html(otp, "Verify your SVBK login"))
         except Exception as e:
             print(f"EMAIL ERROR: {e}")
             
@@ -441,13 +441,13 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     db.add(OTPTable(email=data.email, otp=token, is_used=False, created_at=get_ist_time()))
     db.commit()
 
-    base_url = os.getenv("APP_URL", "https://bknrerp.in")
+    base_url = os.getenv("APP_URL", "https://svbk.in")
     reset_link = f"{base_url}/auth/reset-password?token={token}"
 
     try:
         send_email(
             data.email,
-            "BKNR ERP - Reset Password",
+            "SVBK - Reset Password",
             reset_password_email_html(reset_link)
         )
     except Exception as e:
@@ -482,10 +482,10 @@ def reset_password(token: str = Form(...), password: str = Form(...), db: Sessio
     try:
         send_email(
             user.email,
-            "BKNR ERP - Password Changed",
+            "SVBK - Password Changed",
             professional_email_html(
                 title="Your password was changed",
-                intro="This confirms that your BKNR ERP account password was updated successfully.",
+                intro="This confirms that your SVBK account password was updated successfully.",
                 content_html="<p style='margin:0;color:#475569;font-size:14px;line-height:1.6;'>If this change was not made by you, contact support immediately.</p>",
             )
         )

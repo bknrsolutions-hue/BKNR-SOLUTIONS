@@ -53,7 +53,7 @@ from app.database.models.attendance import EmployeeRegistration, DailyAttendance
 
 router = APIRouter()
 SENDER_EMAIL = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
-SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "BKNR ERP")
+SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "SVBK")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 # =====================================================
@@ -117,7 +117,7 @@ def build_security_otp_email(otp: str, action: str, module: str, company_code: s
             <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#ffffff;border:1px solid #dbeafe;border-radius:12px;overflow:hidden;">
               <tr>
                 <td style="padding:18px 22px;background:#f8fbff;border-bottom:1px solid #e5eefb;">
-                  <div style="font-size:18px;font-weight:800;color:#1d4ed8;">BKNR ERP</div>
+                  <div style="font-size:18px;font-weight:800;color:#1d4ed8;">SVBK</div>
                   <div style="font-size:12px;color:#64748b;margin-top:4px;">Data management security verification</div>
                 </td>
               </tr>
@@ -150,7 +150,7 @@ def build_security_otp_email(otp: str, action: str, module: str, company_code: s
     </body>
     </html>
     """
-    text = f"BKNR ERP security OTP: {otp}\nAction: {action_label}\nModule: {module_label}\nCompany: {company_code}\nSupport: {SUPPORT_EMAIL}"
+    text = f"SVBK security OTP: {otp}\nAction: {action_label}\nModule: {module_label}\nCompany: {company_code}\nSupport: {SUPPORT_EMAIL}"
     return html, text
 
 
@@ -179,7 +179,7 @@ def generate_export_response(comp_code, module_name, export_logic, db):
 
     with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
         pd.DataFrame({
-            "BKNR ERP Export": [f"{module_name} Module Generated Successfully"],
+            "SVBK Export": [f"{module_name} Module Generated Successfully"],
             "Company ID": [comp_code],
             "Timestamp": [ist_now().strftime('%Y-%m-%d %H:%M:%S')]
         }).to_excel(writer, sheet_name="INFO", index=False)
@@ -246,7 +246,7 @@ async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depe
                 msg = MIMEMultipart()
                 msg['From'] = f"{SENDER_NAME} <{SENDER_EMAIL}>"
                 msg['To'] = email_id
-                msg['Subject'] = f"BKNR ERP - Security OTP for {str(payload.action).upper()}"
+                msg['Subject'] = f"SVBK - Security OTP for {str(payload.action).upper()}"
                 msg.attach(MIMEText(text_body, 'plain'))
                 msg.attach(MIMEText(html_body, 'html'))
                 server.send_message(msg)
@@ -318,7 +318,7 @@ async def download_blank_template(table: str = ""):
         with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
             # INFO sheet
             pd.DataFrame({
-                "Info": [f"BKNR ERP Blank Import Sheet — {table}"],
+                "Info": [f"SVBK Blank Import Sheet — {table}"],
                 "Note": ["Row 1 shows format hints. Delete row 1 before importing actual data."]
             }).to_excel(writer, sheet_name="INFO", index=False)
             df.to_excel(writer, sheet_name=safe_sheet, index=False)
@@ -330,7 +330,7 @@ async def download_blank_template(table: str = ""):
     file_path = os.path.join(template_dir, filename)
     with pd.ExcelWriter(file_path, engine="openpyxl") as writer:
         pd.DataFrame({
-            "Info": ["BKNR ERP — All Tables Blank Import Sheets"],
+            "Info": ["SVBK — All Tables Blank Import Sheets"],
             "Note": ["Each sheet = one DB table. Row 1 = format hints. Delete Row 1 before importing real data."]
         }).to_excel(writer, sheet_name="INFO", index=False)
         for tbl_name, model_class in ALL_MODELS.items():

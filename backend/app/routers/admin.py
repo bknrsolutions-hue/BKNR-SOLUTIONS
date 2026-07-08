@@ -189,9 +189,9 @@ def save_user(
     db.commit()
     
     # Send email with credentials and OTP
-    subject = "BKNR ERP – Account Verification Required"
+    subject = "SVBK – Account Verification Required"
     body_html = professional_email_html(
-        title=f"Welcome to BKNR ERP, {full_name}",
+        title=f"Welcome to SVBK, {full_name}",
         intro=f"An administrator has created your profile under {company.company_name}. Please use the details below to sign in and verify your email.",
         content_html=f"""
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-bottom:18px;">
@@ -324,9 +324,9 @@ def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
         try:
             send_email(
                 user.email,
-                "BKNR ERP - User Access Activated",
+                "SVBK - User Access Activated",
                 professional_email_html(
-                    title="Your BKNR ERP access is active",
+                    title="Your SVBK access is active",
                     intro=f"Your user profile under {company.company_name} has been activated by your administrator.",
                     content_html=f"""
                       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-top:14px;">

@@ -208,7 +208,7 @@ def send_gate_notification(db: Session, comp: str, row_id: int):
                 email=row.email, company_id=row.company_id
             )
             text = (
-                f"BKNR ERP Gate Entry Notification\n"
+                f"SVBK Gate Entry Notification\n"
                 f"Batch: {row.batch_number}\n"
                 f"Vehicle: {row.vehicle_number}\n"
                 f"Receiving Center: {row.receiving_center}\n"
@@ -216,7 +216,7 @@ def send_gate_notification(db: Session, comp: str, row_id: int):
                 f"Date/Time: {row.date} {row.time}\n"
                 f"Entered By: {row.email}"
             )
-            send_bulk_email(emails, f"BKNR ERP - Vehicle Arrived: Batch {row.batch_number}", html, text=text)
+            send_bulk_email(emails, f"SVBK - Vehicle Arrived: Batch {row.batch_number}", html, text=text)
     except Exception as e:
         print(f"Mail error ignored: {e}")
 

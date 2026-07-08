@@ -31,7 +31,7 @@ def _send_user_otp_email(to_email: str, otp: str, user_name: str, company_name: 
     SMTP_PORT = 587
     sender_email = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
     sender_password = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
-    sender_name = os.getenv("EMAIL_SENDER_NAME", "BKNR ERP")
+    sender_name = os.getenv("EMAIL_SENDER_NAME", "SVBK")
     support_email = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
     html = f"""<!doctype html>
@@ -64,7 +64,7 @@ def _send_user_otp_email(to_email: str, otp: str, user_name: str, company_name: 
         </tr>
         <tr>
           <td style="padding:16px 22px;background:#f8fbff;border-top:1px solid #e5eefb;color:#64748b;font-size:12px;line-height:1.6;">
-            Sent by <strong>BKNR ERP</strong> from {sender_email}<br>
+            Sent by <strong>SVBK</strong> from {sender_email}<br>
             For support, contact {support_email}. This is an automated email.
           </td>
         </tr>
@@ -298,7 +298,7 @@ async def resend_add_user_otp(
     db.commit()
 
     try:
-        _send_user_otp_email(email, new_otp, pending["name"], company.company_name if company else "BKNR ERP")
+        _send_user_otp_email(email, new_otp, pending["name"], company.company_name if company else "SVBK")
     except Exception as e:
         return JSONResponse({"status": "error", "msg": f"Failed to resend OTP: {e}"})
 

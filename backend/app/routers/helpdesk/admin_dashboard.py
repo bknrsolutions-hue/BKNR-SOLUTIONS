@@ -244,9 +244,9 @@ async def approve_company(company_code: str, request: Request, db: Session = Dep
         try:
             send_email(
                 recipient,
-                "BKNR ERP - Account Approved",
+                "SVBK - Account Approved",
                 professional_email_html(
-                    title="Your BKNR ERP account is approved",
+                    title="Your SVBK account is approved",
                     intro=f"{comp.company_name} has been approved and your ERP access is now active.",
                     content_html=f"""
                       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:14px;">
@@ -258,9 +258,9 @@ async def approve_company(company_code: str, request: Request, db: Session = Dep
                         </tr>
                       </table>
                       <p style="margin:14px 0 0;color:#475569;font-size:14px;line-height:1.6;"><strong>Approved At:</strong> {approved_at}</p>
-                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in to BKNR ERP using your registered email and password.</p>
+                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in to SVBK using your registered email and password.</p>
                     """,
-                    note="If you have trouble logging in, please contact BKNR ERP support."
+                    note="If you have trouble logging in, please contact SVBK support."
                 )
             )
         except Exception as e:
