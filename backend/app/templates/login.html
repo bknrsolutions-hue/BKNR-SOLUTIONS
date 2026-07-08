@@ -58,7 +58,7 @@
     "@type": "Organization",
     "name": "SVBK IT SOLUTIONS",
     "url": "https://bknrerp.in/",
-    "logo": "https://bknrerp.in/static/icon-512.png"
+    "logo": "https://bknrerp.in/static/images/svbk-it-solutions-logo.jpeg"
   }
 }
 </script>
@@ -174,6 +174,19 @@
             align-items: center;
             gap: 12px;
             min-width: 0;
+        }
+
+        .brand-wordmark {
+            display: block;
+            width: clamp(170px, 18vw, 250px);
+            height: auto;
+            max-height: 58px;
+            object-fit: contain;
+        }
+
+        .form-brand .brand-wordmark {
+            width: min(230px, 58vw);
+            max-height: 62px;
         }
 
         .brand-mark {
@@ -1076,6 +1089,7 @@
 
         .login-section .form-side {
             transform: none;
+            padding-top: 28px;
         }
 
         .login-only-shell {
@@ -2034,11 +2048,7 @@
     <div class="site-shell">
         <nav class="site-nav">
             <a class="brand" href="/" aria-label="SVBK IT SOLUTIONS home">
-                <span class="brand-mark"><img src="/static/icon-192.png" alt=""></span>
-                <span class="brand-copy">
-                    <strong>SVBK IT SOLUTIONS</strong>
-                    <span>Seafood SaaS ERP</span>
-                </span>
+                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.jpeg" alt="SVBK IT Solutions">
             </a>
             {% if not show_login|default(false) %}
             <div class="nav-links" aria-label="Website navigation">
@@ -2120,17 +2130,6 @@
         <section class="login-section">
             <aside class="auth-panel" id="login">
                 <div class="form-side">
-                    <div class="form-brand">
-                        <a class="brand" href="/auth/login" aria-label="ERP login">
-                            <span class="brand-mark"><img src="/static/icon-192.png" alt=""></span>
-                            <span class="brand-copy">
-                                <strong>SVBK IT SOLUTIONS</strong>
-                                <span>Account Access</span>
-                            </span>
-                        </a>
-                        <span class="form-badge">Secure</span>
-                    </div>
-
                     <div id="registerBox" class="card">
                         <h2>Company Registration</h2>
                         <div class="form-group"><label>Company Name</label><input id="company_name" type="text"
