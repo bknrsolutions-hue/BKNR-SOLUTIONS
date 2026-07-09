@@ -28,6 +28,8 @@ BREVO_API_KEY = os.getenv("BREVO_API_KEY")
 BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 SENDER_EMAIL = os.getenv("SMTP_EMAIL", os.getenv("BREVO_SENDER_EMAIL", "bknr.solutions@gmail.com"))
 SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "SVBK"))
+if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
+    SENDER_NAME = "SVBK"
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 OTP_EXPIRY_MIN = 10

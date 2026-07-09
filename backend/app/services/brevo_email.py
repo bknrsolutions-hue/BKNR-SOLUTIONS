@@ -5,6 +5,8 @@ BREVO_URL = "https://api.brevo.com/v3/smtp/email"
 
 SENDER_EMAIL = os.getenv("BREVO_SENDER_EMAIL", "bknr.solutions@gmail.com")
 SENDER_NAME = os.getenv("BREVO_SENDER_NAME", "SVBK")
+if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
+    SENDER_NAME = "SVBK"
 REPLY_TO_EMAIL = os.getenv("SUPPORT_EMAIL", SENDER_EMAIL)
 
 

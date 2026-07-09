@@ -4,6 +4,8 @@ from email.message import EmailMessage
 SMTP_EMAIL = os.getenv("SMTP_EMAIL")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
 SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "SVBK")
+if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
+    SENDER_NAME = "SVBK"
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 def build_otp_email(otp):

@@ -32,6 +32,8 @@ def _send_user_otp_email(to_email: str, otp: str, user_name: str, company_name: 
     sender_email = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
     sender_password = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
     sender_name = os.getenv("EMAIL_SENDER_NAME", "SVBK")
+    if not sender_name or "bknr" in sender_name.lower():
+        sender_name = "SVBK"
     support_email = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
     html = f"""<!doctype html>

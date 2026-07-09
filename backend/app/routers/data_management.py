@@ -54,6 +54,8 @@ from app.database.models.attendance import EmployeeRegistration, DailyAttendance
 router = APIRouter()
 SENDER_EMAIL = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
 SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "SVBK")
+if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
+    SENDER_NAME = "SVBK"
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
 
 # =====================================================
