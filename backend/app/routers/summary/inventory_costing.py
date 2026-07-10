@@ -14,6 +14,7 @@ import re
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_sum
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -90,7 +91,21 @@ def calculate_hoso_equivalent_weight(db: Session, comp_code: str, row, v_records
     denominator = (peeling_yield * soaking_yield * hlso_yield)
     return (net_qty / denominator if denominator > 0 else net_qty)
 
-def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
+def get_cost_breakdown(db: Session, comp_code: str, row) -> dict:
+    res = {
+        "production_cost_per_kg": 0.0,
+        "ice_rate_per_kg": 0.0,
+        "deheading_rate_per_kg": 0.0,
+        "grading_rate_per_kg": 0.0,
+        "peeling_rate_per_kg": 0.0,
+        "total_addon": 0.0,
+        "base_rm_rate": 0.0
+    }
+    
+    if is_special_grade(row.grade):
+        res["base_rm_rate"] = 280.0
+        return res
+
     prod_for = str(row.production_for or "").strip()
     freezer = str(getattr(row, "freezer", "") or "").strip()
     glaze = str(row.glaze or "").strip()
@@ -109,7 +124,11 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
         ProductionForTable.status == "Active"
     ).order_by(ProductionForTable.apply_from.desc()).first()
 
-    if not master: return 5.0
+    if not master:
+        res["total_addon"] = 5.0
+        res["production_cost_per_kg"] = 5.0
+        res["base_rm_rate"] = max(0.0, float(row.product_kg_value or 0.0) - 5.0)
+        return res
 
     is_source_rmp = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == comp_code,
@@ -134,27 +153,46 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
     is_source_hlso = "HLSO" in source_variety
 
     if any(x in prod_type for x in ["RAW", "MELTING", "PRODUCTION"]):
-        cost = float(master.production_cost_per_kg or 0) + float(master.ice_rate_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.production_cost_per_kg or 0.0)
+        res["ice_rate_per_kg"] = float(master.ice_rate_per_kg or 0.0)
+        
         if is_source_hoso:
             if is_finish_hlso:
-                cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0))
+                res["deheading_rate_per_kg"] = float(master.deheading_rate_per_kg or 0.0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
             elif is_finish_va:
-                cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0) + float(master.peeling_rate_per_kg or 0))
+                res["deheading_rate_per_kg"] = float(master.deheading_rate_per_kg or 0.0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
+                res["peeling_rate_per_kg"] = float(master.peeling_rate_per_kg or 0.0)
         elif is_source_hlso:
             if is_finish_hlso and is_source_rmp:
-                cost += float(master.grading_rate_per_kg or 0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
             elif is_finish_va:
-                if is_source_rmp: cost += float(master.grading_rate_per_kg or 0)
-                cost += float(master.peeling_rate_per_kg or 0)
-        return round(cost, 2)
+                if is_source_rmp:
+                    res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
+                res["peeling_rate_per_kg"] = float(master.peeling_rate_per_kg or 0.0)
 
     elif any(x in prod_type for x in ["REGLAZE", "REFREEZING"]):
-        return float(master.production_cost_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.production_cost_per_kg or 0.0)
 
     elif any(x in prod_type for x in ["REPACKING", "REWEIGHMENT"]):
-        return float(master.repacking_cost_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.repacking_cost_per_kg or 0.0)
+    else:
+        res["production_cost_per_kg"] = 5.0
 
-    return 5.0
+    res["total_addon"] = round(
+        res["production_cost_per_kg"] +
+        res["ice_rate_per_kg"] +
+        res["deheading_rate_per_kg"] +
+        res["grading_rate_per_kg"] +
+        res["peeling_rate_per_kg"],
+        2
+    )
+    res["base_rm_rate"] = round(max(0.0, float(row.product_kg_value or 0.0) - res["total_addon"]), 2)
+    return res
+
+def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
+    return get_cost_breakdown(db, comp_code, row)["total_addon"]
 
 # ============================================================================
 # MAIN ROUTER WITH UPDATED FILTER FLOW & GLOBAL ENGINE INJECTION
@@ -192,6 +230,9 @@ def inventory_costing_page(
     financial_years = sorted(list(fy_set), reverse=True)
 
     selected_fy = fy
+    if selected_fy is None:
+        today = ist_now().date()
+        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 3. Base Queries Formulation
     q_stock = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
@@ -213,7 +254,10 @@ def inventory_costing_page(
         q_cs = q_cs.filter(func.trim(cold_storage_holding.production_at) == func.trim(location))
 
     # FY & Date Range Logic
-    if selected_fy:
+    if selected_fy == "":
+        q_stock = q_stock.filter(stock_entry.id == -1)
+        q_cs = q_cs.filter(cold_storage_holding.id == -1)
+    elif selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
@@ -253,7 +297,7 @@ def inventory_costing_page(
 
     # 4. Calculation Processing Pool Matrices
     for batch in batch_numbers:
-        rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty).label("tq"), func.sum(RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
+        rmp_stats = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("tq"), active_sum(RawMaterialPurchasing, RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
         raw_val = float(rmp_stats.ta or 0); raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
         
         rep_stats = db.query(func.sum(Reprocess.out_qty).label("tq"), func.sum(Reprocess.inventory_value).label("ta")).filter(Reprocess.company_id == comp_code, Reprocess.new_batch_id == batch).first()
@@ -331,6 +375,14 @@ def inventory_costing_page(
 
     # 5. Fetch Structured Output Records Set
     all_rows = plant_rows + cs_rows
+    for r in all_rows:
+        breakdown = get_cost_breakdown(db, comp_code, r)
+        r.production_cost_per_kg = breakdown["production_cost_per_kg"]
+        r.ice_rate_per_kg = breakdown["ice_rate_per_kg"]
+        r.deheading_rate_per_kg = breakdown["deheading_rate_per_kg"]
+        r.grading_rate_per_kg = breakdown["grading_rate_per_kg"]
+        r.peeling_rate_per_kg = breakdown["peeling_rate_per_kg"]
+        r.base_rm_rate = breakdown["base_rm_rate"]
 
     total_qty_in = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
     total_qty_out = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT")
