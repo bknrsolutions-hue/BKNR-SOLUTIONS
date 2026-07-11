@@ -114,6 +114,7 @@ class DeHeading(Base):
     contractor = Column(String(255))
     rate_per_kg = Column(Float)
     amount = Column(Float)
+    journal_id = Column(Integer, nullable=True)
     email = Column(String)
     company_id = Column(String(50))
 
@@ -177,6 +178,7 @@ class Peeling(Base):
     contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
     rate = Column(Float)
     amount = Column(Float)
+    journal_id = Column(Integer, nullable=True)
  
     diff_qty = Column(Float)        
     diff_percent = Column(Float)

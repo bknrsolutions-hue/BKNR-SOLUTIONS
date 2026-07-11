@@ -115,6 +115,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
+.status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:62px; padding:3px 8px; border-radius:999px; background:#dcfce7; color:#166534; font-size:9px; font-weight:800; letter-spacing:.4px; }
+.status-badge.cancelled { background:#fee2e2; color:#991b1b; }
+.cancelled-row { background:#fff7ed !important; opacity:.78; }
+.cancelled-row td { text-decoration: line-through; color:#9ca3af !important; }
+.cancelled-row .status-badge { text-decoration:none; }
 
 /* Empty State */
 .empty-state { padding: 60px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
@@ -157,8 +162,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -224,12 +229,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th class="text-right">Consumed Units</th>
                 <th class="text-right">Unit Rate</th>
                 <th class="text-right">Total Cost (₹)</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not history %}
             <tr>
-                <td colspan="8" class="empty-state">
+                <td colspan="9" class="empty-state">
                     <i class="fa-solid fa-bolt" style="color:#eab308;"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render active electricity metrics ledger.</span>
@@ -237,10 +243,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </tr>
             {% else %}
                 {% for row in history %}
-                <tr class="data-row" 
+                <tr class="data-row {% if row.is_cancelled %}cancelled-row{% endif %}"
                     data-id="{{ row.id }}" 
                     data-date="{{ row.reading_date }}"
                     data-total="{{ row.total_cost }}"
+                    data-cancelled="{{ 'true' if row.is_cancelled else 'false' }}"
                     onclick="selectRow(this, '{{ row.id }}')">
                     
                     <td class="slno">0</td>
@@ -251,6 +258,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td class="text-right" style="color:var(--success); font-weight:700;">{{ "{:,.2f}".format(row.closing_kwh - row.opening_kwh) }}</td>
                     <td class="text-right">₹{{ "{:,.2f}".format(row.unit_rate or 0) }}</td>
                     <td class="text-right cost-val" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(row.total_cost or 0) }}</td>
+                    <td><span class="status-badge {% if row.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if row.is_cancelled else 'ACTIVE' }}</span></td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -348,9 +356,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     });
 
     function changeFY(val) {
-        if(!val) return;
         const url = new URL(window.location.href);
-        url.searchParams.set('fy', val);
+        url.searchParams.set('fy', val || '');
         window.location.href = url.toString();
     }
 
@@ -375,6 +382,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         rows.forEach(r => {
             const d = r.getAttribute("data-date") || "";
             const t = parseFloat(r.getAttribute("data-total")) || 0;
+            const isCancelled = r.getAttribute("data-cancelled") === "true";
 
             let match = true;
             if (mVal && !d.startsWith(mVal)) match = false;
@@ -382,7 +390,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
             if(match) {
                 r.style.display = "";
-                subtotal += t;
+                subtotal += isCancelled ? -t : t;
                 visibleRows.push(r);
             } else {
                 r.style.display = "none";
@@ -399,6 +407,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function selectRow(tr, id) {
         globalSelectedId = id;
+        window.selectedRowCancelled = tr.getAttribute("data-cancelled") === "true";
         document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
         tr.classList.add('selected-row');
         document.getElementById('threeDotsMenu').style.display = 'block';
@@ -512,26 +521,35 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success || out.status === 'success') {
-                Swal.fire({ icon:'success', title:'Log Entry Posted!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                Swal.fire({ icon:'success', title:'Electricity Saved', text: out.message || 'Electricity log entry saved successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
             } else { Swal.fire("Error", out.message || "Save rejection", "error"); }
         } catch(e) { Swal.fire("Error", "Server network stack failure", "error"); }
     }
 
     async function cancelSelected() {
         if (!globalSelectedId) return;
+        if (window.selectedRowCancelled) {
+            Swal.fire("Already Cancelled", "This electricity entry is already marked as cancelled.", "info");
+            return;
+        }
         const resDecision = await Swal.fire({
             title: "Destroy record item?", text: "This operation will completely drop the entry trace node.", icon: "warning", showCancelButton: true
         });
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire({ icon:'success', title:'Cancelled successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                const out = await res.json();
+                if(res.ok && out.success) {
+                    Swal.fire({ icon:'success', title:'Cancelled', text: out.message || 'Electricity log entry cancelled successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
+                } else {
+                    Swal.fire("Error", out.message || "Cancel failed.", "error");
+                }
             } catch(e) { Swal.fire("Error", "Interceptor execution fault dropping node.", "error"); }
         }
     }
 
     function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

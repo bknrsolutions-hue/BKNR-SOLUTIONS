@@ -13,13 +13,19 @@ import datetime as dt
 from io import BytesIO
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from openpyxl import Workbook
 from app.services.pdf_renderer import render_pdf_from_html
 
 from app.database import get_db
 from app.database.models.processing import DeHeading, AuditLog
-from app.database.models.criteria import HOSO_HLSO_Yields
+from app.database.models.criteria import HOSO_HLSO_Yields, contractors
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_contractor_source_charge,
+)
 
 router = APIRouter(
     prefix="/de_heading",
@@ -32,6 +38,36 @@ templates = Jinja2Templates(directory="app/templates")
 def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def repost_deheading_accounts(db: Session, row: DeHeading, company_id: str, email: str):
+    if row.journal_id:
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        row.journal_id = None
+    if row.is_cancelled or float(row.amount or 0) <= 0:
+        return
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_id,
+        voucher_date=row.date,
+        reference_no=f"DEH-{row.id}",
+        contractor_name=row.contractor,
+        charge_type="Deheading",
+        taxable_amount=row.amount,
+        gst_percent=contractor_gst_percent(db, company_id, row.contractor),
+        created_by=email,
+        quantity=row.hlso_qty,
+        rate=row.rate_per_kg,
+    )
+    row.journal_id = voucher.id
 
 # ============================================================
 # 1. MAIN REPORT (GET) - AUTO REFRESH ON OPEN WITH FY FILTER
@@ -50,8 +86,10 @@ async def de_heading_report(
         return RedirectResponse("/", status_code=302)
 
     # 1. Fetch Current FY and Criteria Map (Species, Count)
-    current_date = dt.date.today()
+    current_date = ist_now().date()
     current_fy_val = get_fin_year(current_date)
+    if fy is None:
+        fy = str(current_fy_val)
     
     target_yields = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_id).all()
     
@@ -73,8 +111,7 @@ async def de_heading_report(
         query = db.query(DeHeading).filter(
             DeHeading.company_id == company_id,
             DeHeading.date >= start_date,
-            DeHeading.date <= end_date,
-            DeHeading.is_cancelled != True
+            DeHeading.date <= end_date
         )
 
         # Global Filters Integration
@@ -154,6 +191,7 @@ async def update_deheading_row(
     enforce_report_permission(request, "report_edit")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
 
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if not row: raise HTTPException(status_code=404, detail="Record not found")
@@ -195,6 +233,7 @@ async def update_deheading_row(
         row.diff_qty = round((hlso / (target_y / 100)) - hoso, 2)
         row.diff_percent = round(row.yield_percent - target_y, 2)
 
+    repost_deheading_accounts(db, row, company_id, user_email)
     db.commit()
     refresh_floor_balance(db, company_id)
     return {"status": "success", "target_yield_percent": row.target_yield_percent, "diff_qty": row.diff_qty, "diff_percent": row.diff_percent}
@@ -228,19 +267,18 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
         DeHeading.company_id == company_id,
-        DeHeading.contractor == contractor,
-        DeHeading.is_cancelled != True
+        DeHeading.contractor == contractor
     )
     if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
     else: query = query.filter(func.to_char(DeHeading.date, 'YYYY-MM') == month)
     rows = query.order_by(DeHeading.date.asc()).all()
     
-    t_hoso = sum(r.hoso_qty or 0 for r in rows)
-    t_hlso = sum(r.hlso_qty or 0 for r in rows)
+    t_hoso = sum(signed_number(r, r.hoso_qty) for r in rows)
+    t_hlso = sum(signed_number(r, r.hlso_qty) for r in rows)
     data = {
         "request": request, "rows": rows, "contractor_name": contractor, "month_year": month,
         "total_hoso": round(t_hoso, 2), "total_hlso": round(t_hlso, 2),
-        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
+        "grand_total": round(sum(signed_number(r, r.amount) for r in rows), 2),
         "avg_yield": round((t_hlso / t_hoso * 100) if t_hoso > 0 else 0, 2), "bill_date": ist_now()
     }
     if download:
@@ -254,8 +292,7 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
-        DeHeading.company_id == company_id,
-        DeHeading.is_cancelled != True
+        DeHeading.company_id == company_id
     )
     
     # 1. 🟢 Force evaluate incoming global interface context
@@ -279,8 +316,7 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
-        DeHeading.company_id == company_id,
-        DeHeading.is_cancelled != True
+        DeHeading.company_id == company_id
     )
     
     # 2. 🟢 Force evaluate incoming global interface context
@@ -307,10 +343,15 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
+    email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if row:
-        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)))
-        row.is_cancelled = True; db.commit()
+        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)))
+        row.is_cancelled = True
+        row.status = "Cancelled"
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        db.commit()
         refresh_floor_balance(db, company_id)
         return {"status": "success"}
     return {"status": "error"}

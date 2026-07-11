@@ -17,7 +17,13 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from app.database import get_db
 from app.database.models.bills import DieselLog
 from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
-from app.database.models.criteria import production_at
+from app.database.models.criteria import production_at, vendors
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_diesel_consumption,
+    post_diesel_purchase,
+)
 
 router = APIRouter(
     prefix="/diesel",
@@ -66,6 +72,11 @@ def diesel_entry_page(
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
+    ensure_bill_accounting_schema(db)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
+
     # 🔹 Production Locations List
     locations = (
         db.query(production_at)
@@ -73,6 +84,10 @@ def diesel_entry_page(
         .order_by(production_at.production_at)
         .all()
     )
+
+    vendor_list = db.query(vendors).filter(
+        vendors.company_id == company_code
+    ).order_by(vendors.name).all()
 
     # 🔹 Diesel History Filtered by Financial Year (April to March)
     diesel_history = []
@@ -85,8 +100,7 @@ def diesel_entry_page(
             db.query(DieselLog, production_at.production_at.label("location_name"))
             .join(production_at, DieselLog.unit_id == production_at.id)
             .filter(
-                production_at.company_id == company_code, DieselLog.is_cancelled != True,
-                DieselLog.is_cancelled != True,
+                production_at.company_id == company_code,
                 DieselLog.log_date >= start_date,
                 DieselLog.log_date <= end_date
             )
@@ -101,7 +115,8 @@ def diesel_entry_page(
             "locations": locations,
             "diesel_history": diesel_history,
             "email": email,
-            "selected_fy": fy
+            "selected_fy": fy,
+            "vendors": vendor_list
         }
     )
 
@@ -142,8 +157,11 @@ async def save_diesel_in(
         return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
+        ensure_bill_accounting_schema(db)
         last = db.query(DieselLog).filter(DieselLog.unit_id == payload.in_unit_id).order_by(desc(DieselLog.id)).first()
         opening = last.closing_stock if last else 0.0
+        taxable_value = round(float(payload.received_qty or 0.0) * float(payload.rate or 0.0), 2)
+        tax_amount = round(float(payload.net_amount or 0.0) - taxable_value, 2)
 
         new_log = DieselLog(
             unit_id=payload.in_unit_id,
@@ -160,7 +178,8 @@ async def save_diesel_in(
             avg_price=payload.rate,
             tax_per=payload.tax_per,
             net_val=payload.net_amount,
-            email=email
+            email=email,
+            status="DRAFT"
         )
 
         db.add(new_log)
@@ -173,8 +192,22 @@ async def save_diesel_in(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
+        voucher = post_diesel_purchase(
+            db,
+            company_code,
+            payload.bill_date,
+            new_log.bill_no or new_log.grn_no,
+            new_log.vendor,
+            taxable_value,
+            tax_amount,
+            payload.net_amount,
+            email,
+        )
+        new_log.journal_id = voucher.id
+        new_log.status = "POSTED"
+
         db.commit()
-        return JSONResponse({"success": True, "message": "Diesel Stock IN record committed successfully!"})
+        return JSONResponse({"success": True, "message": f"Diesel purchase posted successfully: {voucher.voucher_no}"})
     except Exception as e:
         db.rollback()
         logger.error(f"DIESEL IN SAVE ERROR: {str(e)}")
@@ -196,9 +229,12 @@ async def save_diesel_out(
         return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
+        ensure_bill_accounting_schema(db)
         last = db.query(DieselLog).filter(DieselLog.unit_id == payload.unit_id).order_by(desc(DieselLog.id)).first()
         opening = float(last.closing_stock) if last else 0.0
         rate = float(last.avg_price) if last else 0.0
+        consumption_amount = round(payload.out_qty * rate, 2)
+        reference_no = f"DIESEL-OUT-{payload.unit_id}-{payload.out_date}"
 
         new_log = DieselLog(
             unit_id=payload.unit_id,
@@ -211,8 +247,9 @@ async def save_diesel_out(
             closing_stock=payload.out_closing,
             avg_price=rate,
             tax_per=0.0,
-            net_val=round(payload.out_qty * rate, 2),
-            email=email
+            net_val=consumption_amount,
+            email=email,
+            status="DRAFT"
         )
 
         db.add(new_log)
@@ -225,8 +262,19 @@ async def save_diesel_out(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
+        voucher = post_diesel_consumption(
+            db,
+            company_code,
+            payload.out_date,
+            reference_no,
+            consumption_amount,
+            email,
+        )
+        new_log.journal_id = voucher.id
+        new_log.status = "POSTED"
+
         db.commit()
-        return JSONResponse({"success": True, "message": "Diesel Consumption record committed successfully!"})
+        return JSONResponse({"success": True, "message": f"Diesel consumption posted successfully: {voucher.voucher_no}"})
     except Exception as e:
         db.rollback()
         logger.error(f"DIESEL OUT SAVE ERROR: {str(e)}")
@@ -283,7 +331,9 @@ def delete_diesel_log(log_id: int, request: Request, db: Session = Depends(get_d
                 field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
+            cancel_linked_bill_voucher(db, comp_code, log_entry.journal_id, email)
             log_entry.is_cancelled = True
+            log_entry.status = "CANCELLED"
             db.commit()
             return {"success": True, "message": "Diesel record cancelled successfully"}
         except Exception as e:

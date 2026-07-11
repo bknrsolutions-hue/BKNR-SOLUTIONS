@@ -28,6 +28,7 @@ from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_gr
 
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_sum
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -423,7 +424,7 @@ def sync_old_data(request: Request, db: Session = Depends(get_db)):
     dh_totals = db.query(
         DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
         DeHeading.peeling_at, DeHeading.production_for,
-        func.sum(DeHeading.hlso_qty).label("total_hlso")
+        signed_sum(DeHeading, DeHeading.hlso_qty).label("total_hlso")
     ).filter(DeHeading.company_id == company_code).group_by(
         DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
         DeHeading.peeling_at, DeHeading.production_for
@@ -432,7 +433,7 @@ def sync_old_data(request: Request, db: Session = Depends(get_db)):
     grad_totals = db.query(
         Grading.batch_number, Grading.species, Grading.hoso_count, 
         Grading.peeling_at, Grading.production_for,
-        func.sum(Grading.quantity).label("total_graded")
+        signed_sum(Grading, Grading.quantity).label("total_graded")
     ).filter(Grading.company_id == company_code).group_by(
         Grading.batch_number, Grading.species, Grading.hoso_count, 
         Grading.peeling_at, Grading.production_for

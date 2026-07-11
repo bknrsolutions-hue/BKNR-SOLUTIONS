@@ -107,6 +107,8 @@ tbody td { padding: 6px 4px; font-size: 9.5px; border-bottom: 1px solid var(--bo
 tbody tr:hover:not(.subtotal-row) { background: var(--row-hover); }
 tr.selected { background: #e0f2fe !important; border-left: 3px solid var(--accent); }
 tr.selected td { color: #0369a1; font-weight: 600; }
+.cancelled-row { background:#fff1f2 !important; opacity:.78; }
+.cancelled-row td { color:var(--danger) !important; text-decoration:line-through; }
 
 /* Subtotals and Totals styling */
 .subtotal-row { background: #f8fafc !important; font-weight: 800; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; }
@@ -176,8 +178,8 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
     table { min-width: 1400px; } 
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
@@ -315,7 +317,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
                             {% endif %}
                         {% endif %}
                         
-                        <tr class="sum-data-row" data-id="{{ r.id }}" data-date="{{ r.date }}" data-brand="{{ r.brand }}" data-variety="{{ r.variety_name }}" data-freezer="{{ r.freezer }}" data-type="{{ r.production_type }}" data-pf="{{ r.production_for }}" onclick="selectRow(this)">
+                        <tr class="sum-data-row {% if r.is_cancelled %}cancelled-row{% endif %}" data-id="{{ r.id }}" data-date="{{ r.date }}" data-brand="{{ r.brand }}" data-variety="{{ r.variety_name }}" data-freezer="{{ r.freezer }}" data-type="{{ r.production_type }}" data-pf="{{ r.production_for }}" data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}" onclick="selectRow(this)">
                             <td class="slno-sum"></td>
                             <td>{{ r.date }}</td>
                             <td>{{ r.time }}</td>
@@ -415,7 +417,7 @@ tfoot td { background: #f8fafc; font-weight: 800; font-size: 10px; border-top: 2
                             {% endif %}
                         {% endif %}
 
-                        <tr class="det-data-row" data-id="{{ r.id }}" data-date="{{ r.date }}" data-time="{{ r.time }}" data-prod-at="{{ r.production_at }}" data-pf="{{ r.production_for }}" data-type="{{ r.production_type }}" data-species="{{ r.species }}" data-batch="{{ r.batch_number }}" data-brand="{{ r.brand }}" data-variety="{{ r.variety_name }}" data-glaze="{{ r.glaze }}" data-freezer="{{ r.freezer }}" data-pck="{{ r.packing_style }}" data-grade="{{ r.grade }}" onclick="selectRow(this)">
+                        <tr class="det-data-row {% if r.is_cancelled %}cancelled-row{% endif %}" data-id="{{ r.id }}" data-date="{{ r.date }}" data-time="{{ r.time }}" data-prod-at="{{ r.production_at }}" data-pf="{{ r.production_for }}" data-type="{{ r.production_type }}" data-species="{{ r.species }}" data-batch="{{ r.batch_number }}" data-brand="{{ r.brand }}" data-variety="{{ r.variety_name }}" data-glaze="{{ r.glaze }}" data-freezer="{{ r.freezer }}" data-pck="{{ r.packing_style }}" data-grade="{{ r.grade }}" data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}" onclick="selectRow(this)">
                             <td class="slno-det"></td>
                             <td>{{ r.date }}</td>
                             <td>{{ r.time }}</td>
@@ -472,7 +474,7 @@ const lookups={brands_list:{{brands_list|tojson or []}},species_list:{{species_l
 let selectedRow=null,currentAction=null,currentViewMode='summary';
 const baseUrl=window.location.pathname.replace(/\/$/,"");
 
-function changeFY(val){if(!val)return;const url=new URL(window.location.href);url.searchParams.set('fy',val);window.location.href=url.toString();}
+function changeFY(val){const url=new URL(window.location.href);url.searchParams.set('fy',val||'');window.location.href=url.toString();}
 function switchView(mode,btn){
     document.querySelectorAll('.v-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
@@ -515,7 +517,7 @@ function applyFilters(){
   dataRows.forEach(tr=>{
    const d=tr.dataset.date||'',brand=tr.dataset.brand||'',variety=tr.dataset.variety||'',freezer=tr.dataset.freezer||'',type=tr.dataset.type||'',pf=tr.dataset.pf||'',text=tr.innerText.toLowerCase();
    let ok=true;if(fm&&!d.startsWith(fm))ok=false;if(f1&&d<f1)ok=false;if(f2&&d>f2)ok=false;if(fbrd&&brand!==fbrd)ok=false;if(fvar&&variety!==fvar)ok=false;if(ffrz&&freezer!==ffrz)ok=false;if(ftyp&&type!==ftyp)ok=false;if(fpf&&pf !==fpf)ok=false;if(q&&!text.includes(q))ok=false;
-   if(ok){tr.style.display="";visibleCount++;mcT+=parseFloat(tr.cells[14].innerText)||0;lsT+=parseFloat(tr.cells[15].innerText)||0;qtyT+=parseFloat(tr.cells[16].innerText)||0;}else{tr.style.display="none";}
+   if(ok){tr.style.display="";visibleCount++;const sign=tr.dataset.cancelled==="true"?-1:1;mcT+=sign*(parseFloat(tr.cells[14].innerText)||0);lsT+=sign*(parseFloat(tr.cells[15].innerText)||0);qtyT+=sign*(parseFloat(tr.cells[16].innerText)||0);}else{tr.style.display="none";}
   });
   const visibleRows=dataRows.filter(r=>r.style.display!=='none');visibleRows.forEach((r,idx)=>{r.querySelector('.slno-sum').innerText=visibleRows.length-idx;});
   subRows.forEach(sr=>{let hasVisible=false;let prev=sr.previousElementSibling;while(prev&&!prev.classList.contains('subtotal-row')){if(prev.style.display!=='none'){hasVisible=true;break;}prev=prev.previousElementSibling;}sr.style.display=hasVisible?"":"none";});
@@ -525,7 +527,7 @@ function applyFilters(){
   dataRows.forEach(tr=>{
    const d=tr.dataset.date||'',brand=tr.dataset.brand||'',variety=tr.dataset.variety||'',freezer=tr.dataset.freezer||'',type=tr.dataset.type||'',pf=tr.dataset.pf||'',text=tr.innerText.toLowerCase();
    let ok=true;if(fm&&!d.startsWith(fm))ok=false;if(f1&&d<f1)ok=false;if(f2&&d>f2)ok=false;if(fbrd&&brand!==fbrd)ok=false;if(fvar&&variety!==fvar)ok=false;if(ffrz&&freezer!==ffrz)ok=false;if(ftyp&&type!==ftyp)ok=false;if(fpf&&pf!==fpf)ok=false;if(q&&!text.includes(q))ok=false;
-   if(ok){tr.style.display="";visibleCount++;mcT+=parseFloat(tr.cells[14].innerText)||0;lsT+=parseFloat(tr.cells[15].innerText)||0;qtyT+=parseFloat(tr.cells[16].innerText)||0;}else{tr.style.display="none";}
+   if(ok){tr.style.display="";visibleCount++;const sign=tr.dataset.cancelled==="true"?-1:1;mcT+=sign*(parseFloat(tr.cells[14].innerText)||0);lsT+=sign*(parseFloat(tr.cells[15].innerText)||0);qtyT+=sign*(parseFloat(tr.cells[16].innerText)||0);}else{tr.style.display="none";}
   });
   const visibleRows=dataRows.filter(r=>r.style.display!=='none');visibleRows.forEach((r,idx)=>{r.querySelector('.slno-det').innerText=visibleRows.length-idx;});
   subRows.forEach(sr=>{let hasVisible=false;let prev=sr.previousElementSibling;while(prev&&!prev.classList.contains('subtotal-row')){if(prev.style.display!=='none'){hasVisible=true;break;}prev=prev.previousElementSibling;}sr.style.display=hasVisible?"":"none";});
@@ -731,7 +733,7 @@ function fillFilters(){
 
 window.onload=()=>{fillFilters();applyFilters();};
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 
 </body>
 </html>

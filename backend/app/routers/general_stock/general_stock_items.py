@@ -14,6 +14,7 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 # ==================== PAGE LOAD (GET) ==================== #
+@router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 def general_items_page(request: Request, db: Session = Depends(get_db)):
     

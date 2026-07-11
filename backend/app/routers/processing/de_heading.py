@@ -22,6 +22,7 @@ from app.utils.global_filters import get_global_filters
 from app.utils.timezone import ist_now
 from app.services.floor_balance import get_floor_balance
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
+from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
 
 router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -245,6 +246,14 @@ def get_contractor_rate(contractor: str, request: Request, db: Session = Depends
     return {"rate": float(row.rate) if row else 0}
 
 
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
 # =====================================================
 # ACTION: SAVE DE-HEADING (⚡ ATOMIC DUAL MUTATION LOCK)
 # =====================================================
@@ -311,6 +320,7 @@ def save_de_heading(
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
     
     clean_batch = batch_number.strip()
     clean_count = hoso_count.strip()
@@ -365,6 +375,22 @@ def save_de_heading(
 
     # 🟢 ⚡ 3. Synchronize pool *after* successful floor balance state mutations
     add_deheading_to_grading_pool(db, new_entry)
+
+    db.flush()
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_code,
+        voucher_date=current_ist.date(),
+        reference_no=f"DEH-{new_entry.id}",
+        contractor_name=contractor,
+        charge_type="Deheading",
+        taxable_amount=amount,
+        gst_percent=contractor_gst_percent(db, company_code, contractor),
+        created_by=email,
+        quantity=hlso_qty,
+        rate=rate_per_kg,
+    )
+    new_entry.journal_id = voucher.id
 
     db.commit()
     return JSONResponse({"status": "ok"})
@@ -423,6 +449,7 @@ def delete_de_heading(
     row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
     row.cancelled_by = email
     row.cancelled_at = ist_now()
+    cancel_linked_bill_voucher(db, company_code, row.journal_id, email)
 
     db.commit()
     return JSONResponse({"status": "ok"})

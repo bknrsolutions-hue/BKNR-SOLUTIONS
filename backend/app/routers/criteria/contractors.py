@@ -58,6 +58,7 @@ def save_contractor(
     bank_name: str = Form(""),
     account_no: str = Form(""),
     ifsc: str = Form(""),
+    payment_cycle: str = Form(""),
     date: str = Form(...),
     time: str = Form(...),
     id: str = Form(""),
@@ -103,6 +104,7 @@ def save_contractor(
         row.bank_name = bank_name
         row.account_no = account_no
         row.ifsc = ifsc
+        row.payment_cycle = payment_cycle
         row.date = date
         row.time = time
         row.email = session_email
@@ -120,6 +122,7 @@ def save_contractor(
             bank_name=bank_name,
             account_no=account_no,
             ifsc=ifsc,
+            payment_cycle=payment_cycle,
             date=date,
             time=time,
             email=session_email,

@@ -17,9 +17,78 @@ from app.database.models.attendance import (
     EmployeeStatutoryMaster,
     Shift  
 )
+from app.database.models.criteria import contractors
+from app.database.models.enterprise_finance import VoucherHeader
+from app.services.bill_accounting import amount_line, cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
+from app.services.posting_engine import PostingEngineService
 
 router = APIRouter(tags=["SALARY_REPORTS"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def replace_contract_salary_adjustment_voucher(db: Session, company_id: str, emp: EmployeeRegistration, month: str, adjustment_days: float, email: str):
+    if str(emp.employee_type or "").upper() != "CONTRACT" or not emp.contractor_name:
+        return
+
+    reference_no = f"ATT-ADJ-{emp.employee_id}-{month}"[:50]
+    existing = db.query(VoucherHeader).filter(
+        VoucherHeader.company_id == company_id,
+        VoucherHeader.reference_no == reference_no,
+        VoucherHeader.status == "POSTED",
+    ).first()
+    if existing:
+        cancel_linked_bill_voucher(db, company_id, existing.id, email)
+
+    per_day_rate = float(emp.current_salary or 0.0) / 26.0 if emp.current_salary else 0.0
+    taxable_amount = round(abs(float(adjustment_days or 0.0)) * per_day_rate, 2)
+    if taxable_amount <= 0:
+        return
+
+    if adjustment_days > 0:
+        post_contractor_source_charge(
+            db=db,
+            company_id=company_id,
+            voucher_date=date.today(),
+            reference_no=reference_no,
+            contractor_name=emp.contractor_name,
+            charge_type="Processing Adjustment",
+            taxable_amount=taxable_amount,
+            gst_percent=contractor_gst_percent(db, company_id, emp.contractor_name),
+            created_by=email,
+            quantity=adjustment_days,
+            rate=per_day_rate,
+        )
+        return
+
+    gst_percent = contractor_gst_percent(db, company_id, emp.contractor_name)
+    gst_amount = round(taxable_amount * gst_percent / 100.0, 2)
+    total_amount = round(taxable_amount + gst_amount, 2)
+    contractor_ledger = f"{emp.contractor_name} - Contractor A/c"
+    details = [
+        amount_line(contractor_ledger, "Sundry Creditors", "LIABILITY", debit=total_amount, remarks=reference_no, parent_group_name="Current Liabilities"),
+        amount_line("Processing Adjustment Contractor Charges A/c", "Direct Expenses", "EXPENSE", credit=taxable_amount, remarks=reference_no),
+    ]
+    if gst_amount:
+        details.append(amount_line("Input GST A/c", "Duties & Taxes", "LIABILITY", credit=gst_amount, remarks=reference_no, parent_group_name="Current Liabilities"))
+    PostingEngineService.create_voucher(
+        db,
+        company_id,
+        "Journal",
+        date.today(),
+        f"Contract salary negative adjustment {reference_no} for {emp.employee_name}",
+        details,
+        reference_no=reference_no,
+        created_by=email or "SYSTEM",
+        status="POSTED",
+    )
 
 # ==================================================
 # ⚡ HELPER: CALCULATE SHIFT DURATIONS
@@ -83,6 +152,7 @@ def get_salary_report(
 ):
     company_id = request.session.get("company_code")
     if not company_id: return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     year, month_no = map(int, month.split("-"))
     days_in_month = calendar.monthrange(year, month_no)[1]
@@ -118,8 +188,8 @@ def get_salary_report(
         per_day_rate = base_gross / 26.0
 
         for rec in attendance_records:
-            if rec.salary_adjustment:
-                adjustment = max(adjustment, float(rec.salary_adjustment))
+            if rec.salary_adjustment is not None and float(rec.salary_adjustment or 0.0) != 0.0:
+                adjustment = float(rec.salary_adjustment or 0.0)
             
             shift_name = rec.shift_name or "GENERAL"
             req_hours = shift_map.get(shift_name, 8.0)
@@ -150,9 +220,11 @@ def get_salary_report(
                 if duty_credit > 1.0:
                     d_status = getattr(rec, 'duty_status', 'APPROVED') # Needs link to DutyApproval table
                     if d_status == 'APPROVED':
-                        val = duty_credit
+                        approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
+                        val = approved_credit if approved_credit > 0 else duty_credit
                     else:
-                        val = 1.0 # Capped at single duty until HR approves
+                        approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
+                        val = approved_credit if approved_credit > 0 else 1.0 # Capped at single duty until HR approves
                 else:
                     val = duty_credit
 
@@ -326,18 +398,51 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
 @router.post("/api/salary/save-adjustment")
 def save_adjustment(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_id or not email:
+        return JSONResponse({"status": "error", "message": "Session expired. Please login again."}, status_code=401)
+
     emp_id = payload.get("employee_id")
     month = payload.get("month")
-    value = float(payload.get("adjustment", 0))
-    year, month_no = map(int, month.split("-"))
+    try:
+        value = float(payload.get("adjustment", 0) or 0)
+        year, month_no = map(int, str(month or "").split("-"))
+    except Exception:
+        return JSONResponse({"status": "error", "message": "Invalid adjustment/month"}, status_code=400)
+    ensure_bill_accounting_schema(db)
 
-    db.query(DailyAttendance).filter(
+    emp = db.query(EmployeeRegistration).filter(
+        EmployeeRegistration.employee_id == emp_id,
+        EmployeeRegistration.company_id == company_id,
+    ).first()
+    if not emp:
+        return JSONResponse({"status": "error", "message": "Employee not found"}, status_code=404)
+
+    updated = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == emp_id, DailyAttendance.company_id == company_id,
         extract("year", DailyAttendance.duty_date) == year, extract("month", DailyAttendance.duty_date) == month_no
-    ).update({"salary_adjustment": value})
+    ).update({"salary_adjustment": value}, synchronize_session=False)
+
+    if updated == 0:
+        db.add(DailyAttendance(
+            company_id=company_id,
+            employee_id=emp.employee_id,
+            employee_name=emp.employee_name,
+            designation=emp.designation,
+            employee_type=emp.employee_type,
+            production_at=emp.production_at or emp.location,
+            duty_date=date(year, month_no, 1),
+            shift_name="ADJUSTMENT",
+            working_hours=0.0,
+            salary_adjustment=value,
+            status="ADJUSTMENT",
+            movements=[],
+        ))
+
+    replace_contract_salary_adjustment_voucher(db, company_id, emp, month, value, email)
     
     db.commit()
-    return {"status": "success"}
+    return {"status": "success", "adjustment": value}
 
 # ==================================================
 # 5️⃣ 24-HOUR AUTO-EXIT PUNCH LOGIC

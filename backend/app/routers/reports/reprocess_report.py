@@ -33,6 +33,9 @@ async def reprocess_report_page(request: Request, db: Session = Depends(get_db))
         return RedirectResponse("/auth/login", status_code=302)
 
     selected_fy = request.query_params.get('fy')
+    if selected_fy is None:
+        today = ist_now().date()
+        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
     
     # 3 Tab ల కోసం ముందే లిస్టులను డిక్లేర్ చేస్తున్నాం
     rows_reprocess = []

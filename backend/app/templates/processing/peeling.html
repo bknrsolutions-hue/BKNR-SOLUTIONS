@@ -20,8 +20,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 
 <style>:root {
@@ -554,18 +554,19 @@ function buildTodaySummary() {
     todaySummaryBody.innerHTML = "";
     contractorSummaryBody.innerHTML = "";
     
-    const rows = [...document.querySelectorAll('#mainTableBody tr')].filter(r => r.style.display !== "none" && !r.classList.contains("cancelled-row"));
+    const rows = [...document.querySelectorAll('#mainTableBody tr')].filter(r => r.style.display !== "none");
     let todayTree = {}; let contractorTree = {};
     
     rows.forEach(r => {
         const comp = r.dataset.comp; const loc = r.dataset.loc; const variety = r.dataset.var;
         const contractor = r.dataset.cont; const qty = parseFloat(r.dataset.qty) || 0; const amt = parseFloat(r.dataset.amt) || 0;
+        const sign = r.classList.contains("cancelled-row") ? -1 : 1;
         
         const todayKey = `${comp} > ${loc} > ${variety}`;
-        todayTree[todayKey] = (todayTree[todayKey] || 0) + qty;
+        todayTree[todayKey] = (todayTree[todayKey] || 0) + (sign * qty);
         
         if(!contractorTree[contractor]) contractorTree[contractor] = { qty: 0, amt: 0 };
-        contractorTree[contractor].qty += qty; contractorTree[contractor].amt += amt;
+        contractorTree[contractor].qty += sign * qty; contractorTree[contractor].amt += sign * amt;
     });
     
     const todayKeys = Object.keys(todayTree).sort();

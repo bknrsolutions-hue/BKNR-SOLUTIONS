@@ -310,8 +310,8 @@ tr:hover td { background-color: var(--table-hover-bg); }
     .cards-view-grid { display: grid !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 <body>
 
@@ -319,8 +319,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
 
     <div class="header-panel">
         <div class="header-title">
-            <h2>{{ selected_company or 'COMPANY' }} FILTERED TIMEFRAME SUMMARY</h2>
-            <p>Executive Production & Floor Balance Terminal</p>
+            <h2>TIMEFRAME SUMMARY</h2>
         </div>
         <div class="control-bar">
             <button class="btn-action" onclick="window.print()"><i class="fa-solid fa-print"></i> Print</button>
@@ -726,6 +725,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                 <tbody>
                     {% set grouping = [] %}
                     {% for r in rows.rmp %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
+                    {% for r in rows.soaking %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
                     {% for r in rows.peeling %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
                     {% for r in rows.production %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
 
@@ -734,12 +734,14 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         {% set parts = item.split("||") %}
                         {% set s_match = parts[0] %}
                         {% set v_match = parts[1] %}
-                    {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0) %}
+                    {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0, prod_target_yield=0.0, soak_rejection=0.0) %}
                         {% if v_match == "HOSO" or v_match == "FRESH" %}
                             {% for r in rows.deheading %}{% if r.species|upper|trim == s_match %}{% set ns.di = ns.di + (r.hoso_qty|default(0)|float) %}{% set ns.do = ns.do + (r.hlso_qty|default(0)|float) %}{% set ns.d_diff = ns.d_diff + (r.diff_qty|default(0)|float) %}{% set ns.d_expected = ns.d_expected + (r.hoso_qty|default(0)|float * (r.target_yield_percent|default(0)|float / 100)) %}{% endif %}{% endfor %}
                         {% endif %}
                         {% for r in rows.peeling %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.pi = ns.pi + (r.hlso_qty|default(0)|float) %}{% set ns.po = ns.po + (r.peeled_qty|default(0)|float) %}{% set ns.p_diff = ns.p_diff + (r.diff_qty|default(0)|float) %}{% set ns.p_expected = ns.p_expected + (r.hlso_qty|default(0)|float * (r.target_yield_percent|default(0)|float / 100)) %}{% endif %}{% endfor %}
-                        {% for k, v in subtotals.items() %}{% if k[2]|upper|trim == s_match and k[3]|upper|trim == v_match %}{% set ns.si = ns.si + (v.get('soaking_in', 0)|float) %}{% set ns.pro = ns.pro + (v.get('prod_qty', 0)|float) %}{% set ns.total_prod_diff = ns.total_prod_diff + (v.get('diff_qty', 0)|float) %}{% endif %}{% endfor %}
+                        {% for k, v in subtotals.items() %}{% if k[2]|upper|trim == s_match and k[3]|upper|trim == v_match %}{% set ns.pro = ns.pro + (v.get('prod_qty', 0)|float) %}{% if ns.prod_target_yield == 0 and v.get('target_yield', 0)|float > 0 %}{% set ns.prod_target_yield = v.get('target_yield', 0)|float %}{% endif %}{% endif %}{% endfor %}
+                        {% for r in rows.soaking %}{% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}{% set ns.si = ns.si + (r.in_qty|default(0)|float) %}{% endif %}{% set rj_var = (r.rejection_for or r.variety_name or r.variety)|upper|trim %}{% if (r.species|upper|trim == s_match) and (rj_var == v_match) and (r.status|string|upper|trim != "COMPLETED") and (r.rejection_qty|default(0)|float > 0) %}{% set ns.soak_rejection = ns.soak_rejection + (r.rejection_qty|default(0)|float) %}{% endif %}{% endfor %}
+                        {% if ns.si > 0 and ns.prod_target_yield > 0 %}{% set ns.prod_expected = ns.si * (ns.prod_target_yield / 100) %}{% set ns.total_prod_diff = ns.pro - ns.prod_expected %}{% endif %}
                         
                         {% set tot_recon.di = tot_recon.di + ns.di %}{% set tot_recon.do = tot_recon.do + ns.do %}{% set tot_recon.pi = tot_recon.pi + ns.pi %}{% set tot_recon.po = tot_recon.po + ns.po %}{% set tot_recon.si = tot_recon.si + ns.si %}{% set tot_recon.pro = tot_recon.pro + ns.pro %}
                         <tr style="border-bottom: 1px solid var(--border);">
@@ -750,7 +752,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td class="text-right">{{ "%.2f"|format(ns.pi) }}</td><td class="text-right">{{ "%.2f"|format(ns.po) }}</td>
                             <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('peeling', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Peeling rows">{% if ns.pi > 0 %}{% set p_act = (ns.po / ns.pi) * 100 %}{% set p_dpct = (ns.p_diff / ns.pi) * 100 %}{{ "%.2f"|format(p_act) }}%<br><small style="color: {{ 'var(--success)' if p_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if p_dpct >= 0 else "" }}{{ "%.2f"|format(p_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.p_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.p_diff >= 0 else "" }}{{ "%.2f"|format(ns.p_diff) }}</small>{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% endif %}</td>
                             <td class="text-right">{{ "%.2f"|format(ns.si) }}</td><td class="text-right">{{ "%.2f"|format(ns.pro) }}</td>
-                            <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('production', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Production rows">{% if ns.si > 0 %}{% set pr_act = (ns.pro / ns.si) * 100 %}{% set pr_dpct = (ns.total_prod_diff / ns.si) * 100 %}{{ "%.2f"|format(pr_act) }}%<br><small style="color: {{ 'var(--success)' if pr_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if pr_dpct >= 0 else "" }}{{ "%.2f"|format(pr_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.total_prod_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.total_prod_diff >= 0 else "" }}{{ "%.2f"|format(ns.total_prod_diff) }}</small>{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% endif %}</td>
+                            <td class="text-right" style="cursor:pointer;" onclick="filterReconDetails('production', '{{ s_match }}', '{{ v_match }}')" title="Click to filter Production rows">{% if ns.si > 0 %}{% set pr_act = (ns.pro / ns.si) * 100 %}{% set pr_dpct = pr_act - ns.prod_target_yield if ns.prod_target_yield > 0 else 0 %}{{ "%.2f"|format(pr_act) }}%<br><small style="color: {{ 'var(--success)' if pr_dpct >= 0 else 'var(--danger)' }}; font-weight:800;">Δ% {{ "+" if pr_dpct >= 0 else "" }}{{ "%.2f"|format(pr_dpct) }}%</small><br><small style="color: {{ 'var(--success)' if ns.total_prod_diff >= 0 else 'var(--danger)' }}; font-weight:800;">Δkg {{ "+" if ns.total_prod_diff >= 0 else "" }}{{ "%.2f"|format(ns.total_prod_diff) }}</small>{% if ns.soak_rejection > 0 %}<br><small style="color:#ca8a04; font-weight:800;">R/J {{ "%.2f"|format(ns.soak_rejection) }}</small>{% endif %}{% else %}0%<br><small style="color:var(--text-muted)">Δ% 0.00%</small><br><small style="color:var(--text-muted)">Δkg 0.00</small>{% if ns.soak_rejection > 0 %}<br><small style="color:#ca8a04; font-weight:800;">R/J {{ "%.2f"|format(ns.soak_rejection) }}</small>{% endif %}{% endif %}</td>
                         </tr>
                     {% endfor %}
                     {% if grouping %}
@@ -2464,6 +2466,6 @@ function clearReconFilter(stage, rowClass) {
     }
 }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

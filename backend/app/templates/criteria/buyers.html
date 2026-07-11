@@ -10,9 +10,21 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <link rel="stylesheet" href="/static/css/bknr-masters.css">
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<style>
+  .buyer-table { min-width: 1500px; table-layout: fixed; }
+  .buyer-table th, .buyer-table td { vertical-align: middle; }
+  .buyer-table .name-col { width: 220px; text-align: left; padding-left: 20px; }
+  .buyer-table .sm-col { width: 90px; }
+  .buyer-table .md-col { width: 130px; }
+  .buyer-table .lg-col { width: 180px; }
+  .buyer-table .address-col { width: 240px; text-align: left; }
+  .pill-soft { background: var(--bg-color); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700; }
+  .form-grid.buyer-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  .field.full { grid-column: 1 / -1; }
+</style>
 </head>
 
 <body data-theme="dark">
@@ -26,11 +38,80 @@
 <form onsubmit="submitBuyer(event)" id="buyerForm">
   <div class="form-container" id="formSection" style="display:none;">
     
-    <div class="form-grid">
+    <div class="form-grid buyer-grid">
       <div class="form-title-inner"><i class="fa-solid fa-user-tie"></i> Buyer Profile</div>
       <div class="field">
         <label>Buyer Name</label>
         <input type="text" id="buyer_name" required placeholder="Enter Buyer Name">
+      </div>
+      <div class="field">
+        <label>Buyer Type</label>
+        <select id="buyer_type">
+          <option value="EXPORT">EXPORT</option>
+          <option value="DOMESTIC">DOMESTIC</option>
+          <option value="BOTH">BOTH</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Country</label>
+        <input list="countriesList" type="text" id="country" placeholder="Select / type country">
+        <datalist id="countriesList">
+          {% for c in countries_list %}<option value="{{ c.country_name }}"></option>{% endfor %}
+        </datalist>
+      </div>
+      <div class="field">
+        <label>Currency</label>
+        <select id="currency_code">
+          <option value="USD">USD</option>
+          <option value="INR">INR</option>
+          <option value="EUR">EUR</option>
+          <option value="GBP">GBP</option>
+          <option value="AED">AED</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Payment Terms Days</label>
+        <input type="number" id="payment_terms_days" min="0" step="1" value="30">
+      </div>
+      <div class="field">
+        <label>Credit Limit</label>
+        <input type="number" id="credit_limit" min="0" step="0.01" value="0">
+      </div>
+      <div class="field">
+        <label>Credit Insurance</label>
+        <select id="credit_insurance">
+          <option value="0">No</option>
+          <option value="1">Yes / ECGC</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>GST Number</label>
+        <input type="text" id="gst_number" maxlength="15" placeholder="Domestic GSTIN">
+      </div>
+      <div class="field">
+        <label>IEC / Import Code</label>
+        <input type="text" id="iec_code" placeholder="IEC / Import Code">
+      </div>
+      <div class="field">
+        <label>Contact Person</label>
+        <input type="text" id="contact_person" placeholder="Contact Person">
+      </div>
+      <div class="field">
+        <label>Buyer Email</label>
+        <input type="email" id="buyer_email" placeholder="invoice email">
+      </div>
+      <div class="field">
+        <label>Account Ledger</label>
+        <select id="account_ledger_id">
+          <option value="">-- SELECT RECEIVABLE LEDGER --</option>
+          {% for ledger in buyer_ledgers %}
+          <option value="{{ ledger.id }}">{{ ledger.ledger_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field full">
+        <label>Address</label>
+        <input type="text" id="address" placeholder="Buyer billing / shipping address">
       </div>
     </div>
 
@@ -78,6 +159,10 @@
 <div class="mobile-card-list">
     {% for row in today_data %}
     <div class="data-card" data-id="{{ row.id }}" data-name="{{ row.buyer_name }}"
+         data-buyer-type="{{ row.buyer_type or 'EXPORT' }}" data-country="{{ row.country or '' }}" data-currency="{{ row.currency_code or 'USD' }}"
+         data-iec="{{ row.iec_code or '' }}" data-credit-limit="{{ row.credit_limit or 0 }}" data-credit-insurance="{{ row.credit_insurance or 0 }}"
+         data-payment-terms="{{ row.payment_terms_days or 30 }}" data-gst="{{ row.gst_number or '' }}" data-contact="{{ row.contact_person or '' }}"
+         data-buyer-email="{{ row.buyer_email or '' }}" data-ledger-id="{{ row.account_ledger_id or '' }}" data-address="{{ row.address or '' }}"
          data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
          onclick="selectRowOrCard(this)">
         <div class="card-row">
@@ -87,6 +172,18 @@
         <div class="card-row">
             <span class="card-label">Buyer Name</span>
             <span class="card-val" style="color:var(--accent); font-size: 14px;">{{ row.buyer_name }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Type / Country</span>
+            <span class="card-val">{{ row.buyer_type or 'EXPORT' }} · {{ row.country or '-' }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Ledger</span>
+            <span class="card-val">{{ ledger_names.get(row.account_ledger_id, '-') }}</span>
+        </div>
+        <div class="card-row">
+            <span class="card-label">Contact</span>
+            <span class="card-val">{{ row.contact_person or '-' }} · {{ row.buyer_email or '-' }}</span>
         </div>
         <div class="card-row" style="border-top: 1px dashed var(--border-color); margin-top: 8px; padding-top: 8px;">
             <span class="card-label">Created At</span>
@@ -101,28 +198,50 @@
 </div>
 
 <div class="table-wrap">
-  <table id="dataTable">
+  <table id="dataTable" class="buyer-table">
     <thead>
       <tr>
         <th style="width:60px;">ID</th>
-        <th style="text-align: left; padding-left: 20px;">Buyer Name</th>
-        <th>Date</th>
-        <th>Time</th>
-        <th>Email</th>
-        <th>Company ID</th>
+        <th class="name-col">Buyer Name</th>
+        <th class="sm-col">Type</th>
+        <th class="md-col">Country</th>
+        <th class="sm-col">Currency</th>
+        <th class="sm-col">Terms</th>
+        <th class="md-col">Credit Limit</th>
+        <th class="sm-col">Insurance</th>
+        <th class="md-col">GST</th>
+        <th class="md-col">IEC</th>
+        <th class="lg-col">Contact Person</th>
+        <th class="lg-col">Buyer Email</th>
+        <th class="lg-col">Account Ledger</th>
+        <th class="address-col">Address</th>
+        <th class="md-col">Entry User</th>
       </tr>
     </thead>
     <tbody>
       {% for row in today_data %}
       <tr data-id="{{ row.id }}" data-name="{{ row.buyer_name }}"
+          data-buyer-type="{{ row.buyer_type or 'EXPORT' }}" data-country="{{ row.country or '' }}" data-currency="{{ row.currency_code or 'USD' }}"
+          data-iec="{{ row.iec_code or '' }}" data-credit-limit="{{ row.credit_limit or 0 }}" data-credit-insurance="{{ row.credit_insurance or 0 }}"
+          data-payment-terms="{{ row.payment_terms_days or 30 }}" data-gst="{{ row.gst_number or '' }}" data-contact="{{ row.contact_person or '' }}"
+          data-buyer-email="{{ row.buyer_email or '' }}" data-ledger-id="{{ row.account_ledger_id or '' }}" data-address="{{ row.address or '' }}"
           data-date="{{ row.date }}" data-time="{{ row.time }}" data-email="{{ row.email }}" data-company="{{ row.company_id }}"
           onclick="selectRowOrCard(this)">
         <td style="color: var(--secondary-text); font-weight: 700;">#{{ row.id }}</td>
-        <td style="text-align: left; padding-left: 20px; font-weight:700; color:var(--accent);">{{ row.buyer_name }}</td>
-        <td style="color: var(--secondary-text);">{{ row.date if row.date else '' }}</td>
-        <td style="color: var(--secondary-text);">{{ row.time if row.time else '' }}</td>
+        <td class="name-col" style="font-weight:700; color:var(--accent);">{{ row.buyer_name }}</td>
+        <td>{{ row.buyer_type or 'EXPORT' }}</td>
+        <td>{{ row.country or '-' }}</td>
+        <td>{{ row.currency_code or 'USD' }}</td>
+        <td>{{ row.payment_terms_days or 30 }} Days</td>
+        <td>{{ "{:,.2f}".format(row.credit_limit or 0) }}</td>
+        <td>{{ "Yes" if row.credit_insurance else "No" }}</td>
+        <td>{{ row.gst_number or '-' }}</td>
+        <td>{{ row.iec_code or '-' }}</td>
+        <td>{{ row.contact_person or '-' }}</td>
+        <td>{{ row.buyer_email or '-' }}</td>
+        <td>{{ ledger_names.get(row.account_ledger_id, '-') }}</td>
+        <td class="address-col">{{ row.address or '-' }}</td>
         <td style="font-size: 11px;">{{ row.email if row.email else '' }}</td>
-        <td><span style="background: var(--bg-color); padding: 4px 8px; border-radius: 6px; border: 1px solid var(--border-color); font-size: 10px; font-weight: 700;">{{ row.company_id }}</span></td>
       </tr>
       {% endfor %}
     </tbody>
@@ -172,6 +291,11 @@ async function submitBuyer(e){
 
   const buyer_name = document.getElementById("buyer_name").value.trim();
   const record_id = document.getElementById("record_id").value;
+  const fieldIds = [
+    "buyer_type", "country", "currency_code", "iec_code", "credit_limit",
+    "credit_insurance", "payment_terms_days", "gst_number", "contact_person",
+    "buyer_email", "account_ledger_id", "address"
+  ];
 
   const now = new Date();
   const date = now.toISOString().slice(0,10);
@@ -187,6 +311,7 @@ async function submitBuyer(e){
   }
 
   fd.append("buyer_name", buyer_name);
+  fieldIds.forEach(id => fd.append(id, document.getElementById(id).value || ""));
   fd.append("date", date);
   fd.append("time", time);
   fd.append("email", email);
@@ -247,6 +372,18 @@ function editSelected(){
   
   document.getElementById("record_id").value = d.id;
   document.getElementById("buyer_name").value = d.name;
+  document.getElementById("buyer_type").value = d.buyerType || "EXPORT";
+  document.getElementById("country").value = d.country || "";
+  document.getElementById("currency_code").value = d.currency || "USD";
+  document.getElementById("iec_code").value = d.iec || "";
+  document.getElementById("credit_limit").value = d.creditLimit || 0;
+  document.getElementById("credit_insurance").value = d.creditInsurance || 0;
+  document.getElementById("payment_terms_days").value = d.paymentTerms || 30;
+  document.getElementById("gst_number").value = d.gst || "";
+  document.getElementById("contact_person").value = d.contact || "";
+  document.getElementById("buyer_email").value = d.buyerEmail || "";
+  document.getElementById("account_ledger_id").value = d.ledgerId || "";
+  document.getElementById("address").value = d.address || "";
   
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
@@ -291,11 +428,15 @@ function printSelected(){
 
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
+  const d = selectedElement.dataset;
 
   const p = window.open("", "_blank");
   p.document.write("<h3 style='font-family:sans-serif;'>Buyer Details</h3>");
   p.document.write("<p style='font-family:sans-serif;'><b>ID:</b> "+id+"</p>");
   p.document.write("<p style='font-family:sans-serif;'><b>Buyer Name:</b> "+name+"</p>");
+  p.document.write("<p style='font-family:sans-serif;'><b>Type:</b> "+(d.buyerType || "")+"</p>");
+  p.document.write("<p style='font-family:sans-serif;'><b>Country:</b> "+(d.country || "")+"</p>");
+  p.document.write("<p style='font-family:sans-serif;'><b>Contact:</b> "+(d.contact || "")+" / "+(d.buyerEmail || "")+"</p>");
   p.document.close();
   p.print();
 }
@@ -308,8 +449,9 @@ function exportExcel(){
 
   const id = selectedElement.dataset.id;
   const name = selectedElement.dataset.name;
+  const d = selectedElement.dataset;
 
-  const data = `ID\tBuyer Name\n${id}\t${name}`;
+  const data = `ID\tBuyer Name\tType\tCountry\tCurrency\tTerms\tCredit Limit\tInsurance\tGST\tIEC\tContact\tBuyer Email\tAddress\n${id}\t${name}\t${d.buyerType || ""}\t${d.country || ""}\t${d.currency || ""}\t${d.paymentTerms || ""}\t${d.creditLimit || ""}\t${d.creditInsurance === "1" ? "Yes" : "No"}\t${d.gst || ""}\t${d.iec || ""}\t${d.contact || ""}\t${d.buyerEmail || ""}\t${d.address || ""}`;
   const blob = new Blob([data], {type:"application/vnd.ms-excel"});
 
   const url = URL.createObjectURL(blob);
@@ -335,6 +477,6 @@ window.onclick = () => {
     if(d) d.style.display = "none";
 }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

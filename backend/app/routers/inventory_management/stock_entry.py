@@ -29,6 +29,11 @@ router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
 
 
+def signed_stock_movement(column):
+    movement = case((stock_entry.cargo_movement_type == "IN", column), else_=-column)
+    return case((stock_entry.is_cancelled == True, -movement), else_=movement)
+
+
 # -----------------------------------------------------
 # HELPER: EXTRACT NUMERIC VALUE FROM STRING
 # -----------------------------------------------------
@@ -270,11 +275,10 @@ def stock_out_report(
 
     query = db.query(
         stock_entry.location, stock_entry.batch_number,
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)).label("available_mc"),
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)).label("available_loose"),
+        func.sum(signed_stock_movement(stock_entry.no_of_mc)).label("available_mc"),
+        func.sum(signed_stock_movement(stock_entry.loose)).label("available_loose"),
     ).filter(
-        stock_entry.company_id == company_code,
-        stock_entry.is_cancelled == False
+        stock_entry.company_id == company_code
     )
 
     if user_allowed_locations:
@@ -291,8 +295,8 @@ def stock_out_report(
     if grade: query = query.filter(stock_entry.grade == grade)
 
     rows = query.group_by(stock_entry.location, stock_entry.batch_number).having(
-        (func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)) > 0) |
-        (func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)) > 0)
+        (func.sum(signed_stock_movement(stock_entry.no_of_mc)) > 0) |
+        (func.sum(signed_stock_movement(stock_entry.loose)) > 0)
     ).all()
 
     return JSONResponse([

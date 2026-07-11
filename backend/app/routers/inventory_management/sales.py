@@ -4,7 +4,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import re
-from datetime import datetime
+from datetime import date, datetime
 from app.utils.timezone import ist_now
 
 # Database and Models
@@ -13,6 +13,11 @@ from app.database.models.inventory_management import sales_dispatch, stock_entry
 from app.database.models.criteria import packing_styles, production_for
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_export_sales_invoice,
+)
 
 # Router setup
 router = APIRouter(prefix="/inventory", tags=["SALES DISPATCH"])
@@ -22,6 +27,86 @@ def clean_po(val):
     if not val:
         return ""
     return re.sub(r'[^a-zA-Z0-9]', '', str(val)).lower().strip()
+
+
+def parse_invoice_date(value: str | None) -> date:
+    if not value:
+        return ist_now().date()
+    try:
+        return datetime.strptime(str(value), "%Y-%m-%d").date()
+    except ValueError:
+        return ist_now().date()
+
+
+def refresh_sales_amounts(sale_item: sales_dispatch, weight_map: dict[str, float]) -> float:
+    qty_kg = round(
+        float(sale_item.no_of_mc or 0)
+        * weight_map.get(str(sale_item.packing_style or "").strip(), 1.0),
+        3,
+    )
+    amount_usd = round(qty_kg * float(sale_item.price or 0), 2)
+    amount_inr = round(amount_usd * float(sale_item.exchange_rate or 83.5), 2)
+    sale_item.sales_quantity = qty_kg
+    sale_item.amount_usd = amount_usd
+    sale_item.amount_inr = amount_inr
+    return amount_inr
+
+
+def repost_sales_invoice_accounts(
+    db: Session,
+    company_code: str,
+    invoice_no: str,
+    weight_map: dict[str, float],
+    email: str,
+    cancel_existing: bool = True,
+) -> None:
+    invoice_rows = db.query(sales_dispatch).filter(
+        sales_dispatch.company_id == company_code,
+        sales_dispatch.invoice_no == invoice_no,
+    ).all()
+    if not invoice_rows:
+        return
+
+    if cancel_existing:
+        for journal_id in {row.journal_id for row in invoice_rows if row.journal_id}:
+            cancel_linked_bill_voucher(db, company_code, journal_id, email)
+
+    invoice_total_inr = 0.0
+    for row in invoice_rows:
+        invoice_total_inr += refresh_sales_amounts(row, weight_map)
+        row.journal_id = None
+
+    if invoice_total_inr <= 0:
+        return
+
+    first_row = invoice_rows[0]
+    voucher = post_export_sales_invoice(
+        db=db,
+        company_id=company_code,
+        voucher_date=parse_invoice_date(first_row.invoice_date),
+        reference_no=invoice_no,
+        buyer_name=first_row.buyer_name or "Export Buyer",
+        invoice_value_inr=invoice_total_inr,
+        created_by=email or "SYSTEM",
+    )
+    for row in invoice_rows:
+        row.journal_id = voucher.id
+
+
+def sync_unposted_sales_accounts(
+    db: Session,
+    company_code: str,
+    sales_rows: list[sales_dispatch],
+    weight_map: dict[str, float],
+    email: str,
+) -> None:
+    invoice_numbers = {
+        row.invoice_no
+        for row in sales_rows
+        if row.invoice_no and (not row.journal_id or not row.amount_inr)
+    }
+    for invoice_no in invoice_numbers:
+        repost_sales_invoice_accounts(db, company_code, invoice_no, weight_map, email, cancel_existing=True)
 
 # -------------------------------------------------------------------------
 # 1️⃣ SALES REPORT PAGE (WITH PO WISE GROUPING & PRORATED COSTS)
@@ -33,6 +118,7 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
+    ensure_bill_accounting_schema(db)
 
     session_locations = request.session.get("allowed_locations", [])
     if isinstance(session_locations, str):
@@ -51,6 +137,13 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
+    sync_unposted_sales_accounts(
+        db,
+        company_code,
+        sales_data,
+        weight_map,
+        request.session.get("email") or "SYSTEM",
+    )
 
     # Calculate Total KG per PO (to prorate costs if a PO is split across multiple invoices)
     po_total_kg = {}
@@ -105,8 +198,8 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
             current_po = s.po_number
 
         qty = float(s.no_of_mc or 0) * weight_map.get(str(s.packing_style).strip(), 1.0)
-        usd = qty * float(s.price or 0)
-        inr = usd * float(s.exchange_rate or 83.5)
+        usd = round(qty * float(s.price or 0), 2)
+        inr = round(usd * float(s.exchange_rate or 83.5), 2)
         
         sale_po = clean_po(s.po_number)
         
@@ -120,6 +213,9 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         
         pl = inr - (stock_val + f_cost + p_cost)
 
+        s.sales_quantity = qty
+        s.amount_usd = usd
+        s.amount_inr = inr
         s.stock_value, s.freight_cost, s.packing_cost, s.profit_loss = stock_val, f_cost, p_cost, pl
 
         processed.append({
@@ -147,6 +243,7 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     sale_id = data.get("id")
     new_rate = float(data.get("exchange_rate", 83.50))
+    ensure_bill_accounting_schema(db)
     
     sale_item = db.query(sales_dispatch).filter(sales_dispatch.id == sale_id).first()
     if not sale_item:
@@ -164,6 +261,21 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     sale_item.profit_loss = total_inr - (float(sale_item.stock_value or 0) + 
                                          float(sale_item.freight_cost or 0) + 
                                          float(sale_item.packing_cost or 0))
+    sale_item.sales_quantity = qty_kg
+    sale_item.amount_usd = round(qty_kg * float(sale_item.price or 0), 2)
+    sale_item.amount_inr = round(total_inr, 2)
+
+    if sale_item.invoice_no:
+        weight_rows = db.query(packing_styles).filter(packing_styles.company_id == sale_item.company_id).all()
+        weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in weight_rows}
+        repost_sales_invoice_accounts(
+            db,
+            sale_item.company_id,
+            sale_item.invoice_no,
+            weight_map,
+            request.session.get("email") or "SYSTEM",
+            cancel_existing=True,
+        )
     
     db.commit()
     return {
@@ -180,6 +292,7 @@ async def update_status(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     sale_id = data.get("id")
     new_status = data.get("status")
+    ensure_bill_accounting_schema(db)
     
     sale_item = db.query(sales_dispatch).filter(sales_dispatch.id == sale_id).first()
     if not sale_item:

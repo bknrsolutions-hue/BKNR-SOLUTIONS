@@ -34,7 +34,8 @@ TABLES = [
     "export_incentive_register",
     "lc_tracking",
     "salary_processing",
-    "production_cost_allocations"
+    "production_cost_allocations",
+    "commercial_invoices"
 ]
 
 COLUMNS = [
@@ -58,10 +59,68 @@ TABLE_COLUMNS = {
     "expense_vouchers": [
         ("journal_id", "INTEGER"),
     ],
+    "diesel_logs": [
+        ("journal_id", "INTEGER"),
+    ],
+    "purchase_invoices": [
+        ("journal_id", "INTEGER"),
+    ],
+    "container_logs": [
+        ("journal_id", "INTEGER"),
+    ],
+    "qa_testing_logs": [
+        ("journal_id", "INTEGER"),
+        ("product_name", "VARCHAR(150)"),
+        ("parameters", "TEXT"),
+    ],
+    "other_expenses": [
+        ("journal_id", "INTEGER"),
+    ],
+    "commercial_invoices": [
+        ("journal_id", "INTEGER"),
+        ("customer_ledger_id", "INTEGER"),
+        ("sales_ledger_id", "INTEGER"),
+    ],
+    "sales_dispatch": [
+        ("journal_id", "INTEGER"),
+    ],
+    "de_heading": [
+        ("journal_id", "INTEGER"),
+    ],
+    "peeling": [
+        ("journal_id", "INTEGER"),
+    ],
+    "daily_attendance": [
+        ("journal_id", "INTEGER"),
+        ("approved_duty_credit", "DOUBLE PRECISION DEFAULT 0"),
+    ],
+    "salary_processing": [
+        ("salary_journal_id", "INTEGER"),
+        ("payment_journal_id", "INTEGER"),
+        ("payment_date", "DATE"),
+        ("utr_reference", "VARCHAR(50)"),
+        ("paid_amount", "DOUBLE PRECISION DEFAULT 0"),
+    ],
     "journal_entries": [
         ("journal_id", "INTEGER"),
     ],
     "payment_receipts": [
+        ("journal_id", "INTEGER"),
+    ],
+    "general_stock": [
+        ("invoice_number", "VARCHAR(100)"),
+        ("unit_id", "INTEGER"),
+        ("production_at", "VARCHAR(255)"),
+        ("po_number", "VARCHAR(100)"),
+        ("vendor_id", "INTEGER"),
+        ("vendor_name", "VARCHAR(255)"),
+        ("hsn_code", "VARCHAR(50)"),
+        ("gst_percent", "DOUBLE PRECISION DEFAULT 0"),
+        ("tax_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("total_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("accounting_ledger_id", "INTEGER"),
+        ("rate", "DOUBLE PRECISION DEFAULT 0"),
+        ("amount", "DOUBLE PRECISION DEFAULT 0"),
         ("journal_id", "INTEGER"),
     ],
 }

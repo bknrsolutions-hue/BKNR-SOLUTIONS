@@ -29,6 +29,11 @@ from app.database.models.criteria import (
 
 router = APIRouter(prefix="/stock_report", tags=["STOCK REPORT"])
 
+
+def signed_stock_movement(column):
+    movement = case((stock_entry.cargo_movement_type == "IN", column), else_=-column)
+    return case((stock_entry.is_cancelled == True, -movement), else_=movement)
+
 # ------------------------------------------------------------
 # HELPER: GET COMPANY INFO
 # ------------------------------------------------------------
@@ -41,15 +46,14 @@ def get_company_info(db: Session, comp_code: str):
 # ------------------------------------------------------------
 def check_stock_availability(db: Session, comp_code: str, batch: str, location: str, grade: str, packing: str, exclude_id: int = None):
     q = db.query(
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)).label("bal_mc"),
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)).label("bal_ls")
+        func.sum(signed_stock_movement(stock_entry.no_of_mc)).label("bal_mc"),
+        func.sum(signed_stock_movement(stock_entry.loose)).label("bal_ls")
     ).filter(
         stock_entry.company_id == comp_code,
         stock_entry.batch_number == batch,
         stock_entry.location == location,
         stock_entry.grade == grade,
-        stock_entry.packing_style == packing,
-        stock_entry.is_cancelled == False
+        stock_entry.packing_style == packing
     )
     if exclude_id:
         q = q.filter(stock_entry.id != exclude_id)
@@ -122,11 +126,13 @@ async def stock_report_page(
 
     # --- Financial Year Logic ---
     selected_fy = fy
+    if selected_fy is None:
+        today = ist_now().date()
+        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
     
     # బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
     q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
-        stock_entry.company_id == comp_code,
-        stock_entry.is_cancelled == False
+        stock_entry.company_id == comp_code
     )
 
     # 🟢 INJECT ACTIVE UNIVERSAL FILTERS ON BASE QUERY POOL
@@ -135,7 +141,9 @@ async def stock_report_page(
     if global_location:
         q = q.filter(func.trim(stock_entry.production_at) == func.trim(global_location))
 
-    if selected_fy:
+    if selected_fy == "":
+        q = q.filter(stock_entry.id == -1)
+    elif selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
@@ -238,8 +246,7 @@ def export_xlsx(
     global_production_for, global_location = get_global_filters(request)
 
     q = db.query(stock_entry).filter(
-        stock_entry.company_id == comp_code,
-        stock_entry.is_cancelled == False
+        stock_entry.company_id == comp_code
     )
 
     # 🟢 Layer universal bindings safely onto workbook generation parameters pool
@@ -274,6 +281,8 @@ def export_xlsx(
 
     for r in rows:
         s = -1 if r.cargo_movement_type == "OUT" else 1
+        if r.is_cancelled:
+            s *= -1
         ws.append([
             str(r.date), r.batch_number, r.cargo_movement_type, r.brand, r.species, r.variety, r.grade, r.glaze, r.freezer, r.packing_style, r.location, r.po_number or "", r.production_for or "", r.production_at or "", r.hlso_count or 0, r.hoso_count or 0,
             s * int(r.no_of_mc or 0), s * int(r.loose or 0), s * float(r.quantity or 0), float(r.product_kg_value or 0), float(r.inventory_value or 0), float(r.sales_reference_rate or 0), r.email.split('@')[0] if r.email else ""
@@ -301,8 +310,7 @@ def export_pdf(
     global_production_for, global_location = get_global_filters(request)
 
     q = db.query(stock_entry).filter(
-        stock_entry.company_id == comp_code,
-        stock_entry.is_cancelled == False
+        stock_entry.company_id == comp_code
     )
 
     # 🟢 Layer universal bindings safely onto PDF render parameter pipeline

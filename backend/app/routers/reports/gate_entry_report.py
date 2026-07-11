@@ -17,6 +17,7 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
 from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from app.database import get_db
 from app.database.models.processing import GateEntry, AuditLog
@@ -56,12 +57,13 @@ async def gate_entry_report(
     role = request.session.get("role")
     if not company_id:
         return RedirectResponse("/", status_code=302)
+    if fy is None:
+        fy = str(get_fin_year(ist_now().date()))
 
     def build_report_context():
         # 🟢 META DROPDOWNS SYNC WITH func.trim()
         meta_q = db.query(GateEntry).filter(
             GateEntry.company_id == company_id,
-            GateEntry.is_cancelled != True
         )
         
         if production_for:
@@ -95,7 +97,6 @@ async def gate_entry_report(
             GateEntry.company_id == company_id,
             GateEntry.date >= start_date,
             GateEntry.date <= end_date,
-            GateEntry.is_cancelled != True
         )
 
         if production_for:
@@ -159,7 +160,6 @@ async def gate_export_pdf(
         GateEntry.company_id == company_id,
         GateEntry.date >= start_date,
         GateEntry.date <= end_date,
-        GateEntry.is_cancelled != True
     )
     
     # 🟢 GLOBAL FILTERS LOCK FOR PDF WITH func.trim()
@@ -218,7 +218,6 @@ async def gate_export_excel(
         GateEntry.company_id == company_id,
         GateEntry.date >= start_date,
         GateEntry.date <= end_date,
-        GateEntry.is_cancelled != True
     )
     
     # 🟢 GLOBAL FILTERS LOCK FOR EXCEL WITH func.trim()
@@ -276,7 +275,7 @@ async def gate_export_excel(
         ws.append([
             idx, dt_str, tm_str, r.batch_number, r.challan_number or "", r.gate_pass_number or "",
             r.receiving_center or "", r.supplier_name or "", r.purchasing_location or "", r.vehicle_number or "",
-            r.no_of_material_boxes or 0, r.no_of_empty_boxes or 0, r.no_of_ice_boxes or 0
+            signed_number(r, r.no_of_material_boxes), signed_number(r, r.no_of_empty_boxes), signed_number(r, r.no_of_ice_boxes)
         ])
         
         current_row = start_data_row + idx - 1

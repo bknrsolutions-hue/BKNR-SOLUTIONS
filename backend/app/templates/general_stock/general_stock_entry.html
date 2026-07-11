@@ -131,6 +131,58 @@
       }
     }
 
+    @media(min-width:1200px) {
+      .form-container.out-mode .form-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    .form-container.out-mode {
+      max-width: 1400px;
+    }
+
+    .form-container.out-mode .out-hide-strict {
+      display: none !important;
+    }
+
+    .movement-dependent {
+      display: none;
+    }
+
+    .stock-tabs {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 8px;
+      padding: 4px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--table-th-bg);
+    }
+
+    .stock-tab {
+      flex: 1;
+      min-height: 38px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--text-sub);
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    .stock-tab.active {
+      background: var(--card-bg);
+      color: var(--primary);
+      border-color: var(--border);
+      box-shadow: 0 6px 16px rgba(15, 23, 42, 0.08);
+    }
+
+    .stock-tab.out-tab.active {
+      color: var(--warning);
+    }
+
     .field {
       display: flex;
       flex-direction: column;
@@ -480,6 +532,28 @@
       background: var(--primary-light);
     }
 
+    .data-card.cancelled-row,
+    .stock-data-table tbody tr.cancelled-row {
+      opacity: 0.62;
+      background: #f8fafc !important;
+      color: var(--text-sub);
+      text-decoration: line-through;
+    }
+
+    .cancelled-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: #fee2e2;
+      color: #991b1b;
+      font-size: 9px;
+      font-weight: 800;
+      text-decoration: none;
+      margin-left: 6px;
+    }
+
     .card-row {
       display: flex;
       justify-content: space-between;
@@ -579,8 +653,8 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+  <link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 
 <body>
@@ -595,51 +669,108 @@
   <div class="table-header-bar">
     <h3 class="table-title">Stock Ledger Logs</h3>
     <div style="display: flex; gap: 10px; align-items: center;">
-      <div id="toggleActionArea">
-        <button class="btn-toggle" type="button" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add
-          Entry</button>
+      <div id="toggleActionArea" style="display:flex; gap:8px;">
+        <button class="btn-toggle" type="button" onclick="openStockForm('IN')"><i class="fa-solid fa-plus"></i> Stock IN</button>
+        <button class="btn-toggle" type="button" onclick="openStockForm('OUT')" style="background:var(--warning);"><i class="fa-solid fa-arrow-up-from-bracket"></i> Stock OUT</button>
       </div>
 
       <div class="menu-container" id="threeDotsMenu">
         <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
         <div id="dropdownMenu">
-          <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Entry</div>
           <div onclick="cancelSelected()" class="menu-item" style="color:var(--danger);"><i
-              class="fa-solid fa-trash"></i> Delete</div>
-          <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
-          <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+              class="fa-solid fa-ban"></i> Cancel</div>
         </div>
       </div>
     </div>
   </div>
 
   <!-- 🔥 FORM (HIDDEN BY DEFAULT) 🔥 -->
-  <form id="generalStockForm" action="/general_stock/entry" method="post" onsubmit="return validateForm(event)">
+  <form id="generalStockForm" action="/general_stock/entry" method="post" onsubmit="return submitGeneralStockForm(event)">
     <div class="form-container" id="formSection" style="display:none;">
-      <div class="form-grid">
-        <div class="form-title-inner"><i class="fa-solid fa-boxes-stacked"></i> Stock Allocation Info</div>
+      <div class="form-grid" id="stockInfoGrid">
+        <div class="form-title-inner" id="stockInfoTitle"><i class="fa-solid fa-boxes-stacked"></i> Stock Allocation Info</div>
 
-        <div class="field">
-          <label>Movement Type</label>
-          <select id="movementType" name="movement_type" required onchange="handleMovementChange(); calculateStock();">
-            <option value="" disabled selected>Select Movement</option>
-            <option value="IN">IN</option>
-            <option value="OUT">OUT</option>
-          </select>
+        <div class="stock-tabs">
+          <button class="stock-tab in-tab active" id="stockTabIn" type="button" onclick="activateStockTab('IN')">
+            <i class="fa-solid fa-circle-down"></i> Stock IN
+          </button>
+          <button class="stock-tab out-tab" id="stockTabOut" type="button" onclick="activateStockTab('OUT')">
+            <i class="fa-solid fa-circle-up"></i> Stock OUT
+          </button>
+          <input type="hidden" id="movementType" name="movement_type" value="IN">
         </div>
 
-        <div class="field">
+        <div class="field movement-dependent" id="grnField">
           <label>GRN Number</label>
           <input type="text" id="grnPlaceholder" placeholder="Select Movement First" readonly style="display:block;">
           <input type="text" id="grnNumberIn" name="grn_number" placeholder="Enter or Auto-generated GRN" required
             style="display:none;" disabled>
-          <select id="grnNumberOut" name="grn_number" required style="display:none;" disabled>
+          <select id="grnNumberOut" name="grn_number" required style="display:none;" disabled onchange="fetchSelectedGrnRate()">
             <option value="" disabled selected>Select Movement First</option>
           </select>
         </div>
 
-        <div class="field">
-          <label>Item Name</label>
+        <div class="field in-bill-field movement-dependent out-hide-strict" style="display:none;">
+          <label>Invoice Date</label>
+          <input type="date" id="invoiceDate" name="invoice_date">
+        </div>
+
+        <div class="field movement-dependent out-hide-strict" id="invoiceField" style="display:none;">
+          <label>Invoice Number</label>
+          <input type="text" id="invoiceNumber" name="invoice_number" placeholder="Supplier invoice number">
+        </div>
+
+        <div class="field in-bill-field movement-dependent" id="locationField" style="display:none;">
+          <label>Production At</label>
+          <select id="unitId" name="unit_id" onchange="handleOutFilterChange()">
+            <option value="0">Select Unit...</option>
+            {% for loc in locations %}
+            <option value="{{ loc.id }}">{{ loc.production_at }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field in-bill-field movement-dependent out-hide-strict" style="display:none;">
+          <label>Vendor Entity</label>
+          <select id="vendorId" name="vendor_id">
+            <option value="0">-- SELECT VENDOR --</option>
+            {% for v in vendors %}
+            <option value="{{ v.id }}">{{ v.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field in-bill-field movement-dependent out-hide-strict" style="display:none;">
+          <label>Accounting Ledger</label>
+          <select id="accountingLedgerId" name="accounting_ledger_id">
+            <option value="0">Auto - Stock Asset</option>
+            {% for ledger in posting_ledgers %}
+            <option value="{{ ledger.id }}">{{ ledger.ledger_name }}{% if ledger.group %} ({{ ledger.group.group_name }}){% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field in-bill-field movement-dependent" id="poField" style="display:none;">
+          <label>PO Number</label>
+          <div class="search-select-wrapper" id="poWrapper">
+            <div class="search-select-trigger" id="poTrigger">
+              <span id="poSelectedText">N/A</span>
+              <i class="fa-solid fa-chevron-down"></i>
+            </div>
+            <div id="poDropdown" class="search-select-dropdown">
+              <input type="text" class="search-select-input" id="poSearchInput" placeholder="Search PO number..." autocomplete="off">
+              <div class="search-select-options" id="poOptionsContainer">
+                {% for po in po_list %}
+                <div class="search-select-option po-option" data-value="{{ po }}">{{ po }}</div>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+          <input type="hidden" id="poNumber" name="po_number" value="N/A">
+        </div>
+
+        <div class="field movement-dependent" id="itemField">
+          <label>Product Nomenclature / Description</label>
           <div class="search-select-wrapper" id="itemWrapper">
             <div class="search-select-trigger" id="itemTrigger">
               <span id="itemSelectedText">Select Item</span>
@@ -663,7 +794,7 @@
           <input type="hidden" id="itemName" name="item_name" required>
         </div>
 
-        <div class="field">
+        <div class="field out-hide-field movement-dependent out-hide-strict">
           <label>Unit Name</label>
           <div class="search-select-wrapper">
             <div class="search-select-trigger" style="pointer-events: none; opacity: 0.8;"
@@ -675,27 +806,67 @@
         </div>
       </div>
 
-      <div class="form-grid" style="margin-top: 15px;">
-        <div class="form-title-inner"><i class="fa-solid fa-calculator"></i> Quantities & Stock Metrics</div>
+      <div class="form-grid movement-dependent" id="stockMetricsGrid" style="margin-top: 15px;">
+        <div class="form-title-inner" id="stockMetricsTitle"><i class="fa-solid fa-calculator"></i> Quantities & Stock Metrics</div>
 
-        <div class="field">
+        <div class="field" id="quantityField">
           <label>Quantity</label>
-          <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" required oninput="calculateStock()">
+          <input type="number" id="quantity" name="quantity" step="0.01" min="0.01" required oninput="calculateStock(); calculateAmount();">
         </div>
 
-        <div class="field">
-          <label>Opening Stock</label>
+        <div class="field out-hide-field out-hide-strict">
+          <label>Base Price</label>
+          <input type="number" id="rate" name="rate" step="0.01" min="0" value="0" oninput="calculateAmount()">
+        </div>
+
+        <div class="field out-hide-field out-hide-strict">
+          <label>Taxable Value</label>
+          <input type="number" id="amount" name="amount" step="0.01" value="0" readonly>
+        </div>
+
+        <div class="field in-bill-field out-hide-strict" style="display:none;">
+          <label>HSN Code</label>
+          <select id="hsnCode" name="hsn_code" onchange="selectHsnGst()">
+            <option value="">-- SELECT HSN --</option>
+            {% for h in hsn_list %}
+            <option value="{{ h.hsn_code }}" data-gst="{{ h.gst_percent }}">{{ h.hsn_code }} ({{ h.gst_percent }}%)</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="field in-bill-field out-hide-strict" style="display:none;">
+          <label>GST %</label>
+          <input type="number" id="gstPercent" name="gst_percent" step="0.01" value="0" oninput="calculateAmount()">
+        </div>
+
+        <div class="field in-bill-field out-hide-strict" style="display:none;">
+          <label>Tax Value</label>
+          <input type="number" id="taxAmount" step="0.01" value="0" readonly>
+        </div>
+
+        <div class="field in-bill-field out-hide-strict" style="display:none;">
+          <label>Grand Total</label>
+          <input type="number" id="totalAmount" step="0.01" value="0" readonly>
+        </div>
+
+        <div class="field out-hide-field" id="itemAvailableField">
+          <label>Available Item Qty</label>
           <input type="number" id="openingStock" name="opening_stock" step="0.01" value="0" readonly
             title="Auto-fetched from DB">
         </div>
 
-        <div class="field">
+        <div class="field out-hide-field out-hide-strict" id="calculatedAvailableField">
           <label>Available Stock</label>
           <input type="number" id="availableStock" name="available_stock" step="0.01" value="0" readonly
             title="Auto-calculated">
         </div>
 
-        <div class="field">
+        <div class="field" id="grnAvailableField" style="display:none;">
+          <label>Selected GRN Available Qty</label>
+          <input type="number" id="grnAvailableStock" step="0.01" value="0" readonly>
+        </div>
+
+        <div class="field out-hide-field" id="minimumLevelField">
           <label>Minimum Level</label>
           <input type="number" id="minimumLevel" name="minimum_level" step="0.01" value="0" readonly
             title="Auto-fetched from Master">
@@ -704,8 +875,8 @@
 
       <input type="hidden" id="record_id" name="id">
 
-      <div class="actions">
-        <button class="btn" type="submit">SAVE ENTRY</button>
+      <div class="actions movement-dependent" id="formActions">
+        <button class="btn" id="saveEntryBtn" type="submit">SAVE ENTRY</button>
         <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
       </div>
     </div>
@@ -714,12 +885,23 @@
   {% if today_data %}
   <div class="mobile-card-list">
     {% for row in today_data %}
-    <div class="data-card" data-id="{{ row.id }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}"
+    <div class="data-card {% if row.is_cancelled %}cancelled-row{% endif %}" data-id="{{ row.id }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}"
+      data-invoice="{{ row.invoice_number or '' }}"
+      data-date="{{ row.date }}" data-unit-id="{{ row.unit_id or 0 }}" data-location="{{ row.production_at or '' }}" data-po="{{ row.po_number or 'N/A' }}"
+      data-cancelled="{{ 1 if row.is_cancelled else 0 }}"
+      data-ledger-id="{{ row.accounting_ledger_id or 0 }}"
+      data-vendor-id="{{ row.vendor_id or 0 }}" data-vendor="{{ row.vendor_name or '' }}" data-hsn="{{ row.hsn_code or '' }}"
+      data-gst="{{ row.gst_percent or 0 }}" data-tax="{{ row.tax_amount or 0 }}" data-total="{{ row.total_amount or row.amount or 0 }}"
       data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}" data-qty="{{ row.quantity }}"
+      data-rate="{{ row.rate or 0 }}" data-amount="{{ row.amount or 0 }}"
       data-open="{{ row.opening_stock }}" data-avail="{{ row.available_stock }}" data-min="{{ row.minimum_level }}"
       onclick="selectRowOrCard(this)">
       <div class="card-row"><span class="card-label">ID / GRN</span><span class="card-val">#{{ row.id }} | {{
-          row.grn_number }}</span></div>
+          row.grn_number }}{% if row.is_cancelled %}<span class="cancelled-badge">CANCELLED</span>{% endif %}</span></div>
+      {% if row.movement_type == 'IN' %}
+      <div class="card-row"><span class="card-label">Invoice</span><span class="card-val">{{ row.invoice_number or '-' }}</span></div>
+      <div class="card-row"><span class="card-label">Vendor / PO</span><span class="card-val">{{ row.vendor_name or '-' }} | {{ row.po_number or 'N/A' }}</span></div>
+      {% endif %}
       <div class="card-row"><span class="card-label">Item</span><span class="card-val" style="color:var(--primary);">{{
           row.item_name }}</span></div>
       <div class="card-row"><span class="card-label">Movement / Qty</span><span class="card-val"
@@ -732,15 +914,24 @@
   </div>
 
   <div class="table-wrap">
-    <table id="dataTable">
+    <table id="dataTable" class="stock-data-table">
       <thead>
         <tr>
           <th style="width:50px;">ID</th>
           <th>GRN Number</th>
+          <th>Invoice Number</th>
+          <th>Location</th>
+          <th>Vendor</th>
+          <th>PO</th>
           <th>Item Name</th>
+          <th>HSN</th>
           <th>Unit</th>
           <th>Movement</th>
           <th>Qty</th>
+          <th>Rate</th>
+          <th>Value</th>
+          <th>GST</th>
+          <th>Total</th>
           <th>Opening</th>
           <th>Available</th>
           <th>Minimum</th>
@@ -750,17 +941,33 @@
       </thead>
       <tbody>
         {% for row in today_data %}
-        <tr data-id="{{ row.id }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}"
+        <tr class="{% if row.is_cancelled %}cancelled-row{% endif %}" data-id="{{ row.id }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}"
+          data-invoice="{{ row.invoice_number or '' }}"
+          data-date="{{ row.date }}" data-unit-id="{{ row.unit_id or 0 }}" data-location="{{ row.production_at or '' }}" data-po="{{ row.po_number or 'N/A' }}"
+          data-cancelled="{{ 1 if row.is_cancelled else 0 }}"
+          data-ledger-id="{{ row.accounting_ledger_id or 0 }}"
+          data-vendor-id="{{ row.vendor_id or 0 }}" data-vendor="{{ row.vendor_name or '' }}" data-hsn="{{ row.hsn_code or '' }}"
+          data-gst="{{ row.gst_percent or 0 }}" data-tax="{{ row.tax_amount or 0 }}" data-total="{{ row.total_amount or row.amount or 0 }}"
           data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}" data-qty="{{ row.quantity }}"
+          data-rate="{{ row.rate or 0 }}" data-amount="{{ row.amount or 0 }}"
           data-open="{{ row.opening_stock }}" data-avail="{{ row.available_stock }}" data-min="{{ row.minimum_level }}"
           onclick="selectRowOrCard(this)">
-          <td>{{ row.id }}</td>
+          <td>{{ row.id }}{% if row.is_cancelled %}<span class="cancelled-badge">C</span>{% endif %}</td>
           <td>{{ row.grn_number }}</td>
+          <td>{{ row.invoice_number or '-' }}</td>
+          <td>{{ row.production_at or '-' }}</td>
+          <td>{{ row.vendor_name or '-' }}</td>
+          <td>{{ row.po_number or 'N/A' }}</td>
           <td class="text-left" style="font-weight:600; color:var(--primary);">{{ row.item_name }}</td>
+          <td>{{ row.hsn_code or '-' }}</td>
           <td>{{ row.unit_name }}</td>
           <td style="font-weight: 700; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">
             {{ row.movement_type }}</td>
           <td>{{ row.quantity }}</td>
+          <td>{{ "%.2f"|format(row.rate or 0) }}</td>
+          <td>{{ "%.2f"|format(row.amount or 0) }}</td>
+          <td>{{ "%.2f"|format(row.tax_amount or 0) }}</td>
+          <td>{{ "%.2f"|format(row.total_amount or row.amount or 0) }}</td>
           <td>{{ row.opening_stock }}</td>
           <td>{{ row.available_stock }}</td>
           <td>{{ row.minimum_level }}</td>
@@ -803,9 +1010,10 @@
       databaseGRNs = Array.from(uniqueGRNs);
 
       // AUTO-OPEN FORM LOGIC IF EMPTY
-      const tableRows = document.querySelectorAll("#dataTable tbody tr");
+      const tableRows = document.querySelectorAll(".stock-data-table tbody tr");
       if (!tableRows || tableRows.length === 0) {
         document.getElementById("formSection").style.display = "block";
+        activateStockTab("IN");
         const btnArea = document.getElementById("toggleActionArea");
         if (btnArea) btnArea.style.display = "none";
       }
@@ -813,15 +1021,30 @@
 
     /* ================= FORM TOGGLE ENGINE ================= */
     function toggleForm() {
+      openStockForm("IN");
+    }
+
+    function openStockForm(mode = "IN") {
       const formSec = document.getElementById("formSection");
       const toggleArea = document.getElementById("toggleActionArea");
 
       if (formSec.style.display === "none" || formSec.style.display === "") {
         formSec.style.display = "block";
+        activateStockTab(mode);
         if (toggleArea) toggleArea.style.display = "none";
       } else {
-        clearForm();
+        activateStockTab(mode);
       }
+    }
+
+    function activateStockTab(mode) {
+      const movement = document.getElementById("movementType");
+      if (!movement) return;
+      movement.value = mode;
+      document.getElementById("stockTabIn")?.classList.toggle("active", mode === "IN");
+      document.getElementById("stockTabOut")?.classList.toggle("active", mode === "OUT");
+      handleMovementChange();
+      calculateStock();
     }
 
     /* ================= DROPDOWN ENGINE ================= */
@@ -829,6 +1052,9 @@
       const itemTrigger = document.getElementById("itemTrigger");
       const itemDropdown = document.getElementById("itemDropdown");
       const itemSearch = document.getElementById("itemSearchInput");
+      const poTrigger = document.getElementById("poTrigger");
+      const poDropdown = document.getElementById("poDropdown");
+      const poSearch = document.getElementById("poSearchInput");
 
       itemTrigger.addEventListener("mousedown", function (e) {
         e.preventDefault();
@@ -840,10 +1066,24 @@
       });
 
       itemSearch.addEventListener("input", function () { filterItemOptions(this.value); });
+      poTrigger.addEventListener("mousedown", function (e) {
+        e.preventDefault();
+        closeAllDropdowns();
+        poDropdown.classList.add("active");
+        poSearch.value = "";
+        filterPoOptions("");
+        setTimeout(() => poSearch.focus(), 50);
+      });
+      poSearch.addEventListener("input", function () { filterPoOptions(this.value); });
 
       document.getElementById("itemOptionsContainer").addEventListener("click", function (e) {
         if (e.target.classList.contains("search-select-option") && !e.target.classList.contains("search-select-addnew")) {
           selectItemOption(e.target.getAttribute("data-value") || e.target.innerText);
+        }
+      });
+      document.getElementById("poOptionsContainer").addEventListener("click", function (e) {
+        if (e.target.classList.contains("po-option")) {
+          selectPoOption(e.target.getAttribute("data-value") || e.target.innerText);
         }
       });
 
@@ -865,18 +1105,44 @@
       });
     }
 
+    function filterPoOptions(val) {
+      const query = val.toLowerCase().trim();
+      document.querySelectorAll('#poOptionsContainer .po-option').forEach(opt => {
+        const text = opt.innerText.toLowerCase();
+        opt.style.display = text.includes(query) ? "flex" : "none";
+      });
+    }
+
+    function selectPoOption(value) {
+      const clean = value || "N/A";
+      document.getElementById("poNumber").value = clean;
+      document.getElementById("poSelectedText").innerText = clean;
+      closeAllDropdowns();
+    }
+
     function selectItemOption(value) {
       document.getElementById("itemName").value = value;
       document.getElementById("itemSelectedText").innerText = value;
       closeAllDropdowns();
       fetchItemDetails(value);
+      if (document.getElementById("movementType").value === "OUT") populateGRNOutDropdown();
+    }
+
+    function handleOutFilterChange() {
+      if (document.getElementById("movementType").value !== "OUT") return;
+      const item = document.getElementById("itemName").value;
+      if (item) fetchItemDetails(item);
+      populateGRNOutDropdown();
+      document.getElementById("grnAvailableStock").value = "0";
+      document.getElementById("grnNumberOut").value = "";
     }
 
     // FETCH LOCKED DATA
     async function fetchItemDetails(itemName) {
       if (!itemName) return;
       try {
-        const res = await fetch(`/general_stock/api/item_details?item_name=${encodeURIComponent(itemName)}`);
+        const unitId = document.getElementById("movementType").value === "OUT" ? (document.getElementById("unitId").value || "0") : "0";
+        const res = await fetch(`/general_stock/api/item_details?item_name=${encodeURIComponent(itemName)}&unit_id=${encodeURIComponent(unitId)}`);
         if (res.ok) {
           const data = await res.json();
           document.getElementById("unitName").value = data.unit_name;
@@ -901,15 +1167,149 @@
       checkStockLevel();
     }
 
+    function calculateAmount() {
+      const qty = parseFloat(document.getElementById("quantity").value) || 0;
+      const rate = parseFloat(document.getElementById("rate").value) || 0;
+      const base = qty * rate;
+      const gst = parseFloat(document.getElementById("gstPercent")?.value || 0) || 0;
+      const tax = base * gst / 100;
+      document.getElementById("amount").value = base.toFixed(2);
+      document.getElementById("taxAmount").value = tax.toFixed(2);
+      document.getElementById("totalAmount").value = (base + tax).toFixed(2);
+    }
+
+    function selectHsnGst() {
+      const opt = document.getElementById("hsnCode").selectedOptions[0];
+      document.getElementById("gstPercent").value = opt ? Number(opt.dataset.gst || 0).toFixed(2) : "0";
+      calculateAmount();
+    }
+
+    async function fetchSelectedGrnRate() {
+      const item = document.getElementById("itemName").value;
+      const grn = document.getElementById("grnNumberOut").value;
+      const unitId = document.getElementById("unitId").value || "0";
+      if (!item || !grn) return;
+      try {
+        const res = await fetch(`/general_stock/api/grn_rate?item_name=${encodeURIComponent(item)}&grn_number=${encodeURIComponent(grn)}&unit_id=${encodeURIComponent(unitId)}`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById("rate").value = Number(data.rate || 0).toFixed(2);
+          document.getElementById("grnAvailableStock").value = Number(data.available_qty || 0).toFixed(2);
+          document.getElementById("openingStock").value = Number(data.available_qty || 0).toFixed(2);
+          calculateStock();
+          calculateAmount();
+        }
+      } catch (err) { console.error(err); }
+    }
+
+    const outCompactHomes = {};
+
+    function rememberFieldHome(id) {
+      if (outCompactHomes[id]) return;
+      const el = document.getElementById(id);
+      if (!el) return;
+      outCompactHomes[id] = { parent: el.parentNode, next: el.nextSibling };
+    }
+
+    function restoreFieldHome(id) {
+      const el = document.getElementById(id);
+      const home = outCompactHomes[id];
+      if (el && home && home.parent) {
+        home.parent.insertBefore(el, home.next);
+      }
+    }
+
+    function moveFieldToStockGrid(id) {
+      const el = document.getElementById(id);
+      const grid = document.getElementById("stockInfoGrid");
+      if (el && grid) grid.appendChild(el);
+    }
+
+    function fieldDisplay(el) {
+      return el.classList.contains("form-grid") ? "grid" : "flex";
+    }
+
+    function hideMovementFields() {
+      document.querySelectorAll(".movement-dependent").forEach(el => {
+        el.style.display = "none";
+      });
+    }
+
+    function showMovementField(id) {
+      const el = document.getElementById(id);
+      if (el) el.style.display = fieldDisplay(el);
+    }
+
+    function showAllMovementFields() {
+      document.querySelectorAll(".movement-dependent").forEach(el => {
+        el.style.display = fieldDisplay(el);
+      });
+    }
+
+    function setOutCompactMode(enabled) {
+      rememberFieldHome("locationField");
+      rememberFieldHome("poField");
+      rememberFieldHome("itemField");
+      rememberFieldHome("grnField");
+      rememberFieldHome("quantityField");
+      rememberFieldHome("grnAvailableField");
+      rememberFieldHome("itemAvailableField");
+      rememberFieldHome("minimumLevelField");
+      const formSection = document.getElementById("formSection");
+      const infoTitle = document.getElementById("stockInfoTitle");
+      const metricsTitle = document.getElementById("stockMetricsTitle");
+      const saveBtn = document.getElementById("saveEntryBtn");
+
+      document.querySelectorAll(".out-hide-field").forEach(el => {
+        el.style.display = enabled ? "none" : "flex";
+      });
+
+      if (formSection) formSection.classList.toggle("out-mode", enabled);
+      if (metricsTitle) metricsTitle.style.display = enabled ? "none" : "flex";
+
+      if (enabled) {
+        if (infoTitle) infoTitle.innerHTML = '<i class="fa-solid fa-circle-up"></i> Stock Out Search';
+        if (saveBtn) saveBtn.innerHTML = '<i class="fa-solid fa-check-double"></i> CONFIRM STOCK OUT';
+        moveFieldToStockGrid("locationField");
+        moveFieldToStockGrid("poField");
+        moveFieldToStockGrid("itemField");
+        moveFieldToStockGrid("grnField");
+        moveFieldToStockGrid("quantityField");
+        moveFieldToStockGrid("grnAvailableField");
+        moveFieldToStockGrid("itemAvailableField");
+        moveFieldToStockGrid("minimumLevelField");
+      } else {
+        if (infoTitle) infoTitle.innerHTML = '<i class="fa-solid fa-boxes-stacked"></i> Stock Allocation Info';
+        if (saveBtn) saveBtn.innerHTML = 'SAVE ENTRY';
+        restoreFieldHome("locationField");
+        restoreFieldHome("poField");
+        restoreFieldHome("itemField");
+        restoreFieldHome("grnField");
+        restoreFieldHome("quantityField");
+        restoreFieldHome("grnAvailableField");
+        restoreFieldHome("itemAvailableField");
+        restoreFieldHome("minimumLevelField");
+      }
+    }
+
     function handleMovementChange() {
       const moveType = document.getElementById("movementType").value;
       const grnIn = document.getElementById("grnNumberIn");
       const grnOut = document.getElementById("grnNumberOut");
       const grnPlaceholder = document.getElementById("grnPlaceholder");
+      const invoiceField = document.getElementById("invoiceField");
+      const invoiceNumber = document.getElementById("invoiceNumber");
+      const grnAvailableField = document.getElementById("grnAvailableField");
+      const inBillFields = document.querySelectorAll(".in-bill-field");
 
+      document.getElementById("stockTabIn")?.classList.toggle("active", moveType === "IN");
+      document.getElementById("stockTabOut")?.classList.toggle("active", moveType === "OUT");
       updateColor();
+      setOutCompactMode(false);
+      hideMovementFields();
 
       if (moveType === "IN") {
+        showAllMovementFields();
         grnPlaceholder.style.display = "none";
         grnOut.style.display = "none";
         grnOut.disabled = true;
@@ -917,8 +1317,30 @@
         grnIn.style.display = "block";
         grnIn.disabled = false;
         grnIn.value = calculateNextGRNNumber(databaseGRNs);
+        invoiceField.style.display = "flex";
+        invoiceNumber.required = true;
+        inBillFields.forEach(el => el.style.display = "flex");
+        document.getElementById("vendorId").required = true;
+        document.getElementById("unitId").required = true;
+        document.getElementById("invoiceDate").required = true;
+        if (!document.getElementById("invoiceDate").value) document.getElementById("invoiceDate").value = new Date().toISOString().slice(0,10);
+        grnAvailableField.style.display = "none";
+        document.getElementById("grnAvailableStock").value = "0";
+        document.getElementById("rate").readOnly = false;
       }
       else if (moveType === "OUT") {
+        setOutCompactMode(true);
+        inBillFields.forEach(el => el.style.display = "none");
+        document.querySelectorAll(".out-hide-strict").forEach(el => el.style.display = "none");
+        showMovementField("locationField");
+        showMovementField("poField");
+        showMovementField("grnField");
+        showMovementField("itemField");
+        showMovementField("quantityField");
+        showMovementField("grnAvailableField");
+        showMovementField("itemAvailableField");
+        showMovementField("minimumLevelField");
+        showMovementField("formActions");
         grnPlaceholder.style.display = "none";
         grnIn.style.display = "none";
         grnIn.disabled = true;
@@ -926,15 +1348,39 @@
         grnOut.style.display = "block";
         grnOut.disabled = false;
         populateGRNOutDropdown();
+        invoiceField.style.display = "none";
+        invoiceNumber.required = false;
+        invoiceNumber.value = "";
+        document.getElementById("vendorId").required = false;
+        document.getElementById("unitId").required = true;
+        document.getElementById("invoiceDate").required = false;
+        grnAvailableField.style.display = "flex";
+        document.getElementById("itemAvailableField").style.display = "flex";
+        document.getElementById("minimumLevelField").style.display = "flex";
+        document.getElementById("rate").readOnly = true;
+        document.getElementById("grnAvailableStock").value = "0";
       }
+      calculateAmount();
     }
 
-    function populateGRNOutDropdown() {
+    async function populateGRNOutDropdown() {
       const grnOut = document.getElementById("grnNumberOut");
       grnOut.innerHTML = '<option value="" disabled selected>Select Existing GRN</option>';
+      const item = document.getElementById("itemName").value;
+      const unitId = document.getElementById("unitId").value || "0";
+      let grnSource = [];
+      if (item && Number(unitId)) {
+        try {
+          const res = await fetch(`/general_stock/api/get_item_grns?item_name=${encodeURIComponent(item)}&unit_id=${encodeURIComponent(unitId)}`);
+          if (res.ok) {
+            const data = await res.json();
+            grnSource = data.grns || [];
+          }
+        } catch (err) { console.error(err); }
+      }
 
-      if (databaseGRNs && databaseGRNs.length > 0) {
-        let sortedGRNs = databaseGRNs.sort().reverse();
+      if (grnSource && grnSource.length > 0) {
+        let sortedGRNs = grnSource.sort().reverse();
         sortedGRNs.forEach(grn => {
           let opt = document.createElement('option');
           opt.value = grn;
@@ -942,7 +1388,7 @@
           grnOut.appendChild(opt);
         });
       } else {
-        grnOut.innerHTML = '<option value="" disabled selected>No active GRNs found</option>';
+        grnOut.innerHTML = '<option value="" disabled selected>Select Production At and Item first</option>';
       }
     }
 
@@ -1018,18 +1464,96 @@
       const move = document.getElementById("movementType").value;
       const qty = parseFloat(document.getElementById("quantity").value) || 0;
       const op = parseFloat(document.getElementById("openingStock").value) || 0;
+      const grnAvl = parseFloat(document.getElementById("grnAvailableStock").value) || 0;
+      const vendorId = Number(document.getElementById("vendorId").value || 0);
+      const unitId = Number(document.getElementById("unitId").value || 0);
+      const rate = parseFloat(document.getElementById("rate").value) || 0;
+
+      if (move === "IN" && !vendorId) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Vendor Required', text: 'Stock IN purchase bill ki vendor select cheyyali.' });
+        return false;
+      }
+      if (move === "IN" && !unitId) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Location Required', text: 'Location Unit select cheyyali.' });
+        return false;
+      }
+      if (move === "IN" && rate <= 0) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Base Price Required', text: 'Stock IN accounts lo asset/vendor effect ravali ante Base Price 0 kanna ekkuva undali.' });
+        return false;
+      }
+      if (move === "OUT" && !unitId) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'Production At Required', text: 'Stock OUT ki Production At select cheyyali.' });
+        return false;
+      }
 
       if (move === "OUT" && qty > op) {
         e.preventDefault();
         Swal.fire({ icon: 'error', title: 'Stock Deficit', text: 'Cannot dispatch more than opening stock.' });
         return false;
       }
+      if (move === "OUT" && qty > grnAvl) {
+        e.preventDefault();
+        Swal.fire({ icon: 'error', title: 'GRN Stock Deficit', text: `Selected GRN available qty is only ${grnAvl}.` });
+        return false;
+      }
       return true;
+    }
+
+    async function submitGeneralStockForm(e) {
+      e.preventDefault();
+      if (!validateForm(e)) return false;
+
+      const form = document.getElementById("generalStockForm");
+      const saveBtn = document.getElementById("saveEntryBtn");
+      const originalText = saveBtn ? saveBtn.innerHTML : "";
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> SAVING...';
+      }
+
+      try {
+        const res = await fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: { "X-Requested-With": "XMLHttpRequest" }
+        });
+
+        if (res.ok) {
+          await Swal.fire({
+            icon: "success",
+            title: "Saved",
+            text: "Stock entry saved and accounts posting updated.",
+            timer: 1400,
+            showConfirmButton: false
+          });
+          window.location.href = "/general_stock/entry";
+          return false;
+        }
+
+        let message = "Unable to save stock entry.";
+        try {
+          const data = await res.json();
+          message = data.message || data.detail || message;
+        } catch (_) {}
+        Swal.fire({ icon: "error", title: "Save Failed", text: message });
+      } catch (err) {
+        Swal.fire({ icon: "error", title: "Save Failed", text: "Server connection failed." });
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.innerHTML = originalText;
+        }
+      }
+      return false;
     }
 
     /* ================= 3 DOT MENU ================= */
     function selectRowOrCard(el) {
-      document.querySelectorAll(".data-card, #dataTable tbody tr").forEach(x => x.classList.remove("selected"));
+      document.querySelectorAll(".data-card, .stock-data-table tbody tr").forEach(x => x.classList.remove("selected"));
       const id = el.dataset.id;
       selectedElement = el;
       document.querySelectorAll(`[data-id='${id}']`).forEach(target => target.classList.add("selected"));
@@ -1056,21 +1580,41 @@
 
       if (d.move === "IN") {
         document.getElementById("grnNumberIn").value = d.grn;
+        document.getElementById("invoiceDate").value = d.date || "";
+        document.getElementById("unitId").value = d.unitId || "0";
+        document.getElementById("invoiceNumber").value = d.invoice || "";
+        document.getElementById("vendorId").value = d.vendorId || "0";
+        document.getElementById("accountingLedgerId").value = d.ledgerId || "0";
+        selectPoOption(d.po || "N/A");
+        document.getElementById("hsnCode").value = d.hsn || "";
+        document.getElementById("gstPercent").value = parseFloat(d.gst || 0).toFixed(2);
       } else {
         document.getElementById("grnNumberOut").value = d.grn;
       }
 
       selectItemOption(d.item);
+      if (d.move === "OUT") {
+        setTimeout(() => {
+          document.getElementById("grnNumberOut").value = d.grn;
+          fetchSelectedGrnRate();
+        }, 250);
+      }
       document.getElementById("quantity").value = d.qty;
+      document.getElementById("rate").value = parseFloat(d.rate || 0).toFixed(2);
+      calculateAmount();
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     async function cancelSelected() {
       if (!selectedElement) return;
+      if (selectedElement.dataset.cancelled === "1") {
+        Swal.fire({ icon: 'info', title: 'Already Cancelled', text: 'This log is already cancelled.' });
+        return;
+      }
       Swal.fire({
         title: 'Are you sure?', text: "Do you want to cancel this log?", icon: 'warning',
-        showCancelButton: true, confirmButtonColor: 'var(--danger)', confirmButtonText: 'Yes, cancel it!'
+        showCancelButton: true, confirmButtonColor: 'var(--danger)', confirmButtonText: 'Yes, cancel'
       }).then(async (result) => {
         if (result.isConfirmed) {
           const id = selectedElement.dataset.id;
@@ -1087,9 +1631,18 @@
       w.document.write("<style>body{font-family:sans-serif; padding:20px; color:#333;}</style>");
       w.document.write("<h2>ERP - Stock Entry Log</h2><hr>");
       w.document.write(`<p><b>GRN Number:</b> ${d.grn}</p>`);
+      w.document.write(`<p><b>Invoice Number:</b> ${d.invoice || '-'}</p>`);
+      w.document.write(`<p><b>Location Unit:</b> ${d.location || '-'}</p>`);
+      w.document.write(`<p><b>Vendor:</b> ${d.vendor || '-'}</p>`);
+      w.document.write(`<p><b>PO Number:</b> ${d.po || 'N/A'}</p>`);
       w.document.write(`<p><b>Item Profile:</b> ${d.item}</p>`);
+      w.document.write(`<p><b>HSN:</b> ${d.hsn || '-'}</p>`);
       w.document.write(`<p><b>Movement:</b> ${d.move}</p>`);
       w.document.write(`<p><b>Quantity:</b> ${d.qty} ${d.unit}</p>`);
+      w.document.write(`<p><b>Rate:</b> ${d.rate || 0}</p>`);
+      w.document.write(`<p><b>Value:</b> ${d.amount || 0}</p>`);
+      w.document.write(`<p><b>GST Amount:</b> ${d.tax || 0}</p>`);
+      w.document.write(`<p><b>Grand Total:</b> ${d.total || d.amount || 0}</p>`);
       w.document.write(`<p><b>Current Available Stock:</b> ${d.avail}</p>`);
       w.document.close();
       w.print();
@@ -1098,8 +1651,8 @@
     function exportExcel() {
       if (!selectedElement) return;
       const d = selectedElement.dataset;
-      let csv = `ID,GRN Number,Item Name,Unit,Movement,Qty,Opening,Available,Minimum\n`;
-      csv += `${d.id},${d.grn},${d.item},${d.unit},${d.move},${d.qty},${d.open},${d.avail},${d.min}`;
+      let csv = `ID,GRN Number,Invoice Number,Vendor,Item Name,HSN,Unit,Movement,Qty,Rate,Value,GST,Total,Opening,Available,Minimum\n`;
+      csv += `${d.id},${d.grn},${d.invoice || ''},${d.vendor || ''},${d.item},${d.hsn || ''},${d.unit},${d.move},${d.qty},${d.rate || 0},${d.amount || 0},${d.tax || 0},${d.total || d.amount || 0},${d.open},${d.avail},${d.min}`;
       const blob = new Blob([csv], { type: "application/vnd.ms-excel" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
@@ -1117,6 +1670,29 @@
       document.getElementById("openingStock").value = "0";
       document.getElementById("availableStock").value = "0";
       document.getElementById("minimumLevel").value = "0";
+      document.getElementById("rate").value = "0";
+      document.getElementById("rate").readOnly = false;
+      document.getElementById("amount").value = "0";
+      setOutCompactMode(false);
+      hideMovementFields();
+      document.getElementById("invoiceField").style.display = "none";
+      document.getElementById("invoiceNumber").required = false;
+      document.getElementById("invoiceNumber").value = "";
+      document.querySelectorAll(".in-bill-field").forEach(el => el.style.display = "none");
+      document.getElementById("vendorId").required = false;
+      document.getElementById("vendorId").value = "0";
+      document.getElementById("unitId").required = false;
+      document.getElementById("unitId").value = "0";
+      document.getElementById("invoiceDate").required = false;
+      document.getElementById("invoiceDate").value = "";
+      document.getElementById("accountingLedgerId").value = "0";
+      selectPoOption("N/A");
+      document.getElementById("hsnCode").value = "";
+      document.getElementById("gstPercent").value = "0";
+      document.getElementById("taxAmount").value = "0";
+      document.getElementById("totalAmount").value = "0";
+      document.getElementById("grnAvailableField").style.display = "none";
+      document.getElementById("grnAvailableStock").value = "0";
 
       document.getElementById("grnPlaceholder").style.display = "block";
       document.getElementById("grnNumberIn").style.display = "none";
@@ -1136,7 +1712,7 @@
       checkStockLevel();
     }
   </script>
-  <script src="/static/js/global-loader.js"></script>
+  <script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 
 </html>

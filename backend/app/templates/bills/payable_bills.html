@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root{--primary:#143465;--accent:#3b82f6;--border:#d6dde7;--bg:#f4f6f9;--muted:#64748b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#1f2937;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.header-dash{background:var(--card-bg,#fff);padding:15px 25px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
+.header-titles h2{margin:0;font-size:18px;color:var(--primary);font-weight:900}.header-titles span{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.total-strip{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.pill{background:var(--primary);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:900;min-width:160px;text-align:center}
+.filter-bar{background:var(--card-bg,#fff);padding:10px 25px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.filter-item{display:flex;flex-direction:column;gap:3px;min-width:150px;max-width:220px;flex:1}.filter-item label,.pay-field label{font-size:9px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.filter-item input,.filter-item select,.pay-field input,.pay-field select{height:34px;border:1px solid var(--border);border-radius:7px;background:var(--card-bg,#fff);color:var(--primary);font-size:12px;font-weight:800;padding:6px 10px;outline:none}
+.btn{height:34px;border:0;border-radius:7px;padding:0 16px;background:var(--accent);color:#fff;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px}.btn.secondary{background:var(--muted)}
+.tabs{display:flex;gap:8px;padding:12px 25px 0;background:var(--bg);flex-wrap:wrap}.tab-btn{height:32px;border:1px solid var(--border);border-radius:7px;background:var(--card-bg,#fff);color:var(--primary);font-size:11px;font-weight:900;padding:0 14px;cursor:pointer}.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.section-header{padding:15px 25px 8px;display:flex;justify-content:space-between;align-items:center}.section-header strong{font-size:12px;color:var(--primary);text-transform:uppercase}
+.table-wrap{margin:0 25px 25px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:12px;overflow:auto;box-shadow:0 4px 10px rgba(15,23,42,.05)}
+.main-table{width:100%;border-collapse:collapse;min-width:1120px;font-size:12px}.main-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase;padding:11px;border-bottom:2px solid var(--border);text-align:center}.main-table td{padding:11px;border-bottom:1px solid #edf2f7;text-align:center;color:var(--primary);font-weight:750}.main-table td:first-child{text-align:left}
+.row-paid td{background:#dcfce7;color:#14532d}.row-partial td{background:#fef9c3;color:#713f12}.amount-link{display:inline-flex;justify-content:flex-end;min-width:120px;padding:6px 10px;border-radius:7px;background:#eff6ff;color:var(--accent);font-weight:900;text-decoration:none;border:1px solid #bfdbfe;cursor:pointer}.amount-link.empty{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;pointer-events:none}
+.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900;background:#f1f5f9;color:#475569}.badge.posted{background:#dcfce7;color:#166534}.badge.partial{background:#fef3c7;color:#92400e}
+.pay-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;align-items:center;justify-content:center;padding:18px}.pay-card{width:min(620px,96vw);background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 45px rgba(15,23,42,.22);overflow:hidden}.history-card{width:min(1180px,98vw)}
+.pay-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}.pay-head h3{margin:0;font-size:15px;color:var(--primary);font-weight:900}.pay-body{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.pay-body .wide{grid-column:1/-1}.pay-field{display:flex;flex-direction:column;gap:4px}.pay-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.empty-state{padding:70px 20px;text-align:center;color:var(--muted)}.empty-state i{font-size:34px;color:var(--accent);opacity:.65;margin-bottom:12px}.history-table{width:100%;border-collapse:collapse;font-size:12px}.history-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase;padding:9px;border-bottom:1px solid var(--border)}.history-table td{padding:9px;border-bottom:1px solid #edf2f7;color:var(--primary);font-weight:400;text-align:center}
+</style>
+</head>
+<body>
+<div class="header-dash"><div class="header-titles"><span>Finance Bills</span><h2>{{ title }}</h2></div><div class="total-strip"><div class="pill" id="totalAmt">TOTAL: ₹ 0.00</div><div class="pill" id="paidAmt">PAID: ₹ 0.00</div><div class="pill" id="dueAmt">DUE: ₹ 0.00</div></div></div>
+<div class="filter-bar"><div class="filter-item"><label>Financial Year</label><select id="fy">{% for y in range(2024, 2029) %}<option value="{{ y }}" {% if selected_fy == y %}selected{% endif %}>FY {{ y }}-{{ y + 1 }}</option>{% endfor %}</select></div><div class="filter-item"><label>Month</label><input type="month" id="month" value="{{ selected_month }}"></div><button class="btn" onclick="loadRows()"><i class="fa-solid fa-filter"></i> Filter</button><button class="btn secondary" onclick="resetFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button></div>
+<div class="tabs"><button class="tab-btn active" id="tabOutstanding" onclick="switchTab('outstanding')">Outstanding</button><button class="tab-btn" id="tabAll" onclick="switchTab('all')">All Records</button></div>
+<div class="section-header"><strong id="rowCount">0 Records</strong><strong id="monthLabel"></strong></div>
+<div class="table-wrap"><table class="main-table"><thead><tr><th>Party</th><th>Bill No</th><th>Category</th><th>Bill Date</th><th>Total</th><th>Paid</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody id="rows"><tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-file-invoice-dollar"></i><br>Loading bills...</div></td></tr></tbody></table></div>
+
+<div class="pay-modal" id="payModal"><div class="pay-card"><div class="pay-head"><div><h3 id="payTitle">Payment</h3><div id="paySub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div></div><button class="btn secondary" onclick="closePayModal()"><i class="fa-solid fa-xmark"></i></button></div><div class="pay-body"><div class="pay-field"><label>Bill Total</label><input id="payTotal" readonly></div><div class="pay-field"><label>Outstanding</label><input id="payBalance" readonly></div><div class="pay-field"><label>Payment Purpose</label><select id="payPurpose"><option value="AGAINST_OUTSTANDING">Against Outstanding</option><option value="AGAINST_BATCH">Against Batch</option><option value="ADVANCE_PAYMENT">Advance Payment</option></select></div><div class="pay-field"><label>Paid Amount</label><input type="number" step="0.01" min="0" id="payAmount"></div><div class="pay-field wide"><label>Against Details</label><input type="text" id="payAgainst" placeholder="Batch/Bill/Purpose details"></div><div class="pay-field"><label>Payment Mode</label><select id="payMode"><option value="BANK">BANK</option><option value="CASH">CASH</option><option value="CHEQUE">CHEQUE</option><option value="NEFT">NEFT</option><option value="RTGS">RTGS</option></select></div><div class="pay-field wide"><label>Bank / Cash Account</label><select id="payBankLedger"><option value="">-- SELECT ACCOUNT --</option>{% for ledger in bank_cash_ledgers %}<option value="{{ ledger.id }}">{{ ledger.ledger_name }}</option>{% endfor %}</select></div><div class="pay-field"><label>Payment Date</label><input type="date" id="payDate"></div><div class="pay-field"><label>UTR / Cheque Ref</label><input type="text" id="payUtr"></div></div><div class="pay-foot"><button class="btn" id="savePaymentBtn" onclick="submitPayment()"><i class="fa-solid fa-money-check-dollar"></i> Save Payment</button></div></div></div>
+
+<div class="pay-modal" id="historyModal"><div class="pay-card history-card"><div class="pay-head"><div><h3 id="historyTitle">Payment History</h3><div id="historySub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div></div><button class="btn secondary" onclick="closeHistoryModal()"><i class="fa-solid fa-xmark"></i></button></div><div style="padding:14px;max-height:55vh;overflow:auto" id="historyContent"></div></div></div>
+
+<div class="pay-modal" id="detailsModal"><div class="pay-card history-card"><div class="pay-head"><div><h3 id="detailsTitle">Bill Wise Records</h3><div id="detailsSub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div></div><button class="btn secondary" onclick="closeDetailsModal()"><i class="fa-solid fa-xmark"></i></button></div><div style="padding:14px;max-height:70vh;overflow:auto" id="detailsContent"></div><div class="pay-foot"><button class="btn secondary" onclick="printDetails()"><i class="fa-solid fa-print"></i> Print</button><button class="btn" onclick="payFromDetails()"><i class="fa-solid fa-money-check-dollar"></i> Pay Payment</button></div></div></div>
+
+<div class="pay-modal" id="expenseModal"><div class="pay-card"><div class="pay-head"><div><h3 id="expenseTitle">Batch Expenses</h3><div id="expenseSub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div></div><button class="btn secondary" onclick="closeExpenseModal()"><i class="fa-solid fa-xmark"></i></button></div><div class="pay-body"><div class="pay-field"><label>Transportation</label><input type="number" step="0.01" min="0" id="expTransportation"></div><div class="pay-field"><label>Commission</label><input type="number" step="0.01" min="0" id="expCommission"></div><div class="pay-field"><label>Ice</label><input type="number" step="0.01" min="0" id="expIce"></div><div class="pay-field"><label>Others</label><input type="number" step="0.01" min="0" id="expOthers"></div><div class="pay-field wide"><label>Reason</label><input type="text" id="expReason" placeholder="Reason for other/additional expenses"></div></div><div class="pay-foot"><button class="btn" id="saveExpenseBtn" onclick="saveBatchExpense()"><i class="fa-solid fa-floppy-disk"></i> Save Expenses</button></div></div></div>
+
+<script>
+const apiBase = "{{ api_base }}";
+const billType = "{{ bill_type }}";
+const fmt = new Intl.NumberFormat('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+let allRows = [], rowMap = {}, activeTab = 'outstanding', selectedRow = null, currentDetailsKey = '', selectedExpenseBatch = '', currentDetailRows = [];
+function todayISO(){return new Date().toISOString().slice(0,10)}
+async function loadRows(){
+  const month = document.getElementById('month').value;
+  document.getElementById('monthLabel').textContent = month || 'All Months';
+  document.getElementById('rows').innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading bills...</div></td></tr>`;
+  try{
+    const res = await fetch(`${apiBase}/data?month=${encodeURIComponent(month || '')}`);
+    const data = await res.json();
+    if(!data.success){throw new Error(data.message || 'Unable to load bills')}
+    allRows = data.rows || [];
+    renderRows();
+  }catch(err){
+    document.getElementById('rows').innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>${err.message || 'Unable to load bills.'}</div></td></tr>`;
+  }finally{ if(window.forceHideLoader) window.forceHideLoader(); }
+}
+function switchTab(tab){activeTab=tab;document.getElementById('tabOutstanding').classList.toggle('active',tab==='outstanding');document.getElementById('tabAll').classList.toggle('active',tab==='all');renderRows();}
+function renderRows(){
+  const rows = activeTab === 'outstanding' ? allRows.filter(r => Number(r.outstanding || 0) > 0.01) : allRows;
+  rowMap = {}; rows.forEach(r => rowMap[r.bill_key] = r);
+  const total = rows.reduce((s,r)=>s+Number(r.total_amount||0),0), paid = rows.reduce((s,r)=>s+Number(r.paid_amount||0),0), due = rows.reduce((s,r)=>s+Number(r.outstanding||0),0);
+  document.getElementById('totalAmt').textContent = `TOTAL: ₹ ${fmt.format(total)}`;
+  document.getElementById('paidAmt').textContent = `PAID: ₹ ${fmt.format(paid)}`;
+  document.getElementById('dueAmt').textContent = `DUE: ₹ ${fmt.format(due)}`;
+  document.getElementById('rowCount').textContent = `${rows.length} Records`;
+  if(!rows.length){document.getElementById('rows').innerHTML = `<tr><td colspan="9"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>No records found.</div></td></tr>`;return;}
+  document.getElementById('rows').innerHTML = rows.map(r => `<tr class="${r.payment_status==='PAID'?'row-paid':(r.payment_status==='PARTIAL'?'row-partial':'')}"><td>${r.party_name||'-'}</td><td>${r.bill_no||'-'}<br><small>${r.invoice_no||''}</small></td><td>${r.category||'-'}</td><td>${r.bill_date||'-'}</td><td>₹ ${fmt.format(r.total_amount||0)}</td><td><button class="amount-link ${Number(r.paid_amount||0)<=0?'empty':''}" onclick="openHistory('${String(r.bill_key).replace(/'/g,"\\'")}')">₹ ${fmt.format(r.paid_amount||0)}</button></td><td><button class="amount-link ${Number(r.outstanding||0)<=0?'empty':''}" onclick="openDetails('${String(r.bill_key).replace(/'/g,"\\'")}')">₹ ${fmt.format(r.outstanding||0)}</button></td><td><span class="badge ${r.payment_status==='PAID'?'posted':(r.payment_status==='PARTIAL'?'partial':'')}">${r.payment_status||'UNPAID'}</span></td><td><button class="amount-link ${billType!=='supplier'&&Number(r.outstanding||0)<=0?'empty':''}" onclick="openPayModal('${String(r.bill_key).replace(/'/g,"\\'")}')">Pay</button></td></tr>`).join('');
+}
+function openPayModal(key){selectedRow=rowMap[key]||allRows.find(r=>r.bill_key===key);if(!selectedRow)return;document.getElementById('payTitle').textContent=selectedRow.party_name||'Payment';document.getElementById('paySub').textContent=selectedRow.bill_no||'';document.getElementById('payTotal').value=`₹ ${fmt.format(selectedRow.total_amount||0)}`;document.getElementById('payBalance').value=`₹ ${fmt.format(selectedRow.outstanding||0)}`;document.getElementById('payPurpose').value='AGAINST_OUTSTANDING';document.getElementById('payAgainst').value=selectedRow.bill_no||selectedRow.bill_key||'';document.getElementById('payAmount').value=Number(selectedRow.outstanding||0).toFixed(2);document.getElementById('payDate').value=todayISO();document.getElementById('payUtr').value='';const bank=document.getElementById('payBankLedger');if(bank&&!bank.value&&bank.options.length===2)bank.selectedIndex=1;document.getElementById('payModal').style.display='flex';}
+function closePayModal(){document.getElementById('payModal').style.display='none';selectedRow=null;}
+function openHistory(key){const row=rowMap[key]||allRows.find(r=>r.bill_key===key);if(!row)return;const hist=row.payment_history||[];document.getElementById('historyTitle').textContent=row.party_name||'Payment History';document.getElementById('historySub').textContent=`${row.bill_no||''} | Paid: ₹ ${fmt.format(row.paid_amount||0)}`;document.getElementById('historyContent').innerHTML=!hist.length?`<div class="empty-state"><i class="fa-solid fa-receipt"></i><br>No payments found.</div>`:`<table class="history-table"><thead><tr><th>Date</th><th>Purpose</th><th>Against</th><th>Amount</th><th>Mode</th><th>Account</th><th>UTR</th><th>Status</th></tr></thead><tbody>${hist.map(i=>`<tr><td>${i.date||'-'}</td><td>${i.purpose||'-'}</td><td>${i.against||'-'}</td><td>₹ ${fmt.format(i.amount||0)}</td><td>${i.mode||'-'}</td><td>${i.account||'-'}</td><td>${i.utr||'-'}</td><td>${i.status||'-'}</td></tr>`).join('')}</tbody></table>`;document.getElementById('historyModal').style.display='flex';}
+function closeHistoryModal(){document.getElementById('historyModal').style.display='none';}
+async function openDetails(key){
+  currentDetailsKey = key;
+  selectedRow = rowMap[key] || allRows.find(r => r.bill_key === key);
+  if(!selectedRow) return;
+  document.getElementById('detailsTitle').textContent = `${selectedRow.party_name || 'Party'} - Bill Wise Records`;
+  document.getElementById('detailsSub').textContent = `${selectedRow.bill_no || ''} | Outstanding: ₹ ${fmt.format(selectedRow.outstanding || 0)}`;
+  document.getElementById('detailsContent').innerHTML = `<div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading bill records...</div>`;
+  document.getElementById('detailsModal').style.display = 'flex';
+  try{
+    const res = await fetch(`${apiBase}/details?bill_key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if(!data.success) throw new Error(data.message || 'Unable to load bill records');
+	    const rows = data.rows || [];
+	    currentDetailRows = rows;
+	    document.getElementById('detailsContent').innerHTML = !rows.length
+	      ? `<div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>No bill records found.</div>`
+	      : renderDetailRows(rows);
+  }catch(err){
+    document.getElementById('detailsContent').innerHTML = `<div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>${err.message || 'Unable to load bill records.'}</div>`;
+  }finally{ if(window.forceHideLoader) window.forceHideLoader(); }
+}
+function closeDetailsModal(){document.getElementById('detailsModal').style.display='none';}
+function payFromDetails(){ if(selectedRow){ closeDetailsModal(); openPayModal(selectedRow.bill_key); } }
+function escapePrintHtml(value){return String(value || '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+async function printBill(key){
+  selectedRow = rowMap[key] || allRows.find(r => r.bill_key === key);
+  if(!selectedRow) return;
+  if(billType === 'vendor'){
+    let rows = currentDetailsKey === key ? currentDetailRows : [];
+    if(!rows.length){
+      try{
+        const res = await fetch(`${apiBase}/details?bill_key=${encodeURIComponent(key)}`);
+        const data = await res.json();
+        rows = data.success ? (data.rows || []) : [];
+      }catch(err){ rows = []; }
+    }
+    const options = {'__ALL__':'All Invoices'};
+    (rows || []).forEach(row => {
+      const value = row.bill_no || row.invoice_no;
+      if(value) options[value] = row.invoice_no ? `${row.invoice_no} (${row.bill_no})` : row.bill_no;
+    });
+    Swal.fire({
+      title: 'Print Option',
+      input: 'select',
+      inputOptions: options,
+      inputValue: '__ALL__',
+      inputLabel: 'Select Invoice',
+      showCancelButton: true,
+      confirmButtonText: 'Print',
+      cancelButtonText: 'Cancel'
+    }).then(result => {
+      if(!result.isConfirmed) return;
+      const invoice = result.value && result.value !== '__ALL__' ? result.value : '';
+      const url = `${apiBase}/print?bill_key=${encodeURIComponent(selectedRow.bill_key)}${invoice ? `&vendor_bill_no=${encodeURIComponent(invoice)}` : ''}`;
+      window.open(url, '_blank');
+    });
+    return;
+  }
+  let rows = currentDetailsKey === key ? currentDetailRows : [];
+  if(!rows.length){
+    try{
+      const res = await fetch(`${apiBase}/details?bill_key=${encodeURIComponent(key)}`);
+      const data = await res.json();
+      rows = data.success ? (data.rows || []) : [];
+    }catch(err){ rows = []; }
+  }
+  const batches = [...new Set((rows || []).filter(r => !r.is_expense && r.bill_no).map(r => r.bill_no))];
+  const options = {'__ALL__':'All Batches'};
+  batches.forEach(batch => options[batch] = batch);
+  Swal.fire({
+    title: 'Print Option',
+    input: 'select',
+    inputOptions: options,
+    inputValue: '__ALL__',
+    inputLabel: 'Select Batch',
+    showCancelButton: true,
+    confirmButtonText: 'Print',
+    cancelButtonText: 'Cancel'
+  }).then(result => {
+    if(!result.isConfirmed) return;
+    const batch = result.value && result.value !== '__ALL__' ? result.value : '';
+    const url = `${apiBase}/print?bill_key=${encodeURIComponent(selectedRow.bill_key)}${batch ? `&batch_number=${encodeURIComponent(batch)}` : ''}`;
+    window.open(url, '_blank');
+  });
+}
+function printDetails(){
+  if(billType === 'supplier' && selectedRow && selectedRow.bill_key){
+    printBill(selectedRow.bill_key);
+    return;
+  }
+  if(billType === 'vendor' && selectedRow && selectedRow.bill_key){
+    printBill(selectedRow.bill_key);
+    return;
+  }
+  const title = document.getElementById('detailsTitle').textContent || 'Bill Wise Records';
+  const sub = document.getElementById('detailsSub').textContent || '';
+  const content = document.getElementById('detailsContent').innerHTML;
+  const printWindow = window.open('', '_blank', 'width=1100,height=800');
+  if(!printWindow){Swal.fire('Print Blocked','Please allow popups to print this report.','warning');return;}
+  printWindow.document.write(`<!DOCTYPE html><html><head><title>${escapePrintHtml(title)}</title><style>body{font-family:Arial,sans-serif;color:#143465;margin:24px}h2{margin:0 0 4px;font-size:18px}.sub{font-size:12px;color:#64748b;font-weight:700;margin-bottom:16px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:10px}th,td{border:1px solid #d6dde7;padding:8px;text-align:center}@media print{body{margin:12mm}}</style></head><body><h2>${escapePrintHtml(title)}</h2><div class="sub">${escapePrintHtml(sub)}</div>${content}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => { printWindow.print(); }, 250);
+}
+function renderDetailRows(rows){
+  const groups = {};
+  rows.forEach(row => {
+    const batch = row.bill_no || 'Unassigned';
+    if(!groups[batch]) groups[batch] = {qty:0, amount:0, rows:[]};
+    groups[batch].qty += Number(row.qty || 0);
+    groups[batch].amount += Number(row.amount || 0);
+    groups[batch].rows.push(row);
+  });
+  const body = Object.entries(groups).map(([batch, group]) => {
+    return group.rows.filter(i=>!i.is_expense).map(i=>`<tr><td>${i.date||'-'}</td><td>${i.bill_no||'-'}</td><td>${i.invoice_no||'-'}</td><td>${i.description||'-'}</td><td>${fmt.format(i.qty||0)}</td><td>₹ ${fmt.format(i.rate||0)}</td><td>₹ ${fmt.format(i.amount||0)}</td></tr>`).join('');
+  }).join('');
+  return `<table class="history-table"><thead><tr><th>Date</th><th>Bill / Batch</th><th>Invoice</th><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>${body}</tbody></table>`;
+}
+async function openExpenseModal(batch){
+  if(billType !== 'supplier' || !selectedRow) return;
+  selectedExpenseBatch = batch;
+  document.getElementById('expenseTitle').textContent = 'Batch Expenses';
+  document.getElementById('expenseSub').textContent = `${selectedRow.party_name || ''} | ${batch}`;
+  ['expTransportation','expCommission','expIce','expOthers'].forEach(id => document.getElementById(id).value = '0.00');
+  document.getElementById('expReason').value = '';
+  document.getElementById('expenseModal').style.display = 'flex';
+  try{
+    const res = await fetch(`${apiBase}/batch_expense?supplier_name=${encodeURIComponent(selectedRow.party_name || '')}&batch_number=${encodeURIComponent(batch)}`);
+    const out = await res.json();
+    if(out.success && out.expense){
+      document.getElementById('expTransportation').value = Number(out.expense.transportation || 0).toFixed(2);
+      document.getElementById('expCommission').value = Number(out.expense.commission || 0).toFixed(2);
+      document.getElementById('expIce').value = Number(out.expense.ice || 0).toFixed(2);
+      document.getElementById('expOthers').value = Number(out.expense.others || 0).toFixed(2);
+      document.getElementById('expReason').value = out.expense.reason || '';
+    }
+  }catch(err){ Swal.fire('Unable to Load','Expense details load avvaledu.','warning'); }
+}
+function closeExpenseModal(){document.getElementById('expenseModal').style.display='none';selectedExpenseBatch='';}
+async function saveBatchExpense(){
+  if(!selectedRow || !selectedExpenseBatch) return;
+  const btn = document.getElementById('saveExpenseBtn');
+  btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  try{
+    const res = await fetch(`${apiBase}/batch_expense`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({supplier_name:selectedRow.party_name,batch_number:selectedExpenseBatch,transportation:Number(document.getElementById('expTransportation').value||0),commission:Number(document.getElementById('expCommission').value||0),ice:Number(document.getElementById('expIce').value||0),others:Number(document.getElementById('expOthers').value||0),reason:document.getElementById('expReason').value||null})});
+    const out = await res.json();
+    if(out.success){Swal.fire('Saved', out.message || 'Batch expenses saved.', 'success').then(()=>{closeExpenseModal(); if(currentDetailsKey) openDetails(currentDetailsKey); loadRows();});}
+    else{Swal.fire('Save Failed', out.message || 'Unable to save expenses.', 'error');}
+  }catch(err){Swal.fire('Save Failed','Server connection failed.','error');}
+  finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Save Expenses';}
+}
+async function submitPayment(){if(!selectedRow)return;const amount=Number(document.getElementById('payAmount').value||0), bankId=Number(document.getElementById('payBankLedger').value||0);if(amount<=0){Swal.fire('Amount Required','Paid amount enter cheyyali.','warning');return;}if(!bankId){Swal.fire('Account Required','Bank/Cash account select cheyyali.','warning');return;}const btn=document.getElementById('savePaymentBtn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Saving...';try{const res=await fetch(`${apiBase}/payment`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({bill_key:selectedRow.bill_key,party_name:selectedRow.party_name,bill_total:Number(selectedRow.total_amount||0),amount,payment_purpose:document.getElementById('payPurpose').value,against_details:document.getElementById('payAgainst').value||null,payment_mode:document.getElementById('payMode').value,payment_date:document.getElementById('payDate').value||null,utr_reference:document.getElementById('payUtr').value||null,bank_cash_ledger_id:bankId})});const out=await res.json();if(out.success){Swal.fire('Payment Posted',out.message,'success').then(()=>{closePayModal();loadRows();});}else{Swal.fire('Payment Failed',out.message||'Unable to post payment','error');}}catch(err){Swal.fire('Payment Failed','Server connection failed.','error');}finally{btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-money-check-dollar"></i> Save Payment';if(window.forceHideLoader)window.forceHideLoader();}}
+function resetFilters(){document.getElementById('month').value='';loadRows();}
+document.addEventListener('DOMContentLoaded', loadRows);
+</script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
+</body>
+</html>

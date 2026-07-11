@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import JSONResponse, StreamingResponse
+from sqlalchemy import case, func
 from sqlalchemy.orm import Session
 from datetime import date, datetime
 import openpyxl
@@ -16,6 +17,7 @@ from app.database.models.enterprise_finance import (
 )
 from app.services.posting_engine import PostingEngineService
 from app.services.accounting_reports import AccountingReportsService
+from app.utils.timezone import ist_now
 
 router = APIRouter()
 
@@ -469,7 +471,7 @@ def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get
 @router.get("/reports/trial-balance")
 def report_trial_balance(request: Request, as_of_date: Optional[date] = None, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
-    tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date)
+    tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date or ist_now().date())
     return {"success": True, "data": tb}
 
 @router.get("/reports/profit-loss")
@@ -481,7 +483,7 @@ def report_profit_loss(request: Request, start_date: date, end_date: date, db: S
 @router.get("/reports/balance-sheet")
 def report_balance_sheet(request: Request, as_of_date: Optional[date] = None, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
-    bs = AccountingReportsService.get_balance_sheet(db, comp_code, as_of_date)
+    bs = AccountingReportsService.get_balance_sheet(db, comp_code, as_of_date or ist_now().date())
     return {"success": True, "data": bs}
 
 @router.get("/reports/ledger-statement")
@@ -495,7 +497,7 @@ def report_ledger_statement(request: Request, ledger_id: int, start_date: date, 
 @router.get("/reports/day-book")
 def report_day_book(request: Request, target_date: Optional[date] = None, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
-    return {"success": True, "data": AccountingReportsService.get_day_book(db, comp_code, target_date or date.today())}
+    return {"success": True, "data": AccountingReportsService.get_day_book(db, comp_code, target_date or ist_now().date())}
 
 @router.get("/reports/gst-summary")
 def report_gst_summary(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
@@ -506,7 +508,7 @@ def report_gst_summary(request: Request, start_date: date, end_date: date, db: S
 def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
     ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
-    as_of_date = date.today()
+    as_of_date = ist_now().date()
     tb = AccountingReportsService.get_trial_balance(db, comp_code, as_of_date)
     fy_start = date(as_of_date.year if as_of_date.month >= 4 else as_of_date.year - 1, 4, 1)
     pl = AccountingReportsService.get_profit_and_loss(db, comp_code, fy_start, as_of_date)
@@ -526,7 +528,6 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
     payables = abs(sum(
         row["balance"] for row in tb
         if row["type"] == "LEDGER" and row["group_type"] == "LIABILITY"
-        and row.get("group_name") in {"Sundry Creditors", "Duties & Taxes"}
     ))
 
     return {
@@ -546,6 +547,170 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
         },
         "balance_sheet_balanced": bs["is_balanced"],
         "balance_sheet_difference": bs["difference"],
+    }
+
+@router.get("/dashboard/summary/details")
+def accounting_dashboard_summary_details(
+    request: Request,
+    metric: str = Query(..., pattern="^(income|expense|assets|liabilities_equity)$"),
+    db: Session = Depends(get_db),
+):
+    comp_code = require_company_code(request)
+    ensure_default_accounting_setup(db, comp_code, request.session.get("email", "SYSTEM"))
+    as_of_date = ist_now().date()
+    fy_start = date(as_of_date.year if as_of_date.month >= 4 else as_of_date.year - 1, 4, 1)
+
+    labels = {
+        "income": "Total Income",
+        "expense": "Total Expense",
+        "assets": "Assets",
+        "liabilities_equity": "Liabilities + Equity",
+    }
+    group_types = {
+        "income": ["INCOME"],
+        "expense": ["EXPENSE"],
+        "assets": ["ASSET"],
+        "liabilities_equity": ["LIABILITY", "EQUITY"],
+    }[metric]
+
+    posted_debit = case((VoucherHeader.id.isnot(None), VoucherDetail.debit_amount), else_=0.0)
+    posted_credit = case((VoucherHeader.id.isnot(None), VoucherDetail.credit_amount), else_=0.0)
+
+    ledger_rows = db.query(
+        LedgerMaster.id.label("ledger_id"),
+        LedgerMaster.ledger_name,
+        LedgerMaster.opening_balance,
+        LedgerMaster.opening_balance_type,
+        AccountGroup.group_name,
+        AccountGroup.group_type,
+        func.coalesce(func.sum(posted_debit), 0.0).label("debits"),
+        func.coalesce(func.sum(posted_credit), 0.0).label("credits"),
+    ).join(AccountGroup, AccountGroup.id == LedgerMaster.group_id).outerjoin(
+        VoucherDetail, VoucherDetail.ledger_id == LedgerMaster.id
+    ).outerjoin(
+        VoucherHeader,
+        (VoucherHeader.id == VoucherDetail.voucher_id)
+        & (VoucherHeader.company_id == comp_code)
+        & (VoucherHeader.status == "POSTED")
+        & (
+            VoucherHeader.voucher_date.between(fy_start, as_of_date)
+            if metric in {"income", "expense"}
+            else (VoucherHeader.voucher_date <= as_of_date)
+        ),
+    ).filter(
+        LedgerMaster.company_id == comp_code,
+        AccountGroup.group_type.in_(group_types),
+    ).group_by(
+        LedgerMaster.id,
+        LedgerMaster.ledger_name,
+        LedgerMaster.opening_balance,
+        LedgerMaster.opening_balance_type,
+        AccountGroup.group_name,
+        AccountGroup.group_type,
+    ).order_by(AccountGroup.group_name, LedgerMaster.ledger_name).all()
+
+    ledger_summary = []
+    total_amount = 0.0
+    for row in ledger_rows:
+        opening = float(row.opening_balance or 0.0)
+        if row.opening_balance_type != "DR":
+            opening = -opening
+        debits = float(row.debits or 0.0)
+        credits = float(row.credits or 0.0)
+        balance = (0.0 if metric in {"income", "expense"} else opening) + debits - credits
+        if metric == "income":
+            amount = credits - debits
+        elif metric in {"expense", "assets"}:
+            amount = balance
+        else:
+            amount = -balance
+        if abs(amount) > 0.01 or abs(opening) > 0.01 or abs(debits) > 0.01 or abs(credits) > 0.01:
+            total_amount += amount
+            ledger_summary.append({
+                "ledger_id": row.ledger_id,
+                "ledger_name": row.ledger_name,
+                "group_name": row.group_name,
+                "group_type": row.group_type,
+                "opening": round(opening, 2),
+                "debit": round(debits, 2),
+                "credit": round(credits, 2),
+                "amount": round(amount, 2),
+            })
+
+    if metric == "liabilities_equity":
+        pl = AccountingReportsService.get_profit_and_loss(db, comp_code, date(1900, 1, 1), as_of_date)
+        retained = float(pl["net_profit"] or 0.0)
+        if abs(retained) > 0.01:
+            total_amount += retained
+            ledger_summary.append({
+                "ledger_id": None,
+                "ledger_name": "Retained Earnings (P&L to Date)",
+                "group_name": "Equity",
+                "group_type": "EQUITY",
+                "opening": 0.0,
+                "debit": 0.0,
+                "credit": 0.0,
+                "amount": round(retained, 2),
+            })
+
+    tx_query = db.query(
+        VoucherHeader.voucher_date,
+        VoucherHeader.voucher_no,
+        VoucherHeader.reference_no,
+        VoucherHeader.narration,
+        VoucherType.name.label("voucher_type"),
+        LedgerMaster.ledger_name,
+        AccountGroup.group_name,
+        AccountGroup.group_type,
+        VoucherDetail.debit_amount,
+        VoucherDetail.credit_amount,
+        VoucherDetail.remarks,
+    ).join(VoucherDetail, VoucherDetail.voucher_id == VoucherHeader.id).join(
+        LedgerMaster, LedgerMaster.id == VoucherDetail.ledger_id
+    ).join(AccountGroup, AccountGroup.id == LedgerMaster.group_id).join(
+        VoucherType, VoucherType.id == VoucherHeader.voucher_type_id
+    ).filter(
+        VoucherHeader.company_id == comp_code,
+        VoucherHeader.status == "POSTED",
+        AccountGroup.group_type.in_(group_types),
+    )
+    if metric in {"income", "expense"}:
+        tx_query = tx_query.filter(VoucherHeader.voucher_date.between(fy_start, as_of_date))
+    else:
+        tx_query = tx_query.filter(VoucherHeader.voucher_date <= as_of_date)
+
+    transactions = []
+    for row in tx_query.order_by(VoucherHeader.voucher_date.desc(), VoucherHeader.id.desc()).limit(500).all():
+        debit = float(row.debit_amount or 0.0)
+        credit = float(row.credit_amount or 0.0)
+        if metric == "income":
+            contribution = credit - debit
+        elif metric in {"expense", "assets"}:
+            contribution = debit - credit
+        else:
+            contribution = credit - debit
+        transactions.append({
+            "date": row.voucher_date.isoformat() if row.voucher_date else "",
+            "voucher_no": row.voucher_no,
+            "voucher_type": row.voucher_type,
+            "reference_no": row.reference_no or "",
+            "ledger_name": row.ledger_name,
+            "group_name": row.group_name,
+            "debit": round(debit, 2),
+            "credit": round(credit, 2),
+            "amount": round(contribution, 2),
+            "remarks": row.remarks or row.narration or "",
+        })
+
+    return {
+        "success": True,
+        "metric": metric,
+        "title": labels[metric],
+        "period": f"{fy_start.isoformat()} to {as_of_date.isoformat()}" if metric in {"income", "expense"} else f"Up to {as_of_date.isoformat()}",
+        "total_amount": round(total_amount, 2),
+        "ledger_summary": ledger_summary,
+        "transactions": transactions,
+        "transaction_limit": 500,
     }
 
 @router.post("/setup/defaults")

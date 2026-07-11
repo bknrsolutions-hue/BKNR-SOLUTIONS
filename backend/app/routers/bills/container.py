@@ -18,6 +18,13 @@ from app.database.models.processing import AuditLog
 from app.database.models.criteria import vendors, production_at # 🟢 ADDED: production_at
 from app.database.models.inventory_management import pending_orders, sales_dispatch
 from app.utils.global_filters import get_global_filters # 🟢 ADDED: Global Filters
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    list_posting_ledgers,
+    post_vendor_bill,
+    resolve_posting_ledger,
+)
 
 router = APIRouter(
     prefix="/container",
@@ -42,6 +49,7 @@ class ContainerLogisticsSchema(BaseModel):
     handling: float
     detention: float
     gst_percent: float
+    accounting_ledger_id: int | None = None
 
 
 # ============================================================
@@ -59,6 +67,11 @@ def container_entry_page(
 
     if not email or not comp_code:
         return RedirectResponse("/", status_code=302)
+
+    ensure_bill_accounting_schema(db)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 🟢 1. Location Filters Setup
     _, cookie_loc = get_global_filters(request)
@@ -78,6 +91,13 @@ def container_entry_page(
     vendor_list = db.query(vendors).filter(
         vendors.company_id == comp_code
     ).order_by(vendors.name).all()
+
+    posting_ledgers = list_posting_ledgers(
+        db,
+        comp_code,
+        group_types={"EXPENSE"},
+        group_names={"Direct Expenses", "Indirect Expenses"},
+    )
 
     # 🔹 PO LIST DROP-DOWN (PENDING + SALES)
     pending_po = db.query(pending_orders.po_number).filter(
@@ -115,8 +135,7 @@ def container_entry_page(
             query = db.query(ContainerLog, vendors.name.label("v_name")).join(
                 vendors, ContainerLog.vendor_id == vendors.id
             ).filter(
-                ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True,
-                ContainerLog.is_cancelled != True,
+                ContainerLog.company_id == comp_code,
                 ContainerLog.date >= start_date,
                 ContainerLog.date <= end_date
             )
@@ -128,19 +147,6 @@ def container_entry_page(
                 query = query.filter(func.upper(func.trim(ContainerLog.production_at)).in_(user_allowed_locations))
 
             container_history = query.order_by(desc(ContainerLog.id)).all()
-            
-            # ఫాల్‌బ్యాక్ సేఫ్ లోడింగ్
-            if not container_history:
-                fb_query = db.query(ContainerLog, vendors.name.label("v_name")).join(
-                    vendors, ContainerLog.vendor_id == vendors.id
-                ).filter(ContainerLog.company_id == comp_code, ContainerLog.is_cancelled != True)
-                
-                if g_loc_clean and g_loc_clean != "ALL":
-                    fb_query = fb_query.filter(func.upper(func.trim(ContainerLog.production_at)) == g_loc_clean)
-                elif user_allowed_locations:
-                    fb_query = fb_query.filter(func.upper(func.trim(ContainerLog.production_at)).in_(user_allowed_locations))
-                    
-                container_history = fb_query.order_by(desc(ContainerLog.id)).limit(100).all()
                 
         except Exception as e:
             logger.error(f"FETCH CONTAINER LOGS ERROR: {e}")
@@ -157,7 +163,8 @@ def container_entry_page(
             "email": email,
             "selected_fy": fy,
             "production_at_list": production_at_list,   # 🟢 ADDED
-            "selected_location": global_location or ""  # 🟢 ADDED
+            "selected_location": global_location or "",  # 🟢 ADDED
+            "posting_ledgers": posting_ledgers
         }
     )
 
@@ -178,9 +185,12 @@ async def save_container_log(
         return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
+        ensure_bill_accounting_schema(db)
         subtotal = payload.ocean_cost + payload.local_cost + payload.handling + payload.detention
         tax_calculated = round((subtotal * payload.gst_percent) / 100, 2)
         grand_total = round(subtotal + tax_calculated, 2)
+        shipping_vendor = db.query(vendors).filter(vendors.id == payload.shipping_line_id, vendors.company_id == comp_code).first()
+        vendor_name = shipping_vendor.name if shipping_vendor else f"Shipping Vendor {payload.shipping_line_id}"
 
         new_entry = ContainerLog(
             company_id=comp_code,
@@ -196,7 +206,8 @@ async def save_container_log(
             detention=payload.detention,
             lended_total=grand_total,
             vessel_name="",
-            date=dt.date.today() 
+            date=dt.date.today(),
+            status="DRAFT"
         )
 
         db.add(new_entry)
@@ -208,8 +219,34 @@ async def save_container_log(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
+        posting_ledger = resolve_posting_ledger(
+            db,
+            comp_code,
+            payload.accounting_ledger_id,
+            "Freight & Logistics Expense A/c",
+            "Direct Expenses",
+            "EXPENSE",
+        )
+        voucher = post_vendor_bill(
+            db,
+            comp_code,
+            new_entry.date,
+            new_entry.container_no,
+            vendor_name,
+            posting_ledger["ledger_name"],
+            subtotal,
+            tax_calculated,
+            grand_total,
+            f"Logistics invoice {new_entry.container_no}",
+            email,
+            expense_group_name=posting_ledger["group_name"],
+            voucher_type="Purchase",
+        )
+        new_entry.journal_id = voucher.id
+        new_entry.status = "POSTED"
+
         db.commit()
-        return JSONResponse({"success": True, "message": f"Logistics container {payload.container_no} saved successfully!"})
+        return JSONResponse({"success": True, "message": f"Logistics container {payload.container_no} saved and posted: {voucher.voucher_no}"})
 
     except Exception as e:
         db.rollback()
@@ -241,6 +278,8 @@ async def update_container_log(
 
         if not entry:
             return JSONResponse({"success": False, "message": "Logistics entry record not found"}, status_code=404)
+        if entry.journal_id and entry.status == "POSTED":
+            return JSONResponse({"success": False, "message": "Posted logistics bill cannot be edited. Cancel and re-enter to keep accounts correct."}, status_code=400)
 
         # 📜 Field Level Tracking
         tracked_fields = {
@@ -332,7 +371,9 @@ def delete_container_log(
                 field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
+            cancel_linked_bill_voucher(db, comp_code, log_entry.journal_id, email)
             log_entry.is_cancelled = True
+            log_entry.status = "CANCELLED"
             db.commit()
             return {"status": "success", "success": True, "message": "Record cancelled successfully"}
         except Exception as e:

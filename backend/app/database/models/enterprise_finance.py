@@ -528,6 +528,7 @@ class SalaryProcessing(Base):
     payment_mode = Column(String(20), default='BANK')            # BANK / CASH
     payment_date = Column(Date, nullable=True)
     utr_reference = Column(String(50), nullable=True)
+    paid_amount = Column(Float, default=0.0)
     payment_status = Column(String(20), default='UNPAID')        # UNPAID / PAID
 
     # Workflow

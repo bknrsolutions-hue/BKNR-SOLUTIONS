@@ -37,6 +37,7 @@ from app.database.models.gst_models import GSTRegister, GSTRFilingStatus, ITCUti
 from app.database.models.assets import FixedAssetMaster, DepreciationSchedule
 from app.database.models.invoices import ExportDocumentFile
 from app.services.posting_engine import PostingEngineService
+from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
 from app.database.models.processing import AuditLog  # Audit trails
 from app.database.models.attendance import (
     EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance, EmployeeStatutoryMaster
@@ -46,7 +47,73 @@ router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
+
+def is_contract_employee(employee: EmployeeRegistration) -> bool:
+    return str(getattr(employee, "employee_type", "") or "").strip().upper() in {"CONTRACT", "CONTRACTOR"}
+
+
+def repost_salary_processing_accounts(db: Session, comp_code: str, entry: SalaryProcessing, employee: EmployeeRegistration, email: str):
+    if is_contract_employee(employee):
+        if entry.salary_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+            entry.salary_journal_id = None
+        if entry.payment_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
+            entry.payment_journal_id = None
+        return
+
+    if entry.payment_journal_id:
+        cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
+        entry.payment_journal_id = None
+    if entry.salary_journal_id:
+        cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+        entry.salary_journal_id = None
+
+    status = str(entry.status or "DRAFT").strip().upper()
+    payroll_expense = round(
+        float(entry.gross_salary or 0.0)
+        + float(entry.pf_employer or 0.0)
+        + float(entry.esi_employer or 0.0)
+        + float(entry.lwf_employer or 0.0),
+        2,
+    )
+    net_payable = round(float(entry.net_payable or 0.0), 2)
+    if entry.is_cancelled or payroll_expense <= 0 or status == "DRAFT":
+        if status == "DRAFT":
+            entry.paid_amount = 0.0
+            entry.payment_status = "UNPAID"
+        return
+
+    voucher = PostingEngineService.post_salary_approval(db, comp_code, entry)
+    entry.salary_journal_id = voucher.id
+
+    if status == "PAID":
+        if not entry.payment_date:
+            entry.payment_date = date.today()
+        entry.payment_status = "PAID"
+        entry.paid_amount = net_payable
+        if net_payable > 0:
+            payment_voucher = PostingEngineService.post_salary_payment(db, comp_code, entry)
+            entry.payment_journal_id = payment_voucher.id
+    else:
+        entry.paid_amount = 0.0
+        entry.payment_status = "UNPAID"
+        entry.payment_date = None
+        entry.utr_reference = None
+
 EXPORT_PDF_DIR = Path("uploads/export_documents_private")
+
+
+@router.get("/accounts_flow_guide", response_class=HTMLResponse)
+def accounts_flow_guide(request: Request):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="finance_accounts/accounts_flow_guide.html",
+        context={"company_id": comp_code},
+    )
 
 
 def ensure_expense_voucher_schema(db: Session) -> None:
@@ -302,6 +369,8 @@ class SalaryProcessingSchema(BaseModel):
     lwf_employer: float = 0.0
     net_payable: float = 0.0
     payment_mode: str = "BANK"
+    payment_date: date = None
+    utr_reference: str = None
     payment_status: str = "UNPAID"
     status: str = "DRAFT"
 
@@ -1095,6 +1164,15 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         return JSONResponse({"success": False, "message": "Receipt/payment amounts must be valid positive values"}, status_code=400)
     exists = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code, PaymentReceipt.receipt_no == payload.receipt_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher Receipt Number already registered"}, status_code=400)
+    clean_reference = (payload.reference_no or "").strip()
+    if clean_reference:
+        duplicate_reference = db.query(PaymentReceipt.id).filter(
+            PaymentReceipt.company_id == comp_code,
+            PaymentReceipt.is_cancelled != True,
+            func.upper(func.trim(func.coalesce(PaymentReceipt.reference_no, ""))) == clean_reference.upper(),
+        ).first()
+        if duplicate_reference:
+            return JSONResponse({"success": False, "message": "This UTR / reference is already registered in accounts payments."}, status_code=400)
     
     entry = PaymentReceipt(
         company_id=comp_code,
@@ -1110,7 +1188,7 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         amount_inr=payload.amount_inr,
         bank_charges=payload.bank_charges,
         adjustment_amount=payload.adjustment_amount,
-        reference_no=payload.reference_no,
+        reference_no=clean_reference or None,
         payment_mode=payload.payment_mode,
         narration=payload.narration,
         created_by=email
@@ -1136,7 +1214,7 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         details.append(amount_line(db, comp_code, payload.adjustment_amount, 0.0, payload.receipt_no, ledger_name="Settlement Adjustments A/c", group_name="Indirect Expenses", group_type="EXPENSE"))
     voucher = PostingEngineService.create_voucher(
         db, comp_code, voucher_type, payload.entry_date, payload.narration or payload.receipt_no, details,
-        reference_no=payload.reference_no or payload.receipt_no, created_by=email or "SYSTEM",
+        reference_no=clean_reference or payload.receipt_no, created_by=email or "SYSTEM",
     )
     entry.journal_id = voucher.id
     write_audit(db, "payment_receipts", entry.id, comp_code, "CREATE", "NONE", f"Receipt: {payload.receipt_no}", email)
@@ -1385,6 +1463,7 @@ async def lc_tracking_upload_pdf(
 def salary_processing_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
+    ensure_bill_accounting_schema(db)
     history = db.query(SalaryProcessing).filter(
         SalaryProcessing.company_id == comp_code
     ).order_by(desc(SalaryProcessing.month_year), SalaryProcessing.employee_name).all()
@@ -1563,6 +1642,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 "esi_employer": exact.esi_employer,
                 "lwf_employer": exact.lwf_employer,
                 "payment_mode": exact.payment_mode,
+                "payment_date": exact.payment_date.isoformat() if exact.payment_date else "",
+                "utr_reference": exact.utr_reference or "",
+                "payment_status": exact.payment_status or "UNPAID",
                 "status": exact.status,
             }
 
@@ -1629,6 +1711,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             "esi_employer": latest.esi_employer or 0.0,
             "lwf_employer": latest.lwf_employer or 0.0,
             "payment_mode": latest.payment_mode or "BANK",
+            "payment_date": "",
+            "utr_reference": "",
+            "payment_status": "UNPAID",
             "status": "DRAFT",
         }
 
@@ -1705,6 +1790,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         "esi_employer": esi_employer,
         "lwf_employer": lwf_employer,
         "payment_mode": "BANK",
+        "payment_date": "",
+        "utr_reference": "",
+        "payment_status": "UNPAID",
         "status": "DRAFT",
     }
 
@@ -1713,6 +1801,7 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", payload.month_year):
         return JSONResponse({"success": False, "message": "Invalid salary month"}, status_code=400)
     employee = db.query(EmployeeRegistration).filter(
@@ -1722,6 +1811,11 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     ).first()
     if not employee:
         return JSONResponse({"success": False, "message": "Active employee not found"}, status_code=404)
+    normalized_status = (payload.status or "DRAFT").strip().upper()
+    if normalized_status not in {"DRAFT", "APPROVED", "PAID"}:
+        return JSONResponse({"success": False, "message": "Invalid salary status"}, status_code=400)
+    if normalized_status == "PAID" and not payload.payment_date:
+        return JSONResponse({"success": False, "message": "Payment date is required when salary status is PAID"}, status_code=400)
 
     active_advances = db.query(EmployeeSalaryAdvance).filter(
         EmployeeSalaryAdvance.company_id == comp_code,
@@ -1738,6 +1832,8 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
         for row in active_advances
     ), 2)
     values = payload.dict()
+    values["status"] = normalized_status
+    values["payment_status"] = "PAID" if normalized_status == "PAID" else "UNPAID"
     submitted_gross = float(payload.gross_salary or 0.0)
     submitted_net = float(payload.net_payable or 0.0)
     values["employee_name"] = employee.employee_name
@@ -1792,6 +1888,8 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
         save_mode = "CREATED"
         write_audit(db, "salary_processing", entry.id, comp_code, "CREATE", "NONE", f"Emp: {payload.employee_name} Month: {payload.month_year}", email)
 
+    repost_salary_processing_accounts(db, comp_code, record, employee, email)
+
     if has_variance:
         write_audit(
             db,
@@ -1834,6 +1932,14 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     if entry:
         write_audit(db, "salary_processing", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
+        entry.paid_amount = 0.0
+        entry.payment_status = "UNPAID"
+        if entry.salary_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+            entry.salary_journal_id = None
+        if entry.payment_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
+            entry.payment_journal_id = None
         db.commit()
         return {"success": True, "message": "Salary record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)

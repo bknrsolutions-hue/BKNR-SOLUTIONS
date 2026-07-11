@@ -22,8 +22,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/bknr-charts.js"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -469,9 +469,10 @@ function renderMainTable(filteredData) {
         let items = groups[company];
         let sQty = 0, sC = 0, sS = 0, sR = 0;
         items.forEach(item => {
+            const sign = item.status === 'Cancelled' ? -1 : 1;
             let cq = (item.qty * item.chem_p / 100);
             let sq = (item.qty * item.salt_p / 100);
-            sQty += item.qty; sC += cq; sS += sq; sR += item.rej;
+            sQty += sign * item.qty; sC += sign * cq; sS += sign * sq; sR += sign * item.rej;
 
             tableHtml += `
                 <tr class="${selectedRowId == item.id ? 'selected-row' : ''} ${item.status === 'Cancelled' ? 'cancelled-row' : ''}" onclick="selectRow(this, '${item.id}')">
@@ -528,11 +529,11 @@ function buildFloorHierarchy(filteredFloorItems, filteredRejections) {
 function buildTodaySummary(filteredToday) {
     let tree = {};
     filteredToday.forEach(d => {
-        if (d.status === 'Cancelled') return;
-        if(d.qty > 0) addToTree(tree, d.comp, d.loc, d.batch, d.var, d.spec, d.cnt, d.qty);
+        const sign = d.status === 'Cancelled' ? -1 : 1;
+        if(d.qty > 0) addToTree(tree, d.comp, d.loc, d.batch, d.var, d.spec, d.cnt, sign * d.qty);
         if(d.rej > 0) {
             let displayVar = d.rej_for ? `${d.var} → ${d.rej_for}` : `${d.var} (Rej)`;
-            addToTree(tree, d.comp, d.loc, d.batch, displayVar, d.spec, d.cnt, -d.rej);
+            addToTree(tree, d.comp, d.loc, d.batch, displayVar, d.spec, d.cnt, sign * -d.rej);
         }
     });
     renderHierarchy(tree, 'todaySummaryBody', 'sum');
@@ -954,6 +955,6 @@ async function proceedSoakingSave() {
 }
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

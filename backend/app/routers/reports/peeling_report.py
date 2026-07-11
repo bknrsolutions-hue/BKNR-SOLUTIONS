@@ -15,10 +15,16 @@ from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from app.database import get_db
 from app.database.models.processing import Peeling, AuditLog
-from app.database.models.criteria import varieties as Varieties
+from app.database.models.criteria import contractors, varieties as Varieties
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_contractor_source_charge,
+)
 
 router = APIRouter(
     prefix="/peeling_report",
@@ -31,6 +37,36 @@ templates = Jinja2Templates(directory="app/templates")
 def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def repost_peeling_accounts(db: Session, row: Peeling, company_id: str, email: str):
+    if row.journal_id:
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        row.journal_id = None
+    if row.is_cancelled or float(row.amount or 0) <= 0:
+        return
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_id,
+        voucher_date=row.date,
+        reference_no=f"PEL-{row.id}",
+        contractor_name=row.contractor_name,
+        charge_type="Peeling",
+        taxable_amount=row.amount,
+        gst_percent=contractor_gst_percent(db, company_id, row.contractor_name),
+        created_by=email,
+        quantity=row.peeled_qty,
+        rate=row.rate,
+    )
+    row.journal_id = voucher.id
 
 
 # ------------------------------------------------------------
@@ -49,7 +85,9 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/", status_code=302)
 
     # 1. Current System FY & Variety Criteria
-    current_system_fy = get_fin_year(dt.date.today())
+    current_system_fy = get_fin_year(ist_now().date())
+    if selected_fy is None:
+        selected_fy = str(current_system_fy)
     var_list = db.query(Varieties).filter(Varieties.company_id == comp_code).all()
     yield_map = {v.variety_name: float(v.peeling_yield or 0) for v in var_list}
 
@@ -65,8 +103,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             query = db.query(Peeling).filter(
                 Peeling.company_id == comp_code,
                 Peeling.date >= start_date,
-                Peeling.date <= end_date,
-                Peeling.is_cancelled != True
+                Peeling.date <= end_date
             )
 
             if production_for:
@@ -144,6 +181,7 @@ async def update_peeling(
 ):
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_edit")
@@ -201,6 +239,7 @@ async def update_peeling(
     else:
         row.diff_qty = 0.0
 
+    repost_peeling_accounts(db, row, comp_code, user_email)
     db.commit()
     refresh_floor_balance(db, comp_code)
     return {"status": "success", "target_yield": row.target_yield_percent}
@@ -223,8 +262,7 @@ async def peeling_export_pdf(
     enforce_report_permission(request, "report_export")
 
     q = db.query(Peeling).filter(
-        Peeling.company_id == comp_code,
-        Peeling.is_cancelled != True
+        Peeling.company_id == comp_code
     )
     
     # 1. 🟢 Apply global filter constraints to the PDF generation scope
@@ -261,8 +299,7 @@ def peeling_export_excel(
 ):
     comp_code = request.session.get("company_code")
     q = db.query(Peeling).filter(
-        Peeling.company_id == comp_code,
-        Peeling.is_cancelled != True
+        Peeling.company_id == comp_code
     )
     
     # 2. 🟢 Apply global filter constraints to the Excel workbook data scope
@@ -404,12 +441,13 @@ def peeling_monthly_bill(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_print")
     query_bill = db.query(Peeling).filter(
         Peeling.company_id == comp_code,
-        Peeling.contractor_name == contractor,
-        Peeling.is_cancelled != True
+        Peeling.contractor_name == contractor
     )
     
     if ids: 
@@ -420,8 +458,8 @@ def peeling_monthly_bill(
     rows = query_bill.order_by(Peeling.date.asc()).all()
 
     # --- Calculations ---
-    t_hlso = sum(r.hlso_qty or 0 for r in rows)
-    t_peeled = sum(r.peeled_qty or 0 for r in rows)
+    t_hlso = sum(signed_number(r, r.hlso_qty) for r in rows)
+    t_peeled = sum(signed_number(r, r.peeled_qty) for r in rows)
     
     avg_yield = (t_peeled / t_hlso * 100) if t_hlso > 0 else 0
 
@@ -433,7 +471,7 @@ def peeling_monthly_bill(
         "total_hlso": round(t_hlso, 2),
         "total_peeled": round(t_peeled, 2),
         "avg_yield": round(avg_yield, 2),
-        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
+        "grand_total": round(sum(signed_number(r, r.amount) for r in rows), 2),
         "bill_date": ist_now()
     }
     return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
@@ -478,6 +516,8 @@ async def delete_peeling(
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
         row.is_cancelled = True
+        row.status = "Cancelled"
+        cancel_linked_bill_voucher(db, comp_code, row.journal_id, email)
         db.commit()
         refresh_floor_balance(db, comp_code)
         return {"status": "success"}

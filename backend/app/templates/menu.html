@@ -604,8 +604,8 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/app-splash.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/app-splash.css?v=skel3">
 <link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.3">
 </head>
 <body>
@@ -1015,22 +1015,81 @@ function launchCmdApp(url, title) {
 
 // ROUTING & IFRAME
 const COMING_SOON_ROUTE_PREFIXES = [
-    '/finance_accounts',
-    '/export_documents',
-    '/api/electricity',
-    '/api/diesel',
-    '/api/purchase',
-    '/api/container',
-    '/api/qa',
-    '/api/expenses'
 ];
 
 const COMING_SOON_ROUTE_MATCHES = [
-    '/dashboard/finance_dashboard',
-    '/dashboard/costing_dashboard',
-    '/finance_accounts/tally_dashboard',
-    '/tally_dashboard'
 ];
+
+if (window.top === window.self) {
+    window.history.replaceState({ bknrAppShell: true }, "", window.location.href);
+}
+
+async function ensureActiveSession() {
+    try {
+        const response = await fetch("/auth/session-info", {
+            cache: "no-store",
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            window.location.replace("/auth/login");
+        }
+    } catch (error) {
+        window.location.replace("/auth/login");
+    }
+}
+
+window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+        ensureActiveSession();
+    }
+});
+
+const screenPopupConfig = {{ screen_popup_config|default({"enabled": false, "message": "", "routes": [], "updated_at": ""})|tojson }};
+
+function normalizeScreenPopupPath(value) {
+    try {
+        return new URL(value, window.location.origin).pathname.replace(/\/+$/, "") || "/";
+    } catch(e) {
+        return String(value || "").split("?")[0].replace(/\/+$/, "") || "/";
+    }
+}
+
+function shouldShowScreenPopup(path) {
+    if (!screenPopupConfig || !screenPopupConfig.enabled || !screenPopupConfig.message) return false;
+    const targetPath = normalizeScreenPopupPath(path);
+    return (screenPopupConfig.routes || []).some(route => normalizeScreenPopupPath(route) === targetPath);
+}
+
+function blockScreenPopupRoute(path, title) {
+    if (!shouldShowScreenPopup(path)) return false;
+    if (!window.Swal) {
+        alert(screenPopupConfig.message);
+        return true;
+    }
+    const targetPath = normalizeScreenPopupPath(path);
+    const version = screenPopupConfig.updated_at || "current";
+    const seenKey = `bknr_screen_popup:${version}:${targetPath}`;
+    sessionStorage.setItem(seenKey, "1");
+    Swal.fire({
+        icon: "warning",
+        title: title || "Screen Temporarily Unavailable",
+        html: `<div style="font-size:13px;line-height:1.7;color:var(--text-secondary);text-align:left;">${escapeHtml(screenPopupConfig.message)}</div>`,
+        confirmButtonText: "OK",
+        confirmButtonColor: "var(--corp-dash)",
+        allowOutsideClick: false
+    });
+    return true;
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
+}
 
 function isComingSoonModule(url) {
     if (!url || url === '#') return false;
@@ -1137,6 +1196,12 @@ function loadPage(url, element, customTitle = null) {
         targetUrl.searchParams.set("cold_storage_name", pLoc);
     }
 
+    if (blockScreenPopupRoute(targetUrl.pathname, customTitle || (element ? element.innerText.trim() : 'System Notice'))) {
+        toggleSidebar(false);
+        document.querySelectorAll('.dropdown-console').forEach(el => el.classList.remove('show'));
+        return;
+    }
+
     if (window.showLoader) window.showLoader();
     document.getElementById('frame').src = targetUrl.toString();
     document.querySelectorAll('.submenu-item, .dropdown-submenu-item').forEach(el => el.classList.remove('active'));
@@ -1172,6 +1237,33 @@ function loadPage(url, element, customTitle = null) {
 }
 
 const frame = document.getElementById('frame');
+let lastAllowedFrameUrl = "";
+
+function guardBlockedIframeNavigation() {
+    try {
+        if (!frame || !frame.contentWindow || !frame.contentWindow.location) return false;
+        const currentUrl = frame.contentWindow.location.href;
+        const currentPath = frame.contentWindow.location.pathname;
+        if (!currentUrl || currentUrl === "about:blank") return false;
+
+        if (shouldShowScreenPopup(currentPath)) {
+            blockScreenPopupRoute(currentPath, "Screen Temporarily Unavailable");
+            const fallbackUrl = lastAllowedFrameUrl && !shouldShowScreenPopup(lastAllowedFrameUrl)
+                ? lastAllowedFrameUrl
+                : "about:blank";
+            if (frame.src !== fallbackUrl) {
+                frame.src = fallbackUrl;
+            }
+            return true;
+        }
+
+        lastAllowedFrameUrl = currentUrl;
+    } catch(e) {
+        return false;
+    }
+    return false;
+}
+
 frame.addEventListener('load', () => {
     if (window.forceHideLoader) {
         window.forceHideLoader();
@@ -1179,6 +1271,8 @@ frame.addEventListener('load', () => {
         window.hideLoader();
     }
     try {
+        if (guardBlockedIframeNavigation()) return;
+
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         if (!frameDoc) return;
 
@@ -1300,7 +1394,7 @@ function openSupportShortcut() {
     }
 }
 
-function logout() { if(confirm("Do you want to log out?")) window.top.location.href = "/auth/logout"; }
+function logout() { if(confirm("Do you want to log out?")) window.top.location.replace("/auth/logout"); }
 
 function goHomeAction() {
     toggleSidebar(false);
@@ -1375,8 +1469,7 @@ const sidebarMenuData = [
                     ['grading', '/processing/grading', 'fa-filter', 'Grading', 'WIP'],
                     ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling', 'WIP'],
                     ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking', 'WIP'],
-                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP'],
-                    ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'WIP']
+                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP']
                 ]
             },
             {
@@ -1399,9 +1492,7 @@ const sidebarMenuData = [
                     ['shipping_bill', '/export_documents/shipping_bill/entry', 'fa-clipboard-check', 'Shipping Bills', 'ExpOp'],
                     ['bill_of_lading', '/export_documents/bill_of_lading/entry', 'fa-file-contract', 'Bills of Lading', 'ExpOp'],
                     ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp'],
-                    ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp'],
-                    ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'ExpOp'],
-                    ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'ExpOp']
+                    ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp']
                 ]
             }
         ]
@@ -1410,19 +1501,25 @@ const sidebarMenuData = [
         title: "FINANCE",
         subgroups: [
             {
-                name: "Commercial Bills",
+                name: "Operational Bills",
                 items: [
                     ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills', 'Exp'],
                     ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption', 'Exp'],
                     ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging', 'Exp'],
                     ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight', 'Exp'],
-                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
+	                    ['contractor_bills', '/api/contractor_bills/entry', 'fa-users-gear', 'Contractor Bills', 'Exp'],
+	                    ['salaries', '/api/salaries/entry', 'fa-money-check-dollar', 'Salaries', 'Pay'],
+	                    ['vendor_bills', '/api/vendor_bills/entry', 'fa-file-invoice-dollar', 'Vendor Bills', 'AP'],
+	                    ['supplier_bills', '/api/supplier_bills/entry', 'fa-truck-field', 'Supplier Bills', 'AP'],
+	                    ['payment_logs', '/api/payment_logs/entry', 'fa-receipt', 'Payment Logs', 'Pay'],
+	                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
                     ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
                 ]
             },
             {
                 name: "Accounts & Ledgers",
                 items: [
+                    ['accounts_flow_guide', '/finance_accounts/accounts_flow_guide', 'fa-diagram-project', 'Accounts Flow Guide', 'Acc'],
                     ['ledger_master', '/finance_accounts/ledger_master/entry', 'fa-folder-open', 'Ledger Master', 'Acc'],
                     ['journal_entry', '/finance_accounts/journal_entry/entry', 'fa-book', 'Journal Entries', 'Acc'],
                     ['bank_master', '/finance_accounts/bank_master/entry', 'fa-building-columns', 'Bank Master', 'Acc'],
@@ -1439,14 +1536,10 @@ const sidebarMenuData = [
                 ]
             },
             {
-                name: "Payables & Receivables",
+                name: "Integrated Finance",
                 items: [
-                    ['customer_receivable', '/finance_accounts/customer_receivable/entry', 'fa-hand-holding-dollar', 'Customer Receivables', 'Fin'],
-                    ['vendor_payment', '/finance_accounts/vendor_payment/entry', 'fa-money-bill-transfer', 'Vendor Payments', 'Fin'],
-                    ['expense_voucher', '/finance_accounts/expense_voucher/entry', 'fa-receipt', 'Expense Vouchers', 'Fin'],
                     ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'Fin'],
                     ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'Fin'],
-                    ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'Fin'],
                     ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'Fin']
                 ]
             }
@@ -1545,10 +1638,6 @@ const sidebarMenuData = [
                     ['coldstore_locations', '/criteria/coldstore_locations', 'fa-map-location-dot', 'Coldstore Locations', 'Mstr'],
                     ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-truck', 'Vehicle Numbers', 'Mstr'],
                     ['hsn_codes', '/criteria/hsn_codes', 'fa-barcode', 'HSN Codes', 'Mstr'],
-                    ['bank_master', '/finance_accounts/bank_master/entry', 'fa-university', 'Bank Master', 'Mstr'],
-                    ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Mstr'],
-                    ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Mstr'],
-                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Mstr'],
                     ['general_store_items', '/general_stock/items', 'fa-cubes', 'General Store Items', 'Mstr']
                 ]
             },
@@ -1594,10 +1683,7 @@ const dropdownConsoleMenuData = [
         items: [
             ['cold_storage', '/inventory/cold_storage', 'Cold Storage Master'], ['coldstore_locations', '/criteria/coldstore_locations', 'Coldstore Locations'],
             ['vehicle_numbers', '/criteria/vehicle_numbers', 'Vehicle Numbers'], ['hsn_codes', '/criteria/hsn_codes', 'HSN Codes'],
-            ['bank_master', '/finance_accounts/bank_master/entry', 'Bank Master'],
-            ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'Item Accounting Link'],
-            ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'Fixed Assets'],
-            ['gst_register', '/finance_accounts/gst_register/entry', 'GST Register']
+            ['general_store_items', '/general_stock/items', 'General Store Items']
         ]
     },
     {
@@ -2197,7 +2283,7 @@ function resetInactivityTimer() {
 }
 
 function autoLogout() {
-    window.top.location.href = "/auth/logout";
+    window.top.location.replace("/auth/logout");
 }
 
 // Attach event listeners to main window
@@ -2281,7 +2367,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 <script src="/static/js/app-splash.js"></script>
 </body>
 </html>

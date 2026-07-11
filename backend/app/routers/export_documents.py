@@ -28,6 +28,11 @@ from app.database.models.invoices import (
 )
 from app.database.models.processing import AuditLog  # Audit trails
 from app.services.cache import cache_get_or_set, invalidate_company_cache
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_export_sales_invoice,
+)
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -704,41 +709,63 @@ def commercial_invoice_save(request: Request, payload: CommercialInvoiceSchema, 
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
     
     exists = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
     if exists: return JSONResponse({"success": False, "message": "Commercial Invoice No already registered"}, status_code=400)
     
-    inr_value = payload.total_amount * payload.exchange_rate
-    entry = CommercialInvoice(
-        company_id=comp_code,
-        invoice_value_inr=inr_value,
-        created_by=email,
-        **payload.dict()
-    )
-    db.add(entry)
-    db.flush()
-    
-    # Update ExportShipment and ExportComplianceTracker status
-    shipment = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.shipment_no == payload.shipment_no).first()
-    if shipment:
-        shipment.invoice_no = entry.invoice_no
-        tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == shipment.shipment_no).first()
-        if tracker:
-            tracker.invoice_pending = False
-            
-    write_audit(db, "commercial_invoices", entry.id, comp_code, "CREATE", "NONE", f"Invoice Registered: {payload.invoice_no}", email)
-    db.commit()
-    return {"success": True, "message": "Commercial invoice registered successfully"}
+    try:
+        inr_value = payload.total_amount * payload.exchange_rate
+        entry = CommercialInvoice(
+            company_id=comp_code,
+            invoice_value_inr=inr_value,
+            created_by=email,
+            **payload.dict()
+        )
+        db.add(entry)
+        db.flush()
+
+        voucher = post_export_sales_invoice(
+            db,
+            comp_code,
+            payload.invoice_date,
+            payload.invoice_no,
+            payload.buyer_name,
+            inr_value,
+            email,
+        )
+        entry.journal_id = voucher.id
+        entry.status = "POSTED"
+
+        # Update ExportShipment and ExportComplianceTracker status
+        shipment = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.shipment_no == payload.shipment_no).first()
+        if shipment:
+            shipment.invoice_no = entry.invoice_no
+            tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == shipment.shipment_no).first()
+            if tracker:
+                tracker.invoice_pending = False
+
+        write_audit(db, "commercial_invoices", entry.id, comp_code, "CREATE", "NONE", f"Invoice Registered: {payload.invoice_no}", email)
+        db.commit()
+        invalidate_export_cache(comp_code)
+        return {"success": True, "message": "Commercial invoice registered and posted to accounts"}
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Commercial invoice accounting post failed")
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
 @router.post("/commercial_invoice/delete/{log_id}")
 def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     entry = db.query(CommercialInvoice).filter(CommercialInvoice.id == log_id, CommercialInvoice.company_id == comp_code).first()
     if entry:
+        cancel_linked_bill_voucher(db, comp_code, entry.journal_id, email)
         write_audit(db, "commercial_invoices", entry.id, comp_code, "DELETE", f"Invoice: {entry.invoice_no}", "DELETED", email)
         db.delete(entry)
         db.commit()
+        invalidate_export_cache(comp_code)
         return {"success": True, "message": "Commercial invoice deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 

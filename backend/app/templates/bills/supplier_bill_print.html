@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Supplier Bill Print</title>
+<style>
+@page{size:A4 portrait;margin:15mm}
+body{font-family:Arial,sans-serif;font-size:13px;color:#222;margin:0}
+.title{text-align:center;font-size:20px;font-weight:bold;margin-bottom:18px;color:#003366;text-transform:uppercase}
+.header{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px}
+.card{width:49%;padding:10px;border:1px solid #d0d7e2;border-radius:6px}
+h3{margin:0 0 6px;font-size:14px;border-bottom:1px solid #ccc;color:#003366}
+.batch-box{margin-top:18px;padding:8px;background:#eef4ff;border-left:4px solid #003366;border-radius:4px}
+.batch-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.batch-title,.sub-info{font-size:12px;margin:0;background:#fff;border:1px solid #c7d4ea;border-radius:4px;padding:6px;color:#003366}
+.batch-title{font-weight:bold}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border:1px solid #999;padding:5px;font-size:12px;text-align:center}
+th{background:#003366;color:#fff;font-size:11px}
+.payment-row td{background:#f7fbff;color:#003366}
+.totals-box{margin-top:6px;padding:6px;background:#f1f6ff;border:1px solid #c7d4ea;border-radius:4px;font-weight:bold;font-size:12px;width:55%}
+.total-table{width:55%;margin-left:auto}
+.total-table th{text-align:left}
+.total-table td{text-align:right}
+.grand-total{margin-top:25px;padding:12px;background:#003366;color:white;font-size:14px;font-weight:bold;border-radius:6px}
+.terms{margin-top:20px;font-size:12px}
+.signatures{display:flex;justify-content:space-between;margin-top:30px}
+.sign-box{width:30%;text-align:center}.line{border-bottom:1px solid #000;margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="title">RAW MATERIAL SUPPLIER BILL SUMMARY</div>
+
+<div class="header">
+  <div class="card">
+    <h3>Supplier Details</h3>
+    <p><b>Name:</b> {{ supplier.name }}</p>
+    <p><b>Address:</b> {{ supplier.address }}</p>
+    <p><b>Email:</b> {{ supplier.email }}</p>
+    <p><b>Phone:</b> {{ supplier.phone }}</p>
+  </div>
+  <div class="card">
+    <h3>Company Details</h3>
+    <p><b>Company:</b> {{ company_name }}</p>
+    <p><b>Address:</b> {{ company_address }}</p>
+    <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
+  </div>
+</div>
+
+{% for batch in batches %}
+<div class="batch-box">
+  <div class="batch-grid">
+    <div class="batch-title"><b>Batch Number:</b> {{ batch.batch_number }}</div>
+    <div class="sub-info"><b>Vehicle Number:</b> {{ batch.vehicle_number }}</div>
+    <div class="sub-info"><b>Challan Number:</b> {{ batch.challan_number }}</div>
+    <div class="sub-info"><b>Purchasing Location:</b> {{ batch.location }}</div>
+    <div class="sub-info"><b>Purchase Date:</b> {{ batch.date }}</div>
+    <div class="sub-info"><b>Total Material Boxes:</b> {{ "%.2f"|format(batch.total_boxes) }}</div>
+  </div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Species</th><th>Variety</th><th>Count</th>
+  <th>G1</th><th>G2</th><th>DC</th>
+  <th>Recv</th><th>Rate</th><th>HSN</th><th>GST %</th><th>Tax</th><th>Amount</th>
+</tr>
+</thead>
+<tbody>
+{% for r in batch.rows %}
+<tr>
+  <td>{{ r.species }}</td>
+  <td>{{ r.variety_name }}</td>
+  <td>{{ r.count }}</td>
+  <td>{{ "%.2f"|format(r.g1_qty or 0) }}</td>
+  <td>{{ "%.2f"|format(r.g2_qty or 0) }}</td>
+  <td>{{ "%.2f"|format(r.dc_qty or 0) }}</td>
+  <td>{{ "%.2f"|format(r.received_qty or 0) }}</td>
+  <td>{{ "%.2f"|format(r.rate_per_kg or 0) }}</td>
+  <td>{{ r.hsn_code or "-" }}</td>
+  <td>{{ "%.2f"|format(r.gst_percent or 0) }}</td>
+  <td>{{ "%.2f"|format(r.tax_amount or 0) }}</td>
+  <td>{{ "%.2f"|format(r.gross_amount or 0) }}</td>
+</tr>
+{% endfor %}
+{% if batch.expense.total > 0 %}
+<tr class="payment-row">
+  <td colspan="6"><b>Expenses Details</b></td>
+  <td>Transport: {{ "%.2f"|format(batch.expense.transportation) }}</td>
+  <td>Commission: {{ "%.2f"|format(batch.expense.commission) }}</td>
+  <td>Ice: {{ "%.2f"|format(batch.expense.ice) }}</td>
+  <td>Others: {{ "%.2f"|format(batch.expense.others) }}</td>
+  <td>-</td>
+  <td>{{ "%.2f"|format(batch.expense.total) }}</td>
+</tr>
+{% if batch.expense.others > 0 and batch.expense.reason %}
+<tr class="payment-row">
+  <td colspan="12" style="text-align:left"><b>Other Expenses Note:</b> {{ batch.expense.reason }}</td>
+</tr>
+{% endif %}
+{% endif %}
+{% for payment in batch.payments %}
+<tr class="payment-row">
+  <td colspan="7"><b>{{ payment.purpose or "Payment" }}</b> | Against: {{ payment.against or "-" }} | Ref: {{ payment.reference_no or "-" }}</td>
+  <td>{{ payment.entry_date }}</td>
+  <td>{{ payment.payment_mode or "-" }}</td>
+  <td>Paid</td>
+  <td>-</td>
+  <td>-{{ "%.2f"|format(payment.amount_inr or 0) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+
+<table class="total-table">
+<tbody>
+<tr><th>Total Quantity</th><td>{{ "%.2f"|format(batch.total_quantity) }}</td></tr>
+<tr><th>RMP Amount</th><td>Rs. {{ "%.2f"|format(batch.purchase_amount) }}</td></tr>
+<tr><th>Tax Amount</th><td>Rs. {{ "%.2f"|format(batch.tax_amount) }}</td></tr>
+<tr><th>Expenses</th><td>Rs. {{ "%.2f"|format(batch.expense.total) }}</td></tr>
+<tr><th>Total Payable</th><td>Rs. {{ "%.2f"|format(batch.total_amount) }}</td></tr>
+</tbody>
+</table>
+{% endfor %}
+
+{% if unallocated_payments %}
+<div class="batch-box">
+  <div class="batch-title">Payments After Batch Dates / Advance Payments</div>
+</div>
+<table>
+<thead><tr><th>Date</th><th>Purpose</th><th>Against</th><th>Mode</th><th>Reference</th><th>Account</th><th>Amount</th></tr></thead>
+<tbody>
+{% for payment in unallocated_payments %}
+<tr class="payment-row">
+  <td>{{ payment.entry_date }}</td>
+  <td>{{ payment.purpose or "-" }}</td>
+  <td>{{ payment.against or "-" }}</td>
+  <td>{{ payment.payment_mode or "-" }}</td>
+  <td>{{ payment.reference_no or "-" }}</td>
+  <td>{{ payment.bank_cash_ledger or "-" }}</td>
+  <td>{{ "%.2f"|format(payment.amount_inr or 0) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+{% endif %}
+
+<div class="grand-total">FINAL SUMMARY</div>
+<table>
+<thead>
+<tr>
+  <th>Quantity</th>
+  <th>RMP Amount</th>
+  <th>Tax</th>
+  <th>Expenses</th>
+  <th>Total Payable</th>
+  <th>Paid</th>
+  <th>Outstanding</th>
+  <th>Advance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>{{ "%.2f"|format(summary.quantity) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.purchase_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.tax) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.expenses) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.paid) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.outstanding) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.advance) }}</td>
+</tr>
+</tbody>
+</table>
+
+<div class="terms">
+<b>Terms & Conditions:</b>
+<ol>
+  <li>Material once accepted cannot be returned.</li>
+  <li>Weight and quality verified at receiving point.</li>
+  <li>Payments shown are posted in accounts against this supplier bill.</li>
+</ol>
+</div>
+
+<div class="signatures">
+  <div class="sign-box"><div class="line"></div>Supplier</div>
+  <div class="sign-box"><div class="line"></div>Prepared By</div>
+  <div class="sign-box"><div class="line"></div>Authorised</div>
+</div>
+
+<script>
+window.onload = () => window.print();
+</script>
+</body>
+</html>

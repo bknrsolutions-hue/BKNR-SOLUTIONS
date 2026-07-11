@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
 from app.database.models.enterprise_finance import (
@@ -204,10 +205,9 @@ class AccountingReportsService:
         
         details = {"assets": [], "liabilities": [], "equity": []}
 
-        # Calculate Net Profit to date to include in reserves/equity
-        # Calculate from start of current financial year (assuming April 1st)
-        fy_start = date(as_of_date.year if as_of_date.month >= 4 else as_of_date.year - 1, 4, 1)
-        pl = AccountingReportsService.get_profit_and_loss(db, company_id, fy_start, as_of_date)
+        # Balance Sheet needs cumulative retained earnings unless year-end
+        # closing journals have already transferred P&L into equity.
+        pl = AccountingReportsService.get_profit_and_loss(db, company_id, date(1900, 1, 1), as_of_date)
         retained_earnings = pl["net_profit"]
 
         for row in tb:
@@ -227,7 +227,7 @@ class AccountingReportsService:
 
         # Add retained earnings to equity
         equity += retained_earnings
-        details["equity"].append({"name": "Retained Earnings (P&L)", "amount": retained_earnings})
+        details["equity"].append({"name": "Retained Earnings (P&L to Date)", "amount": retained_earnings})
 
         return {
             "total_assets": assets,
@@ -300,15 +300,21 @@ class AccountingReportsService:
             joinedload(VoucherHeader.voucher_type),
         ).filter(
             VoucherHeader.company_id == company_id,
-            VoucherHeader.voucher_date == target_date
-        ).order_by(VoucherHeader.voucher_no).all()
+            VoucherHeader.voucher_date == target_date,
+            VoucherHeader.status == "POSTED",
+        ).order_by(VoucherHeader.created_at.desc(), VoucherHeader.id.desc()).all()
 
         results = []
         for v in vouchers:
             total_debit = sum(d.debit_amount for d in v.details)
+            created_at = v.created_at
+            if created_at and created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=ZoneInfo("UTC"))
+            voucher_time = created_at.astimezone(ZoneInfo("Asia/Kolkata")).strftime("%H:%M:%S") if created_at else ""
             results.append({
                 "voucher_id": v.id,
                 "voucher_no": v.voucher_no,
+                "voucher_time": voucher_time,
                 "voucher_type": v.voucher_type.name if v.voucher_type else "Journal",
                 "narration": v.narration,
                 "status": v.status,

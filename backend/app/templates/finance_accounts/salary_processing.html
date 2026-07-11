@@ -68,8 +68,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .status-draft { background: #f3f4f6; color: #374151; }
 .status-approved { background: #eff6ff; color: #1d4ed8; }
 .status-paid { background: #ecfdf5; color: #047857; }
+.status-unpaid { background: #fff7ed; color: #c2410c; }
 </style>
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 <body>
 
@@ -117,11 +118,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th style="text-align: right;">Deductions (₹)</th>
                 <th style="text-align: right;">Net Payable (₹)</th>
                 <th>Status</th>
+                <th>Payment</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not history %}
-            <tr><td colspan="11" style="padding:40px; color:var(--muted);">No Salary processing logs registered.</td></tr>
+            <tr><td colspan="12" style="padding:40px; color:var(--muted);">No Salary processing logs registered.</td></tr>
             {% else %}
                 {% for row in history %}
                 <tr class="data-row" data-id="{{ row.id }}" data-month="{{ row.month_year }}" onclick="selectRow(this, '{{ row.id }}')">
@@ -137,6 +139,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td style="text-align: right; font-weight:700; color:var(--success);">{{ "{:,.2f}".format(row.net_payable or 0.0) }}</td>
                     <td>
                         <span class="status-pill status-{{ row.status.lower() }}">{{ row.status }}</span>
+                    </td>
+                    <td>
+                        <span class="status-pill status-{{ (row.payment_status or 'UNPAID').lower() }}">{{ row.payment_status or 'UNPAID' }}</span>
                     </td>
                 </tr>
                 {% endfor %}
@@ -244,6 +249,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                         <option value="PAID">PAID (Disbursed)</option>
                     </select>
                 </div>
+                <div class="field">
+                    <label>Payment Date</label>
+                    <input type="date" id="payment_date">
+                </div>
+                <div class="field">
+                    <label>UTR / Cheque Ref</label>
+                    <input type="text" id="utr_reference" placeholder="Bank reference / cheque no">
+                </div>
                 
                 <!-- Employer side columns -->
                 <input type="hidden" id="pf_employer" value="0">
@@ -299,6 +312,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         // Reset form to clean state
         document.getElementById('salaryForm').reset();
         setFieldsToZero();
+        syncPaymentFields();
         document.getElementById('autoFillBadge').style.display = 'none';
         document.getElementById('entryModal').style.display = 'flex';
         loadEmployees();
@@ -367,7 +381,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
             // Payment settings
             document.getElementById('payment_mode').value        = d.payment_mode    || 'BANK';
+            document.getElementById('payment_date').value        = d.payment_date    || '';
+            document.getElementById('utr_reference').value       = d.utr_reference   || '';
             document.getElementById('status').value              = d.status          || 'DRAFT';
+            syncPaymentFields();
 
             // Recalc totals
             recalcSalary();
@@ -427,6 +444,27 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     }
 
+    function todayISO() {
+        return new Date().toISOString().slice(0, 10);
+    }
+
+    function syncPaymentFields() {
+        const status = document.getElementById("status").value;
+        const paymentDate = document.getElementById("payment_date");
+        const utr = document.getElementById("utr_reference");
+        const isPaid = status === "PAID";
+        paymentDate.disabled = !isPaid;
+        utr.disabled = !isPaid;
+        paymentDate.required = isPaid;
+        if (isPaid && !paymentDate.value) paymentDate.value = todayISO();
+        if (!isPaid) {
+            paymentDate.value = "";
+            utr.value = "";
+        }
+    }
+
+    document.getElementById("status").addEventListener("change", syncPaymentFields);
+
     function applyFilters() {
         const query = document.getElementById("searchBox").value.toLowerCase().trim();
         const monthFilter = document.getElementById("monthFilter").value;
@@ -457,6 +495,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const currentStatus = document.getElementById("status").value;
         const payStatus = currentStatus === "PAID" ? "PAID" : "UNPAID";
         document.getElementById("payment_status").value = payStatus;
+        if (currentStatus === "PAID" && !document.getElementById("payment_date").value) {
+            Swal.fire("Payment Date Required", "PAID status ki payment date compulsory.", "warning");
+            return;
+        }
 
         const payload = {
             month_year: document.getElementById("month_year").value,
@@ -489,6 +531,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             lwf_employer: parseFloat(document.getElementById("lwf_employer").value) || 0.0,
             net_payable: parseFloat(document.getElementById("net_payable").value) || 0.0,
             payment_mode: document.getElementById("payment_mode").value,
+            payment_date: document.getElementById("payment_date").value || null,
+            utr_reference: document.getElementById("utr_reference").value || null,
             payment_status: payStatus,
             status: currentStatus
         };
@@ -509,6 +553,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }
+
+    syncPaymentFields();
 
     async function cancelSelected() {
         if (!globalSelectedId) return;

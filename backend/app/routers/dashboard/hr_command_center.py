@@ -1,10 +1,10 @@
 # app/routers/dashboard/hr_command_center.py
 
-from fastapi import APIRouter, Request, Depends, Query, status
+from fastapi import APIRouter, Request, Depends, Form, Query, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, case, extract, cast, Date
+from sqlalchemy import func, and_, or_, case, extract, cast, Date, text
 from datetime import date, datetime, timedelta
 import logging
 from collections import defaultdict
@@ -20,19 +20,134 @@ from app.database.models.attendance import (
 )
 # 🟢 Production Models for "Labour Cost vs Production" Logic
 from app.database.models.processing import Peeling, Production, Grading, Soaking, DeHeading
+from app.services.bill_accounting import ensure_bill_accounting_schema
+from app.database.models.criteria import contractors
+from app.database.models.processing import AuditLog
+from app.services.bill_accounting import post_contractor_source_charge
 # 🟢 Global Filters
 from app.utils.global_filters import get_global_filters
+from app.utils.timezone import ist_now
 
 router = APIRouter(tags=["ENTERPRISE HR COMMAND CENTER"])
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 
+def clean_filter_value(value):
+    if value is None:
+        return None
+    value = str(value).strip()
+    if not value or value.upper() == "ALL" or value.startswith("annotation="):
+        return None
+    return value
+
+
+def ensure_hr_dashboard_schema(db: Session) -> None:
+    db.execute(text(
+        "ALTER TABLE daily_attendance "
+        "ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0"
+    ))
+    db.flush()
+
+
+def get_shift_required_hours(db: Session, company_id: str, shift_name: str) -> float:
+    from app.database.models.attendance import Shift
+
+    shift = db.query(Shift).filter(
+        Shift.company_id == company_id,
+        Shift.shift_name == (shift_name or "GENERAL"),
+    ).first()
+    if not shift or not shift.start_time or not shift.end_time:
+        return 8.0
+    start_dt = datetime.combine(date.today(), shift.start_time)
+    end_dt = datetime.combine(date.today(), shift.end_time)
+    if end_dt < start_dt:
+        end_dt += timedelta(days=1)
+    hours = (end_dt - start_dt).total_seconds() / 3600.0
+    break_hours = (shift.break_minutes or 0) / 60.0
+    return max(1.0, hours - break_hours)
+
+
+def attendance_payable_credit(working_hours: float, required_hours: float) -> float:
+    raw_credit = float(working_hours or 0.0) / required_hours if required_hours > 0 else 0.0
+    if raw_credit < 0.5:
+        return 0.0
+    if raw_credit < 1.0:
+        return 0.5
+    if raw_credit < 1.5:
+        return 1.0
+    if raw_credit < 2.0:
+        return 1.5
+    if raw_credit < 2.5:
+        return 2.0
+    if raw_credit < 3.0:
+        return 2.5
+    return 3.0
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def auto_close_stale_attendance(
+    db: Session,
+    company_id: str,
+    email: str,
+    location: str | None = None,
+    allowed_locations: list[str] | None = None,
+) -> None:
+    now = ist_now()
+    cutoff = now.replace(tzinfo=None) - timedelta(hours=24)
+    query = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.status != "CLOSED",
+        DailyAttendance.first_in != None,
+        DailyAttendance.first_in <= cutoff,
+    )
+    if location and location != "ALL":
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)) == location)
+    elif allowed_locations:
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(allowed_locations))
+
+    for duty in query.all():
+        close_time = duty.first_in + timedelta(hours=24)
+        safe_close = close_time.replace(tzinfo=None)
+        safe_first_in = duty.first_in.replace(tzinfo=None) if duty.first_in else safe_close
+        wh = round(min(24.0, max(0.0, (safe_close - safe_first_in).total_seconds() / 3600)), 2)
+        duty.working_hours = wh
+        duty.exit_time = close_time
+        duty.status = "CLOSED"
+        duty.duty_type = "DOUBLE"
+        duty.calculated_ot_hours = 8.0
+        duty.ot_status = "PENDING"
+        duty.approved_ot_hours = 0.0
+        duty.duty_status = "PENDING"
+        duty.duty_approved_by = None
+        movements = list(duty.movements) if duty.movements else []
+        movements.append({"type": "AUTO OUT", "time": close_time.strftime("%H:%M"), "date": close_time.strftime("%Y-%m-%d")})
+        duty.movements = movements
+        db.add(AuditLog(
+            table_name="daily_attendance",
+            record_id=duty.id,
+            company_id=company_id,
+            field_name="AUTO_OUT_24H",
+            old_value="OPEN",
+            new_value=f"Emp: {duty.employee_name} ({duty.employee_id}) | Auto closed after 24 hours | Duty approval pending",
+            edited_by=email or "SYSTEM",
+            edited_at=datetime.now(),
+        ))
+
+
 # ============================================================
 # ⚡ HELPER: LOCATION SCOPE BOUNDING UTILITY
 # ============================================================
 def get_secure_hr_scope(db: Session, comp_code: str, global_location: str | None, user_allowed_locations: list):
-    g_loc_clean = global_location.strip().upper() if global_location else None
+    clean_location = clean_filter_value(global_location)
+    g_loc_clean = clean_location.upper() if clean_location else None
     emp_loc_col = getattr(EmployeeRegistration, 'production_at', getattr(EmployeeRegistration, 'location', getattr(EmployeeRegistration, 'branch', None)))
     
     emp_base_q = db.query(EmployeeRegistration.employee_id).filter(EmployeeRegistration.company_id == comp_code)
@@ -64,8 +179,15 @@ def hr_command_center(
     if not email or not comp_code:
         return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
 
+    ensure_hr_dashboard_schema(db)
+    db.commit()
+
+    dept_filter = clean_filter_value(dept_filter) or ""
+    type_filter = clean_filter_value(type_filter) or ""
+    status_filter = clean_filter_value(status_filter) or ""
+
     _, cookie_loc = get_global_filters(request)
-    global_location = location if location is not None else cookie_loc
+    global_location = clean_filter_value(location if location is not None else cookie_loc)
 
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
@@ -335,8 +457,19 @@ def hr_command_center(
 
         # Safe fallback in case duty_status isn't in DB yet
         if hasattr(DailyAttendance, 'duty_status'):
-            pending_duty_count = base_att.filter(DailyAttendance.duty_status == "PENDING").count()
-            pending_duty_rows = base_att.filter(DailyAttendance.duty_status == "PENDING").all()
+            pending_duty_rows = base_att.filter(
+                DailyAttendance.status == "CLOSED",
+                DailyAttendance.duty_status == "PENDING",
+            ).all()
+            for duty_row in pending_duty_rows:
+                required_hours = get_shift_required_hours(db, comp_code, duty_row.shift_name)
+                suggested_credit = attendance_payable_credit(duty_row.working_hours, required_hours)
+                movements = list(duty_row.movements) if duty_row.movements else []
+                is_punch_missing = any(str(m.get("type", "")).upper() == "AUTO OUT" for m in movements if isinstance(m, dict))
+                setattr(duty_row, "suggested_duty_credit", suggested_credit)
+                setattr(duty_row, "extra_hours", max(0.0, round(float(duty_row.working_hours or 0.0) - required_hours, 2)))
+                setattr(duty_row, "is_punch_missing", is_punch_missing)
+            pending_duty_count = len(pending_duty_rows)
         else:
             pending_duty_count = 0
             pending_duty_rows = []
@@ -407,8 +540,11 @@ async def get_hr_kpi_details(
     if not comp_code:
         return JSONResponse({"status": "error", "message": "Session Dropped"}, status_code=401)
 
+    ensure_hr_dashboard_schema(db)
+    db.commit()
+
     _, cookie_loc = get_global_filters(request)
-    global_location = location if location is not None else cookie_loc
+    global_location = clean_filter_value(location if location is not None else cookie_loc)
     
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
@@ -499,7 +635,13 @@ def reject_ot_action(att_id: int, request: Request, db: Session = Depends(get_db
 
 
 @router.post("/approve_duty/{att_id}")
-def approve_duty_action(att_id: int, request: Request, db: Session = Depends(get_db)):
+def approve_duty_action(
+    att_id: int,
+    request: Request,
+    approved_duty_credit: float = Form(1.0),
+    approved_ot_hours: float = Form(0.0),
+    db: Session = Depends(get_db),
+):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return RedirectResponse(url="/auth/login", status_code=303)
@@ -508,8 +650,47 @@ def approve_duty_action(att_id: int, request: Request, db: Session = Depends(get
     if hasattr(DailyAttendance, 'duty_status'):
         att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
         if att_record:
+            allowed_credits = {1.0, 1.5, 2.0, 2.5, 3.0}
+            duty_credit = float(approved_duty_credit or 1.0)
+            if duty_credit not in allowed_credits:
+                duty_credit = 1.0
+            ot_hours = max(0.0, min(float(approved_ot_hours or 0.0), 16.0))
+
             att_record.duty_status = "APPROVED"
-            # Optional: tracking who approved it
+            att_record.duty_approved_by = email
+            att_record.approved_duty_credit = duty_credit
+            att_record.approved_ot_hours = ot_hours
+            att_record.ot_status = "APPROVED" if ot_hours > 0 else "REJECTED"
+            att_record.ot_approved_by = email
+            employee = db.query(EmployeeRegistration).filter(
+                EmployeeRegistration.employee_id == att_record.employee_id,
+                EmployeeRegistration.company_id == comp_code,
+            ).first()
+            if (
+                employee
+                and str(employee.employee_type or "").upper() == "CONTRACT"
+                and employee.contractor_name
+                and not att_record.journal_id
+            ):
+                payable_days = duty_credit
+                per_day_rate = float(employee.current_salary or 0.0) / 26.0 if employee.current_salary else 0.0
+                payable_amount = round(payable_days * per_day_rate, 2)
+                if payable_amount > 0:
+                    from app.services.bill_accounting import post_contractor_source_charge
+                    voucher = post_contractor_source_charge(
+                        db=db,
+                        company_id=comp_code,
+                        voucher_date=att_record.duty_date or date.today(),
+                        reference_no=f"ATT-{att_record.id}",
+                        contractor_name=employee.contractor_name,
+                        charge_type="Processing",
+                        taxable_amount=payable_amount,
+                        gst_percent=contractor_gst_percent(db, comp_code, employee.contractor_name),
+                        created_by=email,
+                        quantity=payable_days,
+                        rate=per_day_rate,
+                    )
+                    att_record.journal_id = voucher.id
             db.commit()
             
     return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)
@@ -525,6 +706,11 @@ def reject_duty_action(att_id: int, request: Request, db: Session = Depends(get_
         att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
         if att_record:
             att_record.duty_status = "REJECTED"
+            att_record.duty_approved_by = email
+            att_record.approved_duty_credit = 1.0
+            att_record.approved_ot_hours = 0.0
+            att_record.ot_status = "REJECTED"
+            att_record.ot_approved_by = email
             db.commit()
             
     return RedirectResponse(url="/dashboard/hr_command_center", status_code=303)

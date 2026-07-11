@@ -15,6 +15,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number, signed_sum
 
 from app.database import get_db
 from app.database.models.processing import Production, AuditLog, Soaking
@@ -61,6 +62,9 @@ def production_report_page(
 
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     comp_code = str(comp_code)
     cache_key = (
@@ -78,8 +82,7 @@ def production_report_page(
     
     # Base Query
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     # 🟢 FIX 1: Syntax Bracket Alignment Resolved for Base Query Filter Pipeline
@@ -89,7 +92,9 @@ def production_report_page(
     if selected_location:
         q = q.filter(Production.production_at == selected_location)
 
-    if fy:
+    if fy == "":
+        q = q.filter(Production.id == -1)
+    elif fy:
         start_year = int(fy)
         end_year = start_year + 1
         q = q.filter(
@@ -128,11 +133,10 @@ def production_report_page(
             ).first()
             target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
 
-            soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
+            soaking_in = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
                 Soaking.company_id == comp_code,
                 Soaking.batch_number == r.batch_number,
-                Soaking.variety_name == r.variety_name,
-                Soaking.is_cancelled != True
+                Soaking.variety_name == r.variety_name
             ).scalar() or 0.0
 
             summary_subtotals[key] = {
@@ -142,9 +146,9 @@ def production_report_page(
                 "actual_yield": 0.0, "diff_yield_perc": 0.0, "diff_qty": 0.0
             }
         
-        summary_subtotals[key]["mc"] += float(r.no_of_mc or 0)
-        summary_subtotals[key]["loose"] += float(r.loose or 0)
-        summary_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+        summary_subtotals[key]["mc"] += signed_number(r, r.no_of_mc)
+        summary_subtotals[key]["loose"] += signed_number(r, r.loose)
+        summary_subtotals[key]["prod_qty"] += signed_number(r, r.production_qty)
 
     for key, s in summary_subtotals.items():
         if s["soaking_in"] > 0:
@@ -164,9 +168,9 @@ def production_report_page(
         if key not in detail_subtotals:
             detail_subtotals[key] = {"mc": 0, "loose": 0, "prod_qty": 0.0}
         
-        detail_subtotals[key]["mc"] += float(r.no_of_mc or 0)
-        detail_subtotals[key]["loose"] += float(r.loose or 0)
-        detail_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+        detail_subtotals[key]["mc"] += signed_number(r, r.no_of_mc)
+        detail_subtotals[key]["loose"] += signed_number(r, r.loose)
+        detail_subtotals[key]["prod_qty"] += signed_number(r, r.production_qty)
 
 
     def get_list(model, attr):
@@ -349,8 +353,7 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     selected_production_for, selected_location = get_global_filters(request)
     
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     if selected_production_for:
@@ -405,8 +408,7 @@ def export_production_pdf(
     selected_production_for, selected_location = get_global_filters(request)
     
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     if selected_production_for:

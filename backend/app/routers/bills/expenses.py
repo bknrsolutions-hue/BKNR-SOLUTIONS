@@ -15,7 +15,14 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 from app.database import get_db
 from app.database.models.bills import OtherExpense
 from app.database.models.processing import AuditLog
-from app.database.models.criteria import production_at
+from app.database.models.criteria import production_at, vendors
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    list_posting_ledgers,
+    post_vendor_bill,
+    resolve_posting_ledger,
+)
 
 router = APIRouter(
     prefix="/expenses",
@@ -32,13 +39,14 @@ logger = logging.getLogger(__name__)
 class ExpenseSchema(BaseModel):
     production_at_id: int
     expense_date: date
-    category: str
+    category: str = ""
     paid_to: str
     remarks: str = ""
     voucher_no: str = ""
     amount: float
     gst_per: float = 0.0
     grand_total: float
+    accounting_ledger_id: int | None = None
 
 
 # ============================================================
@@ -56,6 +64,11 @@ def expenses_entry_page(
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
+    ensure_bill_accounting_schema(db)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
+
     # 🔹 Units / Production Locations filter by company
     locations = (
         db.query(production_at)
@@ -63,6 +76,17 @@ def expenses_entry_page(
         .order_by(production_at.production_at)
         .all()
     )
+
+    posting_ledgers = list_posting_ledgers(
+        db,
+        company_code,
+        group_types={"EXPENSE"},
+        group_names={"Direct Expenses", "Indirect Expenses"},
+    )
+
+    vendor_list = db.query(vendors).filter(
+        vendors.company_id == company_code
+    ).order_by(vendors.name).all()
 
     # 🔹 Expenses History Filtered by Financial Year
     expense_history = []
@@ -114,7 +138,9 @@ def expenses_entry_page(
             "expense_history": expense_history,
             "email": email,
             "company_id": company_code,
-            "selected_fy": fy
+            "selected_fy": fy,
+            "posting_ledgers": posting_ledgers,
+            "vendors": vendor_list
         }
     )
 
@@ -133,25 +159,37 @@ async def save_expense(
     if not email or not company_code:
         return JSONResponse({"success": False, "message": "Session expired"}, status_code=401)
 
-    # 📝 Combine extra info into remarks exactly matching structure
-    full_remarks = (
-        f"Date: {payload.expense_date} | "
-        f"Paid To: {payload.paid_to} | "
-        f"Voucher: {payload.voucher_no} | "
-        f"GST: {payload.gst_per}% | "
-        f"Notes: {payload.remarks}"
-    )
-
-    # 🌟 ఇక్కడ మోడల్ కాలమ్ 'date' కు payload.expense_date ని మ్యాప్ చేసాము 📅
-    new_entry = OtherExpense(
-        unit_id=payload.production_at_id,
-        category=payload.category.upper().strip(),
-        amount=payload.grand_total,   
-        remarks=full_remarks,
-        date=payload.expense_date if payload.expense_date else dt.date.today()
-    )
-
     try:
+        ensure_bill_accounting_schema(db)
+
+        posting_ledger = resolve_posting_ledger(
+            db,
+            company_code,
+            payload.accounting_ledger_id,
+            "General Expense A/c",
+            "Indirect Expenses",
+            "EXPENSE",
+        )
+        derived_category = (payload.category or posting_ledger["ledger_name"].replace(" A/c", "").replace(" Expense", "") or "GENERAL").upper().strip()
+
+        full_remarks = (
+            f"Date: {payload.expense_date} | "
+            f"Paid To: {payload.paid_to} | "
+            f"Voucher: {payload.voucher_no} | "
+            f"Ledger: {posting_ledger['ledger_name']} | "
+            f"GST: {payload.gst_per}% | "
+            f"Notes: {payload.remarks}"
+        )
+
+        new_entry = OtherExpense(
+            unit_id=payload.production_at_id,
+            category=derived_category,
+            amount=payload.grand_total,
+            remarks=full_remarks,
+            date=payload.expense_date if payload.expense_date else dt.date.today(),
+            status="DRAFT"
+        )
+
         db.add(new_entry)
         db.flush()
 
@@ -162,8 +200,29 @@ async def save_expense(
             edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
         ))
 
+        taxable_value = round(float(payload.amount or 0.0), 2)
+        gst_amount = round(float(payload.grand_total or 0.0) - taxable_value, 2)
+        reference_no = payload.voucher_no.strip() if payload.voucher_no else f"EXP-{new_entry.id}"
+        voucher = post_vendor_bill(
+            db,
+            company_code,
+            new_entry.date,
+            reference_no,
+            payload.paid_to,
+            posting_ledger["ledger_name"],
+            taxable_value,
+            gst_amount,
+            payload.grand_total,
+            f"Expense voucher {reference_no}",
+            email,
+            expense_group_name=posting_ledger["group_name"],
+            voucher_type="Purchase",
+        )
+        new_entry.journal_id = voucher.id
+        new_entry.status = "POSTED"
+
         db.commit()
-        return JSONResponse({"success": True, "message": "Expense transaction logged successfully!"})
+        return JSONResponse({"success": True, "message": f"Expense transaction saved and posted: {voucher.voucher_no}"})
     except Exception as e:
         db.rollback()
         logger.error(f"EXPENSE SAVE ERROR: {str(e)}")
@@ -221,7 +280,9 @@ def delete_expense(expense_id: int, request: Request, db: Session = Depends(get_
                 field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)
             ))
+            cancel_linked_bill_voucher(db, company_code, entry.journal_id, email)
             entry.is_cancelled = True
+            entry.status = "CANCELLED"
             db.commit()
             return {"success": True, "message": "Expense record cancelled successfully!"}
         except Exception as e:

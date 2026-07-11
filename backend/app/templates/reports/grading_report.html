@@ -212,8 +212,8 @@ tr.subtotal { background: var(--header-bg); font-weight: 800; color: var(--prima
 
 .audit-panel { position: fixed; right: 0; top: 0; bottom: 0; width: 380px; background: var(--card-bg); border-left: 3px solid var(--accent); display: none; flex-direction: column; z-index: 5500; box-shadow: -5px 0 15px rgba(0,0,0,0.3); }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
@@ -410,12 +410,8 @@ const baseUrl = "/reports/grading_report";
 let allDetailedData = []; 
 
 function changeFY(val) {
-    if(!val) {
-        window.location.href = window.location.pathname;
-        return;
-    }
     const url = new URL(window.location.href);
-    url.searchParams.set('fy', val);
+    url.searchParams.set('fy', val || '');
     window.location.href = url.toString();
 }
 
@@ -852,6 +848,6 @@ document.onclick = () => { if(document.getElementById("mainMenu")) document.getE
 
 window.onload = () => { applyFilters(); };
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

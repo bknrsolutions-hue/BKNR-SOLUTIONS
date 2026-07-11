@@ -9,7 +9,9 @@ from fastapi.middleware.gzip import GZipMiddleware
 from app.database import SessionLocal
 from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
+import json
 import os
+import time
 import uuid
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
@@ -33,6 +35,44 @@ application = FastAPI(
 # =====================================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
+SESSION_IDLE_TIMEOUT_SECONDS = 30 * 60
+SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
+
+
+def get_screen_popup_config(db):
+    default_config = {"enabled": False, "message": "", "routes": [], "updated_at": ""}
+    try:
+        from app.database.models.system_settings import SystemSetting
+        row = db.query(SystemSetting).filter(SystemSetting.key == SCREEN_POPUP_SETTING_KEY).first()
+        if not row or not row.value:
+            return default_config
+        data = json.loads(row.value)
+        return {
+            **default_config,
+            "enabled": bool(data.get("enabled")),
+            "message": str(data.get("message") or ""),
+            "routes": [str(route) for route in data.get("routes", []) if str(route).startswith("/")],
+            "updated_at": str(data.get("updated_at") or ""),
+        }
+    except Exception:
+        return default_config
+
+
+def normalize_screen_popup_path(value):
+    path = str(value or "").split("?", 1)[0].rstrip("/")
+    return path or "/"
+
+
+def is_screen_popup_blocked(db, path):
+    config = get_screen_popup_config(db)
+    if not config.get("enabled") or not config.get("message"):
+        return False, config
+    current_path = normalize_screen_popup_path(path)
+    blocked_routes = {
+        normalize_screen_popup_path(route)
+        for route in config.get("routes", [])
+    }
+    return current_path in blocked_routes, config
 
 
 @application.exception_handler(Exception)
@@ -168,7 +208,25 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # LOGIN CHECK
         if not request.session.get("email"):
-            return RedirectResponse("/", status_code=303)
+            return RedirectResponse("/auth/login", status_code=303)
+
+        now_ts = time.time()
+        last_activity = request.session.get("last_activity")
+        try:
+            last_activity_ts = float(last_activity or now_ts)
+        except (TypeError, ValueError):
+            last_activity_ts = now_ts
+
+        if now_ts - last_activity_ts > SESSION_IDLE_TIMEOUT_SECONDS:
+            request.session.clear()
+            if path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
+                return JSONResponse(
+                    {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+                    status_code=401,
+                )
+            return RedirectResponse("/auth/login", status_code=303)
+
+        request.session["last_activity"] = now_ts
 
         # MAINTENANCE MODE CHECK (for logged-in users on protected routes)
         try:
@@ -191,6 +249,37 @@ class AuthMiddleware(BaseHTTPMiddleware):
         except Exception:
             pass
 
+        # SCREEN-LEVEL HOLD/BLOCK CHECK
+        db = None
+        try:
+            db = SessionLocal()
+            blocked, popup_config = is_screen_popup_blocked(db, path)
+            if blocked:
+                if path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
+                    return JSONResponse(
+                        {
+                            "blocked": True,
+                            "message": popup_config.get("message") or "This screen is temporarily unavailable.",
+                        },
+                        status_code=423,
+                    )
+                from fastapi.templating import Jinja2Templates as _J2T
+                _t = _J2T(directory="app/templates")
+                return _t.TemplateResponse(
+                    request=request,
+                    name="screen_hold.html",
+                    context={
+                        "message": popup_config.get("message") or "This screen is temporarily unavailable.",
+                        "path": path,
+                    },
+                    status_code=423,
+                )
+        except Exception as e:
+            logger.error("Screen popup block check failed: %s", e)
+        finally:
+            if db:
+                db.close()
+
         # SINGLE ACTIVE SESSION CHECK
         session_id = request.session.get("session_id")
         if session_id:
@@ -200,7 +289,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 user = db.query(User).filter(User.email == email).first()
                 if user and getattr(user, "current_session_id", None) != session_id:
                     request.session.clear()
-                    return RedirectResponse("/", status_code=303)
+                    return RedirectResponse("/auth/login", status_code=303)
             except Exception as e:
                 logger.error("Active session validation error: %s", e)
             finally:
@@ -536,10 +625,12 @@ async def home_page(request: Request):
         )
         companies_list = menu_filters["companies"]
         locations_list = menu_filters["locations"]
+        screen_popup_config = get_screen_popup_config(db)
     except Exception as e:
         logger.exception("Error loading universal menu filters: %s", e)
         companies_list = []
         locations_list = []
+        screen_popup_config = {"enabled": False, "message": "", "routes": [], "updated_at": ""}
     finally:
         db.close()
 
@@ -549,7 +640,8 @@ async def home_page(request: Request):
         context={
             "request": request,
             "companies": companies_list,
-            "locations": locations_list
+            "locations": locations_list,
+            "screen_popup_config": screen_popup_config
         }
     )
 

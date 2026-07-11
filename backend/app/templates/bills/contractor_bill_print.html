@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef2f7;color:#1f2937;font-family:Arial,Helvetica,sans-serif}
+.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm;box-shadow:0 10px 30px rgba(15,23,42,.15)}
+.top{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #143465;padding-bottom:12px}
+h1{margin:0;color:#143465;font-size:22px;letter-spacing:.02em;text-transform:uppercase}
+.sub{margin-top:5px;color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase}
+.meta{text-align:right;font-size:12px;line-height:1.7;color:#334155}
+.party-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.box{border:1px solid #d6dde7;border-radius:8px;padding:12px;min-height:92px}
+.box-title{font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.name{font-size:14px;color:#143465;font-weight:800;margin-bottom:4px}
+.muted{font-size:12px;color:#475569;line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:10px;border:1px solid #d6dde7;padding:8px;text-align:center}
+td{border:1px solid #d6dde7;padding:8px;text-align:center}
+td.left{text-align:left}
+td.right{text-align:right}
+.summary{margin-left:auto;margin-top:14px;width:320px}
+.summary td{padding:8px 10px}
+.summary .label{text-align:left;font-weight:700;color:#334155}
+.summary .amount{text-align:right;font-weight:800;color:#143465}
+.summary .grand td{background:#143465;color:#fff;font-size:14px}
+.actions{width:210mm;margin:0 auto 24px;text-align:right}
+button{background:#3b82f6;color:#fff;border:0;border-radius:7px;padding:10px 16px;font-size:12px;font-weight:800;cursor:pointer}
+.note{margin-top:22px;font-size:11px;color:#64748b;line-height:1.6}
+.sign{display:flex;justify-content:space-between;margin-top:40px;font-size:12px;font-weight:800;color:#334155}
+@media print{
+  body{background:#fff}
+  .page{margin:0;box-shadow:none;width:auto;min-height:auto}
+  .actions{display:none}
+}
+</style>
+</head>
+<body>
+<div class="actions"><button onclick="window.print()">Print Bill</button></div>
+<main class="page">
+  <section class="top">
+    <div>
+      <h1>{{ title }}</h1>
+      <div class="sub">Month: {{ month_year }} | Bill Date: {{ bill_date.strftime('%d-%m-%Y') if bill_date else '-' }}</div>
+    </div>
+    <div class="meta">
+      <strong>{{ company.name }}</strong><br>
+      {{ company.address or '' }}<br>
+      {{ company.email or '' }}
+    </div>
+  </section>
+
+  <section class="party-grid">
+    <div class="box">
+      <div class="box-title">Bill From</div>
+      <div class="name">{{ contractor.name }}</div>
+      <div class="muted">
+        {{ contractor.address or '-' }}<br>
+        Phone: {{ contractor.phone or '-' }}<br>
+        GSTIN: {{ contractor.gst_number or '-' }}
+      </div>
+    </div>
+    <div class="box">
+      <div class="box-title">Payable By</div>
+      <div class="name">{{ company.name }}</div>
+      <div class="muted">
+        {{ company.address or '-' }}<br>
+        Email: {{ company.email or '-' }}
+      </div>
+    </div>
+  </section>
+
+  {% if bill_type == "processing" %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:60px">Sl</th>
+        <th>Employee Name</th>
+        <th style="width:140px">Working Days</th>
+        <th style="width:160px">Payable</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="left">{{ row.employee_name }}</td>
+        <td>{{ "%.2f"|format(row.working_days or 0) }}</td>
+        <td class="right">₹ {{ "%.2f"|format(row.payable or 0) }}</td>
+      </tr>
+      {% endfor %}
+      {% if not rows %}
+      <tr><td colspan="4">No processing salary rows found for this contractor/month.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <table class="summary">
+    <tr><td class="label">Salary Payable</td><td class="amount">₹ {{ "%.2f"|format(subtotal or 0) }}</td></tr>
+    <tr><td class="label">Commission</td><td class="amount">₹ {{ "%.2f"|format(totals.commission or 0) }}</td></tr>
+    {% for tax in tax_rows %}
+    <tr><td class="label">{{ tax.label }}</td><td class="amount">₹ {{ "%.2f"|format(tax.amount or 0) }}</td></tr>
+    {% endfor %}
+    <tr class="grand"><td>Total Payable</td><td class="right">₹ {{ "%.2f"|format(grand_total or 0) }}</td></tr>
+  </table>
+  {% else %}
+  <table>
+    <thead>
+      <tr>
+        <th style="width:54px">Sl</th>
+        <th style="width:90px">Date</th>
+        <th>Batch</th>
+        <th>Description</th>
+        <th>{{ totals.qty_in_label }}</th>
+        <th>{{ totals.qty_out_label }}</th>
+        <th>Rate</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ row.date.strftime('%d-%m-%Y') if row.date else '-' }}</td>
+        <td>{{ row.batch or '-' }}</td>
+        <td class="left">{{ row.description }}</td>
+        <td>{{ "%.2f"|format(row.qty_in or 0) }}</td>
+        <td>{{ "%.2f"|format(row.qty_out or 0) }}</td>
+        <td class="right">₹ {{ "%.2f"|format(row.rate or 0) }}</td>
+        <td class="right">₹ {{ "%.2f"|format(row.amount or 0) }}</td>
+      </tr>
+      {% endfor %}
+      {% if not rows %}
+      <tr><td colspan="8">No operation rows found for this contractor/month.</td></tr>
+      {% endif %}
+    </tbody>
+  </table>
+  <table class="summary">
+    <tr><td class="label">Total {{ totals.qty_in_label }}</td><td class="amount">{{ "%.2f"|format(totals.qty_in or 0) }}</td></tr>
+    <tr><td class="label">Total {{ totals.qty_out_label }}</td><td class="amount">{{ "%.2f"|format(totals.qty_out or 0) }}</td></tr>
+    <tr><td class="label">Subtotal</td><td class="amount">₹ {{ "%.2f"|format(subtotal or 0) }}</td></tr>
+    {% for tax in tax_rows %}
+    <tr><td class="label">{{ tax.label }}</td><td class="amount">₹ {{ "%.2f"|format(tax.amount or 0) }}</td></tr>
+    {% endfor %}
+    <tr class="grand"><td>Total Payable</td><td class="right">₹ {{ "%.2f"|format(grand_total or 0) }}</td></tr>
+  </table>
+  {% endif %}
+
+  <div class="note">
+    This contractor bill is generated from approved operational entries for the selected month. Cancelled entries are reflected with signed values where applicable.
+  </div>
+
+  <div class="sign">
+    <span>Prepared By</span>
+    <span>Checked By</span>
+    <span>Authorised Signatory</span>
+  </div>
+</main>
+</body>
+</html>

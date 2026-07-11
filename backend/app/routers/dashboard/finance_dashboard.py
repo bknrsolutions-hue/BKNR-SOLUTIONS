@@ -202,9 +202,10 @@ def finance_dashboard(
         total_income = float(profit_loss["total_income"] or 0.0)
         total_expense_books = float(profit_loss["total_expense"] or 0.0)
         net_profit = profit_loss["net_profit"]
-        if total_expenses == 0 and total_expense_books:
-            expense_categories = [row["name"] for row in profit_loss["details"]["expense_ledgers"][:8]]
-            expense_amounts = [float(row["amount"] or 0.0) for row in profit_loss["details"]["expense_ledgers"][:8]]
+        expense_ledger_rows = profit_loss["details"]["expense_ledgers"]
+        if expense_ledger_rows:
+            expense_categories = [row["name"] for row in expense_ledger_rows[:8]]
+            expense_amounts = [float(row["amount"] or 0.0) for row in expense_ledger_rows[:8]]
             total_expenses = total_expense_books
 
         balance_sheet = _safe_accounting_call(
@@ -223,6 +224,23 @@ def finance_dashboard(
             comp_code,
             period_end,
         )
+        books_receivables = sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") == "Sundry Debtors"
+        )
+        books_payables = abs(sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "LIABILITY"
+            and row.get("group_name") == "Sundry Creditors"
+        ))
+        if books_receivables:
+            receivables_outstanding = books_receivables
+        if books_payables:
+            payables_outstanding = books_payables
+
         bank_balance = sum(
             float(row["balance"] or 0.0) for row in trial_balance
             if row["type"] == "LEDGER"

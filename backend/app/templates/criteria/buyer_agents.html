@@ -10,23 +10,41 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <link rel="stylesheet" href="/static/css/bknr-masters.css">
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<style>
+  .agent-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:12px; }
+  .grid-title-full, .grid-span-full { grid-column:1 / -1; }
+  .agent-table { min-width:1350px; table-layout:fixed; }
+  .agent-table th, .agent-table td { vertical-align:middle; }
+  .agent-table .id-col { width:58px; }
+  .agent-table .name-col { width:190px; text-align:left; padding-left:18px; }
+  .agent-table .email-col { width:190px; }
+  .agent-table .phone-col { width:120px; }
+  .agent-table .service-col { width:150px; }
+  .agent-table .gst-col { width:135px; }
+  .agent-table .bank-col { width:165px; }
+  .agent-table .account-col { width:150px; }
+  .agent-table .ifsc-col { width:120px; }
+  .agent-table .address-col { width:230px; text-align:left; }
+  .agent-table td { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .agent-chip { display:inline-flex; align-items:center; justify-content:center; min-height:22px; padding:3px 8px; border:1px solid var(--border-color); border-radius:6px; background:var(--bg-color); font-size:10px; font-weight:700; color:var(--primary-text); }
+  textarea#address { min-height:68px; resize:vertical; }
+</style>
 </head>
 
 <body>
 
 <div class="header">
   <div class="header-titles">
-      <h2>Buyer Agents Master</h2>
+      <h2><i class="fa-solid fa-user-tie" style="margin-right:6px;color:var(--accent);"></i> Buyer Agents Master</h2>
   </div>
-  <div style="font-size:10px; font-weight:700; color: var(--muted)">ERP</div>
 </div>
 
 <form onsubmit="submitBuyerAgent(event)" id="agentForm">
   <div class="form-container" id="formSection" style="display:none;">
-    <div class="grid">
+    <div class="agent-grid">
       
       <div class="form-title-inner grid-title-full"><i class="fa-solid fa-id-card"></i> Profile Info</div>
       
@@ -44,13 +62,12 @@
       </div>
       <div class="field">
         <label>Service For</label>
-        <input list="service_list" id="service_for" required placeholder="Select Type..." onfocus="this.value=''">
-        <datalist id="service_list">
-            <option value="Buyer Agent"></option>
-            <option value="Commission Agent"></option>
-            <option value="Broker"></option>
-            <option value="Local Representative"></option>
-        </datalist>
+        <select id="service_for" required>
+            <option value="Buyer Agent">Buyer Agent</option>
+            <option value="Commission Agent">Commission Agent</option>
+            <option value="Broker">Broker</option>
+            <option value="Local Representative">Local Representative</option>
+        </select>
       </div>
 
       <div class="form-title-inner grid-title-full"><i class="fa-solid fa-building-columns"></i> Statutory & Banking</div>
@@ -72,7 +89,7 @@
         <input type="text" id="ifsc" placeholder="IFSC Code">
       </div>
 
-      <div class="field grid-span-4">
+      <div class="field grid-span-full">
         <label>Address</label>
         <textarea id="address" placeholder="Complete Address..."></textarea>
       </div>
@@ -83,7 +100,7 @@
 
       <!-- Form Only Action Buttons -->
       <div class="actions">
-        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE DATA</button>
+        <button type="submit" class="btn btn-primary" id="submitBtn"><i class="fa-solid fa-floppy-disk"></i> SAVE AGENT</button>
         <button type="button" class="btn btn-clear" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
       </div>
 
@@ -175,19 +192,19 @@
 </div>
 
 <div class="table-wrap">
-  <table id="dataTable">
+  <table id="dataTable" class="agent-table">
     <thead>
       <tr>
-        <th style="width:50px;">ID</th>
-        <th>Agent Name</th>
-        <th>Agent Email</th>
-        <th>Phone</th>
-        <th>Service For</th>
-        <th>GST Number</th>
-        <th>Bank Name</th>
-        <th>Account No</th>
-        <th>IFSC</th>
-        <th>Address</th>
+        <th class="id-col">ID</th>
+        <th class="name-col">Agent Name</th>
+        <th class="email-col">Agent Email</th>
+        <th class="phone-col">Phone</th>
+        <th class="service-col">Service For</th>
+        <th class="gst-col">GST Number</th>
+        <th class="bank-col">Bank Name</th>
+        <th class="account-col">Account No</th>
+        <th class="ifsc-col">IFSC</th>
+        <th class="address-col">Address</th>
       </tr>
     </thead>
     <tbody>
@@ -211,16 +228,16 @@
       } %}
 
       <tr data-id="{{ row.id }}" data-json='{{ row_dict | tojson }}' onclick="selectRowOrCard(this)">
-        <td>#{{ row.id }}</td>
-        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.agent_name }}</td>
-        <td style="color:#0284c7;">{{ row.agent_email if row.agent_email else '' }}</td>
-        <td>{{ row.phone if row.phone else '' }}</td>
-        <td>{{ row.service_for if row.service_for else '' }}</td>
-        <td style="font-family:monospace; font-weight:600;">{{ row.gst_number if row.gst_number else '' }}</td>
-        <td style="font-weight:600; color:#475569;">{{ row.bank_name if row.bank_name else '' }}</td>
-        <td>{{ row.account_no if row.account_no else '' }}</td>
-        <td style="font-family:monospace;">{{ row.ifsc if row.ifsc else '' }}</td>
-        <td class="text-left" style="max-width:150px;overflow:hidden;text-overflow:ellipsis;">{{ row.address if row.address else '' }}</td>
+        <td class="id-col">#{{ row.id }}</td>
+        <td class="name-col" style="font-weight:700;color:var(--accent);">{{ row.agent_name }}</td>
+        <td class="email-col" style="color:var(--accent);">{{ row.agent_email if row.agent_email else '-' }}</td>
+        <td class="phone-col">{{ row.phone if row.phone else '-' }}</td>
+        <td class="service-col"><span class="agent-chip">{{ row.service_for if row.service_for else 'Buyer Agent' }}</span></td>
+        <td class="gst-col" style="font-family:monospace; font-weight:600;">{{ row.gst_number if row.gst_number else '-' }}</td>
+        <td class="bank-col" style="font-weight:600;">{{ row.bank_name if row.bank_name else '-' }}</td>
+        <td class="account-col">{{ row.account_no if row.account_no else '-' }}</td>
+        <td class="ifsc-col" style="font-family:monospace;">{{ row.ifsc if row.ifsc else '-' }}</td>
+        <td class="address-col">{{ row.address if row.address else '-' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -301,11 +318,24 @@ async function submitBuyerAgent(e){
   const res = await fetch("/criteria/buyer_agents", { method:"POST", body:fd });
 
   if(res.ok){
-    Swal.fire({icon:'success', title:'Saved Successfully!', timer:1200, showConfirmButton:false}).then(()=>{
+    Swal.fire({
+        icon:'success',
+        title:'Saved Successfully!',
+        timer:1200,
+        showConfirmButton:false,
+        background:'var(--panel-bg)',
+        color:'var(--primary-text)'
+    }).then(()=>{
         location.reload();
     });
   } else {
-    alert("Save Failed: " + await res.text());
+    Swal.fire({
+        icon:'error',
+        title:'Save Failed',
+        text: await res.text(),
+        background:'var(--panel-bg)',
+        color:'var(--primary-text)'
+    });
   }
 }
 
@@ -347,6 +377,7 @@ function editSelected(){
   document.getElementById("ifsc").value = d.ifsc || '';
 
   document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE DATA";
+  document.getElementById("dropdownMenu").style.display = "none";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -359,18 +390,21 @@ async function deleteSelected(){
   if(!selectedElement) return;
   
   Swal.fire({
-    title: 'Purge Agent Profile?',
-    text: "This execution clears out the mapped agent matrix.",
+    title: 'Delete Agent?',
+    text: "This buyer agent profile will be removed.",
     icon: 'warning',
     showCancelButton: true,
     confirmButtonColor: 'var(--danger)',
-    confirmButtonText: 'Yes, Delete Entity'
+    cancelButtonColor: 'var(--secondary-text)',
+    confirmButtonText: 'Yes, Delete',
+    background:'var(--panel-bg)',
+    color:'var(--primary-text)'
   }).then(async (result) => {
     if (result.isConfirmed) {
       const id = selectedElement.dataset.id;
       const res = await fetch(`/criteria/buyer_agents/delete/${id}`, { method:"POST" });
       if(res.ok) location.reload();
-      else alert("Delete failed");
+      else Swal.fire({icon:'error', title:'Delete failed', background:'var(--panel-bg)', color:'var(--primary-text)'});
     }
   });
 }
@@ -443,7 +477,8 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("agentForm").reset();
   document.getElementById("record_id").value = "";
-  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE DATA";
+  document.getElementById("service_for").value = "Buyer Agent";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-floppy-disk'></i> SAVE AGENT";
   
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
@@ -458,6 +493,6 @@ window.onclick = () => {
 }
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

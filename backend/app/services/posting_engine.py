@@ -177,7 +177,7 @@ class PostingEngineService:
     # =========================================================================
 
     @staticmethod
-    def post_shrimp_purchase(db: Session, company_id: str, supplier_name: str, total_amount: float, gst_rate: float, tds_rate: float, batch_number: str, invoice_date: date) -> VoucherHeader:
+    def post_shrimp_purchase(db: Session, company_id: str, supplier_name: str, total_amount: float, gst_rate: float, tds_rate: float, batch_number: str, invoice_date: date, created_by: str = "SYSTEM") -> VoucherHeader:
         """
         Auto-posts raw material purchasing.
         Double entry:
@@ -237,7 +237,14 @@ class PostingEngineService:
         narration = f"Auto-posted Raw Shrimp Purchase for Batch {batch_number} from {supplier_name} on {invoice_date}."
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Purchase", invoice_date, narration, details, reference_no=batch_number
+            db,
+            company_id,
+            "Purchase",
+            invoice_date,
+            narration,
+            details,
+            reference_no=batch_number,
+            created_by=created_by or "SYSTEM",
         )
 
     @staticmethod
@@ -482,35 +489,45 @@ class PostingEngineService:
         )
 
     @staticmethod
-    def post_salary_payment(db: Session, company_id: str, entry) -> VoucherHeader:
+    def post_salary_payment(db: Session, company_id: str, entry, amount: float = None, bank_cash_ledger=None) -> VoucherHeader:
         """
         Auto-posts salary payment journal.
         Double entry:
           Debit: Salaries Payable A/c (Net Payable)
           Credit: Bank Account
         """
+        payment_mode = (entry.payment_mode or "BANK").strip().upper()
+        credit_ledger = bank_cash_ledger.ledger_name if bank_cash_ledger else ("Cash Account" if payment_mode == "CASH" else "Bank Account")
+        credit_group = bank_cash_ledger.group.group_name if bank_cash_ledger and bank_cash_ledger.group else ("Cash-in-hand" if payment_mode == "CASH" else "Bank Accounts")
+        credit_group_type = bank_cash_ledger.group.group_type if bank_cash_ledger and bank_cash_ledger.group else "ASSET"
+        payment_date = entry.payment_date or date.today()
+        reference_no = entry.utr_reference or f"PAY-{entry.employee_id}-{entry.month_year}"
+        payment_amount = round(float(entry.net_payable if amount is None else amount), 2)
+        if payment_amount <= 0:
+            raise ValueError("Salary payment amount must be greater than zero")
+
         details = [
             {
                 "ledger_name": "Salaries Payable A/c",
                 "group_name": "Current Liabilities",
                 "group_type": "LIABILITY",
-                "debit_amount": entry.net_payable,
+                "debit_amount": payment_amount,
                 "credit_amount": 0.0,
                 "remarks": f"Salary Payment for {entry.employee_name} ({entry.month_year})"
             },
             {
-                "ledger_name": "Bank Account",
-                "group_name": "Bank Accounts",
-                "group_type": "ASSET",
+                "ledger_name": credit_ledger,
+                "group_name": credit_group,
+                "group_type": credit_group_type,
                 "parent_group_name": "Current Assets",
                 "debit_amount": 0.0,
-                "credit_amount": entry.net_payable,
-                "remarks": f"Salary Paid - Mode: {entry.payment_mode}"
+                "credit_amount": payment_amount,
+                "remarks": f"Salary Paid - Mode: {payment_mode}; Ref: {entry.utr_reference or '-'}"
             }
         ]
         
-        narration = f"Auto-posted Salary Payment for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}. Payment Mode: {entry.payment_mode}."
+        narration = f"Auto-posted Salary Payment for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}. Payment Mode: {payment_mode}."
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Payment", date.today(), narration, details, reference_no=f"PAY-{entry.employee_id}-{entry.month_year}"
+            db, company_id, "Payment", payment_date, narration, details, reference_no=reference_no
         )

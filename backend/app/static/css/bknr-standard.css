@@ -194,6 +194,71 @@ option {
     color: var(--text) !important;
 }
 
+/* Universal loading state: legacy pages still inject FontAwesome/SweetAlert
+   spinners, so render those as compact skeleton shimmer blocks. */
+.bknr-inline-skeleton,
+html body i.fa-solid.fa-spinner.fa-spin,
+html body i.fa-solid.fa-circle-notch.fa-spin,
+html body i.fa-spinner.fa-spin,
+html body i.fa-circle-notch.fa-spin,
+html body .swal2-loader,
+.fa-spinner.fa-spin,
+.fa-circle-notch.fa-spin,
+.swal2-loader {
+    position: relative !important;
+    display: inline-block !important;
+    width: 38px !important;
+    height: 8px !important;
+    min-width: 38px !important;
+    min-height: 8px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--loader-skeleton-base, var(--border)) !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    animation: none !important;
+    vertical-align: middle !important;
+}
+
+html body .swal2-loader,
+.swal2-loader {
+    width: 74px !important;
+    height: 10px !important;
+    min-width: 74px !important;
+    min-height: 10px !important;
+}
+
+.bknr-inline-skeleton::before,
+html body i.fa-spinner.fa-spin::before,
+html body i.fa-circle-notch.fa-spin::before,
+.fa-spinner.fa-spin::before,
+.fa-circle-notch.fa-spin::before {
+    content: "" !important;
+}
+
+.bknr-inline-skeleton::after,
+html body i.fa-spinner.fa-spin::after,
+html body i.fa-circle-notch.fa-spin::after,
+html body .swal2-loader::after,
+.fa-spinner.fa-spin::after,
+.fa-circle-notch.fa-spin::after,
+.swal2-loader::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--loader-skeleton-shine, var(--header-bg)), transparent);
+    animation: bknrSkeletonShimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes bknrSkeletonShimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
 /* Links & Buttons Enforcer */
 a { color: var(--accent) !important; }
 
@@ -1226,4 +1291,79 @@ html[data-theme="light"] .total-row td {
     font-weight: 800 !important;
     border-top: 1.5px solid #3b82f6 !important;
     border-bottom: 2.5px double #3b82f6 !important;
+}
+
+/* ==========================================================
+   12. DROPDOWN / FILTER TEXT ALIGNMENT
+   Keeps select text vertically centered across compact filters.
+   ========================================================== */
+@media screen {
+    select,
+    .fbox select,
+    .filters select,
+    .filter-bar select,
+    .filter-item select,
+    .field select,
+    select.form-control,
+    .searchable-select {
+        min-height: 34px !important;
+        height: 34px !important;
+        line-height: 32px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 10px !important;
+        padding-right: 28px !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+
+    .fbox select,
+    .filters select,
+    .filter-bar select,
+    .filter-item select {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+    }
+
+    select option {
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .choices__inner,
+    .dropdown-display-box {
+        min-height: 34px !important;
+        height: 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    .choices__list--single {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        line-height: 32px !important;
+    }
+
+    tbody td select,
+    table td select,
+    .main-table td select,
+    .data-table td select,
+    .rm-table td select,
+    #dataTable td select {
+        max-width: 100% !important;
+        min-height: 28px !important;
+        height: 28px !important;
+        line-height: 26px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 6px !important;
+        padding-right: 24px !important;
+        margin: 0 auto !important;
+        vertical-align: middle !important;
+        font-size: 10px !important;
+        box-sizing: border-box !important;
+    }
 }

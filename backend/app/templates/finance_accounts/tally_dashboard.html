@@ -18,7 +18,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+    <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
     <style>
         .tally-container {
             display: flex;
@@ -187,6 +187,95 @@
             font-size: 12px;
             font-weight: 800;
         }
+        .summary-drill-btn {
+            border: 0;
+            background: transparent;
+            color: var(--accent);
+            font: inherit;
+            font-weight: 900;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 6px;
+        }
+        .summary-drill-btn:hover {
+            background: var(--row-hover);
+            text-decoration: underline;
+        }
+        .kpi-card.clickable {
+            cursor: pointer;
+            transition: transform .12s ease, border-color .12s ease, background .12s ease;
+        }
+        .kpi-card.clickable:hover {
+            transform: translateY(-1px);
+            border-color: var(--accent);
+            background: var(--row-hover);
+        }
+        .details-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 18px;
+            background: rgba(15, 23, 42, 0.42);
+        }
+        .details-modal.open {
+            display: flex;
+        }
+        .details-shell {
+            width: min(1180px, 96vw);
+            max-height: 90vh;
+            overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            box-shadow: 0 18px 45px rgba(15, 23, 42, 0.24);
+            display: flex;
+            flex-direction: column;
+        }
+        .details-head {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .details-head h3 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 900;
+        }
+        .details-meta {
+            color: var(--text-muted);
+            font-size: 11px;
+            font-weight: 800;
+        }
+        .details-body {
+            padding: 14px 16px 16px;
+            overflow: auto;
+        }
+        .details-section-title {
+            margin: 12px 0 8px;
+            color: var(--text-muted);
+            font-size: 10px;
+            font-weight: 900;
+            text-transform: uppercase;
+        }
+        .details-close {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--header-bg);
+            color: var(--text);
+            cursor: pointer;
+        }
+        .details-close:hover {
+            color: var(--accent);
+            background: var(--row-hover);
+        }
     </style>
     <link rel="stylesheet" href="/static/css/dashboard-ui.css">
 </head>
@@ -234,7 +323,7 @@
                     <h4>Aged Payables</h4>
                     <p class="value" id="kpi-payable">₹0.00 CR</p>
                 </div>
-                <div class="kpi-card">
+                <div class="kpi-card clickable" onclick="openTodayVouchers()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTodayVouchers();}">
                     <h4>Today Vouchers</h4>
                     <p class="value" id="kpi-daybook">0</p>
                 </div>
@@ -293,6 +382,7 @@
             <div class="tally-panel">
                 <h3>Masters</h3>
                 <div class="module-grid">
+                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/accounts_flow_guide')"><i class="fa-solid fa-diagram-project"></i><span>Accounts Flow Guide</span></div>
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/ledger_master/entry')"><i class="fa-solid fa-folder-open"></i><span>Ledger Master</span></div>
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/bank_master/entry')"><i class="fa-solid fa-building-columns"></i><span>Bank Master</span></div>
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/item_accounting_link/entry')"><i class="fa-solid fa-link"></i><span>Item Accounting Link</span></div>
@@ -307,9 +397,6 @@
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/journal_entry/entry')"><i class="fa-solid fa-book"></i><span>Journal Entries</span></div>
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/payment_receipt/entry')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Payment Receipts</span></div>
                     <div class="module-card" onclick="openFinanceModule('/finance_accounts/bank_transaction/entry')"><i class="fa-solid fa-money-check-dollar"></i><span>Bank Transactions</span></div>
-                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/customer_receivable/entry')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Customer Receivables</span></div>
-                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/vendor_payment/entry')"><i class="fa-solid fa-money-bill-transfer"></i><span>Vendor Payments</span></div>
-                    <div class="module-card" onclick="openFinanceModule('/finance_accounts/expense_voucher/entry')"><i class="fa-solid fa-receipt"></i><span>Expense Vouchers</span></div>
                 </div>
             </div>
             <div class="tally-panel">
@@ -445,6 +532,23 @@
     </div>
 </div>
 
+<div class="details-modal" id="summary-details-modal" aria-hidden="true">
+    <div class="details-shell">
+        <div class="details-head">
+            <div>
+                <h3 id="details-title">Financial Details</h3>
+                <div class="details-meta" id="details-meta">Loading...</div>
+            </div>
+            <button type="button" class="details-close" onclick="closeSummaryDetails()" title="Close">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="details-body" id="details-body">
+            <div style="padding:20px; text-align:center; color:var(--text-muted);">Loading details...</div>
+        </div>
+    </div>
+</div>
+
 <script>
     // Tab switching state
     function switchTab(tabId, evt) {
@@ -471,6 +575,20 @@
     function money(value, side = "") {
         const amount = Math.abs(parseFloat(value) || 0);
         return `₹${amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}${side ? " " + side : ""}`;
+    }
+
+    function esc(value) {
+        return String(value ?? "").replace(/[&<>"']/g, ch => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        }[ch]));
+    }
+
+    function drillAmount(metric, amount, side = "") {
+        return `<button type="button" class="summary-drill-btn" onclick="openSummaryDetails('${metric}')">${money(amount, side)}</button>`;
     }
 
     async function setupAccountingDefaults() {
@@ -500,15 +618,161 @@
             document.getElementById("kpi-daybook").innerText = k.day_vouchers || 0;
 
             document.getElementById("summary-body").innerHTML = `
-                <tr><td class="text-left" style="font-weight:700;">Total Income</td><td>${money(k.income)}</td><td>Credit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
-                <tr><td class="text-left" style="font-weight:700;">Total Expense</td><td>${money(k.expense)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
-                <tr><td class="text-left" style="font-weight:700;">Assets</td><td>${money(k.assets)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
-                <tr><td class="text-left" style="font-weight:700;">Liabilities + Equity</td><td>${money((k.liabilities || 0) + (k.equity || 0))}</td><td>Credit</td><td><span class="${out.balance_sheet_balanced ? 'bg-completed' : 'bg-pending'}" style="padding:2px 8px; border-radius:4px;">${out.balance_sheet_balanced ? 'BALANCED' : 'CHECK'}</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Total Income</td><td>${drillAmount('income', k.income)}</td><td>Credit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Total Expense</td><td>${drillAmount('expense', k.expense)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Assets</td><td>${drillAmount('assets', k.assets)}</td><td>Debit</td><td><span class="bg-completed" style="padding:2px 8px; border-radius:4px;">LIVE</span></td></tr>
+                <tr><td class="text-left" style="font-weight:700;">Liabilities + Equity</td><td>${drillAmount('liabilities_equity', (k.liabilities || 0) + (k.equity || 0))}</td><td>Credit</td><td><span class="${out.balance_sheet_balanced ? 'bg-completed' : 'bg-pending'}" style="padding:2px 8px; border-radius:4px;">${out.balance_sheet_balanced ? 'BALANCED' : 'CHECK'}</span></td></tr>
             `;
         } catch (err) {
             document.getElementById("summary-body").innerHTML = `<tr><td colspan="4" style="padding:20px; color:var(--cancelled-text);">Unable to load accounting summary.</td></tr>`;
         }
     }
+
+    async function openSummaryDetails(metric) {
+        const modal = document.getElementById("summary-details-modal");
+        const body = document.getElementById("details-body");
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+        document.getElementById("details-title").innerText = "Financial Details";
+        document.getElementById("details-meta").innerText = "Loading...";
+        body.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Loading details...</div>`;
+
+        try {
+            const res = await fetch(`/finance_accounts/dashboard/summary/details?metric=${encodeURIComponent(metric)}`);
+            const out = await res.json();
+            if (!res.ok || !out.success) throw new Error(out.detail || "Unable to load details");
+
+            document.getElementById("details-title").innerText = out.title || "Financial Details";
+            document.getElementById("details-meta").innerText = `${out.period || ""} | Total ${money(out.total_amount || 0)}`;
+
+            const ledgers = (out.ledger_summary || []).map(row => `
+                <tr>
+                    <td class="text-left">${esc(row.ledger_name)}</td>
+                    <td class="text-left">${esc(row.group_name)}</td>
+                    <td>${money(row.opening || 0)}</td>
+                    <td>${money(row.debit || 0)}</td>
+                    <td>${money(row.credit || 0)}</td>
+                    <td style="font-weight:900;">${money(row.amount || 0)}</td>
+                </tr>
+            `).join("") || `<tr><td colspan="6" style="padding:16px; color:var(--text-muted);">No ledger balances found.</td></tr>`;
+
+            const transactions = (out.transactions || []).map(row => `
+                <tr>
+                    <td>${esc(row.date)}</td>
+                    <td class="text-left">${esc(row.voucher_no)}</td>
+                    <td>${esc(row.voucher_type)}</td>
+                    <td class="text-left">${esc(row.ledger_name)}</td>
+                    <td class="text-left">${esc(row.group_name)}</td>
+                    <td>${money(row.debit || 0)}</td>
+                    <td>${money(row.credit || 0)}</td>
+                    <td style="font-weight:900;">${money(row.amount || 0)}</td>
+                    <td class="text-left">${esc(row.remarks)}</td>
+                </tr>
+            `).join("") || `<tr><td colspan="9" style="padding:16px; color:var(--text-muted);">No posted voucher lines found.</td></tr>`;
+
+            body.innerHTML = `
+                <div class="details-section-title">Ledger Summary</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th class="text-left">Ledger</th>
+                                <th class="text-left">Group</th>
+                                <th>Opening</th>
+                                <th>Debit</th>
+                                <th>Credit</th>
+                                <th>Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>${ledgers}</tbody>
+                    </table>
+                </div>
+                <div class="details-section-title">Posted Voucher Details</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th class="text-left">Voucher No</th>
+                                <th>Type</th>
+                                <th class="text-left">Ledger</th>
+                                <th class="text-left">Group</th>
+                                <th>Debit</th>
+                                <th>Credit</th>
+                                <th>Impact</th>
+                                <th class="text-left">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody>${transactions}</tbody>
+                    </table>
+                </div>
+            `;
+        } catch (err) {
+            document.getElementById("details-meta").innerText = "";
+            body.innerHTML = `<div style="padding:20px; color:var(--cancelled-text); font-weight:800;">${esc(err.message || "Unable to load details.")}</div>`;
+        }
+    }
+
+    function closeSummaryDetails() {
+        const modal = document.getElementById("summary-details-modal");
+        modal.classList.remove("open");
+        modal.setAttribute("aria-hidden", "true");
+    }
+
+    async function openTodayVouchers() {
+        const modal = document.getElementById("summary-details-modal");
+        const body = document.getElementById("details-body");
+        modal.classList.add("open");
+        modal.setAttribute("aria-hidden", "false");
+        document.getElementById("details-title").innerText = "Today Vouchers";
+        document.getElementById("details-meta").innerText = "Loading...";
+        body.innerHTML = `<div style="padding:20px; text-align:center; color:var(--text-muted);">Loading vouchers...</div>`;
+
+        try {
+            const res = await fetch("/finance_accounts/reports/day-book");
+            const out = await res.json();
+            if (!res.ok || !out.success) throw new Error(out.detail || "Unable to load vouchers");
+
+            const rows = (out.data || []).map(row => `
+                <tr>
+                    <td>${esc(row.voucher_no)}</td>
+                    <td>${esc(row.voucher_time || "")}</td>
+                    <td>${esc(row.voucher_type)}</td>
+                    <td><span class="${row.status === 'POSTED' ? 'bg-completed' : 'bg-pending'}" style="padding:2px 8px; border-radius:4px;">${esc(row.status)}</span></td>
+                    <td class="text-right" style="font-weight:900;">${money(row.total_amount || 0)}</td>
+                    <td class="text-left">${esc(row.narration || "")}</td>
+                </tr>
+            `).join("") || `<tr><td colspan="6" style="padding:16px; color:var(--text-muted);">No vouchers posted today.</td></tr>`;
+
+            const total = (out.data || []).reduce((sum, row) => sum + (parseFloat(row.total_amount) || 0), 0);
+            document.getElementById("details-meta").innerText = `${new Date().toISOString().slice(0, 10)} | ${out.data?.length || 0} vouchers | Total ${money(total)}`;
+            body.innerHTML = `
+                <div class="details-section-title">Day Book</div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Voucher No</th>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <th class="text-right">Amount</th>
+                                <th class="text-left">Narration</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                </div>
+            `;
+        } catch (err) {
+            document.getElementById("details-meta").innerText = "";
+            body.innerHTML = `<div style="padding:20px; color:var(--cancelled-text); font-weight:800;">${esc(err.message || "Unable to load vouchers.")}</div>`;
+        }
+    }
+
+    document.addEventListener("keydown", (evt) => {
+        if (evt.key === "Escape") closeSummaryDetails();
+    });
 
     async function loadLedgers() {
         try {

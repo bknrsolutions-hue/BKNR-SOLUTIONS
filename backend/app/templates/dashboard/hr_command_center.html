@@ -11,9 +11,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800;900&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="/static/js/bknr-charts.js"></script>
   <script src="/static/js/ui-color-customizer.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      try { window.parent && window.parent.forceHideLoader && window.parent.forceHideLoader(); } catch(e) {}
+    });
+    window.addEventListener("load", () => {
+      try { window.parent && window.parent.forceHideLoader && window.parent.forceHideLoader(); } catch(e) {}
+    });
+  </script>
 
   <style>
     /* ==========================================================
@@ -1209,7 +1216,7 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="/static/css/global-loader.css">
+  <link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
   <link rel="stylesheet" href="/static/css/dashboard-ui.css">
 
   <script>
@@ -1226,7 +1233,7 @@
     syncThemeFromParent();
     window.addEventListener('load', syncThemeFromParent);
   </script>
-  <link rel="stylesheet" href="/static/css/bknr-standard.css">
+  <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
   <style>
     /* HR dashboard controls must win over the global button enforcer. */
     .hr-dashboard .tab-btn {
@@ -2198,6 +2205,9 @@
                         <th>Shift</th>
                         <th class="text-center">Requested Duty</th>
                         <th class="text-right">Working Hrs</th>
+                        <th class="text-right">Extra Hrs</th>
+                        <th class="text-center">Approve Duty</th>
+                        <th class="text-center">Approve OT</th>
                         <th class="text-center">Action</th>
                       </tr>
                     </thead>
@@ -2211,10 +2221,24 @@
                         <td><span class="badge badge-blue">{{ row.shift_name or 'GENERAL' }}</span></td>
                         <td class="text-center">
                           <span class="badge badge-solid-red">{{ row.duty_status }}</span>
+                          {% if row.is_punch_missing %}
+                          <span class="badge badge-amber" style="margin-left:4px;">PUNCH MISS</span>
+                          {% endif %}
                         </td>
                         <td class="text-right td-bold">{{ row.working_hours|default('—') }}</td>
+                        <td class="text-right td-amber">{{ row.extra_hours|default(0) }}</td>
                         <td class="text-center">
-                          <form method="post" action="/dashboard/approve_duty/{{ row.id }}" style="display:inline;">
+                          <select form="dutyForm{{ row.id }}" name="approved_duty_credit" class="filter-select" style="width:74px; height:28px; font-size:10px;">
+                            {% for credit in [1.0, 1.5, 2.0, 2.5, 3.0] %}
+                            <option value="{{ credit }}" {% if row.suggested_duty_credit == credit %}selected{% endif %}>{{ credit }}P</option>
+                            {% endfor %}
+                          </select>
+                        </td>
+                        <td class="text-center">
+                          <input form="dutyForm{{ row.id }}" name="approved_ot_hours" type="number" step="0.25" min="0" max="16" value="{{ row.calculated_ot_hours|default(0) }}" style="width:68px; height:28px; font-size:10px; text-align:center; border:1px solid var(--border); border-radius:6px;">
+                        </td>
+                        <td class="text-center">
+                          <form id="dutyForm{{ row.id }}" method="post" action="/dashboard/approve_duty/{{ row.id }}" style="display:inline;">
                             <button type="submit" class="action-btn btn-approve"><i class="fa-solid fa-check"></i>
                               Approve</button>
                           </form>
@@ -2228,7 +2252,7 @@
                       {% endfor %}
                       {% else %}
                       <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="10" class="empty-state">
                           <i class="fa-solid fa-clipboard-check"></i>
                           All Caught Up! No Pending Duty Requests.
                         </td>
@@ -2511,6 +2535,8 @@
       getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 
     const chartGridColor = getCssVar('--chart-grid') || '#cbd5e1';
+
+    if (window.Chart && window.BKNRCharts) {
     Chart.defaults.color = getCssVar('--text-muted') || '#475569';
     Chart.defaults.borderColor = chartGridColor;
     Chart.defaults.font.size = 11;
@@ -2627,6 +2653,7 @@
         }]
       }
     });
+    }
 
     // ============================================================
     // 🟢 KPI POPUP ENGINE
@@ -2720,7 +2747,7 @@
   </script>
 
   <link rel="stylesheet" href="/static/css/ui-color-customizer.css">
-  <script src="/static/js/global-loader.js"></script>
+  <script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 
 </html>

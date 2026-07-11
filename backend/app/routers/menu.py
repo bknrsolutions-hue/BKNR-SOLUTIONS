@@ -5,6 +5,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 import os
 import shutil
+import json
 from datetime import datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
@@ -20,6 +21,26 @@ from datetime import date
 
 router = APIRouter(prefix="/menu", tags=["Menu"])
 templates = Jinja2Templates(directory="app/templates")
+SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
+
+
+def get_screen_popup_config(db: Session):
+    default_config = {"enabled": False, "message": "", "routes": [], "updated_at": ""}
+    try:
+        from app.database.models.system_settings import SystemSetting
+        row = db.query(SystemSetting).filter(SystemSetting.key == SCREEN_POPUP_SETTING_KEY).first()
+        if not row or not row.value:
+            return default_config
+        data = json.loads(row.value)
+        return {
+            **default_config,
+            "enabled": bool(data.get("enabled")),
+            "message": str(data.get("message") or ""),
+            "routes": [str(route) for route in data.get("routes", []) if str(route).startswith("/")],
+            "updated_at": str(data.get("updated_at") or ""),
+        }
+    except Exception:
+        return default_config
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -50,6 +71,7 @@ async def menu_page(request: Request, db: Session = Depends(get_db)):
             ui_colors = user.ui_colors
     except Exception:
         pass
+    screen_popup_config = get_screen_popup_config(db)
 
     # ---- Render menu page ----
     return templates.TemplateResponse(
@@ -58,7 +80,8 @@ async def menu_page(request: Request, db: Session = Depends(get_db)):
             "request": request,
             "company_name": company_name,
             "user_name": user_name,
-            "ui_colors": ui_colors
+            "ui_colors": ui_colors,
+            "screen_popup_config": screen_popup_config
         }
     )
 

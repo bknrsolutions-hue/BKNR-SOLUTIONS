@@ -3,7 +3,7 @@ from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, case, distinct
-from datetime import datetime
+from datetime import date, datetime
 from app.utils.timezone import ist_now
 from collections import defaultdict
 from pydantic import BaseModel
@@ -30,6 +30,11 @@ from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
 from app.services.cache import cache_get_or_set
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_export_sales_invoice,
+)
 
 # Standardizing Prefix and Tags from Code 2
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
@@ -62,6 +67,28 @@ def calculate_pieces(grade_str, manual_pcs):
     except:
         pass
     return 0
+
+
+def parse_form_date(value: str | None) -> date:
+    if not value:
+        return ist_now().date()
+    try:
+        return datetime.strptime(value, "%Y-%m-%d").date()
+    except ValueError:
+        return ist_now().date()
+
+
+def get_mc_weight_map(db: Session, company_code: str) -> dict[str, float]:
+    rows = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
+    return {str(row.packing_style or "").strip(): float(row.mc_weight or 1.0) for row in rows}
+
+
+def calculate_sales_values(item: pending_orders, weight_map: dict[str, float]) -> tuple[float, float, float]:
+    mc_weight = weight_map.get(str(item.packing_style or "").strip(), 1.0)
+    qty_kg = round(float(item.no_of_mc or 0) * mc_weight, 3)
+    amount_usd = round(qty_kg * float(item.selling_price or 0), 2)
+    amount_inr = round(amount_usd * float(item.exchange_rate or 83.5), 2)
+    return qty_kg, amount_usd, amount_inr
 
 
 def get_pending_order_masters(db: Session, company_code: str, user_allowed_locations: list, production_for_filter: str | None, location: str | None):
@@ -139,11 +166,22 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
     if production_for_filter:
         query = query.filter(func.trim(pending_orders.company_name) == func.trim(production_for_filter))
     rows = query.order_by(pending_orders.sl_no, pending_orders.id).all()
+    active_rows = [
+        row for row in rows
+        if str(row.progress_steps or "pending").strip().lower() != "completed"
+    ]
+    completed_rows = [
+        row for row in rows
+        if str(row.progress_steps or "").strip().lower() == "completed"
+    ]
 
     # Grouping by PO Number for display logic
     po_groups = defaultdict(list)
-    for r in rows:
+    for r in active_rows:
         po_groups[r.po_number].append(r)
+    completed_po_groups = defaultdict(list)
+    for r in completed_rows:
+        completed_po_groups[r.po_number].append(r)
 
     # Logic for Editing an existing PO
     edit_rows = []
@@ -169,6 +207,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         name="inventory_management/pending_orders.html",
         context={
             "po_groups": dict(po_groups),  
+            "completed_po_groups": dict(completed_po_groups),
             "edit_rows": edit_rows,
             "next_sl": next_sl,
             "global_production_for": production_for_filter or "", 
@@ -297,43 +336,88 @@ def move_to_sales(
         request.session["message"] = f"❌ {edit_lock_message()}"
         return RedirectResponse("/inventory/pending_orders", status_code=303)
 
-    for item in items:
-        db.add(
-            sales_dispatch(
+    try:
+        ensure_bill_accounting_schema(db)
+        invoice_dt = parse_form_date(invoice_date)
+        weight_map = get_mc_weight_map(db, company_code)
+        email = request.session.get("email") or "SYSTEM"
+
+        existing_sales = db.query(sales_dispatch).filter(
+            sales_dispatch.company_id == company_code,
+            sales_dispatch.po_number == po_number,
+            sales_dispatch.invoice_no == invoice_no,
+        ).all()
+        old_journal_ids = {row.journal_id for row in existing_sales if row.journal_id}
+        for journal_id in old_journal_ids:
+            cancel_linked_bill_voucher(db, company_code, journal_id, email)
+
+        for old_row in existing_sales:
+            db.delete(old_row)
+        db.flush()
+
+        saved_rows = []
+        invoice_total_inr = 0.0
+        buyer_name = items[0].buyer or "Export Buyer"
+
+        for item in items:
+            qty_kg, amount_usd, amount_inr = calculate_sales_values(item, weight_map)
+            invoice_total_inr += amount_inr
+            sale_row = sales_dispatch(company_id=company_code)
+            sale_row.invoice_no = invoice_no
+            sale_row.invoice_date = invoice_date
+            sale_row.shipping_bill = shipping_bill
+            sale_row.container_no = container_no
+            sale_row.po_number = item.po_number
+            sale_row.buyer_name = item.buyer
+            sale_row.brand = item.brand
+            sale_row.country = item.country
+            sale_row.count_glaze = item.count_glaze
+            sale_row.weight_glaze = item.weight_glaze
+            sale_row.packing_style = item.packing_style
+            sale_row.no_of_mc = item.no_of_mc
+            sale_row.price = item.selling_price
+            sale_row.variety = item.variety
+            sale_row.grade = item.grade
+            sale_row.company_name = item.company_name
+            sale_row.production_at = item.production_at
+            sale_row.exchange_rate = item.exchange_rate
+            sale_row.stock_value = float(sale_row.stock_value or 0.0)
+            sale_row.profit_loss = float(sale_row.profit_loss or 0.0)
+            sale_row.freight_cost = float(sale_row.freight_cost or 0.0)
+            sale_row.packing_cost = float(sale_row.packing_cost or 0.0)
+            sale_row.status = sale_row.status or "Unpaid"
+            sale_row.sales_quantity = qty_kg
+            sale_row.amount_usd = amount_usd
+            sale_row.amount_inr = amount_inr
+            sale_row.journal_id = None
+            sale_row.created_at = sale_row.created_at or ist_now().date()
+            db.add(sale_row)
+            saved_rows.append(sale_row)
+
+        voucher = None
+        if invoice_total_inr > 0:
+            voucher = post_export_sales_invoice(
+                db=db,
                 company_id=company_code,
-                invoice_no=invoice_no,
-                invoice_date=invoice_date,
-                shipping_bill=shipping_bill,
-                container_no=container_no,
-                po_number=item.po_number,
-                buyer_name=item.buyer,
-                brand=item.brand,
-                country=item.country,
-                count_glaze=item.count_glaze,
-                weight_glaze=item.weight_glaze,
-                packing_style=item.packing_style,
-                no_of_mc=item.no_of_mc,
-                price=item.selling_price,
-                variety=item.variety,
-                grade=item.grade,
-                company_name=item.company_name,
-                production_at=item.production_at, 
-                exchange_rate=item.exchange_rate, 
-                stock_value=0.0,
-                profit_loss=0.0,
-                freight_cost=0.0,
-                packing_cost=0.0,
-                status="Unpaid",
-                created_at=ist_now().date()
+                voucher_date=invoice_dt,
+                reference_no=invoice_no,
+                buyer_name=buyer_name,
+                invoice_value_inr=invoice_total_inr,
+                created_by=email,
             )
-        )
+            for sale_row in saved_rows:
+                sale_row.journal_id = voucher.id
 
-    for item in items:
-        item.progress_steps = "completed"
+        for item in items:
+            item.progress_steps = "completed"
 
-    db.commit()
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        request.session["message"] = f"❌ Sales dispatch failed: {str(exc)}"
+        return RedirectResponse("/inventory/pending_orders", status_code=303)
 
-    request.session["message"] = f"PO {po_number} moved to Sales Dispatch (Invoice: {invoice_no})"
+    request.session["message"] = f"PO {po_number} moved to Sales Dispatch and Accounts (Invoice: {invoice_no})"
     return RedirectResponse("/inventory/pending_orders", status_code=303)
 
 # -------------------------------------------------------------------------
@@ -378,7 +462,7 @@ def delete_po(
 
     db.commit()
 
-    request.session["message"] = f"PO {po_number} deleted successfully"
+    request.session["message"] = f"PO {po_number} cancelled successfully"
 
     return RedirectResponse(
         "/inventory/pending_orders",

@@ -19,6 +19,115 @@ router = APIRouter(prefix="/admin", tags=["Admin"])
 templates = Jinja2Templates(directory="app/templates")
 
 SESSION_EXPIRY_MIN = 30  # ⏱️ 30 min session timeout trace limit
+SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
+SUPER_ADMIN_EMAIL = "bknr.solutions@gmail.com"
+
+SCREEN_POPUP_FORMS = [
+    {"group": "Dashboards", "label": "Processing Dashboard", "route": "/dashboard/processing_dashboard"},
+    {"group": "Dashboards", "label": "Inventory Dashboard", "route": "/dashboard/inventory_dashboard"},
+    {"group": "Dashboards", "label": "HR & Staff Dashboard", "route": "/dashboard/hr_command_center"},
+    {"group": "Dashboards", "label": "Export Documents Dashboard", "route": "/export_documents/dashboard"},
+    {"group": "Dashboards", "label": "Costing & Finance Dashboard", "route": "/dashboard/costing_dashboard"},
+    {"group": "Dashboards", "label": "Finance Dashboard", "route": "/dashboard/finance_dashboard"},
+    {"group": "Dashboards", "label": "Tally Dashboard", "route": "/finance_accounts/tally_dashboard"},
+    {"group": "Processing", "label": "Gate Entry", "route": "/processing/gate_entry"},
+    {"group": "Processing", "label": "RM Purchasing", "route": "/processing/raw_material_purchasing"},
+    {"group": "Processing", "label": "De-Heading", "route": "/processing/de_heading"},
+    {"group": "Processing", "label": "Grading", "route": "/processing/grading"},
+    {"group": "Processing", "label": "Peeling", "route": "/processing/peeling"},
+    {"group": "Processing", "label": "Soaking", "route": "/processing/soaking"},
+    {"group": "Processing", "label": "Production", "route": "/processing/production"},
+    {"group": "Inventory", "label": "Stock Entry", "route": "/inventory/stock_entry"},
+    {"group": "Inventory", "label": "Pending Orders", "route": "/inventory/pending_orders"},
+    {"group": "Inventory", "label": "Cold Storage Holding", "route": "/inventory/cold_storage_holding"},
+    {"group": "Inventory", "label": "General Store Entry", "route": "/general_stock/entry"},
+    {"group": "Export Documents", "label": "Export Shipments", "route": "/export_documents/export_shipment/entry"},
+    {"group": "Export Documents", "label": "Commercial Invoices", "route": "/export_documents/commercial_invoice/entry"},
+    {"group": "Export Documents", "label": "Packing Lists", "route": "/export_documents/packing_list/entry"},
+    {"group": "Export Documents", "label": "Container Stuffing", "route": "/export_documents/container_stuffing/entry"},
+    {"group": "Export Documents", "label": "Shipping Bills", "route": "/export_documents/shipping_bill/entry"},
+    {"group": "Export Documents", "label": "Bills of Lading", "route": "/export_documents/bill_of_lading/entry"},
+    {"group": "Export Documents", "label": "Health Certificates", "route": "/export_documents/health_certificate/entry"},
+    {"group": "Export Documents", "label": "Supporting Documents", "route": "/export_documents/supporting_documents/entry"},
+    {"group": "Finance Bills", "label": "Electricity Bills", "route": "/api/electricity/entry"},
+    {"group": "Finance Bills", "label": "Diesel Consumption", "route": "/api/diesel/entry"},
+    {"group": "Finance Bills", "label": "Purchase & Packaging", "route": "/api/purchase/entry"},
+    {"group": "Finance Bills", "label": "Logistics & Freight", "route": "/api/container/entry"},
+    {"group": "Finance Bills", "label": "Contractor Bills", "route": "/api/contractor_bills/entry"},
+    {"group": "Finance Bills", "label": "Salaries", "route": "/api/salaries/entry"},
+    {"group": "Finance Bills", "label": "Vendor Bills", "route": "/api/vendor_bills/entry"},
+    {"group": "Finance Bills", "label": "Supplier Bills", "route": "/api/supplier_bills/entry"},
+    {"group": "Finance Bills", "label": "Payment Logs", "route": "/api/payment_logs/entry"},
+    {"group": "Finance Bills", "label": "QA Testing Charges", "route": "/api/qa/entry"},
+    {"group": "Finance Bills", "label": "Other Expenses", "route": "/api/expenses/entry"},
+    {"group": "Finance & Accounts", "label": "Ledger Master", "route": "/finance_accounts/ledger_master/entry"},
+    {"group": "Finance & Accounts", "label": "Journal Entries", "route": "/finance_accounts/journal_entry/entry"},
+    {"group": "Finance & Accounts", "label": "Bank Master", "route": "/finance_accounts/bank_master/entry"},
+    {"group": "Finance & Accounts", "label": "Item Accounting Link", "route": "/finance_accounts/item_accounting_link/entry"},
+    {"group": "Finance & Accounts", "label": "Fixed Assets", "route": "/finance_accounts/fixed_assets/entry"},
+    {"group": "Finance & Accounts", "label": "GST Register", "route": "/finance_accounts/gst_register/entry"},
+    {"group": "Finance & Accounts", "label": "Bank Transactions", "route": "/finance_accounts/bank_transaction/entry"},
+    {"group": "Finance & Accounts", "label": "Payment Receipts", "route": "/finance_accounts/payment_receipt/entry"},
+    {"group": "Finance & Accounts", "label": "Customer Receivables", "route": "/finance_accounts/customer_receivable/entry"},
+    {"group": "Finance & Accounts", "label": "Vendor Payments", "route": "/finance_accounts/vendor_payment/entry"},
+    {"group": "Finance & Accounts", "label": "Expense Vouchers", "route": "/finance_accounts/expense_voucher/entry"},
+    {"group": "Finance & Accounts", "label": "Export Incentives", "route": "/finance_accounts/export_incentive_register/entry"},
+    {"group": "Finance & Accounts", "label": "LC Tracking", "route": "/finance_accounts/lc_tracking/entry"},
+    {"group": "Finance & Accounts", "label": "Salary Processing", "route": "/finance_accounts/salary_processing/entry"},
+    {"group": "Finance & Accounts", "label": "Production Cost Allocation", "route": "/finance_accounts/production_cost_allocation/entry"},
+    {"group": "Reports", "label": "Gate Entry Report", "route": "/reports/gate_entry"},
+    {"group": "Reports", "label": "RM Purchase Report", "route": "/reports/raw_material_purchasing"},
+    {"group": "Reports", "label": "De-Heading Report", "route": "/reports/de_heading"},
+    {"group": "Reports", "label": "Grading Report", "route": "/reports/grading_report"},
+    {"group": "Reports", "label": "Peeling Report", "route": "/reports/peeling_report"},
+    {"group": "Reports", "label": "Soaking Report", "route": "/reports/soaking_report"},
+    {"group": "Reports", "label": "Production Report", "route": "/reports/production_report"},
+    {"group": "Reports", "label": "Re-Process Report", "route": "/reports/re-process"},
+    {"group": "Reports", "label": "Floor Balance Report", "route": "/reports/floor_balance_report"},
+    {"group": "Reports", "label": "Stock Status Report", "route": "/inventory/stock_report"},
+    {"group": "Reports", "label": "Pending Orders Report", "route": "/reports/pending_orders_report"},
+    {"group": "Reports", "label": "Sales Report", "route": "/inventory/sales_report"},
+    {"group": "Reports", "label": "General Store Report", "route": "/general_stock/report"},
+    {"group": "Reports", "label": "Cold Storage Report", "route": "/inventory/cold_storage_holding_report"},
+    {"group": "Reports", "label": "Storage & Cost Report", "route": "/reports/storage_cost_report"},
+    {"group": "Reports", "label": "Floor Balance Value", "route": "/summary/floor_balance_value"},
+    {"group": "Reports", "label": "Inventory Costing", "route": "/summary/inventory_costing"},
+    {"group": "Reports", "label": "Periodic Summary", "route": "/summary/periodic-report"},
+    {"group": "Reports", "label": "Batch Summary", "route": "/summary/processing"},
+    {"group": "HRMS", "label": "Staff Registration", "route": "/attendance/employee/register"},
+    {"group": "HRMS", "label": "Increment Details", "route": "/attendance/employee-increment"},
+    {"group": "HRMS", "label": "Daily Attendance", "route": "/attendance/daily"},
+    {"group": "HRMS", "label": "Monthly Salary Sheet", "route": "/attendance/salary/monthly-sheet"},
+    {"group": "HRMS", "label": "Payroll Master", "route": "/attendance/tax-master"},
+    {"group": "HRMS", "label": "Salary Advance", "route": "/attendance/salary-advance"},
+    {"group": "Masters", "label": "Buyers", "route": "/criteria/buyers"},
+    {"group": "Masters", "label": "Buyer Agents", "route": "/criteria/buyer_agents"},
+    {"group": "Masters", "label": "Suppliers", "route": "/criteria/suppliers"},
+    {"group": "Masters", "label": "Vendors", "route": "/criteria/vendors"},
+    {"group": "Masters", "label": "Countries", "route": "/criteria/countries"},
+    {"group": "Masters", "label": "Brands", "route": "/criteria/brands"},
+    {"group": "Masters", "label": "Species", "route": "/criteria/species"},
+    {"group": "Masters", "label": "Varieties", "route": "/criteria/varieties"},
+    {"group": "Masters", "label": "Grades", "route": "/criteria/grades"},
+    {"group": "Masters", "label": "Freezers", "route": "/criteria/freezers"},
+    {"group": "Masters", "label": "Glazes", "route": "/criteria/glazes"},
+    {"group": "Masters", "label": "Packing Styles", "route": "/criteria/packing_styles"},
+    {"group": "Masters", "label": "Contractors", "route": "/criteria/contractors"},
+    {"group": "Masters", "label": "Peeling At", "route": "/criteria/peeling_at"},
+    {"group": "Masters", "label": "Peeling Rates", "route": "/criteria/peeling_rates"},
+    {"group": "Masters", "label": "Production At", "route": "/criteria/production_at"},
+    {"group": "Masters", "label": "Production For", "route": "/criteria/production_for"},
+    {"group": "Masters", "label": "Production Types", "route": "/criteria/production_types"},
+    {"group": "Masters", "label": "Chemicals", "route": "/criteria/chemicals"},
+    {"group": "Masters", "label": "Purposes", "route": "/criteria/purposes"},
+    {"group": "Masters", "label": "Grade to HOSO", "route": "/criteria/grade_to_hoso"},
+    {"group": "Masters", "label": "HOSO & HLSO", "route": "/criteria/hoso_hlso"},
+    {"group": "Masters", "label": "Cold Storage Master", "route": "/inventory/cold_storage"},
+    {"group": "Masters", "label": "Coldstore Locations", "route": "/criteria/coldstore_locations"},
+    {"group": "Masters", "label": "Vehicle Numbers", "route": "/criteria/vehicle_numbers"},
+    {"group": "Masters", "label": "HSN Codes", "route": "/criteria/hsn_codes"},
+    {"group": "Masters", "label": "General Store Items", "route": "/general_stock/items"},
+]
 
 
 # ==========================================================
@@ -29,6 +138,46 @@ def apply_no_cache_headers(response):
     response.headers["Pragma"] = "no-cache"
     response.headers["Expires"] = "0"
     return response
+
+
+def get_screen_popup_settings(db: Session):
+    from app.database.models.system_settings import SystemSetting
+
+    default_config = {
+        "enabled": False,
+        "message": "",
+        "routes": [],
+        "updated_at": "",
+        "updated_by": "",
+    }
+    row = db.query(SystemSetting).filter(SystemSetting.key == SCREEN_POPUP_SETTING_KEY).first()
+    if not row or not row.value:
+        return default_config
+    try:
+        data = json.loads(row.value)
+    except (TypeError, ValueError):
+        return default_config
+    return {
+        **default_config,
+        "enabled": bool(data.get("enabled")),
+        "message": str(data.get("message") or ""),
+        "routes": [str(route) for route in data.get("routes", []) if str(route).startswith("/")],
+        "updated_at": str(data.get("updated_at") or ""),
+        "updated_by": str(data.get("updated_by") or row.updated_by or ""),
+    }
+
+
+def save_screen_popup_settings(db: Session, config: dict, actor: str):
+    from app.database.models.system_settings import SystemSetting
+
+    row = db.query(SystemSetting).filter(SystemSetting.key == SCREEN_POPUP_SETTING_KEY).first()
+    value = json.dumps(config, ensure_ascii=True)
+    if row:
+        row.value = value
+        row.updated_by = actor
+    else:
+        db.add(SystemSetting(key=SCREEN_POPUP_SETTING_KEY, value=value, updated_by=actor))
+    db.commit()
 
 
 # ==========================================================
@@ -389,6 +538,7 @@ def system_settings_view(
     # Feature Flags
     flags = db.query(FeatureFlag).all()
     tenant_overrides = db.query(TenantFeatureAccess).all()
+    screen_popup_settings = get_screen_popup_settings(db)
 
     response = templates.TemplateResponse(
         request=request,
@@ -402,6 +552,44 @@ def system_settings_view(
             "audit_logs": audit_logs,
             "feature_flags": flags,
             "tenant_overrides": tenant_overrides,
+            "screen_popup_forms": SCREEN_POPUP_FORMS,
+            "screen_popup_settings": screen_popup_settings,
         }
     )
     return apply_no_cache_headers(response)
+
+
+@router.post("/screen-popup-settings")
+async def update_screen_popup_settings(
+    request: Request,
+    current_session: dict = Depends(check_dashboard_access),
+    db: Session = Depends(get_db),
+):
+    logged_email = request.session.get("email")
+    if logged_email != SUPER_ADMIN_EMAIL:
+        raise HTTPException(status_code=403, detail="Super Admin access required")
+
+    payload = await request.json()
+    message = str(payload.get("message") or "").strip()
+    requested_routes = payload.get("routes") or []
+    enabled = bool(payload.get("enabled", True))
+
+    allowed_routes = {item["route"] for item in SCREEN_POPUP_FORMS}
+    routes = []
+    for route in requested_routes:
+        route = str(route).strip()
+        if route in allowed_routes and route not in routes:
+            routes.append(route)
+
+    if enabled and (not message or not routes):
+        raise HTTPException(status_code=400, detail="Please select at least one form and enter a popup message.")
+
+    config = {
+        "enabled": enabled and bool(message) and bool(routes),
+        "message": message,
+        "routes": routes,
+        "updated_at": ist_now().isoformat(),
+        "updated_by": logged_email,
+    }
+    save_screen_popup_settings(db, config, logged_email)
+    return JSONResponse({"success": True, "config": config})

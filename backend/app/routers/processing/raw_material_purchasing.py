@@ -9,6 +9,7 @@ import json
 import re
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.services.posting_engine import PostingEngineService
+from app.services.bill_accounting import cancel_linked_bill_voucher
 from app.database.models.enterprise_finance import VoucherHeader, VoucherDetail
 
 from app.database import get_db
@@ -21,6 +22,7 @@ from app.database.models.criteria import (
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
+from app.utils.cancel_math import active_sum
 
 router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -45,12 +47,11 @@ def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations
     purch_q = db.query(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.count,
-        func.sum(RawMaterialPurchasing.received_qty).label("total_rec")
+        active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("total_rec")
     ).filter(
         RawMaterialPurchasing.company_id == company_code,
         RawMaterialPurchasing.date >= start.date(),
-        func.upper(RawMaterialPurchasing.variety_name) == 'HOSO',
-        RawMaterialPurchasing.is_cancelled == False
+        func.upper(RawMaterialPurchasing.variety_name) == 'HOSO'
     )
     
     # Apply Global Filter layer on received today calculations
@@ -223,6 +224,25 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
 
     return build()
 
+
+def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created_by: str):
+    amount = round(float(entry.amount or 0.0), 2)
+    if amount <= 0:
+        return None
+    voucher = PostingEngineService.post_shrimp_purchase(
+        db=db,
+        company_id=entry.company_id,
+        supplier_name=entry.supplier_name or "Raw Material Supplier",
+        total_amount=amount,
+        gst_rate=0.0,
+        tds_rate=0.0,
+        batch_number=entry.batch_number or f"RMP-{entry.id}",
+        invoice_date=entry.date,
+        created_by=created_by,
+    )
+    entry.journal_id = voucher.id
+    return voucher
+
 # -----------------------------------------------------
 # REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
@@ -314,6 +334,7 @@ def save_rmp(
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    user_email = request.session.get("email")
     now = ist_now()
     received = g1_qty + g2_qty + dc_qty
     total_billable_qty = g1_qty + (g2_qty / 2)
@@ -325,13 +346,22 @@ def save_rmp(
         peeling_at=peeling_at, variety_name=variety_name,
         species=species, hsn_code=hsn_code, count=count, g1_qty=g1_qty, g2_qty=g2_qty,
         dc_qty=dc_qty, received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
-        material_boxes=material_boxes, remarks=remarks, email=request.session.get("email"),
+        material_boxes=material_boxes, remarks=remarks, email=user_email,
         date=now.date(), time=now.time(), company_id=comp_code
     )
-    db.add(entry)
-    db.commit()
-    refresh_floor_balance(db, comp_code, batch_number=batch_number)
-    request.session["message"] = "✔ Saved Successfully!"
+    try:
+        db.add(entry)
+        db.flush()
+        voucher = post_rmp_purchase_voucher(db, entry, user_email or "SYSTEM")
+        db.commit()
+        refresh_floor_balance(db, comp_code, batch_number=batch_number)
+        if voucher:
+            request.session["message"] = f"✔ Saved and posted to Accounts: {voucher.voucher_no}"
+        else:
+            request.session["message"] = "✔ Saved Successfully! (Amount is zero, voucher not posted)"
+    except Exception as exc:
+        db.rollback()
+        request.session["message"] = f"❌ Save failed: {str(exc)}"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
 @router.post("/raw_material_purchasing/update/{id}")
@@ -344,6 +374,7 @@ def update_rmp(
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    user_email = request.session.get("email")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
     if not entry: return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
     if is_edit_locked(request, entry.date):
@@ -351,23 +382,36 @@ def update_rmp(
         return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
     old_batch_number = entry.batch_number
+    old_journal_id = entry.journal_id
     total_billable_qty = g1_qty + (g2_qty / 2)
     
-    entry.batch_number, entry.supplier_name = batch_number, supplier_name
-    entry.production_for = production_for 
-    entry.peeling_at = peeling_at
-    entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
-    entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
-    entry.received_qty = g1_qty + g2_qty + dc_qty
-    entry.amount = round(total_billable_qty * rate_per_kg, 2)
-    entry.rate_per_kg = rate_per_kg
-    entry.material_boxes, entry.remarks = material_boxes, remarks
-    
-    db.commit()
-    refresh_floor_balance(db, comp_code, batch_number=batch_number)
-    if old_batch_number != batch_number:
-        refresh_floor_balance(db, comp_code, batch_number=old_batch_number)
-    request.session["message"] = "✔ Updated Successfully!"
+    try:
+        if old_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, old_journal_id, user_email)
+            entry.journal_id = None
+
+        entry.batch_number, entry.supplier_name = batch_number, supplier_name
+        entry.production_for = production_for
+        entry.peeling_at = peeling_at
+        entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
+        entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
+        entry.received_qty = g1_qty + g2_qty + dc_qty
+        entry.amount = round(total_billable_qty * rate_per_kg, 2)
+        entry.rate_per_kg = rate_per_kg
+        entry.material_boxes, entry.remarks = material_boxes, remarks
+        voucher = post_rmp_purchase_voucher(db, entry, user_email or "SYSTEM")
+
+        db.commit()
+        refresh_floor_balance(db, comp_code, batch_number=batch_number)
+        if old_batch_number != batch_number:
+            refresh_floor_balance(db, comp_code, batch_number=old_batch_number)
+        if voucher:
+            request.session["message"] = f"✔ Updated and reposted to Accounts: {voucher.voucher_no}"
+        else:
+            request.session["message"] = "✔ Updated Successfully! (Amount is zero, voucher not posted)"
+    except Exception as exc:
+        db.rollback()
+        request.session["message"] = f"❌ Update failed: {str(exc)}"
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
 
 from app.utils.trace_lock import is_batch_used_downstream_from_rmp
@@ -411,6 +455,9 @@ def delete_rmp(
         entry.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
         entry.cancelled_by = request.session.get("email")
         entry.cancelled_at = ist_now()
+        if entry.journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.journal_id, request.session.get("email"))
+            entry.journal_id = None
 
         db.commit()
         refresh_floor_balance(db, comp_code, batch_number=batch_to_refresh)

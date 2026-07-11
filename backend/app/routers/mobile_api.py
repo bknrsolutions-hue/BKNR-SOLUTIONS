@@ -18,6 +18,7 @@ from app.database.models.bills import ElectricityLog, DieselLog, PurchaseInvoice
 from app.database.models.criteria import production_at
 from app.services.accounting_reports import AccountingReportsService
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_sum, signed_sum
 
 router = APIRouter(prefix="/api/mobile", tags=["MOBILE APP API"])
 logger = logging.getLogger(__name__)
@@ -66,7 +67,7 @@ def get_mobile_dashboard_data(
         # ==========================================
         
         # A. Production Weight today
-        prod_q = db.query(func.coalesce(func.sum(Production.production_qty), 0.0)).filter(
+        prod_q = db.query(signed_sum(Production, Production.production_qty)).filter(
             Production.company_id == comp_code,
             Production.date == today
         )
@@ -104,7 +105,7 @@ def get_mobile_dashboard_data(
         sales_today_qty = float(sales_data.qty)
 
         # D. RM Purchases weight today
-        rmp_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0.0)).filter(
+        rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty)).filter(
             RawMaterialPurchasing.company_id == comp_code,
             RawMaterialPurchasing.date == today
         )
@@ -126,13 +127,13 @@ def get_mobile_dashboard_data(
         total_revenue = float(sales_q.scalar() or 0.0)
 
         # B. Purchases & Processing Costs
-        rmp_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0.0)).filter(RawMaterialPurchasing.company_id == comp_code)
+        rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.amount)).filter(RawMaterialPurchasing.company_id == comp_code)
         rmp_cost = float(rmp_q.scalar() or 0.0)
 
-        deh_q = db.query(func.coalesce(func.sum(DeHeading.amount), 0.0)).filter(DeHeading.company_id == comp_code)
+        deh_q = db.query(signed_sum(DeHeading, DeHeading.amount)).filter(DeHeading.company_id == comp_code)
         deheading_cost = float(deh_q.scalar() or 0.0)
 
-        pee_q = db.query(func.coalesce(func.sum(Peeling.amount), 0.0)).filter(Peeling.company_id == comp_code)
+        pee_q = db.query(signed_sum(Peeling, Peeling.amount)).filter(Peeling.company_id == comp_code)
         peeling_cost = float(pee_q.scalar() or 0.0)
 
         # No monetary grading/soaking source is stored in these tables.
@@ -140,12 +141,12 @@ def get_mobile_dashboard_data(
         soaking_cost = 0.0
 
         # C. Utilities & Overheads
-        elec_q = db.query(func.coalesce(func.sum(ElectricityLog.total_cost), 0.0)).join(
+        elec_q = db.query(signed_sum(ElectricityLog, ElectricityLog.total_cost)).join(
             production_at, ElectricityLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         electricity_cost = float(elec_q.scalar() or 0.0)
 
-        dies_q = db.query(func.coalesce(func.sum(DieselLog.net_val), 0.0)).join(
+        dies_q = db.query(signed_sum(DieselLog, DieselLog.net_val)).join(
             production_at, DieselLog.unit_id == production_at.id
         ).filter(and_(production_at.company_id == comp_code, DieselLog.type == "OUT"))
         diesel_cost = float(dies_q.scalar() or 0.0)
@@ -153,18 +154,18 @@ def get_mobile_dashboard_data(
         water_cost = 0.0
         ice_cost = 0.0
 
-        pack_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(PurchaseInvoice.company_id == comp_code)
+        pack_q = db.query(signed_sum(PurchaseInvoice, PurchaseInvoice.grand_total)).filter(PurchaseInvoice.company_id == comp_code)
         packaging_cost = float(pack_q.scalar() or 0.0)
 
-        log_q = db.query(func.coalesce(func.sum(ContainerLog.lended_total), 0.0)).filter(ContainerLog.company_id == comp_code)
+        log_q = db.query(signed_sum(ContainerLog, ContainerLog.lended_total)).filter(ContainerLog.company_id == comp_code)
         logistics_cost = float(log_q.scalar() or 0.0)
 
-        qa_q = db.query(func.coalesce(func.sum(QATestingLog.test_cost), 0.0)).join(
+        qa_q = db.query(signed_sum(QATestingLog, QATestingLog.test_cost)).join(
             production_at, QATestingLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         qa_cost = float(qa_q.scalar() or 0.0)
 
-        oth_q = db.query(func.coalesce(func.sum(OtherExpense.amount), 0.0)).join(
+        oth_q = db.query(signed_sum(OtherExpense, OtherExpense.amount)).join(
             production_at, OtherExpense.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         other_cost = float(oth_q.scalar() or 0.0)
@@ -222,7 +223,7 @@ def get_mobile_dashboard_data(
         bar_chart_data = []
         for i in range(6, -1, -1):
             loop_date = today - timedelta(days=i)
-            day_q = db.query(func.coalesce(func.sum(Production.production_qty), 0.0)).filter(
+            day_q = db.query(signed_sum(Production, Production.production_qty)).filter(
                 Production.company_id == comp_code,
                 Production.date == loop_date
             )
@@ -248,7 +249,7 @@ def get_mobile_dashboard_data(
             ).scalar() or 0.0
             
             # Real month purchase expenses: from RawMaterialPurchasing
-            exp_m = db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0.0)).filter(
+            exp_m = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.amount)).filter(
                 RawMaterialPurchasing.company_id == comp_code,
                 RawMaterialPurchasing.date >= loop_month_start,
                 RawMaterialPurchasing.date < next_month_start

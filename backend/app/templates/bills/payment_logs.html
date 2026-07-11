@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Payment Logs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root{--primary:#143465;--accent:#3b82f6;--border:#d6dde7;--bg:#f4f6f9;--muted:#64748b}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:#1f2937;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.header-dash{background:var(--card-bg,#fff);padding:15px 25px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
+.header-titles h2{margin:0;font-size:18px;color:var(--primary);font-weight:900}
+.header-titles span{font-size:11px;color:var(--muted);font-weight:800;text-transform:uppercase}
+.total-strip{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.total-pill{background:var(--primary);color:#fff;padding:8px 18px;border-radius:8px;font-size:12px;font-weight:900;min-width:165px;text-align:center}
+.filter-bar{background:var(--card-bg,#fff);padding:10px 25px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.filter-item{display:flex;flex-direction:column;gap:3px;min-width:150px;max-width:220px;flex:1}
+.filter-item label{font-size:9px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.filter-item input,.filter-item select{height:34px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg,#fff);color:var(--primary);font-size:12px;font-weight:800;padding:6px 10px;outline:none}
+.btn{height:34px;border:0;border-radius:7px;padding:0 16px;background:var(--accent);color:#fff;font-size:12px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.secondary{background:var(--muted)}
+.btn.danger{background:#dc2626}
+.section-header{padding:15px 25px 8px;display:flex;justify-content:space-between;align-items:center}
+.section-header strong{font-size:12px;color:var(--primary);text-transform:uppercase}
+.table-wrap{margin:0 25px 25px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:12px;overflow:auto;box-shadow:0 4px 10px rgba(15,23,42,.05)}
+.main-table{width:100%;border-collapse:collapse;min-width:1180px;font-size:12px}
+.main-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase;padding:11px;border-bottom:2px solid var(--border);text-align:center}
+.main-table td{padding:11px;border-bottom:1px solid #edf2f7;text-align:center;color:var(--primary);font-weight:750}
+.main-table td:nth-child(3),.main-table td:nth-child(8){text-align:left}
+.main-table tr.cancelled td{background:#f8fafc;color:#94a3b8;text-decoration:line-through}
+.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900;background:#f1f5f9;color:#475569;text-decoration:none}
+.badge.salary{background:#dbeafe;color:#1d4ed8}
+.badge.contractor{background:#ecfdf5;color:#047857}
+.badge.cancelled{background:#fee2e2;color:#b91c1c}
+.empty-state{padding:70px 20px;text-align:center;color:var(--muted)}
+.empty-state i{font-size:34px;color:var(--accent);opacity:.65;margin-bottom:12px}
+@media(max-width:700px){
+  .header-dash{padding:12px;align-items:flex-start;gap:10px;flex-direction:column}
+  .total-pill{width:100%}
+  .filter-bar{padding:10px}
+  .table-wrap{margin:0 10px 20px}
+}
+</style>
+</head>
+<body>
+<div class="header-dash">
+  <div class="header-titles">
+    <span>Operational Bills</span>
+    <h2>Payment Logs</h2>
+  </div>
+  <div class="total-strip">
+    <div class="total-pill" id="activeTotal">ACTIVE: ₹ 0.00</div>
+    <div class="total-pill" id="cancelledTotal">CANCELLED: ₹ 0.00</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-item">
+    <label>Financial Year</label>
+    <select id="fy">
+      {% for y in range(2024, 2029) %}
+      <option value="{{ y }}" {% if selected_fy == y %}selected{% endif %}>FY {{ y }}-{{ y + 1 }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label>Month</label>
+    <input type="month" id="month" value="{{ selected_month }}">
+  </div>
+  <div class="filter-item">
+    <label>Source</label>
+    <select id="source">
+      <option value="all">All Payments</option>
+      <option value="salary">Salaries</option>
+      <option value="contractor">Contractor Bills</option>
+      <option value="vendor">Vendor Payments</option>
+      <option value="supplier">Supplier Payments</option>
+    </select>
+  </div>
+  <div class="filter-item">
+    <label>Status</label>
+    <select id="includeCancelled">
+      <option value="false">Active Only</option>
+      <option value="true">Include Cancelled</option>
+    </select>
+  </div>
+  <button class="btn" onclick="loadLogs()"><i class="fa-solid fa-filter"></i> Filter</button>
+  <button class="btn secondary" onclick="resetFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+</div>
+
+<div class="section-header">
+  <strong id="rowCount">0 Payment Logs</strong>
+  <strong id="monthLabel"></strong>
+</div>
+
+<div class="table-wrap">
+  <table class="main-table">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Source</th>
+        <th>Party</th>
+        <th>Month</th>
+        <th>Amount</th>
+        <th>Mode</th>
+        <th>Bank / Cash Account</th>
+        <th>UTR / Ref</th>
+        <th>Voucher</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody id="logRows">
+      <tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-receipt"></i><br>Loading payment logs...</div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script>
+const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+
+async function loadLogs(){
+  const month = document.getElementById('month').value;
+  const source = document.getElementById('source').value;
+  const includeCancelled = document.getElementById('includeCancelled').value;
+  const tbody = document.getElementById('logRows');
+  document.getElementById('monthLabel').textContent = month || 'All Months';
+  tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading payment logs...</div></td></tr>`;
+  try {
+    const res = await fetch(`/api/payment_logs/data?month=${encodeURIComponent(month || '')}&source=${encodeURIComponent(source)}&include_cancelled=${encodeURIComponent(includeCancelled)}`);
+    const data = await res.json();
+    if(!data.success){
+      tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>${escapeHtml(data.message || 'Unable to load payment logs.')}</div></td></tr>`;
+      return;
+    }
+    document.getElementById('activeTotal').textContent = `ACTIVE: ₹ ${fmt.format(data.total || 0)}`;
+    document.getElementById('cancelledTotal').textContent = `CANCELLED: ₹ ${fmt.format(data.cancelled_total || 0)}`;
+    document.getElementById('rowCount').textContent = `${(data.rows || []).length} Payment Logs`;
+    renderRows(data.rows || []);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>Unable to load payment logs. Please try again.</div></td></tr>`;
+  } finally {
+    if (window.forceHideLoader) window.forceHideLoader();
+  }
+}
+
+function renderRows(rows){
+  const tbody = document.getElementById('logRows');
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>No payment logs found.</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(row => `
+    <tr class="${row.is_cancelled ? 'cancelled' : ''}">
+      <td>${escapeHtml(row.payment_date || '-')}</td>
+      <td><span class="badge ${['contractor','vendor','supplier'].includes(row.source_type) ? 'contractor' : 'salary'}">${sourceLabel(row.source_type)}</span></td>
+      <td>${escapeHtml(row.party_name || '-')}<br><small>${escapeHtml(row.party_code || '')}</small></td>
+      <td>${escapeHtml(row.month_year || '-')}</td>
+      <td>₹ ${fmt.format(row.paid_amount || 0)}</td>
+      <td>${escapeHtml(row.payment_mode || '-')}</td>
+      <td>${escapeHtml(row.bank_cash_account || '-')}</td>
+      <td>${escapeHtml(row.utr_reference || '-')}</td>
+      <td>${escapeHtml(row.voucher_no || '-')}<br><small>${escapeHtml(row.voucher_status || '')}</small></td>
+      <td><span class="badge ${row.is_cancelled ? 'cancelled' : ''}">${row.is_cancelled ? 'CANCELLED' : escapeHtml(row.payment_status || 'POSTED')}</span></td>
+      <td>
+        ${row.is_cancelled ? '-' : `<button class="btn danger" onclick="cancelPayment('${row.source_type}', ${row.payment_id})"><i class="fa-solid fa-ban"></i> Cancel</button>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function cancelPayment(sourceType, paymentId){
+  const confirmation = await Swal.fire({
+    title: 'Cancel payment?',
+    text: 'Voucher cancel avtundi and amount outstanding lo back add avtundi.',
+    icon: 'warning',
+    showCancelButton: true,
+    confirmButtonText: 'Yes, Cancel',
+    cancelButtonText: 'No'
+  });
+  if(!confirmation.isConfirmed) return;
+  try {
+    const res = await fetch(`/api/payment_logs/cancel/${encodeURIComponent(sourceType)}/${paymentId}`, {method: 'POST'});
+    const data = await res.json();
+    if(data.success){
+      Swal.fire('Cancelled', data.message, 'success').then(loadLogs);
+    } else {
+      Swal.fire('Cancel Failed', data.message || 'Unable to cancel payment.', 'error');
+    }
+  } catch (err) {
+    Swal.fire('Cancel Failed', 'Server connection failed.', 'error');
+  } finally {
+    if (window.forceHideLoader) window.forceHideLoader();
+  }
+}
+
+function resetFilters(){
+  document.getElementById('month').value = '';
+  document.getElementById('source').value = 'all';
+  document.getElementById('includeCancelled').value = 'false';
+  loadLogs();
+}
+
+function sourceLabel(sourceType){
+  if(sourceType === 'contractor') return 'Contractor';
+  if(sourceType === 'vendor') return 'Vendor';
+  if(sourceType === 'supplier') return 'Supplier';
+  return 'Salary';
+}
+
+document.addEventListener('DOMContentLoaded', loadLogs);
+</script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
+</body>
+</html>

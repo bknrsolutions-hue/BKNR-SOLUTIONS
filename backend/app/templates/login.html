@@ -2344,6 +2344,10 @@
         const HAS_LOGIN_PANEL = Boolean(document.getElementById("login"));
         let regEmail = sessionStorage.getItem("bknr_reg_email") || "";
 
+        if (HAS_LOGIN_PANEL && window.top !== window.self) {
+            window.top.location.replace("/auth/login");
+        }
+
         async function readResponse(res, fallbackMessage) {
             const text = await res.text();
             let data = {};

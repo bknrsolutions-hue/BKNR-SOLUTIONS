@@ -262,8 +262,8 @@ tfoot td {
     tfoot td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 
 <body>
@@ -462,8 +462,7 @@ let filterLowStockActive = false;
 // --- Financial Year URL Logic ---
 function changeFY(val) {
     const url = new URL(window.location.href);
-    if (val) url.searchParams.set('fy', val);
-    else url.searchParams.delete('fy');
+    url.searchParams.set('fy', val || '');
     window.location.href = url.toString();
 }
 
@@ -732,6 +731,6 @@ function exportExcel() {
 
 window.onload = () => { applyFilters(); };
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

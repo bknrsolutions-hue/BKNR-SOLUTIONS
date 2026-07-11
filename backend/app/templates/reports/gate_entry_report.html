@@ -104,6 +104,8 @@ thead th{
 tbody td{ padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9; border-right:1px solid #f8fafc; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--primary); font-weight: 600; }
 tbody tr:hover{background:#f0f9ff; cursor:pointer;}
 tr.selected{background:#dbeafe !important;}
+.cancelled-row { background:#fff1f2 !important; opacity:.78; }
+.cancelled-row td { color:var(--danger) !important; text-decoration:line-through; }
 
 /* Empty State */
 .empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); }
@@ -152,8 +154,8 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 }
 .print-header-block { display: none; }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 <body>
@@ -269,7 +271,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
                 </tr>
                 {% else %}
                     {% for r in rows %}
-                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" onclick="selectRow(this)">
                         <td class="slno">{{ (rows|length) - loop.index0 }}</td>
                         <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
                         <td>{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
@@ -320,9 +322,8 @@ let selectedRow = null;
 const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 
 function changeFY(val) {
-    if(!val) return;
     let currentUrl = new URL(window.location.href);
-    currentUrl.searchParams.set("fy", val);
+    currentUrl.searchParams.set("fy", val || "");
     window.location.href = currentUrl.toString();
 }
 
@@ -357,9 +358,10 @@ function applyFilters() {
 
         if(ok) {
             r.style.display = ""; vCount++;
-            m_tot += parseFloat(r.querySelector(".mat-box").innerText) || 0;
-            e_tot += parseFloat(r.querySelector(".emp-box").innerText) || 0;
-            i_tot += parseFloat(r.querySelector(".ice-box").innerText) || 0;
+            const sign = r.dataset.cancelled === "true" ? -1 : 1;
+            m_tot += sign * (parseFloat(r.querySelector(".mat-box").innerText) || 0);
+            e_tot += sign * (parseFloat(r.querySelector(".emp-box").innerText) || 0);
+            i_tot += sign * (parseFloat(r.querySelector(".ice-box").innerText) || 0);
             filteredRows.push(r);
         } else {
             r.style.display = "none";
@@ -583,6 +585,6 @@ function exportAction(type) {
 
 applyFilters();
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

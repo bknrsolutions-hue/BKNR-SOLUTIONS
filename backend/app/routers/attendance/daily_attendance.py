@@ -7,7 +7,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, desc, func
 from sqlalchemy.orm.attributes import flag_modified
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from app.utils.timezone import ist_now
 import datetime as dt
 import logging
@@ -17,7 +17,9 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
 from app.database.models.attendance import DailyAttendance, EmployeeRegistration, Shift
+from app.database.models.criteria import contractors
 from app.database.models.processing import AuditLog
+from app.services.bill_accounting import ensure_bill_accounting_schema, post_contractor_source_charge
 
 # 🌐 UNIVERSAL GLOBAL FILTERS HELPER
 from app.utils.global_filters import get_global_filters
@@ -53,6 +55,139 @@ def get_strict_location(request: Request):
     return actual_location, user_allowed_locations
 
 
+def get_shift_required_hours(db: Session, company_id: str, shift_name: str) -> float:
+    shift = db.query(Shift).filter(
+        Shift.company_id == company_id,
+        Shift.shift_name == (shift_name or "GENERAL"),
+    ).first()
+    if not shift or not shift.start_time or not shift.end_time:
+        return 8.0
+    start_dt = datetime.combine(date.today(), shift.start_time)
+    end_dt = datetime.combine(date.today(), shift.end_time)
+    if end_dt < start_dt:
+        end_dt += timedelta(days=1)
+    hours = (end_dt - start_dt).total_seconds() / 3600.0
+    break_hours = (shift.break_minutes or 0) / 60.0
+    return max(1.0, hours - break_hours)
+
+
+def attendance_payable_credit(working_hours: float, required_hours: float) -> float:
+    raw_credit = float(working_hours or 0.0) / required_hours if required_hours > 0 else 0.0
+    if raw_credit < 0.5:
+        return 0.0
+    if raw_credit < 1.0:
+        return 0.5
+    if raw_credit < 1.5:
+        return 1.0
+    if raw_credit < 2.0:
+        return 1.5
+    if raw_credit < 2.5:
+        return 2.0
+    if raw_credit < 3.0:
+        return 2.5
+    return 3.0
+
+
+def calculate_duty_type_and_ot(working_hours: float) -> tuple[str, float]:
+    wh = float(working_hours or 0.0)
+    if wh >= 14:
+        return "DOUBLE", round(wh - 16, 2) if wh > 16 else 0.0
+    if wh >= 8:
+        return "SINGLE", round(wh - 8, 2) if wh > 8 else 0.0
+    if wh >= 4:
+        return "HALF", 0.0
+    return "ABSENT", 0.0
+
+
+def close_attendance_duty(
+    duty: DailyAttendance,
+    close_time: datetime,
+    movement_type: str,
+    pending_approval: bool = False,
+) -> float:
+    safe_close = close_time.replace(tzinfo=None)
+    safe_first_in = duty.first_in.replace(tzinfo=None) if duty.first_in else safe_close
+    wh = round(min(24.0, max(0.0, (safe_close - safe_first_in).total_seconds() / 3600)), 2)
+    duty.working_hours = max(0.0, wh)
+    duty.exit_time = close_time
+    duty.status = "CLOSED"
+    duty.duty_type, duty.calculated_ot_hours = calculate_duty_type_and_ot(duty.working_hours)
+    duty.ot_status = "PENDING"
+    duty.approved_ot_hours = 0.0
+    if pending_approval:
+        duty.duty_status = "PENDING"
+        duty.duty_approved_by = None
+    elif not duty.duty_status or duty.duty_status in {"OPEN", "PENDING"}:
+        duty.duty_status = "APPROVED"
+        duty.approved_duty_credit = duty.approved_duty_credit or 1.0
+
+    movements = list(duty.movements) if duty.movements else []
+    movements.append({
+        "type": movement_type,
+        "time": close_time.strftime("%H:%M"),
+        "date": close_time.strftime("%Y-%m-%d"),
+    })
+    duty.movements = movements
+    flag_modified(duty, "movements")
+    return duty.working_hours
+
+
+def auto_close_stale_attendance(
+    db: Session,
+    company_id: str,
+    email: str,
+    employee_id: str | None = None,
+    location: str | None = None,
+    allowed_locations: list[str] | None = None,
+) -> list[DailyAttendance]:
+    now = ist_now()
+    cutoff = now.replace(tzinfo=None) - timedelta(hours=24)
+    query = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.status != "CLOSED",
+        DailyAttendance.first_in != None,
+        DailyAttendance.first_in <= cutoff,
+    )
+    if employee_id:
+        query = query.filter(DailyAttendance.employee_id == employee_id)
+    if location and location != "ALL":
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)) == location)
+    elif allowed_locations:
+        query = query.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(allowed_locations))
+
+    closed_rows = []
+    for duty in query.all():
+        close_time = duty.first_in + timedelta(hours=24)
+        wh = close_attendance_duty(
+            duty,
+            close_time,
+            "AUTO OUT",
+            pending_approval=True,
+        )
+        db.add(AuditLog(
+            table_name="daily_attendance",
+            record_id=duty.id,
+            company_id=company_id,
+            field_name="AUTO_OUT_24H",
+            old_value="OPEN",
+            new_value=f"Emp: {duty.employee_name} ({duty.employee_id}) | Auto closed after 24 hours | {wh} Hrs | Duty approval pending",
+            edited_by=email or "SYSTEM",
+            edited_at=datetime.now(dt.timezone.utc),
+        ))
+        closed_rows.append(duty)
+    if closed_rows:
+        db.flush()
+    return closed_rows
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
 # ============================================================
 # 📅 1. PAGE LOAD (GET)
 # ============================================================
@@ -64,7 +199,10 @@ def daily_attendance_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
+    ensure_bill_accounting_schema(db)
     actual_location, _ = get_strict_location(request)
+    auto_close_stale_attendance(db, company_code, email, location=actual_location)
+    db.commit()
 
     plant_shifts = []
     if actual_location and actual_location != "UNASSIGNED":
@@ -100,6 +238,7 @@ async def attendance_entry(
     
     if not company_id or not email:
         return JSONResponse({"success": False, "error": "INVALID_SESSION"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     # 🟢 🔴 Explicit Location Fallback Fix
     frontend_location = payload.location.strip().upper() if payload.location else None
@@ -128,12 +267,27 @@ async def attendance_entry(
         return JSONResponse({"success": False, "error": f"ID {input_id} Not Found"}, status_code=404)
 
     full_employee_id = emp.employee_id
+    auto_closed = auto_close_stale_attendance(
+        db,
+        company_id,
+        email,
+        employee_id=full_employee_id,
+        location=actual_location,
+    )
 
     duty = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
         DailyAttendance.status != "CLOSED"
     ).first()
+
+    if auto_closed and action in {"OUT", "EXIT"} and not duty:
+        db.commit()
+        return {
+            "success": True,
+            "employee_name": emp.employee_name,
+            "message": "Previous duty auto-closed after 24 hours and sent for duty approval."
+        }
 
     duty_count = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
@@ -171,7 +325,8 @@ async def attendance_entry(
                     first_in=now,
                     shift_name=shift_name,
                     movements=[{"type": "IN", "time": time_str, "shift": shift_name}],
-                    status="OPEN"
+                    status="OPEN",
+                    duty_status="OPEN",
                 )
                 db.add(new_duty)
                 audit_details = f"Fresh Shift Punch In at {time_str} (Loc: {actual_location}) [{shift_name}]"
@@ -193,37 +348,44 @@ async def attendance_entry(
             if not duty: 
                 return JSONResponse({"success": False, "error": "NO_ACTIVE_DUTY"}, status_code=400)
             
-            movements = list(duty.movements) if duty.movements else []
-            movements.append({"type": "EXIT", "time": time_str})
-            duty.movements = movements
-            duty.exit_time = now
-            duty.status = "CLOSED"
-            
-            safe_now = now.replace(tzinfo=None)
-            safe_first_in = duty.first_in.replace(tzinfo=None) if duty.first_in else safe_now
-            
-            diff = safe_now - safe_first_in
-            wh = round(diff.total_seconds() / 3600, 2)
-            duty.working_hours = wh
-
-            if wh >= 14:
-                duty.duty_type = "DOUBLE"
-                duty.calculated_ot_hours = round(wh - 16, 2) if wh > 16 else 0.0
-            elif wh >= 8:
-                duty.duty_type = "SINGLE"
-                duty.calculated_ot_hours = round(wh - 8, 2) if wh > 8 else 0.0
-            elif wh >= 4:
-                duty.duty_type = "HALF"
-                duty.calculated_ot_hours = 0.0
+            wh = close_attendance_duty(duty, now, "EXIT", pending_approval=False)
+            required_hours = get_shift_required_hours(db, company_id, duty.shift_name)
+            suggested_credit = attendance_payable_credit(wh, required_hours)
+            duty.approved_duty_credit = suggested_credit if suggested_credit <= 1.0 else 0.0
+            if suggested_credit > 1.0:
+                duty.duty_status = "PENDING"
+                duty.duty_approved_by = None
             else:
-                duty.duty_type = "ABSENT"
-                duty.calculated_ot_hours = 0.0
-
-            duty.ot_status = "PENDING"
-            duty.approved_ot_hours = 0.0
-
-            flag_modified(duty, "movements")
+                duty.duty_status = "APPROVED"
+                duty.duty_approved_by = "SYSTEM"
             audit_details = f"Final Shift Close at {time_str} ({wh} Hrs Worked - Duty: {duty.duty_type})"
+
+            if (
+                str(emp.employee_type or "").upper() == "CONTRACT"
+                and emp.contractor_name
+                and not duty.journal_id
+                and duty.duty_status == "APPROVED"
+            ):
+                required_hours = get_shift_required_hours(db, company_id, duty.shift_name)
+                payable_days = attendance_payable_credit(wh, required_hours)
+                per_day_rate = float(emp.current_salary or 0.0) / 26.0 if emp.current_salary else 0.0
+                payable_amount = round(payable_days * per_day_rate, 2)
+                if payable_amount > 0:
+                    db.flush()
+                    voucher = post_contractor_source_charge(
+                        db=db,
+                        company_id=company_id,
+                        voucher_date=duty.duty_date,
+                        reference_no=f"ATT-{duty.id}",
+                        contractor_name=emp.contractor_name,
+                        charge_type="Processing",
+                        taxable_amount=payable_amount,
+                        gst_percent=contractor_gst_percent(db, company_id, emp.contractor_name),
+                        created_by=email,
+                        quantity=payable_days,
+                        rate=per_day_rate,
+                    )
+                    duty.journal_id = voucher.id
 
         db.add(AuditLog(
             table_name="daily_attendance", record_id=emp.id, company_id=company_id,
@@ -249,10 +411,19 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
     company_id = request.session.get("company_code")
     if not company_id: 
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     # 🟢 🔴 Support query param location if fetch drops cookie
     backend_location, user_allowed_locations = get_strict_location(request)
     actual_location = location.strip().upper() if location else backend_location
+    auto_close_stale_attendance(
+        db,
+        company_id,
+        request.session.get("email") or "SYSTEM",
+        location=actual_location,
+        allowed_locations=user_allowed_locations,
+    )
+    db.commit()
 
     query = db.query(
         DailyAttendance, 

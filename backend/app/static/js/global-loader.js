@@ -12,6 +12,83 @@
     let activeRequests = 0;
     let showTimer = null;
 
+    function injectSkeletonLoaderStyle() {
+        if (document.getElementById("bknrSkeletonLoaderStyle")) return;
+        const style = document.createElement("style");
+        style.id = "bknrSkeletonLoaderStyle";
+        style.textContent = `
+            .bknr-inline-skeleton,
+            html body i.fa-solid.fa-spinner.fa-spin,
+            html body i.fa-solid.fa-circle-notch.fa-spin,
+            html body i.fa-spinner.fa-spin,
+            html body i.fa-circle-notch.fa-spin,
+            html body .swal2-loader {
+                position: relative !important;
+                display: inline-block !important;
+                width: 38px !important;
+                height: 8px !important;
+                min-width: 38px !important;
+                min-height: 8px !important;
+                overflow: hidden !important;
+                border: 0 !important;
+                border-radius: 999px !important;
+                background: var(--loader-skeleton-base, var(--border, #e2e8f0)) !important;
+                color: transparent !important;
+                font-size: 0 !important;
+                line-height: 0 !important;
+                animation: none !important;
+                vertical-align: middle !important;
+            }
+            html body .swal2-loader {
+                width: 74px !important;
+                height: 10px !important;
+                min-width: 74px !important;
+                min-height: 10px !important;
+            }
+            .bknr-inline-skeleton::before,
+            .bknr-inline-skeleton::after,
+            html body i.fa-spinner.fa-spin::before,
+            html body i.fa-circle-notch.fa-spin::before,
+            html body i.fa-spinner.fa-spin::after,
+            html body i.fa-circle-notch.fa-spin::after,
+            html body .swal2-loader::after {
+                content: "" !important;
+                position: absolute !important;
+                inset: 0 !important;
+                transform: translateX(-100%);
+                background: linear-gradient(90deg, transparent, var(--loader-skeleton-shine, var(--header-bg, #f8fafc)), transparent);
+                animation: bknrRuntimeSkeletonShimmer 1.15s ease-in-out infinite !important;
+            }
+            @keyframes bknrRuntimeSkeletonShimmer {
+                to { transform: translateX(100%); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    function convertSpinnerIcons(root = document) {
+        if (!root.querySelectorAll) return;
+        root.querySelectorAll("i.fa-spin.fa-spinner, i.fa-spin.fa-circle-notch").forEach((icon) => {
+            icon.classList.remove("fa-spin", "fa-spinner", "fa-circle-notch", "fa-solid", "fa");
+            icon.classList.add("bknr-inline-skeleton");
+            icon.setAttribute("aria-hidden", "true");
+        });
+    }
+
+    function watchSpinnerIcons() {
+        injectSkeletonLoaderStyle();
+        convertSpinnerIcons();
+        if (!document.body || !window.MutationObserver) return;
+        const observer = new MutationObserver((mutations) => {
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    if (node.nodeType === 1) convertSpinnerIcons(node);
+                });
+            });
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+    }
+
     function syncFontAwesomeFallback() {
         if (!document.body) return;
 
@@ -59,7 +136,14 @@
             loader.classList.add("hide");
             loader.innerHTML = `
                 <div class="loader-container">
-                    <div class="loader-spinner"></div>
+                    <div class="loader-skeleton loader-skeleton-title"></div>
+                    <div class="loader-skeleton loader-skeleton-line"></div>
+                    <div class="loader-skeleton loader-skeleton-line short"></div>
+                    <div class="loader-skeleton-grid">
+                        <span class="loader-skeleton"></span>
+                        <span class="loader-skeleton"></span>
+                        <span class="loader-skeleton"></span>
+                    </div>
                 </div>
             `;
             document.body.appendChild(loader);
@@ -101,6 +185,7 @@
     }
 
     document.addEventListener("DOMContentLoaded", function () {
+        watchSpinnerIcons();
         const loader = ensureLoader();
         if (loader) {
             loader.classList.add("hide");

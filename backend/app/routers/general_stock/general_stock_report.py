@@ -234,6 +234,9 @@ async def general_stock_report(
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
+    if "fy" not in request.query_params:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     query = db.query(GeneralStock).filter(GeneralStock.is_cancelled != True)
 
@@ -242,7 +245,9 @@ async def general_stock_report(
         query = query.filter(GeneralStock.company_id == company_id)
 
     # Financial Year Filter
-    if fy:
+    if fy == "":
+        query = query.filter(GeneralStock.id == -1)
+    elif fy:
         try:
             fy_year = int(fy)
             fy_start = date(fy_year, 4, 1)

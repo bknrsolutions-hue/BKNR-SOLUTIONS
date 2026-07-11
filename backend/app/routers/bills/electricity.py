@@ -54,6 +54,9 @@ def electricity_entry_page(
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 🔹 Fetching production units for the dropdown
     units = (
@@ -78,12 +81,12 @@ def electricity_entry_page(
                 ElectricityLog.closing_kwh,
                 ElectricityLog.unit_rate,
                 ElectricityLog.total_cost,
+                ElectricityLog.is_cancelled,
                 production_at.production_at.label("location_name")
             )
             .join(production_at, ElectricityLog.unit_id == production_at.id)
             .filter(
-                production_at.company_id == company_code, ElectricityLog.is_cancelled != True,
-                ElectricityLog.is_cancelled != True,
+                production_at.company_id == company_code,
                 ElectricityLog.reading_date >= start_date,
                 ElectricityLog.reading_date <= end_date
             )

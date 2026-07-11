@@ -162,9 +162,16 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
+    .cancelled-row {
+        background: #fff1f2 !important;
+        color: #b91c1c !important;
+        text-decoration: line-through;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -209,7 +216,8 @@
 
 <tbody>
 {% for r in rows %}
-<tr>
+{% set sign = -1 if r.is_cancelled else 1 %}
+<tr class="{% if r.is_cancelled %}cancelled-row{% endif %}">
     <td>{{ loop.index }}</td>
     <td>{{ r.date.strftime('%d-%m-%Y') if r.date.strftime else r.date }}</td>
     <td>{{ r.time.strftime('%H:%M') if r.time and r.time.strftime else (r.time or '') }}</td>
@@ -222,15 +230,15 @@
     <td>{{ r.vehicle_number or 'N/A' }}</td>
     <td>{{ r.production_for or 'N/A' }}</td>
     <td>{{ r.species or 'N/A' }}</td>
-    <td class="text-right">{{ r.no_of_material_boxes or 0 }}</td>
-    <td class="text-right">{{ r.no_of_empty_boxes or 0 }}</td>
-    <td class="text-right">{{ r.no_of_ice_boxes or 0 }}</td>
+    <td class="text-right">{{ sign * (r.no_of_material_boxes|int if r.no_of_material_boxes else 0) }}</td>
+    <td class="text-right">{{ sign * (r.no_of_empty_boxes|int if r.no_of_empty_boxes else 0) }}</td>
+    <td class="text-right">{{ sign * (r.no_of_ice_boxes|int if r.no_of_ice_boxes else 0) }}</td>
     <td class="text-left" style="font-size: 7px; color: #334155;">{{ r.email.split('@')[0] if r.email else 'System' }}</td>
 </tr>
 
-{% set total_boxes.material = total_boxes.material + (r.no_of_material_boxes|int if r.no_of_material_boxes else 0) %}
-{% set total_boxes.empty = total_boxes.empty + (r.no_of_empty_boxes|int if r.no_of_empty_boxes else 0) %}
-{% set total_boxes.ice = total_boxes.ice + (r.no_of_ice_boxes|int if r.no_of_ice_boxes else 0) %}
+{% set total_boxes.material = total_boxes.material + (sign * (r.no_of_material_boxes|int if r.no_of_material_boxes else 0)) %}
+{% set total_boxes.empty = total_boxes.empty + (sign * (r.no_of_empty_boxes|int if r.no_of_empty_boxes else 0)) %}
+{% set total_boxes.ice = total_boxes.ice + (sign * (r.no_of_ice_boxes|int if r.no_of_ice_boxes else 0)) %}
 {% endfor %}
 </tbody>
 
@@ -274,6 +282,6 @@
     };
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

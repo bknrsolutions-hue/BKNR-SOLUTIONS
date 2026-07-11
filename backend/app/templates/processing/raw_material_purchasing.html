@@ -20,8 +20,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -233,8 +233,8 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
     td { padding: 5px 2px !important; font-size: 9px !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -478,9 +478,9 @@ input[readonly]{ background:var(--header-bg); color: var(--primary); font-weight
                 <td>{{ "{:,.2f}".format(r.g1_qty or 0) }}</td>
                 <td>{{ "{:,.2f}".format(r.g2_qty or 0) }}</td>
                 <td>{{ "{:,.2f}".format(r.dc_qty or 0) }}</td>
-                <td style="color:var(--accent); font-weight:800;">{{ "{:,.2f}".format(r.received_qty) }}</td>
+                <td style="color:var(--accent); font-weight:800;">{{ "{:,.2f}".format(0 if r.is_cancelled else r.received_qty) }}</td>
                 <td>{{ "{:,.2f}".format(r.rate_per_kg or 0) }}</td>
-                <td style="font-weight:700;">₹{{ "{:,.2f}".format(r.amount) }}</td>
+                <td style="font-weight:700;">₹{{ "{:,.2f}".format(0 if r.is_cancelled else r.amount) }}</td>
                 <td>{{r.remarks or ''}}</td>
                 <td style="font-size:10px; color:var(--text-muted);">{{r.email.split('@')[0] if r.email else ''}}</td>
             </tr>
@@ -785,6 +785,6 @@ window.onclick = () => {
 </script>
 {% endif %}
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

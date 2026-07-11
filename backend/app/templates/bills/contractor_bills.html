@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Contractor Bills</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/bknr-columns.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<style>
+:root{
+  --primary:#143465; --accent:#3b82f6; --border:#d6dde7; --bg:#f4f6f9;
+  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success:#166534;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.header-dash{background:var(--card-bg,#fff);padding:15px 25px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:20}
+.header-titles h2{margin:0;font-size:18px;color:var(--primary);font-weight:800}
+.header-titles span{font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.grand-total{background:var(--primary);color:#fff;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:800;min-width:170px;text-align:center}
+.total-strip{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.filter-bar{background:var(--card-bg,#fff);padding:10px 25px;border-bottom:1px solid var(--border);display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap}
+.filter-item{display:flex;flex-direction:column;gap:3px;min-width:150px;max-width:210px;flex:1}
+.filter-item label{font-size:9px;font-weight:800;color:var(--muted);text-transform:uppercase}
+.filter-item input,.filter-item select{height:34px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg,#fff);color:var(--primary);font-size:12px;font-weight:700;padding:6px 10px;outline:none}
+.filter-item input:focus,.filter-item select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.btn{height:34px;border:0;border-radius:7px;padding:0 16px;background:var(--accent);color:#fff;font-size:12px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+.btn.secondary{background:var(--muted)}
+.section-header{padding:15px 25px 8px;display:flex;justify-content:space-between;align-items:center}
+.section-header strong{font-size:12px;color:var(--primary);text-transform:uppercase}
+.tabs{display:flex;gap:8px;padding:12px 25px 0;background:var(--bg);flex-wrap:wrap}
+.tab-btn{height:32px;border:1px solid var(--border);border-radius:7px;background:var(--card-bg,#fff);color:var(--primary);font-size:11px;font-weight:900;padding:0 14px;cursor:pointer}
+.tab-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.table-wrap{margin:0 25px 25px;background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:12px;overflow:auto;box-shadow:0 4px 10px rgba(15,23,42,.05)}
+.main-table{width:100%;border-collapse:collapse;min-width:1280px;font-size:12px}
+.main-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase;padding:11px;border-bottom:2px solid var(--border);text-align:center}
+.main-table td{padding:12px 11px;border-bottom:1px solid #edf2f7;text-align:center;color:var(--primary);font-weight:700}
+.main-table td:first-child{text-align:left}
+.main-table tr.row-paid td{background:#dcfce7;color:#14532d;border-bottom-color:#bbf7d0}
+.main-table tr.row-partial td{background:#fef9c3;color:#713f12;border-bottom-color:#fde68a}
+.amount-link{display:inline-flex;justify-content:flex-end;min-width:120px;padding:6px 10px;border-radius:7px;background:#eff6ff;color:var(--accent);font-weight:800;text-decoration:none;border:1px solid #bfdbfe;cursor:pointer}
+.amount-link:hover{background:#dbeafe}
+.amount-link.empty{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;pointer-events:none}
+.bill-action{display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap}
+.badge{display:inline-flex;border-radius:999px;padding:4px 9px;font-size:10px;font-weight:900;background:#f1f5f9;color:#475569}
+.badge.posted{background:#dcfce7;color:#166534}
+.badge.partial{background:#fef3c7;color:#92400e}
+.empty-state{padding:70px 20px;text-align:center;color:var(--muted)}
+.empty-state i{font-size:34px;color:var(--accent);opacity:.65;margin-bottom:12px}
+.pay-modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:1000;align-items:center;justify-content:center;padding:18px}
+.pay-card{width:min(560px,96vw);background:var(--card-bg,#fff);border:1px solid var(--border);border-radius:12px;box-shadow:0 18px 45px rgba(15,23,42,.22);overflow:hidden}
+.history-card{width:min(760px,96vw)}
+.pay-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.pay-head h3{margin:0;font-size:15px;color:var(--primary);font-weight:900}
+.pay-body{padding:16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pay-body .wide{grid-column:1/-1}
+.pay-field{display:flex;flex-direction:column;gap:4px}
+.pay-field label{font-size:9px;font-weight:900;color:var(--muted);text-transform:uppercase}
+.pay-field input,.pay-field select{height:34px;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;font-weight:800;color:var(--primary);background:var(--card-bg,#fff)}
+.pay-foot{padding:12px 16px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+.history-list{padding:14px;max-height:55vh;overflow:auto}
+.history-table{width:100%;border-collapse:collapse;font-size:12px}
+.history-table th{background:#f8fafc;color:var(--muted);font-size:10px;text-transform:uppercase;padding:9px;border-bottom:1px solid var(--border)}
+.history-table td{padding:9px;border-bottom:1px solid #edf2f7;color:var(--primary);font-weight:700;text-align:center}
+@media(max-width:700px){
+  .header-dash{padding:12px;align-items:flex-start;gap:10px;flex-direction:column}
+  .grand-total{width:100%}
+  .filter-bar{padding:10px}
+  .filter-item{min-width:130px}
+  .section-header{padding:12px 10px 8px}
+  .table-wrap{margin:0 10px 20px}
+}
+</style>
+</head>
+<body>
+<div class="header-dash">
+  <div class="header-titles">
+    <span>Operational Bills</span>
+    <h2>Contractor Bills</h2>
+  </div>
+  <div class="total-strip">
+    <div class="grand-total" id="grandTotal">TOTAL: ₹ 0.00</div>
+    <div class="grand-total" id="paidTotal">PAID: ₹ 0.00</div>
+    <div class="grand-total" id="monthOutstanding">MONTH DUE: ₹ 0.00</div>
+    <div class="grand-total" id="previousOutstanding">PREV DUE: ₹ 0.00</div>
+    <div class="grand-total" id="totalOutstanding">TOTAL DUE: ₹ 0.00</div>
+  </div>
+</div>
+
+<div class="filter-bar">
+  <div class="filter-item">
+    <label>Financial Year</label>
+    <select id="fy">
+      {% for y in range(2024, 2029) %}
+      <option value="{{ y }}" {% if selected_fy == y %}selected{% endif %}>FY {{ y }}-{{ y + 1 }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="filter-item">
+    <label>Month</label>
+    <input type="month" id="month" value="{{ selected_month }}">
+  </div>
+  <button class="btn" onclick="loadBills()"><i class="fa-solid fa-filter"></i> Filter</button>
+  <button class="btn secondary" onclick="resetFilters()"><i class="fa-solid fa-rotate-left"></i> Reset</button>
+</div>
+
+<div class="section-header">
+  <strong id="rowCount">0 Contractors Found</strong>
+  <strong id="monthLabel"></strong>
+</div>
+
+<div class="tabs">
+  <button class="tab-btn active" id="tabOutstanding" onclick="switchContractorTab('outstanding')">Outstanding</button>
+  <button class="tab-btn" id="tabAll" onclick="switchContractorTab('all')">All Records</button>
+</div>
+
+<div class="table-wrap">
+  <table class="main-table">
+    <thead>
+      <tr>
+        <th>Contractor Name</th>
+        <th>Deheading Bill</th>
+        <th>Peeling Bill</th>
+        <th>Processing Bill</th>
+        <th>Grand Total</th>
+        <th>Paid Amount</th>
+        <th>Current Month Outstanding</th>
+        <th>Previous Month Outstanding</th>
+        <th>Total Outstanding</th>
+        <th>Accounts</th>
+      </tr>
+    </thead>
+    <tbody id="billRows">
+      <tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-file-invoice-dollar"></i><br>Select month to load contractor bills.</div></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="pay-modal" id="payModal">
+  <div class="pay-card">
+    <div class="pay-head">
+      <div>
+        <h3 id="payTitle">Contractor Payment</h3>
+        <div id="paySub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div>
+      </div>
+      <button class="btn secondary" onclick="closePayModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="pay-body">
+      <div class="pay-field">
+        <label>Bill Total</label>
+        <input id="payTotal" readonly>
+      </div>
+      <div class="pay-field">
+        <label>Balance</label>
+        <input id="payBalance" readonly>
+      </div>
+      <div class="pay-field">
+        <label>Paid Amount</label>
+        <input type="number" step="0.01" min="0" id="payAmount">
+      </div>
+	      <div class="pay-field">
+	        <label>Payment Mode</label>
+	        <select id="payMode">
+	          <option value="BANK">BANK</option>
+	          <option value="CASH">CASH</option>
+	          <option value="CHEQUE">CHEQUE</option>
+	        </select>
+	      </div>
+	      <div class="pay-field wide">
+	        <label>Bank / Cash Account</label>
+	        <select id="payBankLedger">
+	          <option value="">-- SELECT ACCOUNT --</option>
+	          {% for ledger in bank_cash_ledgers %}
+	          <option value="{{ ledger.id }}">{{ ledger.ledger_name }}</option>
+	          {% endfor %}
+	        </select>
+	      </div>
+	      <div class="pay-field">
+	        <label>Payment Date</label>
+	        <input type="date" id="payDate">
+      </div>
+      <div class="pay-field">
+        <label>UTR / Cheque Ref</label>
+        <input type="text" id="payUtr" placeholder="UTR / cheque no">
+      </div>
+      <div class="pay-field wide">
+        <label>Accounts Status</label>
+        <input id="payAccounts" readonly>
+      </div>
+    </div>
+    <div class="pay-foot">
+      <button class="btn secondary" onclick="openContractorPrint()"><i class="fa-solid fa-print"></i> Print</button>
+      <button class="btn" id="savePaymentBtn" onclick="submitContractorPayment()"><i class="fa-solid fa-money-check-dollar"></i> Save Payment</button>
+    </div>
+  </div>
+</div>
+
+<div class="pay-modal" id="historyModal">
+  <div class="pay-card history-card">
+    <div class="pay-head">
+      <div>
+        <h3 id="historyTitle">Payment History</h3>
+        <div id="historySub" style="font-size:11px;color:var(--muted);font-weight:800;margin-top:3px"></div>
+      </div>
+      <button class="btn secondary" onclick="closeHistoryModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="history-list" id="historyContent"></div>
+  </div>
+</div>
+
+<script>
+const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+let contractorRowsMap = {};
+let selectedContractor = null;
+let contractorRows = [];
+let activeTab = 'outstanding';
+
+function todayISO(){
+  return new Date().toISOString().slice(0, 10);
+}
+
+function amountCell(amount, type, contractor, month){
+  const value = Number(amount || 0);
+  const cls = value === 0 ? 'amount-link empty' : 'amount-link';
+  const href = `/api/contractor_bills/bill/${type}?month=${encodeURIComponent(month)}&contractor=${encodeURIComponent(contractor)}`;
+  return `<div class="bill-action"><a class="${cls}" href="${href}" target="_blank">₹ ${fmt.format(value)}</a></div>`;
+}
+
+async function loadBills(){
+  const month = document.getElementById('month').value;
+  const tbody = document.getElementById('billRows');
+  if(!month){
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-calendar-days"></i><br>Please select a month.</div></td></tr>`;
+    return;
+  }
+  document.getElementById('monthLabel').textContent = month;
+  tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><br>Loading contractor bills...</div></td></tr>`;
+
+  let data;
+  try {
+    const res = await fetch(`/api/contractor_bills/data?month=${encodeURIComponent(month)}`);
+    data = await res.json();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>Unable to load contractor bills. Please try again.</div></td></tr>`;
+    if (window.forceHideLoader) window.forceHideLoader();
+    return;
+  }
+  if(!data.success){
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-triangle-exclamation"></i><br>${data.message || 'Unable to load contractor bills.'}</div></td></tr>`;
+    return;
+  }
+
+  contractorRows = data.rows || [];
+  renderContractorRows();
+}
+
+function switchContractorTab(tab){
+  activeTab = tab;
+  document.getElementById('tabOutstanding').classList.toggle('active', tab === 'outstanding');
+  document.getElementById('tabAll').classList.toggle('active', tab === 'all');
+  renderContractorRows();
+}
+
+function renderContractorRows(){
+  const tbody = document.getElementById('billRows');
+  const month = document.getElementById('month').value;
+  const rows = activeTab === 'outstanding'
+    ? contractorRows.filter(row => Number(row.total_outstanding || 0) > 0.01)
+    : contractorRows;
+  contractorRowsMap = {};
+  rows.forEach(row => { contractorRowsMap[row.contractor_name] = row; });
+  document.getElementById('rowCount').textContent = `${rows.length} Contractors Found`;
+  const grand = rows.reduce((sum, row) => sum + Number(row.grand_total || 0), 0);
+  const paid = rows.reduce((sum, row) => sum + Number(row.paid_amount || 0), 0);
+  const monthDue = rows.reduce((sum, row) => sum + Number(row.current_outstanding || 0), 0);
+  const previousDue = rows.reduce((sum, row) => sum + Number(row.previous_outstanding || 0), 0);
+  const totalDue = rows.reduce((sum, row) => sum + Number(row.total_outstanding || 0), 0);
+  document.getElementById('grandTotal').textContent = `TOTAL: ₹ ${fmt.format(grand)}`;
+  document.getElementById('paidTotal').textContent = `PAID: ₹ ${fmt.format(paid)}`;
+  document.getElementById('monthOutstanding').textContent = `MONTH DUE: ₹ ${fmt.format(monthDue)}`;
+  document.getElementById('previousOutstanding').textContent = `PREV DUE: ₹ ${fmt.format(previousDue)}`;
+  document.getElementById('totalOutstanding').textContent = `TOTAL DUE: ₹ ${fmt.format(totalDue)}`;
+
+  if(!rows.length){
+    tbody.innerHTML = `<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><br>No contractor data found for this view.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map(row => `
+    <tr class="${row.payment_status === 'PAID' ? 'row-paid' : (row.payment_status === 'PARTIAL' ? 'row-partial' : '')}">
+      <td>${row.contractor_name || '-'}</td>
+      <td>${amountCell(row.deheading, 'deheading', row.contractor_name, month)}</td>
+      <td>${amountCell(row.peeling, 'peeling', row.contractor_name, month)}</td>
+      <td>${amountCell(row.processing, 'processing', row.contractor_name, month)}</td>
+      <td><button class="amount-link" onclick="openPayModal('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">₹ ${fmt.format(row.grand_total || 0)}</button></td>
+      <td><button class="amount-link ${Number(row.paid_amount || 0) <= 0 ? 'empty' : ''}" onclick="openPaymentHistory('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">₹ ${fmt.format(row.paid_amount || 0)}</button></td>
+      <td>₹ ${fmt.format(row.current_outstanding || 0)}</td>
+      <td>₹ ${fmt.format(row.previous_outstanding || 0)}</td>
+      <td>₹ ${fmt.format(row.total_outstanding || 0)}</td>
+      <td>
+        <div class="bill-action">
+          <button class="amount-link ${Number(row.current_outstanding || 0) <= 0 ? 'empty' : ''}" onclick="openPayModal('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">Pay</button>
+          <span class="badge ${row.payment_status === 'PAID' ? 'posted' : ''} ${row.payment_status === 'PARTIAL' ? 'partial' : ''}">${row.payment_voucher_no || row.payment_status || 'UNPAID'}</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function openPayModal(contractor){
+  selectedContractor = contractorRowsMap[contractor];
+  if(!selectedContractor) return;
+  document.getElementById('payTitle').textContent = selectedContractor.contractor_name || 'Contractor Payment';
+  document.getElementById('paySub').textContent = `${document.getElementById('month').value}`;
+  document.getElementById('payTotal').value = `₹ ${fmt.format(selectedContractor.grand_total || 0)}`;
+  document.getElementById('payBalance').value = `₹ ${fmt.format(selectedContractor.current_outstanding || 0)}`;
+	  document.getElementById('payAmount').value = Number(selectedContractor.current_outstanding || 0).toFixed(2);
+	  document.getElementById('payMode').value = selectedContractor.payment_mode || 'BANK';
+	  const bankSelect = document.getElementById('payBankLedger');
+	  if(bankSelect && !bankSelect.value && bankSelect.options.length === 2) bankSelect.selectedIndex = 1;
+	  document.getElementById('payDate').value = selectedContractor.payment_date || todayISO();
+  document.getElementById('payUtr').value = selectedContractor.utr_reference || '';
+  document.getElementById('payAccounts').value = selectedContractor.payment_voucher_no
+    ? `Payment Posted: ${selectedContractor.payment_voucher_no}`
+    : (selectedContractor.payment_status || 'UNPAID');
+  document.getElementById('payModal').style.display = 'flex';
+}
+
+function closePayModal(){
+  document.getElementById('payModal').style.display = 'none';
+  selectedContractor = null;
+}
+
+function openPaymentHistory(contractor){
+  const row = contractorRowsMap[contractor] || contractorRows.find(item => item.contractor_name === contractor);
+  if(!row) return;
+  const history = row.payment_history || [];
+  document.getElementById('historyTitle').textContent = row.contractor_name || 'Payment History';
+  document.getElementById('historySub').textContent = `${document.getElementById('month').value} | Paid: ₹ ${fmt.format(row.paid_amount || 0)}`;
+  if(!history.length){
+    document.getElementById('historyContent').innerHTML = `<div class="empty-state"><i class="fa-solid fa-receipt"></i><br>No payment transactions found for this month.</div>`;
+  } else {
+    document.getElementById('historyContent').innerHTML = `
+      <table class="history-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Amount</th>
+	            <th>Mode</th>
+	            <th>Account</th>
+	            <th>UTR / Ref</th>
+	            <th>Voucher</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${history.map(item => `
+            <tr>
+              <td>${item.date || '-'}</td>
+              <td>₹ ${fmt.format(item.amount || 0)}</td>
+	              <td>${item.mode || '-'}</td>
+	              <td>${item.account || '-'}</td>
+	              <td>${item.utr || '-'}</td>
+              <td>${item.voucher_no || '-'}</td>
+              <td><span class="badge ${item.status === 'PAID' ? 'posted' : 'partial'}">${item.status || '-'}</span></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>`;
+  }
+  document.getElementById('historyModal').style.display = 'flex';
+}
+
+function closeHistoryModal(){
+  document.getElementById('historyModal').style.display = 'none';
+}
+
+function openContractorPrint(){
+  if(!selectedContractor) return;
+  const month = document.getElementById('month').value;
+  window.open(`/api/contractor_bills/bill/processing?month=${encodeURIComponent(month)}&contractor=${encodeURIComponent(selectedContractor.contractor_name)}`, '_blank');
+}
+
+async function submitContractorPayment(){
+  if(!selectedContractor) return;
+  const saveBtn = document.getElementById('savePaymentBtn');
+  const amount = Number(document.getElementById('payAmount').value || 0);
+	  if(amount <= 0){
+	    Swal.fire('Amount Required', 'Paid amount enter cheyyali.', 'warning');
+	    return;
+	  }
+	  const bankLedgerId = Number(document.getElementById('payBankLedger').value || 0);
+	  if(!bankLedgerId){
+	    Swal.fire('Account Required', 'Bank/Cash account select cheyyali.', 'warning');
+	    return;
+	  }
+	  const month = document.getElementById('month').value;
+	  const payload = {
+	    amount,
+	    bill_total: Number(selectedContractor.grand_total || 0),
+	    payment_mode: document.getElementById('payMode').value,
+	    bank_cash_ledger_id: bankLedgerId,
+	    payment_date: document.getElementById('payDate').value || null,
+    utr_reference: document.getElementById('payUtr').value || null
+  };
+  if(saveBtn) {
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+  }
+  try {
+    const res = await fetch(`/api/contractor_bills/payment?month=${encodeURIComponent(month)}&contractor=${encodeURIComponent(selectedContractor.contractor_name)}`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const out = await res.json();
+    if(out.success){
+      Swal.fire('Payment Posted', out.message, 'success').then(() => {
+        closePayModal();
+        loadBills();
+      });
+    } else {
+      Swal.fire('Payment Failed', out.message || 'Unable to post payment', 'error');
+    }
+  } catch (err) {
+    Swal.fire('Payment Failed', 'Server connection failed. Please try again.', 'error');
+  } finally {
+    if(saveBtn) {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = '<i class="fa-solid fa-money-check-dollar"></i> Save Payment';
+    }
+    if (window.forceHideLoader) window.forceHideLoader();
+  }
+}
+
+function resetFilters(){
+  const now = new Date();
+  document.getElementById('month').value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  loadBills();
+}
+
+document.getElementById('fy').addEventListener('change', () => {
+  const fy = Number(document.getElementById('fy').value);
+  document.getElementById('month').min = `${fy}-04`;
+  document.getElementById('month').max = `${fy + 1}-03`;
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fy').dispatchEvent(new Event('change'));
+  loadBills();
+});
+</script>
+</body>
+</html>

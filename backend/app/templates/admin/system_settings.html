@@ -89,6 +89,39 @@ body { background: var(--bg-color); color: var(--primary-text); padding-bottom: 
 }
 .form-control:focus { border-color: var(--accent); }
 select.form-control { cursor: pointer; }
+.checkbox-dropdown { position: relative; }
+.checkbox-dropdown-btn {
+    width: 100%; min-height: 42px; background: var(--bg-color);
+    border: 1px solid var(--border-color); border-radius: 8px;
+    color: var(--primary-text); padding: 10px 12px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 700; text-align: left;
+}
+.checkbox-dropdown-menu {
+    display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    max-height: 320px; overflow-y: auto; background: var(--panel-bg);
+    border: 1px solid var(--border-color); border-radius: 10px;
+    box-shadow: 0 16px 30px rgba(15,23,42,0.18); z-index: 50; padding: 8px;
+}
+.checkbox-dropdown.open .checkbox-dropdown-menu { display: block; }
+.check-tools { display: flex; gap: 8px; padding: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px; }
+.check-tools button {
+    border: 1px solid var(--border-color); background: var(--bg-color);
+    color: var(--primary-text); padding: 6px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+}
+.check-group-title {
+    padding: 10px 8px 5px; color: var(--accent); font-size: 10px;
+    font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px;
+}
+.check-option {
+    display: flex; align-items: center; gap: 8px; padding: 8px;
+    border-radius: 7px; cursor: pointer; color: var(--primary-text);
+    font-size: 12px; font-weight: 700;
+}
+.check-option:hover { background: var(--bg-color); }
+.check-option input { width: 15px; height: 15px; accent-color: var(--accent); }
+.muted-help { color: var(--secondary-text); font-size: 11px; line-height: 1.5; }
 
 .btn {
     background: var(--accent); color: white; border: none;
@@ -145,7 +178,7 @@ tr:hover td { background: var(--bg-color); }
 input:checked + .slider { background-color: var(--success); }
 input:checked + .slider:before { transform: translateX(22px); }
 </style>
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 
 <body data-theme="dark">
@@ -219,6 +252,66 @@ input:checked + .slider:before { transform: translateX(22px); }
             </div>
         </div>
         
+    </div>
+
+    <!-- ================= SCREEN POPUP BROADCAST ================= -->
+    <div class="panel-card">
+        <div class="section-header">
+            <span><i class="fa-solid fa-window-restore" style="color: var(--accent); margin-right: 6px;"></i> Screen Popup Broadcast</span>
+            <span class="status-badge {% if screen_popup_settings.enabled %}badge-soft{% else %}badge-off{% endif %}">
+                {% if screen_popup_settings.enabled %}ACTIVE{% else %}OFF{% endif %}
+            </span>
+        </div>
+
+        <form id="screenPopupForm" onsubmit="saveScreenPopup(event)">
+            <div class="section-grid" style="grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.3fr);">
+                <div>
+                    <div class="form-group">
+                        <label>Select Forms / Screens</label>
+                        <div class="checkbox-dropdown" id="screenPopupDropdown">
+                            <button type="button" class="checkbox-dropdown-btn" onclick="toggleScreenPopupDropdown()">
+                                <span id="screenPopupSelectedText">Select screens</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="checkbox-dropdown-menu">
+                                <div class="check-tools">
+                                    <button type="button" onclick="setAllScreenPopupChecks(true)">Select All</button>
+                                    <button type="button" onclick="setAllScreenPopupChecks(false)">Clear</button>
+                                </div>
+                                {% set last_group = namespace(value='') %}
+                                {% for form in screen_popup_forms %}
+                                    {% if last_group.value != form.group %}
+                                        <div class="check-group-title">{{ form.group }}</div>
+                                        {% set last_group.value = form.group %}
+                                    {% endif %}
+                                    <label class="check-option">
+                                        <input type="checkbox" class="screen-popup-route" value="{{ form.route }}" {% if form.route in screen_popup_settings.routes %}checked{% endif %} onchange="updateScreenPopupSelectedText()">
+                                        <span>{{ form.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="muted-help">Selected screens maintenance/hold lo block avuthayi. User click chesthe popup message matrame kanipisthundi.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label>Popup Message</label>
+                        <textarea id="screenPopupMessage" class="form-control" rows="4" placeholder="Example: This screen is under review today. Please save entries carefully.">{{ screen_popup_settings.message }}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> Save Popup</button>
+                        <button type="button" class="btn btn-danger" onclick="clearScreenPopup()"><i class="fa-solid fa-ban"></i> Clear Popup</button>
+                    </div>
+                    {% if screen_popup_settings.updated_at %}
+                    <div class="muted-help" style="margin-top: 10px;">
+                        Last updated by {{ screen_popup_settings.updated_by or '--' }} at {{ screen_popup_settings.updated_at }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- ================= FEATURE FLAGS MANAGEMENT ================= -->
@@ -327,6 +420,107 @@ window.onload = function() {
         const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
         if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
     } catch(e) {}
+    updateScreenPopupSelectedText();
+}
+
+function getSelectedScreenPopupRoutes() {
+    return Array.from(document.querySelectorAll(".screen-popup-route:checked")).map(input => input.value);
+}
+
+function updateScreenPopupSelectedText() {
+    const selected = getSelectedScreenPopupRoutes();
+    const label = document.getElementById("screenPopupSelectedText");
+    if (!label) return;
+    if (!selected.length) {
+        label.textContent = "Select screens";
+    } else if (selected.length === 1) {
+        const checked = document.querySelector(".screen-popup-route:checked");
+        label.textContent = checked ? checked.closest("label").innerText.trim() : "1 screen selected";
+    } else {
+        label.textContent = `${selected.length} screens selected`;
+    }
+}
+
+function toggleScreenPopupDropdown() {
+    document.getElementById("screenPopupDropdown").classList.toggle("open");
+}
+
+function setAllScreenPopupChecks(checked) {
+    document.querySelectorAll(".screen-popup-route").forEach(input => {
+        input.checked = checked;
+    });
+    updateScreenPopupSelectedText();
+}
+
+document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("screenPopupDropdown");
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdown.classList.remove("open");
+    }
+});
+
+async function saveScreenPopup(e) {
+    e.preventDefault();
+    const routes = getSelectedScreenPopupRoutes();
+    const message = document.getElementById("screenPopupMessage").value.trim();
+    if (!routes.length || !message) {
+        Swal.fire("Required", "Please select at least one screen and enter a popup message.", "warning");
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: "Save Screen Popup?",
+        text: `This popup will show on ${routes.length} selected screen(s).`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "var(--accent)",
+        confirmButtonText: "Save"
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const res = await fetch("/admin/screen-popup-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: true, routes, message })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            Swal.fire("Saved", "Screen popup broadcast is active.", "success").then(() => location.reload());
+        } else {
+            Swal.fire("Error", data.detail || "Failed to save popup settings", "error");
+        }
+    } catch(e) {
+        Swal.fire("Error", "Connection failed", "error");
+    }
+}
+
+async function clearScreenPopup() {
+    const confirm = await Swal.fire({
+        title: "Clear Screen Popup?",
+        text: "Users will stop seeing this popup on all screens.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "var(--danger)",
+        confirmButtonText: "Clear"
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const res = await fetch("/admin/screen-popup-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: false, routes: [], message: "" })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            Swal.fire("Cleared", "Screen popup broadcast is now off.", "success").then(() => location.reload());
+        } else {
+            Swal.fire("Error", data.detail || "Failed to clear popup settings", "error");
+        }
+    } catch(e) {
+        Swal.fire("Error", "Connection failed", "error");
+    }
 }
 
 async function updateMaintenanceMode(e) {

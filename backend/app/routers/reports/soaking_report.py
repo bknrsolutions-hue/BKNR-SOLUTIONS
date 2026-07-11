@@ -41,6 +41,9 @@ async def soaking_main_report(
     role = request.session.get("role")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=302)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     rows = []
     if fy:
@@ -51,8 +54,7 @@ async def soaking_main_report(
         query = db.query(Soaking).filter(
             Soaking.company_id == company_id,
             Soaking.date >= f"{start_year}-04-01",
-            Soaking.date <= f"{end_year}-03-31",
-            Soaking.is_cancelled != True
+            Soaking.date <= f"{end_year}-03-31"
         )
 
         if production_for:
@@ -197,8 +199,7 @@ def soaking_export_excel(request: Request, ids: str = Query(None), db: Session =
     production_for, location = get_global_filters(request)
     
     query = db.query(Soaking).filter(
-        Soaking.company_id == company_id,
-        Soaking.is_cancelled != True
+        Soaking.company_id == company_id
     )
     
     if production_for:

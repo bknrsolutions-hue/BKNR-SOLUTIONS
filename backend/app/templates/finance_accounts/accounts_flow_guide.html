@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SVBK ERP Accounting Workflow</title>
+  <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --guide-blue: #0f67b1;
+      --guide-cyan: #22a8d8;
+      --guide-green: #168a5b;
+      --guide-amber: #b46b00;
+      --guide-line: #d9e5f0;
+      --guide-soft: #f6fbff;
+      --guide-ink: #102033;
+      --guide-muted: #617083;
+    }
+
+    body {
+      margin: 0;
+      background: #f7fbff;
+      color: var(--guide-ink);
+      font-family: Inter, Arial, sans-serif;
+      font-size: 13px;
+    }
+
+    .guide-shell {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px;
+      background: #ffffff;
+      border: 1px solid var(--guide-line);
+      border-radius: 8px;
+      box-shadow: 0 10px 24px rgba(15, 103, 177, 0.08);
+    }
+
+    .guide-title h1 {
+      margin: 0;
+      font-size: 22px;
+      line-height: 1.2;
+      color: var(--guide-blue);
+      letter-spacing: 0;
+    }
+
+    .guide-title p {
+      margin: 6px 0 0;
+      color: var(--guide-muted);
+      line-height: 1.45;
+    }
+
+    .guide-badge {
+      flex: 0 0 auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      background: #eaf7ff;
+      color: var(--guide-blue);
+      font-weight: 800;
+      border: 1px solid #c9e9fb;
+      white-space: nowrap;
+    }
+
+    .flow-map {
+      margin-top: 14px;
+      padding: 16px;
+      background: #ffffff;
+      border: 1px solid var(--guide-line);
+      border-radius: 8px;
+      box-shadow: 0 8px 20px rgba(15, 103, 177, 0.06);
+    }
+
+    .flow-map h2,
+    .section h2 {
+      margin: 0 0 12px;
+      font-size: 17px;
+      color: var(--guide-blue);
+      letter-spacing: 0;
+    }
+
+    .diagram {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .node {
+      position: relative;
+      min-height: 94px;
+      padding: 12px;
+      border: 1px solid #cfe2f1;
+      border-radius: 8px;
+      background: var(--guide-soft);
+    }
+
+    .node:not(:last-child)::after {
+      content: "\f061";
+      font-family: "Font Awesome 6 Free";
+      font-weight: 900;
+      position: absolute;
+      right: -17px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--guide-blue);
+      background: #ffffff;
+      border: 1px solid var(--guide-line);
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      font-size: 11px;
+    }
+
+    .node i {
+      color: var(--guide-blue);
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    .node strong {
+      display: block;
+      color: var(--guide-ink);
+      font-size: 13px;
+      margin-bottom: 5px;
+    }
+
+    .node span {
+      display: block;
+      color: var(--guide-muted);
+      line-height: 1.4;
+      font-size: 12px;
+    }
+
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .section {
+      background: #ffffff;
+      border: 1px solid var(--guide-line);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: 0 8px 20px rgba(15, 103, 177, 0.05);
+    }
+
+    .section h2 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .flow-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .flow-item {
+      border: 1px solid #ddebf5;
+      border-radius: 8px;
+      padding: 11px;
+      background: #fbfdff;
+    }
+
+    .flow-item h3 {
+      margin: 0 0 8px;
+      color: var(--guide-ink);
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    .flow-item p {
+      margin: 4px 0;
+      color: var(--guide-muted);
+      line-height: 1.45;
+    }
+
+    .label {
+      color: var(--guide-blue);
+      font-weight: 800;
+    }
+
+    .posting {
+      margin-top: 8px;
+      padding: 8px;
+      border-radius: 8px;
+      background: #edf8f4;
+      border: 1px solid #c7eadc;
+      color: #0e5d3d;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .warning {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #fff8e8;
+      border: 1px solid #f0d8a0;
+      border-radius: 8px;
+      color: #7a4b00;
+      line-height: 1.55;
+    }
+
+    .report-list,
+    .prevention-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .report-pill,
+    .prevention-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1px solid #d8e8f3;
+      background: #fbfdff;
+      color: var(--guide-ink);
+      font-weight: 700;
+      line-height: 1.35;
+    }
+
+    .report-pill i {
+      color: var(--guide-blue);
+    }
+
+    .prevention-pill i {
+      color: var(--guide-green);
+    }
+
+    .vertical-flow {
+      display: grid;
+      justify-items: center;
+      gap: 6px;
+      margin-top: 12px;
+    }
+
+    .vertical-step {
+      width: min(420px, 100%);
+      padding: 10px 12px;
+      border: 1px solid #cfe2f1;
+      border-radius: 8px;
+      background: #fbfdff;
+      color: var(--guide-ink);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .vertical-arrow {
+      color: var(--guide-blue);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .quick-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 14px;
+      background: #ffffff;
+      border: 1px solid var(--guide-line);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 8px 20px rgba(15, 103, 177, 0.05);
+    }
+
+    .quick-table th,
+    .quick-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--guide-line);
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.45;
+    }
+
+    .quick-table th {
+      background: #eaf7ff;
+      color: var(--guide-blue);
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+
+    .quick-table tr:last-child td {
+      border-bottom: 0;
+    }
+
+    @media (max-width: 1040px) {
+      .diagram,
+      .guide-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .node:not(:last-child)::after {
+        content: "\f063";
+        right: 50%;
+        top: auto;
+        bottom: -17px;
+        transform: translateX(50%);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .guide-shell {
+        padding: 10px;
+      }
+
+      .guide-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .guide-title h1 {
+        font-size: 19px;
+      }
+
+      .quick-table {
+        display: block;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="guide-shell">
+    <header class="guide-header">
+      <div class="guide-title">
+        <h1>SVBK ERP Accounting Workflow</h1>
+        <p>This guide explains the complete accounting workflow from source document entry to automatic ledger posting, outstanding management, and financial reporting. Enter each source document only once. The ERP automatically creates the required accounting entries, eliminating duplicate voucher entry.</p>
+      </div>
+      <div class="guide-badge"><i class="fa-solid fa-diagram-project"></i> Tally-style ERP Flow</div>
+    </header>
+
+    <section class="flow-map">
+      <h2>End-to-End Diagram</h2>
+      <div class="diagram">
+        <div class="node">
+          <i class="fa-solid fa-file-circle-plus"></i>
+          <strong>1. Source Entry</strong>
+          <span>Enter the actual bill or invoice data in purchase, diesel, QA, freight, expense, and export invoice forms.</span>
+        </div>
+        <div class="node">
+          <i class="fa-solid fa-gears"></i>
+          <strong>2. Auto Posting</strong>
+          <span>The ERP automatically generates the required accounting voucher. Manual duplicate voucher entry is not required.</span>
+        </div>
+        <div class="node">
+          <i class="fa-solid fa-book"></i>
+          <strong>3. Ledgers</strong>
+          <span>Accounts Payable, Accounts Receivable, Purchase, Sales, Expense, Inventory, GST, Cash & Bank, and General Ledger are updated.</span>
+        </div>
+        <div class="node">
+          <i class="fa-solid fa-money-check-dollar"></i>
+          <strong>4. Payment / Receipt</strong>
+          <span>Enter payments and receipts in Cash & Banking to clear outstanding balances.</span>
+        </div>
+        <div class="node">
+          <i class="fa-solid fa-chart-line"></i>
+          <strong>5. Reports</strong>
+          <span>Transactions appear in dashboards, ledgers, outstanding reports, GST reports, P&L, balance sheet, cash book, and bank book.</span>
+        </div>
+      </div>
+      <div class="warning">
+        <strong>Important:</strong> Customer Receivable, Vendor Payment, and Expense Voucher manual entry pages are intentionally hidden from normal users. Source documents automatically generate accounting vouchers, preventing duplicate postings and maintaining accounting accuracy.
+      </div>
+    </section>
+
+    <section class="flow-map">
+      <h2>Reports Updated Automatically</h2>
+      <div class="report-list">
+        <div class="report-pill"><i class="fa-solid fa-wallet"></i> Finance Dashboard</div>
+        <div class="report-pill"><i class="fa-solid fa-scale-balanced"></i> Trial Balance</div>
+        <div class="report-pill"><i class="fa-solid fa-book"></i> General Ledger</div>
+        <div class="report-pill"><i class="fa-solid fa-file-invoice-dollar"></i> Accounts Payable</div>
+        <div class="report-pill"><i class="fa-solid fa-hand-holding-dollar"></i> Accounts Receivable</div>
+        <div class="report-pill"><i class="fa-solid fa-percent"></i> GST Reports</div>
+        <div class="report-pill"><i class="fa-solid fa-chart-line"></i> Profit & Loss</div>
+        <div class="report-pill"><i class="fa-solid fa-building-columns"></i> Balance Sheet</div>
+        <div class="report-pill"><i class="fa-solid fa-money-bill-wave"></i> Cash Book</div>
+        <div class="report-pill"><i class="fa-solid fa-landmark"></i> Bank Book</div>
+        <div class="report-pill"><i class="fa-solid fa-chart-pie"></i> Financial Analytics Dashboard</div>
+      </div>
+    </section>
+
+    <section class="flow-map">
+      <h2>Duplicate Entry Prevention</h2>
+      <div class="warning">
+        Every source document can be posted only once. If an invoice has already been posted, the ERP prevents duplicate accounting impact.
+      </div>
+      <div class="prevention-list">
+        <div class="prevention-pill"><i class="fa-solid fa-check"></i> Purchase voucher is not created again.</div>
+        <div class="prevention-pill"><i class="fa-solid fa-check"></i> GST is not duplicated.</div>
+        <div class="prevention-pill"><i class="fa-solid fa-check"></i> Outstanding is not duplicated.</div>
+        <div class="prevention-pill"><i class="fa-solid fa-check"></i> Ledger balances remain accurate.</div>
+      </div>
+    </section>
+
+    <section class="flow-map">
+      <h2>Purchase Invoice Workflow</h2>
+      <div class="vertical-flow">
+        <div class="vertical-step">Purchase Invoice</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">Automatic Voucher Posting</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">Vendor Outstanding</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">Ledger Update</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">GST Update</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">Profit & Loss</div>
+        <div class="vertical-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+        <div class="vertical-step">Balance Sheet</div>
+      </div>
+    </section>
+
+    <table class="quick-table">
+      <thead>
+        <tr>
+          <th>Form</th>
+          <th>Enter These Details</th>
+          <th>Auto Accounting</th>
+          <th>Reflects In</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Purchase & Packaging</td>
+          <td>Vendor, invoice no, date, taxable value, GST, total, item purpose.</td>
+          <td>Dr Purchase Account, Dr Input GST, Cr Vendor Payable.</td>
+          <td>Accounts Payable, Purchase Ledger, GST Reports, P&L.</td>
+        </tr>
+        <tr>
+          <td>Diesel</td>
+          <td>Purchase invoice details and consumption readings.</td>
+          <td>Purchase: Dr Diesel Inventory, Cr Vendor Payable. Consumption: Dr Fuel Expense, Cr Diesel Inventory.</td>
+          <td>Inventory Ledger, Fuel Expense, Accounts Payable.</td>
+        </tr>
+        <tr>
+          <td>Logistics / QA / Other Expenses</td>
+          <td>Vendor, bill no, service date, base value, tax, total, remarks.</td>
+          <td>Dr Expense Ledger, Dr Input GST, Cr Vendor Payable.</td>
+          <td>Expense Ledger, Accounts Payable, GST Reports.</td>
+        </tr>
+        <tr>
+          <td>Commercial Invoice</td>
+          <td>Buyer, invoice no, shipment, currency, exchange rate, invoice value.</td>
+          <td>Dr Accounts Receivable (Customer), Cr Export Sales.</td>
+          <td>Accounts Receivable, Sales Ledger, Export Dashboard.</td>
+        </tr>
+        <tr>
+          <td>Payment / Receipt</td>
+          <td>Party ledger, bank/cash ledger, amount, reference no, date.</td>
+          <td>Vendor Payment: Dr Vendor Payable, Cr Bank/Cash. Customer Receipt: Dr Bank/Cash, Cr Customer Receivable.</td>
+          <td>Outstanding, Cash Book, Bank Book, General Ledger.</td>
+        </tr>
+        <tr>
+          <td>Journal Entry</td>
+          <td>Use only for adjustments, depreciation, provisions, accruals, opening balances, and correction entries.</td>
+          <td>Manual Dr/Cr adjustment voucher.</td>
+          <td>General Ledger and Financial Reports.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="guide-grid">
+      <section class="section">
+        <h2><i class="fa-solid fa-language"></i> తెలుగు</h2>
+        <div class="flow-list">
+          <div class="flow-item">
+            <h3>కొనుగోలు / ప్యాకేజింగ్ బిల్లు</h3>
+            <p><span class="label">నమోదు:</span> Vendor పేరు, invoice number, bill date, taxable amount, GST మరియు total amount నమోదు చేయాలి.</p>
+            <p><span class="label">ప్రతిబింబం:</span> Accounts Payable, Purchase Ledger, GST Reports మరియు P&L లో కనిపిస్తుంది.</p>
+            <div class="posting">Dr Purchase Account + Dr Input GST → Cr Vendor Payable</div>
+          </div>
+          <div class="flow-item">
+            <h3>Diesel</h3>
+            <p><span class="label">నమోదు:</span> Diesel purchase invoice మరియు daily consumption ను Diesel page లో నమోదు చేయాలి.</p>
+            <p><span class="label">ప్రతిబింబం:</span> Purchase diesel inventory గా, consumption fuel expense గా accounts లో update అవుతుంది.</p>
+            <div class="posting">Purchase: Dr Diesel Inventory → Cr Vendor Payable. Consumption: Dr Fuel Expense → Cr Diesel Inventory</div>
+          </div>
+          <div class="flow-item">
+            <h3>Export Commercial Invoice</h3>
+            <p><span class="label">నమోదు:</span> Buyer, invoice number, currency, exchange rate మరియు invoice value నమోదు చేయాలి.</p>
+            <p><span class="label">ప్రతిబింబం:</span> Accounts Receivable మరియు Export Sales Ledger లో automatic posting జరుగుతుంది.</p>
+            <div class="posting">Dr Accounts Receivable (Customer) → Cr Export Sales</div>
+          </div>
+          <div class="flow-item">
+            <h3>Payment / Receipt</h3>
+            <p><span class="label">నమోదు:</span> Party ledger, bank/cash ledger, amount, date మరియు reference నమోదు చేయాలి.</p>
+            <p><span class="label">ప్రతిబింబం:</span> Outstanding clear అవుతుంది మరియు bank/cash ledger update అవుతుంది.</p>
+            <div class="posting">Vendor Payment: Dr Vendor Payable → Cr Bank/Cash. Customer Receipt: Dr Bank/Cash → Cr Customer Receivable</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2><i class="fa-solid fa-language"></i> English</h2>
+        <div class="flow-list">
+          <div class="flow-item">
+            <h3>Purchase / Packaging Bill</h3>
+            <p><span class="label">Entry:</span> Enter vendor, invoice number, bill date, taxable amount, GST and total.</p>
+            <p><span class="label">Reflects:</span> Accounts Payable, Purchase Ledger, GST Reports and Profit & Loss.</p>
+            <div class="posting">Dr Purchase Account + Dr Input GST → Cr Vendor Payable</div>
+          </div>
+          <div class="flow-item">
+            <h3>Diesel</h3>
+            <p><span class="label">Entry:</span> Record diesel invoice purchases and daily consumption in the diesel page.</p>
+            <p><span class="label">Reflects:</span> Purchases increase diesel inventory; consumption moves inventory into fuel expense.</p>
+            <div class="posting">Purchase: Dr Diesel Inventory → Cr Vendor Payable. Consumption: Dr Fuel Expense → Cr Diesel Inventory</div>
+          </div>
+          <div class="flow-item">
+            <h3>Export Commercial Invoice</h3>
+            <p><span class="label">Entry:</span> Enter buyer, invoice no, currency, exchange rate and invoice value.</p>
+            <p><span class="label">Reflects:</span> Accounts Receivable and Export Sales are posted automatically.</p>
+            <div class="posting">Dr Accounts Receivable (Customer) → Cr Export Sales</div>
+          </div>
+          <div class="flow-item">
+            <h3>Payment / Receipt</h3>
+            <p><span class="label">Entry:</span> Select party ledger, bank/cash ledger, amount, date and reference.</p>
+            <p><span class="label">Reflects:</span> Outstanding gets cleared and bank/cash ledger is updated.</p>
+            <div class="posting">Vendor Payment: Dr Vendor Payable → Cr Bank/Cash. Customer Receipt: Dr Bank/Cash → Cr Customer Receivable</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2><i class="fa-solid fa-language"></i> हिंदी</h2>
+        <div class="flow-list">
+          <div class="flow-item">
+            <h3>Purchase / Packaging Bill</h3>
+            <p><span class="label">Entry:</span> Vendor name, invoice number, bill date, taxable amount, GST और total amount दर्ज करें.</p>
+            <p><span class="label">Reflect:</span> Accounts Payable, Purchase Ledger, GST Reports और P&L में दिखाई देगा.</p>
+            <div class="posting">Dr Purchase Account + Dr Input GST → Cr Vendor Payable</div>
+          </div>
+          <div class="flow-item">
+            <h3>Diesel</h3>
+            <p><span class="label">Entry:</span> Diesel purchase invoice और daily consumption को Diesel page में दर्ज करें.</p>
+            <p><span class="label">Reflect:</span> Purchase diesel inventory में जाएगा; consumption fuel expense में transfer होगा.</p>
+            <div class="posting">Purchase: Dr Diesel Inventory → Cr Vendor Payable. Consumption: Dr Fuel Expense → Cr Diesel Inventory</div>
+          </div>
+          <div class="flow-item">
+            <h3>Export Commercial Invoice</h3>
+            <p><span class="label">Entry:</span> Buyer, invoice number, currency, exchange rate और invoice value दर्ज करें.</p>
+            <p><span class="label">Reflect:</span> Accounts Receivable और Export Sales Ledger में automatic posting होगी.</p>
+            <div class="posting">Dr Accounts Receivable (Customer) → Cr Export Sales</div>
+          </div>
+          <div class="flow-item">
+            <h3>Payment / Receipt</h3>
+            <p><span class="label">Entry:</span> Party ledger, bank/cash ledger, amount, date और reference दर्ज करें.</p>
+            <p><span class="label">Reflect:</span> Outstanding clear होता है और bank/cash ledger update होता है.</p>
+            <div class="posting">Vendor Payment: Dr Vendor Payable → Cr Bank/Cash. Customer Receipt: Dr Bank/Cash → Cr Customer Receivable</div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

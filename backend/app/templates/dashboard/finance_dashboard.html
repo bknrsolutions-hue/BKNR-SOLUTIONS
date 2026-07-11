@@ -246,9 +246,9 @@
   }
 </style>
 <link rel="stylesheet" href="/static/css/module-rail.css">
-<link rel="stylesheet" href="/static/css/global-loader.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel3">
 <link rel="stylesheet" href="/static/css/dashboard-ui.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 <body class="finance-dashboard">
 
@@ -257,13 +257,11 @@
   <div class="rail-title"><i class="fa-solid fa-wallet"></i> Finance</div>
   <div class="rail-section">
     <div class="rail-label">Accounts</div>
+    <button class="rail-link" onclick="openEntryModal('/finance_accounts/accounts_flow_guide', 'Accounts Flow Guide')"><i class="fa-solid fa-diagram-project"></i><span>Flow Guide</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/ledger_master/entry', 'Ledger Master')"><i class="fa-solid fa-folder-open"></i><span>Ledger Master</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/journal_entry/entry', 'Journal Entries')"><i class="fa-solid fa-book"></i><span>Journal Entries</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/bank_transaction/entry', 'Bank Transactions')"><i class="fa-solid fa-building-columns"></i><span>Bank Transactions</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/payment_receipt/entry', 'Payment Receipts')"><i class="fa-solid fa-file-invoice-dollar"></i><span>Payment Receipts</span></button>
-    <button class="rail-link" onclick="openEntryModal('/finance_accounts/customer_receivable/entry', 'Customer Receivables')"><i class="fa-solid fa-hand-holding-dollar"></i><span>Customer Receivables</span></button>
-    <button class="rail-link" onclick="openEntryModal('/finance_accounts/vendor_payment/entry', 'Vendor Payments')"><i class="fa-solid fa-money-bill-transfer"></i><span>Vendor Payments</span></button>
-    <button class="rail-link" onclick="openEntryModal('/finance_accounts/expense_voucher/entry', 'Expense Vouchers')"><i class="fa-solid fa-receipt"></i><span>Expense Vouchers</span></button>
     <button class="rail-link" onclick="openEntryModal('/finance_accounts/bank_master/entry', 'Bank Master')"><i class="fa-solid fa-landmark"></i><span>Bank Master</span></button>
   </div>
   <div class="rail-section">
@@ -616,6 +614,6 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 </script>
 <link rel="stylesheet" href="/static/css/ui-color-customizer.css">
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel3"></script>
 </body>
 </html>

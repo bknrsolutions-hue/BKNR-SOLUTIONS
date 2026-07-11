@@ -19,8 +19,10 @@ from app.database.models.processing import (
     RawMaterialPurchasing,
     Soaking,
 )
+from app.services.bill_accounting import ensure_bill_accounting_schema
 from app.services.floor_balance import get_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_sum, signed_sum, signed_value
 
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
@@ -46,13 +48,27 @@ def processing_dashboard(
             return JSONResponse({"status": "error", "message": "Session expired"}, status_code=401)
         return RedirectResponse("/auth/login", status_code=303)
 
+    ensure_bill_accounting_schema(db)
+
     cookie_prod, cookie_loc = get_global_filters(request)
+
+    def clean_filter_value(value):
+        if value is None:
+            return None
+        value = str(value).strip()
+        if not value or value.upper() == "ALL" or value.startswith("annotation="):
+            return None
+        return value
     
     # 🟢 🔴 FORCE OVERRIDE: URL Parameters > Cookies
-    global_production_for = production_for if production_for is not None else cookie_prod
-    global_location = location if location is not None else cookie_loc
+    global_production_for = clean_filter_value(production_for if production_for is not None else cookie_prod)
+    global_location = clean_filter_value(location if location is not None else cookie_loc)
 
     today = date.today()
+
+    from_date = from_date if isinstance(from_date, date) else None
+    to_date = to_date if isinstance(to_date, date) else None
+    hour_date = hour_date if isinstance(hour_date, date) else None
 
     if not to_date: to_date = today
     if not from_date: from_date = to_date - timedelta(days=6)
@@ -128,7 +144,7 @@ def processing_dashboard(
     # 2. PROCESSING CARDS (TODAY ONLY FOR KPIs)
     # =====================================================
     def get_today_filtered_sum(model, column, date_col):
-        q = db.query(func.coalesce(func.sum(column), 0))
+        q = db.query(signed_sum(model, column))
         q = apply_dashboard_filters(q, model, date_col, use_today_only=True)
         return q.scalar() or 0
 
@@ -137,13 +153,15 @@ def processing_dashboard(
     gate_today = apply_dashboard_filters(gate_q, GateEntry, GateEntry.date, use_today_only=True).scalar() or 0
 
     # Metrics Cumulative Quantities (Today Only)
-    rmp_today = get_today_filtered_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty, RawMaterialPurchasing.date)
+    rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty))
+    rmp_q = apply_dashboard_filters(rmp_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
+    rmp_today = rmp_q.scalar() or 0
     dh_today = get_today_filtered_sum(DeHeading, DeHeading.hoso_qty, DeHeading.date)
     grading_today = get_today_filtered_sum(Grading, Grading.quantity, Grading.date)
     peeling_today = get_today_filtered_sum(Peeling, Peeling.peeled_qty, Peeling.date)
 
     # Soaking Net Qty (In - Rejection - Today Only)
-    soak_base_q = db.query(func.coalesce(func.sum(Soaking.in_qty - Soaking.rejection_qty), 0))
+    soak_base_q = db.query(signed_sum(Soaking, Soaking.in_qty - Soaking.rejection_qty))
     soaking_today = apply_dashboard_filters(soak_base_q, Soaking, Soaking.date, use_today_only=True).scalar() or 0
 
     production_today = get_today_filtered_sum(Production, Production.production_qty, Production.date)
@@ -155,7 +173,7 @@ def processing_dashboard(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.variety_name,
         RawMaterialPurchasing.count,
-        func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0).label("total_qty"),
+        active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("total_qty"),
     )
     rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
     rm_summary_query = rm_summary_q.group_by(
@@ -173,7 +191,7 @@ def processing_dashboard(
     # 4. HOURLY DATA FOR 3 CHARTS (Hour Date Wise)
     # =====================================================
     def get_hourly_stats(model, column, date_col):
-        data_q = db.query(extract("hour", model.time).label("hour"), func.sum(column).label("qty"))
+        data_q = db.query(extract("hour", model.time).label("hour"), signed_sum(model, column).label("qty"))
         data_q = apply_dashboard_filters(data_q, model, date_col, use_today_only=False, is_hourly=True, target_date=hour_date)
         data = data_q.group_by("hour").all()
 

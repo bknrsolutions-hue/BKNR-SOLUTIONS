@@ -20,6 +20,7 @@ from app.database.models.inventory_management import stock_entry
 from app.database.models.criteria import varieties as VarietyTable, HOSO_HLSO_Yields
 from app.database.models.floor_balance import FloorBalance, FloorBalanceSnapshot 
 from app.database.models.users import Company, User, OTPTable, UserLoginActivity
+from app.utils.cancel_math import active_number, active_sum, signed_number, signed_sum
 
 router = APIRouter(prefix="/summary", tags=["SUMMARY"])
 templates = Jinja2Templates(directory="app/templates")
@@ -154,8 +155,8 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
     avg_rate = 0.0
     if source_type == "RMP":
         rmp_items = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == company_id, RawMaterialPurchasing.batch_number == batch).all()
-        tot_amt = sum(float(item.amount or 0) for item in rmp_items)
-        tot_qty = sum(get_hoso_equivalent_qty(db, company_id, float(item.received_qty or 0), item.variety_name, item.count, item.species) for item in rmp_items)
+        tot_amt = sum(active_number(item, item.amount) for item in rmp_items)
+        tot_qty = sum(get_hoso_equivalent_qty(db, company_id, active_number(item, item.received_qty), item.variety_name, item.count, item.species) for item in rmp_items)
         if tot_qty > 0: avg_rate = tot_amt / tot_qty
     elif source_type == "REPROCESS":
         rep_items = db.query(Reprocess).filter(Reprocess.company_id == company_id, Reprocess.new_batch_id == batch).all()
@@ -199,28 +200,28 @@ def calculate_time_bound_floor_balance(
         in_q = apply_filters(db.query(func.coalesce(func.sum(Reprocess.in_qty), 0)), Reprocess, True)
         main_inward_qty = float(in_q.filter(~Reprocess.reprocess_type.in_(['SALES', 'STORING'])).scalar() or 0)
     else:
-        rmp_q = apply_filters(db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0)), RawMaterialPurchasing)
+        rmp_q = apply_filters(db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty)), RawMaterialPurchasing)
         main_inward_qty = float(rmp_q.filter(func.trim(cast(RawMaterialPurchasing.count, sa_String)) == clean_count).scalar() or 0)
 
-    s_in = apply_filters(db.query(func.coalesce(func.sum(Soaking.in_qty), 0)), Soaking)
+    s_in = apply_filters(db.query(signed_sum(Soaking, Soaking.in_qty)), Soaking)
     soaking_in = float(s_in.filter(func.trim(cast(Soaking.in_count, sa_String)) == clean_count).scalar() or 0)
 
-    s_rej = apply_filters(db.query(func.coalesce(func.sum(Soaking.rejection_qty), 0)), Soaking)
+    s_rej = apply_filters(db.query(signed_sum(Soaking, Soaking.rejection_qty)), Soaking)
     soaking_rejection = float(s_rej.filter(func.trim(cast(Soaking.in_count, sa_String)) == clean_count).scalar() or 0)
 
     base_stock = main_inward_qty + soaking_rejection - soaking_in
     available = 0.0
 
     if variety_upper == "HOSO":
-        g_p = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
-        g_m = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.hoso_count, sa_String)) == clean_count).scalar() or 0
-        dh_u = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hoso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, sa_String)) == clean_count).scalar() or 0
+        g_p = apply_filters(db.query(signed_sum(Grading, Grading.quantity)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
+        g_m = apply_filters(db.query(signed_sum(Grading, Grading.quantity)), Grading).filter(func.trim(cast(Grading.hoso_count, sa_String)) == clean_count).scalar() or 0
+        dh_u = apply_filters(db.query(signed_sum(DeHeading, DeHeading.hoso_qty)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, sa_String)) == clean_count).scalar() or 0
         available = base_stock + float(g_p) - float(g_m) - float(dh_u)
     elif variety_upper == "HLSO":
-        g_h = apply_filters(db.query(func.coalesce(func.sum(Grading.quantity), 0)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
-        dh_o = apply_filters(db.query(func.coalesce(func.sum(DeHeading.hlso_qty), 0)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, sa_String)) == clean_count).scalar() or 0
+        g_h = apply_filters(db.query(signed_sum(Grading, Grading.quantity)), Grading).filter(func.trim(cast(Grading.graded_count, sa_String)) == clean_count).scalar() or 0
+        dh_o = apply_filters(db.query(signed_sum(DeHeading, DeHeading.hlso_qty)), DeHeading).filter(func.trim(cast(DeHeading.hoso_count, sa_String)) == clean_count).scalar() or 0
 
-        p_q = db.query(func.coalesce(func.sum(Peeling.hlso_qty), 0)).filter(
+        p_q = db.query(signed_sum(Peeling, Peeling.hlso_qty)).filter(
             Peeling.company_id == company_id, Peeling.batch_number == batch, Peeling.peeling_at == location, Peeling.species == species,
             func.trim(cast(Peeling.hlso_count, sa_String)) == clean_count
         )
@@ -232,7 +233,7 @@ def calculate_time_bound_floor_balance(
         p_u = p_q.scalar() or 0
         available = base_stock + float(g_h) - float(p_u)
     else:
-        p_q = apply_filters(db.query(func.coalesce(func.sum(Peeling.peeled_qty), 0)), Peeling).filter(func.trim(cast(Peeling.hlso_count, sa_String)) == clean_count).scalar() or 0
+        p_q = apply_filters(db.query(signed_sum(Peeling, Peeling.peeled_qty)), Peeling).filter(func.trim(cast(Peeling.hlso_count, sa_String)) == clean_count).scalar() or 0
         available = base_stock + float(p_q)
 
     return round(max(available, 0.0), 2)
@@ -736,21 +737,21 @@ async def get_periodic_summary_report(
     # KPI cards always use the selected date filter rows (not FY override)
     kpi_rows = rows
     card["gate_boxes"] = sum(int(r.no_of_material_boxes or 0) for r in kpi_rows["gate"])
-    card["rmp_qty"] = sum(float(r.received_qty or 0) for r in kpi_rows["rmp"])
-    card["rmp_amount"] = sum(float(r.amount or 0) for r in kpi_rows["rmp"])
+    card["rmp_qty"] = sum(active_number(r, r.received_qty) for r in kpi_rows["rmp"])
+    card["rmp_amount"] = sum(active_number(r, r.amount) for r in kpi_rows["rmp"])
     card["reprocess_qty"] = sum(float(r.in_qty or 0) for r in kpi_rows["reprocess"])
     card["reprocess_amount"] = sum(float(r.inventory_value or 0) for r in kpi_rows["reprocess"])
     
-    card["deh_hoso"] = sum(float(d.hoso_qty or 0) for d in kpi_rows["deheading"])
-    card["deh_hlso"] = sum(float(d.hlso_qty or 0) for d in kpi_rows["deheading"])
-    card["grd_qty"] = sum(float(g.quantity or 0) for g in kpi_rows["grading_details"])
-    card["pel_hlso"] = sum(float(p.hlso_qty or 0) for p in kpi_rows["peeling"])
-    card["pel_peeled"] = sum(float(p.peeled_qty or 0) for p in kpi_rows["peeling"])
+    card["deh_hoso"] = sum(signed_number(d, d.hoso_qty) for d in kpi_rows["deheading"])
+    card["deh_hlso"] = sum(signed_number(d, d.hlso_qty) for d in kpi_rows["deheading"])
+    card["grd_qty"] = sum(signed_number(g, g.quantity) for g in kpi_rows["grading_details"])
+    card["pel_hlso"] = sum(signed_number(p, p.hlso_qty) for p in kpi_rows["peeling"])
+    card["pel_peeled"] = sum(signed_number(p, p.peeled_qty) for p in kpi_rows["peeling"])
     
-    card["soaking_qty"] = sum(float(s.in_qty or 0) for s in kpi_rows["soaking"])
-    card["chemical_qty"] = sum(float(s.chemical_qty or 0) for s in kpi_rows["soaking"])
-    card["salt_qty"] = sum(float(s.salt_qty or 0) for s in kpi_rows["soaking"])
-    card["production_qty"] = sum(float(pr.production_qty or 0) for pr in kpi_rows["production"])
+    card["soaking_qty"] = sum(signed_number(s, s.in_qty) for s in kpi_rows["soaking"])
+    card["chemical_qty"] = sum(signed_number(s, s.chemical_qty) for s in kpi_rows["soaking"])
+    card["salt_qty"] = sum(signed_number(s, s.salt_qty) for s in kpi_rows["soaking"])
+    card["production_qty"] = sum(signed_number(pr, pr.production_qty) for pr in kpi_rows["production"])
     card["stock_qty"] = sum(float(st.quantity or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "IN")
     card["stock_amount"] = sum(float(st.inventory_value or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "IN")
     card["stock_out_qty"] = sum(float(st.quantity or 0) for st in kpi_rows["stock"] if str(st.cargo_movement_type or "").upper() == "OUT")
@@ -821,18 +822,19 @@ async def get_periodic_summary_report(
     summary_buckets["sec-gate"]["Boxes"]["qty"] = sum(float(r.no_of_material_boxes or 0) for r in chart_rows["gate"])
 
     for row in chart_rows["rmp"]:
-        _add_flow_point(chart_buckets["sec-rmp"], row.date, row.received_qty)
-        _add_flow_point(chart_buckets["sec-rmp-sum1"], row.date, row.received_qty)
-        _add_flow_point(chart_buckets["sec-rmp-sum2"], row.date, row.received_qty)
+        active_qty = active_number(row, row.received_qty)
+        _add_flow_point(chart_buckets["sec-rmp"], row.date, active_qty)
+        _add_flow_point(chart_buckets["sec-rmp-sum1"], row.date, active_qty)
+        _add_flow_point(chart_buckets["sec-rmp-sum2"], row.date, active_qty)
         count_key = f"Count {row.count or 'N/A'}"
         variety_key = f"{row.variety_name or 'N/A'} / {row.count or 'N/A'}"
         supplier_key = row.supplier_name or "N/A"
-        summary_buckets["sec-rmp"][count_key]["qty"] += float(row.received_qty or 0)
-        summary_buckets["sec-rmp-sum1"][variety_key]["qty"] += float(row.received_qty or 0)
-        summary_buckets["sec-rmp-sum2"][supplier_key]["qty"] += float(row.received_qty or 0)
-        add_production_for_series("sec-rmp", row, row.date, row.received_qty)
-        add_production_for_series("sec-rmp-sum1", row, row.date, row.received_qty)
-        add_production_for_series("sec-rmp-sum2", row, row.date, row.received_qty)
+        summary_buckets["sec-rmp"][count_key]["qty"] += active_qty
+        summary_buckets["sec-rmp-sum1"][variety_key]["qty"] += active_qty
+        summary_buckets["sec-rmp-sum2"][supplier_key]["qty"] += active_qty
+        add_production_for_series("sec-rmp", row, row.date, active_qty)
+        add_production_for_series("sec-rmp-sum1", row, row.date, active_qty)
+        add_production_for_series("sec-rmp-sum2", row, row.date, active_qty)
 
     for row in chart_rows["reprocess"]:
         _add_flow_point(chart_buckets["sec-rep"], row.date, row.in_qty)
@@ -1074,7 +1076,7 @@ async def get_periodic_summary_report(
 
     fy_floor_rows = fy_snap_q.all()
     append_production_for_summary(["sec-open-floor", "sec-close-floor"], fy_floor_rows, lambda row: row.opening_qty)
-    append_production_for_summary(["sec-rmp", "sec-rmp-sum1", "sec-rmp-sum2"], chart_rows["rmp"], lambda row: row.received_qty)
+    append_production_for_summary(["sec-rmp", "sec-rmp-sum1", "sec-rmp-sum2"], chart_rows["rmp"], lambda row: active_number(row, row.received_qty))
     append_production_for_summary(["sec-rep"], chart_rows["reprocess"], lambda row: row.in_qty)
     append_production_for_summary(["sec-deh"], chart_rows["deheading"], lambda row: row.hoso_qty)
     append_production_for_summary(["sec-grd", "sec-grading-cards-wrapper"], chart_rows["grading_details"], lambda row: row.quantity)

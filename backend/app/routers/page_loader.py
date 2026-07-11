@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
@@ -74,7 +74,7 @@ def gs_entry(request: Request):
 
 @router.get("/general_stock/items")
 def gs_items(request: Request):
-    return render_page(request, "general_stock/general_store_items.html")
+    return RedirectResponse("/general_stock/items/", status_code=302)
 
 
 # General stock report is loaded dynamically from general_stock_report.py

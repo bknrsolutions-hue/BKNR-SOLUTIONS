@@ -17,7 +17,9 @@ from io import BytesIO
 import json
 import datetime as dt
 from datetime import datetime
+from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
@@ -62,11 +64,12 @@ def grading_report(
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
+    if fy is None:
+        fy = str(get_fin_year(ist_now().date()))
 
     # 1. Base Queries setup for unique filter generation (Universal Filter Core Applied)
     grading_base_query = db.query(Grading).filter(
-        Grading.company_id == company_id,
-        Grading.is_cancelled != True
+        Grading.company_id == company_id
     )
     
     if production_for:
@@ -82,8 +85,7 @@ def grading_report(
     # CRITICAL CHANGE: Only process and fetch data if 'fy' parameter is explicitly provided
     if fy:
         deheading_base_query = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id,
-            DeHeading.is_cancelled != True
+            DeHeading.company_id == company_id
         )
 
         if production_for:
@@ -119,7 +121,7 @@ def grading_report(
         # 4. De-Heading Data Mapping (Actual HOSO Source) filtered by FY
         deheading_hoso_map = defaultdict(float)
         for r in deheading_rows:
-            deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
+            deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += signed_number(r, r.hoso_qty)
 
         # 5. Grading Raw Data Grouping
         grouped = defaultdict(list)
@@ -131,8 +133,8 @@ def grading_report(
 
         # 6. Summary Calculation Logic
         for (batch, species, hoso_count, variety), items in grouped.items():
-            graded_qty_sum = sum(float(i.quantity or 0) for i in items)
-            base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
+            graded_qty_sum = sum(signed_number(i, i.quantity) for i in items)
+            base = sum(float(i.graded_count or 0) * signed_number(i, i.quantity) for i in items)
             
             yield_factor = yield_map.get((species, hoso_count), 0)
 
@@ -240,16 +242,14 @@ def grading_details(
 
     if source == "all":
         data = db.query(Grading).filter(
-            Grading.company_id == company_id,
-            Grading.is_cancelled != True
+            Grading.company_id == company_id
         ).order_by(desc(Grading.date), desc(Grading.time)).all()
     elif source == "hoso":
         data = db.query(DeHeading).filter(
             DeHeading.company_id == company_id, 
             DeHeading.batch_number == batch,
             DeHeading.species == species, 
-            DeHeading.hoso_count == hoso_count,
-            DeHeading.is_cancelled != True
+            DeHeading.hoso_count == hoso_count
         ).all()
     else:
         data = db.query(Grading).filter(
@@ -257,8 +257,7 @@ def grading_details(
             Grading.batch_number == batch,
             Grading.species == species, 
             Grading.hoso_count == hoso_count, 
-            Grading.variety_name == variety,
-            Grading.is_cancelled != True
+            Grading.variety_name == variety
         ).all()
 
     result = []
@@ -369,8 +368,7 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     production_for, location = get_global_filters(request)
 
     query = db.query(Grading).filter(
-        Grading.company_id == company_id,
-        Grading.is_cancelled != True
+        Grading.company_id == company_id
     )
 
     if production_for:

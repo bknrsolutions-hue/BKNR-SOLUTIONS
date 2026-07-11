@@ -131,6 +131,7 @@ class sales_dispatch(Base):
     sales_quantity = Column(Float, default=0.0, nullable=True)  
     amount_usd = Column(Float, default=0.0, nullable=True)      
     amount_inr = Column(Float, default=0.0, nullable=True)
+    journal_id = Column(Integer, nullable=True)
     created_at = Column(Date, default=lambda: ist_now().date()
 )
   

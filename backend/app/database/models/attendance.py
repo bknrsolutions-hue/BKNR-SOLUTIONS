@@ -75,6 +75,7 @@ class DailyAttendance(Base, metacolumns):
     duty_type = Column(String(20), nullable=True)          # HALF, SINGLE, DOUBLE
     calculated_ot_hours = Column(Float, default=0.0)      # System calculate chesina hours
     approved_ot_hours = Column(Float, default=0.0)        # Manager approve cheshaka save ayye hours
+    approved_duty_credit = Column(Float, default=0.0)     # 1.0 / 1.5 / 2.0 / 2.5 / 3.0 approved payable duty
     ot_status = Column(String(20), default="PENDING")     # PENDING, APPROVED, REJECTED
     ot_approved_by = Column(String(100), nullable=True) 
     duty_status = Column(String(20), default="PENDING")
@@ -85,6 +86,7 @@ class DailyAttendance(Base, metacolumns):
     exit_time = Column(DateTime, nullable=True)
     working_hours = Column(Float, default=0.0)
     salary_adjustment = Column(Float, default=0.0)
+    journal_id = Column(Integer, nullable=True)
     movements = Column(JSONB, default=list) 
     status = Column(String(20), default="OPEN") 
     created_at = Column(DateTime, default=datetime.utcnow)
