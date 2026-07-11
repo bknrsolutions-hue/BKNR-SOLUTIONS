@@ -5,6 +5,7 @@ export default function AuthContainer({ handleLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [companyId, setCompanyId] = useState('');
   const [password, setPassword] = useState('');
+  const [loginOtpRequired, setLoginOtpRequired] = useState(false);
 
   // Register Fields
   const [regCompany, setRegCompany] = useState('');
@@ -45,6 +46,9 @@ export default function AuthContainer({ handleLoginSuccess }) {
     setLoginError('');
     setForgotError('');
     setForgotOk('');
+    if (boxName !== 'otp') {
+      setLoginOtpRequired(false);
+    }
   };
 
   const submitLogin = async (e) => {
@@ -70,7 +74,13 @@ export default function AuthContainer({ handleLoginSuccess }) {
       });
       const data = await res.json();
       if (res.ok) {
-        handleLoginSuccess();
+        if (data.status === 'otp_required') {
+          setRegEmailSuccess(email.trim().toLowerCase());
+          setLoginOtpRequired(true);
+          showBox('otp');
+        } else {
+          handleLoginSuccess();
+        }
       } else {
         if (res.status === 403 && data.status === 'unverified') {
           setRegEmailSuccess(email.trim().toLowerCase());
@@ -137,24 +147,43 @@ export default function AuthContainer({ handleLoginSuccess }) {
     }
     setLoading(true);
     try {
-      const res = await fetch('/auth/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: regEmailSuccess,
-          otp: otp.trim()
-        })
-      });
-      const data = await res.json();
-      if (res.ok) {
-        if (data.user_exists) {
-          alert("Email verified successfully! You can now log in.");
-          showBox('login');
+      if (loginOtpRequired) {
+        const res = await fetch('/auth/verify-login-otp', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            company_id: companyId.trim(),
+            email: email.trim().toLowerCase(),
+            otp: otp.trim()
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === 'success') {
+          handleLoginSuccess();
         } else {
-          showBox('password');
+          setOtpError(data.detail || 'Invalid OTP');
         }
       } else {
-        setOtpError(data.detail || 'Invalid OTP');
+        const res = await fetch('/auth/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: regEmailSuccess,
+            otp: otp.trim()
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          if (data.user_exists) {
+            alert("Email verified successfully! You can now log in.");
+            showBox('login');
+          } else {
+            showBox('password');
+          }
+        } else {
+          setOtpError(data.detail || 'Invalid OTP');
+        }
       }
     } catch (err) {
       setOtpError('Server connection failed.');

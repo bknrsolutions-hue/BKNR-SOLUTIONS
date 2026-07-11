@@ -177,6 +177,7 @@ export default function App() {
             role: data.role,
             permissions: data.permissions
           });
+          localStorage.setItem('user_email', data.email);
         } else {
           setUser(null);
         }
@@ -205,7 +206,7 @@ export default function App() {
             role: data.role,
             permissions: data.permissions
           });
-  
+          localStorage.setItem('user_email', data.email);
           setActivePage('dashboard_processing', null);
         }
       }
