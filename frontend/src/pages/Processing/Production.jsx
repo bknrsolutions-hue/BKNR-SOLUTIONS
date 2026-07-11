@@ -371,24 +371,36 @@ export default function Production() {
   };
 
   const handleDeleteLog = async (id) => {
-    if (window.confirm('Delete Log? Confirm deletion permanently.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/production/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          setSelectedLogId(null);
-          fetchBackendData();
-        } else {
-          alert('Failed to delete log entry.');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Connection error deleting record.');
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this production entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/production/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Production Entry Cancelled Successfully');
+        setSelectedLogId(null);
+        fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      console.error(err);
+      alert('Connection error cancelling record.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -560,9 +572,9 @@ export default function Production() {
   const reqGroups = getGroupedRequirements();
 
   // Aggregate stats
-  const activeSoakingQty = soakingData.filter(s => s.status !== 'Completed').reduce((sum, item) => sum + (parseFloat(item.in_qty) || 0), 0);
-  const rejectionQtySum = rejectionData.reduce((sum, item) => sum + (parseFloat(item.rejection_qty) || 0), 0);
-  const productionTodayQty = todayEntries.reduce((sum, item) => sum + (parseFloat(item.production_qty) || 0), 0);
+  const activeSoakingQty = soakingData.filter(s => s.status !== 'Completed' && !s.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.in_qty) || 0), 0);
+  const rejectionQtySum = rejectionData.filter(r => !r.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.rejection_qty) || 0), 0);
+  const productionTodayQty = todayEntries.filter(t => !t.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.production_qty) || 0), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: '16px', padding: '16px 16px 80px 16px' }}>
@@ -1021,8 +1033,21 @@ export default function Production() {
                 todayEntries.filter(row => matchesFilters(row, 'logs')).map(row => (
                   <tr 
                     key={row.id}
-                    onClick={() => setSelectedLogId(row.id === selectedLogId ? null : row.id)}
-                    style={{ background: selectedLogId === row.id ? 'var(--row-selected)' : 'transparent', cursor: 'pointer' }}
+                    className={row.is_cancelled ? 'cancelled-row' : ''}
+                    onClick={() => {
+                      if (row.is_cancelled) {
+                        setSelectedLogId(null);
+                      } else {
+                        setSelectedLogId(row.id === selectedLogId ? null : row.id);
+                      }
+                    }}
+                    style={{ 
+                      background: selectedLogId === row.id ? 'var(--row-selected)' : 'transparent', 
+                      cursor: 'pointer',
+                      opacity: row.is_cancelled ? 0.55 : 1,
+                      textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                      color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                    }}
                   >
                     <td className="text-center">{row.id}</td>
                     <td className="text-left">{row.production_for}</td>
@@ -1036,19 +1061,22 @@ export default function Production() {
                     <td className="text-left">{row.freezer}</td>
                     <td className="text-center">{row.grade}</td>
                     <td className="text-left">{row.packing_style}</td>
-                    <td className="text-right">{row.no_of_mc}</td>
-                    <td className="text-right">{row.loose}</td>
-                    <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{parseFloat(row.production_qty).toFixed(2)}</td>
+                    <td className="text-right">{row.is_cancelled ? 0 : row.no_of_mc}</td>
+                    <td className="text-right">{row.is_cancelled ? 0 : row.loose}</td>
+                    <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : parseFloat(row.production_qty)).toFixed(2)}</td>
                     <td className="text-center">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteLog(row.id);
-                        }} 
-                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {!row.is_cancelled && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteLog(row.id);
+                          }} 
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                          title="Cancel entry"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))

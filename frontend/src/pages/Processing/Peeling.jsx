@@ -248,25 +248,36 @@ export default function Peeling() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this peeling entry? This will reverse floor balance changes.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/peeling/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Peeling entry deleted');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting peeling record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this peeling entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/peeling/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Peeling entry cancelled successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling peeling record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -328,6 +339,7 @@ export default function Peeling() {
     let dailySumMap = {};
 
     logs.forEach(r => {
+      if (r.is_cancelled) return;
       const cont = r.contractor_name || 'Unknown';
       const qty = parseFloat(r.peeled_qty) || 0;
       const amt = parseFloat(r.amount) || 0;
@@ -672,32 +684,45 @@ export default function Peeling() {
               filteredLogs.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{ cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id);
+                    }
+                  }}
+                  style={{ 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
                   <td className="text-left">{row.production_for}</td>
                   <td className="text-left">{row.species}</td>
                   <td className="text-left" style={{ color: 'var(--corp-dash)' }}>{row.variety_name}</td>
                   <td className="text-center">{row.hlso_count}</td>
-                  <td className="text-right">{row.hlso_qty.toFixed(2)}</td>
-                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{row.peeled_qty.toFixed(2)}</td>
+                  <td className="text-right">{(row.is_cancelled ? 0 : row.hlso_qty).toFixed(2)}</td>
+                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{(row.is_cancelled ? 0 : row.peeled_qty).toFixed(2)}</td>
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>
-                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{row.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(row.is_cancelled ? 0 : row.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-center">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(row.id);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                      title="Delete entry"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    {!row.is_cancelled && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(row.id);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                        title="Cancel entry"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

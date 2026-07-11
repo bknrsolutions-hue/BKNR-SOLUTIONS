@@ -262,25 +262,36 @@ export default function DeHeading() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this de-heading entry? This will reverse the floor balance operations.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/de_heading/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('De-Heading Deleted Successfully');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting De-Heading record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this de-heading entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/de_heading/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('De-Heading Cancelled Successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling De-Heading record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -608,18 +619,29 @@ export default function DeHeading() {
               </tr>
             ) : (
               Object.entries(groupedEntries).map(([loc, rows]) => {
-                const subHoso = rows.reduce((acc, r) => acc + (parseFloat(r.hoso_qty) || 0), 0);
-                const subHlso = rows.reduce((acc, r) => acc + (parseFloat(r.hlso_qty) || 0), 0);
-                const subAmt = rows.reduce((acc, r) => acc + (parseFloat(r.amount) || 0), 0);
+                const subHoso = rows.reduce((acc, r) => acc + (r.is_cancelled ? 0 : (parseFloat(r.hoso_qty) || 0)), 0);
+                const subHlso = rows.reduce((acc, r) => acc + (r.is_cancelled ? 0 : (parseFloat(r.hlso_qty) || 0)), 0);
+                const subAmt = rows.reduce((acc, r) => acc + (r.is_cancelled ? 0 : (parseFloat(r.amount) || 0)), 0);
 
                 return (
                   <React.Fragment key={loc}>
                     {rows.map(row => (
                       <tr 
                         key={row.id} 
-                        className={selectedId === row.id ? 'selected-row' : ''}
-                        onClick={() => setSelectedId(row.id)}
-                        style={{ cursor: 'pointer' }}
+                        className={`${selectedId === row.id ? 'selected-row' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                        onClick={() => {
+                          if (row.is_cancelled) {
+                            setSelectedId(null);
+                          } else {
+                            setSelectedId(row.id);
+                          }
+                        }}
+                        style={{ 
+                          cursor: 'pointer',
+                          opacity: row.is_cancelled ? 0.55 : 1,
+                          textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                          color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                        }}
                       >
                         <td className="text-left">{row.peeling_at}</td>
                         <td className="text-left" style={{ fontWeight: '600', color: 'var(--corp-dash)' }}>{row.production_for}</td>
@@ -631,16 +653,18 @@ export default function DeHeading() {
                         <td className="text-left">{row.contractor}</td>
                         <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>₹{row.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="text-center">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(row.id);
-                            }} 
-                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                            title="Delete entry"
-                          >
-                            <Trash2 size={13} />
-                          </button>
+                          {!row.is_cancelled && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(row.id);
+                              }} 
+                              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                              title="Cancel entry"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}

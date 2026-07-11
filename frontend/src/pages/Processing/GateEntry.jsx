@@ -31,6 +31,8 @@ export default function GateEntry() {
   const [lastChallanMap, setLastChallanMap] = useState({});
   const [lastGPComboMap, setLastGPComboMap] = useState({});
   const [lastGPValue, setLastGPValue] = useState('');
+  const [drivers, setDrivers] = useState([]);
+  const [driverName, setDriverName] = useState('');
 
   // Table rows
   const [entries, setEntries] = useState([]);
@@ -60,6 +62,7 @@ export default function GateEntry() {
         setLastChallanMap(data.last_challan_map || {});
         setLastGPComboMap(data.last_gp_combo_map || {});
         setLastGPValue(data.last_gp_value || '');
+        setDrivers(data.drivers || []);
         setEntries(data.today_data || []);
         
         // Show form if no logs exist
@@ -163,6 +166,7 @@ export default function GateEntry() {
     formData.append('supplier_name', supplierName);
     formData.append('purchasing_location', purchasingLocation);
     formData.append('vehicle_number', vehicleNumber);
+    formData.append('driver_name', driverName.trim());
     formData.append('production_for', productionFor);
     formData.append('no_of_material_boxes', parseFloat(noOfMaterialBoxes) || 0);
     formData.append('no_of_empty_boxes', parseFloat(noOfEmptyBoxes) || 0);
@@ -187,6 +191,7 @@ export default function GateEntry() {
         setSupplierName('');
         setPurchasingLocation('');
         setVehicleNumber('');
+        setDriverName('');
         setProductionFor('');
         setReceivingCenter('');
         setSelectedId(null);
@@ -203,26 +208,36 @@ export default function GateEntry() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this gate entry?')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/gate_entry/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Gate Entry Deleted Successfully');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          const data = await res.json();
-          alert(data.message || 'Deletion failed');
-        }
-      } catch (err) {
-        alert('Connection error deleting Gate Entry');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this gate entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/gate_entry/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Gate Entry Cancelled Successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling Gate Entry');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -232,6 +247,7 @@ export default function GateEntry() {
     setSupplierName('');
     setPurchasingLocation('');
     setVehicleNumber('');
+    setDriverName('');
     setNoOfMaterialBoxes('0');
     setNoOfEmptyBoxes('0');
     setNoOfIceBoxes('0');
@@ -352,6 +368,21 @@ export default function GateEntry() {
             </div>
 
             <div className="form-group">
+              <label>Driver Name</label>
+              <input 
+                type="text" 
+                className="form-control" 
+                value={driverName} 
+                onChange={e => setDriverName(e.target.value)} 
+                placeholder="Select or type driver name" 
+                list="driver-name-options"
+              />
+              <datalist id="driver-name-options">
+                {drivers.map(d => <option key={d} value={d} />)}
+              </datalist>
+            </div>
+
+            <div className="form-group">
               <label>Material Boxes</label>
               <input 
                 type="number" 
@@ -417,6 +448,7 @@ export default function GateEntry() {
               <th className="text-left" style={{ width: '150px' }}>Supplier</th>
               <th className="text-left" style={{ width: '130px' }}>Location</th>
               <th className="text-left" style={{ width: '110px' }}>Vehicle</th>
+              <th className="text-left" style={{ width: '150px' }}>Driver Name</th>
               <th className="text-right" style={{ width: '80px' }}>Mat</th>
               <th className="text-right" style={{ width: '80px' }}>Emp</th>
               <th className="text-right" style={{ width: '80px' }}>Ice</th>
@@ -435,9 +467,20 @@ export default function GateEntry() {
               entries.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{ cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id);
+                    }
+                  }}
+                  style={{ 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center">{row.id}</td>
                   <td className="text-center" style={{ color: 'var(--text-secondary)' }}>{row.time ? row.time.substring(0, 5) : ''}</td>
@@ -449,6 +492,7 @@ export default function GateEntry() {
                   <td className="text-left">{row.supplier_name}</td>
                   <td className="text-left">{row.purchasing_location}</td>
                   <td className="text-left">{row.vehicle_number}</td>
+                  <td className="text-left">{row.driver_name || ''}</td>
                   <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{row.no_of_material_boxes}</td>
                   <td className="text-right">{row.no_of_empty_boxes}</td>
                   <td className="text-right">{row.no_of_ice_boxes}</td>
@@ -456,16 +500,18 @@ export default function GateEntry() {
                     {row.email ? row.email.split('@')[0] : ''}
                   </td>
                   <td className="text-center">
-                    <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleDelete(row.id);
-                       }} 
-                       style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                       title="Delete entry"
-                     >
-                      <Trash2 size={14} />
-                    </button>
+                    {!row.is_cancelled && (
+                      <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleDelete(row.id);
+                         }} 
+                         style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                         title="Cancel entry"
+                       >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
