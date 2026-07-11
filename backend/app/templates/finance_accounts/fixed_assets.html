@@ -19,7 +19,7 @@
         .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:2000;align-items:center;justify-content:center}.modal-content{background:var(--card-bg);border:1px solid var(--border);border-radius:12px;width:95%;max-width:900px;max-height:90vh;overflow:auto;padding:20px}
         .form-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.field{display:flex;flex-direction:column;gap:4px}.tabs{display:flex;gap:8px;margin:10px 20px}.tab-btn{background:var(--card-bg);border:1px solid var(--border);color:var(--text);border-radius:6px;padding:7px 12px;font-weight:800;font-size:11px;cursor:pointer}.tab-btn.active{background:var(--accent);color:#fff}
     </style>
-<link rel="stylesheet" href="/static/css/global-loader.css?v=skel5">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel6">
 </head>
 <body>
 <div class="header-dash"><div class="header-titles"><h2>Fixed Assets & Depreciation</h2></div></div>
@@ -63,6 +63,6 @@ function runDep(e){e.preventDefault();postJson('/finance_accounts/fixed_assets/r
 async function cancelAsset(id){if((await Swal.fire({title:'Cancel asset?',showCancelButton:true,icon:'warning'})).isConfirmed){await fetch(`/finance_accounts/fixed_assets/delete/${id}`,{method:'POST'});location.reload()}}
 applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel5"></script>
+<script src="/static/js/global-loader.js?v=skel6"></script>
 </body>
 </html>

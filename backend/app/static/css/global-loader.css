@@ -340,6 +340,85 @@ html body .swal2-loader::after,
     pointer-events: none;
 }
 
+/* Immediate target-route skeleton used by the workspace while the new iframe
+   document is being downloaded. The profile is selected from the target URL. */
+.workspace-route-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    padding: clamp(14px, 2.5vw, 28px);
+    overflow: hidden;
+    background: var(--loader-card-bg, #f8fafc);
+}
+
+.workspace-route-skeleton.show {
+    display: flex;
+}
+
+.workspace-route-skeleton :is(span, i, b) {
+    position: relative;
+    display: block;
+    overflow: hidden;
+    border-radius: 7px;
+    background: var(--loader-skeleton-base);
+}
+
+.workspace-route-skeleton :is(span, i, b)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--loader-skeleton-shine), transparent);
+    animation: loaderSkeletonShimmer 1.15s ease-in-out infinite;
+}
+
+.workspace-skeleton-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 42px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--loader-card-border);
+}
+
+.workspace-skeleton-header span { width: min(260px, 42%); height: 15px; }
+.workspace-skeleton-header i { width: 96px; height: 32px; }
+.workspace-skeleton-filters { display: grid; grid-template-columns: 150px 150px 1fr 82px; gap: 9px; padding: 10px; border: 1px solid var(--loader-card-border); border-radius: 8px; }
+.workspace-skeleton-filters > * { height: 34px; }
+.workspace-skeleton-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.workspace-skeleton-kpis span { height: 72px; }
+.workspace-skeleton-form { display: none; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; border: 1px solid var(--loader-card-border); border-radius: 8px; }
+.workspace-skeleton-form span { height: 42px; }
+.workspace-skeleton-chart { display: none; grid-template-columns: 1.35fr 1fr; gap: 10px; }
+.workspace-skeleton-chart span { height: 210px; }
+.workspace-skeleton-table { overflow: hidden; border: 1px solid var(--loader-card-border); border-radius: 8px; }
+.workspace-skeleton-table > * { height: 38px; margin: 0; border-radius: 0 !important; border-bottom: 1px solid var(--loader-card-border); }
+.workspace-skeleton-table > *:last-child { border-bottom: 0; }
+.workspace-skeleton-table b { height: 34px; }
+
+.workspace-route-skeleton.profile-form .workspace-skeleton-kpis,
+.workspace-route-skeleton.profile-form .workspace-skeleton-chart { display: none; }
+.workspace-route-skeleton.profile-form .workspace-skeleton-form { display: grid; }
+.workspace-route-skeleton.profile-dashboard .workspace-skeleton-filters { display: none; }
+.workspace-route-skeleton.profile-dashboard .workspace-skeleton-chart { display: grid; }
+.workspace-route-skeleton.profile-report .workspace-skeleton-form { display: none; }
+
+@media (max-width: 520px) {
+    .workspace-route-skeleton { padding: 12px; gap: 9px; }
+    .workspace-skeleton-filters { grid-template-columns: 1fr 1fr; }
+    .workspace-skeleton-filters > :nth-child(3) { grid-column: 1 / -1; }
+    .workspace-skeleton-filters > :last-child { display: none; }
+    .workspace-skeleton-kpis { grid-template-columns: repeat(2, 1fr); gap: 7px; }
+    .workspace-skeleton-kpis span { height: 54px; }
+    .workspace-skeleton-form { grid-template-columns: 1fr; gap: 8px; padding: 10px; }
+    .workspace-skeleton-chart { grid-template-columns: 1fr; }
+    .workspace-skeleton-chart span { height: 150px; }
+    .workspace-skeleton-chart span:last-child { display: none; }
+}
+
 @media (max-width: 520px) {
     #globalLoader {
         padding: 12px;
