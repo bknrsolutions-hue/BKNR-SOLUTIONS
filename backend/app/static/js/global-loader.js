@@ -195,7 +195,7 @@
         if (!source) {
             snapshot.replaceChildren();
             snapshot.classList.remove("is-ready");
-            fallback.hidden = false;
+            fallback.hidden = true;
             return;
         }
 
@@ -236,6 +236,7 @@
         const loader = ensureLoader();
         if (!loader) return;
         buildAdaptiveSkeleton(loader);
+        if (!loader.querySelector(".loader-adaptive-snapshot.is-ready")) return;
 
         clearTimeout(showTimer);
         showTimer = setTimeout(() => {
@@ -278,7 +279,7 @@
         watchSpinnerIcons();
         const loader = ensureLoader();
         if (loader) {
-            if (pageReady) {
+            if (pageReady || document.getElementById("appSplash")) {
                 loader.classList.add("hide");
                 loader.style.display = "none";
             } else {
@@ -348,4 +349,37 @@
         activeRequests = 0;
         hideLoader();
     };
+
+    window.BKNRSaveAndContinue = function (message) {
+        const reopenKey = `bknr:new-entry:${window.location.pathname}`;
+        sessionStorage.setItem(reopenKey, "1");
+        const confirmation = window.Swal
+            ? Swal.fire({
+                title: "Saved Successfully",
+                text: message || "Record saved successfully.",
+                icon: "success",
+                confirmButtonText: "Add Next",
+                allowOutsideClick: false,
+            })
+            : Promise.resolve(window.alert(message || "Record saved successfully."));
+        return Promise.resolve(confirmation).then(() => window.location.reload());
+    };
+
+    function reopenNewEntryAfterSave() {
+        const reopenKey = `bknr:new-entry:${window.location.pathname}`;
+        if (sessionStorage.getItem(reopenKey) !== "1") return;
+        sessionStorage.removeItem(reopenKey);
+        setTimeout(() => {
+            if (typeof window.openModal === "function") window.openModal();
+            const form = document.querySelector("#entryModal form, form[id$='Form']");
+            const firstField = form?.querySelector("input:not([type='hidden']):not([readonly]), select:not([disabled]), textarea:not([readonly])");
+            firstField?.focus();
+        }, 80);
+    }
+
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", reopenNewEntryAfterSave, { once: true });
+    } else {
+        reopenNewEntryAfterSave();
+    }
 })();

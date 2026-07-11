@@ -79,10 +79,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 #dropdownMenu { display: none; position: absolute; right: 0; top: 35px; background: var(--card); border: 1px solid var(--border); width: 160px; z-index: 1001; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
 .menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
-.menu-item.delete-item:hover { background: #fef2f2; color: var(--danger); }
+.menu-item.cancel-item:hover { background: #fef2f2; color: var(--danger); }
 </style>
     <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
-<link rel="stylesheet" href="/static/css/global-loader.css?v=skel6">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 </head>
 <body>
 
@@ -108,7 +108,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="menu-item" onclick="pdfSelected()"><i class="fa-solid fa-file-pdf"></i> Generate PDF</div>
                 <div class="menu-item" onclick="window.location.href='/export_documents/health_certificate/register.xlsx'"><i class="fa-solid fa-file-excel"></i> Export Register</div>
                 <div class="menu-item" onclick="uploadPdfSelected()"><i class="fa-solid fa-upload"></i> Upload Updated HC</div>
-                <div class="menu-item delete-item" onclick="deleteSelected()"><i class="fa-solid fa-trash-can"></i> Delete Entry</div>
+                <div class="menu-item cancel-item" onclick="cancelSelected()"><i class="fa-solid fa-ban"></i> Cancel Entry</div>
             </div>
         </div>
         <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW HC LOG</button>
@@ -307,24 +307,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire("Saved", "Health Certificate registered successfully", "success").then(() => location.reload());
+                window.BKNRSaveAndContinue("Health Certificate registered successfully");
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }
 
-    async function deleteSelected() {
+    async function cancelSelected() {
         if (!globalSelectedId) return;
-        const confirmDelete = await Swal.fire({ title: "Delete Certificate?", text: "Are you sure?", icon: "warning", showCancelButton: true });
-        if(confirmDelete.isConfirmed) {
+        const confirmCancel = await Swal.fire({ title: "Cancel Certificate?", text: "Are you sure?", icon: "warning", showCancelButton: true });
+        if(confirmCancel.isConfirmed) {
             try {
-                const res = await fetch(`/export_documents/health_certificate/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire("Deleted", "Certificate removed", "success").then(() => location.reload());
+                const res = await fetch(`/export_documents/health_certificate/cancel/${globalSelectedId}`, { method: 'POST' });
+                if(res.ok) Swal.fire("Cancelled", "Certificate cancelled", "success").then(() => location.reload());
             } catch(e) { Swal.fire("Error", "Server error", "error"); }
         }
     }
     
     applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel6"></script>
+<script src="/static/js/global-loader.js?v=skel8"></script>
 </body>
 </html>

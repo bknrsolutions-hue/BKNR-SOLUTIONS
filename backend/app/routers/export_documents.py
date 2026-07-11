@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
+from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, and_
+from sqlalchemy import desc, func, and_, text
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
@@ -39,6 +40,7 @@ templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 EXPORT_PDF_DIR = Path("uploads/export_documents_private")
+_EXPORT_SCHEMA_READY = False
 
 
 def invalidate_export_cache(company_id: str | None):
@@ -348,6 +350,38 @@ def make_simple_pdf(title: str, document_no: str, lines: list[str]) -> bytes:
     return bytes(pdf)
 
 
+def ensure_export_document_schema(db: Session = Depends(get_db)) -> None:
+    """Keep export routes compatible while pending migrations are deployed."""
+    global _EXPORT_SCHEMA_READY
+    if _EXPORT_SCHEMA_READY:
+        return
+    for table_name in (
+        "commercial_invoices", "packing_lists", "container_stuffing",
+        "shipping_bills", "bill_of_ladings", "health_certificates",
+    ):
+        db.execute(text(
+            f"ALTER TABLE {table_name} ADD COLUMN IF NOT EXISTS "
+            "is_cancelled BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+    db.execute(text(
+        "ALTER TABLE export_compliance_tracker "
+        "ADD COLUMN IF NOT EXISTS company_id VARCHAR"
+    ))
+    db.execute(text("""
+        UPDATE export_compliance_tracker ect
+           SET company_id = es.company_id
+          FROM export_shipments es
+         WHERE es.shipment_no = ect.shipment_no
+           AND ect.company_id IS NULL
+    """))
+    db.commit()
+    _EXPORT_SCHEMA_READY = True
+
+
+# Applied to every route registered below, including direct API calls.
+router.dependencies.append(Depends(ensure_export_document_schema))
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -356,17 +390,20 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
 
     def build_dashboard_context():
         stats = {
-            "shipments": db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).count(),
-            "invoices": db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).count(),
-            "packing_lists": db.query(PackingList).filter(PackingList.company_id == comp_code).count(),
-            "stuffing": db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code).count(),
-            "shipping_bills": db.query(ShippingBill).filter(ShippingBill.company_id == comp_code).count(),
-            "bill_of_lading": db.query(BillOfLading).filter(BillOfLading.company_id == comp_code).count(),
-            "health_certificates": db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code).count(),
+            "shipments": db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True).count(),
+            "invoices": db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).count(),
+            "packing_lists": db.query(PackingList).filter(PackingList.company_id == comp_code, PackingList.is_cancelled != True).count(),
+            "stuffing": db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code, ContainerStuffing.is_cancelled != True).count(),
+            "shipping_bills": db.query(ShippingBill).filter(ShippingBill.company_id == comp_code, ShippingBill.is_cancelled != True).count(),
+            "bill_of_lading": db.query(BillOfLading).filter(BillOfLading.company_id == comp_code, BillOfLading.is_cancelled != True).count(),
+            "health_certificates": db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code, HealthCertificate.is_cancelled != True).count(),
             "compliance": (
                 db.query(ExportComplianceTracker)
-                .join(ExportShipment, ExportComplianceTracker.shipment_no == ExportShipment.shipment_no)
-                .filter(ExportShipment.company_id == comp_code)
+                .join(ExportShipment, and_(
+                    ExportComplianceTracker.company_id == ExportShipment.company_id,
+                    ExportComplianceTracker.shipment_no == ExportShipment.shipment_no,
+                ))
+                .filter(ExportComplianceTracker.company_id == comp_code, ExportShipment.company_id == comp_code)
                 .count()
             ),
         }
@@ -380,7 +417,7 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
                 "eta": _dt(row.eta),
             }
             for row in db.query(ExportShipment)
-            .filter(ExportShipment.company_id == comp_code)
+            .filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True)
             .order_by(desc(ExportShipment.id))
             .limit(8)
             .all()
@@ -394,7 +431,7 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
                 "total_amount": float(row.total_amount or 0),
             }
             for row in db.query(CommercialInvoice)
-            .filter(CommercialInvoice.company_id == comp_code)
+            .filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True)
             .order_by(desc(CommercialInvoice.id))
             .limit(8)
             .all()
@@ -423,7 +460,7 @@ def export_supporting_documents_entry(request: Request, db: Session = Depends(ge
         shipments = [
             {"id": row.id, "shipment_no": row.shipment_no, "buyer_name": row.buyer_name}
             for row in db.query(ExportShipment)
-            .filter(ExportShipment.company_id == comp_code)
+            .filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True)
             .order_by(desc(ExportShipment.id))
             .all()
         ]
@@ -525,6 +562,12 @@ class ExportShipmentSchema(BaseModel):
     etd: date = None
     eta: date = None
 
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.etd and self.eta and self.eta < self.etd:
+            raise ValueError("ETA cannot be before ETD")
+        return self
+
 class CommercialInvoiceSchema(BaseModel):
     shipment_no: str
     invoice_no: str
@@ -537,10 +580,16 @@ class CommercialInvoiceSchema(BaseModel):
     notify_party: str = None
     country: str
     currency: str = "USD"
-    exchange_rate: float = 83.50
-    total_amount: float
+    exchange_rate: Decimal = Decimal("83.50")
+    total_amount: Decimal
     payment_terms: str
     shipment_terms: str
+
+    @model_validator(mode="after")
+    def validate_amounts(self):
+        if self.exchange_rate <= 0 or self.total_amount <= 0:
+            raise ValueError("Exchange rate and invoice amount must be greater than zero")
+        return self
 
 class PackingListSchema(BaseModel):
     packing_no: str
@@ -560,6 +609,14 @@ class PackingListSchema(BaseModel):
     master_cartons: int = 0
     net_weight: float = 0.0
     gross_weight: float = 0.0
+
+    @model_validator(mode="after")
+    def validate_quantities(self):
+        if self.master_cartons < 0 or self.net_weight < 0 or self.gross_weight < 0:
+            raise ValueError("Cartons and weights cannot be negative")
+        if self.gross_weight < self.net_weight:
+            raise ValueError("Gross weight cannot be less than net weight")
+        return self
 
 class ContainerStuffingSchema(BaseModel):
     container_no: str
@@ -594,6 +651,14 @@ class ShippingBillSchema(BaseModel):
     etd: date
     eta: date
 
+    @model_validator(mode="after")
+    def validate_shipping_bill(self):
+        if self.shipping_bill_value < 0 or self.drawback_amount < 0:
+            raise ValueError("Shipping bill and drawback values cannot be negative")
+        if self.eta < self.etd:
+            raise ValueError("ETA cannot be before ETD")
+        return self
+
 class BillOfLadingSchema(BaseModel):
     bl_no: str
     bl_date: date
@@ -607,6 +672,14 @@ class BillOfLadingSchema(BaseModel):
     no_of_original_bl: int = 3
     gross_weight: float = 0.0
     net_weight: float = 0.0
+
+    @model_validator(mode="after")
+    def validate_bl(self):
+        if self.no_of_original_bl <= 0:
+            raise ValueError("Original B/L count must be greater than zero")
+        if self.net_weight < 0 or self.gross_weight < 0 or self.gross_weight < self.net_weight:
+            raise ValueError("B/L weights are invalid")
+        return self
 
 class HealthCertificateSchema(BaseModel):
     certificate_no: str
@@ -637,6 +710,70 @@ def write_audit(db: Session, table: str, rec_id: int, company_id: str, action: s
     db.add(audit)
     invalidate_export_cache(company_id)
 
+
+def require_company_invoice(db: Session, company_id: str, invoice_no: str) -> CommercialInvoice:
+    invoice = db.query(CommercialInvoice).filter(
+        CommercialInvoice.company_id == company_id,
+        CommercialInvoice.invoice_no == invoice_no,
+        CommercialInvoice.is_cancelled != True,
+    ).first()
+    if not invoice:
+        raise ValueError("Select a valid commercial invoice for this company")
+    return invoice
+
+
+def refresh_compliance(db: Session, company_id: str, shipment_no: str) -> None:
+    tracker = db.query(ExportComplianceTracker).filter(
+        ExportComplianceTracker.company_id == company_id,
+        ExportComplianceTracker.shipment_no == shipment_no,
+    ).first()
+    if not tracker:
+        return
+    invoice = db.query(CommercialInvoice).filter(
+        CommercialInvoice.company_id == company_id,
+        CommercialInvoice.shipment_no == shipment_no,
+        CommercialInvoice.is_cancelled != True,
+    ).first()
+    tracker.invoice_pending = invoice is None
+    if not invoice:
+        tracker.packing_list_pending = True
+        tracker.health_cert_pending = True
+        tracker.shipping_bill_pending = True
+        tracker.bl_pending = True
+        return
+    common = (lambda model: db.query(model).filter(
+        model.company_id == company_id,
+        model.invoice_no == invoice.invoice_no,
+        model.is_cancelled != True,
+    ).first() is None)
+    tracker.packing_list_pending = common(PackingList)
+    tracker.health_cert_pending = common(HealthCertificate)
+    tracker.shipping_bill_pending = common(ShippingBill)
+    tracker.bl_pending = common(BillOfLading)
+
+
+def apply_invoice_container_defaults(db: Session, company_id: str, invoices: list[CommercialInvoice]) -> list[CommercialInvoice]:
+    """Populate missing invoice container numbers from stuffing/shipment links for form defaults."""
+    for invoice in invoices:
+        if invoice.container_no:
+            continue
+        stuffing = db.query(ContainerStuffing).filter(
+            ContainerStuffing.company_id == company_id,
+            ContainerStuffing.invoice_no == invoice.invoice_no,
+            ContainerStuffing.is_cancelled != True,
+        ).order_by(desc(ContainerStuffing.id)).first()
+        if stuffing:
+            invoice.container_no = stuffing.container_no
+            continue
+        shipment = db.query(ExportShipment).filter(
+            ExportShipment.company_id == company_id,
+            ExportShipment.shipment_no == invoice.shipment_no,
+            ExportShipment.is_cancelled != True,
+        ).first()
+        if shipment and shipment.container_no:
+            invoice.container_no = shipment.container_no
+    return invoices
+
 # ============================================================
 # 1. EXPORT SHIPMENTS
 # ============================================================
@@ -644,7 +781,7 @@ def write_audit(db: Session, table: str, rec_id: int, company_id: str, action: s
 def export_shipment_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).order_by(desc(ExportShipment.created_at)).all()
+    history = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True).order_by(desc(ExportShipment.created_at)).all()
     return templates.TemplateResponse(request=request, name="export_documents/export_shipment.html", context={"history": history, "company_id": comp_code})
 
 @router.post("/export_shipment/save")
@@ -662,6 +799,7 @@ def export_shipment_save(request: Request, payload: ExportShipmentSchema, db: Se
     
     # Create companion Compliance checklist automatically
     compliance = ExportComplianceTracker(
+        company_id=comp_code,
         shipment_no=entry.shipment_no,
         invoice_pending=True,
         packing_list_pending=True,
@@ -682,12 +820,11 @@ def export_shipment_delete(log_id: int, request: Request, db: Session = Depends(
     email = request.session.get("email")
     entry = db.query(ExportShipment).filter(ExportShipment.id == log_id, ExportShipment.company_id == comp_code).first()
     if entry:
-        # Delete compliance checklist also
-        comp_tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == entry.shipment_no).first()
-        if comp_tracker:
-            db.delete(comp_tracker)
-        write_audit(db, "export_shipments", entry.id, comp_code, "DELETE", f"Shipment: {entry.shipment_no}", "DELETED", email)
-        db.delete(entry)
+        if entry.invoice_no:
+            return JSONResponse({"success": False, "message": "Cancel linked export documents before cancelling this shipment"}, status_code=400)
+        write_audit(db, "export_shipments", entry.id, comp_code, "CANCEL", entry.status, "CANCELLED", email)
+        entry.is_cancelled = True
+        entry.status = "CANCELLED"
         db.commit()
         return {"success": True, "message": "Export shipment deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -700,8 +837,8 @@ def export_shipment_delete(log_id: int, request: Request, db: Session = Depends(
 def commercial_invoice_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).order_by(desc(CommercialInvoice.invoice_date)).all()
-    shipments = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code).all()
+    history = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).order_by(desc(CommercialInvoice.invoice_date)).all()
+    shipments = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True).all()
     return templates.TemplateResponse(request=request, name="export_documents/commercial_invoice.html", context={"history": history, "shipments": shipments, "company_id": comp_code})
 
 @router.post("/commercial_invoice/save")
@@ -713,6 +850,15 @@ def commercial_invoice_save(request: Request, payload: CommercialInvoiceSchema, 
     
     exists = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
     if exists: return JSONResponse({"success": False, "message": "Commercial Invoice No already registered"}, status_code=400)
+    shipment = db.query(ExportShipment).filter(
+        ExportShipment.company_id == comp_code,
+        ExportShipment.shipment_no == payload.shipment_no,
+        ExportShipment.is_cancelled != True,
+    ).first()
+    if not shipment:
+        return JSONResponse({"success": False, "message": "Select a valid export shipment for this company"}, status_code=400)
+    if shipment.invoice_no:
+        return JSONResponse({"success": False, "message": "This shipment already has a commercial invoice"}, status_code=400)
     
     try:
         inr_value = payload.total_amount * payload.exchange_rate
@@ -738,12 +884,8 @@ def commercial_invoice_save(request: Request, payload: CommercialInvoiceSchema, 
         entry.status = "POSTED"
 
         # Update ExportShipment and ExportComplianceTracker status
-        shipment = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.shipment_no == payload.shipment_no).first()
-        if shipment:
-            shipment.invoice_no = entry.invoice_no
-            tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == shipment.shipment_no).first()
-            if tracker:
-                tracker.invoice_pending = False
+        shipment.invoice_no = entry.invoice_no
+        refresh_compliance(db, comp_code, shipment.shipment_no)
 
         write_audit(db, "commercial_invoices", entry.id, comp_code, "CREATE", "NONE", f"Invoice Registered: {payload.invoice_no}", email)
         db.commit()
@@ -761,9 +903,17 @@ def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depen
     ensure_bill_accounting_schema(db)
     entry = db.query(CommercialInvoice).filter(CommercialInvoice.id == log_id, CommercialInvoice.company_id == comp_code).first()
     if entry:
+        for model in (PackingList, ContainerStuffing, ShippingBill, BillOfLading, HealthCertificate):
+            if db.query(model).filter(model.company_id == comp_code, model.invoice_no == entry.invoice_no, model.is_cancelled != True).first():
+                return JSONResponse({"success": False, "message": "Cancel linked export documents before cancelling this invoice"}, status_code=400)
         cancel_linked_bill_voucher(db, comp_code, entry.journal_id, email)
-        write_audit(db, "commercial_invoices", entry.id, comp_code, "DELETE", f"Invoice: {entry.invoice_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "commercial_invoices", entry.id, comp_code, "CANCEL", entry.status, "CANCELLED", email)
+        entry.is_cancelled = True
+        entry.status = "CANCELLED"
+        shipment = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.shipment_no == entry.shipment_no).first()
+        if shipment and shipment.invoice_no == entry.invoice_no:
+            shipment.invoice_no = None
+        refresh_compliance(db, comp_code, entry.shipment_no)
         db.commit()
         invalidate_export_cache(comp_code)
         return {"success": True, "message": "Commercial invoice deleted successfully"}
@@ -777,8 +927,8 @@ def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depen
 def packing_list_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(PackingList).filter(PackingList.company_id == comp_code).order_by(desc(PackingList.created_at)).all()
-    invoices = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).all()
+    history = db.query(PackingList).filter(PackingList.company_id == comp_code, PackingList.is_cancelled != True).order_by(desc(PackingList.created_at)).all()
+    invoices = apply_invoice_container_defaults(db, comp_code, db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).all())
     return templates.TemplateResponse(request=request, name="export_documents/packing_list.html", context={"history": history, "invoices": invoices, "company_id": comp_code})
 
 @router.post("/packing_list/save")
@@ -786,17 +936,16 @@ def packing_list_save(request: Request, payload: PackingListSchema, db: Session 
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
-    
+    try:
+        invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
     entry = PackingList(company_id=comp_code, created_by=email, **payload.dict())
     db.add(entry)
     db.flush()
     
     # Update ExportComplianceTracker packing list pending status
-    invoice = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
-    if invoice:
-        tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == invoice.shipment_no).first()
-        if tracker:
-            tracker.packing_list_pending = False
+    refresh_compliance(db, comp_code, invoice.shipment_no)
             
     write_audit(db, "packing_lists", entry.id, comp_code, "CREATE", "NONE", f"Packing Item: {payload.packing_no}", email)
     db.commit()
@@ -808,8 +957,10 @@ def packing_list_delete(log_id: int, request: Request, db: Session = Depends(get
     email = request.session.get("email")
     entry = db.query(PackingList).filter(PackingList.id == log_id, PackingList.company_id == comp_code).first()
     if entry:
-        write_audit(db, "packing_lists", entry.id, comp_code, "DELETE", f"Packing No: {entry.packing_no}", "DELETED", email)
-        db.delete(entry)
+        invoice = require_company_invoice(db, comp_code, entry.invoice_no)
+        write_audit(db, "packing_lists", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
+        entry.is_cancelled = True
+        refresh_compliance(db, comp_code, invoice.shipment_no)
         db.commit()
         return {"success": True, "message": "Packing list entry deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -822,8 +973,8 @@ def packing_list_delete(log_id: int, request: Request, db: Session = Depends(get
 def container_stuffing_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code).order_by(desc(ContainerStuffing.stuffing_date)).all()
-    invoices = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).all()
+    history = db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code, ContainerStuffing.is_cancelled != True).order_by(desc(ContainerStuffing.stuffing_date)).all()
+    invoices = apply_invoice_container_defaults(db, comp_code, db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).all())
     return templates.TemplateResponse(request=request, name="export_documents/container_stuffing.html", context={"history": history, "invoices": invoices, "company_id": comp_code})
 
 @router.post("/container_stuffing/save")
@@ -831,6 +982,12 @@ def container_stuffing_save(request: Request, payload: ContainerStuffingSchema, 
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    invoice = None
+    if payload.invoice_no:
+        try:
+            invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+        except ValueError as exc:
+            return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
     
     exists = db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code, ContainerStuffing.container_no == payload.container_no).first()
     if exists: return JSONResponse({"success": False, "message": "Container stuffing already logged"}, status_code=400)
@@ -841,8 +998,8 @@ def container_stuffing_save(request: Request, payload: ContainerStuffingSchema, 
     
     # Update ExportShipment container No
     if payload.invoice_no:
-        invoice = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
         if invoice:
+            invoice.container_no = entry.container_no
             shipment = db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.shipment_no == invoice.shipment_no).first()
             if shipment:
                 shipment.container_no = entry.container_no
@@ -857,8 +1014,8 @@ def container_stuffing_delete(log_id: int, request: Request, db: Session = Depen
     email = request.session.get("email")
     entry = db.query(ContainerStuffing).filter(ContainerStuffing.id == log_id, ContainerStuffing.company_id == comp_code).first()
     if entry:
-        write_audit(db, "container_stuffing", entry.id, comp_code, "DELETE", f"Container: {entry.container_no}", "DELETED", email)
-        db.delete(entry)
+        write_audit(db, "container_stuffing", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
+        entry.is_cancelled = True
         db.commit()
         return {"success": True, "message": "Container stuffing record deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -871,8 +1028,8 @@ def container_stuffing_delete(log_id: int, request: Request, db: Session = Depen
 def shipping_bill_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(ShippingBill).filter(ShippingBill.company_id == comp_code).order_by(desc(ShippingBill.shipping_bill_date)).all()
-    invoices = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).all()
+    history = db.query(ShippingBill).filter(ShippingBill.company_id == comp_code, ShippingBill.is_cancelled != True).order_by(desc(ShippingBill.shipping_bill_date)).all()
+    invoices = apply_invoice_container_defaults(db, comp_code, db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).all())
     return templates.TemplateResponse(request=request, name="export_documents/shipping_bill.html", context={"history": history, "invoices": invoices, "company_id": comp_code})
 
 @router.post("/shipping_bill/save")
@@ -880,6 +1037,10 @@ def shipping_bill_save(request: Request, payload: ShippingBillSchema, db: Sessio
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
     
     exists = db.query(ShippingBill).filter(ShippingBill.company_id == comp_code, ShippingBill.shipping_bill_no == payload.shipping_bill_no).first()
     if exists: return JSONResponse({"success": False, "message": "Shipping Bill Number already registered"}, status_code=400)
@@ -889,11 +1050,7 @@ def shipping_bill_save(request: Request, payload: ShippingBillSchema, db: Sessio
     db.flush()
     
     # Update ExportComplianceTracker shipping bill pending status
-    invoice = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
-    if invoice:
-        tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == invoice.shipment_no).first()
-        if tracker:
-            tracker.shipping_bill_pending = False
+    refresh_compliance(db, comp_code, invoice.shipment_no)
             
     write_audit(db, "shipping_bills", entry.id, comp_code, "CREATE", "NONE", f"Shipping Bill: {payload.shipping_bill_no}", email)
     db.commit()
@@ -905,8 +1062,10 @@ def shipping_bill_delete(log_id: int, request: Request, db: Session = Depends(ge
     email = request.session.get("email")
     entry = db.query(ShippingBill).filter(ShippingBill.id == log_id, ShippingBill.company_id == comp_code).first()
     if entry:
-        write_audit(db, "shipping_bills", entry.id, comp_code, "DELETE", f"SB No: {entry.shipping_bill_no}", "DELETED", email)
-        db.delete(entry)
+        invoice = require_company_invoice(db, comp_code, entry.invoice_no)
+        write_audit(db, "shipping_bills", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
+        entry.is_cancelled = True
+        refresh_compliance(db, comp_code, invoice.shipment_no)
         db.commit()
         return {"success": True, "message": "Shipping bill record removed successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -919,8 +1078,8 @@ def shipping_bill_delete(log_id: int, request: Request, db: Session = Depends(ge
 def bill_of_lading_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(BillOfLading).filter(BillOfLading.company_id == comp_code).order_by(desc(BillOfLading.bl_date)).all()
-    invoices = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).all()
+    history = db.query(BillOfLading).filter(BillOfLading.company_id == comp_code, BillOfLading.is_cancelled != True).order_by(desc(BillOfLading.bl_date)).all()
+    invoices = apply_invoice_container_defaults(db, comp_code, db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).all())
     return templates.TemplateResponse(request=request, name="export_documents/bill_of_lading.html", context={"history": history, "invoices": invoices, "company_id": comp_code})
 
 @router.post("/bill_of_lading/save")
@@ -928,6 +1087,10 @@ def bill_of_lading_save(request: Request, payload: BillOfLadingSchema, db: Sessi
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
     
     exists = db.query(BillOfLading).filter(BillOfLading.company_id == comp_code, BillOfLading.bl_no == payload.bl_no).first()
     if exists: return JSONResponse({"success": False, "message": "BL Number already registered"}, status_code=400)
@@ -937,11 +1100,7 @@ def bill_of_lading_save(request: Request, payload: BillOfLadingSchema, db: Sessi
     db.flush()
     
     # Update ExportComplianceTracker BL pending status
-    invoice = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
-    if invoice:
-        tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == invoice.shipment_no).first()
-        if tracker:
-            tracker.bl_pending = False
+    refresh_compliance(db, comp_code, invoice.shipment_no)
             
     write_audit(db, "bill_of_ladings", entry.id, comp_code, "CREATE", "NONE", f"BL Entry: {payload.bl_no}", email)
     db.commit()
@@ -953,8 +1112,10 @@ def bill_of_lading_delete(log_id: int, request: Request, db: Session = Depends(g
     email = request.session.get("email")
     entry = db.query(BillOfLading).filter(BillOfLading.id == log_id, BillOfLading.company_id == comp_code).first()
     if entry:
-        write_audit(db, "bill_of_ladings", entry.id, comp_code, "DELETE", f"BL: {entry.bl_no}", "DELETED", email)
-        db.delete(entry)
+        invoice = require_company_invoice(db, comp_code, entry.invoice_no)
+        write_audit(db, "bill_of_ladings", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
+        entry.is_cancelled = True
+        refresh_compliance(db, comp_code, invoice.shipment_no)
         db.commit()
         return {"success": True, "message": "Bill of lading entry removed"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -967,8 +1128,8 @@ def bill_of_lading_delete(log_id: int, request: Request, db: Session = Depends(g
 def health_certificate_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
-    history = db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code).order_by(desc(HealthCertificate.issue_date)).all()
-    invoices = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code).all()
+    history = db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code, HealthCertificate.is_cancelled != True).order_by(desc(HealthCertificate.issue_date)).all()
+    invoices = apply_invoice_container_defaults(db, comp_code, db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).all())
     return templates.TemplateResponse(request=request, name="export_documents/health_certificate.html", context={"history": history, "invoices": invoices, "company_id": comp_code})
 
 @router.post("/health_certificate/save")
@@ -976,6 +1137,10 @@ def health_certificate_save(request: Request, payload: HealthCertificateSchema, 
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
     
     exists = db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code, HealthCertificate.certificate_no == payload.certificate_no).first()
     if exists: return JSONResponse({"success": False, "message": "Certificate Number already exists"}, status_code=400)
@@ -985,11 +1150,7 @@ def health_certificate_save(request: Request, payload: HealthCertificateSchema, 
     db.flush()
     
     # Update ExportComplianceTracker Health Certificate pending status
-    invoice = db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.invoice_no == payload.invoice_no).first()
-    if invoice:
-        tracker = db.query(ExportComplianceTracker).filter(ExportComplianceTracker.shipment_no == invoice.shipment_no).first()
-        if tracker:
-            tracker.health_cert_pending = False
+    refresh_compliance(db, comp_code, invoice.shipment_no)
             
     write_audit(db, "health_certificates", entry.id, comp_code, "CREATE", "NONE", f"Health Cert: {payload.certificate_no}", email)
     db.commit()
@@ -1001,8 +1162,10 @@ def health_certificate_delete(log_id: int, request: Request, db: Session = Depen
     email = request.session.get("email")
     entry = db.query(HealthCertificate).filter(HealthCertificate.id == log_id, HealthCertificate.company_id == comp_code).first()
     if entry:
-        write_audit(db, "health_certificates", entry.id, comp_code, "DELETE", f"Cert: {entry.certificate_no}", "DELETED", email)
-        db.delete(entry)
+        invoice = require_company_invoice(db, comp_code, entry.invoice_no)
+        write_audit(db, "health_certificates", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
+        entry.is_cancelled = True
+        refresh_compliance(db, comp_code, invoice.shipment_no)
         db.commit()
         return {"success": True, "message": "Health certificate deleted successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)

@@ -604,8 +604,8 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css?v=skel6">
-<link rel="stylesheet" href="/static/css/app-splash.css?v=skel6">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/app-splash.css?v=skel8">
 <link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.3">
 </head>
 <body>
@@ -805,16 +805,6 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 
     <div class="iframe-wrapper">
         <iframe id="frame" name="frame"></iframe>
-        <div id="workspaceRouteSkeleton" class="workspace-route-skeleton" aria-hidden="true">
-            <div class="workspace-skeleton-header"><span></span><i></i></div>
-            <div class="workspace-skeleton-filters"><span></span><span></span><span></span><i></i></div>
-            <div class="workspace-skeleton-kpis"><span></span><span></span><span></span><span></span></div>
-            <div class="workspace-skeleton-form"><span></span><span></span><span></span><span></span><span></span><span></span></div>
-            <div class="workspace-skeleton-chart"><span></span><span></span></div>
-            <div class="workspace-skeleton-table">
-                <b></b><span></span><span></span><span></span><span></span><span></span>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -1149,12 +1139,6 @@ function showWorkspaceLoader() {
 let targetSkeletonPoll = null;
 
 function showTargetPageSkeleton(targetUrl) {
-    const skeleton = document.getElementById('workspaceRouteSkeleton');
-    if (skeleton) {
-        skeleton.classList.remove('show', 'profile-form', 'profile-dashboard', 'profile-report');
-        skeleton.setAttribute('aria-hidden', 'true');
-    }
-
     // Never show a generic approximation for another page. Hide the outgoing
     // document until the target document has built its own exact DOM skeleton.
     const targetFrame = document.getElementById('frame');
@@ -1165,8 +1149,8 @@ function showTargetPageSkeleton(targetUrl) {
     targetSkeletonPoll = setInterval(() => {
         try {
             const framePath = targetFrame?.contentWindow?.location?.pathname;
-            const targetLoader = targetFrame?.contentDocument?.getElementById('globalLoader');
-            if (framePath === expectedPath && targetLoader) {
+            const targetSkeleton = targetFrame?.contentDocument?.querySelector('#globalLoader .loader-adaptive-snapshot.is-ready');
+            if (framePath === expectedPath && targetSkeleton) {
                 clearInterval(targetSkeletonPoll);
                 targetSkeletonPoll = null;
                 hideTargetPageSkeleton();
@@ -1180,10 +1164,6 @@ function showTargetPageSkeleton(targetUrl) {
 function hideTargetPageSkeleton() {
     clearInterval(targetSkeletonPoll);
     targetSkeletonPoll = null;
-    const skeleton = document.getElementById('workspaceRouteSkeleton');
-    if (!skeleton) return;
-    skeleton.classList.remove('show');
-    skeleton.setAttribute('aria-hidden', 'true');
     const targetFrame = document.getElementById('frame');
     if (targetFrame) targetFrame.style.visibility = 'visible';
 }
@@ -1347,12 +1327,12 @@ frame.addEventListener('load', () => {
         if (!frameDoc.querySelector('link[href*="global-loader.css"]')) {
             const loaderCss = frameDoc.createElement('link');
             loaderCss.rel = 'stylesheet';
-            loaderCss.href = '/static/css/global-loader.css?v=skel6';
+            loaderCss.href = '/static/css/global-loader.css?v=skel8';
             frameDoc.head.appendChild(loaderCss);
         }
         if (!frameDoc.querySelector('script[src*="global-loader.js"]')) {
             const loaderScript = frameDoc.createElement('script');
-            loaderScript.src = '/static/js/global-loader.js?v=skel6';
+            loaderScript.src = '/static/js/global-loader.js?v=skel8';
             frameDoc.body.appendChild(loaderScript);
         }
 
@@ -2440,7 +2420,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script src="/static/js/global-loader.js?v=skel6"></script>
+<script src="/static/js/global-loader.js?v=skel8"></script>
 <script src="/static/js/app-splash.js"></script>
 </body>
 </html>

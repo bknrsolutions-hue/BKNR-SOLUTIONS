@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, LargeBinary
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, ForeignKeyConstraint, Boolean, LargeBinary, Numeric, UniqueConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base  # Fixed: use central Base (was declarative_base())
 
@@ -12,7 +12,7 @@ class ExportShipment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    shipment_no = Column(String, unique=True, index=True, nullable=False) # e.g., SHP-2026-0001
+    shipment_no = Column(String, index=True, nullable=False) # e.g., SHP-2026-0001
     po_number = Column(String, index=True, nullable=False)
     invoice_no = Column(String, index=True, nullable=True)     # Updates once Commercial Invoice is created
     container_no = Column(String, index=True, nullable=True)   # Updates once stuffing is assigned
@@ -43,6 +43,8 @@ class ExportShipment(Base):
     invoice_rel = relationship("CommercialInvoice", back_populates="shipment_rel", uselist=False)
     compliance_rel = relationship("ExportComplianceTracker", back_populates="shipment_rel", uselist=False)
 
+    __table_args__ = (UniqueConstraint('company_id', 'shipment_no', name='uq_export_shipments_company_shipment_no'),)
+
 
 class ExportComplianceTracker(Base):
     """
@@ -51,7 +53,8 @@ class ExportComplianceTracker(Base):
     __tablename__ = 'export_compliance_tracker'
 
     id = Column(Integer, primary_key=True, index=True)
-    shipment_no = Column(String, ForeignKey('export_shipments.shipment_no'), unique=True, nullable=False)
+    company_id = Column(String, index=True, nullable=False)
+    shipment_no = Column(String, nullable=False)
     
     # Compliance Checklists
     invoice_pending = Column(Boolean, default=True)
@@ -65,6 +68,14 @@ class ExportComplianceTracker(Base):
     remarks = Column(Text, nullable=True)
 
     shipment_rel = relationship("ExportShipment", back_populates="compliance_rel")
+
+    __table_args__ = (
+        UniqueConstraint('company_id', 'shipment_no', name='uq_export_compliance_company_shipment_no'),
+        ForeignKeyConstraint(
+            ['company_id', 'shipment_no'], ['export_shipments.company_id', 'export_shipments.shipment_no'],
+            name='fk_export_compliance_company_shipment',
+        ),
+    )
 
 
 class ExportDocumentFile(Base):
@@ -97,10 +108,10 @@ class CommercialInvoice(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    shipment_no = Column(String, ForeignKey('export_shipments.shipment_no'), nullable=False)
+    shipment_no = Column(String, nullable=False)
     
     # Standardized Master Keys
-    invoice_no = Column(String, unique=True, index=True, nullable=False) # e.g., INV-2026-0001
+    invoice_no = Column(String, index=True, nullable=False) # e.g., INV-2026-0001
     po_number = Column(String, index=True, nullable=False)
     container_no = Column(String, index=True, nullable=True)
     buyer_name = Column(String, index=True, nullable=False)
@@ -113,9 +124,9 @@ class CommercialInvoice(Base):
     
     # Financials & Multi-Currency System
     currency = Column(String, default="USD")
-    exchange_rate = Column(Float, default=1.0)
-    total_amount = Column(Float, default=0.0)       # In Foreign Currency
-    invoice_value_inr = Column(Float, default=0.0)   # Auto-calculated (total_amount * exchange_rate)
+    exchange_rate = Column(Numeric(18, 6), default=1.0)
+    total_amount = Column(Numeric(18, 2), default=0.0)       # In Foreign Currency
+    invoice_value_inr = Column(Numeric(18, 2), default=0.0)   # Auto-calculated (total_amount * exchange_rate)
     
     # Logistics Specifications
     shipment_type = Column(String, default="SEA")    # SEA / AIR
@@ -151,9 +162,18 @@ class CommercialInvoice(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     approval_status = Column(String, default="PENDING")
+    is_cancelled = Column(Boolean, default=False, index=True)
 
     shipment_rel = relationship("ExportShipment", back_populates="invoice_rel")
     packing_items = relationship("PackingList", back_populates="invoice")
+
+    __table_args__ = (
+        UniqueConstraint('company_id', 'invoice_no', name='uq_commercial_invoices_company_invoice_no'),
+        ForeignKeyConstraint(
+            ['company_id', 'shipment_no'], ['export_shipments.company_id', 'export_shipments.shipment_no'],
+            name='fk_commercial_invoices_company_shipment',
+        ),
+    )
 
 
 class PackingList(Base):
@@ -164,7 +184,7 @@ class PackingList(Base):
     packing_no = Column(String, index=True, nullable=False)  # e.g., PL-2026-0001
     
     # Standardized Cross-Linking Blocks
-    invoice_no = Column(String, ForeignKey('commercial_invoices.invoice_no'), nullable=False)
+    invoice_no = Column(String, nullable=False)
     po_number = Column(String, index=True, nullable=True)
     container_no = Column(String, index=True, nullable=True)
     buyer_name = Column(String, index=True, nullable=True)
@@ -200,8 +220,16 @@ class PackingList(Base):
     updated_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False, index=True)
 
     invoice = relationship("CommercialInvoice", back_populates="packing_items")
+
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ['company_id', 'invoice_no'], ['commercial_invoices.company_id', 'commercial_invoices.invoice_no'],
+            name='fk_packing_lists_company_invoice',
+        ),
+    )
 
 
 class ContainerStuffing(Base):
@@ -212,7 +240,7 @@ class ContainerStuffing(Base):
     company_name = Column(String, nullable=True)
     
     # Standardized Identifiers
-    container_no = Column(String, unique=True, index=True, nullable=False)
+    container_no = Column(String, index=True, nullable=False)
     invoice_no = Column(String, index=True, nullable=True)
     po_number = Column(String, index=True, nullable=True)
     buyer_name = Column(String, index=True, nullable=True)
@@ -246,6 +274,9 @@ class ContainerStuffing(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     approval_status = Column(String, default="PENDING")
+    is_cancelled = Column(Boolean, default=False, index=True)
+
+    __table_args__ = (UniqueConstraint('company_id', 'container_no', name='uq_container_stuffing_company_container_no'),)
 
 
 class ShippingBill(Base):
@@ -253,7 +284,7 @@ class ShippingBill(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    shipping_bill_no = Column(String, unique=True, index=True, nullable=False) # SB-2026-0001
+    shipping_bill_no = Column(String, index=True, nullable=False) # SB-2026-0001
     shipping_bill_date = Column(Date, nullable=False)
     
     # Standardized Identifiers
@@ -263,8 +294,8 @@ class ShippingBill(Base):
     buyer_name = Column(String, index=True, nullable=True)
     
     # Financial Benefits Configurations
-    shipping_bill_value = Column(Float, default=0.0)
-    drawback_amount = Column(Float, default=0.0)     # Duty Drawback (DBK) Receivable
+    shipping_bill_value = Column(Numeric(18, 2), default=0.0)
+    drawback_amount = Column(Numeric(18, 2), default=0.0)     # Duty Drawback (DBK) Receivable
     scheme = Column(String, default="NONE")          # ROSCTL / DBK / BOTH / NONE
     customs_status = Column(String, default="LEO")   # LEO / Assessment Pending
     
@@ -286,6 +317,9 @@ class ShippingBill(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     approval_status = Column(String, default="PENDING")
+    is_cancelled = Column(Boolean, default=False, index=True)
+
+    __table_args__ = (UniqueConstraint('company_id', 'shipping_bill_no', name='uq_shipping_bills_company_shipping_bill_no'),)
 
 
 class BillOfLading(Base):
@@ -293,7 +327,7 @@ class BillOfLading(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    bl_no = Column(String, unique=True, index=True, nullable=False) # BL-2026-0001
+    bl_no = Column(String, index=True, nullable=False) # BL-2026-0001
     bl_date = Column(Date, nullable=False)
     onboard_date = Column(Date, nullable=True)
     
@@ -323,6 +357,9 @@ class BillOfLading(Base):
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
     approval_status = Column(String, default="PENDING")
+    is_cancelled = Column(Boolean, default=False, index=True)
+
+    __table_args__ = (UniqueConstraint('company_id', 'bl_no', name='uq_bill_of_ladings_company_bl_no'),)
 
 
 class HealthCertificate(Base):
@@ -330,7 +367,7 @@ class HealthCertificate(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     company_id = Column(String, index=True, nullable=False)
-    certificate_no = Column(String, unique=True, index=True, nullable=False) # HC-2026-0001
+    certificate_no = Column(String, index=True, nullable=False) # HC-2026-0001
     issue_date = Column(Date, nullable=False)
     authority = Column(String, default="EIA")          # Export Inspection Agency
     factory_approval_no = Column(String, nullable=True)
@@ -354,3 +391,6 @@ class HealthCertificate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    is_cancelled = Column(Boolean, default=False, index=True)
+
+    __table_args__ = (UniqueConstraint('company_id', 'certificate_no', name='uq_health_certificates_company_certificate_no'),)
