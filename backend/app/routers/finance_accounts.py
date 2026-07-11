@@ -645,12 +645,18 @@ def ledger_master_save(request: Request, payload: LedgerMasterSchema, db: Sessio
 def ledger_master_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     entry = db.query(LedgerMaster).filter(LedgerMaster.id == log_id, LedgerMaster.company_id == comp_code).first()
     if entry:
-        write_audit(db, "ledger_master", entry.id, comp_code, "DELETE", f"Ledger: {entry.ledger_name}", "DELETED", email)
-        db.delete(entry)
+        if entry.status == "INACTIVE":
+            return JSONResponse({"success": False, "message": "Ledger is already inactive"}, status_code=400)
+        write_audit(db, "ledger_master", entry.id, comp_code, "STATUS", entry.status, "INACTIVE", email)
+        entry.status = "INACTIVE"
+        entry.modified_by = email or "SYSTEM"
+        entry.modified_at = datetime.utcnow()
         db.commit()
-        return {"success": True, "message": "Ledger deleted successfully"}
+        return {"success": True, "message": "Ledger deactivated successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 

@@ -273,13 +273,15 @@ class AccountingReportsService:
         running_bal = opening_bal
         
         for v in v_details:
-            running_bal += (v.debit_amount - v.credit_amount)
+            debit = float(v.debit_amount or 0.0)
+            credit = float(v.credit_amount or 0.0)
+            running_bal += debit - credit
             transactions.append({
                 "voucher_no": v.voucher_no,
                 "voucher_date": v.voucher_date.strftime('%Y-%m-%d'),
                 "narration": v.narration,
-                "debit": v.debit_amount,
-                "credit": v.credit_amount,
+                "debit": debit,
+                "credit": credit,
                 "balance": running_bal,
                 "formatted_balance": f"{abs(running_bal):,.2f} {'DR' if running_bal >= 0 else 'CR'}",
                 "remarks": v.remarks

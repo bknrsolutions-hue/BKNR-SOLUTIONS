@@ -1,12 +1,13 @@
 import logging
 from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import json
 
 from app.database.models.enterprise_finance import (
-    AccountGroup, LedgerMaster, VoucherType, VoucherHeader, VoucherDetail, 
-    CostCenter, CurrencyMaster, ExchangeRate, FinanceAuditTrail
+    AccountGroup, LedgerMaster, VoucherType, VoucherHeader, VoucherDetail,
+    CostCenter, CurrencyMaster, ExchangeRate, FinanceAuditTrail, FinancialYearMaster
 )
 
 logger = logging.getLogger(__name__)
@@ -14,11 +15,46 @@ logger = logging.getLogger(__name__)
 class PostingEngineService:
 
     @staticmethod
+    def validate_details(details: list) -> tuple[Decimal, Decimal]:
+        """Validate journal lines and return currency-rounded debit/credit totals."""
+        if not isinstance(details, list) or len(details) < 2:
+            raise ValueError("A voucher requires at least two accounting lines")
+
+        total_debit = Decimal("0.00")
+        total_credit = Decimal("0.00")
+        for index, detail in enumerate(details, start=1):
+            try:
+                debit = Decimal(str(detail.get("debit_amount", 0) or 0))
+                credit = Decimal(str(detail.get("credit_amount", 0) or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                raise ValueError(f"Voucher line {index} has an invalid amount") from None
+
+            if not debit.is_finite() or not credit.is_finite():
+                raise ValueError(f"Voucher line {index} amount must be finite")
+            if debit < 0 or credit < 0:
+                raise ValueError(f"Voucher line {index} amount cannot be negative")
+            if (debit > 0) == (credit > 0):
+                raise ValueError(f"Voucher line {index} requires exactly one positive debit or credit")
+            if not str(detail.get("ledger_name", "")).strip():
+                raise ValueError(f"Voucher line {index} requires a ledger")
+
+            total_debit += debit.quantize(Decimal("0.01"))
+            total_credit += credit.quantize(Decimal("0.01"))
+
+        if total_debit <= 0 or total_debit != total_credit:
+            raise ValueError(
+                f"Transaction not balanced. Debit {total_debit:.2f} must equal credit {total_credit:.2f}"
+            )
+        return total_debit, total_credit
+
+    @staticmethod
     def verify_balance(details: list) -> bool:
-        """Checks if sum(debit) == sum(credit) for a list of voucher details."""
-        total_debit = sum(float(d.get('debit_amount', 0.0)) for d in details)
-        total_credit = sum(float(d.get('credit_amount', 0.0)) for d in details)
-        return abs(total_debit - total_credit) < 0.01
+        """Compatibility helper for callers that only need a boolean result."""
+        try:
+            PostingEngineService.validate_details(details)
+            return True
+        except (ValueError, TypeError):
+            return False
 
     @staticmethod
     def get_or_create_group(db: Session, company_id: str, group_name: str, group_type: str, parent_name: str = None) -> AccountGroup:
@@ -127,8 +163,29 @@ class PostingEngineService:
     @staticmethod
     def create_voucher(db: Session, company_id: str, voucher_type_name: str, voucher_date: date, narration: str, details: list, reference_no: str = None, created_by: str = 'SYSTEM', status: str = 'POSTED') -> VoucherHeader:
         """Creates and posts a fully balanced double entry voucher."""
-        if not PostingEngineService.verify_balance(details):
-            raise ValueError(f"Transaction not balanced. Sum(Dr) must equal Sum(Cr). Details: {details}")
+        total_debit, _ = PostingEngineService.validate_details(details)
+        allowed_statuses = {"DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "POSTED", "CANCELLED"}
+        if status not in allowed_statuses:
+            raise ValueError("Invalid voucher status")
+
+        locked_year = db.query(FinancialYearMaster).filter(
+            FinancialYearMaster.company_id == company_id,
+            FinancialYearMaster.is_locked.is_(True),
+            FinancialYearMaster.start_date <= voucher_date,
+            FinancialYearMaster.end_date >= voucher_date,
+        ).first()
+        if locked_year:
+            raise ValueError(f"Financial year {locked_year.year_name} is locked")
+
+        cost_center_ids = {d.get("cost_center_id") for d in details if d.get("cost_center_id")}
+        if cost_center_ids:
+            valid_count = db.query(CostCenter.id).filter(
+                CostCenter.company_id == company_id,
+                CostCenter.is_active.is_(True),
+                CostCenter.id.in_(cost_center_ids),
+            ).count()
+            if valid_count != len(cost_center_ids):
+                raise ValueError("One or more cost centers are invalid for this company")
 
         v_type = PostingEngineService.get_or_create_voucher_type(
             db, company_id, voucher_type_name, voucher_type_name[:3].upper()
@@ -158,15 +215,15 @@ class PostingEngineService:
                 voucher_id=header.id,
                 ledger_id=ledger.id,
                 cost_center_id=d.get('cost_center_id'),
-                debit_amount=float(d.get('debit_amount', 0.0)),
-                credit_amount=float(d.get('credit_amount', 0.0)),
+                debit_amount=Decimal(str(d.get('debit_amount', 0) or 0)).quantize(Decimal("0.01")),
+                credit_amount=Decimal(str(d.get('credit_amount', 0) or 0)).quantize(Decimal("0.01")),
                 remarks=d.get('remarks')
             )
             db.add(detail)
 
         PostingEngineService.write_finance_audit(
             db, company_id, 'voucher_headers', header.id, 'INSERT', None, 
-            {"voucher_no": voucher_no, "amount": sum(float(x.get('debit_amount', 0.0)) for x in details)},
+            {"voucher_no": voucher_no, "amount": float(total_debit)},
             created_by
         )
         db.flush()

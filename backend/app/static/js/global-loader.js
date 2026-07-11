@@ -1,6 +1,6 @@
 // ======================================================
 // BKNR ERP GLOBAL LOADER
-// Shows for page navigation and meaningful mutations only.
+// Shows a page-shaped ERP shell for navigation and data requests.
 // ======================================================
 
 (function () {
@@ -11,6 +11,10 @@
 
     let activeRequests = 0;
     let showTimer = null;
+    let safetyTimer = null;
+    let pageReady = document.readyState === "complete";
+    let initialRevealTimer = null;
+    const MAX_VISIBLE_MS = 30000;
 
     function injectSkeletonLoaderStyle() {
         if (document.getElementById("bknrSkeletonLoaderStyle")) return;
@@ -134,15 +138,35 @@
             loader = document.createElement("div");
             loader.id = "globalLoader";
             loader.classList.add("hide");
+            loader.setAttribute("role", "status");
+            loader.setAttribute("aria-live", "polite");
+            loader.setAttribute("aria-label", "Loading workspace");
+            loader.setAttribute("aria-hidden", "true");
             loader.innerHTML = `
                 <div class="loader-container">
-                    <div class="loader-skeleton loader-skeleton-title"></div>
-                    <div class="loader-skeleton loader-skeleton-line"></div>
-                    <div class="loader-skeleton loader-skeleton-line short"></div>
-                    <div class="loader-skeleton-grid">
-                        <span class="loader-skeleton"></span>
-                        <span class="loader-skeleton"></span>
-                        <span class="loader-skeleton"></span>
+                    <div class="loader-adaptive-snapshot" aria-hidden="true"></div>
+                    <div class="loader-fallback-shell">
+                    <div class="loader-shell-header">
+                        <div class="loader-heading-group">
+                            <span class="loader-skeleton loader-skeleton-logo"></span>
+                            <span class="loader-skeleton loader-skeleton-title"></span>
+                        </div>
+                        <span class="loader-skeleton loader-skeleton-action"></span>
+                    </div>
+                    <div class="loader-filter-row" aria-hidden="true">
+                        <span class="loader-skeleton"></span><span class="loader-skeleton"></span>
+                        <span class="loader-skeleton loader-filter-wide"></span><span class="loader-skeleton loader-filter-button"></span>
+                    </div>
+                    <div class="loader-skeleton-grid" aria-hidden="true">
+                        <span class="loader-skeleton"></span><span class="loader-skeleton"></span><span class="loader-skeleton"></span>
+                    </div>
+                    <div class="loader-table" aria-hidden="true">
+                        <div class="loader-table-head"><span></span><span></span><span></span></div>
+                        <div class="loader-table-row"><span></span><span></span><span></span></div>
+                        <div class="loader-table-row"><span></span><span></span><span></span></div>
+                        <div class="loader-table-row loader-table-row-last"><span></span><span></span><span></span></div>
+                    </div>
+                    <span class="loader-sr-text">Loading workspace</span>
                     </div>
                 </div>
             `;
@@ -151,23 +175,89 @@
         return loader;
     }
 
+    function buildAdaptiveSkeleton(loader) {
+        const snapshot = loader.querySelector(".loader-adaptive-snapshot");
+        const fallback = loader.querySelector(".loader-fallback-shell");
+        if (!snapshot || !fallback) return;
+
+        const selectors = [
+            "[data-skeleton-root]", "main", ".main-content", ".content-wrapper",
+            ".page-content", ".dashboard-container", ".report-container",
+            ".form-container", "body > .container-fluid", "body > .container", "body"
+        ];
+        let source = null;
+        for (const selector of selectors) {
+            source = document.querySelector(selector);
+            if (source && !source.closest("#globalLoader") && source.getBoundingClientRect().height > 80) break;
+            source = null;
+        }
+
+        if (!source) {
+            snapshot.replaceChildren();
+            snapshot.classList.remove("is-ready");
+            fallback.hidden = false;
+            return;
+        }
+
+        const clone = source === document.body ? document.createElement("div") : source.cloneNode(true);
+        if (source === document.body) {
+            Array.from(document.body.children).forEach((child) => {
+                if (!child.matches("#globalLoader, #appSplash, script, style, link, noscript, .modal, .toast, .swal2-container")) {
+                    clone.appendChild(child.cloneNode(true));
+                }
+            });
+        }
+        clone.removeAttribute("id");
+        clone.classList.add("loader-page-snapshot");
+        clone.querySelectorAll("script, style, link, noscript, #globalLoader, .modal, .toast, .swal2-container").forEach((node) => node.remove());
+        clone.querySelectorAll("[id]").forEach((node) => node.removeAttribute("id"));
+        clone.querySelectorAll("input, textarea, select").forEach((node) => {
+            node.removeAttribute("value");
+            node.removeAttribute("placeholder");
+            node.disabled = true;
+        });
+        clone.querySelectorAll("img, canvas, svg, iframe, video").forEach((node) => {
+            node.removeAttribute("src");
+            node.replaceChildren();
+            node.classList.add("loader-media-placeholder");
+        });
+        clone.querySelectorAll("a, button").forEach((node) => {
+            node.removeAttribute("href");
+            node.removeAttribute("onclick");
+            node.setAttribute("tabindex", "-1");
+        });
+
+        snapshot.replaceChildren(clone);
+        snapshot.classList.add("is-ready");
+        fallback.hidden = true;
+    }
+
     function showLoader(delay = 250) {
         const loader = ensureLoader();
         if (!loader) return;
+        buildAdaptiveSkeleton(loader);
 
         clearTimeout(showTimer);
         showTimer = setTimeout(() => {
             loader.style.display = "flex";
             loader.classList.remove("hide");
+            loader.setAttribute("aria-hidden", "false");
+            clearTimeout(safetyTimer);
+            safetyTimer = setTimeout(() => {
+                activeRequests = 0;
+                hideLoader();
+            }, MAX_VISIBLE_MS);
         }, delay);
     }
 
     function hideLoader() {
         clearTimeout(showTimer);
+        clearTimeout(safetyTimer);
         const loader = document.getElementById("globalLoader");
         if (!loader) return;
 
         loader.classList.add("hide");
+        loader.setAttribute("aria-hidden", "true");
         setTimeout(() => {
             if (activeRequests === 0) loader.style.display = "none";
         }, 250);
@@ -179,25 +269,51 @@
         const method = String(init.method || (input && input.method) || "GET").toUpperCase();
 
         if (init.loader === false || init.silent === true) return false;
-        if (method === "GET" || method === "HEAD" || method === "OPTIONS") return false;
+        if (method === "HEAD" || method === "OPTIONS") return false;
 
         return true;
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    function initializeLoader() {
         watchSpinnerIcons();
         const loader = ensureLoader();
         if (loader) {
-            loader.classList.add("hide");
-            loader.style.display = "none";
+            if (pageReady) {
+                loader.classList.add("hide");
+                loader.style.display = "none";
+            } else {
+                // Render the real page structure as a skeleton while its
+                // initial API requests and assets are still resolving.
+                buildAdaptiveSkeleton(loader);
+                showLoader(0);
+            }
         }
         syncFontAwesomeFallback();
         setTimeout(syncFontAwesomeFallback, 1200);
         watchModals();
-    });
+    }
 
-    window.addEventListener("beforeunload", function () {
-        showLoader(0);
+    if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", initializeLoader, { once: true });
+    } else {
+        initializeLoader();
+    }
+
+    window.addEventListener("load", function () {
+        pageReady = true;
+        clearTimeout(initialRevealTimer);
+        initialRevealTimer = setTimeout(() => {
+            if (activeRequests === 0) hideLoader();
+        }, 120);
+    }, { once: true });
+
+    // A page restored from the browser back-forward cache does not fire a new
+    // DOMContentLoaded event. Always reset stale navigation loaders.
+    window.addEventListener("pageshow", function (event) {
+        if (!event.persisted) return;
+        pageReady = true;
+        activeRequests = 0;
+        hideLoader();
     });
 
     const originalFetch = window.fetch;
@@ -213,7 +329,7 @@
         } finally {
             if (useLoader) {
                 activeRequests = Math.max(0, activeRequests - 1);
-                if (activeRequests === 0) hideLoader();
+                if (activeRequests === 0 && pageReady) hideLoader();
             }
         }
     };

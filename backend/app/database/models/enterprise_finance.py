@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Numeric, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -199,6 +199,10 @@ class VoucherHeader(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'voucher_no', name='uix_company_voucher_no'),
+        CheckConstraint(
+            "status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED','POSTED','CANCELLED')",
+            name='ck_voucher_header_status',
+        ),
     )
 
 
@@ -209,13 +213,23 @@ class VoucherDetail(Base):
     voucher_id = Column(Integer, ForeignKey('voucher_headers.id', ondelete='CASCADE'), nullable=False)
     ledger_id = Column(Integer, ForeignKey('ledger_masters.id'), nullable=False)
     cost_center_id = Column(Integer, ForeignKey('cost_centers.id'), nullable=True)
-    debit_amount = Column(Float, default=0.0)
-    credit_amount = Column(Float, default=0.0)
+    debit_amount = Column(Numeric(18, 2), default=0.0, nullable=False)
+    credit_amount = Column(Numeric(18, 2), default=0.0, nullable=False)
     remarks = Column(String(255), nullable=True)
 
     header = relationship("VoucherHeader", back_populates="details")
     ledger = relationship("LedgerMaster")
     cost_center = relationship("CostCenter")
+
+    __table_args__ = (
+        CheckConstraint('debit_amount >= 0', name='ck_voucher_detail_debit_nonnegative'),
+        CheckConstraint('credit_amount >= 0', name='ck_voucher_detail_credit_nonnegative'),
+        CheckConstraint(
+            '(debit_amount > 0 AND credit_amount = 0) OR '
+            '(credit_amount > 0 AND debit_amount = 0)',
+            name='ck_voucher_detail_one_sided',
+        ),
+    )
 
 
 class BankReconciliation(Base):

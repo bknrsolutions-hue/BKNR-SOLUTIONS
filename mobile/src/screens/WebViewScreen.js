@@ -4,7 +4,8 @@ import {
   Text,
   StyleSheet,
   StatusBar,
-  ActivityIndicator,
+  Animated,
+  Easing,
   TouchableOpacity,
   Platform,
   BackHandler,
@@ -13,6 +14,45 @@ import { WebView } from 'react-native-webview';
 import { useAuth } from '../context/AuthContext';
 import { BASE_URL } from '../config';
 import { Feather } from '@expo/vector-icons';
+
+function ERPSkeleton() {
+  const shimmer = useRef(new Animated.Value(-1)).current;
+
+  useEffect(() => {
+    const animation = Animated.loop(
+      Animated.timing(shimmer, {
+        toValue: 1,
+        duration: 1100,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      })
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [shimmer]);
+
+  const translateX = shimmer.interpolate({ inputRange: [-1, 1], outputRange: [-320, 320] });
+  const Block = ({ style }) => (
+    <View style={[styles.skeletonBlock, style]}>
+      <Animated.View style={[styles.skeletonShine, { transform: [{ translateX }] }]} />
+    </View>
+  );
+
+  return (
+    <View style={styles.skeletonCard} accessibilityRole="progressbar" accessibilityLabel="Loading workspace">
+      <View style={styles.skeletonHeader}><Block style={styles.skeletonLogo} /><Block style={styles.skeletonTitle} /></View>
+      <View style={styles.skeletonFilters}><Block style={styles.skeletonFilter} /><Block style={styles.skeletonFilter} /></View>
+      <View style={styles.skeletonMetrics}><Block style={styles.skeletonMetric} /><Block style={styles.skeletonMetric} /><Block style={styles.skeletonMetric} /></View>
+      <View style={styles.skeletonTable}>
+        {[0, 1, 2, 3].map((row) => (
+          <View key={row} style={[styles.skeletonRow, row === 3 && styles.skeletonLastRow]}>
+            <Block style={styles.skeletonCellWide} /><Block style={styles.skeletonCell} /><Block style={styles.skeletonCellSmall} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
 
 export default function WebViewScreen({ navigation, route }) {
   const { logout } = useAuth();
@@ -161,8 +201,7 @@ export default function WebViewScreen({ navigation, route }) {
       {/* Loading Overlay */}
       {loading && !hasError && (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#2563eb" />
-          <Text style={styles.loadingText}>Loading BKNR ERP...</Text>
+          <ERPSkeleton />
         </View>
       )}
     </View>
@@ -180,17 +219,30 @@ const styles = StyleSheet.create({
   },
   loadingContainer: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#060913',
+    backgroundColor: 'rgba(6, 9, 19, 0.94)',
     justifyContent: 'center',
     alignItems: 'center',
     zIndex: 999,
   },
-  loadingText: {
-    marginTop: 14,
-    color: '#94a3b8',
-    fontSize: 14,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+  skeletonCard: {
+    width: '88%', maxWidth: 380, padding: 14, gap: 10,
+    borderRadius: 12, borderWidth: 1, borderColor: '#263247', backgroundColor: '#111827',
+  },
+  skeletonHeader: { flexDirection: 'row', alignItems: 'center', gap: 9, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#263247' },
+  skeletonFilters: { flexDirection: 'row', gap: 7 },
+  skeletonFilter: { flex: 1, height: 32, borderRadius: 7 },
+  skeletonMetrics: { flexDirection: 'row', gap: 7 },
+  skeletonBlock: { overflow: 'hidden', backgroundColor: '#263247', borderRadius: 6 },
+  skeletonShine: { position: 'absolute', top: 0, bottom: 0, width: 90, backgroundColor: 'rgba(100, 116, 139, 0.28)' },
+  skeletonLogo: { width: 28, height: 28, borderRadius: 7 },
+  skeletonTitle: { width: '38%', height: 10, borderRadius: 5 },
+  skeletonMetric: { flex: 1, height: 40, borderRadius: 7 },
+  skeletonTable: { borderWidth: 1, borderColor: '#263247', borderRadius: 7, overflow: 'hidden' },
+  skeletonRow: { minHeight: 27, paddingHorizontal: 8, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#263247' },
+  skeletonLastRow: { borderBottomWidth: 0 },
+  skeletonCellWide: { flex: 1.5, height: 6, borderRadius: 4 },
+  skeletonCell: { flex: 0.9, height: 6, borderRadius: 4 },
+  skeletonCellSmall: { flex: 0.55, height: 6, borderRadius: 4 },
   },
   errorContainer: {
     flex: 1,
