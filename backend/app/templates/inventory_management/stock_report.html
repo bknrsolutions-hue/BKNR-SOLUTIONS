@@ -197,7 +197,12 @@ tfoot td{
     background: var(--header-bg);
     padding: 6px 12px;
     gap: 8px;
+    overflow-x: auto;
+    flex-wrap: nowrap;
 }
+.tab-button { flex:0 0 auto; }
+#uniqueValuesTable { min-width:1950px !important; }
+#uniqueValuesTable tbody td { padding:6px 5px !important; }
 .tab-button {
     background: transparent;
     color: var(--text-muted);
@@ -349,6 +354,7 @@ tfoot td{
     
     table { display: table !important; min-width: 2100px !important; }
     #summaryTable { min-width: 0 !important; width: max-content !important; }
+    #uniqueValuesTable { min-width:1950px !important; width:100% !important; }
     thead { display: table-header-group !important; }
     tbody { display: table-row-group !important; }
     tr { display: table-row !important; background: transparent !important; border: none !important; padding: 0 !important; margin: 0 !important; }
@@ -463,6 +469,7 @@ tfoot td{
     <div class="tabs-container no-print">
         <button id="tabSummary" class="tab-button active" onclick="switchTab('summary')">📊 Grouped Summary</button>
         <button id="tabLedger" class="tab-button" onclick="switchTab('ledger')">📋 Detailed Ledger</button>
+        <button id="tabUnique" class="tab-button" onclick="switchTab('unique')">📍 Location Wise Data</button>
     </div>
 
     <div class="table-wrap" id="ledgerWrap" style="display: none;">
@@ -561,6 +568,44 @@ tfoot td{
             </tfoot>
         </table>
     </div>
+
+    <div class="table-wrap" id="uniqueWrap" style="display:none;">
+        <table id="uniqueValuesTable" style="min-width:1950px;">
+            <thead>
+                <tr>
+                    <th style="width:45px">#</th>
+                    <th style="width:90px">Date</th>
+                    <th style="width:110px">Batch #</th>
+                    <th style="width:130px">Type of Production</th>
+                    <th style="width:100px">Brand</th>
+                    <th style="width:100px">Species</th>
+                    <th style="width:120px">Location</th>
+                    <th style="width:100px">PO #</th>
+                    <th style="width:130px">Production For</th>
+                    <th style="width:110px">Unit</th>
+                    <th style="width:90px">Freezer</th>
+                    <th style="width:120px">Pack Style</th>
+                    <th style="width:150px">Variety</th>
+                    <th style="width:80px">Glaze</th>
+                    <th style="width:90px">Grade</th>
+                    <th style="width:80px">No of MC</th>
+                    <th style="width:80px">Loose Qty</th>
+                    <th style="width:110px" class="qty-col">Qty (KG)</th>
+                    <th style="width:150px">System User</th>
+                </tr>
+            </thead>
+            <tbody id="uniqueValuesTbody"></tbody>
+            <tfoot>
+                <tr style="font-weight:800;">
+                    <td colspan="15" style="text-align:right;">TOTAL (STOCK IN HAND):</td>
+                    <td id="uniqueTotalMc">0</td>
+                    <td id="uniqueTotalLoose">0</td>
+                    <td id="uniqueTotalQty" class="qty-col">0.00</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
 
 <div class="audit-panel" id="auditPanel">
@@ -648,18 +693,24 @@ function switchTab(tab) {
     activeTab = tab;
     const tabLedger = document.getElementById("tabLedger");
     const tabSummary = document.getElementById("tabSummary");
+    const tabUnique = document.getElementById("tabUnique");
     const ledgerWrap = document.getElementById("ledgerWrap");
     const summaryWrap = document.getElementById("summaryWrap");
+    const uniqueWrap = document.getElementById("uniqueWrap");
+
+    [tabLedger, tabSummary, tabUnique].forEach(button => button.classList.remove("active"));
+    ledgerWrap.style.display = "none";
+    summaryWrap.style.display = "none";
+    uniqueWrap.style.display = "none";
     
     if (tab === 'ledger') {
         tabLedger.classList.add("active");
-        tabSummary.classList.remove("active");
         ledgerWrap.style.display = "block";
-        summaryWrap.style.display = "none";
+    } else if (tab === 'unique') {
+        tabUnique.classList.add("active");
+        uniqueWrap.style.display = "block";
     } else {
         tabSummary.classList.add("active");
-        tabLedger.classList.remove("active");
-        ledgerWrap.style.display = "none";
         summaryWrap.style.display = "block";
     }
 }
@@ -681,6 +732,109 @@ function addQty(target, grade, qty) {
     if (!target.gradeQty[grade]) target.gradeQty[grade] = 0;
     target.gradeQty[grade] += qty;
     target.totalQty += qty;
+}
+
+function buildUniqueValuesTable(filteredRows) {
+    const uniqueMap = new Map();
+    filteredRows.forEach(row => {
+        const batch = row.cells[2].innerText.trim();
+        const productionFor = row.cells[9].innerText.trim();
+        const unit = row.cells[10].innerText.trim();
+        const freezer = row.cells[11].innerText.trim();
+        const packStyle = row.cells[12].innerText.trim();
+        const variety = row.cells[13].innerText.trim();
+        const glaze = row.cells[14].innerText.trim();
+        const grade = row.cells[15].innerText.trim();
+
+        // 8-field unique key combination: batch number, pr for, at, freezer, packing style, variety, grade, glaze
+        const key = [batch, productionFor, unit, freezer, packStyle, variety, glaze, grade]
+            .map(value => value.toUpperCase().trim()).join("\u001f");
+
+        const movType = row.cells[4].innerText.trim().toUpperCase();
+        const sign = movType === "OUT" ? -1 : 1;
+        const mcVal = parseInt(row.cells[16].innerText) || 0;
+        const looseVal = parseInt(row.cells[17].innerText) || 0;
+        const qtyVal = parseFloat(row.cells[18].innerText.replace(/,/g, '')) || 0;
+
+        if (uniqueMap.has(key)) {
+            const existing = uniqueMap.get(key);
+            existing.noOfMc += mcVal * sign;
+            existing.looseQty += looseVal * sign;
+            existing.quantity += qtyVal * sign;
+        } else {
+            uniqueMap.set(key, {
+                date: row.cells[1].innerText.trim(),
+                batch: batch,
+                productionType: row.cells[3].innerText.trim(),
+                brand: row.cells[5].innerText.trim(),
+                species: row.cells[6].innerText.trim(),
+                location: row.cells[7].innerText.trim(),
+                poNumber: row.cells[8].innerText.trim(),
+                productionFor: productionFor,
+                unit: unit,
+                freezer: freezer,
+                packStyle: packStyle,
+                variety: variety,
+                glaze: glaze,
+                grade: grade,
+                noOfMc: mcVal * sign,
+                looseQty: looseVal * sign,
+                quantity: qtyVal * sign,
+                systemUser: row.cells[20].innerText.trim()
+            });
+        }
+    });
+
+    const uniqueRows = [...uniqueMap.values()].sort((a, b) =>
+        a.date.localeCompare(b.date, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.productionFor.localeCompare(b.productionFor, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.unit.localeCompare(b.unit, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.location.localeCompare(b.location, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.freezer.localeCompare(b.freezer, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.variety.localeCompare(b.variety, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.grade.localeCompare(b.grade, undefined, { numeric:true, sensitivity:"base" }) ||
+        a.glaze.localeCompare(b.glaze, undefined, { numeric:true, sensitivity:"base" })
+    );
+
+    const tbody = document.getElementById("uniqueValuesTbody");
+    tbody.innerHTML = uniqueRows.length ? uniqueRows.map((row, index) => {
+        const qtyDisplay = row.quantity.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return `
+        <tr>
+            <td>${index + 1}</td>
+            <td>${escapeHtml(row.date)}</td>
+            <td style="text-align:left;font-weight:800;">${escapeHtml(row.batch)}</td>
+            <td>${escapeHtml(row.productionType)}</td>
+            <td>${escapeHtml(row.brand)}</td>
+            <td>${escapeHtml(row.species)}</td>
+            <td style="text-align:left;">${escapeHtml(row.location)}</td>
+            <td>${escapeHtml(row.poNumber)}</td>
+            <td style="text-align:left;font-weight:800;">${escapeHtml(row.productionFor)}</td>
+            <td>${escapeHtml(row.unit)}</td>
+            <td>${escapeHtml(row.freezer)}</td>
+            <td>${escapeHtml(row.packStyle)}</td>
+            <td style="text-align:left;">${escapeHtml(row.variety)}</td>
+            <td>${escapeHtml(row.glaze)}</td>
+            <td>${escapeHtml(row.grade)}</td>
+            <td>${escapeHtml(row.noOfMc)}</td>
+            <td>${escapeHtml(row.looseQty)}</td>
+            <td class="qty-col">${escapeHtml(qtyDisplay)}</td>
+            <td>${escapeHtml(row.systemUser)}</td>
+        </tr>`;
+    }).join("") : `<tr><td colspan="19" class="empty-state">No unique stock values found for the selected filters.</td></tr>`;
+
+    let totalUniqueMc = 0;
+    let totalUniqueLoose = 0;
+    let totalUniqueQty = 0;
+    uniqueRows.forEach(row => {
+        totalUniqueMc += row.noOfMc;
+        totalUniqueLoose += row.looseQty;
+        totalUniqueQty += row.quantity;
+    });
+
+    document.getElementById("uniqueTotalMc").innerText = totalUniqueMc;
+    document.getElementById("uniqueTotalLoose").innerText = totalUniqueLoose;
+    document.getElementById("uniqueTotalQty").innerText = totalUniqueQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function buildSummaryTableHeader(gradeColumns) {
@@ -835,6 +989,7 @@ function applyFilters() {
     document.getElementById("tot_mc").innerText = mcT;
     document.getElementById("tot_lse").innerText = lsT;
     document.getElementById("tot_qty").innerText = qtyT.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    buildUniqueValuesTable(filteredRows);
 
     // Populate Summary Matrix Table with sub-totals and totals
     const summaryTbody = document.getElementById("summaryTbody");

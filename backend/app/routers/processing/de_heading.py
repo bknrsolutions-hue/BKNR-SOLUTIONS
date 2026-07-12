@@ -152,6 +152,39 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
             "available_qty": round(available_qty, 2)
         })
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "contractors": masters["contractors"],
+            "species": masters["species"],
+            "peeling_locations": peeling_locs,
+            "prod_for_list": final_prod_for_list,
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "production_for": r.production_for,
+                    "peeling_at": r.peeling_at,
+                    "species": r.species,
+                    "batch_number": r.batch_number,
+                    "hoso_count": r.hoso_count,
+                    "hoso_qty": r.hoso_qty,
+                    "hlso_qty": r.hlso_qty,
+                    "yield_percent": r.yield_percent,
+                    "contractor": r.contractor,
+                    "rate_per_kg": r.rate_per_kg,
+                    "amount": r.amount,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "hoso_floor_balance": hoso_floor_balance_list
+        })
+
     return templates.TemplateResponse(
         request=request, name="processing/de_heading.html",
         context={

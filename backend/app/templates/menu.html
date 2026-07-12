@@ -488,6 +488,18 @@ body {
 }
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
+.target-page-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: none;
+    overflow: hidden;
+    padding: clamp(14px, 2vw, 24px);
+    background: var(--bg-app);
+    pointer-events: none;
+}
+.target-page-skeleton.show { display: block; }
+
 /* =========================================================
    🌟 MOBILE GRID & MODALS
 ========================================================= */
@@ -804,6 +816,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     </div>
 
     <div class="iframe-wrapper">
+        <div id="targetPageSkeleton" class="target-page-skeleton" role="status" aria-label="Loading original page structure" aria-hidden="true"></div>
         <iframe id="frame" name="frame"></iframe>
     </div>
 </div>
@@ -1139,13 +1152,25 @@ function showWorkspaceLoader() {
 let targetSkeletonPoll = null;
 
 function showTargetPageSkeleton(targetUrl) {
-    // Never show a generic approximation for another page. Hide the outgoing
-    // document until the target document has built its own exact DOM skeleton.
     const targetFrame = document.getElementById('frame');
-    if (targetFrame) targetFrame.style.visibility = 'hidden';
+    const shellSkeleton = document.getElementById('targetPageSkeleton');
+    const expectedPath = new URL(targetUrl, window.location.origin).pathname;
+    let cachedSkeleton = null;
+    try { cachedSkeleton = sessionStorage.getItem(`bknr:exact-skeleton:${expectedPath}`); } catch (e) {}
+
+    if (shellSkeleton && cachedSkeleton) {
+        shellSkeleton.innerHTML = cachedSkeleton;
+        shellSkeleton.classList.add('show');
+        shellSkeleton.setAttribute('aria-hidden', 'false');
+    } else if (shellSkeleton) {
+        shellSkeleton.classList.remove('show');
+        shellSkeleton.setAttribute('aria-hidden', 'true');
+    }
+    // On the first visit keep the current screen visible. Never replace it
+    // with a generic skeleton that belongs to a different page structure.
+    if (targetFrame) targetFrame.style.visibility = 'visible';
 
     clearInterval(targetSkeletonPoll);
-    const expectedPath = new URL(targetUrl, window.location.origin).pathname;
     targetSkeletonPoll = setInterval(() => {
         try {
             const framePath = targetFrame?.contentWindow?.location?.pathname;
@@ -1161,11 +1186,56 @@ function showTargetPageSkeleton(targetUrl) {
     }, 25);
 }
 
+function cacheExactFrameSkeleton(frameDoc, framePath) {
+    if (!frameDoc || !framePath) return;
+    const selectors = [
+        '[data-skeleton-root]', 'main', '.main-content', '.content-wrapper',
+        '.page-content', '.dashboard-container', '.report-container',
+        '.form-container', 'body > .container-fluid', 'body > .container', 'body'
+    ];
+    let source = null;
+    for (const selector of selectors) {
+        const candidate = frameDoc.querySelector(selector);
+        if (candidate && candidate.getBoundingClientRect().height > 80) { source = candidate; break; }
+    }
+    if (!source) return;
+
+    const clone = source === frameDoc.body ? frameDoc.createElement('div') : source.cloneNode(true);
+    if (source === frameDoc.body) {
+        Array.from(frameDoc.body.children).forEach(child => {
+            if (!child.matches('#globalLoader, #appSplash, script, style, link, noscript, .modal, .toast, .swal2-container')) {
+                clone.appendChild(child.cloneNode(true));
+            }
+        });
+    }
+    clone.removeAttribute('id');
+    clone.classList.add('loader-page-snapshot');
+    clone.querySelectorAll('script, style, link, noscript, #globalLoader, .modal, .toast, .swal2-container').forEach(node => node.remove());
+    clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    clone.querySelectorAll('tbody').forEach(body => {
+        Array.from(body.children).slice(6).forEach(row => row.remove());
+    });
+    clone.querySelectorAll('select').forEach(select => {
+        Array.from(select.options).slice(1).forEach(option => option.remove());
+    });
+    clone.querySelectorAll('img, canvas, svg, iframe, video').forEach(node => {
+        node.removeAttribute('src');
+        node.replaceChildren();
+        node.classList.add('loader-media-placeholder');
+    });
+    try { sessionStorage.setItem(`bknr:exact-skeleton:${framePath}`, clone.outerHTML); } catch (e) {}
+}
+
 function hideTargetPageSkeleton() {
     clearInterval(targetSkeletonPoll);
     targetSkeletonPoll = null;
     const targetFrame = document.getElementById('frame');
+    const shellSkeleton = document.getElementById('targetPageSkeleton');
     if (targetFrame) targetFrame.style.visibility = 'visible';
+    if (shellSkeleton) {
+        shellSkeleton.classList.remove('show');
+        shellSkeleton.setAttribute('aria-hidden', 'true');
+    }
 }
 
 function broadcastUniversalFilters() { 
@@ -1321,6 +1391,7 @@ frame.addEventListener('load', () => {
 
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         if (!frameDoc) return;
+        cacheExactFrameSkeleton(frameDoc, frame.contentWindow.location.pathname);
 
         // Every ERP screen gets the same loader, including legacy templates
         // that are opened directly inside the workspace iframe.

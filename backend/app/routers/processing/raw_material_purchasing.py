@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import RedirectResponse, HTMLResponse
+from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 from datetime import datetime, timedelta
@@ -288,6 +288,53 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         today_q = today_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_location))
         
     today_data = today_q.order_by(RawMaterialPurchasing.id.desc()).all()
+
+    if request.query_params.get("format") == "json":
+        hsn_map = master_context.get("hsn_map_json")
+        prod_batch_map = master_context.get("prod_batch_map_json")
+        batch_supplier_map = master_context.get("batch_supplier_map_json")
+        return JSONResponse({
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "batch_number": r.batch_number,
+                    "supplier_name": r.supplier_name,
+                    "production_for": r.production_for,
+                    "peeling_at": r.peeling_at,
+                    "variety_name": r.variety_name,
+                    "species": r.species,
+                    "hsn_code": r.hsn_code,
+                    "count": r.count,
+                    "g1_qty": r.g1_qty,
+                    "g2_qty": r.g2_qty,
+                    "dc_qty": r.dc_qty,
+                    "received_qty": r.received_qty,
+                    "rate_per_kg": r.rate_per_kg,
+                    "amount": r.amount,
+                    "material_boxes": r.material_boxes,
+                    "remarks": r.remarks,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "supplier_list": master_context.get("supplier_list", []),
+            "variety_list": master_context.get("variety_list", []),
+            "species_list": master_context.get("species_list", []),
+            "peeling_locations": master_context.get("peeling_locations", []),
+            "prod_for_list": master_context.get("prod_for_list", []),
+            "hsn_list": master_context.get("hsn_list", []),
+            "hsn_map": json.loads(hsn_map) if isinstance(hsn_map, str) else hsn_map,
+            "hoso_summary": hoso_summary,
+            "drill_down": drill_down,
+            "prod_batch_map": json.loads(prod_batch_map) if isinstance(prod_batch_map, str) else prod_batch_map,
+            "batch_supplier_map": json.loads(batch_supplier_map) if isinstance(batch_supplier_map, str) else batch_supplier_map
+        })
 
     context = {
         **master_context,

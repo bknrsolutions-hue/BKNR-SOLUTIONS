@@ -261,6 +261,18 @@
         }
         .close-btn:hover { color: #fff; background: var(--corp-danger); border-color: var(--corp-danger); }
         #entryFrame { width: 100%; flex-grow: 1; border: none; background: transparent; }
+        .entry-frame-shell { position:relative; display:flex; flex:1; min-height:0; }
+        .entry-form-skeleton { position:absolute; inset:0; z-index:3; display:none; padding:18px; overflow:hidden; background:var(--bg-app); }
+        .entry-form-skeleton.show { display:block; }
+        .entry-skeleton-head { width:34%; height:16px; margin-bottom:18px; border-radius:6px; background:var(--border-light); }
+        .entry-skeleton-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:16px; border:1px solid var(--border-light); border-radius:10px; background:var(--surface-panel); }
+        .entry-skeleton-field { display:grid; gap:7px; }
+        .entry-skeleton-label { width:44%; height:8px; border-radius:99px; background:var(--border-light); }
+        .entry-skeleton-input { height:38px; border:1px solid var(--border-light); border-radius:6px; background:var(--bg-app); }
+        .entry-skeleton-head,.entry-skeleton-label,.entry-skeleton-input { position:relative; overflow:hidden; }
+        .entry-skeleton-head::after,.entry-skeleton-label::after,.entry-skeleton-input::after { content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); animation:entrySkeletonShimmer 1.05s infinite; }
+        @keyframes entrySkeletonShimmer { to { transform:translateX(100%); } }
+        @media(max-width:700px){.entry-skeleton-grid{grid-template-columns:1fr 1fr}.entry-form-skeleton{padding:12px}}
 
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         
@@ -569,7 +581,15 @@
             <h3 id="modalTitle">Process Terminal</h3>
             <button class="close-btn" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <iframe id="entryFrame" src="" frameborder="0"></iframe>
+        <div class="entry-frame-shell">
+            <div id="entryFormSkeleton" class="entry-form-skeleton" aria-hidden="true">
+                <div class="entry-skeleton-head"></div>
+                <div class="entry-skeleton-grid">
+                    {% for _ in range(14) %}<div class="entry-skeleton-field"><span class="entry-skeleton-label"></span><span class="entry-skeleton-input"></span></div>{% endfor %}
+                </div>
+            </div>
+            <iframe id="entryFrame" src="" frameborder="0"></iframe>
+        </div>
     </div>
 </div>
 
@@ -666,7 +686,11 @@
         
         const iframeUrl = url + "?" + urlParams.toString();
         
-        document.getElementById('entryFrame').src = iframeUrl;
+        const entryFrame = document.getElementById('entryFrame');
+        const entrySkeleton = document.getElementById('entryFormSkeleton');
+        if (entrySkeleton) { entrySkeleton.classList.add('show'); entrySkeleton.setAttribute('aria-hidden', 'false'); }
+        entryFrame.style.visibility = 'hidden';
+        entryFrame.src = iframeUrl;
         document.getElementById('entryModal').style.display = 'flex';
         document.body.style.overflow = 'hidden'; 
     }
@@ -677,6 +701,12 @@
         document.body.style.overflow = 'auto'; 
         location.reload(); 
     }
+
+    document.getElementById('entryFrame').addEventListener('load', function() {
+        const entrySkeleton = document.getElementById('entryFormSkeleton');
+        this.style.visibility = 'visible';
+        if (entrySkeleton) { entrySkeleton.classList.remove('show'); entrySkeleton.setAttribute('aria-hidden', 'true'); }
+    });
 
     window.onclick = function(event) { if (event.target == document.getElementById('entryModal')) { closeEntryModal(); } }
 

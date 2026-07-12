@@ -15,7 +15,7 @@
 <meta charset="UTF-8">
 <title>FLOOR BALANCE VALUE | ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
 <style>:root {
@@ -52,7 +52,7 @@
 
 
 
-*{box-sizing:border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
+*{box-sizing:border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0;}
 body{
  background:var(--bg); height:100vh;
  display:flex; flex-direction:column; overflow:hidden; color:var(--text); -webkit-font-smoothing: antialiased;
@@ -86,6 +86,41 @@ select,input[type=text],#searchBox{ padding:3px 5px; font-size:10px; border:1px 
     #searchBox { min-width: 150px !important; width: 150px !important; }
 }
 
+/* Floor Balance shared UI: keep quantity and value screens visually identical. */
+body { background:transparent; color:var(--text-main); }
+.dashboard-wrapper { display:flex; flex-direction:column; width:100%; height:100vh; }
+.sidebar { width:100%; flex-shrink:0; z-index:100; display:flex; flex-direction:column; padding:8px 10px; background:var(--card-bg); border-bottom:1px solid var(--border-color); }
+.sidebar h2 { margin:0 0 6px; color:var(--text-muted); font-size:8px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+.sidebar .filters { margin:0; padding:0 0 4px; border:0; border-radius:0; background:transparent; }
+.sidebar .fbox { width:130px; min-width:130px; gap:2px; }
+.sidebar .fbox label { color:var(--text-muted); font-size:7.5px; }
+.sidebar select,.sidebar input,#searchBox { width:100% !important; min-width:0 !important; height:32px !important; padding:5px 6px; color:var(--text-main); background:var(--slate-bg); border:1px solid var(--border-color); font-size:10.5px; font-weight:600; }
+.main-content { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; background:var(--slate-bg); }
+.header-top { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:8px 10px; background:var(--card-bg); border-bottom:1px solid var(--border-color); }
+.header-top h2 { margin:0; color:var(--primary-dark); font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; }
+.header-meta { display:flex; align-items:center; gap:12px; color:var(--text-muted); font-size:8px; font-weight:700; }
+.btn-print { min-height:28px; padding:5px 9px; color:var(--card-bg); background:var(--accent-blue); font-size:8px; }
+.section { border-radius:var(--radius-premium); border-color:var(--border-color); }
+.table-wrap { background:var(--card-bg) !important; }
+thead th { color:var(--text-muted) !important; background:var(--slate-bg) !important; border-color:var(--border-color) !important; font-weight:700; }
+tbody td { color:var(--text-main) !important; background:var(--card-bg); border-color:var(--border-color) !important; }
+tbody tr:hover td { background:var(--row-hover) !important; }
+.row-loc td,.row-comp td,.row-var td { color:var(--text-main) !important; border-color:var(--border-color) !important; }
+.row-loc td { background:var(--header-bg) !important; border-left:3px solid var(--accent-blue) !important; }
+.row-comp td { background:var(--row-even) !important; }
+.row-var td { background:var(--card-bg) !important; color:var(--text-muted) !important; }
+.batch-bold,.qty-bold,.val-column,.tag,.source-tag { color:var(--text-main) !important; }
+tfoot td { color:var(--primary-dark) !important; background:var(--slate-bg) !important; border-color:var(--border-color) !important; }
+#net_value,#net_qty { color:var(--accent-blue) !important; }
+
+@media(min-width:992px){
+    .dashboard-wrapper{flex-direction:row}
+    .sidebar{width:220px;height:100vh;padding:18px 14px;border-right:1px solid var(--border-color);border-bottom:0}
+    .sidebar .filters{flex-direction:column;gap:10px;overflow-x:visible !important;flex-wrap:wrap !important}
+    .sidebar .fbox{width:100%;min-width:0}
+    .sidebar select,.sidebar input,#searchBox{height:38px !important;font-size:12px !important}
+}
+
 /* ================= ACTIONS ================= */
 .actions{ background:var(--card-bg); padding:4px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
@@ -101,17 +136,17 @@ table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1100
 thead th{
  background:var(--header-bg); padding:8px 4px; font-size:9.5px; font-weight:800;
  text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:20;
+ border-right:1px solid var(--border-color); position:sticky; top:0; z-index:20;
  color: var(--text); letter-spacing: 0.3px; white-space: nowrap;
 }
 
 tbody td{
- padding:6px 4px; font-size:9.5px; border-bottom:1px solid #f1f5f9;
- border-right:1px solid #f8fafc; text-align:center;
+ padding:6px 4px; font-size:9.5px; border-bottom:1px solid var(--border-color);
+ border-right:1px solid var(--border-color); text-align:center;
  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
  font-weight: 600; color: var(--primary);
 }
-tbody tr:hover{ background:#f1f7ff; cursor:pointer; }
+tbody tr:hover{ background:var(--row-hover); cursor:pointer; }
 
 /* 🌟 FRACTIONAL WIDTH COLUMNS MATRIX SYSTEM */
 .w-sl { width: 45px; }       
@@ -126,8 +161,8 @@ tbody tr:hover{ background:#f1f7ff; cursor:pointer; }
 .w-am { width: 130px; }     
 
 /* 🟢 SUBROWS INTERNAL MATRIX */
-.row-loc td { background: var(--primary) !important; text-align: left !important; padding-left: 12px !important; color: #ffffff !important; font-size: 9.5px; font-weight: 800; }
-.row-comp td { background: #eff6ff !important; text-align: left !important; padding-left: 24px !important; color: var(--accent) !important; font-size: 9.5px; font-weight: 700; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+.row-loc td { background: var(--header-bg) !important; text-align: left !important; padding-left: 12px !important; color: var(--primary-dark) !important; font-size: 9.5px; font-weight: 800; }
+.row-comp td { background: var(--row-even) !important; text-align: left !important; padding-left: 24px !important; color: var(--text-main) !important; font-size: 9.5px; font-weight: 700; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
 .row-var td { background: var(--header-bg) !important; text-align: left !important; padding-left: 36px !important; color: var(--text-muted) !important; font-size: 9.5px; font-weight: 700; border-bottom: 1px solid var(--border); }
 
 .qty-bold { text-align: right !important; font-weight: 800; padding-right: 8px !important; }
@@ -174,6 +209,38 @@ tfoot td{
     tfoot tr { display: table-row !important; }
     tfoot td { display: table-cell !important; padding: 4px 2px !important; font-size: 9px !important; }
 }
+
+/* Final shared cascade — identical visual language to Floor Balance Tracker. */
+html,body { color:var(--text-main) !important; }
+body { background:transparent !important; }
+.dashboard-wrapper { display:flex !important; flex-direction:column; height:100vh; width:100%; }
+.sidebar { width:100%; padding:8px 10px; background:var(--card-bg) !important; border-bottom:1px solid var(--border-color); }
+.sidebar h2,.fbox label { color:var(--text-muted) !important; }
+.sidebar .filters { margin:0; padding:0 0 4px; border:0; background:transparent !important; }
+.sidebar select,.sidebar input,#searchBox { color:var(--text-main) !important; background:var(--slate-bg) !important; border-color:var(--border-color) !important; }
+.main-content { display:flex; flex:1; flex-direction:column; min-width:0; overflow:hidden; background:var(--slate-bg) !important; }
+.header-top { padding:8px 10px; background:var(--card-bg) !important; border-bottom:1px solid var(--border-color); }
+.header-top h2 { color:var(--primary-dark) !important; font-size:10px; }
+.header-meta,#rowCount { color:var(--text-muted) !important; }
+.section { margin:4px; background:var(--card-bg) !important; border:1px solid var(--border-color) !important; border-radius:var(--radius-premium); }
+.table-wrap { background:var(--card-bg) !important; }
+thead th { padding:6px 2px; color:var(--text-muted) !important; background:var(--slate-bg) !important; border:1px solid var(--border-color) !important; font-size:8px; font-weight:700; }
+tbody td { padding:6px 3px; color:var(--text-main) !important; background:var(--card-bg) !important; border:1px solid var(--border-color) !important; font-size:8.5px; font-weight:600; }
+tbody tr:hover td { color:var(--text-main) !important; background:var(--row-hover) !important; }
+.row-loc td { color:var(--primary-dark) !important; background:var(--header-bg) !important; border-left:3px solid var(--accent-blue) !important; }
+.row-comp td { color:var(--text-main) !important; background:var(--row-even) !important; }
+.row-var td { color:var(--text-muted) !important; background:var(--card-bg) !important; }
+.batch-bold,.qty-bold,.val-column,.tag,.source-tag { color:var(--text-main) !important; }
+tfoot td { color:var(--primary-dark) !important; background:var(--slate-bg) !important; border-color:var(--border-color) !important; }
+#net_qty,#net_value { color:var(--accent-blue) !important; }
+
+@media(min-width:768px){thead th{padding:8px 4px;font-size:9px}tbody td{padding:8px 6px;font-size:10.5px}}
+@media(min-width:992px){
+    .dashboard-wrapper{flex-direction:row}
+    .sidebar{width:220px;height:100vh;padding:18px 14px;border-right:1px solid var(--border-color);border-bottom:0}
+    .sidebar .filters{flex-direction:column;gap:10px;overflow-x:visible !important;flex-wrap:wrap !important}
+    .sidebar .fbox{width:100%;min-width:0}
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
     <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
@@ -181,14 +248,9 @@ tfoot td{
 
 <body>
 
-<div class="header">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>Floor Balance Value Summary</h2>
-        <div style="font-size: 10px; font-weight: 600; color: var(--text-muted);">
-            Company: {{ company_id }}
-        </div>
-    </div>
-    
+<div class="dashboard-wrapper">
+<aside class="sidebar">
+    <h2>Report Filters</h2>
     <div class="filters">
         <div class="fbox">
             <label>Location</label>
@@ -225,11 +287,16 @@ tfoot td{
             <input id="searchBox" placeholder="Search by Batch, Species, Source..." oninput="applyFilters()">
         </div>
     </div>
-</div>
+</aside>
 
-<div class="actions">
-    <div id="rowCount">0 Records Found</div>
-    <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print Report</button>
+<main class="main-content">
+<div class="header-top">
+    <h2>Floor Balance Value Summary</h2>
+    <div class="header-meta">
+        <span>Company: {{ company_id }}</span>
+        <span id="rowCount">0 Records Found</span>
+        <button class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Print</button>
+    </div>
 </div>
 
 <div class="section">
@@ -260,12 +327,14 @@ tfoot td{
                     <td class="w-sp"></td>
                     <td class="w-var"></td>
                     <td class="w-ct" style="text-align:right; padding-right: 8px;">GRAND TOTAL:</td>
-                    <td class="w-qt" id="net_qty" class="qty-bold" style="text-align: right;">0.00</td>
-                    <td class="w-am" id="net_value" class="qty-bold" style="color:var(--success); text-align: right;">0.00</td>
+                    <td class="w-qt qty-bold" id="net_qty" style="text-align: right;">0.00</td>
+                    <td class="w-am qty-bold" id="net_value" style="text-align: right;">0.00</td>
                 </tr>
             </tfoot>
         </table>
     </div>
+</div>
+</main>
 </div>
 
 <script>
@@ -335,7 +404,7 @@ function applyFilters() {
                 tree[l].comps[c].vars[v].items.forEach(item => {
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
-                        <td class="w-sl" style="color:#64748b;">${sl++}</td>
+                        <td class="w-sl" style="color:var(--text-muted);">${sl++}</td>
                         <td class="w-loc" style="text-align:left;">${item.location}</td>
                         <td class="w-pf" style="text-align:left;">${item.production_for}</td>
                         <td class="w-bt batch-bold">${item.batch}</td>

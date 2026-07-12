@@ -58,7 +58,7 @@
     "@type": "Organization",
     "name": "SVBK IT SOLUTIONS",
     "url": "https://bknrerp.in/",
-    "logo": "https://bknrerp.in/static/images/svbk-it-solutions-logo.jpeg"
+    "logo": "https://bknrerp.in/static/images/svbk-it-solutions-logo.png"
   }
 }
 </script>
@@ -154,6 +154,53 @@
                 linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 52%);
         }
 
+        body.website-page {
+            background:
+                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
+                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
+                linear-gradient(145deg, #f7fbff, #eef7ff 48%, #f4fffd);
+        }
+
+        .website-page .site-shell::before {
+            inset: -24% -10%;
+            z-index: -2;
+            background-image:
+                linear-gradient(rgba(37,99,235,.13) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(37,99,235,.13) 1px, transparent 1px),
+                linear-gradient(rgba(13,148,136,.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(13,148,136,.06) 1px, transparent 1px);
+            background-size: 64px 64px, 64px 64px, 16px 16px, 16px 16px;
+            opacity: .72;
+            mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.28));
+            transform-origin: center bottom;
+            transform-style: preserve-3d;
+            animation: erpGridDepth 14s ease-in-out infinite alternate;
+        }
+
+        .website-page .site-shell::after {
+            z-index: -1;
+            background:
+                radial-gradient(circle at 12% 24%, rgba(37,99,235,.65) 0 3px, transparent 4px),
+                radial-gradient(circle at 78% 18%, rgba(13,148,136,.58) 0 4px, transparent 5px),
+                radial-gradient(circle at 66% 74%, rgba(217,119,6,.42) 0 3px, transparent 4px),
+                linear-gradient(115deg, transparent 18%, rgba(37,99,235,.07) 18.4% 18.8%, transparent 19.2%),
+                linear-gradient(32deg, transparent 67%, rgba(13,148,136,.07) 67.4% 67.8%, transparent 68.2%),
+                linear-gradient(180deg, rgba(255,255,255,.54), rgba(255,255,255,.16));
+            background-size: 190px 170px, 260px 220px, 310px 270px, 150% 150%, 160% 160%, auto;
+            animation: erpSignalsFloat 11s ease-in-out infinite alternate;
+        }
+
+        @keyframes erpGridDepth {
+            0% { transform: perspective(950px) rotateX(58deg) rotateZ(-2deg) translate3d(-2%, -4%, -80px) scale(1.05); }
+            50% { transform: perspective(950px) rotateX(54deg) rotateZ(1deg) translate3d(1%, 1%, 5px) scale(1.09); }
+            100% { transform: perspective(950px) rotateX(60deg) rotateZ(2deg) translate3d(3%, -2%, 55px) scale(1.04); }
+        }
+
+        @keyframes erpSignalsFloat {
+            0% { background-position: 0 0, 0 0, 0 30px, 30px 0, 0 0, 0 0; }
+            100% { background-position: 46px -60px, -54px 64px, 76px -82px, 8% 5%, -7% -5%, 0 0; }
+        }
+
         .site-nav {
             position: sticky;
             top: 0;
@@ -162,11 +209,15 @@
             align-items: center;
             justify-content: space-between;
             gap: 24px;
-            padding: 16px clamp(18px, 4vw, 56px);
+            padding: 4px clamp(18px, 4vw, 56px) 4px 0;
             background: rgba(255, 255, 255, 0.88);
             border-bottom: 1px solid rgba(15, 23, 42, 0.08);
             backdrop-filter: blur(20px);
             box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+        }
+
+        .site-nav > .nav-action {
+            margin-left: auto;
         }
 
         .brand {
@@ -178,15 +229,15 @@
 
         .brand-wordmark {
             display: block;
-            width: clamp(170px, 18vw, 250px);
+            width: clamp(220px, 24vw, 340px);
             height: auto;
-            max-height: 58px;
+            max-height: 72px;
             object-fit: contain;
         }
 
         .form-brand .brand-wordmark {
-            width: min(230px, 58vw);
-            max-height: 62px;
+            width: min(390px, 92vw);
+            max-height: 128px;
         }
 
         .brand-mark {
@@ -196,7 +247,7 @@
             place-items: center;
             flex: 0 0 auto;
             border-radius: 12px;
-            overflow: hidden;
+            overflow: visible;
             color: #ffffff;
             background: #ffffff;
             border: 1px solid rgba(37, 99, 235, 0.12);
@@ -345,6 +396,34 @@
             box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
             font-size: 0.76rem;
             font-weight: 900;
+        }
+
+        .ui-inline-icon {
+            width: 16px;
+            height: 16px;
+            flex: 0 0 auto;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            vertical-align: -3px;
+            margin-right: 6px;
+        }
+
+        .core-pill,
+        .module-card .tag,
+        .process-card b {
+            align-items: center;
+        }
+
+        .hero-core-card b,
+        .metric strong,
+        .hero-photo-caption strong,
+        .insight-card strong,
+        .float-card b {
+            display: flex;
+            align-items: center;
         }
 
         .hero-actions {
@@ -1076,7 +1155,11 @@
 
         .login-section {
             display: grid;
-            place-items: center;
+            grid-template-columns: minmax(0, 1.35fr) minmax(390px, 460px);
+            align-items: center;
+            gap: clamp(34px, 5vw, 76px);
+            max-width: 1380px;
+            margin: 0 auto;
             min-height: calc(100vh - 78px);
             padding: 64px clamp(18px, 4vw, 56px);
             scroll-margin-top: 96px;
@@ -1085,6 +1168,254 @@
         .login-section .auth-panel {
             position: static;
             width: min(100%, 460px);
+        }
+
+        .login-showcase {
+            min-width: 0;
+        }
+
+        .login-showcase-copy {
+            max-width: 760px;
+            margin-bottom: 24px;
+        }
+
+        .login-showcase-copy h1 {
+            margin: 0 0 14px;
+            color: var(--text-primary);
+            font-size: clamp(2rem, 3.4vw, 4rem);
+            line-height: 1.02;
+            letter-spacing: -.045em;
+        }
+
+        .login-showcase-copy p {
+            margin: 5px 0;
+            color: var(--text-secondary);
+            font-size: clamp(.86rem, 1vw, 1rem);
+            line-height: 1.55;
+            font-weight: 650;
+        }
+
+        .login-image-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-auto-rows: 112px;
+            gap: 12px;
+            perspective: 1200px;
+        }
+
+        .login-image-card {
+            position: relative;
+            margin: 0;
+            overflow: hidden;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.72);
+            box-shadow: 0 18px 44px rgba(15,23,42,.16);
+            transform: translateZ(0);
+            transition: transform .28s ease, box-shadow .28s ease;
+        }
+
+        .login-image-card:hover {
+            transform: translateY(-5px) rotateX(2deg) rotateY(-2deg);
+            box-shadow: 0 28px 60px rgba(15,23,42,.22);
+        }
+
+        .login-image-card img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .login-image-card span {
+            position: absolute;
+            left: 10px;
+            bottom: 9px;
+            padding: 5px 8px;
+            border-radius: 6px;
+            color: #fff;
+            background: rgba(4,18,38,.72);
+            backdrop-filter: blur(8px);
+            font-size: .68rem;
+            font-weight: 850;
+        }
+
+        .login-image-card.primary { grid-column: span 2; grid-row: span 2; }
+        .login-image-card.support { grid-column: span 3; }
+
+        .login-3d-carousel {
+            position: relative;
+            width: 100%;
+            min-height: clamp(430px, 62vh, 650px);
+            overflow: hidden;
+            border-radius: 28px;
+            background: #071426;
+            box-shadow: 0 34px 90px rgba(15,23,42,.28);
+            perspective: 1400px;
+            isolation: isolate;
+        }
+
+        .login-carousel-slide {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            opacity: 0;
+            transform: rotateY(36deg) scale(.88) translateX(12%);
+            transform-origin: center right;
+            transition: opacity .55s ease, transform .7s cubic-bezier(.2,.8,.2,1),
+                        width .55s cubic-bezier(.2,.8,.2,1), height .55s cubic-bezier(.2,.8,.2,1),
+                        top .55s cubic-bezier(.2,.8,.2,1), left .55s cubic-bezier(.2,.8,.2,1);
+            pointer-events: none;
+        }
+
+        .login-carousel-slide.active {
+            opacity: 1;
+            transform: rotateY(0) scale(1) translateX(0);
+            pointer-events: auto;
+            z-index: 2;
+        }
+
+        .login-carousel-slide.leaving {
+            opacity: 0;
+            transform: rotateY(-34deg) scale(.9) translateX(-12%);
+            transform-origin: center left;
+        }
+
+        .login-3d-carousel.collage-transition .login-carousel-slide {
+            opacity: .94;
+            z-index: 3;
+            width: 29%;
+            height: 35%;
+            right: auto;
+            bottom: auto;
+            border: 2px solid rgba(255,255,255,.8);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 20px 42px rgba(0,0,0,.32);
+            transform: rotateY(-8deg) rotateX(4deg) scale(1);
+        }
+
+        .login-3d-carousel.collage-transition .login-carousel-slide:nth-of-type(1) { left: 3%; top: 13%; transform: rotateY(10deg) rotateZ(-2deg); }
+        .login-3d-carousel.collage-transition .login-carousel-slide:nth-of-type(2) { left: 35.5%; top: 8%; transform: translateZ(36px) scale(1.04); }
+        .login-3d-carousel.collage-transition .login-carousel-slide:nth-of-type(3) { left: 68%; top: 13%; transform: rotateY(-10deg) rotateZ(2deg); }
+        .login-3d-carousel.collage-transition .login-carousel-slide:nth-of-type(4) { left: 18%; top: 54%; transform: rotateY(8deg) rotateZ(1deg); }
+        .login-3d-carousel.collage-transition .login-carousel-slide:nth-of-type(5) { left: 53%; top: 54%; transform: rotateY(-8deg) rotateZ(-1deg); }
+
+        .login-3d-carousel.collage-transition .login-carousel-dots { opacity: 0; }
+
+        .login-carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .login-carousel-copy {
+            position: absolute;
+            z-index: 5;
+            left: clamp(22px, 4vw, 54px);
+            right: clamp(22px, 4vw, 54px);
+            bottom: clamp(26px, 5vh, 58px);
+            color: #fff;
+            text-shadow: 0 2px 14px rgba(0,0,0,.45);
+        }
+
+        .login-carousel-copy h1 {
+            margin: 0 0 14px;
+            font-size: clamp(2rem, 3.6vw, 4.2rem);
+            line-height: 1;
+            letter-spacing: -.045em;
+        }
+
+        .login-carousel-copy p {
+            margin: 5px 0;
+            color: rgba(255,255,255,.9);
+            font-size: clamp(.82rem, 1vw, 1rem);
+            line-height: 1.5;
+            font-weight: 650;
+        }
+
+        .login-carousel-label {
+            display: inline-flex;
+            margin-bottom: 16px;
+            padding: 7px 10px;
+            border: 1px solid rgba(255,255,255,.3);
+            border-radius: 999px;
+            background: rgba(4,18,38,.46);
+            backdrop-filter: blur(10px);
+            font-size: .72rem;
+            font-weight: 900;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .login-carousel-dots {
+            position: absolute;
+            z-index: 6;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 7px;
+        }
+
+        .login-carousel-dots i {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,.42);
+            transition: width .3s ease, background .3s ease;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        .login-carousel-dots i.active { width: 26px; background: #fff; }
+
+        .login-carousel-dots i:focus-visible {
+            outline: 2px solid #fff;
+            outline-offset: 3px;
+        }
+
+        .login-showcase-logo {
+            position: absolute;
+            z-index: 7;
+            top: 14px;
+            left: 14px;
+            width: min(340px, 48%);
+            height: 92px;
+            object-fit: contain;
+            object-position: left center;
+            filter: drop-shadow(0 8px 18px rgba(0,0,0,.38));
+        }
+
+        .login-showcase-description {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            color: var(--text-secondary);
+            background: rgba(255,255,255,.82);
+            box-shadow: 0 14px 38px rgba(15,23,42,.08);
+            font-size: clamp(.86rem, 1vw, 1rem);
+            line-height: 1.65;
+        }
+
+        .login-showcase-description strong { color: var(--text-primary); }
+
+        .auth-logo-block {
+            width: 100%;
+            height: 128px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+        }
+
+        .auth-logo-block img {
+            display: block;
+            width: calc(100% + 42px);
+            max-width: 472px;
+            height: 128px;
+            object-fit: contain;
+            object-position: left center;
+            transform: translateX(-42px);
         }
 
         .login-section .form-side {
@@ -1616,6 +1947,21 @@
             background: #0f766e;
         }
 
+        .automation-card b {
+            align-items: center;
+            gap: 7px;
+        }
+
+        .automation-card b svg {
+            width: 15px;
+            height: 15px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
         .process-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -1794,6 +2140,16 @@
             font-weight: 900;
         }
 
+        .feature-icon svg {
+            width: 21px;
+            height: 21px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
         .feature-card:nth-child(2) .feature-icon {
             background: var(--green);
         }
@@ -1827,14 +2183,29 @@
         .timeline-step b {
             display: inline-grid;
             place-items: center;
-            width: 34px;
-            height: 34px;
+            width: 48px;
+            height: 48px;
             margin-bottom: 14px;
-            border-radius: 8px;
+            border-radius: 12px;
             color: #ffffff;
             background: var(--navy);
             font-size: 0.86rem;
+            box-shadow: 0 10px 22px rgba(15, 23, 42, .18);
         }
+
+        .timeline-step b svg {
+            width: 26px;
+            height: 26px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .timeline-step:nth-child(2) b { background: var(--amber); }
+        .timeline-step:nth-child(3) b { background: #7c3aed; }
+        .timeline-step:nth-child(4) b { background: var(--green); }
 
         .cta {
             margin: 0 clamp(18px, 4vw, 56px) 44px;
@@ -1888,6 +2259,15 @@
         }
 
         @media (max-width: 1120px) {
+            .login-section {
+                grid-template-columns: 1fr;
+                max-width: 760px;
+            }
+
+            .login-section .auth-panel {
+                width: min(100%, 520px);
+                justify-self: center;
+            }
             .hero-layout {
                 grid-template-columns: 1fr;
             }
@@ -1919,6 +2299,34 @@
         }
 
         @media (max-width: 780px) {
+            .login-section {
+                padding-top: 28px;
+                gap: 26px;
+            }
+
+            .login-image-grid {
+                grid-template-columns: repeat(2, 1fr);
+                grid-auto-rows: 108px;
+            }
+
+            .login-image-card.primary,
+            .login-image-card.support {
+                grid-column: span 1;
+                grid-row: span 1;
+            }
+
+            .login-image-card:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .login-3d-carousel {
+                min-height: 500px;
+                border-radius: 20px;
+            }
+
+            .login-carousel-copy p {
+                font-size: .78rem;
+            }
             .site-nav {
                 align-items: flex-start;
                 flex-direction: column;
@@ -2031,6 +2439,188 @@
             }
         }
 
+        /* Premium motion layer: depth only; existing palette and layout stay unchanged. */
+        .site-shell { perspective: 1800px; }
+
+        .site-nav {
+            animation: premiumNavIn .75s cubic-bezier(.2, .8, .2, 1) both;
+            transform-origin: top center;
+        }
+
+        .hero-main {
+            animation: premiumHeroIn .9s .08s cubic-bezier(.2, .8, .2, 1) both;
+        }
+
+        .module-card,
+        .process-card,
+        .automation-card,
+        .feature-card,
+        .timeline-step,
+        .hero-core-card,
+        .metric,
+        .photo-card,
+        .app-screen-card,
+        .screenshot-card {
+            transform-style: preserve-3d;
+            transform-origin: center center;
+            transition: transform .48s cubic-bezier(.2, .8, .2, 1),
+                        box-shadow .48s ease, border-color .48s ease;
+            backface-visibility: hidden;
+        }
+
+        .premium-reveal {
+            opacity: 0;
+            transform: translate3d(0, 34px, -45px) rotateX(7deg) scale(.975);
+            transition: opacity .72s ease,
+                        transform .82s cubic-bezier(.16, 1, .3, 1),
+                        box-shadow .48s ease, border-color .48s ease;
+            transition-delay: var(--reveal-delay, 0ms);
+        }
+
+        .premium-reveal.is-visible {
+            opacity: 1;
+            transform: translate3d(0, 0, 0) rotateX(0) scale(1);
+        }
+
+        .module-card:hover .ui-inline-icon,
+        .process-card:hover .ui-inline-icon,
+        .automation-card:hover svg,
+        .feature-card:hover svg,
+        .timeline-step:hover svg {
+            animation: premiumIconLift .7s cubic-bezier(.2, .8, .2, 1);
+        }
+
+        .primary-link,
+        .secondary-link,
+        .nav-action,
+        .core-pill,
+        .cta a {
+            transform-style: preserve-3d;
+            transition: transform .32s cubic-bezier(.2, .8, .2, 1), box-shadow .32s ease;
+        }
+
+        @media (hover: hover) and (pointer: fine) {
+            .module-card:hover,
+            .process-card:hover,
+            .automation-card:hover,
+            .feature-card:hover,
+            .timeline-step:hover,
+            .hero-core-card:hover,
+            .metric:hover,
+            .photo-card:hover,
+            .app-screen-card:hover,
+            .screenshot-card:hover {
+                transform: translate3d(0, -9px, 22px) rotateX(3deg) rotateY(-2deg) scale(1.012);
+                box-shadow: 0 28px 58px rgba(15, 23, 42, .16);
+                z-index: 3;
+            }
+
+            .module-card:nth-child(even):hover,
+            .process-card:nth-child(even):hover,
+            .automation-card:nth-child(even):hover,
+            .feature-card:nth-child(even):hover,
+            .timeline-step:nth-child(even):hover {
+                transform: translate3d(0, -9px, 22px) rotateX(3deg) rotateY(2deg) scale(1.012);
+            }
+
+            .primary-link:hover,
+            .secondary-link:hover,
+            .nav-action:hover,
+            .cta a:hover {
+                transform: translate3d(0, -3px, 14px) scale(1.025);
+            }
+
+            .core-pill:hover { transform: translate3d(0, -3px, 10px) rotateX(-5deg); }
+        }
+
+        .website-page .reading-focus {
+            transform: translate3d(0, -8px, 34px) rotateX(2deg) scale(1.035) !important;
+            border-color: rgba(37, 99, 235, .28);
+            box-shadow: 0 30px 66px rgba(15, 23, 42, .2), 0 0 0 2px rgba(37, 99, 235, .08);
+            z-index: 5;
+        }
+
+        .module-card > h3,
+        .module-card > p,
+        .process-card > h3,
+        .process-card > p,
+        .automation-card > h3,
+        .automation-card > p,
+        .feature-card > h3,
+        .feature-card > p,
+        .timeline-step > h3,
+        .timeline-step > p,
+        .hero-core-card > strong,
+        .hero-core-card > span,
+        .metric > strong,
+        .metric > span {
+            transform-origin: left center;
+            transition: transform .55s cubic-bezier(.2, .8, .2, 1), color .4s ease;
+        }
+
+        .website-page .reading-focus > h3,
+        .website-page .reading-focus > p,
+        .website-page .reading-focus > strong,
+        .website-page .reading-focus > span:not(.tag) {
+            transform: translate3d(3px, 0, 24px) scale(1.035);
+        }
+
+        .reading-word {
+            display: inline-block;
+            transform-origin: center bottom;
+        }
+
+        .website-page .reading-focus .reading-word {
+            animation: runningReadZoom .58s cubic-bezier(.2, .8, .2, 1) both;
+            animation-delay: calc(var(--word-index, 0) * 38ms);
+        }
+
+        .website-page .site-shell {
+            min-height: 0;
+            padding-bottom: 0;
+            overflow: clip;
+        }
+
+        .website-page #security { padding-bottom: 12px; }
+        .website-page .cta { margin-top: 0; margin-bottom: 0; }
+        .website-page .site-footer {
+            margin: 0;
+            padding: 8px clamp(18px, 4vw, 56px) 0;
+            line-height: 1.2;
+        }
+
+        @keyframes runningReadZoom {
+            0% { opacity: .72; transform: translate3d(0, 2px, 0) scale(.96); }
+            45% { opacity: 1; transform: translate3d(0, -2px, 30px) scale(1.13); }
+            100% { opacity: 1; transform: translate3d(0, 0, 10px) scale(1.025); }
+        }
+
+        @keyframes premiumNavIn {
+            from { opacity: 0; transform: translate3d(0, -22px, -35px) rotateX(-8deg); }
+            to { opacity: 1; transform: translate3d(0, 0, 0) rotateX(0); }
+        }
+
+        @keyframes premiumHeroIn {
+            from { opacity: 0; transform: translate3d(-28px, 22px, -55px) rotateY(5deg); }
+            to { opacity: 1; transform: translate3d(0, 0, 0) rotateY(0); }
+        }
+
+        @keyframes premiumIconLift {
+            0%, 100% { transform: translateZ(0) scale(1); }
+            45% { transform: translate3d(0, -4px, 28px) rotateY(12deg) scale(1.12); }
+        }
+
+        @media (max-width: 780px) {
+            .website-page .site-shell::before {
+                animation-duration: 16s;
+            }
+
+            .website-page .site-shell::after {
+                animation-duration: 14s;
+            }
+
+        }
+
         @media (prefers-reduced-motion: reduce) {
 
             *,
@@ -2040,15 +2630,21 @@
                 animation-iteration-count: 1 !important;
                 scroll-behavior: auto !important;
             }
+
+            .premium-reveal {
+                opacity: 1 !important;
+                transform: none !important;
+            }
         }
     </style>
 </head>
 
-<body>
+<body class="{% if show_login|default(false) %}login-page{% else %}website-page{% endif %}">
     <div class="site-shell">
         <nav class="site-nav">
             <a class="brand" href="/" aria-label="SVBK IT SOLUTIONS home">
-                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.jpeg" alt="SVBK IT Solutions">
+                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.png" alt="SVBK IT Solutions"
+                    style="width:340px;height:72px">
             </a>
             {% if not show_login|default(false) %}
             <div class="nav-links" aria-label="Website navigation">
@@ -2077,27 +2673,37 @@
                             finance dashboards, export documents, approvals, emails and reports in one SaaS ERP.
                         </p>
                         <div class="core-pill-row" aria-label="Core ERP capabilities">
-                            <span class="core-pill">Accounts & ledgers</span>
-                            <span class="core-pill">Finance dashboards</span>
-                            <span class="core-pill">Auto bills</span>
-                            <span class="core-pill">Approval flows</span>
-                            <span class="core-pill">Email alerts</span>
-                            <span class="core-pill">Excel/PDF reports</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14v18H5zM9 3v18m3-13h4m-4 4h4m-4 4h3"/></svg>Accounts & ledgers</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-5 3 3 5-8m-3 0h3v3"/></svg>Finance dashboards</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Zm3 5h6m-6 4h6"/></svg>Auto bills</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.9 7.8 7 9.5 4.1-1.7 7-5 7-9.5V6l-7-3Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>Approval flows</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>Email alerts</span>
+                            <span class="core-pill"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 16h8m-8-4h5"/></svg>Excel/PDF reports</span>
                         </div>
                         <div class="hero-actions">
-                            <a class="primary-link" href="/auth/login">Start Login</a>
-                            <a class="secondary-link" href="#accounts">View Accounts</a>
+                            <a class="primary-link" href="/auth/login"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M10 5H5v14h5m3-4 4-3-4-3m4 3H9"/></svg>Start Login</a>
+                            <a class="secondary-link" href="#accounts"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18M12 3l9 5H3l9-5Z"/></svg>View Accounts</a>
                         </div>
                         <div class="hero-core-grid">
-                            <div class="hero-core-card"><b>Accounts</b><strong>Ledgers to receivables</strong><span>Journal entries, bank transactions, payables, receivable aging and Tally-style flow.</span></div>
-                            <div class="hero-core-card"><b>Finance</b><strong>Cost and cash visibility</strong><span>Production cost, payroll posting, vendor payments, GST and finance dashboards.</span></div>
-                            <div class="hero-core-card"><b>Automations</b><strong>Less manual follow-up</strong><span>OTP approvals, professional emails, auto bills, snapshots and download-ready reports.</span></div>
+                            <div class="hero-core-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h14v18H5zM9 3v18m3-13h4m-4 4h4"/></svg>Accounts</b><strong>Ledgers to
+                                    receivables</strong><span>Journal entries, bank transactions, payables, receivable
+                                    aging and Tally-style flow.</span></div>
+                            <div class="hero-core-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 8.5c-.6-.7-1.5-1-2.6-1-1.5 0-2.4.7-2.4 1.7 0 2.8 5.3 1.3 5.3 4.6 0 1.1-1 2-2.7 2-1.2 0-2.3-.4-3-1.2M12.5 5v14"/></svg>Finance</b><strong>Cost and cash
+                                    visibility</strong><span>Production cost, payroll posting, vendor payments, GST and
+                                    finance dashboards.</span></div>
+                            <div class="hero-core-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m13 2-2 7h6l-7 13 2-9H6l7-11Z"/></svg>Automations</b><strong>Less manual
+                                    follow-up</strong><span>OTP approvals, professional emails, auto bills, snapshots
+                                    and download-ready reports.</span></div>
                         </div>
                         <div class="metric-row">
-                            <div class="metric"><strong>8+ Workspaces</strong><span>Processing, inventory, HR, accounts, exports, admin and dashboards.</span></div>
-                            <div class="metric"><strong>Live Finance</strong><span>Approvals, bills, bank, cash, payable and receivable status.</span></div>
-                            <div class="metric"><strong>Automation Core</strong><span>Emails, OTP, approvals, snapshots, reports and generated records.</span></div>
-                            <div class="metric"><strong>PWA Ready</strong><span>Installable app with branded icon and mobile-friendly access.</span></div>
+                            <div class="metric"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>8+ Workspaces</strong><span>Processing, inventory, HR, accounts,
+                                    exports, admin and dashboards.</span></div>
+                            <div class="metric"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18M12 3l9 5H3l9-5Z"/></svg>Live Finance</strong><span>Approvals, bills, bank, cash, payable
+                                    and receivable status.</span></div>
+                            <div class="metric"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>Automation Core</strong><span>Emails, OTP, approvals, snapshots,
+                                    reports and generated records.</span></div>
+                            <div class="metric"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M10 6h4m-3 12h2"/></svg>PWA Ready</strong><span>Installable app with branded icon and
+                                    mobile-friendly access.</span></div>
                         </div>
                     </div>
                     <div class="product-stage" aria-hidden="true">
@@ -2106,19 +2712,19 @@
                                 <img src="/static/images/dash_accounts_light.png" alt="">
                                 <div class="hero-photo-caption">
                                     <div>
-                                        <strong>Accounts & Finance Dashboard</strong>
+                                        <strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-5 3 3 5-8m-3 0h3v3"/></svg>Accounts & Finance Dashboard</strong>
                                         <span>Approvals, ledgers, payables, receivables and live reports in one view.</span>
                                     </div>
                                     <b>More Insights</b>
                                 </div>
                             </div>
                             <div class="insight-stack">
-                                <div class="insight-card"><strong>47</strong><span>Voucher approvals waiting for accounts review</span></div>
-                                <div class="insight-card"><strong>Live</strong><span>Bank, cash, payable and receivable movement</span></div>
-                                <div class="insight-card"><strong>Auto</strong><span>Bills, emails, OTP approvals and report exports</span></div>
+                                <div class="insight-card"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.9 7.8 7 9.5 4.1-1.7 7-5 7-9.5V6l-7-3Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>47</strong><span>Voucher approvals waiting for accounts review</span></div>
+                                <div class="insight-card"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18M12 3l9 5H3l9-5Z"/></svg>Live</strong><span>Bank, cash, payable and receivable movement</span></div>
+                                <div class="insight-card"><strong><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m13 2-2 7h6l-7 13 2-9H6l7-11Z"/></svg>Auto</strong><span>Bills, emails, OTP approvals and report exports</span></div>
                             </div>
-                            <div class="float-card one"><b>Finance Core</b><span>Costing, GST, payroll and accounts</span></div>
-                            <div class="float-card two"><b>Automations</b><span>Alerts, approvals and generated records</span></div>
+                            <div class="float-card one"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v12m3-9c-.7-.8-1.5-1-2.6-1-1.5 0-2.4.7-2.4 1.7 0 2.8 5.3 1.3 5.3 4.6 0 1.1-1 2-2.7 2-1.2 0-2.3-.4-3-1.2"/></svg>Finance Core</b><span>Costing, GST, payroll and accounts</span></div>
+                            <div class="float-card two"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6 2.1 2.1m0-12.8-2.1 2.1m-8.6 8.6-2.1 2.1"/><circle cx="12" cy="12" r="4"/></svg>Automations</b><span>Alerts, approvals and generated records</span></div>
                         </div>
                     </div>
                 </div>
@@ -2128,6 +2734,17 @@
 
         {% if show_login|default(false) %}
         <section class="login-section">
+            <div class="login-showcase">
+                <div class="login-3d-carousel" id="login3dCarousel" aria-label="SVBK ERP operational modules">
+                    <figure class="login-carousel-slide active" data-label="Soaking"><img src="/static/images/soaking.jpg" alt="Seafood soaking operations"></figure>
+                    <figure class="login-carousel-slide" data-label="Seafood Processing"><img src="/static/images/seafood_processing.jpg" alt="Seafood processing operations"></figure>
+                    <figure class="login-carousel-slide" data-label="Logistics"><img src="/static/images/logistics.jpg" alt="Export logistics operations"></figure>
+                    <figure class="login-carousel-slide" data-label="Cold Storage"><img src="/static/images/cold_storage.jpg" alt="Cold storage management"></figure>
+                    <figure class="login-carousel-slide" data-label="Accounts Dashboard"><img src="/static/images/dash_accounts.png" alt="Accounts dashboard"></figure>
+                    <div class="login-carousel-dots" aria-label="Select carousel image"><i class="active"></i><i></i><i></i><i></i><i></i></div>
+                </div>
+                <div class="login-showcase-description"><strong>SVBK ERP</strong> is a modern, AI-powered business management platform designed to simplify and automate your daily operations. Manage inventory, production, finance, HR, sales, purchasing, and more from one secure cloud-based system. With real-time tracking, intelligent automation, and powerful analytics, SVBK ERP helps businesses improve efficiency, reduce manual work, and make smarter decisions.</div>
+            </div>
             <aside class="auth-panel" id="login">
                 <div class="form-side">
                     <div id="registerBox" class="card">
@@ -2227,17 +2844,44 @@
                 <div class="section-head">
                     <p class="section-kicker">Modules inside the app</p>
                     <h2>Everything your team opens daily is grouped in one ERP menu.</h2>
-                    <p class="section-text">The app is structured as workspaces for factory teams, accounts, HR, exports and administrators.</p>
+                    <p class="section-text">The app is structured as workspaces for factory teams, accounts, HR, exports
+                        and administrators.</p>
                 </div>
                 <div class="module-grid">
-                    <article class="module-card"><span class="tag">Processing</span><h3>Gate to Production</h3><p>Gate entry, RM purchase, de-heading, grading, peeling, soaking and final production entry.</p></article>
-                    <article class="module-card"><span class="tag">Inventory</span><h3>Stock Control</h3><p>Stock entry, stock reports, pending orders, cold storage and general store tracking.</p></article>
-                    <article class="module-card"><span class="tag">Reports</span><h3>Operational Reports</h3><p>Gate, purchase, production, grading, peeling, soaking, floor balance and storage reports.</p></article>
-                    <article class="module-card"><span class="tag">HRMS</span><h3>Staff & Payroll</h3><p>Employee registration, attendance, shifts, salary sheets, advances and statutory masters.</p></article>
-                    <article class="module-card"><span class="tag">Finance</span><h3>Accounts Desk</h3><p>Ledgers, journal entries, banks, GST, receivables, payables and salary processing.</p></article>
-                    <article class="module-card"><span class="tag">Exports</span><h3>Documentation</h3><p>Export shipments, invoices, packing lists, stuffing, shipping bills and supporting documents.</p></article>
-                    <article class="module-card"><span class="tag">Admin</span><h3>User Control</h3><p>User setup, activation, permissions, data management OTP and approval workflows.</p></article>
-                    <article class="module-card"><span class="tag">Dashboards</span><h3>Live View</h3><p>Processing, inventory, finance, costing and HR command dashboards for fast decisions.</p></article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l4 3V8l4 3V5l4 3v12"/></svg>Processing</span>
+                        <h3>Gate to Production</h3>
+                        <p>Gate entry, RM purchase, de-heading, grading, peeling, soaking and final production entry.
+                        </p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10"/></svg>Inventory</span>
+                        <h3>Stock Control</h3>
+                        <p>Stock entry, stock reports, pending orders, cold storage and general store tracking.</p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4M8 17v-3m4 3V9m4 8v-5"/></svg>Reports</span>
+                        <h3>Operational Reports</h3>
+                        <p>Gate, purchase, production, grading, peeling, soaking, floor balance and storage reports.</p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2.5A4.5 4.5 0 0 1 8 13h2a4.5 4.5 0 0 1 4.5 4.5V20M16 8h5m-2.5-2.5v5"/></svg>HRMS</span>
+                        <h3>Staff & Payroll</h3>
+                        <p>Employee registration, attendance, shifts, salary sheets, advances and statutory masters.</p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 10h18M5 10v8m4-8v8m6-8v8m4-8v8M3 20h18M12 3l9 5H3l9-5Z"/></svg>Finance</span>
+                        <h3>Accounts Desk</h3>
+                        <p>Ledgers, journal entries, banks, GST, receivables, payables and salary processing.</p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 17h16v4H4zM12 3v11m-4-4 4 4 4-4M5 7h3m8 0h3"/></svg>Exports</span>
+                        <h3>Documentation</h3>
+                        <p>Export shipments, invoices, packing lists, stuffing, shipping bills and supporting documents.
+                        </p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.9 7.8 7 9.5 4.1-1.7 7-5 7-9.5V6l-7-3Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>Admin</span>
+                        <h3>User Control</h3>
+                        <p>User setup, activation, permissions, data management OTP and approval workflows.</p>
+                    </article>
+                    <article class="module-card"><span class="tag"><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>Dashboards</span>
+                        <h3>Live View</h3>
+                        <p>Processing, inventory, finance, costing and HR command dashboards for fast decisions.</p>
+                    </article>
                 </div>
             </div>
         </section>
@@ -2247,13 +2891,46 @@
                 <div class="section-head">
                     <p class="section-kicker">Factory workflow</p>
                     <h2>From vehicle arrival to final stock, the data stays connected.</h2>
-                    <p class="section-text">Each department can enter its own work while reports and dashboards combine the full flow.</p>
+                    <p class="section-text">Each department can enter its own work while reports and dashboards combine
+                        the full flow.</p>
                 </div>
                 <div class="process-grid">
-                    <article class="process-card"><b>01 Gate</b><h3>Material Arrivals</h3><p>Capture vehicle, supplier, challan, batch and box details.</p><ul><li>Gate pass tracking</li><li>Receiving center filters</li><li>Email notifications</li></ul></article>
-                    <article class="process-card"><b>02 Purchase</b><h3>RM Purchasing</h3><p>Record raw material purchase details and connect them to batch movement.</p><ul><li>Supplier masters</li><li>Location filters</li><li>Purchase reports</li></ul></article>
-                    <article class="process-card"><b>03 Processing</b><h3>Production Stages</h3><p>Track de-heading, grading, peeling, soaking and final production.</p><ul><li>Stage-wise entries</li><li>Yield masters</li><li>Floor balance</li></ul></article>
-                    <article class="process-card"><b>04 Stock</b><h3>Inventory Output</h3><p>Convert production into stock, cold storage and sales-ready reporting.</p><ul><li>Cold storage holding</li><li>Pending orders</li><li>Stock reports</li></ul></article>
+                    <article class="process-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 18h18M5 18V7h14v11M8 7V4h8v3M8 12h8"/><circle cx="8" cy="20" r="1"/><circle cx="16" cy="20" r="1"/></svg>01 Gate</b>
+                        <h3>Material Arrivals</h3>
+                        <p>Capture vehicle, supplier, challan, batch and box details.</p>
+                        <ul>
+                            <li>Gate pass tracking</li>
+                            <li>Receiving center filters</li>
+                            <li>Email notifications</li>
+                        </ul>
+                    </article>
+                    <article class="process-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg>02 Purchase</b>
+                        <h3>RM Purchasing</h3>
+                        <p>Record raw material purchase details and connect them to batch movement.</p>
+                        <ul>
+                            <li>Supplier masters</li>
+                            <li>Location filters</li>
+                            <li>Purchase reports</li>
+                        </ul>
+                    </article>
+                    <article class="process-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M4 20h16M6 20V9l4 3V8l4 3V5l4 3v12"/><path d="M9 16h2m3 0h2"/></svg>03 Processing</b>
+                        <h3>Production Stages</h3>
+                        <p>Track de-heading, grading, peeling, soaking and final production.</p>
+                        <ul>
+                            <li>Stage-wise entries</li>
+                            <li>Yield masters</li>
+                            <li>Floor balance</li>
+                        </ul>
+                    </article>
+                    <article class="process-card"><b><svg class="ui-inline-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4-8 4-8-4Zm0 0v10l8 4 8-4V7M12 11v10"/></svg>04 Stock</b>
+                        <h3>Inventory Output</h3>
+                        <p>Convert production into stock, cold storage and sales-ready reporting.</p>
+                        <ul>
+                            <li>Cold storage holding</li>
+                            <li>Pending orders</li>
+                            <li>Stock reports</li>
+                        </ul>
+                    </article>
                 </div>
             </div>
         </section>
@@ -2263,15 +2940,46 @@
                 <div class="section-head">
                     <p class="section-kicker">Finance & accounts</p>
                     <h2>Production, purchase, payroll and payments flow into accounts control.</h2>
-                    <p class="section-text">Accounts teams can track bills, ledgers, payment queues, receivables, bank entries and Tally-style reports without losing the link to factory activity.</p>
+                    <p class="section-text">Accounts teams can track bills, ledgers, payment queues, receivables, bank
+                        entries and Tally-style reports without losing the link to factory activity.</p>
                 </div>
                 <div class="feature-grid">
-                    <article class="feature-card"><div class="feature-icon">CB</div><h3>Contractor Bills</h3><p>De-heading, peeling and processing bill bases are prepared from actual quantity, rate and contractor records.</p></article>
-                    <article class="feature-card"><div class="feature-icon">PB</div><h3>Purchase & Vendor Bills</h3><p>Supplier, diesel, electricity, QA, logistics and expense bills can move into approval and payable queues.</p></article>
-                    <article class="feature-card"><div class="feature-icon">AR</div><h3>Receivable Aging</h3><p>Customer receivable aging and reminders help accounts identify due invoices by age and value.</p></article>
-                    <article class="feature-card"><div class="feature-icon">JV</div><h3>Ledgers & Journals</h3><p>Ledger masters, journal entries, bank transactions and voucher status stay organized for review.</p></article>
-                    <article class="feature-card"><div class="feature-icon">PR</div><h3>Payroll Posting</h3><p>Salary sheets, advances, deductions and payroll processing can connect HRMS data with finance records.</p></article>
-                    <article class="feature-card"><div class="feature-icon">TX</div><h3>Tax & Export Support</h3><p>GST, invoice, export billing and document values stay visible for commercial and accounts teams.</p></article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6 3h12v18H6zM9 7h6m-6 4h6m-6 4h3"/><path d="m14.5 16 1.5 1.5 3-3"/></svg></div>
+                        <h3>Contractor Bills</h3>
+                        <p>De-heading, peeling and processing bill bases are prepared from actual quantity, rate and
+                            contractor records.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M3 5h2l2.2 10.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 2-1.6L20.5 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></div>
+                        <h3>Purchase & Vendor Bills</h3>
+                        <p>Supplier, diesel, electricity, QA, logistics and expense bills can move into approval and
+                            payable queues.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2M5 4 3 6m16-2 2 2"/></svg></div>
+                        <h3>Receivable Aging</h3>
+                        <p>Customer receivable aging and reminders help accounts identify due invoices by age and value.
+                        </p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h14v18H5zM9 3v18M12 8h4m-4 4h4m-4 4h3"/></svg></div>
+                        <h3>Ledgers & Journals</h3>
+                        <p>Ledger masters, journal entries, bank transactions and voucher status stay organized for
+                            review.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="8" cy="8" r="3"/><path d="M3 20v-2a5 5 0 0 1 10 0v2M16 8h5m-5 4h4m-5 4h6"/></svg></div>
+                        <h3>Payroll Posting</h3>
+                        <p>Salary sheets, advances, deductions and payroll processing can connect HRMS data with finance
+                            records.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5zM15 3v5h4"/><path d="m9 16 6-6M9.5 10h.01m5 6h.01"/></svg></div>
+                        <h3>Tax & Export Support</h3>
+                        <p>GST, invoice, export billing and document values stay visible for commercial and accounts
+                            teams.</p>
+                    </article>
                 </div>
             </div>
         </section>
@@ -2281,15 +2989,39 @@
                 <div class="section-head">
                     <p class="section-kicker">Automations</p>
                     <h2>Routine work becomes faster with alerts, approvals and generated records.</h2>
-                    <p class="section-text">The app is planned around practical automation: email communication, approval trails, calculated bills, payroll calculations, snapshots and management signals.</p>
+                    <p class="section-text">The app is planned around practical automation: email communication,
+                        approval trails, calculated bills, payroll calculations, snapshots and management signals.</p>
                 </div>
                 <div class="automation-grid">
-                    <article class="automation-card"><b>Email Alerts</b><h3>Instant Communication</h3><p>Gate entry, approval and operational events can notify the right people with professional sender details.</p></article>
-                    <article class="automation-card"><b>Approvals</b><h3>Controlled Posting</h3><p>Company approval, inactive blocking, OTP checks and sensitive actions keep admin work traceable.</p></article>
-                    <article class="automation-card"><b>Auto Bills</b><h3>Bill Preparation</h3><p>Contractor, salary, vendor and operational bills can be prepared from production and HR data.</p></article>
-                    <article class="automation-card"><b>Reports</b><h3>Excel & PDF Output</h3><p>Daily production, stock, accounts and export reports are grouped for quick download and review.</p></article>
-                    <article class="automation-card"><b>Snapshots</b><h3>Daily Balances</h3><p>Inventory and floor balance snapshots help management compare current status with previous days.</p></article>
-                    <article class="automation-card"><b>Signals</b><h3>Decision Support</h3><p>Yield, cost, stock aging and planning signals help managers identify exceptions faster.</p></article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m4 7 8 6 8-6"/></svg>Email Alerts</b>
+                        <h3>Instant Communication</h3>
+                        <p>Gate entry, approval and operational events can notify the right people with professional
+                            sender details.</p>
+                    </article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 5 6v5c0 4.5 2.9 7.8 7 9.5 4.1-1.7 7-5 7-9.5V6l-7-3Z"/><path d="m8.5 12 2.2 2.2 4.8-4.8"/></svg>Approvals</b>
+                        <h3>Controlled Posting</h3>
+                        <p>Company approval, inactive blocking, OTP checks and sensitive actions keep admin work
+                            traceable.</p>
+                    </article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z"/><path d="M9 8h6m-6 4h6"/></svg>Auto Bills</b>
+                        <h3>Bill Preparation</h3>
+                        <p>Contractor, salary, vendor and operational bills can be prepared from production and HR data.
+                        </p>
+                    </article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5V3Z"/><path d="M15 3v5h4M8 17v-3m4 3V9m4 8v-5"/></svg>Reports</b>
+                        <h3>Excel & PDF Output</h3>
+                        <p>Daily production, stock, accounts and export reports are grouped for quick download and
+                            review.</p>
+                    </article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4V7Z"/><circle cx="12" cy="13" r="3.5"/></svg>Snapshots</b>
+                        <h3>Daily Balances</h3>
+                        <p>Inventory and floor balance snapshots help management compare current status with previous
+                            days.</p>
+                    </article>
+                    <article class="automation-card"><b><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 19h16M6 16l4-5 3 3 5-8"/><path d="M15 6h3v3"/></svg>Signals</b>
+                        <h3>Decision Support</h3>
+                        <p>Yield, cost, stock aging and planning signals help managers identify exceptions faster.</p>
+                    </article>
                 </div>
             </div>
         </section>
@@ -2299,15 +3031,40 @@
                 <div class="section-head">
                     <p class="section-kicker">Business controls</p>
                     <h2>Designed for teams, approvals and company-wise data separation.</h2>
-                    <p class="section-text">Admins can control users and permissions while each company’s data stays isolated by company ID.</p>
+                    <p class="section-text">Admins can control users and permissions while each company’s data stays
+                        isolated by company ID.</p>
                 </div>
                 <div class="feature-grid">
-                    <article class="feature-card"><div class="feature-icon">A</div><h3>Approval Based Access</h3><p>Company registration, OTP verification, super-admin approval and confirmation emails.</p></article>
-                    <article class="feature-card"><div class="feature-icon">U</div><h3>User Permissions</h3><p>Role-based menu visibility for processing, reports, HR, admin and support areas.</p></article>
-                    <article class="feature-card"><div class="feature-icon">D</div><h3>Data Management</h3><p>Export/import tools, templates and protected OTP for sensitive actions.</p></article>
-                    <article class="feature-card"><div class="feature-icon">R</div><h3>Reports & Exports</h3><p>Excel/PDF style reporting for daily operations, stock, production and summaries.</p></article>
-                    <article class="feature-card"><div class="feature-icon">P</div><h3>PWA Ready</h3><p>Installable app experience with custom PWA icon and mobile-friendly shell.</p></article>
-                    <article class="feature-card"><div class="feature-icon">C</div><h3>Custom UI Colors</h3><p>Users can adjust header, side menu, dashboard and accent colors with contrast-aware text.</p></article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3 4.5 6v5.2c0 4.7 3.1 8.2 7.5 9.8 4.4-1.6 7.5-5.1 7.5-9.8V6L12 3Z"/><path d="m8.7 12 2.1 2.1 4.6-4.6"/></svg></div>
+                        <h3>Approval Based Access</h3>
+                        <p>Company registration, OTP verification, super-admin approval and confirmation emails.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 19v-1.5A4.5 4.5 0 0 1 8 13h2a4.5 4.5 0 0 1 4.5 4.5V19"/><path d="m16 11 1.5 1.5L21 9"/></svg></div>
+                        <h3>User Permissions</h3>
+                        <p>Role-based menu visibility for processing, reports, HR, admin and support areas.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="7" ry="3"/><path d="M5 5v6c0 1.7 3.1 3 7 3s7-1.3 7-3V5"/><path d="M5 11v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6"/></svg></div>
+                        <h3>Data Management</h3>
+                        <p>Export/import tools, templates and protected OTP for sensitive actions.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 3h10l4 4v14H5V3Z"/><path d="M15 3v5h4M8 17v-3m4 3V9m4 8v-5"/></svg></div>
+                        <h3>Reports & Exports</h3>
+                        <p>Excel/PDF style reporting for daily operations, stock, production and summaries.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2"/><path d="M9 6h6m-4 12h2"/></svg></div>
+                        <h3>PWA Ready</h3>
+                        <p>Installable app experience with custom PWA icon and mobile-friendly shell.</p>
+                    </article>
+                    <article class="feature-card">
+                        <div class="feature-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18h1.4a1.7 1.7 0 0 0 .8-3.2 1.7 1.7 0 0 1 .8-3.2h2.2A3.8 3.8 0 0 0 21 10.8 8 8 0 0 0 12 3Z"/><circle cx="7.5" cy="10" r=".8"/><circle cx="10" cy="6.8" r=".8"/><circle cx="15" cy="7" r=".8"/></svg></div>
+                        <h3>Custom UI Colors</h3>
+                        <p>Users can adjust header, side menu, dashboard and accent colors with contrast-aware text.</p>
+                    </article>
                 </div>
             </div>
         </section>
@@ -2317,25 +3074,42 @@
                 <div class="section-head">
                     <p class="section-kicker">Live readiness</p>
                     <h2>Built with production operations in mind.</h2>
-                    <p class="section-text">Sessions, maintenance mode, deployment controls, scheduled snapshots, cache invalidation and load-test scripts are part of the app structure.</p>
+                    <p class="section-text">Sessions, maintenance mode, deployment controls, scheduled snapshots, cache
+                        invalidation and load-test scripts are part of the app structure.</p>
                 </div>
                 <div class="timeline">
-                    <article class="timeline-step"><b>1</b><h3>Secure Login</h3><p>Session middleware, user verification and inactive company blocking.</p></article>
-                    <article class="timeline-step"><b>2</b><h3>Maintenance Mode</h3><p>Production maintenance pages and deployment token bypass for controlled releases.</p></article>
-                    <article class="timeline-step"><b>3</b><h3>Daily Snapshots</h3><p>Inventory and floor balance snapshots run on scheduler in IST.</p></article>
-                    <article class="timeline-step"><b>4</b><h3>Load Testing</h3><p>Locust test file covers login, dashboards, reports, APIs and optional downloads.</p></article>
+                    <article class="timeline-step"><b aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3m-4 4v3"/></svg></b>
+                        <h3>Secure Login</h3>
+                        <p>Session middleware, user verification and inactive company blocking.</p>
+                    </article>
+                    <article class="timeline-step"><b aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5-5L12 3.6 9.6 6 7.3 3.7a4 4 0 0 0 5 5L4 17a2.1 2.1 0 1 0 3 3l7.7-8.3a4 4 0 0 0 5-5L17.4 9 15 6.6l2.3-2.3"/></svg></b>
+                        <h3>Maintenance Mode</h3>
+                        <p>Production maintenance pages and deployment token bypass for controlled releases.</p>
+                    </article>
+                    <article class="timeline-step"><b aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 7h4l1.5-2h5L16 7h4v12H4V7Z"/><circle cx="12" cy="13" r="3.5"/><path d="M18 3v3m-1.5-1.5h3"/></svg></b>
+                        <h3>Daily Snapshots</h3>
+                        <p>Inventory and floor balance snapshots run on scheduler in IST.</p>
+                    </article>
+                    <article class="timeline-step"><b aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l3-4 3 2 5-7"/><path d="M14 6h3v3M5 4v4m-2-2h4"/></svg></b>
+                        <h3>Load Testing</h3>
+                        <p>Locust test file covers login, dashboards, reports, APIs and optional downloads.</p>
+                    </article>
                 </div>
             </div>
         </section>
 
         <section class="cta">
             <div class="cta-inner">
-                <div><h2>Open your ERP workspace</h2><p>Login with your company ID and registered email, or register your company for approval.</p></div>
+                <div>
+                    <h2>Open your ERP workspace</h2>
+                    <p>Login with your company ID and registered email, or register your company for approval.</p>
+                </div>
                 <a href="/auth/login">Go to Login</a>
             </div>
         </section>
 
-        <footer class="site-footer">SVBK IT SOLUTIONS · Seafood processing SaaS ERP · Built for factory operations, reports and control.</footer>
+        <footer class="site-footer">SVBK IT SOLUTIONS · Seafood processing SaaS ERP · Built for factory operations,
+            reports and control.</footer>
         {% endif %}
     </div>
 
@@ -2702,6 +3476,181 @@
                 forgotErr.innerHTML = error.message || "Server connection failed.";
                 forgotErr.style.display = "block";
             }
+        }
+
+        const premiumMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const premiumRevealItems = Array.from(document.querySelectorAll(
+            '.section-head, .module-card, .process-card, .automation-card, .feature-card, ' +
+            '.timeline-step, .photo-card, .app-screen-card, .screenshot-card, .cta-inner'
+        ));
+
+        premiumRevealItems.forEach((item, index) => {
+            item.classList.add('premium-reveal');
+            item.style.setProperty('--reveal-delay', `${(index % 4) * 70}ms`);
+        });
+
+        if (premiumMotionQuery.matches || !('IntersectionObserver' in window)) {
+            premiumRevealItems.forEach(item => {
+                item.classList.add('is-visible');
+                item.style.removeProperty('--reveal-delay');
+            });
+        } else {
+            const premiumRevealObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (!entry.isIntersecting) return;
+                    entry.target.classList.add('is-visible');
+                    setTimeout(() => entry.target.style.removeProperty('--reveal-delay'), 1100);
+                    observer.unobserve(entry.target);
+                });
+            }, { threshold: 0.12, rootMargin: '0px 0px -5% 0px' });
+
+            premiumRevealItems.forEach(item => premiumRevealObserver.observe(item));
+        }
+
+        const readingCards = Array.from(document.querySelectorAll(
+            '.website-page .module-card, .website-page .process-card, ' +
+            '.website-page .automation-card, .website-page .feature-card, ' +
+            '.website-page .timeline-step, .website-page .photo-card, .website-page .app-screen-card, ' +
+            '.website-page .screenshot-card'
+        ));
+
+        readingCards.forEach(card => {
+            let wordIndex = 0;
+            const textBlocks = Array.from(card.children).filter(child =>
+                child.matches('h3, p, strong, span:not(.tag)')
+            );
+
+            textBlocks.forEach(block => {
+                const textNodes = [];
+                const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT);
+                while (walker.nextNode()) {
+                    if (walker.currentNode.textContent.trim()) textNodes.push(walker.currentNode);
+                }
+
+                textNodes.forEach(textNode => {
+                    const fragment = document.createDocumentFragment();
+                    textNode.textContent.split(/(\s+)/).forEach(part => {
+                        if (!part) return;
+                        if (/^\s+$/.test(part)) {
+                            fragment.appendChild(document.createTextNode(part));
+                            return;
+                        }
+                        const word = document.createElement('span');
+                        word.className = 'reading-word';
+                        word.style.setProperty('--word-index', wordIndex++);
+                        word.textContent = part;
+                        fragment.appendChild(word);
+                    });
+                    textNode.replaceWith(fragment);
+                });
+            });
+        });
+
+        if (readingCards.length && !premiumMotionQuery.matches && 'IntersectionObserver' in window) {
+            const visibleReadingCards = new Set();
+            let activeReadingCard = null;
+            let readingCursor = 0;
+
+            const readingObserver = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && entry.intersectionRatio >= .28) {
+                        visibleReadingCards.add(entry.target);
+                    } else {
+                        visibleReadingCards.delete(entry.target);
+                        entry.target.classList.remove('reading-focus');
+                        if (activeReadingCard === entry.target) activeReadingCard = null;
+                    }
+                });
+            }, { threshold: [0, .28, .55], rootMargin: '-5% 0px -8% 0px' });
+
+            readingCards.forEach(card => readingObserver.observe(card));
+
+            const focusNextVisibleCard = () => {
+                if (document.hidden) return;
+                const visibleCards = readingCards.filter(card => visibleReadingCards.has(card));
+                if (!visibleCards.length) return;
+
+                activeReadingCard?.classList.remove('reading-focus');
+                readingCursor %= visibleCards.length;
+                activeReadingCard = visibleCards[readingCursor];
+                activeReadingCard.classList.add('reading-focus');
+                readingCursor = (readingCursor + 1) % visibleCards.length;
+            };
+
+            setTimeout(focusNextVisibleCard, 650);
+            setInterval(focusNextVisibleCard, 1900);
+        }
+
+        const loginCarousel = document.getElementById('login3dCarousel');
+        if (loginCarousel && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            const slides = Array.from(loginCarousel.querySelectorAll('.login-carousel-slide'));
+            const dots = Array.from(loginCarousel.querySelectorAll('.login-carousel-dots i'));
+            const label = document.getElementById('loginCarouselLabel');
+            let slideIndex = 0;
+            let carouselTimer = null;
+            let transitionTimer = null;
+            let transitionUnlockTimer = null;
+            let isTransitioning = false;
+
+            const showSlide = (targetIndex) => {
+                if (isTransitioning || slides.length < 2 || targetIndex === slideIndex) return;
+                isTransitioning = true;
+                loginCarousel.classList.add('collage-transition');
+                dots[slideIndex]?.classList.remove('active');
+
+                transitionTimer = setTimeout(() => {
+                    slides[slideIndex].classList.remove('active', 'leaving');
+                    slideIndex = targetIndex;
+                    slides[slideIndex].classList.add('active');
+                    dots[slideIndex]?.classList.add('active');
+                    if (label) label.textContent = slides[slideIndex].dataset.label || '';
+                    loginCarousel.classList.remove('collage-transition');
+
+                    transitionUnlockTimer = setTimeout(() => {
+                        isTransitioning = false;
+                    }, 720);
+                }, 520);
+            };
+
+            const showNextSlide = () => showSlide((slideIndex + 1) % slides.length);
+
+            const startCarousel = () => {
+                clearInterval(carouselTimer);
+                carouselTimer = setInterval(showNextSlide, 2400);
+            };
+
+            const pauseCarousel = () => {
+                clearInterval(carouselTimer);
+                carouselTimer = null;
+            };
+
+            dots.forEach((dot, index) => {
+                dot.setAttribute('role', 'button');
+                dot.setAttribute('tabindex', '0');
+                dot.setAttribute('aria-label', `Show image ${index + 1}`);
+
+                const selectImage = () => {
+                    if (index !== slideIndex && !isTransitioning) showSlide(index);
+                    startCarousel();
+                };
+
+                dot.addEventListener('click', selectImage);
+                dot.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        selectImage();
+                    }
+                });
+            });
+
+            startCarousel();
+            document.addEventListener('visibilitychange', () => {
+                if (document.hidden) {
+                    pauseCarousel();
+                } else {
+                    startCarousel();
+                }
+            });
         }
     </script>
 </body>

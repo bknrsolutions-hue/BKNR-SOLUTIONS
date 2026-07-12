@@ -329,6 +329,45 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
     success_msg = request.session.pop("success_msg", None)
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "varieties": masters["varieties"],
+            "contractors": masters["contractors"],
+            "peeling_locations": pa_list,
+            "prod_for_list": masters["prod_for_list"],
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "production_for": r.production_for,
+                    "peeling_at": r.peeling_at,
+                    "batch_number": r.batch_number,
+                    "hlso_count": r.hlso_count,
+                    "species": r.species,
+                    "variety_name": r.variety_name,
+                    "hlso_qty": r.hlso_qty,
+                    "peeled_qty": r.peeled_qty,
+                    "yield_percent": r.yield_percent,
+                    "contractor_name": r.contractor_name,
+                    "rate": r.rate,
+                    "amount": r.amount,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "hlso_floor_balance": hlso_floor_balance,
+            "hlso_summary": list(hlso_summary.values()),
+            "variety_summary": variety_summary,
+            "drill_down_json": drill_down_data,
+            "selected_production_for": global_production_for or "",
+            "selected_location": global_location or ""
+        })
+
     return templates.TemplateResponse(
         request=request, name="processing/peeling.html",
         context={

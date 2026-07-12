@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Depends, Form, Query, status
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_, or_, case, extract, cast, Date, text
+from sqlalchemy import func, and_, or_, case, cast, Date, text
 from datetime import date, datetime, timedelta
 import logging
 from collections import defaultdict
@@ -192,7 +192,7 @@ def hr_command_center(
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    today = date.today()
+    today = ist_now().date()
     start_of_month = today.replace(day=1)
     current_year = today.year
 
@@ -212,17 +212,36 @@ def hr_command_center(
         base_emp = secure_hr(db.query(EmployeeRegistration), EmployeeRegistration)
         base_att = secure_hr(db.query(DailyAttendance), DailyAttendance)
         base_stat = secure_hr(db.query(EmployeeStatutoryMaster), EmployeeStatutoryMaster)
+        active_status = func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE"
+        inactive_status = func.upper(func.trim(EmployeeRegistration.status)) == "INACTIVE"
 
         # ---------------------------------------------------------
         # 🌟 1. EXECUTIVE WORKFORCE SUMMARY (12 PREMIUM KPIs)
         # ---------------------------------------------------------
         total_employees = base_emp.count()
-        active_employees = base_emp.filter(EmployeeRegistration.status == "ACTIVE").count()
-        present_today = base_att.filter(DailyAttendance.duty_date == today).count()
+        active_employees = base_emp.filter(active_status).count()
+        present_today = base_att.filter(DailyAttendance.duty_date == today).with_entities(
+            func.count(func.distinct(DailyAttendance.employee_id))
+        ).scalar() or 0
+        half_day_today = base_att.filter(
+            DailyAttendance.duty_date == today,
+            or_(
+                func.upper(func.trim(DailyAttendance.duty_type)) == "HALF",
+                and_(
+                    func.upper(func.trim(DailyAttendance.status)) == "CLOSED",
+                    DailyAttendance.working_hours >= 4,
+                    DailyAttendance.working_hours < 8,
+                ),
+            ),
+        ).with_entities(func.count(func.distinct(DailyAttendance.employee_id))).scalar() or 0
+        ot_workers_today = base_att.filter(
+            DailyAttendance.duty_date == today,
+            DailyAttendance.calculated_ot_hours > 0,
+        ).with_entities(func.count(func.distinct(DailyAttendance.employee_id))).scalar() or 0
         absent_today = max(0, active_employees - present_today)
         present_pct = (present_today / active_employees * 100) if active_employees > 0 else 0.0
 
-        contract_count = base_emp.filter(and_(EmployeeRegistration.status == "ACTIVE", func.upper(EmployeeRegistration.employee_type) == "CONTRACTOR")).count()
+        contract_count = base_emp.filter(and_(active_status, func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR")).count()
         perm_count = active_employees - contract_count
         contract_pct = (contract_count / active_employees * 100) if active_employees > 0 else 0.0
         perm_pct = (perm_count / active_employees * 100) if active_employees > 0 else 0.0
@@ -230,26 +249,35 @@ def hr_command_center(
         ot_hours_today = base_att.filter(DailyAttendance.duty_date == today).with_entities(func.coalesce(func.sum(DailyAttendance.calculated_ot_hours), 0.0)).scalar()
 
         # Labor Cost Today & Productivity
-        present_emps = db.query(EmployeeRegistration.current_salary).join(
+        present_emps = db.query(EmployeeRegistration.employee_id, EmployeeRegistration.current_salary).join(
             DailyAttendance, DailyAttendance.employee_id == EmployeeRegistration.employee_id
-        ).filter(and_(DailyAttendance.company_id == comp_code, DailyAttendance.duty_date == today, DailyAttendance.employee_id.in_(allowed_emp_ids))).all()
+        ).filter(and_(
+            EmployeeRegistration.company_id == comp_code,
+            DailyAttendance.company_id == comp_code,
+            DailyAttendance.duty_date == today,
+            DailyAttendance.employee_id.in_(allowed_emp_ids),
+        )).group_by(EmployeeRegistration.employee_id, EmployeeRegistration.current_salary).all()
         
-        labor_cost_today = sum([(emp[0] or 0) / 30 for emp in present_emps])
-        avg_salary = base_emp.filter(EmployeeRegistration.status == "ACTIVE").with_entities(func.coalesce(func.avg(EmployeeRegistration.current_salary), 0.0)).scalar()
+        labor_cost_today = sum([(emp.current_salary or 0) / 30 for emp in present_emps])
+        avg_salary = base_emp.filter(active_status).with_entities(func.coalesce(func.avg(EmployeeRegistration.current_salary), 0.0)).scalar()
 
         total_working_hours = base_att.filter(DailyAttendance.duty_date == today).with_entities(func.coalesce(func.sum(DailyAttendance.working_hours), 0.0)).scalar()
         employee_productivity = (total_working_hours / (present_today * 8) * 100) if present_today > 0 else 0.0
 
-        resigned_this_year = base_emp.filter(and_(EmployeeRegistration.resignation_date >= date(current_year, 1, 1), EmployeeRegistration.status == "INACTIVE")).count()
+        resigned_this_year = base_emp.filter(and_(EmployeeRegistration.resignation_date >= date(current_year, 1, 1), inactive_status)).count()
         attrition_rate = (resigned_this_year / total_employees * 100) if total_employees > 0 else 0.0
 
         # Production KG Fetch for Cost/KG
         def get_prod_kg(model, field):
             q = db.query(func.coalesce(func.sum(field), 0.0)).filter(and_(model.company_id == comp_code, model.date == today))
-            if hasattr(model, 'production_at') and g_loc_clean and g_loc_clean != "ALL":
-                q = q.filter(func.upper(func.trim(model.production_at)) == g_loc_clean)
-            elif hasattr(model, 'peeling_at') and g_loc_clean and g_loc_clean != "ALL":
-                q = q.filter(func.upper(func.trim(model.peeling_at)) == g_loc_clean)
+            location_col = getattr(model, 'production_at', None)
+            if location_col is None:
+                location_col = getattr(model, 'peeling_at', None)
+            if location_col is not None:
+                if g_loc_clean and g_loc_clean != "ALL":
+                    q = q.filter(func.upper(func.trim(location_col)) == g_loc_clean)
+                elif user_allowed_locations:
+                    q = q.filter(func.upper(func.trim(location_col)).in_(user_allowed_locations))
             return q.scalar()
 
         total_prod_kg = get_prod_kg(Production, Production.production_qty) + get_prod_kg(Peeling, Peeling.peeled_qty)
@@ -266,7 +294,7 @@ def hr_command_center(
         for d_name in dept_names:
             heatmap_data[d_name] = []
             for day in past_7_days:
-                c = db.query(func.count(DailyAttendance.id)).join(EmployeeRegistration, DailyAttendance.employee_id == EmployeeRegistration.employee_id).filter(
+                c = db.query(func.count(func.distinct(DailyAttendance.employee_id))).join(EmployeeRegistration, DailyAttendance.employee_id == EmployeeRegistration.employee_id).filter(
                     and_(DailyAttendance.company_id == comp_code, DailyAttendance.duty_date == day, EmployeeRegistration.department == d_name, DailyAttendance.employee_id.in_(allowed_emp_ids))
                 ).scalar()
                 heatmap_data[d_name].append(c)
@@ -276,7 +304,7 @@ def hr_command_center(
         # ---------------------------------------------------------
         shift_aggs = base_att.filter(DailyAttendance.duty_date == today).with_entities(
             DailyAttendance.shift_name,
-            func.count(DailyAttendance.id).label("emp_count"),
+            func.count(func.distinct(DailyAttendance.employee_id)).label("emp_count"),
             func.sum(DailyAttendance.working_hours).label("total_hrs"),
             func.sum(DailyAttendance.calculated_ot_hours).label("ot_hrs")
         ).group_by(DailyAttendance.shift_name).all()
@@ -287,13 +315,17 @@ def hr_command_center(
             emp_c = s.emp_count or 0
             eff = ((s.total_hrs or 0) / (emp_c * 8) * 100) if emp_c > 0 else 0.0
             shift_performance.append({
-                "shift": s_name, "employees": emp_c, "ot_hrs": round(s.ot_hrs or 0, 1), "efficiency": round(eff, 1)
+                "shift": s_name,
+                "employees": emp_c,
+                "ot_hrs": round(s.ot_hrs or 0, 1),
+                "avg_hrs": round((s.total_hrs or 0) / emp_c, 1) if emp_c > 0 else 0.0,
+                "efficiency": round(eff, 1),
             })
 
         # ---------------------------------------------------------
         # 🌟 4. DEPARTMENT COST CENTER
         # ---------------------------------------------------------
-        dept_cost_data = base_emp.filter(EmployeeRegistration.status == "ACTIVE").with_entities(
+        dept_cost_data = base_emp.filter(active_status).with_entities(
             EmployeeRegistration.department,
             func.count(EmployeeRegistration.id).label("emps"),
             func.sum(EmployeeRegistration.current_salary).label("total_sal"),
@@ -311,7 +343,7 @@ def hr_command_center(
         # ---------------------------------------------------------
         # 🌟 5. CONTRACTOR ANALYTICS
         # ---------------------------------------------------------
-        contractor_data = base_emp.filter(and_(EmployeeRegistration.status == "ACTIVE", func.upper(EmployeeRegistration.employee_type) == "CONTRACTOR")).with_entities(
+        contractor_data = base_emp.filter(and_(active_status, func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR")).with_entities(
             EmployeeRegistration.contractor_name,
             func.count(EmployeeRegistration.id).label("manpower"),
             func.sum(EmployeeRegistration.current_salary).label("salary")
@@ -320,7 +352,7 @@ def hr_command_center(
         contractor_analytics = []
         for c in contractor_data:
             c_name = c.contractor_name or "DIRECT/UNKNOWN"
-            c_present = db.query(func.count(DailyAttendance.id)).join(EmployeeRegistration, DailyAttendance.employee_id == EmployeeRegistration.employee_id).filter(
+            c_present = db.query(func.count(func.distinct(DailyAttendance.employee_id))).join(EmployeeRegistration, DailyAttendance.employee_id == EmployeeRegistration.employee_id).filter(
                 and_(DailyAttendance.company_id == comp_code, DailyAttendance.duty_date == today, EmployeeRegistration.contractor_name == c.contractor_name, DailyAttendance.employee_id.in_(allowed_emp_ids))
             ).scalar() or 0
             
@@ -348,19 +380,31 @@ def hr_command_center(
         # ---------------------------------------------------------
         # 🌟 7. STATUTORY COMPLIANCE & RISK CENTER
         # ---------------------------------------------------------
-        pf_covered = base_stat.filter(and_(EmployeeStatutoryMaster.pf_applicable == True, EmployeeStatutoryMaster.status == "ACTIVE")).count()
-        esi_covered = base_stat.filter(and_(EmployeeStatutoryMaster.esi_applicable == True, EmployeeStatutoryMaster.status == "ACTIVE")).count()
-        stat_missing_uan = base_stat.filter(and_(EmployeeStatutoryMaster.pf_applicable == True, or_(EmployeeStatutoryMaster.uan_number == None, EmployeeStatutoryMaster.uan_number == ""))).count()
-        stat_missing_esi = base_stat.filter(and_(EmployeeStatutoryMaster.esi_applicable == True, or_(EmployeeStatutoryMaster.esi_number == None, EmployeeStatutoryMaster.esi_number == ""))).count()
+        def distinct_stat_count(query):
+            return query.with_entities(func.count(func.distinct(EmployeeStatutoryMaster.employee_id))).scalar() or 0
+
+        active_stat = func.upper(func.trim(EmployeeStatutoryMaster.status)) == "ACTIVE"
+        pf_covered = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.pf_applicable == True, active_stat))
+        esi_covered = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.esi_applicable == True, active_stat))
+        pt_covered = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.pt_applicable == True, active_stat))
+        stat_pf_na = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.pf_applicable == False, active_stat))
+        stat_missing_uan = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.pf_applicable == True, or_(EmployeeStatutoryMaster.uan_number == None, EmployeeStatutoryMaster.uan_number == "")))
+        stat_missing_esi = distinct_stat_count(base_stat.filter(EmployeeStatutoryMaster.esi_applicable == True, or_(EmployeeStatutoryMaster.esi_number == None, EmployeeStatutoryMaster.esi_number == "")))
         
         pf_coverage_pct = (pf_covered / active_employees * 100) if active_employees > 0 else 0.0
         esi_coverage_pct = (esi_covered / active_employees * 100) if active_employees > 0 else 0.0
+        pt_coverage_pct = (pt_covered / active_employees * 100) if active_employees > 0 else 0.0
 
         risk_no_pan = base_emp.filter(or_(EmployeeRegistration.pan_number == None, EmployeeRegistration.pan_number == "")).count()
         risk_no_aadhar = base_emp.filter(or_(EmployeeRegistration.aadhar_number == None, EmployeeRegistration.aadhar_number == "")).count()
         risk_no_bank = base_emp.filter(or_(EmployeeRegistration.account_number == None, EmployeeRegistration.account_number == "")).count()
         risk_no_photo = base_emp.filter(or_(EmployeeRegistration.photo_path == None, EmployeeRegistration.photo_path == "")).count()
         risk_no_mobile = base_emp.filter(or_(EmployeeRegistration.mobile == None, EmployeeRegistration.mobile == "")).count()
+        risk_no_email = base_emp.filter(and_(
+            or_(EmployeeRegistration.email == None, EmployeeRegistration.email == ""),
+            or_(EmployeeRegistration.personal_email == None, EmployeeRegistration.personal_email == ""),
+            or_(EmployeeRegistration.official_email == None, EmployeeRegistration.official_email == ""),
+        )).count()
         
         stat_emp_ids = secure_hr(db.query(EmployeeStatutoryMaster.employee_id), EmployeeStatutoryMaster)
         risk_missing_statutory = base_emp.filter(~EmployeeRegistration.employee_id.in_(stat_emp_ids)).count()
@@ -368,24 +412,44 @@ def hr_command_center(
         # ---------------------------------------------------------
         # 🌟 8. BIRTHDAY / ANNIVERSARY (Upcoming 7 & 30 Days)
         # ---------------------------------------------------------
-        def get_upcoming(date_col, days):
-            end_date = today + timedelta(days=days)
-            return base_emp.filter(EmployeeRegistration.status == "ACTIVE",
-                or_(
-                    and_(extract('month', date_col) == today.month, extract('day', date_col) >= today.day, extract('day', date_col) <= end_date.day),
-                    and_(today.month != end_date.month, extract('month', date_col) == end_date.month, extract('day', date_col) <= end_date.day)
-                )
-            ).all()
+        active_employee_rows = base_emp.filter(active_status).all()
 
-        bday_7 = get_upcoming(EmployeeRegistration.dob, 7)
-        bday_30 = get_upcoming(EmployeeRegistration.dob, 30)
-        anniv_7 = get_upcoming(EmployeeRegistration.joining_date, 7)
+        def next_annual_date(source_date):
+            if not source_date:
+                return None
+            try:
+                candidate = source_date.replace(year=today.year)
+            except ValueError:  # 29-Feb in a non-leap year
+                candidate = date(today.year, 2, 28)
+            if candidate < today:
+                try:
+                    candidate = source_date.replace(year=today.year + 1)
+                except ValueError:
+                    candidate = date(today.year + 1, 2, 28)
+            return candidate
+
+        def get_upcoming(attribute_name, days):
+            end_date = today + timedelta(days=days)
+            matches = []
+            for employee in active_employee_rows:
+                candidate = next_annual_date(getattr(employee, attribute_name, None))
+                if candidate and today <= candidate <= end_date:
+                    matches.append(employee)
+            return matches
+
+        bday_7 = get_upcoming("dob", 7)
+        bday_30 = get_upcoming("dob", 30)
+        anniv_7 = get_upcoming("joining_date", 7)
 
         # ---------------------------------------------------------
         # 🌟 9. SALARY ADVANCE CONTROL TOWER
         # ---------------------------------------------------------
         base_adv = secure_hr(db.query(EmployeeSalaryAdvance), EmployeeSalaryAdvance)
-        adv_agg = base_adv.with_entities(
+        adv_ytd = base_adv.filter(
+            EmployeeSalaryAdvance.advance_date >= date(current_year, 1, 1),
+            EmployeeSalaryAdvance.advance_date <= today,
+        )
+        adv_agg = adv_ytd.with_entities(
             func.sum(EmployeeSalaryAdvance.advance_amount).label("issued"),
             func.sum(EmployeeSalaryAdvance.remaining_balance).label("balance"),
             func.sum(EmployeeSalaryAdvance.paid_amount).label("recovered")
@@ -414,7 +478,7 @@ def hr_command_center(
             func.count(case((and_(EmployeeRegistration.current_salary >= 10000, EmployeeRegistration.current_salary < 20000), EmployeeRegistration.id))).label("tier_2"),
             func.count(case((and_(EmployeeRegistration.current_salary >= 20000, EmployeeRegistration.current_salary < 30000), EmployeeRegistration.id))).label("tier_3"),
             func.count(case((EmployeeRegistration.current_salary >= 30000, EmployeeRegistration.id))).label("tier_4")
-        ).filter(EmployeeRegistration.status == "ACTIVE"), EmployeeRegistration).first()
+        ).filter(active_status), EmployeeRegistration).first()
         salary_tiers = [int(salary_histogram.tier_1 or 0), int(salary_histogram.tier_2 or 0), int(salary_histogram.tier_3 or 0), int(salary_histogram.tier_4 or 0)]
 
         gender_data = secure_hr(db.query(EmployeeRegistration.gender, func.count(EmployeeRegistration.id)), EmployeeRegistration).group_by(EmployeeRegistration.gender).all()
@@ -428,18 +492,37 @@ def hr_command_center(
         attendance_trend_data = []
         for i in range(29, -1, -1):
             loop_date = today - timedelta(days=i)
-            loop_day_present = base_att.filter(DailyAttendance.duty_date == loop_date).count()
+            loop_day_present = base_att.filter(DailyAttendance.duty_date == loop_date).with_entities(
+                func.count(func.distinct(DailyAttendance.employee_id))
+            ).scalar() or 0
             day_pct = (loop_day_present / active_employees * 100) if active_employees > 0 else 0.0
             attendance_trend_labels.append(loop_date.strftime('%d-%b'))
             attendance_trend_data.append(round(day_pct, 1))
 
         # ---------------------------------------------------------
+        # 🌟 ANALYTICS GROWTH METRICS
+        # ---------------------------------------------------------
+        new_joinings_month = base_emp.filter(
+            EmployeeRegistration.joining_date >= start_of_month,
+            EmployeeRegistration.joining_date <= today,
+        ).count()
+        resignations_month = base_emp.filter(
+            EmployeeRegistration.resignation_date >= start_of_month,
+            EmployeeRegistration.resignation_date <= today,
+        ).count()
+        increments_ytd = secure_hr(db.query(EmployeeIncrement), EmployeeIncrement).filter(
+            EmployeeIncrement.effective_from >= date(current_year, 1, 1),
+            EmployeeIncrement.effective_from <= today,
+            func.upper(func.trim(EmployeeIncrement.status)) == "ACTIVE",
+        ).count()
+
+        # ---------------------------------------------------------
         # Directory List
         # ---------------------------------------------------------
         dir_query = base_emp
-        if dept_filter: dir_query = dir_query.filter(EmployeeRegistration.department == dept_filter)
-        if type_filter: dir_query = dir_query.filter(EmployeeRegistration.employee_type == type_filter)
-        if status_filter: dir_query = dir_query.filter(EmployeeRegistration.status == status_filter)
+        if dept_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.department)) == dept_filter.upper())
+        if type_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == type_filter.upper())
+        if status_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.status)) == status_filter.upper())
         directory_list = dir_query.order_by(EmployeeRegistration.employee_id).all()
 
         # ---------------------------------------------------------
@@ -478,8 +561,8 @@ def hr_command_center(
         logger.critical(f"Premium HR Dashboard Pipeline Crash: {str(router_err)}")
         raise router_err
 
-    # MOCK LEAVES (Since Leave Module is pending)
-    leave_module = {"cl": 145, "sl": 67, "el": 312, "pending_approvals": 12}
+    # Leave masters are not connected to this dashboard yet; never show mock data.
+    leave_module = {"cl": 0, "sl": 0, "el": 0, "pending_approvals": 0}
 
     return templates.TemplateResponse(
         request=request, name="dashboard/hr_command_center.html",
@@ -487,11 +570,12 @@ def hr_command_center(
             "company_id": comp_code, "production_for": f"Enterprise HR Suite ({today.strftime('%d-%b-%Y')})",
             "actual_location": global_location,
             # Exec Summary
-            "total_employees": total_employees, "active_employees": active_employees, "present_pct": round(present_pct, 1),
-            "absent_today": absent_today,
+            "total_employees": total_employees, "active_employees": active_employees, "present_today": present_today,
+            "present_pct": round(present_pct, 1), "absent_today": absent_today,
+            "half_day_today": half_day_today, "ot_workers_today": ot_workers_today,
             "ot_hours_today": round(ot_hours_today, 1), "labor_cost_today": round(labor_cost_today, 0), "cost_per_kg": round(cost_per_kg, 2),
             "contract_pct": round(contract_pct, 1), "perm_pct": round(perm_pct, 1), "avg_salary": round(avg_salary, 0),
-            "employee_productivity": round(employee_productivity, 1), "attrition_rate": round(attrition_rate, 1), "enps_score": 88, 
+            "employee_productivity": round(employee_productivity, 1), "attrition_rate": round(attrition_rate, 1), "enps_score": 0,
             # Arrays for charts 
             "productivity_data": productivity_data,
             "salary_tiers": salary_tiers,
@@ -500,6 +584,9 @@ def hr_command_center(
             "blood_groups": blood_groups,
             "attendance_trend_labels": attendance_trend_labels,
             "attendance_trend_data": attendance_trend_data,
+            "new_joinings_month": new_joinings_month,
+            "resignations_month": resignations_month,
+            "increments_ytd": increments_ytd,
             # Heatmap & Shifts
             "heatmap_days": [d.strftime('%a %d') for d in past_7_days], "heatmap_data": heatmap_data,
             "shift_performance": shift_performance,
@@ -511,13 +598,15 @@ def hr_command_center(
             "pending_ot_rows": pending_ot_rows, "pending_duty_rows": pending_duty_rows,
             # Compliance & Risk
             "pf_coverage_pct": round(pf_coverage_pct, 1), "esi_coverage_pct": round(esi_coverage_pct, 1),
+            "pt_coverage_pct": round(pt_coverage_pct, 1), "stat_pf_na": stat_pf_na,
             "stat_missing_uan": stat_missing_uan, "stat_missing_esi": stat_missing_esi,
             "risk_no_pan": risk_no_pan, "risk_no_aadhar": risk_no_aadhar, "risk_no_bank": risk_no_bank, 
-            "risk_no_photo": risk_no_photo, "risk_no_mobile": risk_no_mobile,
+            "risk_no_photo": risk_no_photo, "risk_no_mobile": risk_no_mobile, "risk_no_email": risk_no_email,
             "risk_missing_statutory": risk_missing_statutory,
             # Calendar & Leaves
             "bday_7": bday_7, "bday_30": bday_30, "anniv_7": anniv_7,
-            "adv_issued": round(adv_issued, 0), "adv_balance": round(adv_balance, 0), "adv_recovery_pct": round(adv_recovery_pct, 1),
+            "adv_issued": round(adv_issued, 0), "adv_recovered": round(adv_recovered, 0),
+            "adv_balance": round(adv_balance, 0), "adv_recovery_pct": round(adv_recovery_pct, 1),
             "top_10_advances": top_10_advances, "leave_module": leave_module,
             # General
             "directory_list": directory_list,
@@ -532,8 +621,11 @@ def hr_command_center(
 @router.get("/hr_kpi_details")
 async def get_hr_kpi_details(
     request: Request,
-    kpi_type: str = Query(...),  
+    kpi_type: str = Query(...),
     location: str | None = Query(None),
+    dept_filter: str = Query(""),
+    type_filter: str = Query(""),
+    status_filter: str = Query(""),
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
@@ -549,9 +641,12 @@ async def get_hr_kpi_details(
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    today = date.today()
+    today = ist_now().date()
     
     allowed_emp_ids, g_loc_clean, emp_loc_col = get_secure_hr_scope(db, comp_code, global_location, user_allowed_locations)
+    dept_filter = clean_filter_value(dept_filter)
+    type_filter = clean_filter_value(type_filter)
+    status_filter = clean_filter_value(status_filter)
 
     result_data = []
 
@@ -563,9 +658,16 @@ async def get_hr_kpi_details(
             if g_loc_clean and g_loc_clean != "ALL": emp_q = emp_q.filter(func.upper(func.trim(emp_loc_col)) == g_loc_clean)
             elif user_allowed_locations: emp_q = emp_q.filter(func.upper(func.trim(emp_loc_col)).in_(user_allowed_locations))
 
-        if kpi_type.upper() == "ACTIVE_STAFF": emp_q = emp_q.filter(EmployeeRegistration.status == "ACTIVE")
-        elif kpi_type.upper() == "CONTRACT": emp_q = emp_q.filter(and_(EmployeeRegistration.status == "ACTIVE", func.upper(EmployeeRegistration.employee_type) == "CONTRACTOR"))
-        elif kpi_type.upper() == "PERMANENT": emp_q = emp_q.filter(and_(EmployeeRegistration.status == "ACTIVE", func.upper(EmployeeRegistration.employee_type) != "CONTRACTOR"))
+        if dept_filter:
+            emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.department)) == dept_filter.upper())
+        if type_filter:
+            emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == type_filter.upper())
+        if status_filter:
+            emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.status)) == status_filter.upper())
+
+        if kpi_type.upper() == "ACTIVE_STAFF": emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE")
+        elif kpi_type.upper() == "CONTRACT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR"))
+        elif kpi_type.upper() == "PERMANENT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", func.upper(func.trim(EmployeeRegistration.employee_type)) != "CONTRACTOR"))
         elif kpi_type.upper() == "ABSENT":
             today_punched_in = db.query(DailyAttendance.employee_id).filter(and_(DailyAttendance.company_id == comp_code, DailyAttendance.duty_date == today)).subquery()
             emp_q = emp_q.filter(and_(EmployeeRegistration.status == "ACTIVE", ~EmployeeRegistration.employee_id.in_(today_punched_in)))
@@ -574,7 +676,7 @@ async def get_hr_kpi_details(
         for r in rows:
             result_data.append({
                 "id": r.employee_id, "name": r.employee_name, "department": r.department or "GENERAL", "designation": r.designation or "STAFF",
-                "contact": r.mobile or "N/A", "manager": r.reporting_to or "N/A", "status": r.status,
+                "employee_type": r.employee_type or "REGULAR", "contact": r.mobile or "N/A", "manager": r.reporting_to or "N/A", "status": r.status,
                 # 🛡️ MANDATORY STRICT REDACTION FOR AADHAAR
                 "aadhar": "[Aadhaar Redacted]" if r.aadhar_number else "N/A"
             })

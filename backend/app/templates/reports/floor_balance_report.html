@@ -130,12 +130,12 @@ select:focus, input:focus { border-color: var(--accent-blue); }
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 
 /* Fixed Column Widths (Mobile Optimization) */
-.w-sl { width: 24px; } .w-bt { width: 55px; } .w-ty { width: 42px; } .w-vr { width: 110px; }
-.w-ct { width: 45px; } .w-sp { width: 50px; } .w-pf { width: 85px; } .w-qt { width: 65px; }
+.w-sl { width: 24px; } .w-loc { width: 85px; } .w-pf { width: 90px; } .w-bt { width: 60px; }
+.w-ty { width: 46px; } .w-sp { width: 55px; } .w-vr { width: 105px; } .w-ct { width: 45px; } .w-qt { width: 70px; }
 
 @media(min-width: 768px) {
-    .w-sl { width: 35px; } .w-bt { width: 100px; } .w-ty { width: 80px; } .w-vr { width: 150px; }
-    .w-ct { width: 80px; } .w-sp { width: 100px; } .w-pf { width: 140px; } .w-qt { width: 105px; }
+    .w-sl { width: 35px; } .w-loc { width: 130px; } .w-pf { width: 140px; } .w-bt { width: 100px; }
+    .w-ty { width: 80px; } .w-sp { width: 110px; } .w-vr { width: 150px; } .w-ct { width: 80px; } .w-qt { width: 105px; }
 }
 
 thead th {
@@ -229,12 +229,13 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                     <thead>
                         <tr>
                             <th class="w-sl">#</th>
+                            <th class="w-loc">Location</th>
+                            <th class="w-pf">Production For</th>
                             <th class="w-bt">Batch</th>
                             <th class="w-ty">Src</th>
+                            <th class="w-sp">Spec</th>
                             <th class="w-vr">Variety Description</th>
                             <th class="w-ct">Count</th>
-                            <th class="w-sp">Spec</th>
-                            <th class="w-pf">Prod For</th>
                             <th class="w-qt" style="text-align:right; padding-right:4px;">Avail (KG)</th>
                         </tr>
                     </thead>
@@ -244,7 +245,7 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                         {# Group by Location first, then by Batch #}
                         {% for loc, loc_group in rows_batch|groupby('location') %}
                             <tr class="row-location" data-loc="{{ loc }}">
-                                <td colspan="8">{{ loc | upper }}</td>
+                                <td colspan="9">{{ loc | upper }}</td>
                             </tr>
                             
                             {% for batch, batch_group in loc_group|groupby('batch') %}
@@ -258,12 +259,13 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                                         data-spec="{{ r.species }}"
                                         data-source="{{ r.source }}">
                                         <td>{{ ns.sl }}</td>
+                                        <td style="text-align:left;">{{ loc }}</td>
+                                        <td style="text-align:left;">{{ r.production_for }}</td>
                                         <td style="color: var(--accent-blue); text-align:left;">{{ batch }}</td>
                                         <td><span class="badge">{{ r.source }}</span></td>
+                                        <td style="color: var(--text-muted);">{{ r.species }}</td>
                                         <td style="text-align:left;">{{ r.variety }}</td>
                                         <td>{{ r.count }}</td>
-                                        <td style="color: var(--text-muted);">{{ r.species }}</td>
-                                        <td style="text-align:left;">{{ r.production_for }}</td>
                                         <td style="text-align:right; font-weight:700; padding-right:4px;">{{ "{:,.2f}".format(r.available_qty) }}</td>
                                     </tr>
                                     {% set ns.sl = ns.sl + 1 %}
@@ -272,7 +274,7 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                                 {% endfor %}
                                 
                                 <tr class="row-batch-total" data-loc="{{ loc }}" data-batch="{{ batch }}">
-                                    <td colspan="7" class="subtotal-label">Batch [{{ batch }}] Total:</td>
+                                    <td colspan="8" class="subtotal-label">Batch [{{ batch }}] Subtotal:</td>
                                     <td class="qty-bold">{{ "{:,.2f}".format(batch_ns.subtotal) }}</td>
                                 </tr>
                             {% endfor %}
@@ -280,7 +282,7 @@ tfoot td { background: var(--slate-bg); font-weight: 800; font-size: 9.5px; bord
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td colspan="7" style="text-align:right; padding-right:8px; font-weight:700; color:var(--text-muted); font-size:8px;">GRAND NET BALANCE:</td>
+                            <td colspan="8" style="text-align:right; padding-right:8px; font-weight:700; color:var(--text-muted); font-size:8px;">GRAND NET BALANCE:</td>
                             <td id="grandTotal" style="text-align:right; color:var(--accent-blue); font-weight:800; padding-right:4px;">{{ "{:,.2f}".format(ns.grand_total) }} KG</td>
                         </tr>
                     </tfoot>
@@ -325,7 +327,7 @@ function filterTable() {
         
         r.style.display = match ? "" : "none";
         if(match) {
-            net += parseFloat(r.cells[7].innerText.replace(/,/g,''));
+            net += parseFloat(r.cells[8].innerText.replace(/,/g,''));
             visibleCount++;
         }
     });
@@ -340,7 +342,7 @@ function filterTable() {
 
         rows.forEach(r => {
             if (r.dataset.loc === currentLoc && r.dataset.batch === currentBatch && r.style.display !== "none") {
-                batchSum += parseFloat(r.cells[7].innerText.replace(/,/g,''));
+                batchSum += parseFloat(r.cells[8].innerText.replace(/,/g,''));
                 hasVisibleRows = true;
             }
         });

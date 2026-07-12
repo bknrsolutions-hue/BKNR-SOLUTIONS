@@ -222,6 +222,54 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
     deheading_pending = pending_pool_q.order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "species_list": species_list,
+            "variety_list": variety_list,
+            "peeling_locations": peeling_locations,
+            "prod_for_list": prod_for_list,
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "batch_number": r.batch_number,
+                    "hoso_count": r.hoso_count,
+                    "variety_name": r.variety_name,
+                    "graded_count": r.graded_count,
+                    "quantity": r.quantity,
+                    "species": r.species,
+                    "peeling_at": r.peeling_at,
+                    "production_for": r.production_for,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "hlso_summary": list(hlso_summary.values()),
+            "hoso_summary": list(hoso_summary.values()),
+            "deheading_pending": [
+                {
+                    "id": p.id,
+                    "date": p.date.isoformat() if p.date else None,
+                    "time": p.time.strftime("%H:%M") if p.time else None,
+                    "batch_number": p.batch_number,
+                    "production_for": p.production_for,
+                    "peeling_at": p.peeling_at,
+                    "species": p.species,
+                    "hoso_count": p.hoso_count,
+                    "total_hlso_qty": p.total_hlso_qty,
+                    "graded_qty": p.graded_qty,
+                    "available_qty": p.available_qty,
+                    "status": p.status
+                } for p in deheading_pending
+            ],
+            "drill_down": drill_down_data
+        })
+
     return templates.TemplateResponse(
         request=request, name="processing/grading.html",
         context={

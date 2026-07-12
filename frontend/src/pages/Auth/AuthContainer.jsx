@@ -315,7 +315,6 @@ export default function AuthContainer({ handleLoginSuccess }) {
       {/* Right Column: Ultra-Compact Premium Authentication Gate Matrix */}
       <div style={formSideStyle}>
         <div style={formContainerStyle}>
-          
           {/* 1. Register Card */}
           {box === 'register' && (
             <div style={cardStyle}>
@@ -631,8 +630,9 @@ const brandingFooterStyle = {
 
 const formContainerStyle = {
   width: '100%',
-  margin: 'auto 0'
+  margin: '0'
 };
+
 
 const cardStyle = {
   width: '100%'

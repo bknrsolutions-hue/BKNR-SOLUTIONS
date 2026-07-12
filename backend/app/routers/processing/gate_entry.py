@@ -166,6 +166,45 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
 
     today_rows = today_q.order_by(GateEntry.id.desc()).all()
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "suppliers": suppliers_dd,
+            "locations": locations_dd,
+            "vehicles": vehicles_dd,
+            "drivers": drivers_dd,
+            "peeling_ats": peeling_dd,
+            "prod_for_list": prod_for_list,
+            "last_batch_map": json.loads(lb_json) if isinstance(lb_json, str) else lb_json,
+            "last_challan_map": json.loads(lc_json) if isinstance(lc_json, str) else lc_json,
+            "last_gp_combo_map": json.loads(lgp_json) if isinstance(lgp_json, str) else lgp_json,
+            "last_gp_value": last_gp,
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "batch_number": r.batch_number,
+                    "challan_number": r.challan_number,
+                    "gate_pass_number": r.gate_pass_number,
+                    "supplier_name": r.supplier_name,
+                    "purchasing_location": r.purchasing_location,
+                    "vehicle_number": r.vehicle_number,
+                    "driver_name": getattr(r, 'driver_name', ''),
+                    "no_of_material_boxes": r.no_of_material_boxes,
+                    "no_of_empty_boxes": r.no_of_empty_boxes,
+                    "no_of_ice_boxes": r.no_of_ice_boxes,
+                    "species": r.species,
+                    "production_for": r.production_for,
+                    "receiving_center": r.receiving_center,
+                    "is_cancelled": r.is_cancelled,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_rows
+            ]
+        })
+
     return templates.TemplateResponse(
         request=request,
         name="processing/gate_entry.html",
