@@ -125,10 +125,7 @@ async def stock_report_page(
     financial_years = master_context["financial_years"]
 
     # --- Financial Year Logic ---
-    selected_fy = fy
-    if selected_fy is None:
-        today = ist_now().date()
-        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
+    selected_fy = fy if fy is not None else ""
     
     # బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
     q = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
@@ -141,9 +138,7 @@ async def stock_report_page(
     if global_location:
         q = q.filter(func.trim(stock_entry.production_at) == func.trim(global_location))
 
-    if selected_fy == "":
-        q = q.filter(stock_entry.id == -1)
-    elif selected_fy:
+    if selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
