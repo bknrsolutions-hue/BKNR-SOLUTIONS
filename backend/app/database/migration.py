@@ -188,6 +188,34 @@ def run_migration():
             else:
                 print(f"  ✔ Column '{col_name}' already exists in table 'users'.")
                     
+    # -----------------------------------------------------
+    # Create required indexes on critical lookup columns
+    # -----------------------------------------------------
+    print("Checking and creating required indexes...")
+    indexes_to_create = [
+        # stock_entry indexes
+        ("idx_stock_entry_batch_number", "stock_entry", "batch_number"),
+        ("idx_stock_entry_location", "stock_entry", "location"),
+        ("idx_stock_entry_production_for", "stock_entry", "production_for"),
+        ("idx_stock_entry_production_at", "stock_entry", "production_at"),
+        # processing tables indexes
+        ("idx_gate_entry_batch_number", "gate_entry", "batch_number"),
+        ("idx_raw_material_purchasing_batch_number", "raw_material_purchasing", "batch_number"),
+        ("idx_de_heading_batch_number", "de_heading", "batch_number"),
+        ("idx_grading_batch_number", "grading", "batch_number"),
+        ("idx_peeling_batch_number", "peeling", "batch_number"),
+        ("idx_soaking_batch_number", "soaking", "batch_number"),
+        ("idx_production_batch_number", "production", "batch_number")
+    ]
+    with engine.begin() as conn:
+        for idx_name, tbl_name, col_name in indexes_to_create:
+            print(f"Creating index {idx_name} on {tbl_name}({col_name}) if not exists...")
+            try:
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {tbl_name}({col_name});"))
+                print(f"  ✔ Index {idx_name} checked/created.")
+            except Exception as e:
+                print(f"  ❌ Error creating index {idx_name}: {e}")
+
     print("Migration completed successfully!")
 
 if __name__ == "__main__":

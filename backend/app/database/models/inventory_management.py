@@ -24,10 +24,10 @@ class stock_entry(Base, metacolumns):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    batch_number = Column(String(255))
+    batch_number = Column(String(255), index=True)
     type_of_production = Column(String(255))
     cargo_movement_type = Column(String(50))   # IN / OUT
-    location = Column(String(255))
+    location = Column(String(255), index=True)
     brand = Column(String(255))
     freezer = Column(String(255))
     packing_style = Column(String(255))
@@ -43,8 +43,8 @@ class stock_entry(Base, metacolumns):
     purpose = Column(String(255), nullable=True)
     po_number = Column(String(255), nullable=True)
 
-    production_at = Column(String(255))
-    production_for = Column(String(255))
+    production_at = Column(String(255), index=True)
+    production_for = Column(String(255), index=True)
     species = Column(String(100))
 
     # Cancellation attributes

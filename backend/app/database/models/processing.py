@@ -6,7 +6,7 @@ class GateEntry(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     challan_number = Column(String)
     gate_pass_number = Column(String)
     receiving_center = Column(String)   # 👈 NEW COLUMN
@@ -50,7 +50,7 @@ class RawMaterialPurchasing(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     supplier_name = Column(String)
 
     variety_name = Column(String)
@@ -102,7 +102,7 @@ class DeHeading(Base):
     peeling_at = Column(String(255))
     production_for = Column(String(255))
     species = Column(String)
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     hoso_count = Column(String(50))
     hoso_qty = Column(Float)
     hlso_qty = Column(Float)
@@ -136,7 +136,7 @@ class Grading(Base):
     peeling_at = Column(String(255))
     production_for = Column(String(255))
     species = Column(String(100))
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     hoso_count = Column(String(50))
     variety_name = Column(String(100))
     graded_count = Column(String(50))
@@ -166,7 +166,7 @@ class Peeling(Base):
     peeling_at = Column(String(255))
     production_for = Column(String(255))
     species = Column(String(100))
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     hlso_count = Column(String(50))
     hlso_qty = Column(Float)
 
@@ -206,7 +206,7 @@ class Soaking(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     sintex_number = Column(String(100)) # కొత్తగా యాడ్ చేసిన కాలమ్
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     variety_name = Column(String(100))
     in_count = Column(String(50))
     in_qty = Column(Float)
@@ -249,7 +249,7 @@ class Production(Base):
     production_for = Column(String(255))
     production_type = Column(String)
     species = Column(String(100))
-    batch_number = Column(String(100))
+    batch_number = Column(String(100), index=True)
     brand = Column(String(255))
     variety_name = Column(String(100))
     glaze = Column(String(50))
