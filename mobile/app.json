@@ -18,16 +18,11 @@
       "infoPlist": {
         "NSAppTransportSecurity": {
           "NSAllowsArbitraryLoads": true
-        },
-        "NSCameraUsageDescription": "BKNR ERP needs camera access to scan barcodes and QR codes for inventory and gate entry operations."
+        }
       }
     },
     "android": {
       "package": "com.bknr.erp",
-      "permissions": [
-        "android.permission.CAMERA",
-        "android.permission.RECORD_AUDIO"
-      ],
       "adaptiveIcon": {
         "backgroundColor": "#060913",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -39,10 +34,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-font",
-      "expo-camera"
-    ],
     "extra": {
       "eas": {
         "projectId": "1ed9ceb0-0c30-43d2-b2bc-00c960aafcdc"

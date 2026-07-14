@@ -7,9 +7,9 @@ services:
     name: bknr-erp-production
     runtime: python
     branch: main
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: bash start.sh
+    rootDir: .
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
+    startCommand: cd backend && bash start.sh
     plan: standard                   # match your current Render plan
     region: singapore                # match your region
     healthCheckPath: /health
@@ -34,9 +34,9 @@ services:
     name: bknr-erp-staging
     runtime: python
     branch: staging
-    rootDir: backend
-    buildCommand: pip install -r requirements.txt
-    startCommand: bash start.sh
+    rootDir: .
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
+    startCommand: cd backend && bash start.sh
     plan: starter                    # cheaper plan OK for staging
     region: singapore
     healthCheckPath: /health

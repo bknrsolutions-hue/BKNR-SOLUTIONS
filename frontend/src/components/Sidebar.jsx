@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 
 export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, setSidebarOpen }) {
+  const isNativeMobile = typeof navigator !== 'undefined'
+    && navigator.userAgent.includes('BKNR_ERP_Native_Mobile');
   // Enforce permission checks matching menu.html allow() function
   const permissions = user?.permissions || [];
   const currentUserEmail = user?.email || '';
@@ -233,6 +235,41 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     }
   ];
 
+  // The browser keeps the complete ERP menu. The native shell reuses these
+  // same React pages but intentionally exposes only the approved mobile scope.
+  const mobilePageIds = new Set([
+    'dashboard_processing',
+    'dashboard_inventory',
+    'gate_entry',
+    'raw_material_purchasing',
+    'de_heading',
+    'grading',
+    'peeling',
+    'soaking',
+    'production',
+    'stock_entry',
+    'pending_orders',
+    'cold_storage_holding',
+    'general_stock_entry',
+    'report_inventory_report',
+    'attendance_daily_attendance',
+  ]);
+
+  const visibleMenuConfig = isNativeMobile
+    ? menuConfig
+        .map((category) => ({
+          ...category,
+          items: category.items?.filter((item) => mobilePageIds.has(item.id)),
+          subgroups: category.subgroups
+            ?.map((subgroup) => ({
+              ...subgroup,
+              items: subgroup.items.filter((item) => mobilePageIds.has(item.id)),
+            }))
+            .filter((subgroup) => subgroup.items.length > 0),
+        }))
+        .filter((category) => (category.items?.length || 0) + (category.subgroups?.length || 0) > 0)
+    : menuConfig;
+
   return (
     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
       {/* Sidebar Header */}
@@ -250,7 +287,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
 
       {/* Sidebar Navigation Scroll Box */}
       <div className="sidebar-menu">
-        {menuConfig.map((cat, idx) => {
+        {visibleMenuConfig.map((cat, idx) => {
           // Check permissions for the category
           let hasVisible = false;
           if (cat.items) {
@@ -352,4 +389,3 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     </div>
   );
 }
-

@@ -13,6 +13,7 @@ import json
 import os
 import time
 import uuid
+from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
@@ -174,8 +175,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        exact_paths = ["/", "/health", "/health/live", "/health/ready", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
-        prefix_paths = ["/auth/", "/static/", "/create-all", "/admin/maintenance"]
+        exact_paths = ["/", "/app", "/health", "/health/live", "/health/ready", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
+        prefix_paths = ["/app/", "/auth/", "/static/", "/create-all", "/admin/maintenance"]
 
         # Check deployment token header bypass
         deploy_token = request.headers.get("X-Deploy-Token")
@@ -815,6 +816,15 @@ def record_version(request: Request, payload: dict = Body(default={})):
     finally:
         db.close()
 
+
+# React frontend used by the native mobile shell. HashRouter keeps all client
+# routes under this single static entry point, while API requests stay on the
+# same origin and continue using the signed backend session cookie.
+frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
+if frontend_dist.is_dir():
+    application.mount("/app", StaticFiles(directory=str(frontend_dist), html=True), name="react-app")
+else:
+    logger.warning("React frontend build not found at %s; /app is unavailable", frontend_dist)
 
 # ASGI entrypoint for Render
 app = application
