@@ -36,6 +36,10 @@ export default function GateEntryReport({ activeRoute }) {
     if (toDate && r.date > toDate) return false;
     if (supplier && r.supplier_name !== supplier) return false;
     if (factory && r.receiving_center !== factory) return false;
+    if (search) {
+      const query = search.toLowerCase();
+      if (!Object.values(r).some(value => String(value ?? '').toLowerCase().includes(query))) return false;
+    }
     return true;
   });
 
@@ -66,6 +70,7 @@ export default function GateEntryReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -77,7 +82,7 @@ export default function GateEntryReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -86,14 +91,15 @@ export default function GateEntryReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -106,7 +112,7 @@ export default function GateEntryReport({ activeRoute }) {
     { label: 'Export PDF', onClick: () => { window.location.href = getExportUrl('pdf'); } },
     { label: 'Export Excel', onClick: () => { window.location.href = getExportUrl('excel'); } },
     { divider: true },
-    { label: 'Delete Record', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Record', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   return (
@@ -157,7 +163,7 @@ export default function GateEntryReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Total Entries" value={rows.length} accent="var(--corp-dash)" />
@@ -355,17 +361,13 @@ export default function GateEntryReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> above to load the Gate Entry Registry.
-        </div>
-      )}
+
 
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

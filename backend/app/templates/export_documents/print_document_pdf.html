@@ -13,6 +13,9 @@ table { width: 100%; border-collapse: collapse; }
 .section { margin-top: 10px; padding: 5px 7px; background: #dbeaf2; border: 1px solid #9ab8c8; font-weight: bold; text-transform: uppercase; }
 .details td { border: 1px solid #c8d2da; padding: 5px 7px; vertical-align: top; }
 .details .label { width: 31%; background: #f1f5f7; color: #44515c; font-size: 8pt; font-weight: bold; text-transform: uppercase; }
+.items th, .items td { border: 1px solid #c8d2da; padding: 4px; }
+.items th { background: #f1f5f7; font-size: 7.5pt; text-transform: uppercase; }
+.num { text-align: right; }
 .declaration { border: 1px solid #c8d2da; padding: 7px; line-height: 1.45; }
 .signatures { margin-top: 24px; }
 .signatures td { width: 33.33%; border-top: 1px solid #172033; padding: 6px; font-size: 8pt; font-weight: bold; text-transform: uppercase; }
@@ -33,6 +36,15 @@ table { width: 100%; border-collapse: collapse; }
   {% if value is not none and value != "" %}<tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>{% endif %}
 {% endfor %}
 </table>
+
+{% if doc_type == "commercial_invoice" and line_items %}
+<div class="section">Invoice Product / Packing Details</div>
+<table class="items">
+<tr><th>#</th><th>Product</th><th>Grade</th><th>Packing</th><th>Batch</th><th class="num">MC</th><th class="num">Net Wt.</th><th class="num">Gross Wt.</th></tr>
+{% for item in line_items %}<tr><td>{{ loop.index }}</td><td>{{ item.product }}</td><td>{{ item.grade }}</td><td>{{ item.packing_style }}</td><td>{{ item.batch_no or '' }}</td><td class="num">{{ item.master_cartons }}</td><td class="num">{{ '%.2f'|format(item.net_weight) }}</td><td class="num">{{ '%.2f'|format(item.gross_weight) }}</td></tr>{% endfor %}
+<tr><td colspan="5"><b>Total</b></td><td class="num"><b>{{ line_items|sum(attribute='master_cartons') }}</b></td><td class="num"><b>{{ '%.2f'|format(line_items|sum(attribute='net_weight')) }}</b></td><td class="num"><b>{{ '%.2f'|format(line_items|sum(attribute='gross_weight')) }}</b></td></tr>
+</table>
+{% endif %}
 
 <div class="section">Declaration and Control</div>
 <div class="declaration">We certify that the particulars shown above are true and correct according to the records maintained in ERP. The document must be checked against the buyer contract, customs filing, carrier document, statutory certificate, and latest approved revision before external use.</div>

@@ -160,9 +160,42 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         "global_location": global_location or ""
     }
 
+    # JSON API response for React
+    if request.query_params.get("format") == "json":
+        def ser(v):
+            if isinstance(v, (date, datetime)): return v.isoformat()
+            return v
+        rows_out = []
+        for r in table_data:
+            d = {}
+            for col in r.__table__.columns:
+                d[col.name] = ser(getattr(r, col.name))
+            rows_out.append(d)
+        ps_out = [{"packing_style": p.packing_style, "mc_weight": float(p.mc_weight or 0), "slab_weight": float(p.slab_weight or 0)} for p in context["packing_styles"]]
+        return JSONResponse({
+            "table_data": rows_out,
+            "batch_data_list": batch_data_list,
+            "species": context["species"],
+            "brands": context["brands"],
+            "production_for_list": production_for_unique,
+            "glazes": context["glazes"],
+            "varieties": context["varieties"],
+            "grades": context["grades"],
+            "freezers": context["freezers"],
+            "production_types": context["production_types"],
+            "purposes": context["purposes"],
+            "production_places": production_places_list,
+            "locations": coldstore_list,
+            "packing_styles": ps_out,
+            "po_numbers": context["po_numbers"],
+            "global_production_for": global_production_for or "",
+            "global_location": global_location or "",
+        })
+
     return templates.TemplateResponse(
         request=request, name="inventory_management/stock_entry.html", context=context
     )
+
 
 
 # -----------------------------------------------------

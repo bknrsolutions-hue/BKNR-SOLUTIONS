@@ -95,9 +95,10 @@ def report_page(
     role = request.session.get("role")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+    is_json = request.query_params.get("format") == "json"
     if fy is None:
         today = ist_now().date()
-        fy = str(today.year if today.month >= 4 else today.year - 1)
+        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
 
     def build_report_context():
         # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
@@ -110,30 +111,23 @@ def report_page(
             fy_set.add(fy_str)
         financial_years = sorted(list(fy_set), reverse=True)
 
-        if not fy:
-            return {
-                "rows": [], "batches": [], "suppliers": [], "varieties": [],
-                "species": [], "production_for_list": [], "peeling_locations": [],
-                "hsn_list": [], "company_name": "", "company_address": "",
-                "financial_years": financial_years,
-                "selected_fy": None
-            }
-
-        selected_fy = int(fy)
-        start_date = dt.date(selected_fy, 4, 1)
-        end_date = dt.date(selected_fy + 1, 3, 31)
-
-        # 🟢 UPDATED: Core query selection layered dynamically via global options
         query = (
             db.query(RawMaterialPurchasing)
             .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
             .filter(
                 RawMaterialPurchasing.company_id == comp_code,
-                GateEntry.company_id == comp_code,
+                GateEntry.company_id == comp_code
+            )
+        )
+
+        if fy:
+            selected_fy = int(fy)
+            start_date = dt.date(selected_fy, 4, 1)
+            end_date = dt.date(selected_fy + 1, 3, 31)
+            query = query.filter(
                 GateEntry.date >= start_date,
                 GateEntry.date <= end_date
             )
-        )
 
         if production_for:
             query = query.filter(RawMaterialPurchasing.production_for == production_for)
@@ -142,6 +136,15 @@ def report_page(
             query = query.filter(RawMaterialPurchasing.peeling_at == location)
 
         rows = [row_to_dict(row) for row in query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()]
+
+        # Serialize dates and times
+        for r in rows:
+            if isinstance(r.get("date"), (date, datetime)):
+                r["date"] = r["date"].isoformat()
+            if isinstance(r.get("time"), (dt.time, datetime)):
+                r["time"] = r["time"].strftime("%H:%M")
+            if isinstance(r.get("cancelled_at"), (date, datetime)):
+                r["cancelled_at"] = r["cancelled_at"].isoformat()
 
         def get_dist(attr):
             return sorted({r.get(attr) for r in rows if r.get(attr)})
@@ -159,7 +162,7 @@ def report_page(
             "company_name": comp["name"],
             "company_address": comp["address"],
             "financial_years": financial_years,
-            "selected_fy": str(selected_fy)
+            "selected_fy": fy
         }
 
     cache_key = f"bknr:processing_reports:{comp_code}:rmp_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
@@ -175,6 +178,22 @@ def report_page(
         "can_print": check_report_permission(request, "report_print"),
         "can_export": check_report_permission(request, "report_export"),
     })
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
 
     return templates.TemplateResponse(
         request=request,

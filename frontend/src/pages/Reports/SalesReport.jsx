@@ -334,14 +334,14 @@ export default function SalesReport({ activeRoute }) {
                 <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)', fontWeight: 700 }}>
                   {row.sl_no}
                 </td>
+                <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)' }}>
+                  {s.po_number}
+                </td>
                 <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)', fontWeight: 800, color: 'var(--corp-rep)' }}>
                   {invoiceNo}
                 </td>
                 <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)' }}>
                   {s.invoice_date}
-                </td>
-                <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)' }}>
-                  {s.po_number}
                 </td>
                 <td rowSpan={group.length} style={{ background: 'var(--header-bg)' }}>
                   {s.buyer_name}
@@ -351,15 +351,16 @@ export default function SalesReport({ activeRoute }) {
                 </td>
               </>
             )}
-            <td>{s.brand} / {s.variety} / {s.grade}</td>
-            <td className="text-center">{s.count_glaze}</td>
+            <td>{s.brand}</td>
+            <td>{s.variety}</td>
+            <td>{s.grade}</td>
+            <td>{s.container_no}</td>
+            <td>{s.shipping_bill}</td>
+            <td className="text-center">{[s.count_glaze, s.weight_glaze].filter(Boolean).join(' / ')}</td>
+            <td>{s.packing_style}</td>
             <td className="text-center">{s.no_of_mc}</td>
             <td className="text-right">{fmt.number(row.total_qty_kg)}</td>
-            <td className="text-right">$ {Number(s.price || 0).toFixed(3)}</td>
-            <td className="text-right">$ {fmt.number(row.total_usd)}</td>
             <td className="text-right" style={{ padding: '2px 4px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>Exch:</span>
                 <input
                   type="number"
                   step="0.01"
@@ -377,16 +378,19 @@ export default function SalesReport({ activeRoute }) {
                     }
                   }}
                 />
-                <span style={{ marginLeft: 'auto' }}>{fmt.currency(row.total_inr)}</span>
-              </div>
             </td>
+            <td className="text-right">$ {fmt.number(row.total_usd)}</td>
+            <td className="text-right">{fmt.currency(row.total_inr)}</td>
             <td className="text-right">{fmt.currency(row.stock_value)}</td>
+            <td className="text-right">{fmt.currency(row.freight_cost)}</td>
+            <td className="text-right">{fmt.currency(row.packing_cost)}</td>
             <td className="text-right" style={{ fontWeight: 700, color: row.profit_loss >= 0 ? '#10b981' : '#ef4444' }}>
               {fmt.currency(row.profit_loss)}
             </td>
             {idx === 0 && (
-              <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)' }}>
-                <select
+              <>
+                <td rowSpan={group.length} className="text-center" style={{ background: 'var(--header-bg)' }}>
+                  <select
                   value={s.status}
                   onChange={e => handleStatusChange(s.id, e.target.value)}
                   style={{
@@ -400,8 +404,10 @@ export default function SalesReport({ activeRoute }) {
                   <option value="Unpaid">UNPAID</option>
                   <option value="Paid">PAID</option>
                   <option value="Cancelled">CANCELLED</option>
-                </select>
-              </td>
+                  </select>
+                </td>
+                <td rowSpan={group.length} style={{ background: 'var(--header-bg)' }}>{s.company_name || s.company_id}</td>
+              </>
             )}
           </tr>
         );
@@ -410,20 +416,21 @@ export default function SalesReport({ activeRoute }) {
       // Subtotal row per Invoice
       trs.push(
         <tr key={`subtotal-${invoiceNo}`} style={{ background: 'rgba(71,85,105,0.06)', fontWeight: 800 }}>
-          <td colSpan={6} style={{ textAlign: 'right', paddingRight: '8px' }}>
+          <td colSpan={13} style={{ textAlign: 'right', paddingRight: '8px' }}>
             SUBTOTAL {invoiceNo}:
           </td>
-          <td colSpan={2}></td>
           <td className="text-center">{subMc} MC</td>
           <td className="text-right">{fmt.number(subQty)} KG</td>
           <td></td>
           <td className="text-right">$ {fmt.number(subUsd)}</td>
           <td className="text-right">{fmt.currency(subInr)}</td>
           <td className="text-right">{fmt.currency(subStock)}</td>
+          <td className="text-right">{fmt.currency(group.reduce((sum, item) => sum + Number(item.freight_cost || 0), 0))}</td>
+          <td className="text-right">{fmt.currency(group.reduce((sum, item) => sum + Number(item.packing_cost || 0), 0))}</td>
           <td className="text-right" style={{ color: subPL >= 0 ? '#10b981' : '#ef4444' }}>
             {fmt.currency(subPL)}
           </td>
-          <td></td>
+          <td colSpan={2}></td>
         </tr>
       );
     });
@@ -560,41 +567,51 @@ export default function SalesReport({ activeRoute }) {
               <thead>
                 <tr>
                   <th style={{ width: 45 }}>#</th>
+                  <th style={{ width: 110 }}>PO No</th>
                   <th style={{ width: 110 }}>Invoice No</th>
                   <th style={{ width: 100 }}>Date</th>
-                  <th style={{ width: 110 }}>PO Number</th>
                   <th style={{ width: 150 }}>Buyer</th>
                   <th style={{ width: 110 }}>Country</th>
-                  <th>Brand / Variety / Grade</th>
-                  <th style={{ width: 100 }} className="text-center">Count/Glaze</th>
+                  <th>Brand</th>
+                  <th>Variety</th>
+                  <th>Grade</th>
+                  <th>Container</th>
+                  <th>S.Bill</th>
+                  <th style={{ width: 100 }} className="text-center">Glaze (C/W)</th>
+                  <th>Packing</th>
                   <th style={{ width: 80 }} className="text-center">MC</th>
-                  <th style={{ width: 100 }} className="text-right">Qty (Kg)</th>
-                  <th style={{ width: 110 }} className="text-right">Rate (USD)</th>
-                  <th style={{ width: 110 }} className="text-right">Total USD</th>
-                  <th style={{ width: 220 }} className="text-right">Total INR</th>
-                  <th style={{ width: 130 }} className="text-right">Stock Val</th>
+                  <th style={{ width: 100 }} className="text-right">KG</th>
+                  <th style={{ width: 100 }} className="text-right">Ex. Rate</th>
+                  <th style={{ width: 110 }} className="text-right">USD Value</th>
+                  <th style={{ width: 130 }} className="text-right">INR Value</th>
+                  <th style={{ width: 130 }} className="text-right">Stock Cost</th>
+                  <th style={{ width: 110 }} className="text-right">Freight</th>
+                  <th style={{ width: 120 }} className="text-right">Packing Cost</th>
                   <th style={{ width: 130 }} className="text-right">Profit/Loss</th>
                   <th style={{ width: 130 }} className="text-center">Status</th>
+                  <th style={{ width: 130 }}>Company</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
-                  <EmptyRow cols={16} />
+                  <EmptyRow cols={24} />
                 ) : (
                   renderInvoiceRows()
                 )}
               </tbody>
               <tfoot>
                 <tr style={{ fontWeight: 800, background: 'var(--accent)', color: '#fff' }}>
-                  <td colSpan={8} style={{ textAlign: 'right', color: '#fff' }}>GRAND TOTALS:</td>
+                  <td colSpan={13} style={{ textAlign: 'right', color: '#fff' }}>GRAND TOTALS:</td>
                   <td className="text-center" style={{ color: '#fff' }}>{filtered.reduce((s, r) => s + Number(r.obj?.no_of_mc || 0), 0)} MC</td>
                   <td className="text-right" style={{ color: '#fff' }}>{fmt.number(totalQty)} KG</td>
                   <td></td>
                   <td className="text-right" style={{ color: '#fff' }}>$ {fmt.number(totalUsd)}</td>
                   <td className="text-right" style={{ color: '#fff' }}>{fmt.currency(totalInr)}</td>
                   <td className="text-right" style={{ color: '#fff' }}>{fmt.currency(filtered.reduce((s, r) => s + Number(r.stock_value || 0), 0))}</td>
+                  <td className="text-right" style={{ color: '#fff' }}>{fmt.currency(totalFreight)}</td>
+                  <td className="text-right" style={{ color: '#fff' }}>{fmt.currency(totalPacking)}</td>
                   <td className="text-right" style={{ color: '#fff' }}>{fmt.currency(totalPL)}</td>
-                  <td></td>
+                  <td colSpan={2}></td>
                 </tr>
               </tfoot>
             </table>

@@ -392,64 +392,65 @@
     <div class="cards">
         <div class="kpi-card" style="--kpi-color: var(--corp-warning);" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Gate Entries</span>
+                <span class="kpi-title">Gate Entries</span>
                 <div class="kpi-icon"><i class="fa-solid fa-door-open"></i></div>
             </div>
             <div class="kpi-value">{{ gate_today }}</div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing Platform')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Raw Material</span>
+                <span class="kpi-title">Raw Material</span>
                 <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             </div>
             <div class="kpi-value">{{ rmp_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's De-heading</span>
+                <span class="kpi-title">De-heading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-scissors"></i></div>
             </div>
             <div class="kpi-value">{{ dh_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-info);" onclick="openEntryModal('/processing/grading', 'Grading Allocation Module')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Grading</span>
+                <span class="kpi-title">Grading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-filter"></i></div>
             </div>
             <div class="kpi-value">{{ grading_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/peeling', 'Peeling Process Terminal')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Peeling</span>
+                <span class="kpi-title">Peeling</span>
                 <div class="kpi-icon"><i class="fa-solid fa-hand-dots"></i></div>
             </div>
             <div class="kpi-value">{{ peeling_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Soaking</span>
+                <span class="kpi-title">Soaking</span>
                 <div class="kpi-icon"><i class="fa-solid fa-droplet"></i></div>
             </div>
             <div class="kpi-value">{{ soaking_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Production</span>
+                <span class="kpi-title">Production</span>
                 <div class="kpi-icon"><i class="fa-solid fa-industry"></i></div>
             </div>
             <div class="kpi-value">{{ production_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--text-secondary);">
             <div class="kpi-header">
-                <span class="kpi-title">Current Floor Stock</span>
+                <span class="kpi-title">Floor Snapshot (9 AM)</span>
                 <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
             </div>
             <div class="kpi-value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
+            <div style="font-size:9px; color:var(--text-tertiary); margin-top:4px; font-weight:700;">{{ floor_snapshot_date or to_date }} · {{ floor_snapshot_time }}</div>
         </div>
     </div>
 
     <div class="section-head">
-        <span>Staff Attendance Today</span>
+        <span>Staff Attendance — Selected Date</span>
         <div class="section-head-line"></div>
     </div>
     <div class="attendance-viewport">
@@ -565,7 +566,7 @@
     </div>
 
     <div class="section-head">
-        <span>Current Floor Balance Report</span>
+        <span>Floor Balance Snapshot — {{ floor_snapshot_date or to_date }} · {{ floor_snapshot_time }}</span>
         <div class="section-head-line"></div>
     </div>
     <div class="corp-panel floor-box">
@@ -660,6 +661,7 @@
             return; 
         }
 
+        urlParams.set('snapshot_date', urlParams.get('to_date') || '{{ to_date }}');
         document.getElementById("floorReportFrame").src = "/reports/floor_balance_report?" + urlParams.toString();
 
         if(parentCompNode && !parentCompNode.dataset.listenerAttached) {

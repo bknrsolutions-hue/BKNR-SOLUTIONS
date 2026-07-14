@@ -349,15 +349,42 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
         group_types={"ASSET"},
         group_names={"Current Assets", "Stock-in-hand"},
     )
-
-    # ఈరోజు ఎంటర్ చేసిన డేటా
-    today = ist_now().date()
     today_data = db.query(GeneralStock).filter(
-        GeneralStock.date == today,
-        func.upper(func.trim(GeneralStock.company_id)) == comp_code
+        func.upper(func.trim(GeneralStock.company_id)) == comp_code,
+        GeneralStock.date == ist_now().date(),
     ).order_by(GeneralStock.id.desc()).all()
 
-    return request.app.state.templates.TemplateResponse(
+    # JSON API response for React
+    if request.query_params.get("format") == "json":
+        import datetime as dt_mod
+        def ser(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)): return v.isoformat()
+            if isinstance(v, dt_mod.time): return v.strftime("%H:%M")
+            return v
+        def row_to_dict(r):
+            d = {}
+            for col in r.__table__.columns:
+                d[col.name] = ser(getattr(r, col.name))
+            return d
+        
+        v_list = [{"id": v.id, "name": v.name} for v in vendor_list]
+        h_list = [{"id": h.id, "hsn_code": h.hsn_code, "description": h.description or ""} for h in hsn_list]
+        l_list = [{"id": loc.id, "production_at": loc.production_at} for loc in location_list]
+        pl_list = [{"id": p["ledger_id"], "ledger_name": p["ledger_name"]} for p in posting_ledgers]
+
+        return JSONResponse({
+            "grn_list": grn_list,
+            "items": items,
+            "units": units,
+            "today_data": [row_to_dict(r) for r in today_data],
+            "vendors": v_list,
+            "hsn_list": h_list,
+            "locations": l_list,
+            "posting_ledgers": pl_list,
+            "po_list": po_list,
+        })
+
+    return templates.TemplateResponse(
         request=request,
         name="general_stock/general_stock_entry.html",
         context={
@@ -373,6 +400,7 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
             "po_list": po_list,
         }
     )
+
 
 # =============================================================
 # 2. AUTO-FILL ITEM DETAILS API (AJAX)

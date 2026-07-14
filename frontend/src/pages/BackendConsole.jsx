@@ -39,6 +39,10 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
       if (!doc) return;
       if (doc.documentElement) doc.documentElement.setAttribute('data-theme', theme || 'dark');
       if (doc.body)            doc.body.setAttribute('data-theme', theme || 'dark');
+      
+      if (window.BKNRColorCustomizer) {
+        window.BKNRColorCustomizer.applyToFrame(iframe);
+      }
     } catch (_) {}
   };
 

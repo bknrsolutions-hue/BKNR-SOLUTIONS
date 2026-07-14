@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, Form, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.database.models.attendance import DailyAttendance, EmployeeRegistration
-from app.database.models.floor_balance import FloorBalance
 from app.database.models.processing import (
     DeHeading,
     GateEntry,
@@ -20,9 +19,10 @@ from app.database.models.processing import (
     Soaking,
 )
 from app.services.bill_accounting import ensure_bill_accounting_schema
-from app.services.floor_balance import get_floor_balance
+from app.services.floor_balance import get_floor_balance_snapshot_rows
 from app.utils.global_filters import get_global_filters
-from app.utils.cancel_math import active_sum, signed_sum, signed_value
+from app.utils.cancel_math import active_sum
+from app.utils.timezone import ist_now
 
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
@@ -64,15 +64,18 @@ def processing_dashboard(
     global_production_for = clean_filter_value(production_for if production_for is not None else cookie_prod)
     global_location = clean_filter_value(location if location is not None else cookie_loc)
 
-    today = date.today()
+    # Render servers commonly run in UTC. Dashboard business dates are IST.
+    today = ist_now().date()
 
     from_date = from_date if isinstance(from_date, date) else None
     to_date = to_date if isinstance(to_date, date) else None
     hour_date = hour_date if isinstance(hour_date, date) else None
 
     if not to_date: to_date = today
-    if not from_date: from_date = to_date - timedelta(days=6)
-    if not hour_date: hour_date = today
+    # With no explicit range, KPI cards represent one selected business date.
+    if not from_date: from_date = to_date
+    # One dashboard date controls both KPI totals and hourly charts.
+    if not hour_date: hour_date = to_date
 
     session_locations = request.session.get("allowed_locations", [])
     if isinstance(session_locations, str):
@@ -141,33 +144,35 @@ def processing_dashboard(
         return query
 
     # =====================================================
-    # 2. PROCESSING CARDS (TODAY ONLY FOR KPIs)
+    # 2. PROCESSING CARDS (SELECTED DATE / RANGE)
     # =====================================================
-    def get_today_filtered_sum(model, column, date_col):
-        q = db.query(signed_sum(model, column))
-        q = apply_dashboard_filters(q, model, date_col, use_today_only=True)
+    def get_period_filtered_sum(model, column, date_col):
+        # Dashboard KPIs represent active operational output. A cancelled row is
+        # removed from the total; it is not a new negative production movement.
+        q = db.query(active_sum(model, column))
+        q = apply_dashboard_filters(q, model, date_col)
         return q.scalar() or 0
 
-    # Gate Entry Count (Today Only)
-    gate_q = db.query(func.count(GateEntry.id))
-    gate_today = apply_dashboard_filters(gate_q, GateEntry, GateEntry.date, use_today_only=True).scalar() or 0
+    # Gate Entry Count (selected date/range)
+    gate_q = db.query(func.count(GateEntry.id)).filter(GateEntry.is_cancelled.is_not(True))
+    gate_today = apply_dashboard_filters(gate_q, GateEntry, GateEntry.date).scalar() or 0
 
-    # Metrics Cumulative Quantities (Today Only)
+    # Metrics Cumulative Quantities (selected date/range)
     rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty))
-    rmp_q = apply_dashboard_filters(rmp_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
+    rmp_q = apply_dashboard_filters(rmp_q, RawMaterialPurchasing, RawMaterialPurchasing.date)
     rmp_today = rmp_q.scalar() or 0
-    dh_today = get_today_filtered_sum(DeHeading, DeHeading.hoso_qty, DeHeading.date)
-    grading_today = get_today_filtered_sum(Grading, Grading.quantity, Grading.date)
-    peeling_today = get_today_filtered_sum(Peeling, Peeling.peeled_qty, Peeling.date)
+    dh_today = get_period_filtered_sum(DeHeading, DeHeading.hoso_qty, DeHeading.date)
+    grading_today = get_period_filtered_sum(Grading, Grading.quantity, Grading.date)
+    peeling_today = get_period_filtered_sum(Peeling, Peeling.peeled_qty, Peeling.date)
 
-    # Soaking Net Qty (In - Rejection - Today Only)
-    soak_base_q = db.query(signed_sum(Soaking, Soaking.in_qty - Soaking.rejection_qty))
-    soaking_today = apply_dashboard_filters(soak_base_q, Soaking, Soaking.date, use_today_only=True).scalar() or 0
+    # Soaking Net Qty (In - Rejection, selected date/range)
+    soak_base_q = db.query(active_sum(Soaking, Soaking.in_qty - Soaking.rejection_qty))
+    soaking_today = apply_dashboard_filters(soak_base_q, Soaking, Soaking.date).scalar() or 0
 
-    production_today = get_today_filtered_sum(Production, Production.production_qty, Production.date)
+    production_today = get_period_filtered_sum(Production, Production.production_qty, Production.date)
 
     # =====================================================
-    # 3. RM PURCHASING SUMMARY (🔥 FIXED: TODAY ONLY FOR SUMMARY TABLE)
+    # 3. RM PURCHASING SUMMARY (SELECTED DATE / RANGE)
     # =====================================================
     rm_summary_q = db.query(
         RawMaterialPurchasing.species,
@@ -175,7 +180,7 @@ def processing_dashboard(
         RawMaterialPurchasing.count,
         active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("total_qty"),
     )
-    rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
+    rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date)
     rm_summary_query = rm_summary_q.group_by(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.variety_name,
@@ -191,7 +196,7 @@ def processing_dashboard(
     # 4. HOURLY DATA FOR 3 CHARTS (Hour Date Wise)
     # =====================================================
     def get_hourly_stats(model, column, date_col):
-        data_q = db.query(extract("hour", model.time).label("hour"), signed_sum(model, column).label("qty"))
+        data_q = db.query(extract("hour", model.time).label("hour"), active_sum(model, column).label("qty"))
         data_q = apply_dashboard_filters(data_q, model, date_col, use_today_only=False, is_hourly=True, target_date=hour_date)
         data = data_q.group_by("hour").all()
 
@@ -261,11 +266,17 @@ def processing_dashboard(
                 m[key]["active"] += 1
 
     # =====================================================
-    # 6. FLOOR BALANCE TOTAL (LIVE SNAPSHOT)
+    # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
     # =====================================================
-    fb_q = db.query(func.coalesce(func.sum(FloorBalance.available_qty), 0)).filter(FloorBalance.available_qty > 0)
-    fb_q = apply_dashboard_filters(fb_q, FloorBalance, is_floor_balance=True)
-    floor_total = round(fb_q.scalar() or 0.0, 2)
+    floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
+        db,
+        company_id,
+        to_date,
+        production_for=global_production_for,
+        location=global_location,
+        allowed_locations=user_allowed_locations,
+    )
+    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_snapshot_rows), 2)
 
     # 7. RESPONSE PAYLOAD
     if request.query_params.get("format") == "json":
@@ -279,6 +290,8 @@ def processing_dashboard(
             "soaking_today": round(soaking_today, 2),
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
+            "floor_snapshot_date": str(floor_snapshot_date) if floor_snapshot_date else "",
+            "floor_snapshot_time": "09:00 IST",
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,
@@ -308,6 +321,8 @@ def processing_dashboard(
             "soaking_today": round(soaking_today, 2),
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
+            "floor_snapshot_date": floor_snapshot_date,
+            "floor_snapshot_time": "09:00 IST",
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,

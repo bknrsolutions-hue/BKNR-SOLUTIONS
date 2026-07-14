@@ -131,8 +131,10 @@ export default function Peeling() {
     return Array.from(new Set(matches.map(m => m.count))).sort();
   };
 
-  // Autoload Species & Available Floor stock from selected options
+  // Autoload the exact species row, then refresh its live quantity from the
+  // backend formula instead of relying only on the page-load snapshot.
   useEffect(() => {
+    let active = true;
     if (productionFor && locationVal && batchNumber && inCount) {
       const compVal = productionFor.toUpperCase().trim();
       const locVal = locationVal.toUpperCase().trim();
@@ -145,7 +147,21 @@ export default function Peeling() {
       );
       if (match) {
         setSpecies(match.species || '');
-        setFloorAvail(parseFloat(match.available_qty) || 0);
+        const params = new URLSearchParams({
+          production_for: productionFor,
+          location: locationVal,
+          batch: batchNumber,
+          count: inCount,
+          species_name: match.species || '',
+          variety_name: match.variety || 'HLSO',
+        });
+        fetch(`/processing/peeling/get_available_qty?${params.toString()}`)
+          .then(res => res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)))
+          .then(data => { if (active) setFloorAvail(parseFloat(data.available_qty) || 0); })
+          .catch(err => {
+            console.error('Unable to refresh peeling balance:', err);
+            if (active) setFloorAvail(0);
+          });
       } else {
         setSpecies('');
         setFloorAvail(0);
@@ -154,6 +170,7 @@ export default function Peeling() {
       setSpecies('');
       setFloorAvail(0);
     }
+    return () => { active = false; };
   }, [productionFor, locationVal, batchNumber, inCount, hlsoFloorBalance]);
 
   // Load Peeling Rate
@@ -812,7 +829,7 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Species</label>
-                  <input type="text" className="form-control" value={species} readonly placeholder="Auto Loaded" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={species} readOnly placeholder="Auto Loaded" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
@@ -872,17 +889,17 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Rate / Kg</label>
-                  <input type="number" className="form-control" value={rate} readonly placeholder="0.00" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="number" className="form-control" value={rate} readOnly placeholder="0.00" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Yield %</label>
-                  <input type="text" className="form-control" value={yieldPercent + '%'} readonly placeholder="0.00%" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={yieldPercent + '%'} readOnly placeholder="0.00%" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Total Amount (₹)</label>
-                  <input type="text" className="form-control" value={amount} readonly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800' }} />
+                  <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800' }} />
                 </div>
               </div>
 

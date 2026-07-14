@@ -7,7 +7,8 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract
-from datetime import datetime
+from datetime import date, datetime
+import datetime as dt
 from app.utils.timezone import ist_now
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
@@ -26,6 +27,9 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 
+def row_to_dict(row):
+    return {col.name: getattr(row, col.name) for col in row.__table__.columns}
+
 
 # ------------------------------------------------------------
 # 1. MAIN REPORT VIEW (WITH FY FILTER & UNIVERSAL FILTERS)
@@ -33,7 +37,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("", response_class=HTMLResponse)
 async def soaking_main_report(
     request: Request,
-    fy: str = Query(None), # Financial Year parameter
+    fy: str = Query(None),
     db: Session = Depends(get_db)
 ):
     production_for, location = get_global_filters(request)
@@ -41,54 +45,91 @@ async def soaking_main_report(
     role = request.session.get("role")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=302)
+    is_json = request.query_params.get("format") == "json"
     if fy is None:
         today = ist_now().date()
-        fy = str(today.year if today.month >= 4 else today.year - 1)
+        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
 
-    rows = []
+    # Fetch unique financial years from database
+    all_dates = db.query(Soaking.date).filter(Soaking.company_id == company_id, Soaking.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+    financial_years = sorted(list(fy_set), reverse=True)
+
+    query = db.query(Soaking).filter(
+        Soaking.company_id == company_id
+    )
+
     if fy:
-        # Financial Year Logic (e.g., FY 2024 is April 2024 to March 2025)
         start_year = int(fy)
         end_year = start_year + 1
-        
-        query = db.query(Soaking).filter(
-            Soaking.company_id == company_id,
+        query = query.filter(
             Soaking.date >= f"{start_year}-04-01",
             Soaking.date <= f"{end_year}-03-31"
         )
 
-        if production_for:
-            query = query.filter(Soaking.production_for == production_for)
+    if production_for:
+        query = query.filter(Soaking.production_for == production_for)
 
-        if location:
-            query = query.filter(Soaking.production_at == location)
+    if location:
+        query = query.filter(Soaking.production_at == location)
 
-        rows = query.order_by(desc(Soaking.date), desc(Soaking.id)).all()
+    rows = query.order_by(desc(Soaking.date), desc(Soaking.id)).all()
 
     # Searchable dropdowns logic based on filtered rows
     varieties = sorted(list({r.variety_name for r in rows if r.variety_name}))
     locations = sorted(list({r.production_at for r in rows if r.production_at}))
     batches = sorted(list({r.batch_number for r in rows if r.batch_number}))
 
+    serialized_rows = []
+    for r in rows:
+        d = row_to_dict(r)
+        if isinstance(d.get("date"), (date, datetime)):
+            d["date"] = d["date"].isoformat()
+        if isinstance(d.get("time"), (dt.time, datetime)):
+            d["time"] = d["time"].strftime("%H:%M")
+        serialized_rows.append(d)
+
     from app.utils.report_permissions import check_report_permission
+    context = {
+        "rows": serialized_rows if is_json else rows,
+        "selected_fy": fy,
+        "financial_years": financial_years,
+        "selected_production_for": production_for,
+        "selected_location": location,
+        "varieties": varieties,
+        "locations": locations,
+        "batches": batches,
+        "is_admin": role == "admin",
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+        "datetime": datetime 
+    }
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/soaking_report.html",
-        context={
-            "rows": rows,
-            "selected_fy": fy,
-            "selected_production_for": production_for, # 🟢 Passed to template context
-            "selected_location": location,             # 🟢 Passed to template context
-            "varieties": varieties,
-            "locations": locations,
-            "batches": batches,
-            "is_admin": role == "admin",
-            "can_edit": check_report_permission(request, "report_edit"),
-            "can_delete": check_report_permission(request, "report_delete"),
-            "can_print": check_report_permission(request, "report_print"),
-            "can_export": check_report_permission(request, "report_export"),
-            "datetime": datetime 
-        }
+        context=context
     )
 
 # ------------------------------------------------------------

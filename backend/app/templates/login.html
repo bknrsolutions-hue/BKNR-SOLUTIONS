@@ -62,21 +62,50 @@
   }
 }
 </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap"
-        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        const savedTheme = localStorage.getItem("theme") || "dark";
+        document.documentElement.setAttribute("data-theme", savedTheme);
+        
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+            const newTheme = currentTheme === "dark" ? "light" : "dark";
+            document.documentElement.setAttribute("data-theme", newTheme);
+            localStorage.setItem("theme", newTheme);
+            updateThemeIcon(newTheme);
+        }
+        
+        function updateThemeIcon(theme) {
+            const icon = document.getElementById('themeIcon');
+            if (icon) {
+                if (theme === 'light') {
+                    icon.className = 'fa-solid fa-sun';
+                } else {
+                    icon.className = 'fa-solid fa-moon';
+                }
+            }
+        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
+            updateThemeIcon(currentTheme);
+        });
+    </script>
 
     <style>
         :root {
-            --bg-app: #f4f9ff;
-            --surface-panel: rgba(255, 255, 255, 0.98);
-            --glass-bg: rgba(255, 255, 255, 0.9);
-            --text-primary: #102033;
-            --text-secondary: #38516d;
+            --bg-app: #0f172a;
+            --surface-panel: rgba(15, 23, 42, 0.98);
+            --glass-bg: rgba(6, 9, 19, 0.95);
+            --text-primary: #ffffff;
+            --text-secondary: #94a3b8;
             --text-tertiary: #64748b;
-            --border-light: rgba(15, 23, 42, 0.08);
-            --border-highlight: rgba(15, 23, 42, 0.12);
-            --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.08);
-            --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.04);
+            --border-light: rgba(255, 255, 255, 0.08);
+            --border-highlight: rgba(255, 255, 255, 0.15);
+            --shadow-float: 0 10px 30px rgba(0, 0, 0, 0.25);
+            --shadow-soft: 0 4px 15px rgba(0, 0, 0, 0.12);
             --radius-panel: 16px;
             --radius-element: 8px;
             --corp-dash: #3b82f6;
@@ -88,12 +117,35 @@
             --amber: #d97706;
             --rose: #e11d48;
             --muted: #b7c7dc;
-            --input-bg: #ffffff;
-            --input-border: rgba(15, 23, 42, 0.14);
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --input-border: rgba(255, 255, 255, 0.15);
             --error-bg: #fef2f2;
             --error-text: #991b1b;
             --success-bg: #ecfdf5;
             --success-text: #166534;
+        }
+
+        [data-theme="light"] {
+            --bg-app: #f4f9ff;
+            --surface-panel: rgba(255, 255, 255, 0.98);
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --text-primary: #102033;
+            --text-secondary: #38516d;
+            --text-tertiary: #64748b;
+            --border-light: rgba(15, 23, 42, 0.08);
+            --border-highlight: rgba(15, 23, 42, 0.12);
+            --shadow-float: 0 10px 30px rgba(15, 23, 42, 0.08);
+            --shadow-soft: 0 4px 15px rgba(15, 23, 42, 0.04);
+            --input-bg: #ffffff;
+            --input-border: rgba(15, 23, 42, 0.14);
+        }
+
+        label {
+            color: var(--text-secondary);
+        }
+
+        [data-theme="light"] label {
+            color: #263f5c;
         }
 
         * {
@@ -109,8 +161,19 @@
             min-height: 100vh;
             font-family: "Plus Jakarta Sans", Arial, sans-serif;
             color: var(--text-primary);
-            background: var(--bg-app);
+            background:
+                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
+                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
+                linear-gradient(145deg, #090d16, #0f172a 48%, #0d121f);
             overflow-x: hidden;
+            transition: background 0.3s ease, color 0.3s ease;
+        }
+
+        [data-theme="light"] body {
+            background:
+                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
+                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
+                linear-gradient(145deg, #f7fbff, #eef7ff 48%, #f4fffd);
         }
 
         a {
@@ -133,35 +196,6 @@
         .site-shell::before {
             content: "";
             position: fixed;
-            inset: 0;
-            z-index: -2;
-            background-image:
-                linear-gradient(rgba(59, 130, 246, 0.08) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(59, 130, 246, 0.08) 1px, transparent 1px);
-            background-size: 42px 42px;
-            mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 82%);
-        }
-
-        .site-shell::after {
-            content: "";
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            background:
-                radial-gradient(circle at 18% 18%, rgba(59, 130, 246, 0.1), transparent 30%),
-                radial-gradient(circle at 78% 78%, rgba(16, 185, 129, 0.1), transparent 28%),
-                linear-gradient(180deg, rgba(255, 255, 255, 0.78), transparent 52%);
-        }
-
-        body.website-page {
-            background:
-                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
-                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
-                linear-gradient(145deg, #f7fbff, #eef7ff 48%, #f4fffd);
-        }
-
-        .website-page .site-shell::before {
             inset: -24% -10%;
             z-index: -2;
             background-image:
@@ -177,8 +211,12 @@
             animation: erpGridDepth 14s ease-in-out infinite alternate;
         }
 
-        .website-page .site-shell::after {
+        .site-shell::after {
+            content: "";
+            position: fixed;
+            inset: 0;
             z-index: -1;
+            pointer-events: none;
             background:
                 radial-gradient(circle at 12% 24%, rgba(37,99,235,.65) 0 3px, transparent 4px),
                 radial-gradient(circle at 78% 18%, rgba(13,148,136,.58) 0 4px, transparent 5px),
@@ -210,10 +248,11 @@
             justify-content: space-between;
             gap: 24px;
             padding: 4px clamp(18px, 4vw, 56px) 4px 0;
-            background: rgba(255, 255, 255, 0.88);
-            border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+            background: var(--glass-bg);
+            border-bottom: 1px solid var(--border-light);
             backdrop-filter: blur(20px);
-            box-shadow: 0 14px 38px rgba(15, 23, 42, 0.08);
+            box-shadow: var(--shadow-soft);
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
         }
 
         .site-nav > .nav-action {
@@ -1444,11 +1483,12 @@
             padding: 24px;
             border: 1px solid var(--border-light);
             border-radius: var(--radius-panel);
-            background: #ffffff;
-            box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+            background: var(--surface-panel);
+            box-shadow: var(--shadow-float);
             backdrop-filter: blur(20px);
             transform: rotateY(4deg);
             transform-style: preserve-3d;
+            transition: background 0.3s, border-color 0.3s, box-shadow 0.3s;
         }
 
         .form-brand {
@@ -2611,11 +2651,11 @@
         }
 
         @media (max-width: 780px) {
-            .website-page .site-shell::before {
+            .site-shell::before {
                 animation-duration: 16s;
             }
 
-            .website-page .site-shell::after {
+            .site-shell::after {
                 animation-duration: 14s;
             }
 
@@ -2646,19 +2686,28 @@
                 <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.png" alt="SVBK IT Solutions"
                     style="width:340px;height:72px">
             </a>
-            {% if not show_login|default(false) %}
-            <div class="nav-links" aria-label="Website navigation">
-                <a href="#modules">Modules</a>
-                <a href="#workflow">Workflow</a>
-                <a href="#accounts">Accounts</a>
-                <a href="#automations">Automations</a>
-                <a href="#operations">Operations</a>
-                <a href="#security">Security</a>
+            <div class="nav-actions-container" style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
+                {% if not show_login|default(false) %}
+                <div class="nav-links" aria-label="Website navigation" style="display: flex; gap: 8px;">
+                    <a href="#modules">Modules</a>
+                    <a href="#workflow">Workflow</a>
+                    <a href="#accounts">Accounts</a>
+                    <a href="#automations">Automations</a>
+                    <a href="#operations">Operations</a>
+                    <a href="#security">Security</a>
+                </div>
+                {% endif %}
+                
+                <div class="theme-icon-btn" onclick="toggleTheme()" style="cursor: pointer; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: var(--border-light); color: var(--text-primary); transition: background 0.3s;" title="Switch Mode">
+                    <i class="fa-solid fa-moon" id="themeIcon" style="font-size: 16px;"></i>
+                </div>
+                
+                {% if not show_login|default(false) %}
+                <a class="nav-action" href="/auth/login" style="margin-left: 0;">Login / Register</a>
+                {% else %}
+                <a class="nav-action" href="/" style="margin-left: 0;">Back to Website</a>
+                {% endif %}
             </div>
-            <a class="nav-action" href="/auth/login">Login / Register</a>
-            {% else %}
-            <a class="nav-action" href="/">Back to Website</a>
-            {% endif %}
         </nav>
 
         {% if not show_login|default(false) %}
@@ -3118,9 +3167,8 @@
         const HAS_LOGIN_PANEL = Boolean(document.getElementById("login"));
         let regEmail = sessionStorage.getItem("bknr_reg_email") || "";
 
-        if (HAS_LOGIN_PANEL && window.top !== window.self) {
-            window.top.location.replace("/auth/login");
-        }
+        // Frame-busting stays disabled because the React shell intentionally
+        // hosts this login page inside its full-screen backend iframe.
 
         async function readResponse(res, fallbackMessage) {
             const text = await res.text();

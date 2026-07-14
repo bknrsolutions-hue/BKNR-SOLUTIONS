@@ -1,10 +1,9 @@
-from datetime import date
-
 from app.database import SessionLocal
 from app.database.models.floor_balance import (
     FloorBalance,
     FloorBalanceSnapshot
 )
+from app.utils.timezone import ist_now
 
 
 def create_floor_balance_snapshot():
@@ -13,7 +12,7 @@ def create_floor_balance_snapshot():
 
     try:
 
-        today = date.today()
+        today = ist_now().date()
 
         # Already created today?
         exists = db.query(FloorBalanceSnapshot).filter(

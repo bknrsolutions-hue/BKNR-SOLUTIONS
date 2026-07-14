@@ -80,6 +80,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .menu-item { padding: 8px 12px; cursor: pointer; font-size: 11px; font-weight: 600; color: var(--primary); }
 .menu-item:hover { background: #f8fafc; color: var(--accent); }
 .menu-item.cancel-item:hover { background: #fef2f2; color: var(--danger); }
+.invoice-actions { display:flex; justify-content:center; gap:5px; white-space:nowrap; }
+.invoice-action { border:1px solid var(--border); background:var(--card); color:var(--primary); border-radius:5px; padding:5px 7px; cursor:pointer; font-size:10px; font-weight:700; }
+.invoice-action:hover { border-color:var(--accent); color:var(--accent); }
 </style>
     <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
@@ -130,11 +133,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th style="text-align: right;">Exchange Rate</th>
                 <th style="text-align: right;">Value in INR (₹)</th>
                 <th>Terms</th>
+                <th>Prints</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not history %}
-            <tr><td colspan="11" style="padding:40px; color:var(--muted);">No invoices registered yet.</td></tr>
+            <tr><td colspan="12" style="padding:40px; color:var(--muted);">No invoices registered yet.</td></tr>
             {% else %}
                 {% for row in history %}
                 <tr class="data-row" data-id="{{ row.id }}" onclick="selectRow(this, '{{ row.id }}')">
@@ -149,6 +153,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td style="text-align: right;">{{ "{:,.2f}".format(row.exchange_rate or 0) }}</td>
                     <td style="text-align: right; font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(row.invoice_value_inr or 0) }}</td>
                     <td>{{ row.shipment_terms }} ({{ row.payment_terms }})</td>
+                    <td>
+                        <div class="invoice-actions">
+                            <button class="invoice-action" type="button" onclick="event.stopPropagation(); printInvoice('{{ row.id }}')"><i class="fa-solid fa-print"></i> Print</button>
+                            <button class="invoice-action" type="button" onclick="event.stopPropagation(); pdfInvoice('{{ row.id }}')"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                        </div>
+                    </td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -243,6 +253,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         window.open(`/export_documents/${exportDocType}/print/${globalSelectedId}`, "_blank");
     }
 
+    function printInvoice(id) {
+        window.open(`/export_documents/${exportDocType}/print/${id}`, "_blank", "noopener");
+    }
+
+    function pdfInvoice(id) {
+        window.open(`/export_documents/${exportDocType}/pdf/${id}`, "_blank", "noopener");
+    }
+
     function pdfSelected() {
         if (!ensureSelection()) return;
         window.open(`/export_documents/${exportDocType}/pdf/${globalSelectedId}`, "_blank");
@@ -309,7 +327,18 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success) {
-                window.BKNRSaveAndContinue("Commercial Invoice registered successfully");
+                const result = await Swal.fire({
+                    title: "Invoice Saved Successfully",
+                    text: "Invoice posted to accounts. Print it now or continue with the next invoice.",
+                    icon: "success",
+                    confirmButtonText: "Print Invoice",
+                    denyButtonText: "Add Next",
+                    showDenyButton: true,
+                    allowOutsideClick: false
+                });
+                sessionStorage.setItem(`bknr:new-entry:${window.location.pathname}`, "1");
+                if (result.isConfirmed && out.print_url) window.open(out.print_url, "_blank", "noopener");
+                window.location.reload();
             } else { Swal.fire("Error", out.message, "error"); }
         } catch(err) { Swal.fire("Error", "Network error", "error"); }
     }

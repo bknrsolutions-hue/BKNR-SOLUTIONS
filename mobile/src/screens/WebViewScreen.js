@@ -243,7 +243,6 @@ const styles = StyleSheet.create({
   skeletonCellWide: { flex: 1.5, height: 6, borderRadius: 4 },
   skeletonCell: { flex: 0.9, height: 6, borderRadius: 4 },
   skeletonCellSmall: { flex: 0.55, height: 6, borderRadius: 4 },
-  },
   errorContainer: {
     flex: 1,
     backgroundColor: '#060913',

@@ -262,13 +262,19 @@ export default function InventoryCosting({ activeRoute }) {
                       <th>MC</th>
                       <th>Loose</th>
                       <th className="text-right">Qty (Kg)</th>
-                      <th className="text-right">Rate/Kg</th>
+                      <th className="text-right">Base RM Rate</th>
+                      <th className="text-right">Prod Cost</th>
+                      <th className="text-right">Ice Rate</th>
+                      <th className="text-right">Deheading</th>
+                      <th className="text-right">Grading</th>
+                      <th className="text-right">Peeling</th>
+                      <th className="text-right">Total Cost/KG</th>
                       <th className="text-right">Inv Value</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredRows.length === 0 ? (
-                      <EmptyRow cols={22} />
+                      <EmptyRow cols={28} />
                     ) : (
                       filteredRows.map((r, idx) => (
                         <tr key={idx}>
@@ -302,7 +308,13 @@ export default function InventoryCosting({ activeRoute }) {
                           <td>{r.no_of_mc}</td>
                           <td>{r.loose}</td>
                           <td className="text-right" style={{ fontWeight: 800 }}>{fmt.number(r.quantity)}</td>
-                          <td className="text-right">{fmt.currency(r.product_kg_value)}</td>
+                          <td className="text-right">{fmt.currency(r.base_rm_rate)}</td>
+                          <td className="text-right">{fmt.currency(r.production_cost_per_kg)}</td>
+                          <td className="text-right">{fmt.currency(r.ice_rate_per_kg)}</td>
+                          <td className="text-right">{fmt.currency(r.deheading_rate_per_kg)}</td>
+                          <td className="text-right">{fmt.currency(r.grading_rate_per_kg)}</td>
+                          <td className="text-right">{fmt.currency(r.peeling_rate_per_kg)}</td>
+                          <td className="text-right" style={{ fontWeight: 800 }}>{fmt.currency(r.product_kg_value)}</td>
                           <td className="text-right" style={{ fontWeight: 800, color: r.cargo_movement_type === 'IN' ? '#16a34a' : '#dc2626' }}>
                             {fmt.currency(r.inventory_value)}
                           </td>

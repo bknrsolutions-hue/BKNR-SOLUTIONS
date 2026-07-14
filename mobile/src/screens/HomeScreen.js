@@ -1,6 +1,6 @@
 // ============================================================
 // BKNR ERP — Home Dashboard Screen
-// All modules visible, WebView opens remaining pages
+// Mobile launcher: only approved operational modules are visible.
 // ============================================================
 import React, { useState } from 'react';
 import {
@@ -53,8 +53,12 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-  // Filter menu to show ONLY the screens/modules we implemented natively + complaints & logout
+  // Keep the native mobile launcher intentionally compact. Dedicated native
+  // screens open directly; dashboard/report/inventory companions open inside
+  // the authenticated in-app workspace until dedicated screens are available.
   const ALLOWED_MODULE_IDS = [
+    'processing_dashboard',
+    'inventory_dashboard',
     'gate_entry',
     'raw_material_purchasing',
     'de_heading',
@@ -63,8 +67,11 @@ export default function HomeScreen({ navigation }) {
     'soaking',
     'production',
     'stock_entry',
+    'pending_orders',
+    'cold_storage_holding',
+    'general_store_entry',
+    'inventory_report',
     'daily_attendance',
-    'raise_ticket'
   ];
 
   const processedMenu = MENU_DATA.map(section => {

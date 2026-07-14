@@ -224,6 +224,28 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         })
 
     db.commit()
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_processed = []
+        for item in processed:
+            serialized_item = dict(item)
+            obj_dict = {col.name: getattr(item["obj"], col.name) for col in item["obj"].__table__.columns}
+            obj_dict["stock_value"] = getattr(item["obj"], "stock_value", 0.0)
+            obj_dict["freight_cost"] = getattr(item["obj"], "freight_cost", 0.0)
+            obj_dict["packing_cost"] = getattr(item["obj"], "packing_cost", 0.0)
+            obj_dict["profit_loss"] = getattr(item["obj"], "profit_loss", 0.0)
+            serialized_item["obj"] = obj_dict
+            serialized_processed.append(serialized_item)
+            
+        json_context = {
+            "sales_data": serialized_processed,
+            "unique_companies": unique_companies,
+            "global_production_for": production_for_filter or "",
+            "global_location": location or ""
+        }
+        return JSONResponse(jsonable_encoder(json_context))
+
     return templates.TemplateResponse(
         request=request, 
         name="inventory_management/sales_report.html", 

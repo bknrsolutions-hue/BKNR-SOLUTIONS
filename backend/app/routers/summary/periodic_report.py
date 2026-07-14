@@ -259,6 +259,12 @@ async def get_periodic_summary_report(
 ):
     company_code = request.session.get("company_code")
     if not company_code: return RedirectResponse("/auth/login", status_code=303)
+
+    # Optional query values must render as empty HTML input values, never the
+    # literal string "None" (which browsers reject for date/month fields).
+    selected_month = selected_month or ""
+    start_date = start_date or ""
+    end_date = end_date or ""
         
     today_dt = date.today()
     if date_filter_type == "yesterday":
@@ -1083,6 +1089,54 @@ async def get_periodic_summary_report(
     append_production_for_summary(["sec-pel"], chart_rows["peeling"], lambda row: row.hlso_qty)
     append_production_for_summary(["sec-soak"], chart_rows["soaking"], lambda row: row.in_qty)
     append_production_for_summary(["sec-prod", "sec-recon"], chart_rows["production"], lambda row: row.production_qty)
+
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_rows = {}
+        for key, val in rows.items():
+            if isinstance(val, list):
+                serialized_list = []
+                for item in val:
+                    if hasattr(item, "__table__"):
+                        d = {col.name: getattr(item, col.name) for col in item.__table__.columns}
+                        for attr in ["target_yield_percent", "yield_percent", "diff_qty", "diff_percent", "product_kg_value", "inventory_value"]:
+                            if hasattr(item, attr):
+                                d[attr] = getattr(item, attr)
+                        serialized_list.append(d)
+                    else:
+                        serialized_list.append(item)
+                serialized_rows[key] = serialized_list
+            else:
+                serialized_rows[key] = val
+                
+        str_subtotals = {}
+        for k, v in subtotals.items():
+            str_key = "|".join(str(x) for x in k)
+            str_subtotals[str_key] = v
+            
+        json_context = {
+            "financial_years": financial_years,
+            "selected_fy": selected_fy,
+            "selected_date_filter": date_filter_type,
+            "selected_month": selected_month,
+            "selected_start_date": start_date,
+            "selected_end_date": end_date,
+            "companies": companies,
+            "production_ats": production_ats,
+            "batches": batches,
+            "selected_company": production_for,
+            "selected_production_at": production_at,
+            "selected_prod_type": prod_type,
+            "selected_batch": batch,
+            "rows": serialized_rows,
+            "card": card,
+            "subtotals": str_subtotals,
+            "opening_floor_balance": opening_floor_balance_list,
+            "closing_floor_balance": closing_floor_balance_list,
+            "flow_charts": flow_charts
+        }
+        return JSONResponse(jsonable_encoder(json_context))
 
     return templates.TemplateResponse(
         request=request, name="summary/periodic_summary.html", 

@@ -144,6 +144,7 @@ export default function DeHeading() {
       try {
         const params = new URLSearchParams({ 
           location: deheadingAt, 
+          production_for: productionFor,
           batch: batchNumber, 
           count: hosoCount, 
           species_name: species 
@@ -158,7 +159,7 @@ export default function DeHeading() {
       }
     };
     checkFloor();
-  }, [deheadingAt, batchNumber, hosoCount, species]);
+  }, [productionFor, deheadingAt, batchNumber, hosoCount, species]);
 
   // Fetch Contractor Rate
   useEffect(() => {
@@ -805,7 +806,7 @@ export default function DeHeading() {
 
                 <div className="form-group">
                   <label>Yield %</label>
-                  <input type="text" className="form-control" value={yieldPercent + '%'} readonly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
+                  <input type="text" className="form-control" value={yieldPercent + '%'} readOnly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
                 </div>
 
                 <div className="form-group">
@@ -823,12 +824,12 @@ export default function DeHeading() {
 
                 <div className="form-group">
                   <label>Rate / Kg</label>
-                  <input type="number" className="form-control" value={ratePerKg} readonly style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="number" className="form-control" value={ratePerKg} readOnly style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Total Amount (₹)</label>
-                  <input type="text" className="form-control" value={amount} readonly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800', fontSize: '13px' }} />
+                  <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800', fontSize: '13px' }} />
                 </div>
               </div>
 

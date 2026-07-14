@@ -279,6 +279,14 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
 
     rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        return JSONResponse(jsonable_encoder({
+            "rows_batch": rows_batch,
+            "company_id": company_id
+        }))
+
     return templates.TemplateResponse(
         request=request,
         name="summary/floor_balance_value.html",

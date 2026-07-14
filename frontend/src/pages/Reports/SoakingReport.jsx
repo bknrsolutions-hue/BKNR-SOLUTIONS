@@ -95,6 +95,7 @@ export default function SoakingReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -106,7 +107,7 @@ export default function SoakingReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -115,14 +116,15 @@ export default function SoakingReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -140,7 +142,7 @@ export default function SoakingReport({ activeRoute }) {
     { label: 'Print Table', onClick: () => window.print() },
     { label: 'Export Excel Filtered', onClick: () => { window.location.href = getExportUrl(); } },
     { divider: true },
-    { label: 'Delete Selected Row', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Selected Row', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   const getStatusBadgeStyle = (statusStr) => {
@@ -220,7 +222,7 @@ export default function SoakingReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Soaking Batches" value={filteredRows.length} accent="var(--corp-dash)" />
@@ -249,7 +251,7 @@ export default function SoakingReport({ activeRoute }) {
                   <th style={{ width: 110 }}>Soaking At</th>
                   <th style={{ width: 95 }}>Status</th>
                   <th style={{ width: 110 }}>Prod For</th>
-                  <th style={{ width: 140 }}>User</th>
+                  <th style={{ width: 140 }}>System User</th>
                 </tr>
               </thead>
               <tbody>
@@ -450,17 +452,11 @@ export default function SoakingReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load Soaking logs.
-        </div>
-      )}
-
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

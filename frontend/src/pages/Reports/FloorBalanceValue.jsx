@@ -5,7 +5,7 @@
 import React, { useState } from 'react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput,
+  KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
   useReport, fmt,
 } from './ReportShell';
 

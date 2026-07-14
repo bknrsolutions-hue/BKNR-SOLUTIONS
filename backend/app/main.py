@@ -35,7 +35,12 @@ application = FastAPI(
 # =====================================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
-SESSION_IDLE_TIMEOUT_SECONDS = 30 * 60
+# Keep the signed cookie lifetime and server-side idle policy aligned. The
+# value can be reduced per deployment without changing application code.
+SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(8 * 60 * 60)))
+SESSION_IDLE_TIMEOUT_SECONDS = int(
+    os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(SESSION_MAX_AGE_SECONDS))
+)
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
 
 
@@ -206,8 +211,19 @@ class AuthMiddleware(BaseHTTPMiddleware):
                     pass
             return await call_next(request)
 
+        wants_json = (
+            path.startswith("/api/")
+            or request.query_params.get("format") == "json"
+            or "application/json" in request.headers.get("accept", "")
+        )
+
         # LOGIN CHECK
         if not request.session.get("email"):
+            if wants_json:
+                return JSONResponse(
+                    {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+                    status_code=401,
+                )
             return RedirectResponse("/auth/login", status_code=303)
 
         now_ts = time.time()
@@ -219,7 +235,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         if now_ts - last_activity_ts > SESSION_IDLE_TIMEOUT_SECONDS:
             request.session.clear()
-            if path.startswith("/api/") or "application/json" in request.headers.get("accept", ""):
+            if wants_json:
                 return JSONResponse(
                     {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
                     status_code=401,
@@ -331,7 +347,7 @@ application.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET_KEY", "bknr_secret_key_2026_dev_only"),
     session_cookie="bknr_session",
-    max_age=60 * 60 * 8  # 8 Hours
+    max_age=SESSION_MAX_AGE_SECONDS,
 )
 
 # Outermost: Runs FIRST on request (Handles Preflight CORS)

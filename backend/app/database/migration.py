@@ -207,14 +207,19 @@ def run_migration():
         ("idx_soaking_batch_number", "soaking", "batch_number"),
         ("idx_production_batch_number", "production", "batch_number")
     ]
-    with engine.begin() as conn:
-        for idx_name, tbl_name, col_name in indexes_to_create:
-            print(f"Creating index {idx_name} on {tbl_name}({col_name}) if not exists...")
-            try:
+    for idx_name, tbl_name, col_name in indexes_to_create:
+        try:
+            # Index verification must never hold the whole ERP startup hostage.
+            # A busy production table can otherwise keep /auth/session-info and
+            # the React menu unavailable until PostgreSQL releases its lock.
+            with engine.begin() as conn:
+                if engine.dialect.name == "postgresql":
+                    conn.execute(text("SET LOCAL lock_timeout = '3s'"))
+                print(f"Creating index {idx_name} on {tbl_name}({col_name}) if not exists...")
                 conn.execute(text(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {tbl_name}({col_name});"))
                 print(f"  ✔ Index {idx_name} checked/created.")
-            except Exception as e:
-                print(f"  ❌ Error creating index {idx_name}: {e}")
+        except Exception as e:
+            print(f"  ⚠ Index {idx_name} skipped during startup: {e}")
 
     print("Migration completed successfully!")
 

@@ -352,3 +352,4 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     </div>
   );
 }
+

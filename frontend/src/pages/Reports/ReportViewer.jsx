@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Printer, Download, RefreshCw, Filter, ChevronDown, ChevronRight, Edit2, Trash2, Save, X, Plus } from 'lucide-react';
+import { FileText, Search, Printer, Download, RefreshCw, Edit2, Trash2, Save, X } from 'lucide-react';
 
-export default function ReportViewer({ reportId, activeRoute, user, theme }) {
+export default function ReportViewer({ reportId, activeRoute }) {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
 
   // Local filters state
-  const [selectedFy, setSelectedFy] = useState(new Date().getFullYear().toString());
+  const [selectedFy, setSelectedFy] = useState('');
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -17,6 +17,8 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
   const [dateFilterType, setDateFilterType] = useState('today');
   const [prodType, setProdType] = useState('RMP');
   const [selectedBatch, setSelectedBatch] = useState('');
+  const [selectedCompany, setSelectedCompany] = useState('');
+  const [selectedProductionAt, setSelectedProductionAt] = useState('');
   
   // Storage Cost Filters
   const [freezer, setFreezer] = useState('');
@@ -28,6 +30,12 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   // Active tabs for compound dashboards
   const [activeTab, setActiveTab] = useState('summary');
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (reportId === 'report_periodic_summary') setActiveTab('opening_floor_balance');
+    else if (reportId === 'report_batch_summary') setActiveTab('grading_summary');
+  }, [reportId]);
 
   // Unified metadata configurations for standard reports
   const reportConfigs = {
@@ -364,6 +372,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
     setLoading(true);
     setError(null);
     try {
+      if (!activeRoute) throw new Error('Report route is not configured. Please reopen this report from the menu.');
       const activeComp = localStorage.getItem('production_for_filter') || '';
       const activeLoc = localStorage.getItem('plant_location_filter') || '';
 
@@ -379,16 +388,21 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
         if (freezer) queryParams.append('freezer', freezer);
         if (coldStorageName) queryParams.append('cold_storage_name', coldStorageName);
       } else if (reportId === 'report_periodic_summary') {
+        if (selectedFy) queryParams.append('fy', selectedFy);
         queryParams.append('date_filter_type', dateFilterType);
         if (selectedMonth) queryParams.append('selected_month', selectedMonth);
         if (fromDate) queryParams.append('start_date', fromDate);
         if (toDate) queryParams.append('end_date', toDate);
         if (prodType) queryParams.append('prod_type', prodType);
         if (selectedBatch) queryParams.append('batch', selectedBatch);
+        if (selectedCompany || activeComp) queryParams.set('production_for', selectedCompany || activeComp);
+        if (selectedProductionAt || activeLoc) queryParams.set('production_at', selectedProductionAt || activeLoc);
+        queryParams.delete('location');
       } else if (reportId === 'report_batch_summary') {
         if (selectedFy) queryParams.append('fy', selectedFy);
         if (prodType) queryParams.append('prod_type', prodType);
         if (selectedBatch) queryParams.append('batch', selectedBatch);
+        if (selectedCompany || activeComp) queryParams.set('production_for', selectedCompany || activeComp);
       } else {
         // Standard filters
         if (selectedFy) queryParams.append('fy', selectedFy);
@@ -396,18 +410,39 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
         if (toDate) queryParams.append('to_date', toDate);
       }
 
-      const res = await fetch(`${activeRoute}?${queryParams.toString()}`);
-      if (!res.ok) throw new Error(`Fetch failed: ${res.statusText}`);
-      
+      const res = await fetch(`${activeRoute}?${queryParams.toString()}`, {
+        credentials: 'include',
+        redirect: 'follow',
+        headers: { Accept: 'application/json' },
+      });
+
+      // Detect redirect to login page (session expired)
+      if (res.redirected || res.url.includes('/auth/login') || res.url.includes('/login')) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      // Ensure we received JSON and not an HTML login page
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok) {
+        if (res.status === 500) throw new Error('Server error (500). The report backend may have crashed. Please retry or contact support.');
+        if (res.status === 403) throw new Error('Access denied (403). You do not have permission to view this report.');
+        if (!contentType.includes('application/json')) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        let errJson = null;
+        try { errJson = await res.json(); } catch { /* response had no JSON error body */ }
+        throw new Error(errJson?.detail || errJson?.message || `HTTP ${res.status}: ${res.statusText}`);
+      }
+      if (!contentType.includes('application/json')) {
+        throw new Error('Report server returned HTML instead of JSON. Try refreshing or re-logging in.');
+      }
+
       const resData = await res.json();
-      if (resData.status === 'success' || resData.rows || resData.rows_batch) {
+      // Accept any valid JSON object — each report knows its own response shape
+      if (resData !== null && typeof resData === 'object' && !Array.isArray(resData)) {
         setData(resData);
-        // Pre-populate batch lists for summaries if returned
-        if (resData.batches && resData.batches.length > 0 && !selectedBatch) {
-          // Keep it empty or select first
-        }
+      } else if (Array.isArray(resData)) {
+        setData({ rows: resData });
       } else {
-        throw new Error('Malformed JSON response from backend router');
+        throw new Error('Server returned an unexpected response');
       }
     } catch (err) {
       console.error(err);
@@ -418,6 +453,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
 
     // Listen to universal header filter changes
@@ -426,13 +462,35 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
     };
     window.addEventListener('filter_change', handleGlobalFilterChange);
     return () => window.removeEventListener('filter_change', handleGlobalFilterChange);
-  }, [reportId, activeRoute, selectedFy, fromDate, toDate, selectedMonth, dateFilterType, prodType, selectedBatch, freezer, coldStorageName]);
+  }, [reportId, activeRoute, selectedFy, fromDate, toDate, selectedMonth, dateFilterType, prodType, selectedBatch, selectedCompany, selectedProductionAt, freezer, coldStorageName]);
 
   const handlePrint = () => {
     window.print();
   };
 
   const handleExport = (type) => {
+    if (reportId === 'report_periodic_summary' || reportId === 'report_batch_summary') {
+      const table = document.querySelector('.report-viewer-card .card table');
+      if (!table) {
+        alert('No active report table is available to export.');
+        return;
+      }
+      const csv = [...table.rows].map(row => [...row.cells].map(cell => {
+        const value = cell.innerText.replace(/\s+/g, ' ').trim().replace(/"/g, '""');
+        return `"${value}"`;
+      }).join(',')).join('\n');
+      const blob = new Blob([`\ufeff${csv}`], { type: 'text/csv;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${reportId === 'report_periodic_summary' ? 'periodic-summary' : 'batch-summary'}-${activeTab}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     const activeComp = localStorage.getItem('production_for_filter') || '';
     const activeLoc = localStorage.getItem('plant_location_filter') || '';
 
@@ -500,8 +558,8 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
   // Get raw list rows from payload
   const getRowsList = () => {
     if (!data) return [];
-    if (data.rows) return data.rows;
-    if (data.rows_batch) return data.rows_batch;
+    if (data.rows && Array.isArray(data.rows)) return data.rows;
+    if (data.rows_batch && Array.isArray(data.rows_batch)) return data.rows_batch;
     return [];
   };
 
@@ -546,19 +604,19 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
           <div style={{ marginTop: '20px' }}>
             {/* Batch Header Summary Card */}
             <div style={kpiGridStyle}>
-              <div style={kpiCardStyle('var(--corp-dash)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-dash)' }}>
                 <span style={kpiTitleStyle}>Supplier</span>
                 <span style={kpiValueStyle}>{data.card?.supplier_name || 'N/A'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-ops)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-ops)' }}>
                 <span style={kpiTitleStyle}>Purchasing Location</span>
                 <span style={kpiValueStyle}>{data.card?.purchasing_location || 'N/A'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-rep)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-rep)' }}>
                 <span style={kpiTitleStyle}>Vehicle / Challan</span>
                 <span style={kpiValueStyle}>{data.card?.vehicle_number || 'N/A'} / {data.card?.challan_number || 'N/A'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-fin)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-fin)' }}>
                 <span style={kpiTitleStyle}>Produced Qty (Kg)</span>
                 <span style={kpiValueStyle}>{data.card?.production_qty?.toFixed(2) || '0.00'}</span>
               </div>
@@ -566,15 +624,15 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
             {/* Subtotals & Value Metrics */}
             <div style={kpiGridStyle}>
-              <div style={kpiCardStyle('var(--corp-fin)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-fin)' }}>
                 <span style={kpiTitleStyle}>RMP Material Purchased</span>
                 <span style={kpiValueStyle}>{data.card?.rmp_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.rmp_amount?.toLocaleString('en-IN') || '0'})</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-rep)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-rep)' }}>
                 <span style={kpiTitleStyle}>WIP Floor Balance</span>
                 <span style={kpiValueStyle}>{data.card?.floor_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.floor_amount?.toLocaleString('en-IN') || '0'})</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-dash)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-dash)' }}>
                 <span style={kpiTitleStyle}>CS In-Stock Inventory</span>
                 <span style={kpiValueStyle}>{data.card?.stock_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.stock_amount?.toLocaleString('en-IN') || '0'})</span>
               </div>
@@ -582,13 +640,13 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
             {/* Stages Tab Buttons */}
             <div style={tabsRowStyle}>
-              {['gate', 'rmp', 'deheading', 'grading_summary', 'peeling', 'soaking', 'production', 'stock', 'hoso_floor_balance'].map(tab => (
+              {['grading_summary', 'gate', 'rmp', 'reprocess', 'deheading', 'grading_details', 'peeling', 'soaking', 'production', 'stock', 'hoso_floor_balance', 'reconciliation'].map(tab => (
                 <button
                   key={tab}
                   style={activeTab === tab ? activeTabStyle : inactiveTabStyle}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab.replace('_', ' ').toUpperCase()}
+                  {tab.replaceAll('_', ' ').toUpperCase()}
                 </button>
               ))}
             </div>
@@ -701,13 +759,13 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
             {/* Stages Tab Buttons */}
             <div style={tabsRowStyle}>
-              {['gate', 'rmp', 'deheading', 'grading_summary', 'peeling', 'soaking', 'production', 'stock', 'opening_floor_balance', 'closing_floor_balance'].map(tab => (
+              {['opening_floor_balance', 'closing_floor_balance', 'rmp_variety_summary', 'supplier_summary', 'reconciliation', 'grading_summary', 'gate', 'rmp', 'reprocess', 'deheading', 'grading_details', 'peeling', 'soaking', 'production', 'stock_in', 'stock_out'].map(tab => (
                 <button
                   key={tab}
                   style={activeTab === tab ? activeTabStyle : inactiveTabStyle}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab.replace('_', ' ').toUpperCase()}
+                  {tab.replaceAll('_', ' ').toUpperCase()}
                 </button>
               ))}
             </div>
@@ -736,19 +794,19 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
           <div style={{ marginTop: '20px' }}>
             {/* Grand Totals */}
             <div style={kpiGridStyle}>
-              <div style={kpiCardStyle('var(--corp-dash)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-dash)' }}>
                 <span style={kpiTitleStyle}>Total Opening MC</span>
                 <span style={kpiValueStyle}>{data.total_opening_mc || '0'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-ops)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-ops)' }}>
                 <span style={kpiTitleStyle}>Rent / Handling Charges</span>
                 <span style={kpiValueStyle}>₹ {data.total_storage_rent?.toLocaleString('en-IN') || '0'} / ₹ {data.total_charges?.toLocaleString('en-IN') || '0'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-rep)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-rep)' }}>
                 <span style={kpiTitleStyle}>Total Payable (This Month)</span>
                 <span style={kpiValueStyle}>₹ {data.total_payable_all?.toLocaleString('en-IN') || '0'}</span>
               </div>
-              <div style={kpiCardStyle('var(--corp-fin)')}>
+              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-fin)' }}>
                 <span style={kpiTitleStyle}>Total Closing MC</span>
                 <span style={kpiValueStyle}>{data.total_closing_mc || '0'}</span>
               </div>
@@ -765,7 +823,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
                     setSearchQuery('');
                   }}
                 >
-                  {tab.replace('_', ' ').toUpperCase()}
+                  {tab.replaceAll('_', ' ').toUpperCase()}
                 </button>
               ))}
             </div>
@@ -945,7 +1003,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   function renderStandardFilters() {
     return (
-      <div style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
         {activeConfig?.filters.includes('fy') && (
           <div style={filterBoxStyle}>
             <label style={filterLabelStyle}>Financial Year</label>
@@ -994,7 +1052,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   function renderStorageCostFilters() {
     return (
-      <div style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Billing Month</label>
           <input
@@ -1035,7 +1093,14 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   function renderPeriodicFilters() {
     return (
-      <div style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
+        <div style={filterBoxStyle}>
+          <label style={filterLabelStyle}>Financial Year</label>
+          <select className="form-control" style={selectControlStyle} value={selectedFy} onChange={e => setSelectedFy(e.target.value)}>
+            <option value="">ALL FINANCIAL YEARS</option>
+            {(data?.financial_years || []).map(y => <option key={y} value={y}>{y}</option>)}
+          </select>
+        </div>
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Filter Type</label>
           <select
@@ -1090,6 +1155,22 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
         )}
 
         <div style={filterBoxStyle}>
+          <label style={filterLabelStyle}>Production For</label>
+          <select className="form-control" style={selectControlStyle} value={selectedCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedBatch(''); }}>
+            <option value="">ALL COMPANIES</option>
+            {(data?.companies || []).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+
+        <div style={filterBoxStyle}>
+          <label style={filterLabelStyle}>Production At</label>
+          <select className="form-control" style={selectControlStyle} value={selectedProductionAt} onChange={e => setSelectedProductionAt(e.target.value)}>
+            <option value="">ALL LOCATIONS</option>
+            {(data?.production_ats || []).map(v => <option key={v} value={v}>{v}</option>)}
+          </select>
+        </div>
+
+        <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Production Source</label>
           <select
             className="form-control"
@@ -1123,7 +1204,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   function renderBatchSummaryFilters() {
     return (
-      <div style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Financial Year</label>
           <select
@@ -1132,11 +1213,20 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
             value={selectedFy}
             onChange={e => setSelectedFy(e.target.value)}
           >
+            <option value="">SELECT FINANCIAL YEAR</option>
             {data?.financial_years ? (
               data.financial_years.map(y => <option key={y} value={y}>{y}</option>)
             ) : (
               ['2026', '2025', '2024'].map(y => <option key={y} value={y}>{y}</option>)
             )}
+          </select>
+        </div>
+
+        <div style={filterBoxStyle}>
+          <label style={filterLabelStyle}>Production For</label>
+          <select className="form-control" style={selectControlStyle} value={selectedCompany} onChange={e => { setSelectedCompany(e.target.value); setSelectedBatch(''); }}>
+            <option value="">SELECT COMPANY</option>
+            {(data?.companies || []).map(v => <option key={v} value={v}>{v}</option>)}
           </select>
         </div>
 
@@ -1176,7 +1266,41 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
 
   function renderSummaryTabTable(tab) {
     if (!data || !data.rows) return null;
-    const tabRows = data.rows[tab] || data[tab] || [];
+    const sourceRows = data.rows;
+    const aggregateRmp = (bySupplier = false) => {
+      const map = new Map();
+      (sourceRows.rmp || []).forEach(row => {
+        const parts = bySupplier
+          ? [row.supplier_name, row.species, row.variety_name, row.count]
+          : [row.species, row.variety_name, row.count];
+        const key = parts.join('\u001f');
+        const item = map.get(key) || {
+          supplier_name: row.supplier_name, species: row.species,
+          variety_name: row.variety_name, count: row.count,
+          material_boxes: 0, received_qty: 0, amount: 0,
+        };
+        item.material_boxes += Number(row.material_boxes || 0);
+        item.received_qty += Number(row.received_qty || 0);
+        item.amount += Number(row.amount || 0);
+        map.set(key, item);
+      });
+      return [...map.values()];
+    };
+    const reconciliationRows = Object.entries(data.subtotals || {}).map(([key, value]) => {
+      const [production_for, production_at, species, variety, batch_number] = key.split('|');
+      return { production_for, production_at, species, variety, batch_number, ...value };
+    });
+    const specialRows = {
+      opening_floor_balance: data.opening_floor_balance || sourceRows.opening_floor_balance || [],
+      closing_floor_balance: data.closing_floor_balance || sourceRows.closing_floor_balance || [],
+      hoso_floor_balance: data.hoso_floor_balance || [],
+      rmp_variety_summary: aggregateRmp(false),
+      supplier_summary: aggregateRmp(true),
+      reconciliation: reconciliationRows,
+      stock_in: sourceRows.stock_in || (sourceRows.stock || []).filter(r => String(r.cargo_movement_type || '').toUpperCase() === 'IN'),
+      stock_out: sourceRows.stock_out || (sourceRows.stock || []).filter(r => String(r.cargo_movement_type || '').toUpperCase() === 'OUT'),
+    };
+    const tabRows = specialRows[tab] || sourceRows[tab] || data[tab] || [];
 
     // Filter rows dynamically by search query
     const filteredTabRows = tabRows.filter(row => {
@@ -1186,71 +1310,151 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
       );
     });
 
-    // Custom table schemas per tab
+    // Keep the React tables aligned with the server-rendered summary templates.
     const schemas = {
       gate: {
-        headers: ['Gate Pass', 'Date', 'Supplier', 'Vehicle', 'Boxes', 'Ice Boxes'],
-        keys: ['gate_pass_number', 'date', 'supplier_name', 'vehicle_number', 'no_of_material_boxes', 'no_of_ice_boxes']
+        headers: ['Sl', 'Batch Number', 'Supplier Name', 'Vehicle Number', 'Date', 'Time', 'Species', 'Gate Pass', 'Challan', 'Center', 'Location', 'Boxes', 'Production For', 'Email'],
+        keys: ['__sl', 'batch_number', 'supplier_name', 'vehicle_number', 'date', 'time', 'species', 'gate_pass_number', 'challan_number', 'receiving_center', 'purchasing_location', 'no_of_material_boxes', 'production_for', 'email'],
+        formats: { no_of_material_boxes: 'number' }
       },
       rmp: {
-        headers: ['Species', 'Variety', 'Count', 'Purchased Qty (Kg)', 'Rate (₹)', 'Amount (₹)'],
-        keys: ['species', 'variety_name', 'count', 'received_qty', 'rate', 'amount'],
-        formats: { received_qty: 'number', rate: 'currency', amount: 'currency' }
+        headers: ['Sl', 'Batch Number', 'Supplier Name', 'Date', 'Time', 'Species', 'Variety Name', 'Count', 'G1 Qty', 'G2 Qty', 'DC Qty', 'Boxes', 'Received Qty', 'Rate', 'Amount', 'Peeling At', 'Production For', 'Remarks', 'HSN Code', 'Email'],
+        keys: ['__sl', 'batch_number', 'supplier_name', 'date', 'time', 'species', 'variety_name', 'count', 'g1_qty', 'g2_qty', 'dc_qty', 'material_boxes', 'received_qty', 'rate_per_kg', 'amount', 'peeling_at', 'production_for', 'remarks', 'hsn_code', 'email'],
+        formats: { g1_qty: 'number', g2_qty: 'number', dc_qty: 'number', material_boxes: 'number', received_qty: 'number', rate_per_kg: 'currency', amount: 'currency' }
+      },
+      reprocess: {
+        headers: ['Sl', 'Batch Number', 'Date', 'Prod For', 'Prod At', 'Species', 'Type', 'Old Batch', 'Brand', 'Freezer', 'Packing', 'MC', 'Loose', 'Variety', 'Grade', 'In Qty', 'Out Qty', 'Value'],
+        keys: ['__sl', 'new_batch_id', 'date', 'production_for', 'production_at', 'species', 'reprocess_type', 'original_batch', 'brand', 'freezer', 'packing_style', 'no_of_mc', 'loose', 'variety', 'grade', 'in_qty', 'out_qty', 'inventory_value'],
+        formats: { no_of_mc: 'number', loose: 'number', in_qty: 'number', out_qty: 'number', inventory_value: 'currency' }
       },
       deheading: {
-        headers: ['Contractor', 'Species', 'Count', 'HOSO Qty', 'HLSO Qty', 'Yield %', 'Amount (₹)'],
-        keys: ['contractor', 'species', 'hoso_count', 'hoso_qty', 'hlso_qty', 'yield_percent', 'amount'],
-        formats: { hoso_qty: 'number', hlso_qty: 'number', yield_percent: 'percentage', amount: 'currency' }
+        headers: ['Sl', 'Batch Number', 'Contractor', 'Date', 'Time', 'Prod At', 'Prod For', 'Species', 'Variety / Count', 'HOSO Qty', 'HLSO Qty', 'Yield %', 'Target %', 'Diff Qty', 'Rate', 'Amount', 'Email'],
+        keys: ['__sl', 'batch_number', 'contractor', 'date', 'time', 'peeling_at', 'production_for', 'species', 'hoso_count', 'hoso_qty', 'hlso_qty', 'yield_percent', 'target_yield_percent', 'diff_qty', 'rate_per_kg', 'amount', 'email'],
+        formats: { hoso_qty: 'number', hlso_qty: 'number', yield_percent: 'percentage', target_yield_percent: 'percentage', diff_qty: 'number', rate_per_kg: 'currency', amount: 'currency' }
       },
-      grading_summary: {
-        headers: ['Species', 'HOSO Count', 'Variety', 'Graded Qty (Kg)', 'Workout Count', 'Yield %'],
-        keys: ['species', 'hoso_count', 'variety', 'graded_qty', 'workout_count', 'yield_pct'],
-        formats: { graded_qty: 'number', yield_pct: 'percentage' }
-      },
-      peeling: {
-        headers: ['Contractor', 'Species', 'Variety', 'HLSO Count', 'Peeled Qty', 'Yield %', 'Amount (₹)'],
-        keys: ['contractor', 'species', 'variety', 'hlso_count', 'peeled_qty', 'yield_percent', 'amount'],
-        formats: { peeled_qty: 'number', yield_percent: 'percentage', amount: 'currency' }
-      },
-      soaking: {
-        headers: ['Production At', 'Variety', 'In Count', 'In Qty', 'Chemical', 'Out Qty', 'Gain %'],
-        keys: ['production_at', 'variety_name', 'in_count', 'in_qty', 'chemical_name', 'out_qty', 'gain_percent'],
-        formats: { in_qty: 'number', out_qty: 'number', gain_percent: 'percentage' }
-      },
-      production: {
-        headers: ['Brand', 'Variety', 'Grade', 'Glaze', 'Freezer', 'MC Slabs', 'Loose', 'Net Weight (Kg)'],
-        keys: ['brand_name', 'variety_name', 'grade', 'glaze', 'freezer', 'no_of_mc', 'loose', 'production_qty'],
-        formats: { production_qty: 'number' }
-      },
-      stock: {
-        headers: ['Location', 'Brand', 'Variety', 'Grade', 'MC Slabs', 'Quantity (Kg)'],
-        keys: ['location', 'brand', 'variety', 'grade', 'no_of_mc', 'quantity'],
+      grading_details: {
+        headers: ['Sl', 'Batch Number', 'Date', 'Time', 'Peeling At', 'Production For', 'Species', 'HOSO Count', 'Variety Name', 'Graded Count', 'Quantity', 'Email'],
+        keys: ['__sl', 'batch_number', 'date', 'time', 'peeling_at', 'production_for', 'species', 'hoso_count', 'variety_name', 'graded_count', 'quantity', 'email'],
         formats: { quantity: 'number' }
       },
+      grading_summary: {
+        headers: ['Species', 'HOSO Count', 'Variety', 'Actual HOSO', 'Graded Qty', 'Workout Count', 'Yield %', 'Grading HOSO', 'Diff KG', 'Diff %'],
+        keys: ['species', 'hoso_count', 'variety', 'hoso_qty', 'graded_qty', 'workout_count', 'yield_pct', 'grading_hoso_qty', 'weight_diff_kg', 'weight_diff_pct'],
+        formats: { hoso_qty: 'number', graded_qty: 'number', grading_hoso_qty: 'number', weight_diff_kg: 'number', yield_pct: 'percentage', weight_diff_pct: 'percentage' }
+      },
+      peeling: {
+        headers: ['Sl', 'Batch Number', 'Contractor Name', 'Date', 'Time', 'Peeling At', 'Prod For', 'Species', 'HLSO Count', 'Variety Name', 'HLSO Qty', 'Peeled Qty', 'Yield %', 'Target %', 'Diff Qty', 'Diff %', 'Rate', 'Amount', 'Email'],
+        keys: ['__sl', 'batch_number', 'contractor_name', 'date', 'time', 'peeling_at', 'production_for', 'species', 'hlso_count', 'variety_name', 'hlso_qty', 'peeled_qty', 'yield_percent', 'target_yield_percent', 'diff_qty', 'diff_percent', 'rate', 'amount', 'email'],
+        formats: { hlso_qty: 'number', peeled_qty: 'number', yield_percent: 'percentage', target_yield_percent: 'percentage', diff_qty: 'number', diff_percent: 'percentage', rate: 'currency', amount: 'currency' }
+      },
+      soaking: {
+        headers: ['Sl', 'Batch Number', 'Variety Name', 'Date', 'Time', 'Species', 'In Count', 'Sintex Number', 'Chemical Name', 'Chem %', 'Chem Qty', 'Salt %', 'Salt Qty', 'In Qty', 'Rejection Qty', 'Rejection For', 'Status', 'Production At', 'Production For', 'Email'],
+        keys: ['__sl', 'batch_number', 'variety_name', 'date', 'time', 'species', 'in_count', 'sintex_number', 'chemical_name', 'chemical_percent', 'chemical_qty', 'salt_percent', 'salt_qty', 'in_qty', 'rejection_qty', 'rejection_for', 'status', 'production_at', 'production_for', 'email'],
+        formats: { chemical_percent: 'percentage', chemical_qty: 'number', salt_percent: 'percentage', salt_qty: 'number', in_qty: 'number', rejection_qty: 'number' }
+      },
+      production: {
+        headers: ['Sl', 'Date', 'Time', 'Prod At', 'Prod For', 'Type', 'Species', 'Batch No', 'Brand', 'Variety', 'Glaze', 'Freezer', 'Packing', 'Grade', 'MC', 'Loose', 'Gross Qty', 'Prod Qty', 'Yield %', 'Diff', 'User'],
+        keys: ['__sl', 'date', 'time', 'production_at', 'production_for', 'production_type', 'species', 'batch_number', 'brand', 'variety_name', 'glaze', 'freezer', 'packing_style', 'grade', 'no_of_mc', 'loose', '__gross_qty', 'production_qty', '__dash', '__dash', 'email'],
+        formats: { no_of_mc: 'number', loose: 'number', __gross_qty: 'number', production_qty: 'number' }
+      },
+      stock: {
+        headers: ['Sl.No', 'Species', 'Location', 'Production At', 'Production For', 'PO Number', 'Purpose', 'Movement Type', 'Brand', 'Freezer', 'Packing Style', 'Glaze', 'Variety', 'Grade', 'No of MC', 'Loose', 'Quantity (KG)', 'Inventory Value'],
+        keys: ['__sl', 'species', 'location', 'production_at', 'production_for', 'po_number', 'purpose', 'cargo_movement_type', 'brand', 'freezer', 'packing_style', 'glaze', 'variety', 'grade', 'no_of_mc', 'loose', 'quantity', 'inventory_value'],
+        formats: { no_of_mc: 'number', loose: 'number', quantity: 'number', inventory_value: 'currency' }
+      },
+      stock_in: null,
+      stock_out: null,
       hoso_floor_balance: {
-        headers: ['WIP Location', 'Species', 'Variety', 'Count', 'WIP Qty (Kg)', 'Estimated Value (₹)'],
-        keys: ['peeling_at', 'species', 'variety', 'count', 'available_qty', 'value'],
+        headers: ['Sl', 'Batch Number', 'Species', 'Location / Peeling At', 'Production For', 'Variety', 'Count / Grade', 'Available Qty (KG)', 'Value'],
+        keys: ['__sl', '__batch', 'species', 'peeling_at', 'production_for', 'variety', 'count', 'available_qty', 'value'],
         formats: { available_qty: 'number', value: 'currency' }
       },
       opening_floor_balance: {
-        headers: ['WIP Location', 'Species', 'Variety', 'Count', 'Opening Qty (Kg)', 'Opening Value (₹)'],
-        keys: ['peeling_at', 'species', 'variety', 'count', 'available_qty', 'value'],
+        headers: ['Sl', 'Batch Number', 'Species', 'Location / Peeling At', 'Production For', 'Variety', 'Count / Grade', 'Opening Qty (KG)', 'Value'],
+        keys: ['__sl', '__batch', 'species', 'peeling_at', 'production_for', 'variety', 'count', 'available_qty', 'value'],
         formats: { available_qty: 'number', value: 'currency' }
       },
       closing_floor_balance: {
-        headers: ['WIP Location', 'Species', 'Variety', 'Count', 'Closing Qty (Kg)', 'Closing Value (₹)'],
-        keys: ['peeling_at', 'species', 'variety', 'count', 'available_qty', 'value'],
+        headers: ['Sl', 'Batch Number', 'Species', 'Location / Peeling At', 'Production For', 'Variety', 'Count / Grade', 'Available Qty (KG)', 'Value'],
+        keys: ['__sl', '__batch', 'species', 'peeling_at', 'production_for', 'variety', 'count', 'available_qty', 'value'],
+        formats: { available_qty: 'number', value: 'currency' }
+      },
+      rmp_variety_summary: {
+        headers: ['Sl', 'Species', 'Variety Name', 'Count', 'Total Boxes', 'Total Received Qty (KG)', 'Total Amount'],
+        keys: ['__sl', 'species', 'variety_name', 'count', 'material_boxes', 'received_qty', 'amount'],
+        formats: { material_boxes: 'number', received_qty: 'number', amount: 'currency' }
+      },
+      supplier_summary: {
+        headers: ['Sl', 'Supplier Name', 'Species', 'Variety Name', 'Count', 'Total Boxes', 'Total Received Qty (KG)', 'Total Amount'],
+        keys: ['__sl', 'supplier_name', 'species', 'variety_name', 'count', 'material_boxes', 'received_qty', 'amount'],
+        formats: { material_boxes: 'number', received_qty: 'number', amount: 'currency' }
+      },
+      reconciliation: {
+        headers: ['Production For', 'Production At', 'Species', 'Variety', 'Batch', 'Soaking In', 'Produced Qty', 'Target Yield', 'Actual Yield', 'Yield Diff', 'Diff Qty'],
+        keys: ['production_for', 'production_at', 'species', 'variety', 'batch_number', 'soaking_in', 'prod_qty', 'target_yield', 'actual_yield', 'diff_yield_perc', 'diff_qty'],
+        formats: { soaking_in: 'number', prod_qty: 'number', target_yield: 'percentage', actual_yield: 'percentage', diff_yield_perc: 'percentage', diff_qty: 'number' }
+      }
+    };
+
+    schemas.stock_in = schemas.stock;
+    schemas.stock_out = schemas.stock;
+
+    const batchSchemas = {
+      gate: {
+        headers: ['Sl', 'Date', 'Time', 'Prod For', 'Species', 'Gate Pass', 'Challan', 'Center', 'Supplier', 'Location', 'Vehicle', 'Boxes', 'Email'],
+        keys: ['__sl', 'date', 'time', 'production_for', 'species', 'gate_pass_number', 'challan_number', 'receiving_center', 'supplier_name', 'purchasing_location', 'vehicle_number', 'no_of_material_boxes', 'email'],
+        formats: { no_of_material_boxes: 'number' }
+      },
+      rmp: {
+        headers: ['Sl', 'Date', 'Species', 'HSN', 'Peeling At', 'G1/G2/DC', 'Remarks', 'Boxes', 'Variety', 'Count', 'Qty', 'Rate', 'Amount', 'Email'],
+        keys: ['__sl', 'date', 'species', 'hsn_code', 'peeling_at', '__g123', 'remarks', 'material_boxes', 'variety_name', 'count', 'received_qty', 'rate_per_kg', 'amount', 'email'],
+        formats: { material_boxes: 'number', received_qty: 'number', rate_per_kg: 'currency', amount: 'currency' }
+      },
+      reprocess: {
+        headers: ['Sl', 'Date', 'Prod For', 'Prod At', 'Species', 'Type', 'Old Batch', 'Brand', 'Freezer', 'Packing', 'MC/Loose', 'Variety', 'Grade', 'In Qty', 'Out Qty', 'Value'],
+        keys: ['__sl', 'date', 'production_for', 'production_at', 'species', 'reprocess_type', 'original_batch', 'brand', 'freezer', 'packing_style', '__mc_loose', 'variety', 'grade', 'in_qty', 'out_qty', 'inventory_value'],
+        formats: { in_qty: 'number', out_qty: 'number', inventory_value: 'currency' }
+      },
+      deheading: {
+        headers: ['Sl', 'Date', 'Time', 'Batch No', 'Prod At', 'Prod For', 'Species', 'Variety', 'HOSO Qty', 'HLSO Qty', 'Yield %', 'Def Yield', 'Def Qty', 'Rate', 'Amount', 'Contractor', 'Email'],
+        keys: ['__sl', 'date', 'time', 'batch_number', 'peeling_at', 'production_for', 'species', 'hoso_count', 'hoso_qty', 'hlso_qty', 'yield_percent', 'target_yield_percent', 'diff_qty', 'rate_per_kg', 'amount', 'contractor', 'email'],
+        formats: schemas.deheading.formats
+      },
+      grading_details: {
+        headers: ['Sl', 'Date', 'Time', 'Peeling At', 'Production For', 'Species', 'Batch Number', 'Variety Name', 'Graded Count', 'Quantity', 'Email'],
+        keys: ['__sl', 'date', 'time', 'peeling_at', 'production_for', 'species', 'batch_number', 'variety_name', 'graded_count', 'quantity', 'email'],
+        formats: { quantity: 'number' }
+      },
+      peeling: {
+        headers: ['Sl', 'Date', 'Peeling At', 'Peeling For', 'Variety', 'HLSO Qty', 'Peeled Qty', 'Yield %', 'Def Yield', 'Def Qty', 'Rate', 'Amount', 'Contractor', 'Email'],
+        keys: ['__sl', 'date', 'peeling_at', 'production_for', 'variety_name', 'hlso_qty', 'peeled_qty', 'yield_percent', 'target_yield_percent', 'diff_qty', 'rate', 'amount', 'contractor_name', 'email'],
+        formats: schemas.peeling.formats
+      },
+      soaking: {
+        headers: ['Sl', 'Date', 'Sintex #', 'Chemical', 'Chem % / Qty', 'Salt % / Qty', 'Variety', 'Count', 'In Qty', 'Status', 'Rej', 'Email'],
+        keys: ['__sl', 'date', 'sintex_number', 'chemical_name', '__chemical', '__salt', 'variety_name', 'in_count', 'in_qty', 'status', 'rejection_qty', 'email'],
+        formats: { in_qty: 'number', rejection_qty: 'number' }
+      },
+      production: schemas.production,
+      stock: {
+        headers: ['Sl.No', 'Species', 'Location', 'Production At', 'Production For', 'PO Number', 'Purpose', 'Movement Type', 'Brand', 'Freezer', 'Packing Style', 'Variety', 'Grade', 'No of MC', 'Loose', 'Quantity (KG)', 'Inventory Value'],
+        keys: ['__sl', 'species', 'location', 'production_at', 'production_for', 'po_number', 'purpose', 'cargo_movement_type', 'brand', 'freezer', 'packing_style', 'variety', 'grade', 'no_of_mc', 'loose', 'quantity', 'inventory_value'],
+        formats: schemas.stock.formats
+      },
+      hoso_floor_balance: {
+        headers: ['Sl', 'Species', 'Location / Peeling At', 'Variety', 'Count / Grade', 'Available Qty (KG)', 'Value'],
+        keys: ['__sl', 'species', 'peeling_at', 'variety', 'count', 'available_qty', 'value'],
         formats: { available_qty: 'number', value: 'currency' }
       }
     };
 
-    const schema = schemas[tab] || schemas.gate;
+    const schema = (reportId === 'report_batch_summary' ? batchSchemas[tab] : null) || schemas[tab] || schemas.gate;
 
     return (
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
-            {tab.replace('_', ' ')} DETAILS
+            {tab.replaceAll('_', ' ')} DETAILS
           </h4>
           <div style={searchWrapperStyle}>
             <Search size={13} style={searchIconStyle} />
@@ -1265,7 +1469,7 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
         </div>
 
         <div className="table-responsive">
-          <table className="bknr-table">
+          <table className="bknr-table" style={{ minWidth: Math.max(900, schema.headers.length * 105) }}>
             <thead>
               <tr>
                 {schema.headers.map((head, index) => (
@@ -1279,9 +1483,24 @@ export default function ReportViewer({ reportId, activeRoute, user, theme }) {
                   <tr key={rIdx}>
                     {schema.keys.map((k, cIdx) => {
                       const format = schema.formats?.[k];
+                      let value = row[k];
+                      if (k === '__sl') value = rIdx + 1;
+                      else if (k === '__batch') value = row.batch_number || row.batch || '';
+                      else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
+                      else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
+                      else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
+                      else if (k === '__salt') value = `${Number(row.salt_percent || 0).toFixed(2)}% / ${Number(row.salt_qty || 0).toFixed(2)}`;
+                      else if (k === '__dash') value = '-';
+                      else if (k === '__gross_qty') {
+                        const netQty = Number(row.production_qty || 0);
+                        const glazeText = String(row.glaze || '').trim().toUpperCase();
+                        const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                        const glazePct = match ? Number(match[1]) : 0;
+                        value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                      }
                       return (
                         <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
-                          {formatVal(row[k], format)}
+                          {formatVal(value, format)}
                         </td>
                       );
                     })}
@@ -1530,26 +1749,31 @@ const actionsRowStyle = {
 
 const filtersWrapperStyle = {
   display: 'flex',
-  flexWrap: 'wrap',
-  gap: '14px',
+  flexWrap: 'nowrap',
+  gap: '6px',
   background: 'var(--glass-bg)',
-  padding: '12px 16px',
-  borderRadius: 'var(--radius-panel)',
+  padding: '4px 7px',
+  borderRadius: 'var(--radius-element)',
   border: '1px solid var(--border-light)',
-  marginBottom: '16px',
-  alignItems: 'flex-end'
+  marginBottom: '6px',
+  alignItems: 'flex-end',
+  overflowX: 'auto',
+  overflowY: 'hidden',
+  WebkitOverflowScrolling: 'touch',
+  scrollbarWidth: 'thin'
 };
 
 const filterBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '4px',
+  gap: '2px',
   flexShrink: 0,
-  minWidth: '150px'
+  minWidth: '108px',
+  width: '108px'
 };
 
 const filterLabelStyle = {
-  fontSize: '10px',
+  fontSize: '8px',
   fontWeight: '800',
   color: 'var(--text-secondary)',
   textTransform: 'uppercase',
@@ -1557,9 +1781,9 @@ const filterLabelStyle = {
 };
 
 const selectControlStyle = {
-  height: '36px',
-  padding: '0 12px',
-  fontSize: '13px',
+  height: '27px',
+  padding: '0 7px',
+  fontSize: '10px',
   fontWeight: '600',
   borderRadius: 'var(--radius-element)',
   border: '1px solid var(--input-border)',
@@ -1577,34 +1801,39 @@ const searchWrapperStyle = {
 
 const searchIconStyle = {
   position: 'absolute',
-  left: '12px',
+  left: '7px',
   color: 'var(--text-tertiary)'
 };
 
 const searchInputStyle = {
-  padding: '8px 12px 8px 36px',
-  fontSize: '13px',
+  padding: '0 7px 0 25px',
+  fontSize: '10px',
   border: '1px solid var(--input-border)',
   borderRadius: 'var(--radius-element)',
   background: 'var(--input-bg)',
   color: 'var(--text-primary)',
   outline: 'none',
-  width: '200px',
-  height: '36px'
+  width: '150px',
+  height: '27px'
 };
 
 const kpiGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-  gap: '12px',
-  marginBottom: '20px'
+  display: 'flex',
+  flexWrap: 'nowrap',
+  overflowX: 'auto',
+  overflowY: 'hidden',
+  gap: '6px',
+  marginBottom: '6px'
 };
 
 const kpiCardStyle = {
   background: 'var(--surface-panel)',
   border: '1px solid var(--border-light)',
-  borderRadius: 'var(--radius-element)',
-  padding: '14px',
+  borderRadius: '6px',
+  padding: '5px 8px',
+  minWidth: '150px',
+  minHeight: '38px',
+  flex: '1 0 150px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
@@ -1617,7 +1846,7 @@ const kpiMetaStyle = {
 };
 
 const kpiLabelStyle = {
-  fontSize: '10px',
+  fontSize: '8px',
   textTransform: 'uppercase',
   fontWeight: '800',
   color: 'var(--text-secondary)',
@@ -1625,10 +1854,10 @@ const kpiLabelStyle = {
 };
 
 const kpiValueStyle = {
-  fontSize: '19px',
+  fontSize: '12px',
   fontWeight: '800',
   color: 'var(--text-primary)',
-  marginTop: '4px',
+  marginTop: '1px',
   letterSpacing: '-0.5px'
 };
 

@@ -5,10 +5,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
-  StatusBar, Animated, Dimensions, Easing,
+  StatusBar, Animated, Dimensions, Easing, Image,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { Feather } from '@expo/vector-icons';
+import { BASE_URL } from '../config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -108,11 +109,13 @@ export default function LoginScreen() {
               <Text style={styles.badgeText}>ENTERPRISE PLATFORM</Text>
             </View>
 
-            {/* Logo mark */}
-            <View style={styles.logoRing}>
-              <View style={styles.logoInner}>
-                <Feather name="layers" size={28} color="#fff" />
-              </View>
+            <View style={styles.companyLogoWrap}>
+              <Image
+                source={{ uri: `${BASE_URL}/static/images/svbk-it-solutions-logo.png` }}
+                style={styles.companyLogo}
+                resizeMode="contain"
+                accessibilityLabel="SVBK IT Solutions"
+              />
             </View>
 
             <Text style={styles.brandTitle}>BKNR <Text style={{ color: '#3b82f6' }}>ERP</Text></Text>
@@ -300,6 +303,18 @@ const styles = StyleSheet.create({
   logoArea: {
     alignItems: 'center',
     marginBottom: 32,
+  },
+  companyLogoWrap: {
+    width: '92%',
+    maxWidth: 330,
+    height: 82,
+    marginBottom: 10,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  companyLogo: {
+    width: '100%',
+    height: '100%',
   },
   badgeRow: {
     flexDirection: 'row',

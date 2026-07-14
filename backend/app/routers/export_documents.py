@@ -229,12 +229,27 @@ def set_document_path(row, path: str):
 
 
 def build_document_payload(cfg, row):
-    return {
+    payload = {
         "title": cfg["title"],
         "document_no": getattr(row, cfg["no"], ""),
         "document_date": getattr(row, cfg["date"], None),
         "fields": [(label, getattr(row, attr, None)) for label, attr in cfg["fields"]],
     }
+    if isinstance(row, CommercialInvoice):
+        payload["line_items"] = [
+            {
+                "product": item.product_name,
+                "grade": item.grade,
+                "packing_style": item.packing_style,
+                "batch_no": item.batch_no,
+                "master_cartons": item.master_cartons or 0,
+                "net_weight": item.net_weight or 0,
+                "gross_weight": item.gross_weight or 0,
+            }
+            for item in row.packing_items
+            if not item.is_cancelled
+        ]
+    return payload
 
 
 def render_document_pdf(cfg, row, company_id: str, doc_type: str) -> bytes:
@@ -890,12 +905,19 @@ def commercial_invoice_save(request: Request, payload: CommercialInvoiceSchema, 
         write_audit(db, "commercial_invoices", entry.id, comp_code, "CREATE", "NONE", f"Invoice Registered: {payload.invoice_no}", email)
         db.commit()
         invalidate_export_cache(comp_code)
-        return {"success": True, "message": "Commercial invoice registered and posted to accounts"}
+        return {
+            "success": True,
+            "message": "Commercial invoice registered and posted to accounts",
+            "record_id": entry.id,
+            "print_url": f"/export_documents/commercial_invoice/print/{entry.id}",
+            "pdf_url": f"/export_documents/commercial_invoice/pdf/{entry.id}",
+        }
     except Exception as exc:
         db.rollback()
         logger.exception("Commercial invoice accounting post failed")
         return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
+@router.post("/commercial_invoice/cancel/{log_id}")
 @router.post("/commercial_invoice/delete/{log_id}")
 def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -916,7 +938,7 @@ def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depen
         refresh_compliance(db, comp_code, entry.shipment_no)
         db.commit()
         invalidate_export_cache(comp_code)
-        return {"success": True, "message": "Commercial invoice deleted successfully"}
+        return {"success": True, "message": "Commercial invoice cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 

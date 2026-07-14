@@ -253,6 +253,13 @@ def pending_orders_report_page(
     cache_context["rows"] = [row_to_dict(r) for r in rows]
     cache_set(cache_key, cache_context, ttl=75)
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        json_context = dict(context)
+        json_context["rows"] = cache_context["rows"]
+        return JSONResponse(jsonable_encoder(json_context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/pending_orders_report.html",

@@ -202,6 +202,26 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
 
     master_context = get_pending_order_masters(db, company_code, user_allowed_locations, production_for_filter, location)
 
+    # JSON API for React
+    if request.query_params.get("format") == "json":
+        import datetime as dt_mod
+        def ser(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)): return v.isoformat()
+            return v
+        def row_to_dict(r):
+            d = {}
+            for col in r.__table__.columns:
+                d[col.name] = ser(getattr(r, col.name))
+            return d
+        return JSONResponse({
+            "active_rows": [row_to_dict(r) for r in active_rows],
+            "completed_rows": [row_to_dict(r) for r in completed_rows],
+            "next_sl": next_sl,
+            "global_production_for": production_for_filter or "",
+            "global_location": location or "",
+            **master_context,
+        })
+
     return templates.TemplateResponse(
         request=request,
         name="inventory_management/pending_orders.html",
@@ -216,6 +236,7 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
             "message": request.session.pop("message", None)
         }
     )
+
 
 # -------------------------------------------------------------------------
 # 2️⃣ SAVE PENDING ORDERS (POST) - SECURED FOR 422 AND REFRESH EXCEPTION

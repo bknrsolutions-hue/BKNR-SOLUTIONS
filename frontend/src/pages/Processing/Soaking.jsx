@@ -124,12 +124,16 @@ export default function Soaking() {
   // Load counts matching selected batch
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!batchNumber) {
+      if (!productionFor || !productionAt || !batchNumber) {
         setCountsList([]);
         return;
       }
       try {
-        const res = await fetch(`/processing/soaking/get_count/${encodeURIComponent(batchNumber)}`);
+        const params = new URLSearchParams({
+          production_for: productionFor,
+          location: productionAt,
+        });
+        const res = await fetch(`/processing/soaking/get_count/${encodeURIComponent(batchNumber)}?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setCountsList(Array.from(new Set(data.counts)).sort());
@@ -139,7 +143,7 @@ export default function Soaking() {
       }
     };
     fetchCounts();
-  }, [batchNumber]);
+  }, [productionFor, productionAt, batchNumber]);
 
   // Load available qty
   useEffect(() => {
@@ -150,6 +154,7 @@ export default function Soaking() {
       }
       try {
         const params = new URLSearchParams({
+          production_for: productionFor,
           location: productionAt,
           batch: batchNumber,
           count: inCount,
@@ -166,7 +171,7 @@ export default function Soaking() {
       }
     };
     fetchAvailable();
-  }, [productionAt, batchNumber, inCount, varietyName, speciesName]);
+  }, [productionFor, productionAt, batchNumber, inCount, varietyName, speciesName]);
 
   // Sintex numbers and reject validations trigger
   useEffect(() => {
@@ -692,7 +697,7 @@ export default function Soaking() {
               <div className="form-grid">
                 <div className="form-group">
                   <label>Sintex</label>
-                  <input type="text" className="form-control" value={sintexNumber} readonly placeholder="Auto Generated" style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
+                  <input type="text" className="form-control" value={sintexNumber} readOnly placeholder="Auto Generated" style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
                 </div>
 
                 <div className="form-group">
@@ -869,12 +874,12 @@ export default function Soaking() {
 
                 <div className="form-group">
                   <label>Chemical Calc (KG)</label>
-                  <input type="text" className="form-control" value={chemCalc} readonly style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={chemCalc} readOnly style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Salt Calc (KG)</label>
-                  <input type="text" className="form-control" value={saltCalc} readonly style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={saltCalc} readOnly style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
               </div>
 

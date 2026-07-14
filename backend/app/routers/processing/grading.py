@@ -382,6 +382,28 @@ def save_grading(
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    if quantity <= 0:
+        return JSONResponse({"error": "Quantity must be greater than zero"}, status_code=400)
+
+    # Lock the same FIFO pool consumed by consume_hlso_for_grading(). This is
+    # a guard around the existing formula, preventing concurrent or excessive
+    # consumption without changing any yield/balance calculations.
+    pool_rows = db.query(HlsoForGrading).filter(
+        HlsoForGrading.batch_number == batch_number,
+        HlsoForGrading.production_for == production_for,
+        HlsoForGrading.peeling_at == peeling_at,
+        HlsoForGrading.species == species_val,
+        HlsoForGrading.hoso_count == hoso_count,
+        HlsoForGrading.company_id == company_code,
+        HlsoForGrading.status == "Pending",
+    ).with_for_update().all()
+    pool_available = round(sum(float(row.available_qty or 0) for row in pool_rows), 2)
+    if quantity > pool_available + 0.01:
+        return JSONResponse(
+            {"error": f"Insufficient grading pool balance. Available: {pool_available:.2f} KG"},
+            status_code=400,
+        )
+
     current_ist = ist_now()
 
     grading = Grading(

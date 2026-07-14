@@ -240,7 +240,8 @@ export default function Grading() {
         clearForm();
         await fetchBackendData();
       } else {
-        alert('Error saving Grading record');
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || errorData.message || 'Error saving Grading record');
       }
     } catch (err) {
       alert('Connection error saving Grading record');

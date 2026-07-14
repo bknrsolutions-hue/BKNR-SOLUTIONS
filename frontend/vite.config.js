@@ -22,6 +22,7 @@ export default defineConfig({
       '/dashboard':        'http://localhost:8000',
       '/helpdesk':         'http://localhost:8000',
       '/menu':             'http://localhost:8000',
+      '/home':             'http://localhost:8000',
     }
   }
 })

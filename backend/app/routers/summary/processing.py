@@ -432,6 +432,46 @@ async def get_processing_summary(
         card["floor_qty"] = round(sum(f["available_qty"] for f in floor_balance_list), 2)
         card["floor_amount"] = round(total_floor_val, 2)
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_rows = {}
+        for key, val in rows.items():
+            if isinstance(val, list):
+                serialized_list = []
+                for item in val:
+                    if hasattr(item, "__table__"):
+                        d = {col.name: getattr(item, col.name) for col in item.__table__.columns}
+                        for attr in ["target_yield_percent", "yield_percent", "diff_qty", "diff_percent", "product_kg_value", "inventory_value"]:
+                            if hasattr(item, attr):
+                                d[attr] = getattr(item, attr)
+                        serialized_list.append(d)
+                    else:
+                        serialized_list.append(item)
+                serialized_rows[key] = serialized_list
+            else:
+                serialized_rows[key] = val
+                
+        str_subtotals = {}
+        for k, v in subtotals.items():
+            str_key = "|".join(str(x) for x in k)
+            str_subtotals[str_key] = v
+            
+        json_context = {
+            "financial_years": financial_years,
+            "selected_fy": fy,
+            "companies": companies,
+            "batches": batches,
+            "selected_company": production_for,
+            "selected_prod_type": prod_type,
+            "selected_batch": batch,
+            "rows": serialized_rows,
+            "card": card,
+            "hoso_floor_balance": floor_balance_list,
+            "subtotals": str_subtotals
+        }
+        return JSONResponse(jsonable_encoder(json_context))
+
     return templates.TemplateResponse(
         request=request, name="summary/processing_summary.html", 
         context={

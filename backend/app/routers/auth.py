@@ -174,6 +174,16 @@ def get_login(request: Request):
         context={"request": request, "show_login": True}
     )
 
+@router.get("/landing", response_class=HTMLResponse)
+def get_landing(request: Request):
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request, "show_login": False}
+    )
+
 @router.get("/register", response_class=HTMLResponse)
 def get_register(request: Request):
     if request.session.get("email"):
@@ -424,13 +434,20 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
 
 @router.get("/session-info")
 def session_info(request: Request):
-    if not request.session.get("email"): return JSONResponse({"authenticated": False}, status_code=401)
+    # Session probing is a state check, not a protected business operation.
+    # Returning 200 for guests prevents expected login state from surfacing as
+    # a failed network request in React/Vite while protected routes still use
+    # their normal 401/redirect guards.
+    if not request.session.get("email"):
+        return {"authenticated": False}
     return {
         "authenticated": True,
         "email": request.session.get("email"),
         "name": request.session.get("name"),
         "company_name": request.session.get("company_name"),
         "company_code": request.session.get("company_code"),
+        "role": request.session.get("role"),
+        "permissions": request.session.get("permissions") or [],
     }
 
 @router.post("/forgot-password")
@@ -575,3 +592,61 @@ def save_ui_colors(request: Request, data: UIColorsRequest, db: Session = Depend
         })
     db.commit()
     return {"success": True, "message": "UI colors saved to database successfully"}
+
+
+@router.get("/global-dropdowns")
+def global_dropdowns(request: Request, db: Session = Depends(get_db)):
+    email = request.session.get("email")
+    if not email:
+        return JSONResponse({"status": "error", "message": "Not authenticated"}, status_code=401)
+        
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"status": "success", "companies": [], "locations": []})
+
+    from app.database.models.criteria import peeling_at, production_at, production_for
+    from app.database.models.inventory_management import cold_storage
+    from sqlalchemy import func
+    from app.services.cache import cache_get_or_set
+
+    def build_menu_filters():
+        companies = {
+            str(value).strip()
+            for (value,) in db.query(production_for.production_for).filter(
+                production_for.company_id == company_code,
+                func.lower(production_for.status) == "active",
+            ).distinct().all()
+            if value and str(value).strip()
+        }
+        locations = {
+            str(value).strip()
+            for model, column in (
+                (production_at, production_at.production_at),
+                (peeling_at, peeling_at.peeling_at),
+            )
+            for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
+            if value and str(value).strip()
+        }
+        locations.update(
+            str(value).strip()
+            for (value,) in db.query(cold_storage.storage_name).filter(
+                cold_storage.company_id == company_code,
+                func.lower(cold_storage.is_active) == "active",
+            ).distinct().all()
+            if value and str(value).strip()
+        )
+        return {"companies": sorted(companies), "locations": sorted(locations)}
+
+    try:
+        menu_filters = cache_get_or_set(
+            f"bknr:menu:{company_code}:universal_filters:v2",
+            build_menu_filters,
+            ttl=300,
+        )
+        return {
+            "status": "success",
+            "companies": menu_filters["companies"],
+            "locations": menu_filters["locations"]
+        }
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

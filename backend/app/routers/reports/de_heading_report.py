@@ -8,7 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime
+from datetime import date, datetime
 import datetime as dt
 from io import BytesIO
 from app.services.floor_balance_sync import refresh_floor_balance
@@ -69,6 +69,10 @@ def repost_deheading_accounts(db: Session, row: DeHeading, company_id: str, emai
     )
     row.journal_id = voucher.id
 
+def row_to_dict(row):
+    return {col.name: getattr(row, col.name) for col in row.__table__.columns}
+
+
 # ============================================================
 # 1. MAIN REPORT (GET) - AUTO REFRESH ON OPEN WITH FY FILTER
 # ============================================================
@@ -88,8 +92,9 @@ async def de_heading_report(
     # 1. Fetch Current FY and Criteria Map (Species, Count)
     current_date = ist_now().date()
     current_fy_val = get_fin_year(current_date)
+    is_json = request.query_params.get("format") == "json"
     if fy is None:
-        fy = str(current_fy_val)
+        fy = "" if is_json else str(current_fy_val)
     
     target_yields = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_id).all()
     
@@ -99,29 +104,36 @@ async def de_heading_report(
         for ty in target_yields
     }
 
+    # Fetch unique financial years from database
+    all_dates = db.query(DeHeading.date).filter(DeHeading.company_id == company_id, DeHeading.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+    financial_years = sorted(list(fy_set), reverse=True)
+
     # 2. Fetch Rows based on selected FY
-    rows = []
+    query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id
+    )
+
     if fy:
         selected_year = int(fy)
-        # Financial Year Logic: April (Selected Year) to March (Next Year)
         start_date = dt.date(selected_year, 4, 1)
         end_date = dt.date(selected_year + 1, 3, 31)
-        
-        # 🟢 UPDATED: Core query selection layered dynamically via global options
-        query = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id,
+        query = query.filter(
             DeHeading.date >= start_date,
             DeHeading.date <= end_date
         )
 
-        # Global Filters Integration
-        if production_for:
-            query = query.filter(DeHeading.production_for == production_for)
+    # Global Filters Integration
+    if production_for:
+        query = query.filter(DeHeading.production_for == production_for)
 
-        if location:
-            query = query.filter(DeHeading.peeling_at == location)
+    if location:
+        query = query.filter(DeHeading.peeling_at == location)
 
-        rows = query.order_by(DeHeading.date.desc(), DeHeading.time.desc()).all()
+    rows = query.order_by(DeHeading.date.desc(), DeHeading.time.desc()).all()
 
     # 3. Auto-Refresh Logic (Current FY only)
     needs_commit = False
@@ -158,24 +170,52 @@ async def de_heading_report(
     def get_unique(field_attr):
         return sorted(list({getattr(r, field_attr) for r in rows if getattr(r, field_attr)}))
 
+    serialized_rows = []
+    for r in rows:
+        d = row_to_dict(r)
+        if isinstance(d.get("date"), (date, datetime)):
+            d["date"] = d["date"].isoformat()
+        if isinstance(d.get("time"), (dt.time, datetime)):
+            d["time"] = d["time"].strftime("%H:%M")
+        serialized_rows.append(d)
+
+    context = {
+        "rows": serialized_rows if is_json else rows,
+        "batches": get_unique("batch_number"),
+        "contractors": get_unique("contractor"),
+        "species_list": get_unique("species"),
+        "peeling_locations": get_unique("peeling_at"),
+        "production_for_list": get_unique("production_for"),
+        "is_admin": role == "admin",
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+        "selected_fy": fy,
+        "financial_years": financial_years,
+        "datetime": datetime
+    }
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/de_heading_report.html",
-        context={
-            "rows": rows,
-            "batches": get_unique("batch_number"),
-            "contractors": get_unique("contractor"),
-            "species_list": get_unique("species"),
-            "peeling_locations": get_unique("peeling_at"),
-            "production_for_list": get_unique("production_for"),
-            "is_admin": role == "admin",
-            "can_edit": check_report_permission(request, "report_edit"),
-            "can_delete": check_report_permission(request, "report_delete"),
-            "can_print": check_report_permission(request, "report_print"),
-            "can_export": check_report_permission(request, "report_export"),
-            "selected_fy": fy,
-            "datetime": datetime
-        }
+        context=context
     )
 
 # ============================================================

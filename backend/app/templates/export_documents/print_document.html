@@ -18,6 +18,9 @@ body { font-family: Arial, Helvetica, sans-serif; color: #111827; margin: 0; fon
 table { width: 100%; border-collapse: collapse; }
 .info td { border: 1px solid #d1d5db; padding: 7px 8px; vertical-align: top; }
 .info td.label { width: 26%; color: #4b5563; font-weight: 700; background: #f9fafb; text-transform: uppercase; font-size: 9px; letter-spacing: 0.35px; }
+.items th, .items td { border: 1px solid #d1d5db; padding: 6px; text-align: left; }
+.items th { background: #f3f4f6; font-size: 9px; text-transform: uppercase; }
+.items .num { text-align: right; }
 .declaration { border: 1px solid #d1d5db; padding: 10px 12px; min-height: 74px; }
 .declaration p { margin: 0 0 6px; }
 .footer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 22px; }
@@ -70,6 +73,19 @@ table { width: 100%; border-collapse: collapse; }
         {% endfor %}
         </tbody>
     </table>
+
+    {% if doc_type == "commercial_invoice" and line_items %}
+    <div class="section-title">Invoice Product / Packing Details</div>
+    <table class="items">
+        <thead><tr><th>#</th><th>Product</th><th>Grade</th><th>Packing</th><th>Batch</th><th class="num">MC</th><th class="num">Net Wt.</th><th class="num">Gross Wt.</th></tr></thead>
+        <tbody>
+        {% for item in line_items %}
+        <tr><td>{{ loop.index }}</td><td>{{ item.product }}</td><td>{{ item.grade }}</td><td>{{ item.packing_style }}</td><td>{{ item.batch_no or '' }}</td><td class="num">{{ item.master_cartons }}</td><td class="num">{{ '%.2f'|format(item.net_weight) }}</td><td class="num">{{ '%.2f'|format(item.gross_weight) }}</td></tr>
+        {% endfor %}
+        <tr><td colspan="5"><b>Total</b></td><td class="num"><b>{{ line_items|sum(attribute='master_cartons') }}</b></td><td class="num"><b>{{ '%.2f'|format(line_items|sum(attribute='net_weight')) }}</b></td><td class="num"><b>{{ '%.2f'|format(line_items|sum(attribute='gross_weight')) }}</b></td></tr>
+        </tbody>
+    </table>
+    {% endif %}
 
     <div class="section-title">Declaration</div>
     <div class="declaration">

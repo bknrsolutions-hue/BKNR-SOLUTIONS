@@ -42,7 +42,6 @@ export default function GradingReport({ activeRoute }) {
 
   // Load detailed data when switching tabs or refreshing
   const fetchDetailedData = async () => {
-    if (!fy) return;
     setDetailedLoading(true);
     try {
       const res = await fetch(`${activeRoute}/details?source=all`);
@@ -58,7 +57,7 @@ export default function GradingReport({ activeRoute }) {
   };
 
   useEffect(() => {
-    if (activeTab !== 'summary' && fy) {
+    if (activeTab !== 'summary') {
       fetchDetailedData();
     }
   }, [activeTab, fy]);
@@ -161,6 +160,7 @@ export default function GradingReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         fetchDetailedData();
@@ -172,7 +172,7 @@ export default function GradingReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -181,14 +181,15 @@ export default function GradingReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         fetchDetailedData();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -209,9 +210,8 @@ export default function GradingReport({ activeRoute }) {
     { header: 'Export Options' },
     { label: 'Print View', onClick: () => window.print() },
     { label: 'Export Excel', onClick: () => { window.location.href = getExportUrl('excel'); } },
-    { label: 'Export PDF', onClick: () => { window.location.href = getExportUrl('pdf'); } },
     { divider: true },
-    { label: 'Delete Record', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow || activeTab !== 'detailed' }
+    { label: 'Cancel Record', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow || activeTab !== 'detailed' }
   ];
 
   return (
@@ -292,7 +292,7 @@ export default function GradingReport({ activeRoute }) {
       {(loading || detailedLoading) && <Loader />}
       {error && <ErrorBox msg={error} onRetry={handleReload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           {activeTab === 'summary' && (
             <>
@@ -675,17 +675,13 @@ export default function GradingReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load Grading data.
-        </div>
-      )}
+
 
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

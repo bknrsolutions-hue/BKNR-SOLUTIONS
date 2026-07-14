@@ -6,6 +6,19 @@ import './App.css';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 
+let initialSessionRequest;
+
+function loadInitialSession() {
+  if (!initialSessionRequest) {
+    initialSessionRequest = fetch('/auth/session-info', { credentials: 'include' })
+      .then(async response => {
+        if (!response.ok) throw new Error('Unable to read session');
+        return response.json();
+      });
+  }
+  return initialSessionRequest;
+}
+
 const AuthContainer = lazy(() => import('./pages/Auth/AuthContainer'));
 const DashboardsConsole = lazy(() => import('./pages/Dashboards/DashboardsConsole'));
 const BackendConsole = lazy(() => import('./pages/BackendConsole'));
@@ -65,6 +78,11 @@ const Grading = lazy(() => import('./pages/Processing/Grading'));
 const Peeling = lazy(() => import('./pages/Processing/Peeling'));
 const Soaking = lazy(() => import('./pages/Processing/Soaking'));
 const Production = lazy(() => import('./pages/Processing/Production'));
+const StockEntry = lazy(() => import('./pages/Processing/StockEntry'));
+const PendingOrders = lazy(() => import('./pages/Processing/PendingOrders'));
+const ColdStorageHolding = lazy(() => import('./pages/Processing/ColdStorageHolding'));
+const GeneralStoreEntry = lazy(() => import('./pages/Processing/GeneralStoreEntry'));
+const DailyAttendance = lazy(() => import('./pages/Attendance/DailyAttendance'));
 
 const CRITERIA_COMPONENTS = {
   criteria_buyers: Buyers,
@@ -104,6 +122,11 @@ const CRITERIA_COMPONENTS = {
   peeling: Peeling,
   soaking: Soaking,
   production: Production,
+  stock_entry: StockEntry,
+  pending_orders: PendingOrders,
+  cold_storage_holding: ColdStorageHolding,
+  general_store_entry: GeneralStoreEntry,
+  attendance_daily_attendance: DailyAttendance,
 };
 
 const REPORT_COMPONENTS = {
@@ -138,7 +161,7 @@ function PageLoading() {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [theme, setTheme]               = useState('dark');
+  const [theme, setTheme]               = useState(() => localStorage.getItem('theme') || 'dark');
   const [user, setUser]                 = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
@@ -160,15 +183,12 @@ export default function App() {
 
   // Load session on mount
   useEffect(() => {
-    fetch('/auth/session-info', {
-      credentials: 'include'
-    })
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Not authenticated');
-      })
+    loadInitialSession()
       .then(data => {
         if (data.authenticated) {
+          document.documentElement.setAttribute('data-user-email', data.email || '');
+          document.documentElement.setAttribute('data-company-code', data.company_code || '');
+          window.applyBKNRUiColors?.();
           setUser({
             email: data.email,
             company: data.company_name,
@@ -186,7 +206,11 @@ export default function App() {
       .finally(() => { setLoadingSession(false); });
   }, []);
 
-  const toggleTheme = () => setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  const toggleTheme = () => setTheme(prev => {
+    const next = prev === 'dark' ? 'light' : 'dark';
+    localStorage.setItem('theme', next);
+    return next;
+  });
 
   const handleLoginSuccess = async () => {
     try {
@@ -198,6 +222,9 @@ export default function App() {
         const data = await res.json();
   
         if (data.authenticated) {
+          document.documentElement.setAttribute('data-user-email', data.email || '');
+          document.documentElement.setAttribute('data-company-code', data.company_code || '');
+          window.applyBKNRUiColors?.();
           setUser({
             email: data.email,
             company: data.company_name,

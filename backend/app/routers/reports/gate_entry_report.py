@@ -57,8 +57,9 @@ async def gate_entry_report(
     role = request.session.get("role")
     if not company_id:
         return RedirectResponse("/", status_code=302)
+    is_json = request.query_params.get("format") == "json"
     if fy is None:
-        fy = str(get_fin_year(ist_now().date()))
+        fy = "" if is_json else str(get_fin_year(ist_now().date()))
 
     def build_report_context():
         # 🟢 META DROPDOWNS SYNC WITH func.trim()
@@ -76,6 +77,13 @@ async def gate_entry_report(
         def extract_global_unique(field_attr):
             return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
 
+        all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == company_id, GateEntry.date != None).all()
+        fy_set = set()
+        for d_tuple in all_dates:
+            d = d_tuple[0]
+            fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+        financial_years = sorted(list(fy_set), reverse=True)
+
         base_context = {
             "suppliers_list": extract_global_unique("supplier_name"),
             "factories_list": extract_global_unique("receiving_center"),
@@ -84,20 +92,21 @@ async def gate_entry_report(
             "production_for_list": extract_global_unique("production_for"),
             "selected_production_for": production_for,
             "selected_location": location,
+            "financial_years": financial_years,
         }
-
-        if not fy:
-            return {**base_context, "rows": [], "selected_fy": None}
-
-        selected_fy = int(fy)
-        start_date = dt.date(selected_fy, 4, 1)
-        end_date = dt.date(selected_fy + 1, 3, 31)
 
         query = db.query(GateEntry).filter(
             GateEntry.company_id == company_id,
-            GateEntry.date >= start_date,
-            GateEntry.date <= end_date,
         )
+
+        if fy:
+            selected_fy = int(fy)
+            start_date = dt.date(selected_fy, 4, 1)
+            end_date = dt.date(selected_fy + 1, 3, 31)
+            query = query.filter(
+                GateEntry.date >= start_date,
+                GateEntry.date <= end_date,
+            )
 
         if production_for:
             query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
@@ -105,7 +114,14 @@ async def gate_entry_report(
             query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
 
         rows = [row_to_dict(row) for row in query.order_by(GateEntry.date.desc(), GateEntry.time.desc()).all()]
-        return {**base_context, "rows": rows, "selected_fy": str(selected_fy)}
+        
+        for r in rows:
+            if isinstance(r.get("date"), (date, datetime)):
+                r["date"] = r["date"].isoformat()
+            if isinstance(r.get("time"), (dt.time, datetime)):
+                r["time"] = r["time"].strftime("%H:%M")
+
+        return {**base_context, "rows": rows, "selected_fy": fy}
 
     cache_key = f"bknr:processing_reports:{company_id}:gate_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
     context = cache_get_or_set(cache_key, build_report_context, ttl=75)
@@ -120,6 +136,22 @@ async def gate_entry_report(
         "is_admin": role == "admin", 
         "today_date": ist_now()
     })
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
 
     if not fy:
         return templates.TemplateResponse(

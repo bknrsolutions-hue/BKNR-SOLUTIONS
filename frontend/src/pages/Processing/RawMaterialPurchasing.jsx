@@ -163,6 +163,22 @@ export default function RawMaterialPurchasing() {
     });
   };
 
+  const optionList = (items, currentValue = '') => Array.from(new Set(
+    [currentValue, ...items].map(value => String(value || '').trim()).filter(Boolean)
+  ));
+
+  const handleProductionForChange = (value) => {
+    setProductionFor(value);
+    setBatchNumber('');
+    setSupplierName('');
+  };
+
+  const handlePeelingAtChange = (value) => {
+    setPeelingAt(value);
+    setBatchNumber('');
+    setSupplierName('');
+  };
+
   const handleEdit = (row) => {
     setEditId(row.id);
     setProductionFor(row.production_for || '');
@@ -461,108 +477,91 @@ export default function RawMaterialPurchasing() {
               <div className="form-grid">
             <div className="form-group">
               <label>Production For *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Company..."
+              <select
+                className="form-control"
                 value={productionFor} 
-                onChange={e => setProductionFor(e.target.value)} 
-                list="prod-for-options"
+                onChange={e => handleProductionForChange(e.target.value)}
                 required 
-              />
-              <datalist id="prod-for-options">
-                {prodForList.map(p => <option key={p} value={p} />)}
-              </datalist>
+              >
+                <option value="">Select Company</option>
+                {optionList(prodForList, productionFor).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Receiving At (Location) *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Location..."
+              <select
+                className="form-control"
                 value={peelingAt} 
-                onChange={e => setPeelingAt(e.target.value)} 
-                list="peeling-at-options"
+                onChange={e => handlePeelingAtChange(e.target.value)}
                 required 
-              />
-              <datalist id="peeling-at-options">
-                {peelingLocations.map(l => <option key={l} value={l} />)}
-              </datalist>
+              >
+                <option value="">Select Location</option>
+                {optionList(peelingLocations, peelingAt).map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Batch Number *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select Batch..."
+              <select
+                className="form-control"
                 value={batchNumber} 
                 onChange={e => setBatchNumber(e.target.value)} 
-                list="batch-options"
+                disabled={!productionFor || !peelingAt}
                 required 
-              />
-              <datalist id="batch-options">
-                {getFilteredBatches().map(b => <option key={b} value={b} />)}
-              </datalist>
+              >
+                <option value="">{productionFor && peelingAt ? 'Select Batch' : 'Select Company & Location First'}</option>
+                {optionList(getFilteredBatches(), batchNumber).map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Supplier Name</label>
-              <input type="text" className="form-control" value={supplierName} readonly placeholder="Auto from Batch" style={{ background: 'rgba(255,255,255,0.02)' }} />
+              <input type="text" className="form-control" value={supplierName} readOnly placeholder="Auto from Batch" style={{ background: 'rgba(255,255,255,0.02)' }} />
             </div>
 
             <div className="form-group">
               <label>Product *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Product..."
+              <select
+                className="form-control"
                 value={productDescription} 
                 onChange={e => setProductDescription(e.target.value)} 
-                list="product-options"
                 required 
-              />
-              <datalist id="product-options">
-                {hsnList.map(h => <option key={h} value={h} />)}
-              </datalist>
+              >
+                <option value="">Select Product</option>
+                {optionList(hsnList, productDescription).map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>HSN Code</label>
-              <input type="text" className="form-control" value={hsnCode} readonly placeholder="Auto from Product" style={{ background: 'rgba(255,255,255,0.02)' }} />
+              <input type="text" className="form-control" value={hsnCode} readOnly placeholder="Auto from Product" style={{ background: 'rgba(255,255,255,0.02)' }} />
             </div>
 
             <div className="form-group">
               <label>Variety *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Variety..."
+              <select
+                className="form-control"
                 value={varietyName} 
                 onChange={e => setVarietyName(e.target.value)} 
-                list="variety-options"
                 required 
-              />
-              <datalist id="variety-options">
-                {varieties.map(v => <option key={v} value={v} />)}
-              </datalist>
+              >
+                <option value="">Select Variety</option>
+                {optionList(varieties, varietyName).map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Species *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Species..."
+              <select
+                className="form-control"
                 value={species} 
                 onChange={e => setSpecies(e.target.value)} 
-                list="species-options"
                 required 
-              />
-              <datalist id="species-options">
-                {speciesList.map(s => <option key={s} value={s} />)}
-              </datalist>
+              >
+                <option value="">Select Species</option>
+                {optionList(speciesList, species).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
@@ -595,7 +594,7 @@ export default function RawMaterialPurchasing() {
             </div>
             <div className="form-group">
               <label>Total Received Qty</label>
-              <input type="text" className="form-control" value={receivedQty} readonly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
+              <input type="text" className="form-control" value={receivedQty} readOnly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
             </div>
             <div className="form-group">
               <label>Purchase Rate (₹ per Kg) *</label>
@@ -603,7 +602,7 @@ export default function RawMaterialPurchasing() {
             </div>
             <div className="form-group">
               <label>Computed Amount (₹)</label>
-              <input type="text" className="form-control" value={amount} readonly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800', color: 'var(--corp-fin)' }} />
+              <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800', color: 'var(--corp-fin)' }} />
             </div>
           </div>
 

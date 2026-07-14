@@ -277,6 +277,18 @@ async def general_stock_report(
     dropdown_items = sorted(list({r.item_name for r in records if r.item_name}))
     dropdown_unit = sorted(list({r.unit_name for r in records if r.unit_name}))
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_records = [{col.name: getattr(r, col.name) for col in r.__table__.columns} for r in records]
+        return JSONResponse(jsonable_encoder({
+            "records": serialized_records,
+            "dropdown_grn": dropdown_grn,
+            "dropdown_items": dropdown_items,
+            "dropdown_unit": dropdown_unit,
+            "selected_fy": fy
+        }))
+
     return request.app.state.templates.TemplateResponse(
         request=request,
         name="general_stock/general_stock_report.html",

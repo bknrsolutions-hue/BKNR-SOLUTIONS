@@ -135,7 +135,10 @@ def _unused_incomplete_production_page(
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     # ========== 1. LOAD MASTER DATA ==========
-    all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+    all_stock = db.query(stock_entry).filter(
+        stock_entry.company_id == company_code,
+        stock_entry.is_cancelled.is_not(True),
+    ).all()
     calc_masters = get_production_calc_masters(db, company_code)
     yield_records = calc_masters["yields"]
     p_styles = calc_masters["packing"]
@@ -465,7 +468,10 @@ def production_page(
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     # ========== 1. LOAD MASTER DATA ==========
-    all_stock = db.query(stock_entry).filter(stock_entry.company_id == company_code).all()
+    all_stock = db.query(stock_entry).filter(
+        stock_entry.company_id == company_code,
+        stock_entry.is_cancelled.is_not(True),
+    ).all()
     calc_masters = get_production_calc_masters(db, company_code)
     yield_records = calc_masters["yields"]
     p_styles = calc_masters["packing"]

@@ -159,7 +159,7 @@ export default function ReprocessReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Total Records" value={filteredRows.length} accent="var(--corp-dash)" />
@@ -209,11 +209,7 @@ export default function ReprocessReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load Re-Process data.
-        </div>
-      )}
+
     </div>
   );
 }

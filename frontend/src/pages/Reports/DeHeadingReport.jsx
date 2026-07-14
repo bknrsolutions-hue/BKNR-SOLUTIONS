@@ -133,6 +133,7 @@ export default function DeHeadingReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -144,7 +145,7 @@ export default function DeHeadingReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -153,14 +154,15 @@ export default function DeHeadingReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -178,7 +180,7 @@ export default function DeHeadingReport({ activeRoute }) {
     { label: 'Print Bill', onClick: () => executeAction('print_bill'), disabled: !contractor || !month },
     { label: 'Download Bill PDF', onClick: () => executeAction('pdf_bill'), disabled: !contractor || !month },
     { divider: true },
-    { label: 'Delete Record', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Record', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   return (
@@ -249,7 +251,7 @@ export default function DeHeadingReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Records" value={filteredRows.length} accent="var(--corp-dash)" />
@@ -265,27 +267,26 @@ export default function DeHeadingReport({ activeRoute }) {
                 <tr>
                   <th style={{ width: 40 }}>#</th>
                   <th style={{ width: 80 }}>Date</th>
-                  <th style={{ width: 60 }}>Time</th>
                   <th style={{ width: 95 }}>Batch No</th>
                   <th style={{ width: 140 }}>Contractor</th>
                   <th style={{ width: 100 }}>Species</th>
-                  <th style={{ width: 90 }}>HOSO Count</th>
-                  <th style={{ width: 100 }}>HOSO Qty (Kg)</th>
-                  <th style={{ width: 100 }}>HLSO Qty (Kg)</th>
-                  <th style={{ width: 80 }}>Yield %</th>
-                  <th style={{ width: 100 }}>Target Yield %</th>
+                  <th style={{ width: 90 }}>H-Cnt</th>
+                  <th style={{ width: 100 }}>HOSO Kg</th>
+                  <th style={{ width: 100 }}>HLSO Kg</th>
+                  <th style={{ width: 100 }}>Target %</th>
+                  <th style={{ width: 80 }}>Actual %</th>
                   <th style={{ width: 80 }}>Diff %</th>
                   <th style={{ width: 90 }}>Diff Kg</th>
-                  <th style={{ width: 80 }}>Rate/Kg (₹)</th>
-                  <th style={{ width: 120 }}>Amount (₹)</th>
+                  <th style={{ width: 80 }}>Rate</th>
+                  <th style={{ width: 120 }}>Amount</th>
                   <th style={{ width: 110 }}>Peeling At</th>
-                  <th style={{ width: 110 }}>Production For</th>
+                  <th style={{ width: 110 }}>Prod For</th>
                   <th style={{ width: 100 }}>User</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRows.length === 0 ? (
-                  <EmptyRow cols={18} />
+                  <EmptyRow cols={17} />
                 ) : (
                   filteredRows.map((row, index) => {
                     const isSelected = selectedRow?.id === row.id;
@@ -318,7 +319,6 @@ export default function DeHeadingReport({ activeRoute }) {
                       >
                         <td className="text-center">{slNo}</td>
                         <td className="text-center">{row.date}</td>
-                        <td className="text-center">{row.time}</td>
                         <td className="text-center" style={{ fontWeight: 700 }}>
                           {isEditing && isSelected ? (
                             <input
@@ -387,9 +387,6 @@ export default function DeHeadingReport({ activeRoute }) {
                             fmt.number(row.hlso_qty)
                           )}
                         </td>
-                        <td className="text-center" style={{ fontWeight: 700, color: 'var(--corp-rep)' }}>
-                          {fmt.pct(yld)}
-                        </td>
                         <td className="text-center">
                           {isEditing && isSelected ? (
                             <input
@@ -401,6 +398,9 @@ export default function DeHeadingReport({ activeRoute }) {
                           ) : (
                             fmt.pct(row.target_yield_percent)
                           )}
+                        </td>
+                        <td className="text-center" style={{ fontWeight: 700, color: 'var(--corp-rep)' }}>
+                          {fmt.pct(yld)}
                         </td>
                         <td className="text-center" style={{ fontWeight: 700, color: diffPct >= 0 ? '#10b981' : '#ef4444' }}>
                           {fmt.pct(diffPct)}
@@ -476,17 +476,13 @@ export default function DeHeadingReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load De-Heading data.
-        </div>
-      )}
+
 
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

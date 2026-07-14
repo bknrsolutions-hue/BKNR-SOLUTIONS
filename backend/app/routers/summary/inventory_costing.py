@@ -410,6 +410,50 @@ def inventory_costing_page(
     if not prod_types_list:
         prod_types_list = ["RAW", "MELTING", "PRODUCTION", "REGLAZE", "REFREEZING", "REPACKING", "REWEIGHMENT"]
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_rows = []
+        for r in all_rows:
+            d = {col.name: getattr(r, col.name) for col in r.__table__.columns}
+            d["production_cost_per_kg"] = getattr(r, "production_cost_per_kg", 0.0)
+            d["ice_rate_per_kg"] = getattr(r, "ice_rate_per_kg", 0.0)
+            d["deheading_rate_per_kg"] = getattr(r, "deheading_rate_per_kg", 0.0)
+            d["grading_rate_per_kg"] = getattr(r, "grading_rate_per_kg", 0.0)
+            d["peeling_rate_per_kg"] = getattr(r, "peeling_rate_per_kg", 0.0)
+            d["base_rm_rate"] = getattr(r, "base_rm_rate", 0.0)
+            d["product_kg_value"] = getattr(r, "product_kg_value", 0.0)
+            d["inventory_value"] = getattr(r, "inventory_value", 0.0)
+            serialized_rows.append(d)
+            
+        json_context = {
+            "rows": serialized_rows,
+            "from_date": from_date,
+            "to_date": to_date,
+            "financial_years": financial_years,
+            "selected_fy": selected_fy,
+            "selected_production_for": production_for_filter,
+            "selected_location": location,
+            "company_name": request.session.get("company_name", "BKNR"),
+            "is_admin": request.session.get("role") == "admin",
+            "brands_list": get_list(brands, "brand_name"),
+            "species_list": get_list(species_model, "species_name"),
+            "varieties_list": [v.variety_name for v in v_records.values()],
+            "grades_list": get_list(grades, "grade_name"),
+            "glazes_list": get_list(glazes, "glaze_name"),
+            "freezers_list": get_list(freezers, "freezer_name"),
+            "packing_styles_list": get_list(packing_styles, "packing_style"),
+            "production_for_list": sorted({x.production_for for x in db.query(ProductionForTable).filter(ProductionForTable.company_id == comp_code).all() if x.production_for}),
+            "production_at_list": get_list(production_at, "production_at"),
+            "type_of_production_list": prod_types_list,
+            "summary": {
+                "total_items": len(all_rows), "qty_in": total_qty_in, "qty_out": total_qty_out,
+                "net_qty": available_qty, "val_in": total_val_in, "val_out": total_val_out_abs,
+                "net_val": balance_value, "avg_rate": round(avg_rate, 2)
+            }
+        }
+        return JSONResponse(jsonable_encoder(json_context))
+
     return templates.TemplateResponse(
         request=request, 
         name="inventory_management/inventory_costing.html", 

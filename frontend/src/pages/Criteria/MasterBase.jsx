@@ -283,7 +283,7 @@ export default function MasterBase({
         <div className="master-header-titles">
           <h2><i className="fa-solid fa-layer-group"></i> {title}</h2>
         </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>BKNR ERP</div>
+        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>SVBK IT Solutions</div>
       </div>
 
       {/* Dynamic Form Area */}

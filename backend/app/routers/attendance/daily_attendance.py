@@ -192,7 +192,11 @@ def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -
 # 📅 1. PAGE LOAD (GET)
 # ============================================================
 @router.get("/daily", response_class=HTMLResponse)
-def daily_attendance_page(request: Request, db: Session = Depends(get_db)):
+def daily_attendance_page(
+    request: Request,
+    format: str = Query(default="html"),
+    db: Session = Depends(get_db),
+):
     email = request.session.get("email")
     company_code = request.session.get("company_code")
 
@@ -211,6 +215,27 @@ def daily_attendance_page(request: Request, db: Session = Depends(get_db)):
             Shift.is_active == True,
             func.upper(func.trim(Shift.production_at)) == actual_location
         ).all()
+
+    if format.lower() == "json":
+        return JSONResponse({
+            "status": "success",
+            "email": email,
+            "company_id": company_code,
+            "actual_location": actual_location or "",
+            "location_required": not bool(actual_location),
+            "shifts": [
+                {
+                    "id": shift.id,
+                    "shift_name": shift.shift_name,
+                    "production_at": shift.production_at,
+                    "start_time": shift.start_time.strftime("%H:%M") if shift.start_time else "",
+                    "end_time": shift.end_time.strftime("%H:%M") if shift.end_time else "",
+                    "break_minutes": shift.break_minutes or 0,
+                    "is_night_shift": bool(shift.is_night_shift),
+                }
+                for shift in plant_shifts
+            ],
+        })
 
     return templates.TemplateResponse(
         request=request,

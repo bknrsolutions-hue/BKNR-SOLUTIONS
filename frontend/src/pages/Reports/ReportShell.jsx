@@ -33,6 +33,7 @@ export function useReport({ url, params = {}, deps = [] }) {
     setLoading(true);
     setError(null);
     try {
+      if (!url) throw new Error('Report route is not configured. Please reopen this report from the menu.');
       const q = new URLSearchParams({ format: 'json', ...params });
       // inject global filters
       const pf = localStorage.getItem('production_for_filter') || '';
@@ -40,14 +41,40 @@ export function useReport({ url, params = {}, deps = [] }) {
       if (pf)  q.set('production_for', pf);
       if (loc) q.set('location', loc);
 
-      const res = await fetch(`${url}?${q}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const res = await fetch(`${url}?${q}`, {
+        credentials: 'include',
+        redirect: 'follow',
+        headers: { Accept: 'application/json' },
+      });
+
+      // Detect redirect to login page (session expired)
+      if (res.redirected || res.url.includes('/auth/login') || res.url.includes('/login')) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
+      // Ensure response is JSON, not an HTML login/error page
+      const contentType = res.headers.get('content-type') || '';
+      if (!res.ok) {
+        if (res.status === 500) throw new Error('Server error (500). The report backend may have crashed. Check server logs.');
+        if (res.status === 403) throw new Error('Access denied (403). You do not have permission to view this report.');
+        if (!contentType.includes('application/json')) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+        // Try to read JSON error message
+        try { const errJson = await res.json(); throw new Error(errJson?.detail || errJson?.message || `HTTP ${res.status}`); } catch(_) {}
+        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      }
+      if (!contentType.includes('application/json')) {
+        throw new Error('Report server returned HTML instead of JSON. Try refreshing or re-logging in.');
+      }
+
       const json = await res.json();
-      if (json.status === 'success' || json.rows || json.rows_batch ||
-          json.summary_rows !== undefined) {
+      // Accept any valid JSON object — each report component knows its own shape.
+      if (json !== null && typeof json === 'object' && !Array.isArray(json)) {
         setData(json);
+      } else if (Array.isArray(json)) {
+        // Some endpoints return a plain array — wrap it.
+        setData({ rows: json });
       } else {
-        throw new Error('Unexpected response shape');
+        throw new Error('Server returned an unexpected response');
       }
     } catch (e) {
       setError(e.message);
@@ -91,7 +118,7 @@ export function ReportHeader({ title, subtitle, loading, onReload, onPrint, expo
 
 /* ── FilterBar ───────────────────────────────────────────── */
 export function FilterBar({ children }) {
-  return <div style={styles.filterBar}>{children}</div>;
+  return <div className="erp-horizontal-filter-row" style={styles.filterBar}>{children}</div>;
 }
 
 export function FilterBox({ label, children }) {
@@ -122,12 +149,12 @@ export function FilterInput({ type = 'text', value, onChange, placeholder, style
 
 /* ── KPI Cards ───────────────────────────────────────────── */
 export function KPIGrid({ children }) {
-  return <div style={styles.kpiGrid}>{children}</div>;
+  return <div className="erp-report-kpi-row" style={styles.kpiGrid}>{children}</div>;
 }
 
 export function KPICard({ label, value, accent = 'var(--corp-rep)' }) {
   return (
-    <div style={{ ...styles.kpiCard, borderLeft: `4px solid ${accent}` }}>
+    <div className="erp-report-kpi-card" style={{ ...styles.kpiCard, borderLeft: `3px solid ${accent}` }}>
       <span style={styles.kpiLabel}>{label}</span>
       <span style={styles.kpiValue}>{value}</span>
     </div>
@@ -246,7 +273,7 @@ function Btn({ icon, label, onClick }) {
   return (
     <button className="btn btn-secondary"
       onClick={onClick}
-      style={{ height: 36, display: 'flex', alignItems: 'center', gap: 6 }}>
+      style={{ height: 28, padding: '0 8px', fontSize: 9, display: 'flex', alignItems: 'center', gap: 4 }}>
       {icon} {label}
     </button>
   );
@@ -256,44 +283,45 @@ function Btn({ icon, label, onClick }) {
 const styles = {
   header: {
     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-    flexWrap: 'wrap', gap: 14, paddingBottom: 16,
-    borderBottom: '1px solid var(--border-light)', marginBottom: 20,
+    flexWrap: 'nowrap', gap: 8, paddingBottom: 6,
+    borderBottom: '1px solid var(--border-light)', marginBottom: 6,
   },
   iconBox: {
-    width: 38, height: 38, borderRadius: 10,
+    width: 30, height: 30, borderRadius: 7,
     background: 'var(--corp-rep)', display: 'flex',
     alignItems: 'center', justifyContent: 'center',
   },
-  title: { fontSize: 17, fontWeight: 800, color: 'var(--text-primary)', margin: 0 },
-  subtitle: { fontSize: 11, color: 'var(--text-secondary)', margin: 0 },
-  actions: { display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  title: { fontSize: 14, fontWeight: 800, color: 'var(--text-primary)', margin: 0 },
+  subtitle: { fontSize: 9, color: 'var(--text-secondary)', margin: 0 },
+  actions: { display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' },
   filterBar: {
-    display: 'flex', flexWrap: 'wrap', gap: 14,
-    background: 'var(--glass-bg)', padding: '12px 16px',
-    borderRadius: 'var(--radius-panel)', border: '1px solid var(--border-light)',
-    marginBottom: 16, alignItems: 'flex-end',
+    display: 'flex', flexWrap: 'nowrap', gap: 6,
+    background: 'var(--glass-bg)', padding: '4px 7px',
+    borderRadius: 'var(--radius-element)', border: '1px solid var(--border-light)',
+    marginBottom: 6, alignItems: 'flex-end', overflowX: 'auto', overflowY: 'hidden',
+    WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin',
   },
-  filterBox: { display: 'flex', flexDirection: 'column', gap: 4, minWidth: 150 },
+  filterBox: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 108, flex: '0 0 108px' },
   filterLabel: {
-    fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)',
-    textTransform: 'uppercase', letterSpacing: '0.5px',
+    fontSize: 8, fontWeight: 800, color: 'var(--text-secondary)',
+    textTransform: 'uppercase', letterSpacing: '0.35px',
   },
   select: {
-    height: 36, padding: '0 12px', fontSize: 13, fontWeight: 600,
-    borderRadius: 'var(--radius-element)', border: '1px solid var(--input-border)',
+    height: 27, padding: '0 7px', fontSize: 10, fontWeight: 700,
+    borderRadius: 5, border: '1px solid var(--input-border)',
     background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none', width: '100%',
   },
   kpiGrid: {
-    display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(200px,1fr))',
-    gap: 14, marginBottom: 16,
+    display: 'flex', flexWrap: 'nowrap', overflowX: 'auto', overflowY: 'hidden',
+    gap: 6, marginBottom: 6, scrollbarWidth: 'thin',
   },
   kpiCard: {
     background: 'var(--surface-panel)', border: '1px solid var(--border-light)',
-    padding: '14px 16px', borderRadius: 'var(--radius-element)',
-    display: 'flex', flexDirection: 'column', gap: 4, boxShadow: 'var(--shadow-soft)',
+    padding: '5px 8px', borderRadius: 6, minWidth: 140, minHeight: 38, flex: '1 0 140px',
+    display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7, boxShadow: 'var(--shadow-soft)',
   },
-  kpiLabel: { fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' },
-  kpiValue: { fontSize: 16, fontWeight: 800, color: 'var(--text-primary)' },
+  kpiLabel: { fontSize: 8, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.35px', whiteSpace: 'nowrap' },
+  kpiValue: { fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', whiteSpace: 'nowrap' },
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 60 },
   errBox: {
     background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)',
@@ -301,12 +329,12 @@ const styles = {
     display: 'flex', alignItems: 'center', marginBottom: 12,
   },
   searchWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
-  searchIcon: { position: 'absolute', left: 10, color: 'var(--text-tertiary)' },
+  searchIcon: { position: 'absolute', left: 7, color: 'var(--text-tertiary)' },
   searchInput: {
-    padding: '8px 10px 8px 32px', fontSize: 13,
-    border: '1px solid var(--input-border)', borderRadius: 'var(--radius-element)',
+    padding: '0 7px 0 25px', fontSize: 10,
+    border: '1px solid var(--input-border)', borderRadius: 5,
     background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none',
-    width: 210, height: 36,
+    width: 150, height: 27,
   },
   subtotalRow: { background: 'rgba(139,92,246,0.06)' },
   modalOverlay: {

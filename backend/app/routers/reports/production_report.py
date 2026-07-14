@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract, func
 from datetime import datetime, date
+import datetime as dt
 from app.utils.timezone import ist_now
 
 from io import BytesIO
@@ -62,23 +63,25 @@ def production_report_page(
 
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+    is_json = request.query_params.get("format") == "json"
     if fy is None:
         today = ist_now().date()
-        fy = str(today.year if today.month >= 4 else today.year - 1)
+        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
 
     comp_code = str(comp_code)
-    cache_key = (
-        f"bknr:processing_reports:{comp_code}:production_report:"
-        f"{fy or 'NONE'}:{from_date or 'NONE'}:{to_date or 'NONE'}:"
-        f"{selected_production_for or 'ALL'}:{selected_location or 'ALL'}"
-    )
-    cached_context = cache_get(cache_key)
-    if cached_context is not None:
-        return templates.TemplateResponse(
-            request=request,
-            name="reports/production_report.html",
-            context=cached_context,
+    if not is_json:
+        cache_key = (
+            f"bknr:processing_reports:{comp_code}:production_report:"
+            f"{fy or 'NONE'}:{from_date or 'NONE'}:{to_date or 'NONE'}:"
+            f"{selected_production_for or 'ALL'}:{selected_location or 'ALL'}"
         )
+        cached_context = cache_get(cache_key)
+        if cached_context is not None:
+            return templates.TemplateResponse(
+                request=request,
+                name="reports/production_report.html",
+                context=cached_context,
+            )
     
     # Base Query
     q = db.query(Production).filter(
@@ -92,7 +95,7 @@ def production_report_page(
     if selected_location:
         q = q.filter(Production.production_at == selected_location)
 
-    if fy == "":
+    if fy == "" and not is_json:
         q = q.filter(Production.id == -1)
     elif fy:
         start_year = int(fy)
@@ -205,6 +208,66 @@ def production_report_page(
             "can_print": check_report_permission(request, "report_print"),
             "can_export": check_report_permission(request, "report_export"),
         }
+    if is_json:
+        # Generate financial years from database for dropdown
+        all_dates = db.query(Production.date).filter(Production.company_id == comp_code, Production.date != None).all()
+        fy_set = set()
+        for d_tuple in all_dates:
+            d = d_tuple[0]
+            fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+        financial_years = sorted(list(fy_set), reverse=True)
+
+        context_json = {**context}
+        context_json["financial_years"] = financial_years
+        
+        # Serialize list of rows to dictionary
+        context_json["summary_rows"] = []
+        for r in summary_rows:
+            d = row_to_dict(r)
+            if isinstance(d.get("date"), (date, datetime)):
+                d["date"] = d["date"].isoformat()
+            if isinstance(d.get("time"), (dt.time, datetime)):
+                d["time"] = d["time"].strftime("%H:%M")
+            context_json["summary_rows"].append(d)
+
+        context_json["detail_rows"] = []
+        for r in detail_rows:
+            d = row_to_dict(r)
+            if isinstance(d.get("date"), (date, datetime)):
+                d["date"] = d["date"].isoformat()
+            if isinstance(d.get("time"), (dt.time, datetime)):
+                d["time"] = d["time"].strftime("%H:%M")
+            context_json["detail_rows"].append(d)
+
+        # Convert dictionary keys of summary_subtotals to strings
+        subtotals_json = {}
+        for key, val in summary_subtotals.items():
+            str_key = "__".join(str(k or "") for k in key)
+            subtotals_json[str_key] = val
+        context_json["summary_subtotals"] = subtotals_json
+
+        # Convert detail_subtotals keys
+        detail_subtotals_json = {}
+        for key, val in detail_subtotals.items():
+            str_key = str(key.isoformat() if isinstance(key, (date, datetime)) else key)
+            detail_subtotals_json[str_key] = val
+        context_json["detail_subtotals"] = detail_subtotals_json
+
+        from fastapi.responses import JSONResponse
+        context_json.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context_json))
+
     cache_context = dict(context)
     cache_context["summary_rows"] = [row_to_dict(r) for r in summary_rows]
     cache_context["detail_rows"] = [row_to_dict(r) for r in detail_rows]
