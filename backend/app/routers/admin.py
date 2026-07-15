@@ -10,7 +10,7 @@ import json
 from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password
-from app.routers.auth import get_ist_time, professional_email_html, send_email
+from app.routers.auth import get_ist_time, professional_email_html, send_email, send_security_email
 
 # ==========================================================
 # CONFIG & INITIALIZATION PARAMETERS
@@ -357,12 +357,7 @@ def save_user(
         """,
         note="Please change your password after your first successful login."
     )
-    try:
-        send_email(email, subject, body_html)
-    except Exception as e:
-        print(f"EMAIL ERROR: {e}")
-        
-    print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {email}: {otp}\n")
+    send_security_email(email, subject, body_html, otp, "new user verification OTP")
 
     response = RedirectResponse("/admin/add_user?msg=User Saved. Verification email sent.", status_code=302)
     return apply_no_cache_headers(response)

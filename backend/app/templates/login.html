@@ -3167,6 +3167,14 @@
         const HAS_LOGIN_PANEL = Boolean(document.getElementById("login"));
         let regEmail = sessionStorage.getItem("bknr_reg_email") || "";
 
+        function completeLogin(nextPage) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type: "BKNR_AUTH_SUCCESS" }, window.location.origin);
+                return;
+            }
+            window.location.replace(nextPage || "/home");
+        }
+
         // Frame-busting stays disabled because the React shell intentionally
         // hosts this login page inside its full-screen backend iframe.
 
@@ -3415,7 +3423,7 @@
                         loginCompanyId = document.getElementById("login_company_id").value.trim();
                         showBox("loginOtpBox");
                     } else {
-                        window.location.replace(data.next_page || "/home");
+                        completeLogin(data.next_page);
                     }
                 } else {
                     if (res.status === 403 && data.status === "unverified") {
@@ -3474,7 +3482,7 @@
                 btn.disabled = false;
 
                 if (res.ok) {
-                    window.location.replace(data.next_page || "/home");
+                    completeLogin(data.next_page);
                 } else {
                     loginOtpErr.innerHTML = getErrorMessage(data, "Invalid OTP");
                     loginOtpErr.style.display = "block";

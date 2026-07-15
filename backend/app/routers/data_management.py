@@ -235,14 +235,16 @@ async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depe
 
     SMTP_SERVER = "smtp.gmail.com"
     SMTP_PORT = 587
-    SENDER_PASSWORD = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
+    sender_password = os.getenv("SMTP_PASSWORD")
+    if not sender_password:
+        return {"success": False, "error": "Security email delivery is not configured."}
     sent_count = 0
 
     try:
         html_body, text_body = build_security_otp_email(otp, payload.action, payload.module, comp_code)
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(SENDER_EMAIL, SENDER_PASSWORD)
+        server.login(SENDER_EMAIL, sender_password)
         for email_id in authorized_emails:
             try:
                 msg = MIMEMultipart()
@@ -255,12 +257,9 @@ async def generate_otp(payload: OTPRequest, request: Request, db: Session = Depe
                 sent_count += 1
             except: pass
         server.quit()
-    except Exception as e:
-        # Fallback to local terminal logging so developers don't get blocked
-        print(f"\n🔑 [OFFLINE/DEBUG] ADMIN OTP FOR {payload.action.upper()} ({payload.module.upper()}): {otp}\n")
-        return {"success": True, "message": "SMTP failed. OTP printed to server terminal console."}
+    except Exception:
+        return {"success": False, "error": "Security email delivery failed. Please try again."}
 
-    print(f"\n🔑 [OFFLINE/DEBUG] ADMIN OTP FOR {payload.action.upper()} ({payload.module.upper()}): {otp}\n")
     return {"success": True, "message": f"OTP sent to {sent_count} admins."}
 
 @router.post("/data-management/verify-otp")

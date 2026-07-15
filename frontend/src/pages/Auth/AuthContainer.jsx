@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 
 export default function AuthContainer({ handleLoginSuccess }) {
   const completedRef = useRef(false);
+  const iframeRef = useRef(null);
 
   const simplifyLoginPage = useCallback((event) => {
     const iframe = event.currentTarget;
@@ -31,27 +32,30 @@ export default function AuthContainer({ handleLoginSuccess }) {
   }, []);
 
   useEffect(() => {
-    const checkSession = async () => {
-      if (completedRef.current || document.hidden) return;
+    const onAuthMessage = async (event) => {
+      if (
+        event.origin !== window.location.origin
+        || event.source !== iframeRef.current?.contentWindow
+        || event.data?.type !== 'BKNR_AUTH_SUCCESS'
+        || completedRef.current
+      ) return;
+
+      completedRef.current = true;
       try {
-        const response = await fetch('/auth/session-info', { credentials: 'include' });
-        if (!response.ok) return;
-        const data = await response.json();
-        if (data.authenticated) {
-          completedRef.current = true;
-          await handleLoginSuccess();
-        }
+        await handleLoginSuccess();
       } catch {
-        // Keep the embedded website usable while the backend reconnects.
+        // Allow another login-complete event if the session refresh failed.
+        completedRef.current = false;
       }
     };
 
-    const timer = window.setInterval(checkSession, 1200);
-    return () => window.clearInterval(timer);
+    window.addEventListener('message', onAuthMessage);
+    return () => window.removeEventListener('message', onAuthMessage);
   }, [handleLoginSuccess]);
 
   return (
     <iframe
+      ref={iframeRef}
       title="SVBK ERP Website and Login"
       src="/auth/login"
       onLoad={simplifyLoginPage}

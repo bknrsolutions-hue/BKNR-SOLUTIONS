@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from pydantic import BaseModel, Field
 from datetime import datetime, timedelta
-import random, json, os, requests, secrets
+import logging, random, json, os, requests, secrets
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,6 +17,7 @@ from app.services.setup_service import SetupService
 from app.database.models.criteria import production_at as ProductionAtModel, production_for as ProductionForModel
 from app.services.default_masters import seed_default_masters
 from app.utils.timezone import ist_now
+from app.utils.security_secrets import log_development_secret
 
 # =====================================================
 router = APIRouter(prefix="/auth", tags=["AUTH"])
@@ -31,6 +32,7 @@ SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "SVB
 if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
     SENDER_NAME = "SVBK"
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
+logger = logging.getLogger("BKNR_ERP.auth")
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
@@ -61,12 +63,12 @@ def send_email(to_email: str, subject: str, html: str):
             }
             res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
             if res.status_code in [200, 201, 202]:
-                print(f"✅ Email successfully sent to {to_email} via Brevo API")
+                logger.info("Email successfully sent via Brevo API")
                 return
             else:
-                print(f"⚠️ Brevo API rejected email: {res.status_code} - {res.text}")
+                logger.warning("Brevo API rejected email with status %s", res.status_code)
         except Exception as e:
-            print(f"❌ Brevo API request failed: {e}")
+            logger.warning("Brevo API request failed: %s", e)
 
     # Fallback to standard SMTP if Brevo is not configured or fails
     import smtplib
@@ -76,13 +78,16 @@ def send_email(to_email: str, subject: str, html: str):
     SMTP_SERVER = "smtp.gmail.com"
     SMTP_PORT = 587
     sender_email = SENDER_EMAIL
-    SENDER_PASSWORD = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
+    sender_password = os.getenv("SMTP_PASSWORD")
     sender_name = SENDER_NAME
+
+    if not sender_password:
+        raise RuntimeError("Email delivery is not configured")
 
     try:
         server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
         server.starttls()
-        server.login(sender_email, SENDER_PASSWORD)
+        server.login(sender_email, sender_password)
         
         msg = MIMEMultipart()
         msg['From'] = f"{sender_name} <{sender_email}>"
@@ -92,10 +97,23 @@ def send_email(to_email: str, subject: str, html: str):
         
         server.send_message(msg)
         server.quit()
-        print(f"✅ Email successfully sent to {to_email} via Gmail SMTP fallback")
+        logger.info("Email successfully sent via Gmail SMTP fallback")
     except Exception as e:
-        print(f"SMTP EMAIL ERROR: {e}")
-        raise HTTPException(500, f"Email sending failed: {e}")
+        logger.error("SMTP email delivery failed: %s", e)
+        raise RuntimeError("Email delivery failed") from e
+
+
+def send_security_email(to_email: str, subject: str, html: str, debug_secret: str, debug_label: str):
+    try:
+        send_email(to_email, subject, html)
+    except Exception as exc:
+        if log_development_secret(debug_label, debug_secret):
+            return
+        logger.error("Security email delivery failed", exc_info=True)
+        raise HTTPException(
+            status_code=503,
+            detail="Verification email could not be sent. Please try again later.",
+        ) from exc
 
 def professional_email_html(title: str, intro: str, content_html: str, note: str = "", header_title: str = "SVBK") -> str:
     note_html = f"<p style='margin:14px 0 0;color:#64748b;font-size:13px;line-height:1.6;'>{note}</p>" if note else ""
@@ -243,13 +261,13 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     db.add(OTPTable(email=data.email, otp=otp, extra=json.dumps(extra_data), is_used=False, created_at=get_ist_time()))
     db.commit()
 
-    try:
-        send_email(data.email, "SVBK - Verification Code", otp_email_html(otp, "Verify your SVBK email"))
-    except Exception as e:
-        print(f"EMAIL ERROR: {e}")
-    
-    # 🔑 Fallback print to terminal so offline/unauthorized IP setups can proceed
-    print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {data.email}: {otp}\n")
+    send_security_email(
+        data.email,
+        "SVBK - Verification Code",
+        otp_email_html(otp, "Verify your SVBK email"),
+        otp,
+        "registration OTP",
+    )
     return {"message": "OTP sent"}
 
 @router.post("/verify-otp")
@@ -363,12 +381,13 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         ))
         db.commit()
         
-        try:
-            send_email(user.email, "SVBK - Email Verification Code", otp_email_html(otp, "Verify your SVBK login"))
-        except Exception as e:
-            print(f"EMAIL ERROR: {e}")
-            
-        print(f"\n🔑 [OFFLINE/DEBUG] GENERATED OTP FOR {user.email}: {otp}\n")
+        send_security_email(
+            user.email,
+            "SVBK - Email Verification Code",
+            otp_email_html(otp, "Verify your SVBK login"),
+            otp,
+            "email verification OTP",
+        )
         
         return JSONResponse(
             status_code=403,
@@ -387,12 +406,13 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    try:
-        send_email(user.email, f"{company.company_name} - Login Verification Code", otp_email_html(otp, "Verify your login", header_title=company.company_name))
-    except Exception as e:
-        print(f"EMAIL ERROR: {e}")
-
-    print(f"\n🔑 [OFFLINE/DEBUG] GENERATED LOGIN OTP FOR {user.email}: {otp}\n")
+    send_security_email(
+        user.email,
+        f"{company.company_name} - Login Verification Code",
+        otp_email_html(otp, "Verify your login", header_title=company.company_name),
+        otp,
+        "login OTP",
+    )
 
     return JSONResponse({
         "status": "otp_required",
@@ -488,17 +508,13 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     base_url = os.getenv("APP_URL", "https://svbk.in")
     reset_link = f"{base_url}/auth/reset-password?token={token}"
 
-    try:
-        send_email(
-            data.email,
-            "SVBK - Reset Password",
-            reset_password_email_html(reset_link)
-        )
-    except Exception as e:
-        print(f"EMAIL ERROR: {e}")
-    
-    # 🔑 Fallback print to terminal so offline/unauthorized IP setups can proceed
-    print(f"\n🔑 [OFFLINE/DEBUG] RESET PASSWORD LINK FOR {data.email}: {reset_link}\n")
+    send_security_email(
+        data.email,
+        "SVBK - Reset Password",
+        reset_password_email_html(reset_link),
+        reset_link,
+        "password reset link",
+    )
     return {"message": "Reset link sent"}
 
 @router.get("/reset-password", response_class=HTMLResponse)

@@ -25,6 +25,14 @@ services:
         value: https://bknrerp.in
       - key: SESSION_SECRET_KEY
         generateValue: true
+      - key: BREVO_API_KEY
+        sync: false                  # Render Dashboard → Brevo transactional API key
+      - key: BREVO_SENDER_EMAIL
+        sync: false                  # must be a sender verified in Brevo
+      - key: BREVO_SENDER_NAME
+        value: SVBK
+      - key: APP_URL
+        value: https://bknrerp.in
 
   # ============================================================
   # STAGING SERVICE — staging branch
@@ -52,6 +60,14 @@ services:
         value: https://staging-bknrerp.onrender.com
       - key: SESSION_SECRET_KEY
         generateValue: true
+      - key: BREVO_API_KEY
+        sync: false
+      - key: BREVO_SENDER_EMAIL
+        sync: false
+      - key: BREVO_SENDER_NAME
+        value: SVBK Staging
+      - key: APP_URL
+        value: https://staging-bknrerp.onrender.com
 
 # ============================================================
 # NEXT STEPS (Manual in Render Dashboard):

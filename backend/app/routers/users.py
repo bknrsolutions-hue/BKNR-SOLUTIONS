@@ -30,7 +30,9 @@ def _send_user_otp_email(to_email: str, otp: str, user_name: str, company_name: 
     SMTP_SERVER = "smtp.gmail.com"
     SMTP_PORT = 587
     sender_email = os.getenv("SMTP_EMAIL", "bknr.solutions@gmail.com")
-    sender_password = os.getenv("SMTP_PASSWORD", "aaim dsqz jpbg sosx")
+    sender_password = os.getenv("SMTP_PASSWORD")
+    if not sender_password:
+        raise RuntimeError("Email delivery is not configured")
     sender_name = os.getenv("EMAIL_SENDER_NAME", "SVBK")
     if not sender_name or "bknr" in sender_name.lower():
         sender_name = "SVBK"
