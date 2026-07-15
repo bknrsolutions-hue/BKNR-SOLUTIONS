@@ -537,8 +537,8 @@ body {
 .sidebar-brand { height: 86px; display: flex; align-items: center; justify-content: space-between; padding: 0 28px; border-bottom: 1px solid var(--border-light); flex-shrink: 0; transition: border-color 0.3s ease;}
 .brand-wrapper { display: flex; flex-direction: column; gap: 2px; }
 .brand-title { font-weight: 800; font-size: 17px; letter-spacing: -0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
-.brand-title i { color: var(--corp-dash); font-size: 20px; }
-.brand-subtitle { font-size: 8px; font-weight: 800; color: var(--text-tertiary); letter-spacing: 3px; text-transform: uppercase; margin-left: 30px; }
+.brand-title i { color: var(--corp-dash); font-size: 30px; line-height: 1; transform: scale(1.08); transform-origin: center; }
+.brand-subtitle { font-size: 8px; font-weight: 800; color: var(--text-tertiary); letter-spacing: 3px; text-transform: uppercase; margin-left: 40px; }
 
 .close-sidebar-btn {
     display: flex; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-light); color: var(--text-secondary);
