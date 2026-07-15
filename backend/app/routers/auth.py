@@ -45,6 +45,30 @@ def require_auth(request: Request):
     return request.session
 
 def send_email(to_email: str, subject: str, html: str):
+    # Try using Brevo transactional HTTP API first if API key is present
+    if BREVO_API_KEY:
+        try:
+            payload = {
+                "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                "to": [{"email": to_email}],
+                "subject": subject,
+                "htmlContent": html
+            }
+            headers = {
+                "accept": "application/json",
+                "api-key": BREVO_API_KEY,
+                "content-type": "application/json"
+            }
+            res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
+            if res.status_code in [200, 201, 202]:
+                print(f"✅ Email successfully sent to {to_email} via Brevo API")
+                return
+            else:
+                print(f"⚠️ Brevo API rejected email: {res.status_code} - {res.text}")
+        except Exception as e:
+            print(f"❌ Brevo API request failed: {e}")
+
+    # Fallback to standard SMTP if Brevo is not configured or fails
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
@@ -68,6 +92,7 @@ def send_email(to_email: str, subject: str, html: str):
         
         server.send_message(msg)
         server.quit()
+        print(f"✅ Email successfully sent to {to_email} via Gmail SMTP fallback")
     except Exception as e:
         print(f"SMTP EMAIL ERROR: {e}")
         raise HTTPException(500, f"Email sending failed: {e}")
