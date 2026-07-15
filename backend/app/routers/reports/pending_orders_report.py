@@ -3,8 +3,10 @@
 # ============================================================
 
 from fastapi import APIRouter, Request, Depends, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.encoders import jsonable_encoder
 from fastapi.templating import Jinja2Templates
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
@@ -54,6 +56,8 @@ def pending_orders_report_page(
     )
     cached_context = cache_get(cache_key)
     if cached_context is not None:
+        if request.query_params.get("format") == "json":
+            return JSONResponse(jsonable_encoder(cached_context))
         return templates.TemplateResponse(
             request=request,
             name="reports/pending_orders_report.html",
@@ -70,19 +74,20 @@ def pending_orders_report_page(
     if production_for:
         q = q.filter(pending_orders.company_name == production_for)
         
-    # NOTE: Location filter is skipped because pending_orders model lacks location/production_at fields.
+    if location:
+        q = q.filter(func.trim(pending_orders.production_at) == func.trim(location))
 
     # Date Filtering with Error Handling
     if from_date:
         try:
             from_dt = datetime.strptime(from_date, "%Y-%m-%d").date()
-            q = q.filter(pending_orders.date >= from_dt)
+            q = q.filter(pending_orders.shipment_date >= from_dt)
         except ValueError:
             pass
     if to_date:
         try:
             to_dt = datetime.strptime(to_date, "%Y-%m-%d").date()
-            q = q.filter(pending_orders.date <= to_dt)
+            q = q.filter(pending_orders.shipment_date <= to_dt)
         except ValueError:
             pass
 
@@ -254,8 +259,6 @@ def pending_orders_report_page(
     cache_set(cache_key, cache_context, ttl=75)
 
     if request.query_params.get("format") == "json":
-        from fastapi.responses import JSONResponse
-        from fastapi.encoders import jsonable_encoder
         json_context = dict(context)
         json_context["rows"] = cache_context["rows"]
         return JSONResponse(jsonable_encoder(json_context))

@@ -1,10 +1,10 @@
 /**
  * PendingOrdersReport.jsx – Pending Orders Production Tracker
  */
-import React, { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput,
+  Loader, ErrorBox, SearchInput,
   EmptyRow, useReport, fmt
 } from './ReportShell';
 
@@ -122,7 +122,7 @@ export default function PendingOrdersReport({ activeRoute }) {
       const isDrillOpen = !!drillExpanded[`${idPrefix}_${key}`];
 
       trs.push(
-        <React.Fragment key={key}>
+        <Fragment key={key}>
           <tr>
             <td>{spVar}</td>
             <td
@@ -160,7 +160,7 @@ export default function PendingOrdersReport({ activeRoute }) {
               </td>
             </tr>
           )}
-        </React.Fragment>
+        </Fragment>
       );
     });
 
@@ -219,7 +219,7 @@ export default function PendingOrdersReport({ activeRoute }) {
                   {po}
                 </td>
                 <td rowSpan={items.length} className="text-left po-cell-merged" style={{ background: 'var(--header-bg)' }}>
-                  {row.buyer_name}
+                  {row.buyer}
                 </td>
                 <td rowSpan={items.length} className="text-center po-cell-merged" style={{ background: 'var(--header-bg)' }}>
                   {row.shipment_date}
@@ -236,7 +236,7 @@ export default function PendingOrdersReport({ activeRoute }) {
             <td className="text-center" style={{ fontWeight: 700 }}>{row.nw_grade}</td>
             <td className="text-center">{row.no_of_pieces}</td>
             <td className="text-center" style={{ fontWeight: 800 }}>{row.no_of_mc}</td>
-            <td className="text-right">USD {fmt.number(row.price_per_mc || row.selling_price)}</td>
+            <td className="text-right">$ {fmt.number(row.selling_price)}</td>
             <td className="text-right">₹{fmt.number(row.exchange_rate || 83.5)}</td>
             <td className="text-center">{row.stock_mc}</td>
             <td className="text-center">{row.prod_pending_mc}</td>
@@ -330,7 +330,7 @@ export default function PendingOrdersReport({ activeRoute }) {
       trs.push(
         <tr key={`subtotal-${po}`} className="subtotal-row" style={{ background: 'rgba(71,85,105,0.05)', fontWeight: 800 }}>
           <td colSpan={14} style={{ textAlign: 'right', paddingRight: '8px' }}>
-            SUBTOTAL {po}:
+            TOTAL {po}:
           </td>
           <td className="text-center">{subMc}</td>
           <td colSpan={2}></td>
@@ -373,7 +373,13 @@ export default function PendingOrdersReport({ activeRoute }) {
           </FilterSelect>
         </FilterBox>
         <FilterBox label="Search Stream">
-          <SearchInput value={search} onChange={setSearch} placeholder="Buyer, Brand, Species, Var..." />
+          <SearchInput value={search} onChange={setSearch} placeholder="Buyer, Brand, Species, Var, Grd..." />
+        </FilterBox>
+        <FilterBox label="Actions">
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="btn btn-clear" type="button" onClick={() => { setFrom(''); setTo(''); setPoFilter(''); setSearch(''); }}>Reset</button>
+            <button className="btn btn-primary" type="button" onClick={() => window.print()}>Print</button>
+          </div>
         </FilterBox>
       </FilterBar>
 
@@ -487,19 +493,19 @@ export default function PendingOrdersReport({ activeRoute }) {
                 )}
               </tbody>
               <tfoot>
-                <tr style={{ fontWeight: 800, background: 'var(--accent)', color: '#fff' }}>
-                  <td colSpan={14} style={{ textAlign: 'right', color: '#fff' }}>GRAND TOTAL:</td>
-                  <td className="text-center" style={{ color: '#fff' }}>{grandTotal.mc}</td>
+                <tr style={{ fontWeight: 800, background: 'var(--header-bg)', color: 'var(--text)', borderTop: '2px solid var(--accent)' }}>
+                  <td colSpan={14} style={{ textAlign: 'right', color: 'var(--text)' }}>GRAND TOTAL:</td>
+                  <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.mc}</td>
                   <td colSpan={2}></td>
-                  <td className="text-center" style={{ color: '#fff' }}>{grandTotal.stockMc}</td>
-                  <td className="text-center" style={{ color: '#fff' }}>{grandTotal.pendMc}</td>
+                  <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.stockMc}</td>
+                  <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.pendMc}</td>
                   <td colSpan={3}></td>
-                  <td className="text-right" style={{ color: '#fff' }}>{fmt.number(grandTotal.ordQty)}</td>
-                  <td className="text-right" style={{ color: '#fff' }}>{fmt.number(grandTotal.avail)}</td>
-                  <td className="text-right" style={{ color: '#fff' }}>{fmt.number(grandTotal.pendPrd)}</td>
+                  <td className="text-right" style={{ color: 'var(--text)' }}>{fmt.number(grandTotal.ordQty)}</td>
+                  <td className="text-right" style={{ color: 'var(--text)' }}>{fmt.number(grandTotal.avail)}</td>
+                  <td className="text-right" style={{ color: 'var(--text)' }}>{fmt.number(grandTotal.pendPrd)}</td>
                   <td colSpan={2}></td>
-                  <td className="text-right" style={{ color: '#fff' }}>{fmt.number(grandTotal.reqHl)}</td>
-                  <td className="text-right" style={{ color: '#fff' }}>{fmt.number(grandTotal.reqHo)}</td>
+                  <td className="text-right" style={{ color: 'var(--text)' }}>{fmt.number(grandTotal.reqHl)}</td>
+                  <td className="text-right" style={{ color: 'var(--text)' }}>{fmt.number(grandTotal.reqHo)}</td>
                 </tr>
               </tfoot>
             </table>
@@ -509,4 +515,3 @@ export default function PendingOrdersReport({ activeRoute }) {
     </div>
   );
 }
-

@@ -426,7 +426,7 @@ function getNextSequence(val) {
     return parts.join('-');
 }
 
-// 🟢 🔴 CASCADE RESET RULE: కంపెనీ మారినప్పుడు ఫ్యాక్టరీ మరియు ఆటో సింక్ ఫీల్డ్స్ క్లియర్ అవుతాయి
+// Cascade reset: clear factory and auto-sync fields when the company changes.
 function handleCompanyChange() {
     document.getElementById("receiving_dd").value = "";
     document.getElementById("batch_num").value = "";
@@ -434,7 +434,7 @@ function handleCompanyChange() {
     document.getElementById("gp_num").value = "";
 }
 
-// 🟢 🔴 CASCADE CALCULATION RULE: ఫ్యాక్టరీ ఫిక్స్ అవ్వగానే బ్యాకెండ్ సింక్ సిస్టమ్ రన్ అవుతుంది
+// Cascade calculation: run backend synchronization after the factory is selected.
 function handleFactoryChange() {
     const pName = document.getElementById("prod_for").value;
     const fName = document.getElementById("receiving_dd").value.trim().toUpperCase();

@@ -183,7 +183,7 @@ syncThemeFromParent();
         <div class="header">
             <h1><i class="fa-solid fa-file-export" style="color:var(--accent);"></i> Export Documents Dashboard</h1>
             <div class="header-actions">
-                <button class="header-action" onclick="window.location.href='/export_documents/registers.xlsx'" title="Download all export document registers"><i class="fa-solid fa-file-excel"></i> Registers</button>
+                <button class="header-action" onclick="confirmDashboardExport('/export_documents/registers.xlsx', 'all export document registers')" title="Download all export document registers"><i class="fa-solid fa-file-excel"></i> Registers</button>
                 <button class="header-action" onclick="window.print()" title="Print dashboard"><i class="fa-solid fa-print"></i></button>
                 <div class="badge">{{ company_id }}</div>
             </div>
@@ -208,7 +208,7 @@ syncThemeFromParent();
                         <thead><tr><th>Shipment</th><th>Invoice</th><th>Buyer</th><th>ETD</th><th>ETA</th><th></th></tr></thead>
                         <tbody>
                         {% for row in recent_shipments %}
-                            <tr><td>{{ row.shipment_no }}</td><td>{{ row.invoice_no or '-' }}</td><td>{{ row.buyer_name }}</td><td>{{ row.etd or '-' }}</td><td>{{ row.eta or '-' }}</td><td><button class="header-action" onclick="window.location.href='/export_documents/shipment/{{ row.id }}/dossier.zip'" title="Download complete shipment dossier"><i class="fa-solid fa-file-zipper"></i></button></td></tr>
+                            <tr><td>{{ row.shipment_no }}</td><td>{{ row.invoice_no or '-' }}</td><td>{{ row.buyer_name }}</td><td>{{ row.etd or '-' }}</td><td>{{ row.eta or '-' }}</td><td><button class="header-action" onclick="confirmDashboardExport('/export_documents/shipment/{{ row.id }}/dossier.zip', 'shipment {{ row.shipment_no }} dossier')" title="Download complete shipment dossier"><i class="fa-solid fa-file-zipper"></i></button></td></tr>
                         {% else %}
                             <tr><td colspan="6"><div class="empty">No shipments found</div></td></tr>
                         {% endfor %}
@@ -246,6 +246,11 @@ syncThemeFromParent();
 </div>
 
 <script>
+function confirmDashboardExport(url, label) {
+    if (!window.confirm('Do you want to download this file?')) return;
+    window.location.href = url;
+    window.setTimeout(() => window.alert(`${label} export started successfully.`), 100);
+}
 function openModule(url, title) {
     document.getElementById("moduleTitle").innerText = title;
     document.getElementById("moduleFrame").src = url;

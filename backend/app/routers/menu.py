@@ -61,7 +61,10 @@ async def menu_page(request: Request, db: Session = Depends(get_db)):
         request.session.clear()
 
         # Redirect to login
-        return RedirectResponse(url="/auth/login", status_code=302)
+        return RedirectResponse(url="/app/", status_code=302)
+
+    # Keep the legacy URL working while making React the only main workspace.
+    return RedirectResponse(url="/app/#/page/dashboard_processing", status_code=303)
 
     # Fetch user's custom colors from database
     ui_colors = None

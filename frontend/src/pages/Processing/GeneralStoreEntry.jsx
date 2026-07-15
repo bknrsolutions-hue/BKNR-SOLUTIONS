@@ -1,67 +1,93 @@
-import React, { useState, useEffect } from 'react';
-import { Store, Plus, Trash2, RefreshCw } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Ban, Plus, Store } from 'lucide-react';
+
+const emptyForm = {
+  id: '',
+  grnNumber: '',
+  invoiceDate: '',
+  unitId: 0,
+  invoiceNumber: '',
+  vendorId: 0,
+  accountingLedgerId: 0,
+  poNumber: 'N/A',
+  hsnCode: '',
+  gstPercent: 0,
+  itemName: '',
+  unitName: '',
+  quantity: 0,
+  rate: 0,
+  minimumLevel: 0,
+  openingStock: 0,
+  grnAvailableStock: 0,
+};
+
+const number = (value) => Number(value || 0);
+const fixed = (value) => number(value).toFixed(2);
+const money = (value) => `₹${fixed(value)}`;
+
+function Field({ label, children }) {
+  return (
+    <div className="form-group">
+      <label>{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export default function GeneralStoreEntry() {
+  const [initialLoading, setInitialLoading] = useState(true);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
-  const [mode, setMode] = useState('IN'); // IN or OUT
+  const [message, setMessage] = useState(null);
+  const [mode, setMode] = useState('IN');
   const [showForm, setShowForm] = useState(false);
+  const [selectedId, setSelectedId] = useState(null);
   const [entries, setEntries] = useState([]);
+  const [masters, setMasters] = useState({
+    grns: [], items: [], vendors: [], hsns: [], locations: [], ledgers: [], pos: ['N/A'],
+  });
+  const [form, setForm] = useState(emptyForm);
+  const [outGrns, setOutGrns] = useState([]);
 
-  // Masters
-  const [grnList, setGrnList] = useState([]);
-  const [itemsList, setItemsList] = useState([]);
-  const [unitsList, setUnitsList] = useState([]);
-  const [vendorsList, setVendorsList] = useState([]);
-  const [hsnList, setHsnList] = useState([]);
-  const [locationsList, setLocationsList] = useState([]);
-  const [postingLedgersList, setPostingLedgersList] = useState([]);
-  const [poList, setPoList] = useState([]);
-
-  // Form Fields
-  const [id, setId] = useState('');
-  const [grnNumber, setGrnNumber] = useState('');
-  const [invoiceDate, setInvoiceDate] = useState('');
-  const [unitId, setUnitId] = useState(0);
-  const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [vendorId, setVendorId] = useState(0);
-  const [accountingLedgerId, setAccountingLedgerId] = useState(0);
-  const [poNumber, setPoNumber] = useState('N/A');
-  const [hsnCode, setHsnCode] = useState('');
-  const [gstPercent, setGstPercent] = useState(0.0);
-  const [itemName, setItemName] = useState('');
-  const [unitName, setUnitName] = useState('');
-  const [quantity, setQuantity] = useState(0);
-  const [rate, setRate] = useState(0.0);
-  const [minimumLevel, setMinimumLevel] = useState(0.0);
-  const [availableStockMsg, setAvailableStockMsg] = useState('');
-
-  // New Item Quick Add
   const [showQuickAdd, setShowQuickAdd] = useState(false);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemUnit, setNewItemUnit] = useState('');
-  const [newItemMinLevel, setNewItemMinLevel] = useState(0.0);
+  const [newItem, setNewItem] = useState({ itemName: '', unitName: '', minimumLevel: 0 });
 
-  const fetchData = async () => {
+  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const amount = useMemo(() => form.quantity * form.rate, [form.quantity, form.rate]);
+  const taxAmount = useMemo(
+    () => mode === 'IN' ? amount * form.gstPercent / 100 : 0,
+    [amount, form.gstPercent, mode],
+  );
+  const totalAmount = amount + taxAmount;
+  const availableStock = mode === 'IN'
+    ? form.openingStock + form.quantity
+    : form.openingStock - form.quantity;
+
+  const notify = (type, text) => setMessage({ type, text });
+
+  const fetchData = async ({ preserveForm = false } = {}) => {
     setLoading(true);
     try {
-      const res = await fetch('/general_stock/entry?format=json', { credentials: 'include' });
-      if (!res.ok) return;
-      const d = await res.json();
-      setEntries(d.today_data || []);
-      setGrnList(d.grn_list || []);
-      setItemsList(d.items || []);
-      setUnitsList(d.units || []);
-      setVendorsList(d.vendors || []);
-      setHsnList(d.hsn_list || []);
-      setLocationsList(d.locations || []);
-      setPostingLedgersList(d.posting_ledgers || []);
-      setPoList(d.po_list || []);
-      if ((d.today_data || []).length === 0) setShowForm(true);
-    } catch (e) {
-      console.error(e);
+      const response = await fetch('/general_stock/entry?format=json', { credentials: 'include' });
+      if (!response.ok) throw new Error(`Unable to load General Stock (${response.status})`);
+      const data = await response.json();
+      const rows = data.today_data || [];
+      setEntries(rows);
+      setMasters({
+        grns: data.grn_list || [],
+        items: data.items || [],
+        vendors: data.vendors || [],
+        hsns: data.hsn_list || [],
+        locations: data.locations || [],
+        ledgers: data.posting_ledgers || [],
+        pos: (data.po_list || []).length ? data.po_list : ['N/A'],
+      });
+      if (!preserveForm && rows.length === 0) setShowForm(true);
+    } catch (error) {
+      notify('error', error.message || 'Unable to load General Stock Entry.');
     } finally {
       setLoading(false);
+      setInitialLoading(false);
     }
   };
 
@@ -69,370 +95,447 @@ export default function GeneralStoreEntry() {
     fetchData();
   }, []);
 
-  // Autofill details when Item is selected
   useEffect(() => {
-    if (!itemName) {
-      setUnitName('');
-      setMinimumLevel(0.0);
-      setAvailableStockMsg('');
+    if (!form.itemName) {
+      setForm((current) => ({
+        ...current,
+        unitName: '', minimumLevel: 0, openingStock: 0, grnAvailableStock: 0,
+      }));
+      setOutGrns([]);
       return;
     }
-    fetch(`/general_stock/api/item_details?item_name=${encodeURIComponent(itemName)}&unit_id=${unitId}`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => {
-        setUnitName(d.unit_name || '');
-        setMinimumLevel(d.minimum_level || 0);
-        setAvailableStockMsg(`Opening Stock Balance: ${d.opening_stock || 0} ${d.unit_name || ''}`);
-      });
-  }, [itemName, unitId]);
 
-  // For Stock OUT: Load GRNs and rates
-  useEffect(() => {
-    if (mode === 'OUT' && itemName) {
-      fetch(`/general_stock/api/get_item_grns?item_name=${encodeURIComponent(itemName)}&unit_id=${unitId}`, { credentials: 'include' })
-        .then(r => r.json())
-        .then(d => setGrnList(d.grns || []));
+    const unitForBalance = mode === 'OUT' ? form.unitId : 0;
+    const query = new URLSearchParams({
+      item_name: form.itemName,
+      unit_id: String(unitForBalance || 0),
+    });
+
+    fetch(`/general_stock/api/item_details?${query}`, { credentials: 'include' })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to load item details');
+        setForm((current) => ({
+          ...current,
+          unitName: data.unit_name || '',
+          minimumLevel: number(data.minimum_level),
+          openingStock: number(data.opening_stock),
+          grnAvailableStock: 0,
+        }));
+      })
+      .catch((error) => notify('error', error.message));
+
+    if (mode === 'OUT') {
+      fetch(`/general_stock/api/get_item_grns?${query}`, { credentials: 'include' })
+        .then((response) => response.json())
+        .then((data) => setOutGrns(data.grns || []))
+        .catch(() => setOutGrns([]));
     }
-  }, [itemName, unitId, mode]);
+  }, [form.itemName, form.unitId, mode]);
 
-  // When GRN changes in Stock OUT, fetch rate & available qty
   useEffect(() => {
-    if (mode === 'OUT' && itemName && grnNumber) {
-      fetch(`/general_stock/api/grn_rate?item_name=${encodeURIComponent(itemName)}&grn_number=${encodeURIComponent(grnNumber)}&unit_id=${unitId}`, { credentials: 'include' })
-        .then(r => r.json())
-        .then(d => {
-          if (d.success) {
-            setRate(d.rate || 0);
-            setAvailableStockMsg(`GRN Available Stock: ${d.available_qty || 0} ${unitName}`);
-          }
-        });
-    }
-  }, [grnNumber, itemName, unitId, mode]);
+    if (mode !== 'OUT' || !form.itemName || !form.grnNumber) return;
+    const query = new URLSearchParams({
+      item_name: form.itemName,
+      grn_number: form.grnNumber,
+      unit_id: String(form.unitId || 0),
+    });
+    fetch(`/general_stock/api/grn_rate?${query}`, { credentials: 'include' })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || 'Unable to load GRN balance');
+        setForm((current) => ({
+          ...current,
+          rate: number(data.rate),
+          openingStock: number(data.available_qty),
+          grnAvailableStock: number(data.available_qty),
+        }));
+      })
+      .catch((error) => notify('error', error.message));
+  }, [mode, form.itemName, form.grnNumber, form.unitId]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const openForm = (nextMode) => {
+    setMode(nextMode);
+    setForm(emptyForm);
+    setOutGrns([]);
+    setSelectedId(null);
+    setMessage(null);
+    setShowForm(true);
+  };
+
+  const switchMode = (nextMode) => {
+    if (nextMode === mode) return;
+    setMode(nextMode);
+    setForm((current) => ({
+      ...current,
+      grnNumber: '', invoiceDate: '', invoiceNumber: '', vendorId: 0,
+      accountingLedgerId: 0, hsnCode: '', gstPercent: 0, quantity: 0,
+      rate: 0, openingStock: 0, grnAvailableStock: 0,
+    }));
+  };
+
+  const validate = () => {
+    if (!form.unitId) return 'Production At is required.';
+    if (!form.itemName) return 'Item Name is required.';
+    if (!form.grnNumber.trim()) return 'GRN Number is required.';
+    if (!form.unitName) return 'Item unit is not available in master.';
+    if (form.quantity <= 0) return 'Quantity must be greater than zero.';
+    if (mode === 'IN' && !form.vendorId) return 'Vendor is required for Stock IN.';
+    if (mode === 'IN' && form.rate <= 0) return 'Base Price must be greater than zero for Stock IN.';
+    if (mode === 'OUT' && form.quantity > form.openingStock) return `Available item quantity is only ${fixed(form.openingStock)}.`;
+    if (mode === 'OUT' && form.quantity > form.grnAvailableStock) return `Selected GRN available quantity is only ${fixed(form.grnAvailableStock)}.`;
+    return '';
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const validationError = validate();
+    if (validationError) {
+      notify('error', validationError);
+      return;
+    }
+
+    const body = new URLSearchParams({
+      id: form.id,
+      grn_number: form.grnNumber,
+      invoice_date: form.invoiceDate,
+      unit_id: String(form.unitId),
+      invoice_number: form.invoiceNumber,
+      vendor_id: String(form.vendorId),
+      accounting_ledger_id: String(form.accountingLedgerId),
+      po_number: form.poNumber || 'N/A',
+      hsn_code: form.hsnCode,
+      gst_percent: String(form.gstPercent),
+      item_name: form.itemName,
+      unit_name: form.unitName,
+      movement_type: mode,
+      quantity: String(form.quantity),
+      rate: String(form.rate),
+      minimum_level: String(form.minimumLevel),
+    });
+
     setLoading(true);
-    const fd = new URLSearchParams();
-    if (id) fd.append('id', id);
-    fd.append('grn_number', grnNumber);
-    fd.append('invoice_date', invoiceDate);
-    fd.append('unit_id', unitId);
-    fd.append('invoice_number', invoiceNumber);
-    fd.append('vendor_id', vendorId);
-    fd.append('accounting_ledger_id', accountingLedgerId);
-    fd.append('po_number', poNumber);
-    fd.append('hsn_code', hsnCode);
-    fd.append('gst_percent', gstPercent);
-    fd.append('item_name', itemName);
-    fd.append('unit_name', unitName);
-    fd.append('movement_type', mode);
-    fd.append('quantity', quantity);
-    fd.append('rate', rate);
-    fd.append('minimum_level', minimumLevel);
-
     try {
-      const res = await fetch('/general_stock/entry', {
+      const response = await fetch('/general_stock/entry', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
         credentials: 'include',
-        body: fd,
-        redirect: 'manual',
+        body,
       });
-      setMsg('✅ General Store entry saved successfully!');
+      if (!response.ok) {
+        let detail = 'Unable to save stock entry.';
+        try {
+          const data = await response.json();
+          detail = data.message || data.detail || detail;
+        } catch (_) {}
+        throw new Error(detail);
+      }
+
+      notify('success', 'Stock entry saved and accounts posting updated.');
+      setForm(emptyForm);
       setShowForm(false);
-      setId('');
-      setGrnNumber('');
-      setInvoiceNumber('');
-      setItemName('');
-      setQuantity(0);
-      setRate(0);
-      await fetchData();
-    } catch (err) {
-      setMsg('❌ Error saving entry');
+      await fetchData({ preserveForm: true });
+    } catch (error) {
+      notify('error', error.message || 'Unable to save stock entry.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickAdd = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const fd = new URLSearchParams();
-    fd.append('item_name', newItemName);
-    fd.append('unit_name', newItemUnit);
-    fd.append('minimum_level', newItemMinLevel);
+  const cancelSelected = async () => {
+    const row = entries.find((entry) => entry.id === selectedId);
+    if (!row || row.is_cancelled) return;
+    if (!window.confirm('Do you want to cancel this stock log?')) return;
 
+    setLoading(true);
     try {
-      const res = await fetch('/general_stock/items/add', {
+      const response = await fetch(`/general_stock/entry/delete/${row.id}`, {
+        method: 'POST', credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Cancellation failed.');
+      notify('success', 'Stock entry cancelled successfully.');
+      setSelectedId(null);
+      await fetchData({ preserveForm: true });
+    } catch (error) {
+      notify('error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickAdd = async (event) => {
+    event.preventDefault();
+    setLoading(true);
+    try {
+      const response = await fetch('/general_stock/items/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         credentials: 'include',
-        body: fd,
+        body: new URLSearchParams({
+          item_name: newItem.itemName,
+          unit_name: newItem.unitName,
+          minimum_level: String(newItem.minimumLevel),
+        }),
       });
-      if (res.ok) {
-        setMsg('✅ Item added to master list!');
-        setShowQuickAdd(false);
-        setNewItemName('');
-        setNewItemUnit('');
-        await fetchData();
-      }
-    } catch (err) {
-      setMsg('❌ Failed to add item');
+      if (!response.ok) throw new Error('Failed to add master item.');
+      notify('success', 'Item registered in General Store master.');
+      setShowQuickAdd(false);
+      setNewItem({ itemName: '', unitName: '', minimumLevel: 0 });
+      await fetchData({ preserveForm: true });
+    } catch (error) {
+      notify('error', error.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (idVal) => {
-    if (!window.confirm('Cancel this general store entry permanently?')) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/general_stock/entry/delete/${idVal}`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-      if (res.ok) {
-        setMsg('✅ Entry cancelled successfully');
-        await fetchData();
-      }
-    } catch (err) {
-      setMsg('❌ Cancellation failed');
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (initialLoading) {
+    return (
+      <div className="general-stock-page is-loading">
+        <div className="general-stock-toolbar skeleton-box" />
+        <div className="general-stock-form skeleton-box" />
+        <div className="general-stock-table-skeleton skeleton-box" />
+      </div>
+    );
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <h2 style={{ color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-          <Store size={22} /> General Store stock movement
-        </h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-clear" onClick={fetchData} disabled={loading}>
-            <RefreshCw size={13} className={loading ? 'spin-animation' : ''} /> Refresh
+    <div className="general-stock-page">
+      <div className="general-stock-titlebar">
+        <h2><Store size={20} /> General Stock Management</h2>
+      </div>
+
+      <div className="general-stock-toolbar">
+        <h3>Stock Ledger Logs</h3>
+        <div className="general-stock-actions">
+          <button type="button" className="btn btn-primary" onClick={() => openForm('IN')}>
+            <Plus size={13} /> Stock IN
           </button>
-          {!showForm && (
-            <>
-              <button className="btn btn-primary" style={{ background: '#10b981', borderColor: '#10b981' }}
-                onClick={() => { setMode('IN'); setShowForm(true); }}>
-                + Stock IN (Purchase)
-              </button>
-              <button className="btn btn-primary" style={{ background: '#ef4444', borderColor: '#ef4444' }}
-                onClick={() => { setMode('OUT'); setShowForm(true); }}>
-                - Stock OUT (Issue)
-              </button>
-            </>
+          <button type="button" className="btn general-stock-out" onClick={() => openForm('OUT')}>Stock OUT</button>
+          {selectedId && (
+            <button type="button" className="btn general-stock-cancel" onClick={cancelSelected} disabled={loading}>
+              <Ban size={13} /> Cancel Selected
+            </button>
           )}
         </div>
       </div>
 
-      {msg && (
-        <div style={{ padding: '10px 16px', borderRadius: 8, background: msg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: msg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: 13, fontWeight: 700 }}>
-          {msg}
-          <button style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => setMsg('')}>✕</button>
+      {message && (
+        <div className={`general-stock-message ${message.type}`}>
+          <span>{message.type === 'success' ? '✓' : '⚠'} {message.text}</span>
+          <button type="button" onClick={() => setMessage(null)}>×</button>
         </div>
       )}
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="card" style={{ flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <h3 style={{ fontSize: 13, fontWeight: 800, margin: 0, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              {mode === 'IN' ? 'GRN PURCHASE / STOCK IN' : 'CONSUMPTION ISSUE / STOCK OUT'}
-            </h3>
-            <button type="button" className="btn btn-secondary" style={{ height: 28, padding: '2px 8px', fontSize: 11 }}
-              onClick={() => setShowQuickAdd(true)}>
-              + Quick Add Master Item
-            </button>
+        <form className={`general-stock-form ${mode === 'OUT' ? 'out-mode' : ''}`} onSubmit={handleSubmit}>
+          <div className="general-stock-section-title">Stock Allocation Info</div>
+          <div className="general-stock-tabs">
+            <button type="button" className={mode === 'IN' ? 'active' : ''} onClick={() => switchMode('IN')}>Stock IN</button>
+            <button type="button" className={mode === 'OUT' ? 'active out' : ''} onClick={() => switchMode('OUT')}>Stock OUT</button>
           </div>
 
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Location Unit *</label>
-              <select className="form-control" value={unitId} onChange={e => setUnitId(parseInt(e.target.value) || 0)} required>
-                <option value="">— Select Location —</option>
-                {locationsList.map(l => <option key={l.id} value={l.id}>{l.production_at}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Item Name *</label>
-              <select className="form-control" value={itemName} onChange={e => setItemName(e.target.value)} required>
-                <option value="">— Select Item —</option>
-                {itemsList.map(item => <option key={item} value={item}>{item}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Unit Name</label>
-              <input type="text" className="form-control" value={unitName} readOnly style={{ background: 'var(--input-bg-disabled)' }} />
-            </div>
+          <div className="general-stock-grid">
+            <Field label="GRN Number">
+              {mode === 'IN' ? (
+                <input className="form-control" value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} placeholder="Enter or auto-generated GRN" required />
+              ) : (
+                <select className="form-control" value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} required>
+                  <option value="">Select source GRN</option>
+                  {outGrns.map((grn) => <option key={grn} value={grn}>{grn}</option>)}
+                </select>
+              )}
+            </Field>
 
-            {mode === 'IN' ? (
+            {mode === 'IN' && (
               <>
-                <div className="form-group">
-                  <label>GRN / Bill Number *</label>
-                  <input type="text" className="form-control" value={grnNumber} onChange={e => setGrnNumber(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Invoice Number</label>
-                  <input type="text" className="form-control" value={invoiceNumber} onChange={e => setInvoiceNumber(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label>Invoice / GRN Date *</label>
-                  <input type="date" className="form-control" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Vendor *</label>
-                  <select className="form-control" value={vendorId} onChange={e => setVendorId(parseInt(e.target.value) || 0)} required>
-                    <option value="">— Select Vendor —</option>
-                    {vendorsList.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Asset Ledger Posting *</label>
-                  <select className="form-control" value={accountingLedgerId} onChange={e => setAccountingLedgerId(parseInt(e.target.value) || 0)} required>
-                    <option value="">— Select Ledger —</option>
-                    {postingLedgersList.map(p => <option key={p.id} value={p.id}>{p.ledger_name}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>HSN Code</label>
-                  <select className="form-control" value={hsnCode} onChange={e => setHsnCode(e.target.value)}>
-                    <option value="">— Select HSN —</option>
-                    {hsnList.map(h => <option key={h.id} value={h.hsn_code}>{h.hsn_code} ({h.description})</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>GST Percent (%)</label>
-                  <input type="number" step="0.1" className="form-control" value={gstPercent} onChange={e => setGstPercent(parseFloat(e.target.value) || 0)} />
-                </div>
-                <div className="form-group">
-                  <label>Quantity *</label>
-                  <input type="number" step="0.01" className="form-control" value={quantity} onChange={e => setQuantity(parseFloat(e.target.value) || 0)} required />
-                </div>
-                <div className="form-group">
-                  <label>Purchase Rate / Unit *</label>
-                  <input type="number" step="0.0001" className="form-control" value={rate} onChange={e => setRate(parseFloat(e.target.value) || 0)} required />
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="form-group">
-                  <label>Source GRN Batch *</label>
-                  <select className="form-control" value={grnNumber} onChange={e => setGrnNumber(e.target.value)} required>
-                    <option value="">— Select GRN —</option>
-                    {grnList.map(g => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Issue Quantity *</label>
-                  <input type="number" step="0.01" className="form-control" value={quantity} onChange={e => setQuantity(parseFloat(e.target.value) || 0)} required />
-                </div>
-                <div className="form-group">
-                  <label>GRN Rate / Unit</label>
-                  <input type="number" step="0.0001" className="form-control" value={rate} readOnly style={{ background: 'var(--input-bg-disabled)' }} />
-                </div>
+                <Field label="Invoice Date">
+                  <input type="date" className="form-control" value={form.invoiceDate} onChange={(e) => setField('invoiceDate', e.target.value)} />
+                </Field>
+                <Field label="Invoice Number">
+                  <input className="form-control" value={form.invoiceNumber} onChange={(e) => setField('invoiceNumber', e.target.value)} placeholder="Supplier invoice number" />
+                </Field>
               </>
             )}
 
-            <div className="form-group">
-              <label>Re-Order Minimum Level</label>
-              <input type="number" step="0.01" className="form-control" value={minimumLevel} onChange={e => setMinimumLevel(parseFloat(e.target.value) || 0)} />
-            </div>
-            <div className="form-group">
-              <label>Link PO Reference</label>
-              <select className="form-control" value={poNumber} onChange={e => setPoNumber(e.target.value)}>
-                {poList.map(po => <option key={po} value={po}>{po}</option>)}
+            <Field label="Production At">
+              <select className="form-control" value={form.unitId} onChange={(e) => setField('unitId', Number(e.target.value))} required>
+                <option value="0">Select Unit...</option>
+                {masters.locations.map((location) => <option key={location.id} value={location.id}>{location.production_at}</option>)}
               </select>
-            </div>
+            </Field>
+
+            {mode === 'IN' && (
+              <>
+                <Field label="Vendor Entity">
+                  <select className="form-control" value={form.vendorId} onChange={(e) => setField('vendorId', Number(e.target.value))}>
+                    <option value="0">-- Select Vendor --</option>
+                    {masters.vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
+                  </select>
+                </Field>
+                <Field label="Accounting Ledger">
+                  <select className="form-control" value={form.accountingLedgerId} onChange={(e) => setField('accountingLedgerId', Number(e.target.value))}>
+                    <option value="0">Auto - Stock Asset</option>
+                    {masters.ledgers.map((ledger) => (
+                      <option key={ledger.id} value={ledger.id}>
+                        {ledger.ledger_name}{ledger.group_name ? ` (${ledger.group_name})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+              </>
+            )}
+
+            <Field label="PO Number">
+              <select className="form-control" value={form.poNumber} onChange={(e) => setField('poNumber', e.target.value)}>
+                {masters.pos.map((po) => <option key={po} value={po}>{po}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Product Nomenclature / Description">
+              <select className="form-control" value={form.itemName} onChange={(e) => setField('itemName', e.target.value)} required>
+                <option value="">Select Item</option>
+                {masters.items.map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </Field>
+
+            {mode === 'IN' && (
+              <Field label="Unit Name">
+                <input className="form-control" value={form.unitName} readOnly />
+              </Field>
+            )}
           </div>
 
-          {availableStockMsg && (
-            <div style={{ marginTop: 8, fontSize: 11, color: 'var(--corp-ops)', fontWeight: 700 }}>
-              💡 {availableStockMsg}
-            </div>
-          )}
+          <div className="general-stock-section-title metrics">Quantities & Stock Metrics</div>
+          <div className="general-stock-grid">
+            <Field label="Quantity">
+              <input type="number" min="0.01" step="0.01" className="form-control" value={form.quantity || ''} onChange={(e) => setField('quantity', number(e.target.value))} required />
+            </Field>
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" className="btn btn-primary" disabled={loading}>
-              {mode === 'IN' ? 'Post Purchase Bill' : 'Post Consumption Issue'}
-            </button>
-            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+            {mode === 'IN' && (
+              <>
+                <Field label="Base Price">
+                  <input type="number" min="0" step="0.01" className="form-control" value={form.rate || ''} onChange={(e) => setField('rate', number(e.target.value))} />
+                </Field>
+                <Field label="Taxable Value"><input className="form-control" value={fixed(amount)} readOnly /></Field>
+                <Field label="HSN Code">
+                  <select
+                    className="form-control"
+                    value={form.hsnCode}
+                    onChange={(e) => {
+                      const hsn = masters.hsns.find((item) => item.hsn_code === e.target.value);
+                      setForm((current) => ({
+                        ...current,
+                        hsnCode: e.target.value,
+                        gstPercent: number(hsn?.gst_percent),
+                      }));
+                    }}
+                  >
+                    <option value="">-- Select HSN --</option>
+                    {masters.hsns.map((hsn) => (
+                      <option key={hsn.id} value={hsn.hsn_code}>{hsn.hsn_code} ({fixed(hsn.gst_percent)}%)</option>
+                    ))}
+                  </select>
+                </Field>
+                <Field label="GST %">
+                  <input type="number" min="0" step="0.01" className="form-control" value={form.gstPercent} onChange={(e) => setField('gstPercent', number(e.target.value))} />
+                </Field>
+                <Field label="Tax Value"><input className="form-control" value={fixed(taxAmount)} readOnly /></Field>
+                <Field label="Grand Total"><input className="form-control" value={fixed(totalAmount)} readOnly /></Field>
+              </>
+            )}
+
+            {mode === 'OUT' && (
+              <Field label="Selected GRN Available Qty">
+                <input className="form-control" value={fixed(form.grnAvailableStock)} readOnly />
+              </Field>
+            )}
+            <Field label="Available Item Qty"><input className="form-control" value={fixed(form.openingStock)} readOnly /></Field>
+            {mode === 'IN' && <Field label="Available Stock"><input className="form-control" value={fixed(availableStock)} readOnly /></Field>}
+            {mode === 'IN' && <Field label="Minimum Level"><input className="form-control" value={fixed(form.minimumLevel)} readOnly /></Field>}
+          </div>
+
+          <div className="general-stock-form-actions">
+            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save Entry'}</button>
+            <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
+            <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(true)}>+ Add New Item</button>
           </div>
         </form>
       )}
 
-      {/* TODAY'S LOG TABLE */}
-      <div style={{ flexShrink: 0 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Today's General Store Stock Entries
-        </h3>
-        <div className="table-responsive">
-          <table className="bknr-table" style={{ minWidth: 1400 }}>
-            <thead><tr>
-              <th>ID</th><th>Time</th><th>Move</th><th>GRN/Bill</th><th>Item Name</th><th>Location</th>
-              <th>Vendor</th><th className="text-right">Quantity</th><th>Unit</th><th className="text-right">Rate</th>
-              <th className="text-right">Amount</th><th className="text-right">Total Amount</th><th>PO #</th><th>Posted Journal ID</th><th>Action</th>
-            </tr></thead>
-            <tbody>
-              {entries.map(r => (
-                <tr key={r.id} style={{ opacity: r.is_cancelled ? 0.5 : 1, textDecoration: r.is_cancelled ? 'line-through' : 'none' }}>
-                  <td className="text-center">{r.id}</td>
-                  <td className="text-center">{r.time ? String(r.time).substring(0, 5) : ''}</td>
-                  <td className="text-center">
-                    <span style={{ background: r.movement_type === 'IN' ? '#10b981' : '#ef4444', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 800 }}>
-                      {r.movement_type}
-                    </span>
-                  </td>
-                  <td>{r.grn_number}</td>
-                  <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{r.item_name}</td>
-                  <td>{r.production_at}</td>
-                  <td>{r.vendor_name || '—'}</td>
-                  <td className="text-right">{Number(r.quantity || 0).toFixed(2)}</td>
-                  <td>{r.unit_name}</td>
-                  <td className="text-right">₹{Number(r.rate || 0).toFixed(2)}</td>
-                  <td className="text-right">₹{Number(r.amount || 0).toFixed(2)}</td>
-                  <td className="text-right">₹{Number(r.total_amount || 0).toFixed(2)}</td>
-                  <td>{r.po_number}</td>
-                  <td className="text-center">{r.journal_id || '—'}</td>
-                  <td className="text-center">
-                    {!r.is_cancelled && (
-                      <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
-                        onClick={() => handleDelete(r.id)}>
-                        <Trash2 size={13} />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div className="general-stock-table-wrap">
+        <table className="bknr-table general-stock-table">
+          <thead>
+            <tr>
+              <th>ID</th><th>GRN Number</th><th>Invoice Number</th><th>Location</th><th>Vendor</th><th>PO</th>
+              <th>Item Name</th><th>HSN</th><th>Unit</th><th>Movement</th><th>Qty</th><th>Rate</th>
+              <th>Value</th><th>GST</th><th>Total</th><th>Opening</th><th>Available</th><th>Minimum</th><th>Date</th><th>Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.length === 0 ? (
+              <tr><td colSpan="20" className="general-stock-empty">No stock entries for today.</td></tr>
+            ) : entries.map((row) => (
+              <tr
+                key={row.id}
+                className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled' : ''}`}
+                onClick={() => setSelectedId(row.id)}
+              >
+                <td>{row.id}{row.is_cancelled ? <span className="cancelled-pill">C</span> : null}</td>
+                <td>{row.grn_number}</td><td>{row.invoice_number || '—'}</td><td>{row.production_at || '—'}</td>
+                <td>{row.vendor_name || '—'}</td><td>{row.po_number || 'N/A'}</td><td>{row.item_name}</td>
+                <td>{row.hsn_code || '—'}</td><td>{row.unit_name}</td>
+                <td><span className={`movement-pill ${row.movement_type === 'IN' ? 'in' : 'out'}`}>{row.movement_type}</span></td>
+                <td>{fixed(row.quantity)}</td><td>{money(row.rate)}</td><td>{money(row.amount)}</td>
+                <td>{money(row.tax_amount)}</td><td>{money(row.total_amount || row.amount)}</td>
+                <td>{fixed(row.opening_stock)}</td><td>{fixed(row.available_stock)}</td><td>{fixed(row.minimum_level)}</td>
+                <td>{row.date || '—'}</td><td>{row.time ? String(row.time).slice(0, 5) : '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
-      {/* QUICK ADD MODAL */}
       {showQuickAdd && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <form onSubmit={handleQuickAdd} className="card" style={{ width: 340, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>Add New Item to Store Master</h3>
-            <div className="form-group">
-              <label>Item Name *</label>
-              <input type="text" className="form-control" value={newItemName} onChange={e => setNewItemName(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label>Unit Name (e.g. Kg, Box, Pcs) *</label>
-              <input type="text" className="form-control" value={newItemUnit} onChange={e => setNewItemUnit(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label>Min Level</label>
-              <input type="number" step="0.01" className="form-control" value={newItemMinLevel} onChange={e => setNewItemMinLevel(parseFloat(e.target.value) || 0)} />
-            </div>
-            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
+        <div className="general-stock-modal-backdrop">
+          <form className="general-stock-modal" onSubmit={handleQuickAdd}>
+            <h3>Add New Item to Store Master</h3>
+            <Field label="Item Name">
+              <input className="form-control" value={newItem.itemName} onChange={(e) => setNewItem((current) => ({ ...current, itemName: e.target.value }))} required />
+            </Field>
+            <Field label="Unit Name">
+              <input className="form-control" value={newItem.unitName} onChange={(e) => setNewItem((current) => ({ ...current, unitName: e.target.value }))} required />
+            </Field>
+            <Field label="Minimum Stock Level">
+              <input type="number" min="0" step="0.01" className="form-control" value={newItem.minimumLevel} onChange={(e) => setNewItem((current) => ({ ...current, minimumLevel: number(e.target.value) }))} />
+            </Field>
+            <div className="general-stock-form-actions">
+              <button type="submit" className="btn btn-primary" disabled={loading}>Save Item</button>
               <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary">Add Item</button>
             </div>
           </form>
         </div>
       )}
+
+      <style>{`
+        .general-stock-page{display:flex;flex:1;min-height:0;flex-direction:column;gap:10px;padding:10px 12px 28px;overflow:auto;color:var(--text-primary)}
+        .general-stock-titlebar h2{display:flex;align-items:center;gap:8px;margin:0;color:var(--corp-ops);font-size:17px}
+        .general-stock-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.general-stock-toolbar h3{margin:0;font-size:12px;text-transform:uppercase;color:var(--corp-ops)}
+        .general-stock-actions,.general-stock-form-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.general-stock-out{background:#f97316!important;color:#fff!important}.general-stock-cancel{background:#dc2626!important;color:#fff!important}
+        .general-stock-message{display:flex;justify-content:space-between;padding:8px 10px;border-radius:7px;font-size:12px;font-weight:750}.general-stock-message.success{background:#dcfce7;color:#166534}.general-stock-message.error{background:#fee2e2;color:#991b1b}.general-stock-message button{border:0;background:none;color:inherit;font-size:16px;cursor:pointer}
+        .general-stock-form{padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg)}
+        .general-stock-section-title{padding-bottom:6px;border-bottom:1px dashed var(--border);color:var(--corp-ops);font-size:10px;font-weight:850;text-transform:uppercase}.general-stock-section-title.metrics{margin-top:11px}
+        .general-stock-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}.general-stock-tabs button{height:34px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--text-secondary);font-weight:800}.general-stock-tabs button.active{border-color:var(--corp-ops);color:var(--corp-ops);background:color-mix(in srgb,var(--corp-ops) 10%,transparent)}.general-stock-tabs button.active.out{border-color:#f97316;color:#f97316}
+        .general-stock-grid{display:grid;grid-template-columns:repeat(5,minmax(125px,1fr));gap:8px;margin-top:8px}.general-stock-form-actions{justify-content:center;margin-top:12px}.general-stock-form input[readonly]{font-weight:750;background:var(--input-bg-disabled,var(--input-bg))}
+        .general-stock-table-wrap{min-height:0;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--card-bg)}.general-stock-table{min-width:1850px}.general-stock-table th,.general-stock-table td{padding:7px 6px;font-size:10px;white-space:nowrap;text-align:center}.general-stock-table tbody tr{cursor:pointer}.general-stock-table tbody tr.selected{background:color-mix(in srgb,var(--corp-ops) 13%,transparent);box-shadow:inset 3px 0 var(--corp-ops)}.general-stock-table tbody tr.cancelled{opacity:.58;text-decoration:line-through}.cancelled-pill{margin-left:4px;padding:1px 4px;border-radius:999px;background:#fee2e2;color:#991b1b;text-decoration:none}.movement-pill{display:inline-block;padding:2px 6px;border-radius:4px;color:#fff;font-weight:850}.movement-pill.in{background:#16a34a}.movement-pill.out{background:#dc2626}.general-stock-empty{padding:24px!important;color:var(--text-secondary)}
+        .general-stock-modal-backdrop{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:16px;background:rgba(2,6,23,.65);backdrop-filter:blur(4px)}.general-stock-modal{width:min(390px,100%);display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg)}.general-stock-modal h3{margin:0 0 4px;font-size:14px;color:var(--corp-ops)}
+        .skeleton-box{position:relative;overflow:hidden;background:var(--card-bg);border:1px solid var(--border);border-radius:9px}.skeleton-box:after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(148,163,184,.18),transparent);animation:generalStockShimmer 1.1s infinite}.is-loading .general-stock-toolbar{height:46px}.general-stock-form.skeleton-box{height:230px}.general-stock-table-skeleton{height:250px}@keyframes generalStockShimmer{to{transform:translateX(100%)}}
+        @media(max-width:1100px){.general-stock-grid{grid-template-columns:repeat(3,minmax(130px,1fr))}}
+        @media(max-width:700px){.general-stock-page{padding:8px}.general-stock-titlebar h2{font-size:15px}.general-stock-toolbar{align-items:flex-start;flex-direction:column}.general-stock-actions{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}.general-stock-actions .btn{flex:0 0 auto}.general-stock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.general-stock-form{padding:8px}.general-stock-table-wrap{max-height:none}.general-stock-modal{padding:14px}}
+      `}</style>
     </div>
   );
 }

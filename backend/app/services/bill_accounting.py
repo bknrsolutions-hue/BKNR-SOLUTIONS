@@ -25,6 +25,7 @@ def ensure_bill_accounting_schema(db: Session) -> None:
         "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
         "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS journal_id INTEGER",
         "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+        "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS cogs_journal_id INTEGER",
         "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS customer_ledger_id INTEGER",
         "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS sales_ledger_id INTEGER",
         "ALTER TABLE sales_dispatch ADD COLUMN IF NOT EXISTS journal_id INTEGER",
@@ -464,21 +465,8 @@ def post_contractor_source_charge(
 def cancel_linked_bill_voucher(db: Session, company_id: str, journal_id: Optional[int], email: Optional[str]) -> None:
     if not journal_id:
         return
-    voucher = db.query(VoucherHeader).filter(
-        VoucherHeader.company_id == company_id,
-        VoucherHeader.id == journal_id,
-    ).first()
-    if not voucher or voucher.status == "CANCELLED":
-        return
-    old_status = voucher.status
-    voucher.status = "CANCELLED"
-    PostingEngineService.write_finance_audit(
-        db,
-        company_id,
-        "voucher_headers",
-        voucher.id,
-        "CANCEL",
-        {"status": old_status},
-        {"status": "CANCELLED"},
+    PostingEngineService.reverse_voucher(
+        db, company_id, journal_id,
+        "Linked source transaction cancelled",
         email or "SYSTEM",
     )

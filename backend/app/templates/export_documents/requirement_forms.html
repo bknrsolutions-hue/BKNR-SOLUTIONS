@@ -1,0 +1,14 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Export Requirement Entry Forms</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+.rf-page{padding:22px}.rf-head{margin-bottom:18px}.rf-head h2{margin:0}.rf-search{width:min(420px,100%);padding:10px;border:1px solid #cbd5e1;border-radius:7px;margin:14px 0}
+.rf-stage{margin:20px 0}.rf-stage h3{font-size:13px;text-transform:uppercase}.rf-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.rf-card{display:flex;gap:10px;align-items:center;padding:14px;border:1px solid var(--border-color,#dbe3ea);border-radius:9px;text-decoration:none;color:inherit;background:var(--card-bg,#fff)}.rf-card:hover{border-color:#176b87}.rf-card small{display:block;color:#64748b}
+.rf-selector{display:grid;grid-template-columns:1fr 2fr;gap:12px;margin-bottom:12px}.rf-selector select{padding:10px;border:1px solid #cbd5e1;border-radius:7px}.rf-frame{width:100%;height:1500px;border:1px solid #dbe3ea;border-radius:10px;background:#fff}
+</style>
+</head><body>
+<div class="rf-page"><div class="rf-head"><h2>Export Requirement Entry Forms</h2><small>Each requirement has a separate details, PDF and email approval page.</small></div>
+<div class="rf-selector"><input id="rfSearch" class="rf-search" placeholder="Search document form..." oninput="filterOptions(this.value)"><select id="rfSelect" onchange="openSelectedForm()">{% for item in document_types %}<option value="{{ item.template_url }}" data-search="{{ item.label|lower }} {{ item.code|lower }} {{ item.stage|lower }}">{{ item.label }} · {{ item.stage }}{% if item.pending_for_me %} · {{ item.pending_for_me }} pending for me{% endif %}</option>{% endfor %}</select></div>
+<iframe id="rfFrame" class="rf-frame" src="{{ document_types[0].template_url if document_types else '' }}"></iframe></div>
+<script>function openSelectedForm(){document.getElementById('rfFrame').src=document.getElementById('rfSelect').value}function filterOptions(value){const q=value.toLowerCase().trim(),select=document.getElementById('rfSelect');[...select.options].forEach(x=>x.hidden=!!q&&!x.dataset.search.includes(q));const first=[...select.options].find(x=>!x.hidden);if(first){select.value=first.value;openSelectedForm()}}</script>
+</body></html>

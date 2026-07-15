@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Trash2, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
@@ -726,7 +726,7 @@ export default function RawMaterialPurchasing() {
                           style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
                           title="Cancel log"
                         >
-                          <Trash2 size={13} />
+                          <Ban size={13} />
                         </button>
                       </div>
                     )}

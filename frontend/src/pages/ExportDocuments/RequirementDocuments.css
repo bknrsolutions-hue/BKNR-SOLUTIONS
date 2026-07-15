@@ -1,0 +1,68 @@
+.main-content > .attendance-container.requirement-forms-page,
+.main-content > .attendance-container.requirement-document-page {
+  display: block !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  height: 100% !important;
+  scrollbar-width: thin;
+}
+
+.requirement-forms-page > .requirement-document-page {
+  min-height: auto;
+  padding: 8px 0 30px;
+  background: transparent;
+}
+
+.requirement-form-selector {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr);
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--att-border);
+  border-radius: 10px;
+  background: var(--att-card);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.requirement-inline-form {
+  padding: 16px;
+  margin: 10px 0 16px;
+  border: 1px solid var(--att-border);
+  border-radius: 12px;
+  background: var(--att-card);
+  box-shadow: var(--att-shadow);
+}
+
+.requirement-inline-form-head h2 { margin: 0; font-size: 16px; }
+.requirement-inline-form-head p { margin: 4px 0 14px; color: var(--att-muted); font-size: 12px; }
+.requirement-fields-grid { grid-template-columns: repeat(3, minmax(190px, 1fr)); }
+.requirement-approver-field { grid-column: 1 / -1; }
+.requirement-email-dropdown { border: 1px solid var(--att-border); border-radius: 7px; padding: 10px; }
+.requirement-email-dropdown summary { cursor: pointer; font-weight: 700; }
+.requirement-email-grid { display: grid; grid-template-columns: repeat(2, minmax(260px, 1fr)); gap: 8px; padding-top: 10px; }
+.requirement-email-grid label { display: flex; align-items: center; gap: 8px; padding: 7px; border: 1px solid var(--att-border); border-radius: 6px; }
+.requirement-email-grid small { display: block; color: var(--att-muted); }
+.requirement-lookup-multi-grid { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 6px; max-height: 190px; overflow: auto; padding-top: 9px; }
+.requirement-lookup-multi-grid label { display: flex; align-items: center; gap: 7px; padding: 6px 7px; border: 1px solid var(--att-border); border-radius: 6px; cursor: pointer; }
+.requirement-save-row { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; padding-top: 4px; }
+
+.requirement-document-page > .attendance-table-container {
+  min-height: 280px !important;
+  max-height: 520px;
+  overflow: hidden !important;
+}
+
+.requirement-document-page > .attendance-table-container > .attendance-table-wrapper {
+  height: 100%;
+  overflow: auto !important;
+}
+
+@media (max-width: 850px) {
+  .requirement-form-selector,
+  .requirement-fields-grid,
+  .requirement-email-grid,
+  .requirement-lookup-multi-grid { grid-template-columns: 1fr; }
+}

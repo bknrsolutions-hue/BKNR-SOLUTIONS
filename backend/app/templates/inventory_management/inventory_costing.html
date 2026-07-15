@@ -348,14 +348,13 @@
 
     <form method="get" id="filterForm" class="filters-group">
         <div class="fbox" id="fyFilterWrapper">
-            <label style="color: var(--brand-accent);"><i class="fa-solid fa-calendar-check"></i> Year Filter</label>
+            <label style="color: var(--brand-accent);"><i class="fa-solid fa-calendar-check"></i> Financial Year</label>
             <select id="f_fy" class="fy-select-premium" onchange="changeFY(this.value)">
                 <option value="">-- ALL YEARS --</option>
                 {% set start_yr = 2024 %}
                 {% set end_yr = 2027 %}
                 {% for y in range(start_yr, end_yr) %}
-                {% set next_yr_short = (y + 1) | string %}
-                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ next_yr_short[2:] }}</option>
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y + 1 }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -531,7 +530,7 @@
         window.location.href = url.toString();
     }
 
-    // 🌟 🟢 GHOST EV_TRIGGER BLOCK: సైలెంట్ గా వాల్యూస్ ని మాత్రమే మార్చి, ఈవెంట్ లూప్స్ ని కంప్లీట్ గా కిల్ చేస్తుంది!
+    // Update values silently and prevent event loops.
     function syncParentScreenFilters() {
         try {
             const activeProdFor = "{{ selected_production_for or '' }}";
@@ -541,18 +540,18 @@
                 const parentProdForDropdown = window.parent.document.getElementById("global_production_for") || window.parent.document.getElementById("production_for");
                 const parentLocDropdown = window.parent.document.getElementById("global_location") || window.parent.document.getElementById("location") || window.parent.document.getElementById("peeling_at") || window.parent.document.getElementById("production_at");
 
-                // 🔴 CRITICAL FIX: వాల్యూస్ మారితేనే అప్‌డేట్ చేస్తుంది, మళ్లీ మళ్లీ ఈవెంట్స్ ని ట్రిగ్గర్ చేయనివ్వదు!
+                // Update only when values change to prevent repeated events.
                 if (parentProdForDropdown && activeProdFor && parentProdForDropdown.value !== activeProdFor) {
                     let oldHandler = parentProdForDropdown.onchange;
-                    parentProdForDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentProdForDropdown.onchange = null; // Temporarily clear the event.
                     parentProdForDropdown.value = activeProdFor;
-                    parentProdForDropdown.onchange = oldHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                    parentProdForDropdown.onchange = oldHandler; // Restore the event handler.
                 }
                 if (parentLocDropdown && activeLocation && parentLocDropdown.value !== activeLocation) {
                     let oldLocHandler = parentLocDropdown.onchange;
-                    parentLocDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentLocDropdown.onchange = null; // Temporarily clear the event.
                     parentLocDropdown.value = activeLocation;
-                    parentLocDropdown.onchange = oldLocHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                    parentLocDropdown.onchange = oldLocHandler; // Restore the event handler.
                 }
             }
         } catch (e) {

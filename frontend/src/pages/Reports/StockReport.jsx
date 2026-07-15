@@ -41,6 +41,7 @@ function signedMovement(row, field) {
 }
 
 export default function StockReport({ activeRoute, user }) {
+  const routeBase = activeRoute?.split('?')[0] || activeRoute;
   const [fy, setFy]                     = useState('');
   const [fromDate, setFrom]             = useState('');
   const [toDate, setTo]                 = useState('');
@@ -196,7 +197,7 @@ export default function StockReport({ activeRoute, user }) {
   });
 
   const getExportUrl = (type) => {
-    let url = `${activeRoute}/export_${type}?from_date=${fromDate}&to_date=${toDate}&type=${movFilter}&batch=${encodeURIComponent(batchFilter)}&brand=${encodeURIComponent(brandFilter)}&species=${encodeURIComponent(speciesFilter)}&variety=${encodeURIComponent(varietyFilter)}&location=${encodeURIComponent(locationFilter)}`;
+    let url = `${routeBase}/export_${type}?from_date=${fromDate}&to_date=${toDate}&type=${movFilter}&batch=${encodeURIComponent(batchFilter)}&brand=${encodeURIComponent(brandFilter)}&species=${encodeURIComponent(speciesFilter)}&variety=${encodeURIComponent(varietyFilter)}&location=${encodeURIComponent(locationFilter)}`;
     const pf = localStorage.getItem('production_for_filter') || '';
     const loc = localStorage.getItem('plant_location_filter') || '';
     if (pf) url += `&production_for=${encodeURIComponent(pf)}`;
@@ -225,7 +226,7 @@ export default function StockReport({ activeRoute, user }) {
       return;
     }
     try {
-      const response = await fetch(`${activeRoute}/update`, {
+      const response = await fetch(`${routeBase}/update`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -771,7 +772,7 @@ export default function StockReport({ activeRoute, user }) {
       <AuditDrawer
         isOpen={auditOpen}
         onClose={() => setAuditOpen(false)}
-        auditUrl={`${activeRoute}/audit_all`}
+        auditUrl={`${routeBase}/audit_all`}
       />
 
     </div>

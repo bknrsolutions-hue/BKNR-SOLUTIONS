@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/bknr-charts.js"></script>
-<script src="/static/js/ui-color-customizer.js"></script>
+<script src="/static/js/ui-color-customizer.js?v=2.4"></script>
 
 <style>
   :root {
@@ -304,11 +304,11 @@
         </select>
       </div>
       <div class="input-field">
-        <label><i class="fa-solid fa-calendar-days"></i> FY</label>
+        <label><i class="fa-solid fa-calendar-days"></i> Financial Year</label>
         <select name="fy" id="fySelect">
           {% for fy_item in fy_options %}
             {% set fy_start = fy_item.split('-')[0]|int %}
-            <option value="{{ fy_item }}" data-start="{{ fy_start }}-04-01" data-end="{{ fy_start + 1 }}-03-31" {% if selected_fy == fy_item %}selected{% endif %}>{{ fy_item }}</option>
+            <option value="{{ fy_item }}" data-start="{{ fy_start }}-04-01" data-end="{{ fy_start + 1 }}-03-31" {% if selected_fy == fy_item %}selected{% endif %}>FY {{ fy_start }}-{{ fy_start + 1 }}</option>
           {% endfor %}
         </select>
       </div>
@@ -613,7 +613,7 @@ document.addEventListener("DOMContentLoaded", function() {
   observer.observe(document.documentElement, { attributes: true });
 });
 </script>
-<link rel="stylesheet" href="/static/css/ui-color-customizer.css">
+<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
 <script src="/static/js/global-loader.js?v=skel8"></script>
 </body>
 </html>

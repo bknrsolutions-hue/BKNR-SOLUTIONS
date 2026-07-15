@@ -14,6 +14,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
@@ -370,11 +371,29 @@ application.add_middleware(PerformanceHeadersMiddleware)
 @application.on_event("startup")
 def on_startup():
     start_snapshot_scheduler()
-    try:
+
+    # Do not block Render's public port while PostgreSQL is waking up or
+    # recovering. Existing schema remains usable and migration retries in the
+    # background with a fresh SQLAlchemy connection each time.
+    def migrate_with_retry():
         from app.database.migration import run_migration
-        run_migration()
-    except Exception as e:
-        logger.error(f"Database migration failed on startup: {e}")
+
+        for attempt in range(1, 4):
+            try:
+                run_migration()
+                logger.info("Database migration completed on attempt %s", attempt)
+                return
+            except Exception as exc:
+                engine.dispose()
+                logger.error("Database migration attempt %s/3 failed: %s", attempt, exc)
+                if attempt < 3:
+                    time.sleep(attempt * 5)
+
+    threading.Thread(
+        target=migrate_with_retry,
+        name="database-migration",
+        daemon=True,
+    ).start()
 
 
 @application.on_event("shutdown")
@@ -470,14 +489,15 @@ async def legacy_tally_dashboard_redirect():
 
 @application.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
-    if request.session.get("email"):
-        return RedirectResponse("/home", status_code=303)
-        
-    return templates.TemplateResponse(
-        request=request,
-        name="login.html",
-        context={"request": request, "show_login": False}
-    )
+    # The production web entry is the React application. Authentication still
+    # uses the same signed backend session and API endpoints.
+    return RedirectResponse("/app/", status_code=303)
+
+
+@application.head("/")
+async def root_head():
+    """Fast port-discovery response for Render deploy checks."""
+    return Response(status_code=200)
 
 
 @application.get("/robots.txt", response_class=PlainTextResponse)
@@ -597,70 +617,8 @@ async def status_page(request: Request):
 @application.get("/home", response_class=HTMLResponse)
 async def home_page(request: Request):
     if not request.session.get("email"):
-        return RedirectResponse("/", status_code=303)
-
-    company_code = request.session.get("company_code")
-
-    # Universal filters come from indexed masters, not repeated transaction-table scans.
-    db = SessionLocal()
-    try:
-        from app.database.models.criteria import peeling_at, production_at, production_for
-        from app.database.models.inventory_management import cold_storage
-
-        def build_menu_filters():
-            companies = {
-                str(value).strip()
-                for (value,) in db.query(production_for.production_for).filter(
-                    production_for.company_id == company_code,
-                    func.lower(production_for.status) == "active",
-                ).distinct().all()
-                if value and str(value).strip()
-            }
-            locations = {
-                str(value).strip()
-                for model, column in (
-                    (production_at, production_at.production_at),
-                    (peeling_at, peeling_at.peeling_at),
-                )
-                for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
-                if value and str(value).strip()
-            }
-            locations.update(
-                str(value).strip()
-                for (value,) in db.query(cold_storage.storage_name).filter(
-                    cold_storage.company_id == company_code,
-                    func.lower(cold_storage.is_active) == "active",
-                ).distinct().all()
-                if value and str(value).strip()
-            )
-            return {"companies": sorted(companies), "locations": sorted(locations)}
-
-        menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v2",
-            build_menu_filters,
-            ttl=300,
-        )
-        companies_list = menu_filters["companies"]
-        locations_list = menu_filters["locations"]
-        screen_popup_config = get_screen_popup_config(db)
-    except Exception as e:
-        logger.exception("Error loading universal menu filters: %s", e)
-        companies_list = []
-        locations_list = []
-        screen_popup_config = {"enabled": False, "message": "", "routes": [], "updated_at": ""}
-    finally:
-        db.close()
-
-    return templates.TemplateResponse(
-        request=request,
-        name="menu.html",
-        context={
-            "request": request,
-            "companies": companies_list,
-            "locations": locations_list,
-            "screen_popup_config": screen_popup_config
-        }
-    )
+        return RedirectResponse("/app/", status_code=303)
+    return RedirectResponse("/app/#/page/dashboard_processing", status_code=303)
 
 
 @application.get("/health")

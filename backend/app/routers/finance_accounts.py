@@ -31,7 +31,9 @@ from app.database.models.enterprise_finance import (
     ExportIncentiveRegister,
     LCTracking,
     SalaryProcessing,
-    ProductionCostAllocation
+    ProductionCostAllocation,
+    BillAllocation,
+    ForexRevaluation,
 )
 from app.database.models.gst_models import GSTRegister, GSTRFilingStatus, ITCUtilization
 from app.database.models.assets import FixedAssetMaster, DepreciationSchedule
@@ -41,6 +43,11 @@ from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill
 from app.database.models.processing import AuditLog  # Audit trails
 from app.database.models.attendance import (
     EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance, EmployeeStatutoryMaster
+)
+from app.database.models.criteria import production_at as ProductionLocation
+from app.services.production_cost_automation import (
+    build_monthly_production_cost_preview,
+    build_production_cost_comparison,
 )
 
 router = APIRouter()
@@ -398,6 +405,24 @@ class ProductionCostAllocationSchema(BaseModel):
     cost_center_id: int = None
     status: str = "OPEN"
 
+
+class ForexRevaluationRunSchema(BaseModel):
+    as_of_date: date
+    closing_rates: dict[str, float]
+
+
+PRODUCTION_COST_LEDGER_MAP = (
+    ("raw_material_cost", "Raw Shrimp Purchase A/c", "Purchase Accounts"),
+    ("labour_cost", "Processing Labour Cost A/c", "Direct Expenses"),
+    ("power_cost", "Production Power Cost A/c", "Direct Expenses"),
+    ("ice_cost", "Production Ice Cost A/c", "Direct Expenses"),
+    ("water_cost", "Production Water Cost A/c", "Direct Expenses"),
+    ("packing_material_cost", "Packing Material Purchase A/c", "Purchase Accounts"),
+    ("chemical_cost", "Soaking Chemical Cost A/c", "Direct Expenses"),
+    ("cold_storage_cost", "Cold Storage Rent & Handling A/c", "Indirect Expenses"),
+    ("other_cost", "Other Production Cost A/c", "Direct Expenses"),
+)
+
 class GSTRegisterSchema(BaseModel):
     transaction_type: str
     invoice_no: str
@@ -459,6 +484,64 @@ class DepreciationRunSchema(BaseModel):
     run_date: date = None
 
 
+NATIVE_FINANCE_MODELS = {
+    "bank_master": BankMaster,
+    "item_accounting_link": ItemAccountingLink,
+    "export_incentive_register": ExportIncentiveRegister,
+    "lc_tracking": LCTracking,
+    "gst_register": GSTRegister,
+    "fixed_assets": FixedAssetMaster,
+}
+
+
+def serialize_native_row(row):
+    result = {}
+    for column in row.__table__.columns:
+        value = getattr(row, column.name)
+        if isinstance(value, (date, datetime)):
+            value = value.isoformat()
+        result[column.name] = value
+    return result
+
+
+@router.get("/native-data/{module_key}")
+def native_finance_data(module_key: str, request: Request, db: Session = Depends(get_db)):
+    """JSON bootstrap used by native React finance register pages."""
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    model = NATIVE_FINANCE_MODELS.get(module_key)
+    if not model:
+        return JSONResponse({"success": False, "message": "Unknown finance module"}, status_code=404)
+
+    query = db.query(model).filter(model.company_id == comp_code)
+    if hasattr(model, "is_cancelled"):
+        query = query.filter(model.is_cancelled != True)
+    rows = query.order_by(desc(model.id)).all()
+    ledgers = db.query(LedgerMaster).filter(
+        LedgerMaster.company_id == comp_code,
+        LedgerMaster.status == "ACTIVE",
+    ).order_by(LedgerMaster.ledger_name).all()
+    result = {
+        "success": True,
+        "rows": [serialize_native_row(row) for row in rows],
+        "ledgers": [{"id": row.id, "name": row.ledger_name, "code": row.ledger_code} for row in ledgers],
+    }
+    if module_key == "gst_register":
+        filings = db.query(GSTRFilingStatus).filter(GSTRFilingStatus.company_id == comp_code).order_by(desc(GSTRFilingStatus.period_month)).all()
+        itc_rows = db.query(ITCUtilization).filter(ITCUtilization.company_id == comp_code).order_by(desc(ITCUtilization.period_month)).all()
+        result["filings"] = [serialize_native_row(row) for row in filings]
+        result["itc_rows"] = [serialize_native_row(row) for row in itc_rows]
+    if module_key == "fixed_assets":
+        depreciation = db.query(DepreciationSchedule).filter(DepreciationSchedule.company_id == comp_code).order_by(desc(DepreciationSchedule.period_month)).all()
+        asset_names = {row.id: row.asset_name for row in rows}
+        result["depreciation"] = [
+            {**serialize_native_row(row), "asset_name": asset_names.get(row.asset_id, "")}
+            for row in depreciation
+        ]
+    return result
+
+
 # Helper function to audit actions
 def write_audit(db: Session, table: str, rec_id: int, company_id: str, action: str, old: str, new: str, email: str):
     audit = AuditLog(
@@ -499,23 +582,87 @@ def amount_line(db: Session, company_id: str, debit: float, credit: float, remar
 def cancel_linked_voucher(db: Session, company_id: str, journal_id: int | None, email: str) -> None:
     if not journal_id:
         return
-    voucher = db.query(VoucherHeader).filter(
-        VoucherHeader.id == journal_id,
-        VoucherHeader.company_id == company_id,
-    ).first()
-    if voucher and voucher.status != "CANCELLED":
-        old_status = voucher.status
-        voucher.status = "CANCELLED"
-        PostingEngineService.write_finance_audit(
-            db,
-            company_id,
-            "voucher_headers",
-            voucher.id,
-            "CANCEL",
-            {"status": old_status},
-            {"status": "CANCELLED"},
-            email or "SYSTEM",
-        )
+    PostingEngineService.reverse_voucher(
+        db, company_id, journal_id,
+        "Linked source transaction cancelled",
+        email or "SYSTEM",
+    )
+
+
+def allocate_payment_to_source(db: Session, company_id: str, entry: PaymentReceipt, email: str) -> BillAllocation | None:
+    """Apply one receipt/payment to its selected invoice or vendor bill."""
+    amount = round(float(entry.amount_inr or 0), 2)
+    if entry.transaction_type == "VENDOR_PAYMENT" and entry.vendor_bill_no:
+        source = db.query(VendorPayment).filter(
+            VendorPayment.company_id == company_id,
+            VendorPayment.bill_no == entry.vendor_bill_no,
+            VendorPayment.is_cancelled != True,
+        ).with_for_update().first()
+        source_type = "PAYABLE"
+        document_no = entry.vendor_bill_no
+    elif entry.transaction_type != "VENDOR_PAYMENT" and entry.invoice_no:
+        source = db.query(CustomerReceivable).filter(
+            CustomerReceivable.company_id == company_id,
+            CustomerReceivable.invoice_no == entry.invoice_no,
+            CustomerReceivable.is_cancelled != True,
+        ).with_for_update().first()
+        source_type = "RECEIVABLE"
+        document_no = entry.invoice_no
+        amount = round(amount + float(entry.bank_charges or 0) + float(entry.adjustment_amount or 0), 2)
+    else:
+        return None
+    if not source:
+        raise ValueError(f"Selected {source_type.lower()} document was not found")
+    current_balance = round(float(source.balance if source_type == "PAYABLE" else source.balance_amount or 0), 2)
+    if amount > current_balance + 0.01:
+        raise ValueError(f"Allocation exceeds outstanding balance of ₹{current_balance:.2f}")
+    new_balance = round(max(current_balance - amount, 0), 2)
+    if source_type == "PAYABLE":
+        source.paid_amount = round(float(source.paid_amount or 0) + amount, 2)
+        source.balance = new_balance
+        source.status = "Paid" if new_balance <= 0.01 else "Partially Paid"
+    else:
+        source.received_amount = round(float(source.received_amount or 0) + amount, 2)
+        source.balance_amount = new_balance
+        source.received_date = entry.entry_date
+        source.payment_status = "PAID" if new_balance <= 0.01 else "PARTIAL"
+        source.status = "CLOSED" if new_balance <= 0.01 else "OPEN"
+    allocation = BillAllocation(
+        company_id=company_id,
+        payment_receipt_id=entry.id,
+        source_type=source_type,
+        source_id=source.id,
+        document_no=document_no,
+        allocated_amount=amount,
+        created_by=email or "SYSTEM",
+    )
+    db.add(allocation)
+    return allocation
+
+
+def reverse_payment_allocation(db: Session, company_id: str, payment_receipt_id: int) -> None:
+    allocations = db.query(BillAllocation).filter(
+        BillAllocation.company_id == company_id,
+        BillAllocation.payment_receipt_id == payment_receipt_id,
+        BillAllocation.is_reversed == False,
+    ).with_for_update().all()
+    for allocation in allocations:
+        amount = float(allocation.allocated_amount or 0)
+        if allocation.source_type == "PAYABLE":
+            source = db.query(VendorPayment).filter(VendorPayment.id == allocation.source_id, VendorPayment.company_id == company_id).with_for_update().first()
+            if source:
+                source.paid_amount = round(max(float(source.paid_amount or 0) - amount, 0), 2)
+                source.balance = round(float(source.balance or 0) + amount, 2)
+                source.status = "Unpaid" if float(source.paid_amount or 0) <= 0.01 else "Partially Paid"
+        else:
+            source = db.query(CustomerReceivable).filter(CustomerReceivable.id == allocation.source_id, CustomerReceivable.company_id == company_id).with_for_update().first()
+            if source:
+                source.received_amount = round(max(float(source.received_amount or 0) - amount, 0), 2)
+                source.balance_amount = round(float(source.balance_amount or 0) + amount, 2)
+                source.payment_status = "PENDING" if float(source.received_amount or 0) <= 0.01 else "PARTIAL"
+                source.status = "OPEN"
+        allocation.is_reversed = True
+        allocation.reversed_at = datetime.utcnow()
 
 
 SALARY_EARNING_FIELDS = (
@@ -758,6 +905,87 @@ def get_customer_receivables_history(request: Request, db: Session = Depends(get
         } for row in history
     ]
     return {"success": True, "data": history_data}
+
+
+@router.post("/customer_receivables/forex-revaluation")
+def run_customer_forex_revaluation(request: Request, payload: ForexRevaluationRunSchema, db: Session = Depends(get_db)):
+    """Reverse the prior run and post period-end unrealised FX per open invoice."""
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email") or "SYSTEM"
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    rates = {str(code).strip().upper(): float(rate) for code, rate in payload.closing_rates.items() if float(rate) > 0}
+    if not rates:
+        return JSONResponse({"success": False, "message": "At least one valid closing exchange rate is required"}, status_code=400)
+    duplicate = db.query(ForexRevaluation.id).filter(
+        ForexRevaluation.company_id == comp_code,
+        ForexRevaluation.as_of_date == payload.as_of_date,
+    ).first()
+    if duplicate:
+        return JSONResponse({"success": False, "message": "Forex revaluation already exists for this date"}, status_code=400)
+    receivables = db.query(CustomerReceivable).filter(
+        CustomerReceivable.company_id == comp_code,
+        CustomerReceivable.is_cancelled != True,
+        CustomerReceivable.balance_amount > 0.01,
+        CustomerReceivable.currency != "INR",
+    ).all()
+    posted = skipped = 0
+    net_gain_loss = 0.0
+    try:
+        for source in receivables:
+            currency = str(source.currency or "USD").strip().upper()
+            closing_rate = rates.get(currency)
+            booking_rate = float(source.exchange_rate or 0)
+            if not closing_rate or booking_rate <= 0 or float(source.invoice_value_inr or 0) <= 0:
+                skipped += 1
+                continue
+            previous = db.query(ForexRevaluation).filter(
+                ForexRevaluation.company_id == comp_code,
+                ForexRevaluation.receivable_id == source.id,
+                ForexRevaluation.is_reversed == False,
+            ).order_by(ForexRevaluation.as_of_date.desc()).first()
+            if previous:
+                PostingEngineService.reverse_voucher(
+                    db, comp_code, previous.journal_id,
+                    f"Forex revaluation rolled forward to {payload.as_of_date.isoformat()}", email,
+                    reversal_date=payload.as_of_date,
+                )
+                previous.is_reversed = True
+            foreign_balance = round(float(source.invoice_value_foreign or 0) * float(source.balance_amount or 0) / float(source.invoice_value_inr), 4)
+            gain_loss = round(foreign_balance * (closing_rate - booking_rate), 2)
+            if abs(gain_loss) < 0.01:
+                skipped += 1
+                continue
+            customer = f"{source.buyer_name} - Customer A/c" if not str(source.buyer_name).lower().endswith("a/c") else source.buyer_name
+            if gain_loss > 0:
+                details = [
+                    amount_line(db, comp_code, gain_loss, 0.0, source.invoice_no, ledger_name=customer, group_name="Sundry Debtors", group_type="ASSET", parent_group_name="Current Assets"),
+                    amount_line(db, comp_code, 0.0, gain_loss, source.invoice_no, ledger_name="Unrealised Forex Gain A/c", group_name="Indirect Incomes", group_type="INCOME"),
+                ]
+            else:
+                value = abs(gain_loss)
+                details = [
+                    amount_line(db, comp_code, value, 0.0, source.invoice_no, ledger_name="Unrealised Forex Loss A/c", group_name="Indirect Expenses", group_type="EXPENSE"),
+                    amount_line(db, comp_code, 0.0, value, source.invoice_no, ledger_name=customer, group_name="Sundry Debtors", group_type="ASSET", parent_group_name="Current Assets"),
+                ]
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", payload.as_of_date,
+                f"Unrealised forex revaluation for invoice {source.invoice_no}", details,
+                reference_no=f"FX-{source.invoice_no}"[:50], created_by=email,
+            )
+            db.add(ForexRevaluation(
+                company_id=comp_code, receivable_id=source.id, as_of_date=payload.as_of_date,
+                currency_code=currency, foreign_balance=foreign_balance,
+                booking_rate=booking_rate, closing_rate=closing_rate,
+                gain_loss_amount=gain_loss, journal_id=voucher.id, created_by=email,
+            ))
+            posted += 1
+            net_gain_loss += gain_loss
+        db.commit()
+        return {"success": True, "message": f"Posted {posted} forex revaluations; skipped {skipped}.", "posted": posted, "skipped": skipped, "net_gain_loss": round(net_gain_loss, 2)}
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
 
 # ============================================================
@@ -1223,9 +1451,14 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         reference_no=clean_reference or payload.receipt_no, created_by=email or "SYSTEM",
     )
     entry.journal_id = voucher.id
+    allocation = allocate_payment_to_source(db, comp_code, entry, email)
     write_audit(db, "payment_receipts", entry.id, comp_code, "CREATE", "NONE", f"Receipt: {payload.receipt_no}", email)
     db.commit()
-    return {"success": True, "message": "Payment receipt registered successfully"}
+    return {
+        "success": True,
+        "message": "Payment receipt and bill allocation registered successfully",
+        "allocation_id": allocation.id if allocation else None,
+    }
 
 @router.post("/payment_receipt/delete/{log_id}")
 def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
@@ -1234,6 +1467,7 @@ def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(
     entry = db.query(PaymentReceipt).filter(PaymentReceipt.id == log_id, PaymentReceipt.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
+        reverse_payment_allocation(db, comp_code, entry.id)
         write_audit(db, "payment_receipts", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -1962,7 +2196,45 @@ def production_cost_allocation_entry(request: Request, db: Session = Depends(get
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     from app.database.models.enterprise_finance import CostCenter
     cost_centers = db.query(CostCenter).filter(CostCenter.company_id == comp_code).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/production_cost_allocation.html", context={"history": history, "ledgers": ledgers, "cost_centers": cost_centers, "company_id": comp_code})
+    locations = db.query(ProductionLocation).filter(ProductionLocation.company_id == comp_code).order_by(ProductionLocation.production_at).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/production_cost_allocation.html", context={"history": history, "ledgers": ledgers, "cost_centers": cost_centers, "locations": locations, "company_id": comp_code})
+
+
+@router.get("/production_cost_allocation/automation-preview")
+def production_cost_automation_preview(
+    request: Request,
+    month: str = Query(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    production_at: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        preview = build_monthly_production_cost_preview(db, comp_code, month, production_at or None)
+        return {"success": True, "preview": preview}
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
+
+
+@router.get("/production_cost_allocation/automation-comparison")
+def production_cost_automation_comparison(
+    request: Request,
+    production_at: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    comparison = build_production_cost_comparison(db, comp_code, production_at or None)
+    locations = [
+        row.production_at
+        for row in db.query(ProductionLocation).filter(
+            ProductionLocation.company_id == comp_code
+        ).order_by(ProductionLocation.production_at).all()
+        if row.production_at
+    ]
+    return {"success": True, "comparison": comparison, "locations": locations}
 
 @router.post("/production_cost_allocation/save")
 def production_cost_allocation_save(request: Request, payload: ProductionCostAllocationSchema, db: Session = Depends(get_db)):
@@ -1970,21 +2242,106 @@ def production_cost_allocation_save(request: Request, payload: ProductionCostAll
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
-    exists = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.company_id == comp_code, ProductionCostAllocation.batch_number == payload.batch_number).first()
-    if exists:
-        # Update existing
-        for k, v in payload.dict().items():
-            setattr(exists, k, v)
-        write_audit(db, "production_cost_allocations", exists.id, comp_code, "UPDATE", f"Batch: {payload.batch_number}", "UPDATED", email)
-    else:
-        # Create new
-        entry = ProductionCostAllocation(company_id=comp_code, created_by=email, **payload.dict())
-        db.add(entry)
-        db.flush()
-        write_audit(db, "production_cost_allocations", entry.id, comp_code, "CREATE", "NONE", f"Batch: {payload.batch_number}", email)
-        
-    db.commit()
-    return {"success": True, "message": "Production cost allocation saved successfully"}
+    status = str(payload.status or "OPEN").strip().upper()
+    if status not in {"OPEN", "COST_ALLOCATED", "FG_TRANSFERRED"}:
+        return JSONResponse({"success": False, "message": "Invalid production accounting status"}, status_code=400)
+    component_values = {
+        field: round(float(getattr(payload, field, 0) or 0), 2)
+        for field, _, _ in PRODUCTION_COST_LEDGER_MAP
+    }
+    if any(value < 0 for value in component_values.values()):
+        return JSONResponse({"success": False, "message": "Production cost components cannot be negative"}, status_code=400)
+    calculated_total = round(sum(component_values.values()), 2)
+    if status != "OPEN" and calculated_total <= 0:
+        return JSONResponse({"success": False, "message": "Allocate at least one production cost before posting"}, status_code=400)
+    if status == "FG_TRANSFERRED" and float(payload.output_qty_kg or 0) <= 0:
+        return JSONResponse({"success": False, "message": "Finished-goods quantity is required before transfer"}, status_code=400)
+
+    exists = db.query(ProductionCostAllocation).filter(
+        ProductionCostAllocation.company_id == comp_code,
+        ProductionCostAllocation.batch_number == payload.batch_number,
+    ).with_for_update().first()
+    try:
+        if exists:
+            if exists.wip_journal_id:
+                PostingEngineService.reverse_voucher(db, comp_code, exists.wip_journal_id, "Production cost allocation revised", email or "SYSTEM")
+            if exists.fg_journal_id:
+                PostingEngineService.reverse_voucher(db, comp_code, exists.fg_journal_id, "Finished goods valuation revised", email or "SYSTEM")
+            entry = exists
+            for key, value in payload.model_dump().items():
+                setattr(entry, key, value)
+            entry.wip_journal_id = None
+            entry.fg_journal_id = None
+            entry.modified_at = datetime.utcnow()
+            action = "UPDATE"
+        else:
+            entry = ProductionCostAllocation(company_id=comp_code, created_by=email, **payload.model_dump())
+            db.add(entry)
+            db.flush()
+            action = "CREATE"
+
+        entry.status = status
+        entry.total_cost = calculated_total
+        entry.cost_per_kg = round(calculated_total / float(entry.output_qty_kg or 1), 2) if float(entry.output_qty_kg or 0) > 0 else 0.0
+        entry.yield_percent = round(float(entry.output_qty_kg or 0) * 100 / float(entry.input_qty_kg or 1), 2) if float(entry.input_qty_kg or 0) > 0 else 0.0
+        entry.process_loss_kg = round(max(float(entry.input_qty_kg or 0) - float(entry.output_qty_kg or 0), 0), 2)
+
+        if status in {"COST_ALLOCATED", "FG_TRANSFERRED"}:
+            wip_line = amount_line(
+                db, comp_code, calculated_total, 0.0, f"WIP batch {entry.batch_number}",
+                ledger_id=entry.wip_ledger_id,
+                ledger_name="Work In Progress A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            wip_line["cost_center_id"] = entry.cost_center_id
+            details = [wip_line]
+            for field, ledger_name, group_name in PRODUCTION_COST_LEDGER_MAP:
+                value = component_values[field]
+                if value:
+                    line = amount_line(
+                        db, comp_code, 0.0, value, f"Cost absorbed into batch {entry.batch_number}",
+                        ledger_name=ledger_name, group_name=group_name, group_type="EXPENSE",
+                    )
+                    line["cost_center_id"] = entry.cost_center_id
+                    details.append(line)
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", entry.production_date,
+                f"Production costs absorbed into WIP for batch {entry.batch_number}", details,
+                reference_no=entry.batch_number, created_by=email or "SYSTEM",
+            )
+            entry.wip_journal_id = voucher.id
+
+        if status == "FG_TRANSFERRED":
+            fg_debit = amount_line(
+                db, comp_code, calculated_total, 0.0, f"Finished goods batch {entry.batch_number}",
+                ledger_name="Finished Goods Inventory A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            wip_credit = amount_line(
+                db, comp_code, 0.0, calculated_total, f"WIP completed for batch {entry.batch_number}",
+                ledger_id=entry.wip_ledger_id,
+                ledger_name="Work In Progress A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            fg_debit["cost_center_id"] = entry.cost_center_id
+            wip_credit["cost_center_id"] = entry.cost_center_id
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", entry.production_date,
+                f"WIP transferred to finished goods for batch {entry.batch_number}",
+                [fg_debit, wip_credit], reference_no=entry.batch_number, created_by=email or "SYSTEM",
+            )
+            entry.fg_journal_id = voucher.id
+
+        write_audit(db, "production_cost_allocations", entry.id, comp_code, action, "NONE", f"Batch: {entry.batch_number}; Status: {status}; Cost: {calculated_total}", email)
+        db.commit()
+        return {
+            "success": True,
+            "message": "Production cost and accounting vouchers saved successfully",
+            "wip_journal_id": entry.wip_journal_id,
+            "fg_journal_id": entry.fg_journal_id,
+            "total_cost": calculated_total,
+            "cost_per_kg": entry.cost_per_kg,
+        }
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
 @router.post("/production_cost_allocation/delete/{log_id}")
 def production_cost_allocation_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
@@ -1992,6 +2349,10 @@ def production_cost_allocation_delete(log_id: int, request: Request, db: Session
     email = request.session.get("email")
     entry = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.id == log_id, ProductionCostAllocation.company_id == comp_code).first()
     if entry:
+        if entry.wip_journal_id:
+            PostingEngineService.reverse_voucher(db, comp_code, entry.wip_journal_id, "Production cost allocation cancelled", email or "SYSTEM")
+        if entry.fg_journal_id:
+            PostingEngineService.reverse_voucher(db, comp_code, entry.fg_journal_id, "Finished goods transfer cancelled", email or "SYSTEM")
         write_audit(db, "production_cost_allocations", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()

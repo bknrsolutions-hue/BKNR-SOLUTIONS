@@ -1,15 +1,16 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from decimal import Decimal
 from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, and_, text
+from sqlalchemy import desc, func, and_, or_, text
 from datetime import date, datetime
 from io import BytesIO
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile
 import re
+import json
 import logging
 import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
@@ -17,6 +18,7 @@ from openpyxl.utils import get_column_letter
 
 from app.database import get_db
 from app.database.models.invoices import (
+    ProformaInvoice,
     ExportShipment,
     ExportComplianceTracker,
     CommercialInvoice,
@@ -25,8 +27,17 @@ from app.database.models.invoices import (
     ShippingBill,
     BillOfLading,
     HealthCertificate,
-    ExportDocumentFile
+    ExportDocumentFile,
+    ExportDocumentApproval,
+    ExportRequiredDocument,
 )
+from app.database.models.users import Company, User
+from app.database.models.criteria import (
+    buyers, buyer_agents, countries, species, varieties, grades, brands,
+    glazes, freezers, packing_styles, shipping_vendors,
+)
+from app.database.models.enterprise_finance import BankMaster, ProductionCostAllocation
+from app.database.models.inventory_management import pending_orders, sales_dispatch
 from app.database.models.processing import AuditLog  # Audit trails
 from app.services.cache import cache_get_or_set, invalidate_company_cache
 from app.services.bill_accounting import (
@@ -34,6 +45,7 @@ from app.services.bill_accounting import (
     ensure_bill_accounting_schema,
     post_export_sales_invoice,
 )
+from app.services.posting_engine import PostingEngineService
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -41,6 +53,223 @@ logger = logging.getLogger(__name__)
 
 EXPORT_PDF_DIR = Path("uploads/export_documents_private")
 _EXPORT_SCHEMA_READY = False
+
+
+def repost_invoice_cogs(db: Session, company_id: str, invoice: CommercialInvoice, email: str) -> float:
+    """Value packing-list batches and keep one COGS voucher per invoice."""
+    if invoice.cogs_journal_id:
+        PostingEngineService.reverse_voucher(
+            db, company_id, invoice.cogs_journal_id,
+            "Packing list valuation revised", email or "SYSTEM",
+        )
+        invoice.cogs_journal_id = None
+    rows = db.query(PackingList).filter(
+        PackingList.company_id == company_id,
+        PackingList.invoice_no == invoice.invoice_no,
+        PackingList.is_cancelled != True,
+    ).all()
+    total_cogs = 0.0
+    missing_batches = []
+    for row in rows:
+        batch = str(row.batch_no or "").strip()
+        if not batch:
+            missing_batches.append(row.packing_no)
+            continue
+        allocation = db.query(ProductionCostAllocation).filter(
+            ProductionCostAllocation.company_id == company_id,
+            ProductionCostAllocation.batch_number == batch,
+            ProductionCostAllocation.status == "FG_TRANSFERRED",
+            ProductionCostAllocation.is_cancelled != True,
+        ).first()
+        if not allocation or float(allocation.cost_per_kg or 0) <= 0:
+            missing_batches.append(batch)
+            continue
+        total_cogs += float(row.net_weight or 0) * float(allocation.cost_per_kg or 0)
+    total_cogs = round(total_cogs, 2)
+    if missing_batches:
+        raise ValueError("Complete FG cost allocation for packing batches: " + ", ".join(sorted(set(missing_batches))))
+    if total_cogs <= 0:
+        return 0.0
+    voucher = PostingEngineService.create_voucher(
+        db, company_id, "Journal", invoice.invoice_date,
+        f"Cost of goods sold for export invoice {invoice.invoice_no}",
+        [
+            {"ledger_name": "Cost of Goods Sold A/c", "group_name": "Direct Expenses", "group_type": "EXPENSE", "debit_amount": total_cogs, "credit_amount": 0.0, "remarks": invoice.invoice_no},
+            {"ledger_name": "Finished Goods Inventory A/c", "group_name": "Stock-in-hand", "group_type": "ASSET", "debit_amount": 0.0, "credit_amount": total_cogs, "remarks": invoice.invoice_no},
+        ],
+        reference_no=invoice.invoice_no, created_by=email or "SYSTEM",
+    )
+    invoice.cogs_journal_id = voucher.id
+    return total_cogs
+
+EXPORT_SUPPORT_DOCUMENT_TYPES = [
+    # Order and buyer approval stage
+    {"code": "PROFORMA_INVOICE", "label": "Proforma Invoice (PI)", "stage": "Order & Contract"},
+    {"code": "BUYER_PO", "label": "Buyer Purchase Order", "stage": "Order & Contract"},
+    {"code": "SALES_CONTRACT", "label": "Sales / Export Contract", "stage": "Order & Contract"},
+    {"code": "LC_COPY", "label": "Letter of Credit (LC) Copy", "stage": "Order & Contract"},
+    {"code": "LC_AMENDMENT", "label": "LC Amendment", "stage": "Order & Contract"},
+    {"code": "ADVANCE_PAYMENT_PROOF", "label": "Advance Payment / SWIFT Proof", "stage": "Order & Contract"},
+    {"code": "BUYER_APPROVAL", "label": "Buyer Approval / Email Copy", "stage": "Order & Contract"},
+    {"code": "PRODUCT_SPECIFICATION", "label": "Product Specification / MSDS", "stage": "Order & Contract"},
+    {"code": "LABEL_ARTWORK_APPROVAL", "label": "Label / Artwork Approval", "stage": "Order & Contract"},
+    {"code": "IMPORT_PERMIT", "label": "Buyer Country Import Permit", "stage": "Order & Contract"},
+
+    # Seafood production, quality and traceability stage
+    {"code": "BATCH_TRACEABILITY", "label": "Batch & Lot Traceability Record", "stage": "Seafood Quality"},
+    {"code": "FARM_CATCH_DECLARATION", "label": "Farm / Catch Declaration", "stage": "Seafood Quality"},
+    {"code": "CATCH_CERTIFICATE", "label": "Catch Certificate", "stage": "Seafood Quality"},
+    {"code": "HACCP_CHECKLIST", "label": "HACCP / Processing Checklist", "stage": "Seafood Quality"},
+    {"code": "QC_INSPECTION_REPORT", "label": "QC Inspection Report", "stage": "Seafood Quality"},
+    {"code": "LAB_TEST_REPORT", "label": "Laboratory Test Report", "stage": "Seafood Quality"},
+    {"code": "MICROBIOLOGY_REPORT", "label": "Microbiology Report", "stage": "Seafood Quality"},
+    {"code": "ANTIBIOTIC_RESIDUE_REPORT", "label": "Antibiotic Residue Test Report", "stage": "Seafood Quality"},
+    {"code": "HEAVY_METAL_REPORT", "label": "Heavy Metal Test Report", "stage": "Seafood Quality"},
+    {"code": "WATER_ICE_TEST_REPORT", "label": "Water / Ice Quality Report", "stage": "Seafood Quality"},
+    {"code": "TEMPERATURE_LOG", "label": "Cold-chain Temperature Log", "stage": "Seafood Quality"},
+    {"code": "WEIGHT_PACKING_VERIFICATION", "label": "Weight & Packing Verification", "stage": "Seafood Quality"},
+
+    # Statutory and certification stage
+    {"code": "EIA_INSPECTION_REPORT", "label": "EIA Inspection Report", "stage": "Certificates"},
+    {"code": "HEALTH_CERTIFICATE_COPY", "label": "Health Certificate", "stage": "Certificates"},
+    {"code": "PHYTO_CERTIFICATE", "label": "Phytosanitary Certificate", "stage": "Certificates"},
+    {"code": "VETERINARY_CERTIFICATE", "label": "Veterinary Certificate", "stage": "Certificates"},
+    {"code": "COO", "label": "Certificate of Origin", "stage": "Certificates"},
+    {"code": "FUMIGATION_CERTIFICATE", "label": "Fumigation Certificate", "stage": "Certificates"},
+    {"code": "HALAL_CERTIFICATE", "label": "Halal Certificate", "stage": "Certificates"},
+    {"code": "ANIMAL_QUARANTINE_NOC", "label": "Animal Quarantine / NOC", "stage": "Certificates"},
+
+    # Commercial, customs and logistics stage
+    {"code": "COMMERCIAL_INVOICE", "label": "Commercial Invoice", "stage": "Shipping & Customs"},
+    {"code": "PACKING_LIST", "label": "Packing List", "stage": "Shipping & Customs"},
+    {"code": "CONTAINER_STUFFING_REPORT", "label": "Container Stuffing Report", "stage": "Shipping & Customs"},
+    {"code": "CONTAINER_SEAL_REPORT", "label": "Container Seal / Inspection Report", "stage": "Shipping & Customs"},
+    {"code": "VGM_DECLARATION", "label": "VGM Declaration", "stage": "Shipping & Customs"},
+    {"code": "SHIPPING_BILL", "label": "Shipping Bill", "stage": "Shipping & Customs"},
+    {"code": "CUSTOMS_LEO_COPY", "label": "Customs Let Export Order (LEO)", "stage": "Shipping & Customs"},
+    {"code": "BILL_OF_LADING_DRAFT", "label": "Bill of Lading Draft", "stage": "Shipping & Customs"},
+    {"code": "BL_COPY", "label": "Final Bill of Lading / AWB", "stage": "Shipping & Customs"},
+    {"code": "INSURANCE_CERTIFICATE", "label": "Marine Insurance Certificate", "stage": "Shipping & Customs"},
+    {"code": "FREIGHT_INVOICE", "label": "Freight Invoice", "stage": "Shipping & Customs"},
+    {"code": "CHA_INVOICE", "label": "CHA / Customs Broker Invoice", "stage": "Shipping & Customs"},
+    {"code": "PORT_TERMINAL_RECEIPT", "label": "Port / Terminal Receipt", "stage": "Shipping & Customs"},
+
+    # Bank submission, payment and closure stage
+    {"code": "BANK_SUBMISSION_SET", "label": "Bank Document Submission Set", "stage": "Bank & Payment"},
+    {"code": "BILL_OF_EXCHANGE", "label": "Bill of Exchange", "stage": "Bank & Payment"},
+    {"code": "NEGOTIATION_COLLECTION_PROOF", "label": "Negotiation / Collection Proof", "stage": "Bank & Payment"},
+    {"code": "PAYMENT_SWIFT_COPY", "label": "Payment SWIFT Copy", "stage": "Bank & Payment"},
+    {"code": "PAYMENT_RECEIPT", "label": "Payment Receipt / Bank Credit Advice", "stage": "Bank & Payment"},
+    {"code": "FIRC", "label": "Foreign Inward Remittance Certificate (FIRC)", "stage": "Bank & Payment"},
+    {"code": "EBRC", "label": "Electronic Bank Realisation Certificate (e-BRC)", "stage": "Bank & Payment"},
+    {"code": "CREDIT_DEBIT_NOTE", "label": "Credit / Debit Note", "stage": "Bank & Payment"},
+    {"code": "DUTY_DRAWBACK_PROOF", "label": "Duty Drawback Credit Proof", "stage": "Bank & Payment"},
+    {"code": "RODTEP_CREDIT_PROOF", "label": "RoDTEP Credit Proof", "stage": "Bank & Payment"},
+    {"code": "EXPORT_CLOSURE_CONFIRMATION", "label": "Export File Closure Confirmation", "stage": "Bank & Payment"},
+]
+
+# Document handling follows the same separation used by enterprise output
+# systems: structured data is independent from the rendered/imported PDF.
+EXPORT_GENERATE_DOCUMENTS = {
+    "SALES_CONTRACT", "PRODUCT_SPECIFICATION",
+    "BATCH_TRACEABILITY", "HACCP_CHECKLIST", "TEMPERATURE_LOG",
+    "WEIGHT_PACKING_VERIFICATION", "COMMERCIAL_INVOICE", "PACKING_LIST",
+    "CONTAINER_STUFFING_REPORT", "VGM_DECLARATION", "BILL_OF_EXCHANGE",
+    "BANK_SUBMISSION_SET", "CREDIT_DEBIT_NOTE", "EXPORT_CLOSURE_CONFIRMATION",
+}
+EXPORT_HYBRID_DOCUMENTS = {
+    "SALES_CONTRACT", "PRODUCT_SPECIFICATION",
+    "CATCH_CERTIFICATE", "HEALTH_CERTIFICATE_COPY", "COMMERCIAL_INVOICE",
+    "PACKING_LIST", "CONTAINER_STUFFING_REPORT", "VGM_DECLARATION",
+    "BILL_OF_EXCHANGE", "BANK_SUBMISSION_SET", "CREDIT_DEBIT_NOTE",
+}
+
+
+def export_document_mode(document_code: str) -> str:
+    if document_code == "PROFORMA_INVOICE":
+        return "IMPORT_FINAL_PDF"
+    if document_code in EXPORT_HYBRID_DOCUMENTS:
+        return "GENERATE_AND_IMPORT_FINAL"
+    if document_code in EXPORT_GENERATE_DOCUMENTS:
+        return "GENERATE"
+    return "IMPORT_PDF"
+
+EXPORT_REQUIREMENT_STAGE_FIELDS = {
+    "Order & Contract": [
+        {"name": "buyer_name", "label": "Buyer", "type": "select", "lookup": "buyers"},
+        {"name": "buyer_agent", "label": "Buyer Agent", "type": "select", "lookup": "buyer_agents"},
+        {"name": "destination_country", "label": "Destination Country", "type": "select", "lookup": "countries"},
+        {"name": "buyer_reference", "label": "Buyer Reference", "type": "text"},
+        {"name": "contract_date", "label": "Contract / Approval Date", "type": "date"},
+        {"name": "validity_date", "label": "Validity Date", "type": "date"},
+        {"name": "incoterm", "label": "Incoterm", "type": "select", "options": ["FOB", "CFR", "CIF", "EXW", "FCA", "CPT", "CIP", "DDP"]},
+        {"name": "payment_terms", "label": "Payment Terms", "type": "text"},
+        {"name": "product_description", "label": "Product / Specification", "type": "textarea"},
+    ],
+    "Seafood Quality": [
+        {"name": "batch_no", "label": "Batch Number", "type": "text"},
+        {"name": "lot_no", "label": "Lot Number", "type": "text"},
+        {"name": "species", "label": "Species", "type": "select", "lookup": "species", "multiple": True},
+        {"name": "variety", "label": "Variety", "type": "select", "lookup": "varieties", "multiple": True},
+        {"name": "grade", "label": "Grade / Size", "type": "select", "lookup": "grades", "multiple": True},
+        {"name": "brand", "label": "Brand", "type": "select", "lookup": "brands"},
+        {"name": "glaze", "label": "Glaze", "type": "select", "lookup": "glazes", "multiple": True},
+        {"name": "freezer", "label": "Freezer", "type": "select", "lookup": "freezers", "multiple": True},
+        {"name": "packing_style", "label": "Packing Style", "type": "select", "lookup": "packing_styles", "multiple": True},
+        {"name": "lab_name", "label": "Laboratory / Inspector", "type": "text"},
+        {"name": "sample_date", "label": "Sample Date", "type": "date"},
+        {"name": "result", "label": "Test / Inspection Result", "type": "select", "options": ["PASS", "FAIL", "CONDITIONAL", "NA"]},
+        {"name": "temperature", "label": "Temperature", "type": "text"},
+    ],
+    "Certificates": [
+        {"name": "certificate_no", "label": "Certificate Number", "type": "text"},
+        {"name": "authority", "label": "Issuing Authority", "type": "text"},
+        {"name": "factory_approval_no", "label": "Factory Approval Number", "type": "text"},
+        {"name": "destination_country", "label": "Destination Country", "type": "select", "lookup": "countries"},
+        {"name": "species", "label": "Species / Product", "type": "select", "lookup": "species", "multiple": True},
+        {"name": "health_marks", "label": "Health Marks / Endorsement", "type": "textarea"},
+    ],
+    "Shipping & Customs": [
+        {"name": "invoice_no", "label": "Invoice Number", "type": "text"},
+        {"name": "container_no", "label": "Container Number", "type": "text"},
+        {"name": "seal_no", "label": "Seal Number", "type": "text"},
+        {"name": "shipping_line", "label": "Shipping Line / CHA", "type": "select", "lookup": "shipping_vendors"},
+        {"name": "freezer", "label": "Freezer", "type": "select", "lookup": "freezers", "multiple": True},
+        {"name": "packing_style", "label": "Packing Style", "type": "select", "lookup": "packing_styles", "multiple": True},
+        {"name": "vessel_voyage", "label": "Vessel / Voyage", "type": "text"},
+        {"name": "port_of_loading", "label": "Port of Loading", "type": "text"},
+        {"name": "port_of_discharge", "label": "Port of Discharge", "type": "text"},
+        {"name": "etd", "label": "ETD", "type": "date"},
+        {"name": "eta", "label": "ETA", "type": "date"},
+        {"name": "gross_weight", "label": "Gross Weight", "type": "number"},
+        {"name": "net_weight", "label": "Net Weight", "type": "number"},
+    ],
+    "Bank & Payment": [
+        {"name": "bank_account", "label": "Company Bank Account", "type": "select", "lookup": "bank_accounts"},
+        {"name": "swift_reference", "label": "SWIFT / Bank Reference", "type": "text"},
+        {"name": "invoice_no", "label": "Invoice Number", "type": "text"},
+        {"name": "submission_date", "label": "Submission Date", "type": "date"},
+        {"name": "receipt_date", "label": "Receipt / Credit Date", "type": "date"},
+        {"name": "bill_reference", "label": "Bill / e-BRC Reference", "type": "text"},
+        {"name": "realisation_status", "label": "Realisation Status", "type": "select", "options": ["PENDING", "PARTIAL", "REALISED", "CLOSED"]},
+    ],
+    "Custom": [
+        {"name": "custom_reference_1", "label": "Additional Reference 1", "type": "text"},
+        {"name": "custom_reference_2", "label": "Additional Reference 2", "type": "text"},
+        {"name": "description", "label": "Document Details", "type": "textarea"},
+    ],
+}
+
+EXPORT_REQUIREMENT_COMMON_FIELDS = [
+    {"name": "document_no", "label": "Document Number / Reference", "type": "text", "required": True},
+    {"name": "document_date", "label": "Document Date", "type": "date", "required": True},
+    {"name": "expiry_date", "label": "Expiry / Valid Until", "type": "date"},
+    {"name": "issuer_name", "label": "Issuer / Organisation", "type": "text"},
+    {"name": "reference_no", "label": "Secondary Reference", "type": "text"},
+    {"name": "currency", "label": "Currency", "type": "select", "options": ["USD", "EUR", "GBP", "AED", "JPY", "INR"]},
+    {"name": "amount", "label": "Amount / Value", "type": "number"},
+    {"name": "status_note", "label": "Status / Notes", "type": "textarea"},
+]
 
 
 def invalidate_export_cache(company_id: str | None):
@@ -60,6 +289,22 @@ def safe_filename(value: str) -> str:
 
 def export_doc_config():
     return {
+        "proforma_invoice": {
+            "model": ProformaInvoice, "no": "pi_no", "date": "pi_date",
+            "title": "Proforma Invoice", "template": "export_documents/print_document.html",
+            "fields": [
+                ("PI No", "pi_no"), ("PI Date", "pi_date"), ("Valid Until", "validity_date"),
+                ("Buyer", "buyer_name"), ("Buyer Address", "buyer_address"),
+                ("Country", "country"), ("Buyer PO", "po_number"), ("Currency", "currency"),
+                ("Incoterm", "incoterm"), ("Payment Terms", "payment_terms"),
+                ("Port of Loading", "port_of_loading"), ("Port of Discharge", "port_of_discharge"),
+                ("Product Description", "product_description"), ("Quantity", "quantity"),
+                ("Unit", "unit"), ("Unit Price", "unit_price"), ("Total Amount", "total_amount"),
+                ("Status", "status"), ("Approval Status", "approval_status"),
+                ("Approved By", "approved_by"), ("Approval Remarks", "approval_remarks"),
+                ("Remarks", "remarks"),
+            ],
+        },
         "export_shipment": {
             "model": ExportShipment, "no": "shipment_no", "date": "created_at",
             "title": "Export Shipment File", "template": "export_documents/print_document.html",
@@ -275,6 +520,32 @@ def render_document_pdf(cfg, row, company_id: str, doc_type: str) -> bytes:
     return make_simple_pdf(payload["title"], payload["document_no"], lines)
 
 
+def render_requirement_pdf(definition: dict, details: dict, company_id: str, reference) -> bytes:
+    """Render a controlled PDF from a generic requirement data model."""
+    document_no = str(details.get("document_no") or getattr(reference, "shipment_no", None) or getattr(reference, "pi_no", reference.id))
+    fields = [
+        (field["label"], requirement_display_value(details.get(field["name"])))
+        for field in definition["fields"]
+        if requirement_field_values(details.get(field["name"]))
+    ]
+    html = templates.env.get_template("export_documents/print_document_pdf.html").render(
+        title=definition["label"], document_no=document_no,
+        document_date=details.get("document_date"), fields=fields,
+        line_items=[], company_id=company_id, record=reference,
+        doc_type=definition["code"].lower(), generated_at=datetime.utcnow(),
+    )
+    try:
+        from xhtml2pdf import pisa
+
+        output = BytesIO()
+        result = pisa.CreatePDF(BytesIO(html.encode("utf-8")), dest=output, encoding="utf-8")
+        if not result.err:
+            return output.getvalue()
+    except Exception as exc:
+        logger.warning("Requirement PDF rendering failed for %s: %s", definition["code"], exc)
+    return make_simple_pdf(definition["label"], document_no, [f"{label}: {value}" for label, value in fields])
+
+
 def style_register_sheet(sheet, title: str, company_id: str, fields: list[tuple[str, str]], rows: list) -> None:
     sheet.freeze_panes = "A5"
     sheet.sheet_view.showGridLines = False
@@ -370,6 +641,40 @@ def ensure_export_document_schema(db: Session = Depends(get_db)) -> None:
     global _EXPORT_SCHEMA_READY
     if _EXPORT_SCHEMA_READY:
         return
+    ProformaInvoice.__table__.create(bind=db.get_bind(), checkfirst=True)
+    # Some installations already had the PI table before email/document approval
+    # was introduced. Keep that existing data and add only the missing columns.
+    db.execute(text(
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS "
+        "approval_status VARCHAR NOT NULL DEFAULT 'PENDING'"
+    ))
+    db.execute(text("ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS approved_by VARCHAR"))
+    db.execute(text("ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP"))
+    db.execute(text("ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS approval_remarks TEXT"))
+    db.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_proforma_invoices_approval_status "
+        "ON proforma_invoices (approval_status)"
+    ))
+    ExportRequiredDocument.__table__.create(bind=db.get_bind(), checkfirst=True)
+    ExportDocumentApproval.__table__.create(bind=db.get_bind(), checkfirst=True)
+    db.execute(text(
+        "ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS "
+        "approval_status VARCHAR NOT NULL DEFAULT 'PENDING'"
+    ))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS approved_by VARCHAR"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS approval_remarks TEXT"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS document_date DATE"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS expiry_date DATE"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS issuer_name VARCHAR"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS reference_no VARCHAR"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS currency VARCHAR"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS amount NUMERIC(18, 2)"))
+    db.execute(text("ALTER TABLE export_document_files ADD COLUMN IF NOT EXISTS details_json TEXT"))
+    db.execute(text(
+        "CREATE INDEX IF NOT EXISTS ix_export_document_files_approval_status "
+        "ON export_document_files (approval_status)"
+    ))
     for table_name in (
         "commercial_invoices", "packing_lists", "container_stuffing",
         "shipping_bills", "bill_of_ladings", "health_certificates",
@@ -466,43 +771,1079 @@ def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
     )
 
 
+class RequiredDocumentItemSchema(BaseModel):
+    code: str
+    label: str | None = None
+
+
+class RequiredDocumentSelectionSchema(BaseModel):
+    po_number: str
+    documents: list[RequiredDocumentItemSchema]
+
+
+class SupportingDocumentApprovalSchema(BaseModel):
+    decision: str
+    remarks: str | None = None
+
+
+class RequirementGenerateSchema(BaseModel):
+    shipment_id: int
+    details: dict = Field(default_factory=dict)
+    approver_emails: list[str] = Field(default_factory=list)
+
+
+def is_supporting_document_admin(request: Request) -> bool:
+    role = str(request.session.get("role") or "").strip().lower()
+    email = str(request.session.get("email") or "").strip().lower()
+    return role in {"admin", "super_admin"} or email == "bknr.solutions@gmail.com"
+
+
+def export_requirement_definition(db: Session, company_id: str, document_kind: str) -> dict | None:
+    code = re.sub(r"[^A-Z0-9_]+", "_", document_kind.strip().upper()).strip("_")[:80]
+    canonical = next((item for item in EXPORT_SUPPORT_DOCUMENT_TYPES if item["code"] == code), None)
+    if canonical:
+        definition = dict(canonical)
+    else:
+        custom = db.query(ExportRequiredDocument).filter(
+            ExportRequiredDocument.company_id == company_id,
+            ExportRequiredDocument.document_kind == code,
+        ).order_by(desc(ExportRequiredDocument.id)).first()
+        if not custom:
+            return None
+        definition = {"code": code, "label": custom.document_label, "stage": "Custom"}
+    definition["fields"] = EXPORT_REQUIREMENT_COMMON_FIELDS + EXPORT_REQUIREMENT_STAGE_FIELDS.get(
+        definition["stage"], EXPORT_REQUIREMENT_STAGE_FIELDS["Custom"],
+    )
+    if code == "PROFORMA_INVOICE":
+        definition["fields"] = [
+            {
+                **field,
+                **({"label": "PI Valid Until"} if field["name"] == "expiry_date" else {}),
+            }
+            for field in definition["fields"]
+        ]
+    definition["page_id"] = f"export_requirement_{code}"
+    definition["page_url"] = f"/page/export_requirement_{code}"
+    definition["template_url"] = f"/export_documents/requirement/{code}/entry"
+    definition["document_mode"] = export_document_mode(code)
+    definition["workspace_url"] = "/page/proforma_invoice" if code == "PROFORMA_INVOICE" else None
+    return definition
+
+
+def requirement_field_values(value) -> list[str]:
+    """Normalize single and multi-select form values for validation/rendering."""
+    raw_values = value if isinstance(value, list) else [value]
+    return list(dict.fromkeys(str(item).strip() for item in raw_values if item is not None and str(item).strip()))
+
+
+def requirement_display_value(value):
+    values = requirement_field_values(value)
+    return ", ".join(values) if isinstance(value, list) else (values[0] if values else None)
+
+
+def export_company_email_options(db: Session, company_code: str, session_email: str | None) -> list[dict]:
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    users = []
+    if company:
+        users = db.query(User).filter(
+            User.company_id == company.id,
+            or_(User.is_active == True, User.is_active.is_(None)),
+        ).order_by(User.name, User.email).all()
+    options = []
+    seen = set()
+    for user in users:
+        email = (user.email or "").strip().lower()
+        if email and email not in seen:
+            seen.add(email)
+            options.append({"email": email, "name": user.name or email, "designation": user.designation or ""})
+    current = (session_email or "").strip().lower()
+    if current and current not in seen:
+        options.insert(0, {"email": current, "name": "Current Session User", "designation": ""})
+    return options
+
+
+def export_requirement_lookup_options(db: Session, company_code: str) -> dict[str, list[str]]:
+    """Return normalized, company-scoped master values used by requirement forms."""
+    def values(model, column) -> list[str]:
+        rows = db.query(column).filter(model.company_id == company_code).distinct().all()
+        return sorted({str(value).strip() for (value,) in rows if value and str(value).strip()}, key=str.casefold)
+
+    bank_rows = db.query(BankMaster).filter(
+        BankMaster.company_id == company_code,
+        BankMaster.is_active == True,
+    ).order_by(BankMaster.bank_name, BankMaster.account_number).all()
+    bank_accounts = [
+        f"{row.bank_name} · {row.account_number} · {row.currency_code or 'INR'}"
+        for row in bank_rows
+    ]
+    return {
+        "buyers": values(buyers, buyers.buyer_name),
+        "buyer_agents": values(buyer_agents, buyer_agents.agent_name),
+        "countries": values(countries, countries.country_name),
+        "species": values(species, species.species_name),
+        "varieties": values(varieties, varieties.variety_name),
+        "grades": values(grades, grades.grade_name),
+        "brands": values(brands, brands.brand_name),
+        "glazes": values(glazes, glazes.glaze_name),
+        "freezers": values(freezers, freezers.freezer_name),
+        "packing_styles": values(packing_styles, packing_styles.packing_style),
+        "shipping_vendors": values(shipping_vendors, shipping_vendors.vendor_name),
+        "bank_accounts": bank_accounts,
+    }
+
+
+def serialize_email_approval(row: ExportDocumentApproval, current_email: str) -> dict:
+    return {
+        "id": row.id,
+        "email": row.approver_email,
+        "decision": row.decision or "PENDING",
+        "remarks": row.remarks,
+        "assigned_by": row.assigned_by,
+        "assigned_at": _dt(row.assigned_at),
+        "decided_at": _dt(row.decided_at),
+        "is_current_user": row.approver_email.lower() == current_email.lower(),
+    }
+
+
+def refresh_email_approval_status(file_row: ExportDocumentFile, approvals: list[ExportDocumentApproval]) -> None:
+    decisions = [row.decision or "PENDING" for row in approvals]
+    if decisions and all(decision == "APPROVED" for decision in decisions):
+        file_row.approval_status = "APPROVED"
+    elif "REJECTED" in decisions:
+        file_row.approval_status = "REJECTED"
+    else:
+        file_row.approval_status = "PENDING"
+    decided = [row for row in approvals if row.decision != "PENDING"]
+    file_row.approved_by = ", ".join(row.approver_email for row in decided) or None
+    file_row.approved_at = max((row.decided_at for row in decided if row.decided_at), default=None)
+
+
+def serialize_requirement_file(row: ExportDocumentFile, approvals: list[ExportDocumentApproval], current_email: str) -> dict:
+    try:
+        details = json.loads(row.details_json or "{}")
+    except (TypeError, ValueError):
+        details = {}
+    approval_rows = [serialize_email_approval(item, current_email) for item in approvals]
+    pending = [item["email"] for item in approval_rows if item["decision"] == "PENDING"]
+    return {
+        "id": row.id,
+        "shipment_id": row.record_id,
+        "document_kind": row.document_kind,
+        "document_no": row.document_no,
+        "document_date": _dt(row.document_date),
+        "expiry_date": _dt(row.expiry_date),
+        "issuer_name": row.issuer_name,
+        "reference_no": row.reference_no,
+        "currency": row.currency,
+        "amount": str(row.amount) if row.amount is not None else None,
+        "details": details,
+        "file_name": row.file_name,
+        "version_no": row.version_no,
+        "uploaded_by": row.uploaded_by,
+        "uploaded_at": _dt(row.uploaded_at),
+        "remarks": row.remarks,
+        "approval_status": row.approval_status or "PENDING",
+        "approval_remarks": row.approval_remarks,
+        "approvals": approval_rows,
+        "pending_approvers": pending,
+        "approval_progress": f"{len([item for item in approval_rows if item['decision'] == 'APPROVED'])}/{len(approval_rows)}",
+        "can_current_user_approve": any(item["is_current_user"] and item["decision"] != "APPROVED" for item in approval_rows),
+        "download_url": f"/export_documents/files/{row.id}/download",
+    }
+
+
+@router.get("/requirement-pages/catalog")
+def export_requirement_catalog(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    current_email = (request.session.get("email") or "").strip().lower()
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    definitions = [export_requirement_definition(db, comp_code, item["code"]) for item in EXPORT_SUPPORT_DOCUMENT_TYPES]
+    custom_codes = db.query(ExportRequiredDocument.document_kind).filter(
+        ExportRequiredDocument.company_id == comp_code,
+    ).distinct().all()
+    canonical_codes = {item["code"] for item in EXPORT_SUPPORT_DOCUMENT_TYPES}
+    definitions.extend(
+        definition for (code,) in custom_codes
+        if code not in canonical_codes
+        if (definition := export_requirement_definition(db, comp_code, code))
+    )
+    pending_counts = dict(
+        db.query(ExportDocumentFile.document_kind, func.count(ExportDocumentApproval.id))
+        .join(ExportDocumentApproval, ExportDocumentApproval.file_id == ExportDocumentFile.id)
+        .filter(
+            ExportDocumentFile.company_id == comp_code,
+            ExportDocumentFile.is_current == True,
+            ExportDocumentApproval.company_id == comp_code,
+            func.lower(ExportDocumentApproval.approver_email) == current_email,
+            ExportDocumentApproval.decision == "PENDING",
+        )
+        .group_by(ExportDocumentFile.document_kind)
+        .all()
+    ) if current_email else {}
+    for definition in definitions:
+        definition["pending_for_me"] = int(pending_counts.get(definition["code"], 0))
+    return {"success": True, "document_types": definitions}
+
+
+@router.get("/requirement-pages/entry", response_class=HTMLResponse)
+def export_requirement_catalog_entry(request: Request, db: Session = Depends(get_db)):
+    context = export_requirement_catalog(request, db)
+    if isinstance(context, JSONResponse):
+        return RedirectResponse("/auth/login")
+    return templates.TemplateResponse(
+        request=request,
+        name="export_documents/requirement_forms.html",
+        context={"request": request, **context},
+    )
+
+
+@router.get("/requirement/{document_kind}/data")
+def export_requirement_page_data(document_kind: str, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    current_email = (request.session.get("email") or "").strip().lower()
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    definition = export_requirement_definition(db, comp_code, document_kind)
+    if not definition:
+        return JSONResponse({"success": False, "message": "Document type not found"}, status_code=404)
+    is_pre_po = definition["code"] == "PROFORMA_INVOICE"
+    if is_pre_po:
+        references = db.query(ProformaInvoice).filter(
+            ProformaInvoice.company_id == comp_code,
+            ProformaInvoice.is_cancelled != True,
+        ).order_by(desc(ProformaInvoice.pi_date), desc(ProformaInvoice.id)).all()
+        module_name = "export_proforma_requirement"
+    else:
+        references = db.query(ExportShipment).filter(
+            ExportShipment.company_id == comp_code,
+            ExportShipment.is_cancelled != True,
+        ).order_by(desc(ExportShipment.id)).all()
+        module_name = "export_supporting"
+    reference_by_id = {row.id: row for row in references}
+    all_files = db.query(ExportDocumentFile).filter(
+        ExportDocumentFile.company_id == comp_code,
+        ExportDocumentFile.module_name == module_name,
+        ExportDocumentFile.document_kind == definition["code"],
+    ).order_by(desc(ExportDocumentFile.version_no), desc(ExportDocumentFile.id)).all()
+    files = [row for row in all_files if row.is_current]
+    versions_by_reference = {}
+    for version in all_files:
+        try:
+            version_details = json.loads(version.details_json or "{}")
+        except (TypeError, ValueError):
+            version_details = {}
+        versions_by_reference.setdefault(version.record_id, []).append({
+            "id": version.id,
+            "version_no": version.version_no,
+            "file_name": version.file_name,
+            "file_origin": version_details.get("_file_origin") or ("GENERATED" if "generated" in (version.remarks or "").lower() else "IMPORTED"),
+            "uploaded_by": version.uploaded_by,
+            "uploaded_at": _dt(version.uploaded_at),
+            "is_current": bool(version.is_current),
+            "download_url": f"/export_documents/files/{version.id}/download",
+        })
+    file_ids = [row.id for row in files]
+    approval_rows = db.query(ExportDocumentApproval).filter(
+        ExportDocumentApproval.company_id == comp_code,
+        ExportDocumentApproval.file_id.in_(file_ids),
+    ).order_by(ExportDocumentApproval.id).all() if file_ids else []
+    approval_map = {}
+    for approval in approval_rows:
+        approval_map.setdefault(approval.file_id, []).append(approval)
+    entries = []
+    for file_row in files:
+        payload = serialize_requirement_file(file_row, approval_map.get(file_row.id, []), current_email)
+        payload["versions"] = versions_by_reference.get(file_row.record_id, [])
+        payload["file_origin"] = payload["details"].get("_file_origin") or "IMPORTED"
+        reference = reference_by_id.get(file_row.record_id)
+        if is_pre_po:
+            payload.update({
+                "po_number": reference.po_number if reference else None,
+                "shipment_no": reference.pi_no if reference else None,
+                "buyer_name": reference.buyer_name if reference else None,
+                "country": reference.country if reference else None,
+            })
+        else:
+            payload.update({
+                "po_number": reference.po_number if reference else None,
+                "shipment_no": reference.shipment_no if reference else None,
+                "buyer_name": reference.buyer_name if reference else None,
+                "country": reference.country if reference else None,
+            })
+        entries.append(payload)
+    required_pos = {po for (po,) in db.query(ExportRequiredDocument.po_number).filter(
+        ExportRequiredDocument.company_id == comp_code,
+        ExportRequiredDocument.document_kind == definition["code"],
+    ).all()}
+    return {
+        "success": True,
+        "definition": {
+            **definition,
+            "pre_po_allowed": is_pre_po,
+            "reference_label": "Proforma Invoice Number / Buyer" if is_pre_po else "PO Number / Shipment",
+            "create_reference_url": "/page/proforma_invoice" if is_pre_po else None,
+        },
+        "current_email": current_email,
+        "email_options": export_company_email_options(db, comp_code, current_email),
+        "lookup_options": export_requirement_lookup_options(db, comp_code),
+        "po_options": [{
+            "shipment_id": row.id,
+            "shipment_no": row.pi_no if is_pre_po else row.shipment_no,
+            "po_number": (row.po_number or "PRE-PO") if is_pre_po else row.po_number,
+            "buyer_name": row.buyer_name,
+            "country": row.country,
+            "document_date": row.pi_date.isoformat() if is_pre_po and row.pi_date else None,
+            "validity_date": row.validity_date.isoformat() if is_pre_po and row.validity_date else None,
+            "is_required": False if is_pre_po else row.po_number in required_pos,
+        } for row in references],
+        "entries": entries,
+    }
+
+
+@router.get("/requirement/{document_kind}/entry", response_class=HTMLResponse)
+def export_requirement_page_entry(document_kind: str, request: Request, db: Session = Depends(get_db)):
+    context = export_requirement_page_data(document_kind, request, db)
+    if isinstance(context, JSONResponse):
+        return context
+    return templates.TemplateResponse(
+        request=request,
+        name="export_documents/requirement_document.html",
+        context={"request": request, **context},
+    )
+
+
+@router.post("/requirement/{document_kind}/generate")
+def export_requirement_page_generate(
+    document_kind: str,
+    payload: RequirementGenerateSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = (request.session.get("email") or "").strip().lower()
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    definition = export_requirement_definition(db, comp_code, document_kind)
+    if not definition:
+        return JSONResponse({"success": False, "message": "Document type not found"}, status_code=404)
+    if definition["document_mode"] not in {"GENERATE", "GENERATE_AND_IMPORT_FINAL"}:
+        return JSONResponse({"success": False, "message": "This document must be imported as an original PDF"}, status_code=400)
+
+    is_pre_po = definition["code"] == "PROFORMA_INVOICE"
+    model = ProformaInvoice if is_pre_po else ExportShipment
+    reference = db.query(model).filter(
+        model.id == payload.shipment_id,
+        model.company_id == comp_code,
+        model.is_cancelled != True,
+    ).first()
+    if not reference:
+        return JSONResponse({"success": False, "message": "Select a valid PI reference" if is_pre_po else "Select a valid PO / shipment"}, status_code=404)
+
+    details = payload.details if isinstance(payload.details, dict) else {}
+    selected_emails = list(dict.fromkeys(str(value).strip().lower() for value in payload.approver_emails if str(value).strip()))
+    missing_fields = [
+        field["label"] for field in definition["fields"]
+        if field.get("required") and not requirement_field_values(details.get(field["name"]))
+    ]
+    if missing_fields:
+        return JSONResponse({"success": False, "message": f"Required fields missing: {', '.join(missing_fields)}"}, status_code=400)
+    lookup_options = export_requirement_lookup_options(db, comp_code)
+    invalid_lookups = [
+        field["label"] for field in definition["fields"]
+        if field.get("lookup") and any(
+            value not in set(lookup_options.get(field["lookup"], []))
+            for value in requirement_field_values(details.get(field["name"]))
+        )
+    ]
+    if invalid_lookups:
+        return JSONResponse({"success": False, "message": f"Select valid master values for: {', '.join(invalid_lookups)}"}, status_code=400)
+    valid_emails = {item["email"] for item in export_company_email_options(db, comp_code, email)}
+    if not selected_emails or any(value not in valid_emails for value in selected_emails):
+        return JSONResponse({"success": False, "message": "Select at least one valid approval email"}, status_code=400)
+
+    try:
+        parsed_document_date = date.fromisoformat(details["document_date"]) if details.get("document_date") else None
+        parsed_expiry_date = date.fromisoformat(details["expiry_date"]) if details.get("expiry_date") else None
+        parsed_amount = Decimal(str(details["amount"])) if details.get("amount") not in (None, "") else None
+    except (ValueError, ArithmeticError):
+        return JSONResponse({"success": False, "message": "Enter valid document dates and amount"}, status_code=400)
+    if parsed_document_date and parsed_expiry_date and parsed_expiry_date < parsed_document_date:
+        return JSONResponse({"success": False, "message": "Expiry date cannot be before document date"}, status_code=400)
+    if parsed_amount is not None and (not parsed_amount.is_finite() or parsed_amount < 0):
+        return JSONResponse({"success": False, "message": "Amount must be a valid non-negative number"}, status_code=400)
+
+    document_no = str(details.get("document_no") or getattr(reference, "pi_no", None) or getattr(reference, "shipment_no", reference.id)).strip()[:160]
+    pdf_bytes = render_requirement_pdf(definition, details, comp_code, reference)
+    module_name = "export_proforma_requirement" if is_pre_po else "export_supporting"
+    file_row = store_export_pdf(
+        db=db, company_id=comp_code, module_name=module_name, record_id=reference.id,
+        document_no=document_no, document_kind=definition["code"],
+        file_name=f"{safe_filename(document_no)}.pdf", content=pdf_bytes,
+        uploaded_by=email, remarks="System generated controlled PDF",
+    )
+    file_row.document_date = parsed_document_date
+    file_row.expiry_date = parsed_expiry_date
+    file_row.amount = parsed_amount
+    file_row.issuer_name = str(details.get("issuer_name") or "")[:255] or None
+    file_row.reference_no = str(details.get("reference_no") or "")[:255] or None
+    file_row.currency = str(details.get("currency") or "")[:10] or None
+    allowed_fields = {field["name"] for field in definition["fields"]}
+    file_row.details_json = json.dumps({
+        **{key: value for key, value in details.items() if key in allowed_fields},
+        "_file_origin": "GENERATED",
+    }, ensure_ascii=False)
+    file_row.approval_status = "PENDING"
+    db.flush()
+    for approver_email in selected_emails:
+        db.add(ExportDocumentApproval(
+            company_id=comp_code, file_id=file_row.id, approver_email=approver_email,
+            decision="PENDING", assigned_by=email,
+        ))
+    write_audit(
+        db, "export_supporting", file_row.id, comp_code, "PDF_GENERATE_SAVE", "NONE",
+        f"TYPE={definition['code']} | REF={document_no} | VERSION={file_row.version_no}", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {
+        "success": True,
+        "message": f"{definition['label']} PDF generated and saved as version {file_row.version_no}",
+        "file_id": file_row.id,
+        "download_url": f"/export_documents/files/{file_row.id}/download",
+    }
+
+
+@router.post("/requirement/{document_kind}/upload")
+async def export_requirement_page_upload(
+    document_kind: str,
+    request: Request,
+    shipment_id: int = Form(...),
+    details_json: str = Form("{}"),
+    approver_emails: str = Form("[]"),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = (request.session.get("email") or "").strip().lower()
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    definition = export_requirement_definition(db, comp_code, document_kind)
+    if not definition:
+        return JSONResponse({"success": False, "message": "Document type not found"}, status_code=404)
+    is_pre_po = definition["code"] == "PROFORMA_INVOICE"
+    if is_pre_po:
+        reference = db.query(ProformaInvoice).filter(
+            ProformaInvoice.id == shipment_id,
+            ProformaInvoice.company_id == comp_code,
+            ProformaInvoice.is_cancelled != True,
+        ).first()
+        module_name = "export_proforma_requirement"
+        reference_no = reference.pi_no if reference else None
+        po_number = reference.po_number if reference else None
+    else:
+        reference = db.query(ExportShipment).filter(
+            ExportShipment.id == shipment_id,
+            ExportShipment.company_id == comp_code,
+            ExportShipment.is_cancelled != True,
+        ).first()
+        module_name = "export_supporting"
+        reference_no = reference.shipment_no if reference else None
+        po_number = reference.po_number if reference else None
+    if not reference:
+        return JSONResponse({"success": False, "message": "Select a valid PI reference" if is_pre_po else "Select a valid PO / shipment"}, status_code=404)
+    try:
+        details = json.loads(details_json or "{}")
+        raw_emails = json.loads(approver_emails or "[]")
+    except (TypeError, ValueError, json.JSONDecodeError):
+        return JSONResponse({"success": False, "message": "Invalid form details or approver list"}, status_code=400)
+    if not isinstance(details, dict) or not isinstance(raw_emails, list):
+        return JSONResponse({"success": False, "message": "Invalid form details or approver list"}, status_code=400)
+    selected_emails = list(dict.fromkeys(
+        str(value).strip().lower() for value in raw_emails if str(value).strip()
+    ))
+    missing_fields = [
+        field["label"] for field in definition["fields"]
+        if field.get("required") and not requirement_field_values(details.get(field["name"]))
+    ]
+    if missing_fields:
+        return JSONResponse({"success": False, "message": f"Required fields missing: {', '.join(missing_fields)}"}, status_code=400)
+    lookup_options = export_requirement_lookup_options(db, comp_code)
+    invalid_lookups = []
+    for field in definition["fields"]:
+        lookup_key = field.get("lookup")
+        selected_values = requirement_field_values(details.get(field["name"]))
+        if lookup_key and any(value not in set(lookup_options.get(lookup_key, [])) for value in selected_values):
+            invalid_lookups.append(field["label"])
+    if invalid_lookups:
+        return JSONResponse({
+            "success": False,
+            "message": f"Select valid master values for: {', '.join(invalid_lookups)}",
+        }, status_code=400)
+    valid_emails = {item["email"] for item in export_company_email_options(db, comp_code, email)}
+    if not selected_emails:
+        return JSONResponse({"success": False, "message": "Select at least one approval email"}, status_code=400)
+    if any(value not in valid_emails for value in selected_emails):
+        return JSONResponse({"success": False, "message": "One or more approver emails are invalid"}, status_code=400)
+    if file.content_type != "application/pdf" and not (file.filename or "").lower().endswith(".pdf"):
+        return JSONResponse({"success": False, "message": "Only PDF files are allowed"}, status_code=400)
+    content = await file.read()
+    if not content or len(content) > 25 * 1024 * 1024 or not content.startswith(b"%PDF-"):
+        return JSONResponse({"success": False, "message": "Invalid PDF or file exceeds 25 MB"}, status_code=400)
+    parsed_dates = {}
+    for key in ("document_date", "expiry_date"):
+        value = details.get(key)
+        if value:
+            try:
+                parsed_dates[key] = date.fromisoformat(value)
+            except ValueError:
+                return JSONResponse({"success": False, "message": f"Invalid {key.replace('_', ' ')}"}, status_code=400)
+    if parsed_dates.get("document_date") and parsed_dates.get("expiry_date") and parsed_dates["expiry_date"] < parsed_dates["document_date"]:
+        return JSONResponse({"success": False, "message": "Expiry date cannot be before document date"}, status_code=400)
+    amount = details.get("amount")
+    try:
+        parsed_amount = Decimal(str(amount)) if amount not in (None, "") else None
+    except Exception:
+        return JSONResponse({"success": False, "message": "Amount must be numeric"}, status_code=400)
+    if parsed_amount is not None and (not parsed_amount.is_finite() or parsed_amount < 0):
+        return JSONResponse({"success": False, "message": "Amount must be a valid non-negative number"}, status_code=400)
+    document_no = str(details.get("document_no") or reference_no).strip()[:160]
+    file_row = store_export_pdf(
+        db=db, company_id=comp_code, module_name=module_name, record_id=reference.id,
+        document_no=document_no, document_kind=definition["code"],
+        file_name=file.filename or f"{document_no}.pdf", content=content,
+        uploaded_by=email, remarks=str(details.get("status_note") or "")[:1000] or None,
+    )
+    file_row.document_date = parsed_dates.get("document_date")
+    file_row.expiry_date = parsed_dates.get("expiry_date")
+    file_row.issuer_name = str(details.get("issuer_name") or "")[:255] or None
+    file_row.reference_no = str(details.get("reference_no") or "")[:255] or None
+    file_row.currency = str(details.get("currency") or "")[:10] or None
+    file_row.amount = parsed_amount
+    allowed_fields = {field["name"] for field in definition["fields"]}
+    cleaned_details = {
+        **{key: value for key, value in details.items() if key in allowed_fields},
+        "_file_origin": "IMPORTED_FINAL" if definition["document_mode"] in {"GENERATE_AND_IMPORT_FINAL", "IMPORT_FINAL_PDF"} else "IMPORTED_ORIGINAL",
+    }
+    file_row.details_json = json.dumps(cleaned_details, ensure_ascii=False)
+    file_row.approval_status = "PENDING"
+    db.flush()
+    for approver_email in selected_emails:
+        db.add(ExportDocumentApproval(
+            company_id=comp_code, file_id=file_row.id, approver_email=approver_email,
+            decision="PENDING", assigned_by=email,
+        ))
+    write_audit(
+        db, "export_supporting", file_row.id, comp_code, "DETAILS_FILE_UPLOAD", "NONE",
+        f"PO={po_number or 'PRE-PO'} | REF={reference_no} | TYPE={definition['code']} | APPROVERS={', '.join(selected_emails)}", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": f"{definition['label']} uploaded and sent to {len(selected_emails)} approver(s)"}
+
+
+@router.post("/requirement/{document_kind}/files/{file_id}/approval")
+def export_requirement_email_approval(
+    document_kind: str,
+    file_id: int,
+    payload: SupportingDocumentApprovalSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = (request.session.get("email") or "").strip().lower()
+    if not comp_code or not email:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    definition = export_requirement_definition(db, comp_code, document_kind)
+    file_row = db.query(ExportDocumentFile).filter(
+        ExportDocumentFile.id == file_id,
+        ExportDocumentFile.company_id == comp_code,
+        ExportDocumentFile.document_kind == (definition or {}).get("code"),
+        ExportDocumentFile.is_current == True,
+    ).first()
+    if not file_row:
+        return JSONResponse({"success": False, "message": "Current document not found"}, status_code=404)
+    assignment = db.query(ExportDocumentApproval).filter(
+        ExportDocumentApproval.file_id == file_id,
+        ExportDocumentApproval.company_id == comp_code,
+        func.lower(ExportDocumentApproval.approver_email) == email,
+    ).first()
+    if not assignment:
+        return JSONResponse({"success": False, "message": "This document was not assigned to your email"}, status_code=403)
+    decision = payload.decision.strip().upper()
+    remarks = (payload.remarks or "").strip()[:500]
+    if decision not in {"APPROVED", "REJECTED"}:
+        return JSONResponse({"success": False, "message": "Decision must be APPROVED or REJECTED"}, status_code=400)
+    if decision == "REJECTED" and not remarks:
+        return JSONResponse({"success": False, "message": "Rejection remarks are required"}, status_code=400)
+    old_decision = assignment.decision or "PENDING"
+    assignment.decision = decision
+    assignment.remarks = remarks or None
+    assignment.decided_at = datetime.utcnow()
+    approvals = db.query(ExportDocumentApproval).filter(
+        ExportDocumentApproval.file_id == file_id,
+        ExportDocumentApproval.company_id == comp_code,
+    ).all()
+    refresh_email_approval_status(file_row, approvals)
+    file_row.approval_remarks = "; ".join(
+        f"{row.approver_email}: {row.decision}" for row in approvals
+    )
+    write_audit(
+        db, "export_supporting", file_id, comp_code, "EMAIL_APPROVAL",
+        f"{email}: {old_decision}", f"{email}: {decision}{f' | {remarks}' if remarks else ''}", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": f"Your decision was saved. Overall status: {file_row.approval_status}"}
+
+
+@router.get("/supporting_documents/data")
+def export_supporting_documents_data(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    current_email = (request.session.get("email") or "").strip().lower()
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+
+    shipments = (
+        db.query(ExportShipment)
+        .filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True)
+        .order_by(desc(ExportShipment.id))
+        .all()
+    )
+    shipment_by_id = {row.id: row for row in shipments}
+    po_options_by_number = {}
+
+    def add_po_option(po_number, buyer_name=None, country=None, source=None):
+        value = str(po_number or "").strip()
+        if not value or value.upper() in {"N/A", "NA", "-", "NONE", "NULL", "PRE-PO"}:
+            return
+        key = value.upper()
+        existing = po_options_by_number.get(key, {})
+        po_options_by_number[key] = {
+            "po_number": existing.get("po_number") or value,
+            "shipment_id": existing.get("shipment_id"),
+            "shipment_no": existing.get("shipment_no"),
+            "buyer_name": existing.get("buyer_name") or str(buyer_name or "").strip(),
+            "country": existing.get("country") or str(country or "").strip(),
+            "source": existing.get("source") or source,
+        }
+
+    pending_po_rows = db.query(
+        pending_orders.po_number, pending_orders.buyer, pending_orders.country,
+    ).filter(
+        pending_orders.company_id == comp_code,
+        pending_orders.po_number.isnot(None),
+        pending_orders.po_number != "",
+    ).all()
+    for po_number, buyer_name, country in pending_po_rows:
+        add_po_option(po_number, buyer_name, country, "PENDING_ORDERS")
+
+    sales_po_rows = db.query(
+        sales_dispatch.po_number, sales_dispatch.buyer_name, sales_dispatch.country,
+    ).filter(
+        sales_dispatch.company_id == comp_code,
+        sales_dispatch.po_number.isnot(None),
+        sales_dispatch.po_number != "",
+    ).all()
+    for po_number, buyer_name, country in sales_po_rows:
+        add_po_option(po_number, buyer_name, country, "SALES")
+
+    for row in shipments:
+        po_options_by_number[str(row.po_number or "").strip().upper()] = {
+            "po_number": row.po_number,
+            "shipment_id": row.id,
+            "shipment_no": row.shipment_no,
+            "buyer_name": row.buyer_name,
+            "country": row.country,
+            "source": "EXPORT_SHIPMENT",
+        }
+
+    requirements = (
+        db.query(ExportRequiredDocument)
+        .filter(ExportRequiredDocument.company_id == comp_code)
+        .order_by(ExportRequiredDocument.po_number, ExportRequiredDocument.document_label)
+        .all()
+    )
+    file_rows = (
+        db.query(
+            ExportDocumentFile.id,
+            ExportDocumentFile.record_id,
+            ExportDocumentFile.document_kind,
+            ExportDocumentFile.document_no,
+            ExportDocumentFile.file_name,
+            ExportDocumentFile.version_no,
+            ExportDocumentFile.is_current,
+            ExportDocumentFile.uploaded_at,
+            ExportDocumentFile.remarks,
+            ExportDocumentFile.approval_status,
+            ExportDocumentFile.approved_by,
+            ExportDocumentFile.approved_at,
+            ExportDocumentFile.approval_remarks,
+        )
+        .filter(
+            ExportDocumentFile.company_id == comp_code,
+            ExportDocumentFile.module_name == "export_supporting",
+        )
+        .order_by(desc(ExportDocumentFile.uploaded_at), desc(ExportDocumentFile.id))
+        .all()
+    )
+    supporting_file_ids = [row.id for row in file_rows]
+    email_approval_rows = db.query(ExportDocumentApproval).filter(
+        ExportDocumentApproval.company_id == comp_code,
+        ExportDocumentApproval.file_id.in_(supporting_file_ids),
+    ).order_by(ExportDocumentApproval.id).all() if supporting_file_ids else []
+    email_approvals_by_file = {}
+    for approval in email_approval_rows:
+        email_approvals_by_file.setdefault(approval.file_id, []).append(approval)
+
+    def approval_summary(file_row):
+        approvals = email_approvals_by_file.get(file_row.id, []) if file_row else []
+        serialized = [serialize_email_approval(item, current_email) for item in approvals]
+        return {
+            "approvals": serialized,
+            "pending_approvers": [item["email"] for item in serialized if item["decision"] == "PENDING"],
+            "approval_progress": f"{len([item for item in serialized if item['decision'] == 'APPROVED'])}/{len(serialized)}" if serialized else None,
+            "can_current_user_approve": any(item["is_current_user"] and item["decision"] != "APPROVED" for item in serialized),
+        }
+
+    canonical_labels = {item["code"]: item["label"] for item in EXPORT_SUPPORT_DOCUMENT_TYPES}
+    latest_files = {}
+    for file_row in file_rows:
+        if not file_row.is_current:
+            continue
+        shipment = shipment_by_id.get(file_row.record_id)
+        if not shipment:
+            continue
+        latest_files.setdefault((shipment.po_number, file_row.document_kind), (file_row, shipment))
+
+    checklist = []
+    required_keys = set()
+    for requirement in requirements:
+        key = (requirement.po_number, requirement.document_kind)
+        required_keys.add(key)
+        matched = latest_files.get(key)
+        file_row, shipment = matched if matched else (None, None)
+        po_meta = po_options_by_number.get(str(requirement.po_number or "").strip().upper(), {})
+        checklist.append({
+            "requirement_id": requirement.id,
+            "po_number": requirement.po_number,
+            "shipment_id": shipment.id if shipment else po_meta.get("shipment_id"),
+            "shipment_no": shipment.shipment_no if shipment else po_meta.get("shipment_no"),
+            "buyer_name": shipment.buyer_name if shipment else po_meta.get("buyer_name"),
+            "document_kind": requirement.document_kind,
+            "document_label": requirement.document_label,
+            "required": True,
+            "status": "UPLOADED" if file_row else "PENDING",
+            "file_id": file_row.id if file_row else None,
+            "file_name": file_row.file_name if file_row else None,
+            "document_no": file_row.document_no if file_row else None,
+            "version_no": file_row.version_no if file_row else None,
+            "uploaded_at": _dt(file_row.uploaded_at) if file_row else None,
+            "remarks": file_row.remarks if file_row else None,
+            "approval_status": (file_row.approval_status or "PENDING") if file_row else None,
+            "approved_by": file_row.approved_by if file_row else None,
+            "approved_at": _dt(file_row.approved_at) if file_row else None,
+            "approval_remarks": file_row.approval_remarks if file_row else None,
+            "download_url": f"/export_documents/files/{file_row.id}/download" if file_row else None,
+            "page_url": f"/page/export_requirement_{requirement.document_kind}",
+            **approval_summary(file_row),
+        })
+
+    for key, (file_row, shipment) in latest_files.items():
+        if key in required_keys:
+            continue
+        checklist.append({
+            "requirement_id": None,
+            "po_number": shipment.po_number,
+            "shipment_id": shipment.id,
+            "shipment_no": shipment.shipment_no,
+            "buyer_name": shipment.buyer_name,
+            "document_kind": file_row.document_kind,
+            "document_label": canonical_labels.get(file_row.document_kind, file_row.document_kind.replace("_", " ").title()),
+            "required": False,
+            "status": "UPLOADED",
+            "file_id": file_row.id,
+            "file_name": file_row.file_name,
+            "document_no": file_row.document_no,
+            "version_no": file_row.version_no,
+            "uploaded_at": _dt(file_row.uploaded_at),
+            "remarks": file_row.remarks,
+            "approval_status": file_row.approval_status or "PENDING",
+            "approved_by": file_row.approved_by,
+            "approved_at": _dt(file_row.approved_at),
+            "approval_remarks": file_row.approval_remarks,
+            "download_url": f"/export_documents/files/{file_row.id}/download",
+            "page_url": f"/page/export_requirement_{file_row.document_kind}",
+            **approval_summary(file_row),
+        })
+
+    checklist.sort(key=lambda row: (row["po_number"] or "", row["status"] != "PENDING", row["document_label"] or ""))
+    requirements_by_po = {}
+    for row in requirements:
+        requirements_by_po.setdefault(row.po_number, []).append({
+            "code": row.document_kind,
+            "label": row.document_label,
+        })
+
+    po_groups = []
+    checklist_by_po = {}
+    for row in checklist:
+        checklist_by_po.setdefault(row["po_number"], []).append(row)
+    for po in sorted(po_options_by_number.values(), key=lambda item: item["po_number"].upper()):
+        rows = checklist_by_po.get(po["po_number"], [])
+        required_rows = [row for row in rows if row["required"]]
+        uploaded_rows = [row for row in required_rows if row["status"] == "UPLOADED"]
+        approved_rows = [row for row in uploaded_rows if row["approval_status"] == "APPROVED"]
+        rejected_rows = [row for row in uploaded_rows if row["approval_status"] == "REJECTED"]
+        pending_upload = len(required_rows) - len(uploaded_rows)
+        pending_approval = len(uploaded_rows) - len(approved_rows) - len(rejected_rows)
+        if not required_rows:
+            po_status = "NOT_CONFIGURED"
+        elif len(approved_rows) == len(required_rows):
+            po_status = "COMPLETE"
+        elif rejected_rows:
+            po_status = "REJECTED"
+        else:
+            po_status = "PENDING"
+        po_groups.append({
+            **po,
+            "rows": rows,
+            "required_count": len(required_rows),
+            "uploaded_count": len(uploaded_rows),
+            "approved_count": len(approved_rows),
+            "pending_upload_count": pending_upload,
+            "pending_approval_count": pending_approval,
+            "rejected_count": len(rejected_rows),
+            "extra_count": len([row for row in rows if not row["required"]]),
+            "status": po_status,
+        })
+
+    audit_rows = (
+        db.query(AuditLog)
+        .filter(AuditLog.company_id == comp_code, AuditLog.table_name == "export_supporting")
+        .order_by(desc(AuditLog.edited_at), desc(AuditLog.id))
+        .limit(100)
+        .all()
+    )
+    audit_logs = [{
+        "id": row.id,
+        "record_id": row.record_id,
+        "action": row.field_name,
+        "old_value": row.old_value,
+        "new_value": row.new_value,
+        "edited_by": row.edited_by,
+        "edited_at": _dt(row.edited_at),
+    } for row in audit_rows]
+    document_groups = []
+    for document_type in EXPORT_SUPPORT_DOCUMENT_TYPES:
+        if not document_groups or document_groups[-1]["stage"] != document_type["stage"]:
+            document_groups.append({"stage": document_type["stage"], "items": []})
+        document_groups[-1]["items"].append(document_type)
+
+    completed_po_numbers = {
+        group["po_number"].strip().upper()
+        for group in po_groups
+        if group["required_count"] > 0 and group["status"] == "COMPLETE"
+    }
+    selectable_po_options = [
+        po for po in sorted(po_options_by_number.values(), key=lambda item: item["po_number"].upper())
+        if po["po_number"].strip().upper() not in completed_po_numbers
+    ]
+
+    return {
+        "success": True,
+        "company_id": comp_code,
+        "po_options": selectable_po_options,
+        "document_types": EXPORT_SUPPORT_DOCUMENT_TYPES,
+        "document_groups": document_groups,
+        "requirements_by_po": requirements_by_po,
+        "checklist": checklist,
+        "po_groups": po_groups,
+        "audit_logs": audit_logs,
+        "is_admin": is_supporting_document_admin(request),
+    }
+
+
+@router.post("/supporting_documents/requirements")
+def save_export_required_documents(
+    payload: RequiredDocumentSelectionSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+
+    po_number = payload.po_number.strip()
+    shipment = db.query(ExportShipment).filter(
+        ExportShipment.company_id == comp_code,
+        func.upper(func.trim(ExportShipment.po_number)) == po_number.upper(),
+        ExportShipment.is_cancelled != True,
+    ).first()
+    if not shipment:
+        pending_source = db.query(pending_orders).filter(
+            pending_orders.company_id == comp_code,
+            func.upper(func.trim(pending_orders.po_number)) == po_number.upper(),
+        ).first()
+        sales_source = db.query(sales_dispatch).filter(
+            sales_dispatch.company_id == comp_code,
+            func.upper(func.trim(sales_dispatch.po_number)) == po_number.upper(),
+        ).first()
+        source = pending_source or sales_source
+        if not source:
+            return JSONResponse({
+                "success": False,
+                "message": "Select a valid PO number from Pending Orders or Sales",
+            }, status_code=404)
+        buyer_name = getattr(source, "buyer", None) or getattr(source, "buyer_name", None) or "Buyer Not Available"
+        country = getattr(source, "country", None) or "Country Not Available"
+        shipment_base = re.sub(r"[^A-Z0-9]+", "-", po_number.upper()).strip("-")[:50] or "PO"
+        shipment_no = f"AUTO-{shipment_base}"
+        suffix = 1
+        while db.query(ExportShipment.id).filter(
+            ExportShipment.company_id == comp_code,
+            ExportShipment.shipment_no == shipment_no,
+        ).first():
+            suffix += 1
+            shipment_no = f"AUTO-{shipment_base}-{suffix}"
+        shipment = ExportShipment(
+            company_id=comp_code,
+            shipment_no=shipment_no,
+            po_number=po_number,
+            buyer_name=str(buyer_name).strip(),
+            country=str(country).strip(),
+            status="OPEN",
+            approval_status="PENDING",
+            created_by=email or "SYSTEM",
+        )
+        db.add(shipment)
+        db.flush()
+
+    canonical_labels = {item["code"]: item["label"] for item in EXPORT_SUPPORT_DOCUMENT_TYPES}
+    selected = {}
+    for document in payload.documents:
+        code = re.sub(r"[^A-Z0-9_]+", "_", document.code.strip().upper()).strip("_")[:80]
+        if not code:
+            continue
+        label = (document.label or canonical_labels.get(code) or code.replace("_", " ").title()).strip()[:160]
+        selected[code] = label
+
+    existing_rows = db.query(ExportRequiredDocument).filter(
+        ExportRequiredDocument.company_id == comp_code,
+        ExportRequiredDocument.po_number == po_number,
+    ).all()
+    existing_by_code = {row.document_kind: row for row in existing_rows}
+    old_codes = sorted(existing_by_code)
+
+    for code, row in existing_by_code.items():
+        if code not in selected:
+            db.delete(row)
+    for code, label in selected.items():
+        row = existing_by_code.get(code)
+        if row:
+            row.document_label = label
+            row.updated_at = datetime.utcnow()
+        else:
+            db.add(ExportRequiredDocument(
+                company_id=comp_code,
+                po_number=po_number,
+                document_kind=code,
+                document_label=label,
+                created_by=email,
+            ))
+
+    write_audit(
+        db, "export_supporting", shipment.id, comp_code,
+        "REQUIREMENTS_UPDATE", ", ".join(old_codes) or "NONE",
+        ", ".join(sorted(selected)) or "NONE", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {
+        "success": True,
+        "message": f"Required document list saved for PO {po_number}",
+        "count": len(selected),
+    }
+
+
+@router.post("/supporting_documents/files/{file_id}/approval")
+def decide_supporting_document_approval(
+    file_id: int,
+    payload: SupportingDocumentApprovalSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    decision = payload.decision.strip().upper()
+    if decision not in {"APPROVED", "REJECTED"}:
+        return JSONResponse({"success": False, "message": "Decision must be APPROVED or REJECTED"}, status_code=400)
+    remarks = (payload.remarks or "").strip()[:500]
+    if decision == "REJECTED" and not remarks:
+        return JSONResponse({"success": False, "message": "Rejection remarks are required"}, status_code=400)
+
+    file_row = db.query(ExportDocumentFile).filter(
+        ExportDocumentFile.id == file_id,
+        ExportDocumentFile.company_id == comp_code,
+        ExportDocumentFile.module_name == "export_supporting",
+        ExportDocumentFile.is_current == True,
+    ).first()
+    if not file_row:
+        return JSONResponse({"success": False, "message": "Current supporting document not found"}, status_code=404)
+
+    assignments = db.query(ExportDocumentApproval).filter(
+        ExportDocumentApproval.company_id == comp_code,
+        ExportDocumentApproval.file_id == file_id,
+    ).all()
+    if assignments:
+        assignment = next((row for row in assignments if row.approver_email.lower() == (email or "").lower()), None)
+        if not assignment:
+            return JSONResponse({"success": False, "message": "This document was not assigned to your email"}, status_code=403)
+        old_status = assignment.decision or "PENDING"
+        assignment.decision = decision
+        assignment.remarks = remarks or None
+        assignment.decided_at = datetime.utcnow()
+        refresh_email_approval_status(file_row, assignments)
+        file_row.approval_remarks = "; ".join(f"{row.approver_email}: {row.decision}" for row in assignments)
+        write_audit(
+            db, "export_supporting", file_row.id, comp_code, "EMAIL_APPROVAL",
+            f"{email}: {old_status}", f"{email}: {decision}{f' | {remarks}' if remarks else ''}", email,
+        )
+        db.commit()
+        invalidate_export_cache(comp_code)
+        return {"success": True, "message": f"Decision saved. Overall status: {file_row.approval_status}"}
+
+    if not is_supporting_document_admin(request):
+        return JSONResponse({"success": False, "message": "Admin approval is required"}, status_code=403)
+
+    old_status = file_row.approval_status or "PENDING"
+    file_row.approval_status = decision
+    file_row.approved_by = email
+    file_row.approved_at = datetime.utcnow()
+    file_row.approval_remarks = remarks or None
+    write_audit(
+        db, "export_supporting", file_row.id, comp_code,
+        f"DOCUMENT_{decision}", old_status,
+        f"{decision}{f' | {remarks}' if remarks else ''}", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": f"Document {decision.lower()} successfully"}
+
+
 @router.get("/supporting_documents/entry", response_class=HTMLResponse)
 def export_supporting_documents_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login")
-    def build_supporting_context():
-        shipments = [
-            {"id": row.id, "shipment_no": row.shipment_no, "buyer_name": row.buyer_name}
-            for row in db.query(ExportShipment)
-            .filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True)
-            .order_by(desc(ExportShipment.id))
-            .all()
-        ]
-        history = [
-            {
-                "id": row.id,
-                "document_kind": row.document_kind,
-                "document_no": row.document_no,
-                "file_path": row.file_path,
-                "file_name": row.file_name,
-                "version_no": row.version_no,
-                "is_current": row.is_current,
-                "uploaded_at": _dt(row.uploaded_at),
-                "remarks": row.remarks,
-            }
-            for row in db.query(ExportDocumentFile)
-            .filter(ExportDocumentFile.company_id == comp_code, ExportDocumentFile.module_name == "export_supporting")
-            .order_by(desc(ExportDocumentFile.uploaded_at))
-            .all()
-        ]
-        return {"shipments": shipments, "history": history, "company_id": comp_code}
-
-    context = cache_get_or_set(f"bknr:export_documents:{comp_code}:supporting_documents", build_supporting_context, ttl=45)
+    context = export_supporting_documents_data(request, db)
     return templates.TemplateResponse(
         request=request,
         name="export_documents/supporting_documents.html",
-        context=context,
+        context={"request": request, **context},
     )
 
 
@@ -517,54 +1858,13 @@ async def export_supporting_documents_upload(
     db: Session = Depends(get_db),
 ):
     comp_code = request.session.get("company_code")
-    email = request.session.get("email")
     if not comp_code:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
-    shipment = db.query(ExportShipment).filter(ExportShipment.id == shipment_id, ExportShipment.company_id == comp_code).first()
-    if not shipment:
-        return JSONResponse({"success": False, "message": "Shipment not found"}, status_code=404)
-    if file.content_type != "application/pdf" and not file.filename.lower().endswith(".pdf"):
-        return JSONResponse({"success": False, "message": "Only PDF files are allowed"}, status_code=400)
-    content = await file.read()
-    if not content:
-        return JSONResponse({"success": False, "message": "Empty PDF file"}, status_code=400)
-    if len(content) > 25 * 1024 * 1024:
-        return JSONResponse({"success": False, "message": "PDF size cannot exceed 25 MB"}, status_code=400)
-    if not content.startswith(b"%PDF-"):
-        return JSONResponse({"success": False, "message": "Invalid PDF file"}, status_code=400)
-    file_row = store_export_pdf(
-        db=db,
-        company_id=comp_code,
-        module_name="export_supporting",
-        record_id=shipment.id,
-        document_no=document_no or shipment.shipment_no,
-        document_kind=document_kind,
-        file_name=file.filename or f"{shipment.shipment_no}.pdf",
-        content=content,
-        uploaded_by=email,
-        remarks=remarks,
-    )
-    write_audit(db, "export_supporting", shipment.id, comp_code, "PDF_UPLOAD", "NONE", file_row.file_path, email)
-    db.commit()
-    invalidate_export_cache(comp_code)
-    return {
-        "success": True,
-        "message": "Supporting export PDF saved in DB",
-        "file_id": file_row.id,
-        "file_path": file_row.file_path,
-        "row": {
-            "id": file_row.id,
-            "document_kind": file_row.document_kind,
-            "document_no": file_row.document_no,
-            "file_name": file_row.file_name,
-            "file_path": file_row.file_path,
-            "download_url": f"/export_documents/files/{file_row.id}/download",
-            "version_no": file_row.version_no,
-            "is_current": file_row.is_current,
-            "uploaded_at": _dt(file_row.uploaded_at),
-            "remarks": file_row.remarks,
-        },
-    }
+    return JSONResponse({
+        "success": False,
+        "message": "Use the document-specific entry page to enter details, upload PDF and select approval emails",
+        "page_url": f"/page/export_requirement_{document_kind}",
+    }, status_code=400)
 
 # Pydantic schemas for data validation
 class ExportShipmentSchema(BaseModel):
@@ -582,6 +1882,38 @@ class ExportShipmentSchema(BaseModel):
         if self.etd and self.eta and self.eta < self.etd:
             raise ValueError("ETA cannot be before ETD")
         return self
+
+
+class ProformaInvoiceSchema(BaseModel):
+    pi_no: str
+    pi_date: date
+    validity_date: date = None
+    po_number: str = None
+    buyer_name: str
+    buyer_address: str
+    country: str
+    currency: str = "USD"
+    incoterm: str
+    payment_terms: str
+    port_of_loading: str = None
+    port_of_discharge: str = None
+    product_description: str
+    quantity: Decimal
+    unit: str = "KG"
+    unit_price: Decimal
+    status: str = "DRAFT"
+    remarks: str = None
+
+    @model_validator(mode="after")
+    def validate_proforma(self):
+        if self.validity_date and self.validity_date < self.pi_date:
+            raise ValueError("Validity date cannot be before PI date")
+        if self.quantity <= 0 or self.unit_price < 0:
+            raise ValueError("Quantity must be greater than zero and unit price cannot be negative")
+        if self.status not in {"DRAFT", "SENT", "ACCEPTED", "EXPIRED"}:
+            raise ValueError("Invalid proforma invoice status")
+        return self
+
 
 class CommercialInvoiceSchema(BaseModel):
     shipment_no: str
@@ -789,6 +2121,221 @@ def apply_invoice_container_defaults(db: Session, company_id: str, invoices: lis
             invoice.container_no = shipment.container_no
     return invoices
 
+
+# ============================================================
+# PROFORMA INVOICES
+# ============================================================
+def serialize_proforma(row: ProformaInvoice) -> dict:
+    return {
+        "id": row.id,
+        "pi_no": row.pi_no,
+        "pi_date": _dt(row.pi_date),
+        "validity_date": _dt(row.validity_date),
+        "po_number": row.po_number,
+        "buyer_name": row.buyer_name,
+        "buyer_address": row.buyer_address,
+        "country": row.country,
+        "currency": row.currency,
+        "incoterm": row.incoterm,
+        "payment_terms": row.payment_terms,
+        "port_of_loading": row.port_of_loading,
+        "port_of_discharge": row.port_of_discharge,
+        "product_description": row.product_description,
+        "quantity": str(row.quantity or 0),
+        "unit": row.unit,
+        "unit_price": str(row.unit_price or 0),
+        "total_amount": str(row.total_amount or 0),
+        "status": row.status,
+        "approval_status": row.approval_status or "PENDING",
+        "approved_by": row.approved_by,
+        "approved_at": _dt(row.approved_at),
+        "approval_remarks": row.approval_remarks,
+        "remarks": row.remarks,
+        "created_by": row.created_by,
+        "created_at": _dt(row.created_at),
+    }
+
+
+@router.get("/proforma_invoice/entry", response_class=HTMLResponse)
+def proforma_invoice_entry(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return RedirectResponse("/", status_code=302)
+    history = db.query(ProformaInvoice).filter(
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).order_by(desc(ProformaInvoice.pi_date), desc(ProformaInvoice.id)).all()
+    return templates.TemplateResponse(
+        request=request,
+        name="export_documents/proforma_invoice.html",
+        context={"history": history, "company_id": comp_code},
+    )
+
+
+@router.get("/proforma_invoice/data")
+def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    rows = db.query(ProformaInvoice).filter(
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).order_by(desc(ProformaInvoice.pi_date), desc(ProformaInvoice.id)).all()
+    audit_rows = db.query(AuditLog).filter(
+        AuditLog.company_id == comp_code,
+        AuditLog.table_name == "proforma_invoices",
+    ).order_by(desc(AuditLog.edited_at), desc(AuditLog.id)).limit(100).all()
+    return {
+        "success": True,
+        "can_approve": is_supporting_document_admin(request),
+        "rows": [serialize_proforma(row) for row in rows],
+        "audit_logs": [{
+            "id": audit.id,
+            "record_id": audit.record_id,
+            "action": audit.field_name,
+            "old_value": audit.old_value,
+            "new_value": audit.new_value,
+            "edited_by": audit.edited_by,
+            "edited_at": _dt(audit.edited_at),
+        } for audit in audit_rows],
+    }
+
+
+def proforma_payload_values(payload: ProformaInvoiceSchema) -> dict:
+    values = payload.model_dump()
+    values["pi_no"] = payload.pi_no.strip()
+    values["buyer_name"] = payload.buyer_name.strip()
+    values["total_amount"] = (payload.quantity * payload.unit_price).quantize(Decimal("0.01"))
+    return values
+
+
+@router.post("/proforma_invoice/save")
+def proforma_invoice_save(request: Request, payload: ProformaInvoiceSchema, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    exists = db.query(ProformaInvoice).filter(
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.pi_no == payload.pi_no.strip(),
+    ).first()
+    if exists:
+        return JSONResponse({"success": False, "message": "PI number already exists"}, status_code=400)
+    entry = ProformaInvoice(company_id=comp_code, created_by=email, **proforma_payload_values(payload))
+    db.add(entry)
+    db.flush()
+    write_audit(db, "proforma_invoices", entry.id, comp_code, "CREATE", "NONE", f"PI {entry.pi_no}", email)
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {
+        "success": True,
+        "message": "Proforma invoice created successfully",
+        "record_id": entry.id,
+        "print_url": f"/export_documents/proforma_invoice/print/{entry.id}",
+        "pdf_url": f"/export_documents/proforma_invoice/pdf/{entry.id}",
+    }
+
+
+@router.put("/proforma_invoice/{record_id}")
+def proforma_invoice_update(record_id: int, request: Request, payload: ProformaInvoiceSchema, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    entry = db.query(ProformaInvoice).filter(
+        ProformaInvoice.id == record_id,
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).first()
+    if not entry:
+        return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+    duplicate = db.query(ProformaInvoice).filter(
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.pi_no == payload.pi_no.strip(),
+        ProformaInvoice.id != record_id,
+    ).first()
+    if duplicate:
+        return JSONResponse({"success": False, "message": "PI number already exists"}, status_code=400)
+    old_status = entry.status
+    old_approval = entry.approval_status or "PENDING"
+    for field, value in proforma_payload_values(payload).items():
+        setattr(entry, field, value)
+    entry.updated_by = email
+    entry.approval_status = "PENDING"
+    entry.approved_by = None
+    entry.approved_at = None
+    entry.approval_remarks = None
+    write_audit(db, "proforma_invoices", entry.id, comp_code, "UPDATE", old_status, entry.status, email)
+    if old_approval != "PENDING":
+        write_audit(db, "proforma_invoices", entry.id, comp_code, "APPROVAL_RESET", old_approval, "PENDING", email)
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": "Proforma invoice updated successfully"}
+
+
+@router.post("/proforma_invoice/cancel/{record_id}")
+def proforma_invoice_cancel(record_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    entry = db.query(ProformaInvoice).filter(
+        ProformaInvoice.id == record_id,
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).first()
+    if not entry:
+        return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+    old_status = entry.status
+    entry.is_cancelled = True
+    entry.status = "CANCELLED"
+    entry.updated_by = email
+    write_audit(db, "proforma_invoices", entry.id, comp_code, "CANCEL", old_status, "CANCELLED", email)
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": "Proforma invoice cancelled successfully"}
+
+
+@router.post("/proforma_invoice/{record_id}/approval")
+def proforma_invoice_approval(
+    record_id: int,
+    payload: SupportingDocumentApprovalSchema,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    if not is_supporting_document_admin(request):
+        return JSONResponse({"success": False, "message": "Admin approval is required"}, status_code=403)
+    decision = payload.decision.strip().upper()
+    remarks = (payload.remarks or "").strip()[:500]
+    if decision not in {"APPROVED", "REJECTED"}:
+        return JSONResponse({"success": False, "message": "Decision must be APPROVED or REJECTED"}, status_code=400)
+    if decision == "REJECTED" and not remarks:
+        return JSONResponse({"success": False, "message": "Rejection remarks are required"}, status_code=400)
+    entry = db.query(ProformaInvoice).filter(
+        ProformaInvoice.id == record_id,
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).first()
+    if not entry:
+        return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+    old_status = entry.approval_status or "PENDING"
+    entry.approval_status = decision
+    entry.approved_by = email
+    entry.approved_at = datetime.utcnow()
+    entry.approval_remarks = remarks or None
+    write_audit(
+        db, "proforma_invoices", entry.id, comp_code, f"DOCUMENT_{decision}",
+        old_status, f"{decision}{f' | {remarks}' if remarks else ''}", email,
+    )
+    db.commit()
+    invalidate_export_cache(comp_code)
+    return {"success": True, "message": f"Proforma invoice {decision.lower()} successfully"}
+
+
 # ============================================================
 # 1. EXPORT SHIPMENTS
 # ============================================================
@@ -929,6 +2476,7 @@ def commercial_invoice_delete(log_id: int, request: Request, db: Session = Depen
             if db.query(model).filter(model.company_id == comp_code, model.invoice_no == entry.invoice_no, model.is_cancelled != True).first():
                 return JSONResponse({"success": False, "message": "Cancel linked export documents before cancelling this invoice"}, status_code=400)
         cancel_linked_bill_voucher(db, comp_code, entry.journal_id, email)
+        cancel_linked_bill_voucher(db, comp_code, entry.cogs_journal_id, email)
         write_audit(db, "commercial_invoices", entry.id, comp_code, "CANCEL", entry.status, "CANCELLED", email)
         entry.is_cancelled = True
         entry.status = "CANCELLED"
@@ -965,13 +2513,14 @@ def packing_list_save(request: Request, payload: PackingListSchema, db: Session 
     entry = PackingList(company_id=comp_code, created_by=email, **payload.dict())
     db.add(entry)
     db.flush()
+    cogs_value = repost_invoice_cogs(db, comp_code, invoice, email)
     
     # Update ExportComplianceTracker packing list pending status
     refresh_compliance(db, comp_code, invoice.shipment_no)
             
     write_audit(db, "packing_lists", entry.id, comp_code, "CREATE", "NONE", f"Packing Item: {payload.packing_no}", email)
     db.commit()
-    return {"success": True, "message": "Packing list line item recorded successfully"}
+    return {"success": True, "message": "Packing list and COGS accounting recorded successfully", "cogs_value": cogs_value}
 
 @router.post("/packing_list/delete/{log_id}")
 def packing_list_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
@@ -982,6 +2531,7 @@ def packing_list_delete(log_id: int, request: Request, db: Session = Depends(get
         invoice = require_company_invoice(db, comp_code, entry.invoice_no)
         write_audit(db, "packing_lists", entry.id, comp_code, "CANCEL", "ACTIVE", "CANCELLED", email)
         entry.is_cancelled = True
+        repost_invoice_cogs(db, comp_code, invoice, email)
         refresh_compliance(db, comp_code, invoice.shipment_no)
         db.commit()
         return {"success": True, "message": "Packing list entry deleted successfully"}
@@ -1355,6 +2905,9 @@ def export_document_pdf(doc_type: str, record_id: int, request: Request, db: Ses
         uploaded_by=request.session.get("email"),
         remarks="System generated international format PDF",
     )
+    # Register PDFs are working drafts. Controlled approval starts only when
+    # the final copy is saved through Document Center with selected emails.
+    file_row.approval_status = "DRAFT"
     set_document_path(row, file_row.file_path)
     write_audit(db, doc_type, row.id, comp_code, "PDF_GENERATE", "NONE", file_row.file_path, request.session.get("email"))
     db.commit()
@@ -1398,10 +2951,19 @@ async def export_document_upload_pdf(
         uploaded_by=request.session.get("email"),
         remarks=remarks,
     )
+    # Direct register uploads remain drafts; the Document Center is the single
+    # controlled import/approval workflow and prevents duplicate final copies.
+    file_row.approval_status = "DRAFT"
     set_document_path(row, file_row.file_path)
     write_audit(db, doc_type, row.id, comp_code, "PDF_UPLOAD", "NONE", file_row.file_path, request.session.get("email"))
     db.commit()
-    return {"success": True, "message": "PDF saved in DB", "file_id": file_row.id, "file_path": file_row.file_path}
+    return {
+        "success": True,
+        "message": "Draft PDF saved. Import the final copy in Document Center for selected-email approval.",
+        "file_id": file_row.id,
+        "file_path": file_row.file_path,
+        "approval_status": "DRAFT",
+    }
 
 
 @router.get("/files/{file_id}/download")

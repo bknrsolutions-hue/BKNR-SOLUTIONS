@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
+import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
 
 export default function Grading() {
   const [date, setDate] = useState('');
@@ -743,7 +743,7 @@ export default function Grading() {
                         style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
                         title="Cancel log"
                       >
-                        <Trash2 size={13} />
+                        <Ban size={13} />
                       </button>
                     )}
                   </td>

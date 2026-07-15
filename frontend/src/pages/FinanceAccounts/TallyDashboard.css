@@ -1,0 +1,104 @@
+.tally-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.tally-kpi-card {
+  --tally-kpi-tone: var(--att-accent);
+  appearance: none;
+  min-width: 0;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid var(--att-border);
+  border-radius: 10px;
+  background: var(--att-card);
+  color: var(--att-text);
+  box-shadow: var(--att-shadow);
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.tally-kpi-card:hover {
+  border-color: var(--tally-kpi-tone);
+  transform: translateY(-1px);
+}
+
+.tally-kpi-card:focus-visible {
+  outline: 2px solid var(--tally-kpi-tone);
+  outline-offset: 2px;
+}
+
+.tally-kpi-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tally-kpi-tone);
+  background: color-mix(in srgb, var(--tally-kpi-tone) 12%, transparent);
+}
+
+.tally-kpi-content {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tally-kpi-label {
+  color: var(--att-muted);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: .55px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tally-kpi-value {
+  color: var(--att-heading);
+  font-size: clamp(14px, 1.2vw, 18px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -.25px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tally-kpi-side {
+  align-self: start;
+  padding: 3px 5px;
+  border-radius: 5px;
+  color: var(--tally-kpi-tone);
+  background: color-mix(in srgb, var(--tally-kpi-tone) 10%, transparent);
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.tally-kpi-blue { --tally-kpi-tone: #3b82f6; }
+.tally-kpi-green { --tally-kpi-tone: #10b981; }
+.tally-kpi-red { --tally-kpi-tone: #ef4444; }
+.tally-kpi-cyan { --tally-kpi-tone: #06b6d4; }
+.tally-kpi-orange { --tally-kpi-tone: #f97316; }
+
+@media (max-width: 1100px) {
+  .tally-kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .tally-kpi-grid { grid-template-columns: 1fr; }
+  .tally-kpi-card { min-height: 76px; }
+}

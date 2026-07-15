@@ -8,7 +8,7 @@ import {
   useReport, fmt
 } from './ReportShell';
 
-export default function FloorBalanceReport({ activeRoute, params = {} }) {
+export default function FloorBalanceReport({ activeRoute, params = {}, hideSnapshotStatus = false }) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
@@ -120,7 +120,9 @@ export default function FloorBalanceReport({ activeRoute, params = {} }) {
     <div className="report-viewer-card">
       <ReportHeader
         title="Floor Balance Stock Register"
-        subtitle={`${filteredRows.length} items loaded${data?.actual_snapshot_date ? ` — 9 AM snapshot: ${data.actual_snapshot_date}` : ''}`}
+        subtitle={hideSnapshotStatus
+          ? undefined
+          : `${filteredRows.length} items loaded${data?.actual_snapshot_date ? ` — 9 AM snapshot: ${data.actual_snapshot_date}` : ''}`}
         loading={loading}
         onReload={reload}
       />

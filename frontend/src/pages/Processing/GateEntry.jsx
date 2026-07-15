@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Trash2, Calendar, Clock, Mail, RefreshCw } from 'lucide-react';
+import { Truck, Plus, Ban, Calendar, Clock, Mail, RefreshCw } from 'lucide-react';
 
 export default function GateEntry() {
   const [date, setDate] = useState('');
@@ -509,7 +509,7 @@ export default function GateEntry() {
                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
                          title="Cancel entry"
                        >
-                        <Trash2 size={14} />
+                        <Ban size={14} />
                       </button>
                     )}
                   </td>

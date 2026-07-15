@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Printer, Download, RefreshCw, Edit2, Trash2, Save, X } from 'lucide-react';
+import { FileText, Search, Printer, Download, RefreshCw, Edit2, Ban, Save, X } from 'lucide-react';
+import { formatFinancialYear } from '../../utils/financialYear';
 
 export default function ReportViewer({ reportId, activeRoute }) {
   const [loading, setLoading] = useState(false);
@@ -535,7 +536,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   const deleteRow = async (id) => {
     if (!activeConfig || !activeConfig.deleteEndpoint) return;
-    if (!confirm('Delete this record permanently?')) return;
+    if (!confirm('Cancel this record?')) return;
     setLoading(true);
     try {
       const res = await fetch(activeConfig.deleteEndpoint, {
@@ -546,7 +547,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
       if (res.ok) {
         fetchData();
       } else {
-        alert('Failed to delete record.');
+        alert('Failed to cancel record.');
       }
     } catch (err) {
       console.error(err);
@@ -921,7 +922,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
                                   <Edit2 size={12} />
                                 </button>
                                 <button onClick={() => deleteRow(row.id)} className="btn btn-secondary" style={{ padding: '4px 8px', height: '28px', background: '#dc2626' }}>
-                                  <Trash2 size={12} />
+                                  <Ban size={12} /> Cancel
                                 </button>
                               </div>
                             )}
@@ -1014,9 +1015,9 @@ export default function ReportViewer({ reportId, activeRoute }) {
               onChange={e => setSelectedFy(e.target.value)}
             >
               {data?.financial_years ? (
-                data.financial_years.map(y => <option key={y} value={y}>{y}</option>)
+                data.financial_years.map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)
               ) : (
-                ['2026', '2025', '2024'].map(y => <option key={y} value={y}>{y}</option>)
+                ['2026', '2025', '2024'].map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)
               )}
             </select>
           </div>
@@ -1097,8 +1098,8 @@ export default function ReportViewer({ reportId, activeRoute }) {
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Financial Year</label>
           <select className="form-control" style={selectControlStyle} value={selectedFy} onChange={e => setSelectedFy(e.target.value)}>
-            <option value="">ALL FINANCIAL YEARS</option>
-            {(data?.financial_years || []).map(y => <option key={y} value={y}>{y}</option>)}
+            <option value="">-- ALL FY --</option>
+            {(data?.financial_years || []).map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)}
           </select>
         </div>
         <div style={filterBoxStyle}>
@@ -1213,11 +1214,11 @@ export default function ReportViewer({ reportId, activeRoute }) {
             value={selectedFy}
             onChange={e => setSelectedFy(e.target.value)}
           >
-            <option value="">SELECT FINANCIAL YEAR</option>
+            <option value="">-- SELECT FY --</option>
             {data?.financial_years ? (
-              data.financial_years.map(y => <option key={y} value={y}>{y}</option>)
+              data.financial_years.map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)
             ) : (
-              ['2026', '2025', '2024'].map(y => <option key={y} value={y}>{y}</option>)
+              ['2026', '2025', '2024'].map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)
             )}
           </select>
         </div>

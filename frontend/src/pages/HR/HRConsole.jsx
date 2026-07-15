@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Plus, Trash2, Check, X } from 'lucide-react';
+import { Ban, Users, Plus, Check, X } from 'lucide-react';
 
 export default function HRConsole({ activePage }) {
   const getInitialTab = () => {
@@ -193,7 +193,7 @@ export default function HRConsole({ activePage }) {
                       <td className="text-right">₹{row.amount.toLocaleString()}</td>
                       <td className="text-center"><span className="badge badge-success">{row.status}</span></td>
                       <td className="text-center">
-                        <button onClick={() => setAdvances(advances.filter(a => a.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setAdvances(advances.filter(a => a.id !== row.id))} style={removeBtnStyle} title="Cancel advance" aria-label="Cancel salary advance"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -252,7 +252,7 @@ export default function HRConsole({ activePage }) {
                       <td className="text-right">₹{row.advanceDeduct.toLocaleString()}</td>
                       <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{row.netSalary.toLocaleString()}</td>
                       <td className="text-center">
-                        <button onClick={() => setSalarySheets(salarySheets.filter(s => s.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setSalarySheets(salarySheets.filter(s => s.id !== row.id))} style={removeBtnStyle} title="Cancel salary sheet" aria-label="Cancel salary sheet"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}

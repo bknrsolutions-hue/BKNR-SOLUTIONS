@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Snowflake, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Snowflake, Plus, Ban, RefreshCw } from 'lucide-react';
 
 export default function ColdStorageHolding() {
   const initialFetchStarted = useRef(false);
@@ -150,7 +150,7 @@ export default function ColdStorageHolding() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this holding entry?')) return;
+    if (!window.confirm('Are you sure you want to cancel this holding entry?')) return;
     setLoading(true);
     try {
       await fetch(`/cold_storage_holding/delete/${id}`, {
@@ -158,7 +158,7 @@ export default function ColdStorageHolding() {
         credentials: 'include',
         redirect: 'manual',
       });
-      setMsg('✅ Entry deleted');
+      setMsg('Entry cancelled');
       await fetchData();
     } catch (err) {
       setMsg('❌ Error deleting holding');
@@ -300,9 +300,9 @@ export default function ColdStorageHolding() {
                   <td className="text-center">{r.rent_start_date ? String(r.rent_start_date).substring(0, 10) : ''}</td>
                   <td className="text-center">{r.status}</td>
                   <td className="text-center">
-                    <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                    <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }} title="Cancel entry" aria-label="Cancel holding entry"
                       onClick={() => handleDelete(r.id)}>
-                      <Trash2 size={13} />
+                      <Ban size={13} />
                     </button>
                   </td>
                 </tr>

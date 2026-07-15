@@ -1,23 +1,23 @@
-/* సర్వసాధారణమైన షేప్ కరెక్షన్ */
+/* General shape correction. */
 * {
-    box-sizing: border-box; /* ప్యాడింగ్ వల్ల విడ్త్ పెరగకుండా చూస్తుంది */
+    box-sizing: border-box; /* Prevent padding from increasing width. */
 }
 
 body {
     margin: 0;
     padding: 0;
     width: 100% !important;
-    overflow-x: hidden !important; /* సైడ్ స్క్రోలింగ్ ఆపుతుంది */
+    overflow-x: hidden !important; /* Prevent horizontal scrolling. */
 }
 
-/* కంటైనర్లు మరియు సెక్షన్లు */
+/* Containers and sections. */
 .section, .card, .container {
     width: 95% !important;
     margin: 10px auto !important;
-    float: none !important; /* పాత ఫ్లోట్ స్టైల్స్ ఉంటే తీసేస్తుంది */
+    float: none !important; /* Remove legacy float styles. */
 }
 
-/* టేబుల్స్ ఫిక్స్ */
+/* Table corrections. */
 .table-wrap{
     background: var(--card-bg) !important;
 }
@@ -31,16 +31,16 @@ table {
     min-width: 600px;
 }
 
-/* మొబైల్ వ్యూ కరెక్షన్ */
+/* Mobile view corrections. */
 @media (max-width: 768px) {
     .header {
-        display: block !important; /* ఫ్లెక్స్ వల్ల వచ్చే ఇబ్బందులు పోతాయి */
+        display: block !important; /* Avoid flex layout issues. */
         text-align: center;
         height: auto !important;
     }
     
     div, section, td, th {
-        font-size: 14px !important; /* మొబైల్ లో టెక్స్ట్ చిన్నగా */
+        font-size: 14px !important; /* Smaller text on mobile. */
     }
 
     input, select, button {

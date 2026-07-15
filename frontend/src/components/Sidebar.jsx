@@ -1,8 +1,6 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 
-export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, setSidebarOpen }) {
-  const isNativeMobile = typeof navigator !== 'undefined'
-    && navigator.userAgent.includes('BKNR_ERP_Native_Mobile');
+export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, setSidebarOpen, onMenuItemsReady }) {
   // Enforce permission checks matching menu.html allow() function
   const permissions = user?.permissions || [];
   const currentUserEmail = user?.email || '';
@@ -19,27 +17,32 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
 
   // State to track accordion open states for sub-groups
   const [openSections, setOpenSections] = useState({
-    'Processing': true,
+    'Processing': false,
     'Inventory': false,
     'Export Documents': false,
-    'Commercial Bills': false,
+    'Operational Bills': false,
     'Accounts & Ledgers': false,
     'Cash & Banking': false,
-    'Payables & Receivables': false,
+    'Integrated Finance': false,
     'Processing Reports': false,
     'Inventory Reports': false,
     'Costing Reports': false,
     'Business Masters': false,
     'Production Masters': false,
-    'Inventory Masters': false,
-    'Finance Masters': false
+    'Inv & Fin Masters': false,
+    'Admin': false
   });
+  const [openPillars, setOpenPillars] = useState({});
 
   const toggleSection = (sectionName) => {
     setOpenSections(prev => ({
       ...prev,
       [sectionName]: !prev[sectionName]
     }));
+  };
+
+  const togglePillar = (title) => {
+    setOpenPillars(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   // Menu data replicating menu.html sidebarMenuData exactly (first 6 pillars)
@@ -82,13 +85,17 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         {
           name: "Export Documents",
           items: [
+            { id: 'export_documents_dashboard', perm: 'export_documents_dashboard', route: '/export_documents/dashboard', icon: 'fa-file-export', label: 'Export Dashboard', badge: 'ExpOp' },
+            { id: 'proforma_invoice', perm: 'proforma_invoice', route: '/export_documents/proforma_invoice/entry', icon: 'fa-file-invoice-dollar', label: 'Proforma Invoices', badge: 'ExpOp' },
             { id: 'export_shipment', perm: 'export_shipment', route: '/export_documents/export_shipment/entry', icon: 'fa-ship', label: 'Export Shipments', badge: 'ExpOp' },
             { id: 'commercial_invoice', perm: 'commercial_invoice', route: '/export_documents/commercial_invoice/entry', icon: 'fa-file-invoice', label: 'Commercial Invoices', badge: 'ExpOp' },
             { id: 'packing_list', perm: 'packing_list', route: '/export_documents/packing_list/entry', icon: 'fa-file-lines', label: 'Packing Lists', badge: 'ExpOp' },
             { id: 'container_stuffing', perm: 'container_stuffing', route: '/export_documents/container_stuffing/entry', icon: 'fa-truck-ramp-box', label: 'Container Stuffing', badge: 'ExpOp' },
             { id: 'shipping_bill', perm: 'shipping_bill', route: '/export_documents/shipping_bill/entry', icon: 'fa-clipboard-check', label: 'Shipping Bills', badge: 'ExpOp' },
             { id: 'bill_of_lading', perm: 'bill_of_lading', route: '/export_documents/bill_of_lading/entry', icon: 'fa-file-contract', label: 'Bills of Lading', badge: 'ExpOp' },
-            { id: 'health_certificate', perm: 'health_certificate', route: '/export_documents/health_certificate/entry', icon: 'fa-file-medical', label: 'Health Certificates', badge: 'ExpOp' }
+            { id: 'health_certificate', perm: 'health_certificate', route: '/export_documents/health_certificate/entry', icon: 'fa-file-medical', label: 'Health Certificates', badge: 'ExpOp' },
+            { id: 'export_supporting_documents', perm: 'export_supporting_documents', route: '/export_documents/supporting_documents/entry', icon: 'fa-ship', label: 'Shipment Status', badge: 'Action' },
+            { id: 'export_requirement_forms', perm: 'export_documents_dashboard', route: '/export_documents/requirement-pages/entry', icon: 'fa-folder-tree', label: 'Document Center', badge: 'ExpOp' }
           ]
         }
       ]
@@ -97,12 +104,17 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
       title: "FINANCE",
       subgroups: [
         {
-          name: "Commercial Bills",
+          name: "Operational Bills",
           items: [
             { id: 'finance_electricity_bills', perm: 'electricity_bills', route: '/api/electricity/entry', icon: 'fa-bolt', label: 'Electricity Bills', badge: 'Exp' },
             { id: 'finance_diesel_bills', perm: 'diesel_bills', route: '/api/diesel/entry', icon: 'fa-gas-pump', label: 'Diesel Consumption', badge: 'Exp' },
             { id: 'finance_packaging_bills', perm: 'packaging_bills', route: '/api/purchase/entry', icon: 'fa-file-invoice-dollar', label: 'Purchase & Packaging', badge: 'Exp' },
             { id: 'finance_logistics_bills', perm: 'logistics_bills', route: '/api/container/entry', icon: 'fa-truck-fast', label: 'Logistics & Freight', badge: 'Exp' },
+            { id: 'finance_contractor_bills', perm: 'contractor_bills', route: '/api/contractor_bills/entry', icon: 'fa-users-gear', label: 'Contractor Bills', badge: 'Exp' },
+            { id: 'finance_salaries', perm: 'salaries', route: '/api/salaries/entry', icon: 'fa-money-check-dollar', label: 'Salaries', badge: 'Pay' },
+            { id: 'finance_vendor_bills', perm: 'vendor_bills', route: '/api/vendor_bills/entry', icon: 'fa-file-invoice-dollar', label: 'Vendor Bills', badge: 'AP' },
+            { id: 'finance_supplier_bills', perm: 'supplier_bills', route: '/api/supplier_bills/entry', icon: 'fa-truck-field', label: 'Supplier Bills', badge: 'AP' },
+            { id: 'finance_payment_logs', perm: 'payment_logs', route: '/api/payment_logs/entry', icon: 'fa-receipt', label: 'Payment Logs', badge: 'Pay' },
             { id: 'finance_qa_testing', perm: 'qa_testing', route: '/api/qa/entry', icon: 'fa-microscope', label: 'QA Testing Charges', badge: 'Exp' },
             { id: 'finance_other_expenses', perm: 'other_expenses', route: '/api/expenses/entry', icon: 'fa-receipt', label: 'Other Expenses', badge: 'Misc' }
           ]
@@ -110,8 +122,13 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         {
           name: "Accounts & Ledgers",
           items: [
+            { id: 'finance_accounts_flow_guide', perm: 'accounts_flow_guide', route: '/finance_accounts/accounts_flow_guide', icon: 'fa-diagram-project', label: 'Accounts Flow Guide', badge: 'Acc' },
             { id: 'finance_ledger_master', perm: 'ledger_master', route: '/finance_accounts/ledger_master/entry', icon: 'fa-folder-open', label: 'Ledger Master', badge: 'Acc' },
-            { id: 'finance_journal_entry', perm: 'journal_entry', route: '/finance_accounts/journal_entry/entry', icon: 'fa-book', label: 'Journal Entries', badge: 'Acc' }
+            { id: 'finance_journal_entry', perm: 'journal_entry', route: '/finance_accounts/journal_entry/entry', icon: 'fa-book', label: 'Journal Entries', badge: 'Acc' },
+            { id: 'finance_bank_master', perm: 'bank_master', route: '/finance_accounts/bank_master/entry', icon: 'fa-building-columns', label: 'Bank Master', badge: 'Acc' },
+            { id: 'finance_item_accounting_link', perm: 'item_accounting_link', route: '/finance_accounts/item_accounting_link/entry', icon: 'fa-link', label: 'Item Accounting Link', badge: 'Acc' },
+            { id: 'finance_fixed_assets', perm: 'fixed_assets', route: '/finance_accounts/fixed_assets/entry', icon: 'fa-building', label: 'Fixed Assets', badge: 'Acc' },
+            { id: 'finance_gst_register', perm: 'gst_register', route: '/finance_accounts/gst_register/entry', icon: 'fa-percent', label: 'GST Register', badge: 'Acc' }
           ]
         },
         {
@@ -122,11 +139,11 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
           ]
         },
         {
-          name: "Payables & Receivables",
+          name: "Integrated Finance",
           items: [
-            { id: 'finance_customer_receivable', perm: 'customer_receivable', route: '/finance_accounts/customer_receivable/entry', icon: 'fa-hand-holding-dollar', label: 'Customer Receivables', badge: 'Fin' },
-            { id: 'finance_vendor_payment', perm: 'vendor_payment', route: '/finance_accounts/vendor_payment/entry', icon: 'fa-money-bill-transfer', label: 'Vendor Payments', badge: 'Fin' },
-            { id: 'finance_expense_voucher', perm: 'expense_voucher', route: '/finance_accounts/expense_voucher/entry', icon: 'fa-receipt', label: 'Expense Vouchers', badge: 'Fin' }
+            { id: 'finance_export_incentive_register', perm: 'export_incentive_register', route: '/finance_accounts/export_incentive_register/entry', icon: 'fa-award', label: 'Export Incentives', badge: 'Fin' },
+            { id: 'finance_lc_tracking', perm: 'lc_tracking', route: '/finance_accounts/lc_tracking/entry', icon: 'fa-file-shield', label: 'LC Tracking', badge: 'Fin' },
+            { id: 'finance_production_cost_allocation', perm: 'production_cost_allocation', route: '/finance_accounts/production_cost_allocation/entry', icon: 'fa-coins', label: 'Production Cost Allocation', badge: 'Fin' }
           ]
         }
       ]
@@ -178,7 +195,8 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'attendance_daily_attendance', perm: 'daily_attendance', route: '/attendance/daily', icon: 'fa-fingerprint', label: 'Daily Attendance', badge: 'HR' },
         { id: 'attendance_salary_report', perm: 'salary_report', route: '/attendance/salary/monthly-sheet', icon: 'fa-money-check-dollar', label: 'Monthly Salary Sheet', badge: 'HR' },
         { id: 'attendance_tax_master', perm: 'tax_master', route: '/attendance/tax-master', icon: 'fa-file-shield', label: 'Payroll Master', badge: 'HR' },
-        { id: 'attendance_salary_advance', perm: 'salary_advance', route: '/attendance/salary-advance', icon: 'fa-hand-holding-dollar', label: 'Salary Advance', badge: 'HR' }
+        { id: 'attendance_salary_advance', perm: 'salary_advance', route: '/attendance/salary-advance', icon: 'fa-hand-holding-dollar', label: 'Salary Advance', badge: 'HR' },
+        { id: 'finance_salary_processing', perm: 'salary_processing', route: '/finance_accounts/salary_processing/entry', icon: 'fa-calculator', label: 'Salary Processing', badge: 'HR' }
       ]
     },
     {
@@ -187,88 +205,85 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         {
           name: "Business Masters",
           items: [
-            { id: 'criteria_buyers', perm: 'buyers', route: '/criteria/buyers', icon: 'fa-circle-chevron-right', label: 'Buyers', badge: 'Mstr' },
-            { id: 'criteria_buyer_agents', perm: 'buyer_agents', route: '/criteria/buyer_agents', icon: 'fa-circle-chevron-right', label: 'Buyer Agents', badge: 'Mstr' },
-            { id: 'criteria_suppliers', perm: 'suppliers', route: '/criteria/suppliers', icon: 'fa-circle-chevron-right', label: 'Suppliers', badge: 'Mstr' },
-            { id: 'criteria_vendors', perm: 'vendors', route: '/criteria/vendors', icon: 'fa-circle-chevron-right', label: 'Vendors', badge: 'Mstr' },
-            { id: 'criteria_countries', perm: 'countries', route: '/criteria/countries', icon: 'fa-circle-chevron-right', label: 'Countries', badge: 'Mstr' },
-            { id: 'criteria_brands', perm: 'brands', route: '/criteria/brands', icon: 'fa-circle-chevron-right', label: 'Brands', badge: 'Mstr' },
-            { id: 'criteria_purchasing_locations', perm: 'purchasing_locations', route: '/criteria/purchasing_locations', icon: 'fa-circle-chevron-right', label: 'Purchasing Locations', badge: 'Mstr' }
+            { id: 'criteria_buyers', perm: 'buyers', route: '/criteria/buyers', icon: 'fa-users', label: 'Buyers', badge: 'Mstr' },
+            { id: 'criteria_buyer_agents', perm: 'buyer_agents', route: '/criteria/buyer_agents', icon: 'fa-user-tie', label: 'Buyer Agents', badge: 'Mstr' },
+            { id: 'criteria_suppliers', perm: 'suppliers', route: '/criteria/suppliers', icon: 'fa-truck-field', label: 'Suppliers', badge: 'Mstr' },
+            { id: 'criteria_vendors', perm: 'vendors', route: '/criteria/vendors', icon: 'fa-store', label: 'Vendors', badge: 'Mstr' },
+            { id: 'criteria_countries', perm: 'countries', route: '/criteria/countries', icon: 'fa-globe', label: 'Countries', badge: 'Mstr' },
+            { id: 'criteria_brands', perm: 'brands', route: '/criteria/brands', icon: 'fa-building', label: 'Brands', badge: 'Mstr' }
           ]
         },
         {
           name: "Production Masters",
           items: [
-            { id: 'criteria_species', perm: 'species', route: '/criteria/species', icon: 'fa-circle-chevron-right', label: 'Species', badge: 'Prod' },
-            { id: 'criteria_varieties', perm: 'varieties', route: '/criteria/varieties', icon: 'fa-circle-chevron-right', label: 'Varieties', badge: 'Prod' },
-            { id: 'criteria_grades', perm: 'grades', route: '/criteria/grades', icon: 'fa-circle-chevron-right', label: 'Grades', badge: 'Prod' },
-            { id: 'criteria_freezers', perm: 'freezers', route: '/criteria/freezers', icon: 'fa-circle-chevron-right', label: 'Freezers', badge: 'Prod' },
-            { id: 'criteria_glazes', perm: 'glazes', route: '/criteria/glazes', icon: 'fa-circle-chevron-right', label: 'Glazes', badge: 'Prod' },
-            { id: 'criteria_packing_styles', perm: 'packing_styles', route: '/criteria/packing_styles', icon: 'fa-circle-chevron-right', label: 'Packing Styles', badge: 'Prod' },
-            { id: 'criteria_contractors', perm: 'contractors', route: '/criteria/contractors', icon: 'fa-circle-chevron-right', label: 'Contractors', badge: 'Prod' },
-            { id: 'criteria_peeling_at', perm: 'peeling_at', route: '/criteria/peeling_at', icon: 'fa-circle-chevron-right', label: 'Peeling At', badge: 'Prod' },
-            { id: 'criteria_peeling_rates', perm: 'peeling_rates', route: '/criteria/peeling_rates', icon: 'fa-circle-chevron-right', label: 'Peeling Rates', badge: 'Prod' },
-            { id: 'criteria_production_at', perm: 'production_at', route: '/criteria/production_at', icon: 'fa-circle-chevron-right', label: 'Production At', badge: 'Prod' },
-            { id: 'criteria_production_for', perm: 'production_for', route: '/criteria/production_for', icon: 'fa-circle-chevron-right', label: 'Production For', badge: 'Prod' },
-            { id: 'criteria_production_types', perm: 'production_types', route: '/criteria/production_types', icon: 'fa-circle-chevron-right', label: 'Production Types', badge: 'Prod' },
-            { id: 'criteria_chemicals', perm: 'chemicals', route: '/criteria/chemicals', icon: 'fa-circle-chevron-right', label: 'Chemicals', badge: 'Prod' },
-            { id: 'criteria_purposes', perm: 'purposes', route: '/criteria/purposes', icon: 'fa-circle-chevron-right', label: 'Purposes', badge: 'Prod' },
-            { id: 'criteria_grade_to_hoso', perm: 'grade_to_hoso', route: '/criteria/grade_to_hoso', icon: 'fa-circle-chevron-right', label: 'Grade to HOSO', badge: 'Prod' },
-            { id: 'criteria_hoso_hlso', perm: 'hoso_hlso', route: '/criteria/hoso_hlso', icon: 'fa-circle-chevron-right', label: 'HOSO & HLSO', badge: 'Prod' }
+            { id: 'criteria_species', perm: 'species', route: '/criteria/species', icon: 'fa-fish', label: 'Species', badge: 'Mstr' },
+            { id: 'criteria_varieties', perm: 'varieties', route: '/criteria/varieties', icon: 'fa-seedling', label: 'Varieties', badge: 'Mstr' },
+            { id: 'criteria_grades', perm: 'grades', route: '/criteria/grades', icon: 'fa-medal', label: 'Grades', badge: 'Mstr' },
+            { id: 'criteria_freezers', perm: 'freezers', route: '/criteria/freezers', icon: 'fa-snowflake', label: 'Freezers', badge: 'Mstr' },
+            { id: 'criteria_glazes', perm: 'glazes', route: '/criteria/glazes', icon: 'fa-igloo', label: 'Glazes', badge: 'Mstr' },
+            { id: 'criteria_packing_styles', perm: 'packing_styles', route: '/criteria/packing_styles', icon: 'fa-box', label: 'Packing Styles', badge: 'Mstr' },
+            { id: 'criteria_contractors', perm: 'contractors', route: '/criteria/contractors', icon: 'fa-hard-hat', label: 'Contractors', badge: 'Mstr' },
+            { id: 'criteria_peeling_at', perm: 'peeling_at', route: '/criteria/peeling_at', icon: 'fa-map-pin', label: 'Peeling At', badge: 'Mstr' },
+            { id: 'criteria_peeling_rates', perm: 'peeling_rates', route: '/criteria/peeling_rates', icon: 'fa-money-bill', label: 'Peeling Rates', badge: 'Mstr' },
+            { id: 'criteria_production_at', perm: 'production_at', route: '/criteria/production_at', icon: 'fa-industry', label: 'Production At', badge: 'Mstr' },
+            { id: 'criteria_production_for', perm: 'production_for', route: '/criteria/production_for', icon: 'fa-building-flag', label: 'Production For', badge: 'Mstr' },
+            { id: 'criteria_production_types', perm: 'production_types', route: '/criteria/production_types', icon: 'fa-tags', label: 'Production Types', badge: 'Mstr' },
+            { id: 'criteria_chemicals', perm: 'chemicals', route: '/criteria/chemicals', icon: 'fa-flask', label: 'Chemicals', badge: 'Mstr' },
+            { id: 'criteria_purposes', perm: 'purposes', route: '/criteria/purposes', icon: 'fa-bullseye', label: 'Purposes', badge: 'Mstr' },
+            { id: 'criteria_grade_to_hoso', perm: 'grade_to_hoso', route: '/criteria/grade_to_hoso', icon: 'fa-exchange-alt', label: 'Grade to HOSO', badge: 'Mstr' },
+            { id: 'criteria_hoso_hlso', perm: 'hoso_hlso', route: '/criteria/hoso_hlso', icon: 'fa-ruler-combined', label: 'HOSO & HLSO', badge: 'Mstr' }
           ]
         },
         {
-          name: "Inventory Masters",
+          name: "Inv & Fin Masters",
           items: [
-            { id: 'criteria_cold_storage', perm: 'cold_storage', route: '/inventory/cold_storage', icon: 'fa-warehouse', label: 'Cold Storage Master', badge: 'InvM' },
-            { id: 'criteria_coldstore_locations', perm: 'coldstore_locations', route: '/criteria/coldstore_locations', icon: 'fa-circle-chevron-right', label: 'Coldstore Locations', badge: 'InvM' },
-            { id: 'criteria_vehicle_numbers', perm: 'vehicle_numbers', route: '/criteria/vehicle_numbers', icon: 'fa-circle-chevron-right', label: 'Vehicle Numbers', badge: 'InvM' }
+            { id: 'criteria_cold_storage', perm: 'cold_storage', route: '/inventory/cold_storage', icon: 'fa-igloo', label: 'Cold Storage Master', badge: 'Mstr' },
+            { id: 'criteria_coldstore_locations', perm: 'coldstore_locations', route: '/criteria/coldstore_locations', icon: 'fa-map-location-dot', label: 'Coldstore Locations', badge: 'Mstr' },
+            { id: 'criteria_vehicle_numbers', perm: 'vehicle_numbers', route: '/criteria/vehicle_numbers', icon: 'fa-truck', label: 'Vehicle Numbers', badge: 'Mstr' },
+            { id: 'criteria_hsn_codes', perm: 'hsn_codes', route: '/criteria/hsn_codes', icon: 'fa-barcode', label: 'HSN Codes', badge: 'Mstr' },
+            { id: 'criteria_general_store_items', perm: 'general_store_items', route: '/general_stock/items', icon: 'fa-cubes', label: 'General Store Items', badge: 'Mstr' }
           ]
         },
         {
-          name: "Finance Masters",
+          name: "Admin",
           items: [
-            { id: 'criteria_hsn_codes', perm: 'hsn_codes', route: '/criteria/hsn_codes', icon: 'fa-circle-chevron-right', label: 'HSN Codes', badge: 'FinM' }
+            { id: 'admin_add_user', perm: 'add_user', route: '/admin/add_user', icon: 'fa-user-gear', label: 'User Configuration', badge: 'Admin' },
+            { id: 'admin_shifts', perm: 'shifts', route: '/attendance/shifts', icon: 'fa-business-time', label: 'Shifts', badge: 'Admin' },
+            { id: 'admin_data_management', perm: 'data_management', route: '/data-management', icon: 'fa-database', label: 'Data Management', badge: 'Admin' },
+            ...(isDefaultSuperAdmin ? [{ id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', badge: 'Admin' }] : [])
           ]
         }
       ]
     }
   ];
 
-  // The browser keeps the complete ERP menu. The native shell reuses these
-  // same React pages but intentionally exposes only the approved mobile scope.
-  const mobilePageIds = new Set([
-    'dashboard_processing',
-    'dashboard_inventory',
-    'gate_entry',
-    'raw_material_purchasing',
-    'de_heading',
-    'grading',
-    'peeling',
-    'soaking',
-    'production',
-    'stock_entry',
-    'pending_orders',
-    'cold_storage_holding',
-    'general_stock_entry',
-    'report_inventory_report',
-    'attendance_daily_attendance',
-  ]);
+  // menu.html keeps Masters/Admin in the profile mega-menu, not the sidebar.
+  const visibleMenuConfig = menuConfig.filter(category => category.title !== 'MASTERS');
 
-  const visibleMenuConfig = isNativeMobile
-    ? menuConfig
-        .map((category) => ({
-          ...category,
-          items: category.items?.filter((item) => mobilePageIds.has(item.id)),
-          subgroups: category.subgroups
-            ?.map((subgroup) => ({
-              ...subgroup,
-              items: subgroup.items.filter((item) => mobilePageIds.has(item.id)),
-            }))
-            .filter((subgroup) => subgroup.items.length > 0),
-        }))
-        .filter((category) => (category.items?.length || 0) + (category.subgroups?.length || 0) > 0)
-    : menuConfig;
+  useEffect(() => {
+    if (!onMenuItemsReady) return;
+
+    const items = menuConfig.flatMap(category => {
+      if (category.items) {
+        return category.items
+          .filter(item => allow(item.perm))
+          .map(item => ({ ...item, category: category.title }));
+      }
+      return (category.subgroups || []).flatMap(subgroup => subgroup.items
+        .filter(item => allow(item.perm))
+        .map(item => ({ ...item, category: `${category.title} > ${subgroup.name}` })));
+    });
+
+    onMenuItemsReady(items);
+    // The sidebar mounts after authentication, so this permission-filtered snapshot
+    // only needs to be published once for the header Quick Actions picker.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onMenuItemsReady]);
+
+  const categoryHasVisibleItems = (category) => category.items
+    ? category.items.some(item => allow(item.perm))
+    : category.subgroups?.some(subgroup => subgroup.items.some(item => allow(item.perm)));
+  const firstVisibleTitle = visibleMenuConfig.find(categoryHasVisibleItems)?.title;
 
   return (
     <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
@@ -289,19 +304,19 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
       <div className="sidebar-menu">
         {visibleMenuConfig.map((cat, idx) => {
           // Check permissions for the category
-          let hasVisible = false;
-          if (cat.items) {
-            hasVisible = cat.items.some(item => allow(item.perm));
-          } else if (cat.subgroups) {
-            hasVisible = cat.subgroups.some(sub => sub.items.some(item => allow(item.perm)));
-          }
+          const hasVisible = categoryHasVisibleItems(cat);
           if (!hasVisible) return null;
 
           const catClass = `cat-${cat.title.split(' ')[0]}`;
+          const isPillarOpen = openPillars[cat.title] ?? cat.title === firstVisibleTitle;
 
           return (
-            <div key={idx} className="pillar-block">
-              <div className="pillar-title">{cat.title}</div>
+            <div key={idx} className={`pillar-block ${isPillarOpen ? 'open' : 'collapsed'}`}>
+              <div className="pillar-title" onClick={() => togglePillar(cat.title)}>
+                <i className="fa-solid fa-chevron-right pillar-chevron"></i>
+                <i className={`fa-solid ${isPillarOpen ? 'fa-folder-open' : 'fa-folder'} pillar-folder`}></i>
+                <span>{cat.title}</span>
+              </div>
               <div className="menu-wrapper">
                 
                 {/* Render direct items */}
@@ -322,7 +337,6 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
                           <i className={`fa-solid ${item.icon}`}></i> 
                           {item.label}
                         </div>
-                        <span className="kpi-badge">{item.badge}</span>
                       </a>
                     </div>
                   );
@@ -342,6 +356,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
                         onClick={() => toggleSection(sub.name)}
                       >
                         <i className="fa-solid fa-chevron-right sub-chevron"></i>
+                        <i className={`fa-solid ${isSubgroupOpen ? 'fa-folder-open' : 'fa-folder'} sub-folder`}></i>
                         <span>{sub.name}</span>
                       </div>
 
@@ -363,7 +378,6 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
                                   <i className={`fa-solid ${item.icon}`}></i> 
                                   {item.label}
                                 </div>
-                                <span className="kpi-badge">{item.badge}</span>
                               </a>
                             </div>
                           );

@@ -7,7 +7,8 @@
  * ─────────────────────────────────────────────────────────
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { RefreshCw, Printer, Download, Search, FileText, MoreVertical, X, Trash2, Edit, Save, History, Check } from 'lucide-react';
+import { RefreshCw, Printer, Download, Search, FileText, MoreVertical, X, Edit, Save, History, Check } from 'lucide-react';
+import { formatFinancialYear } from '../../utils/financialYear';
 
 /* ── Formatters ─────────────────────────────────────────── */
 export const fmt = {
@@ -34,14 +35,20 @@ export function useReport({ url, params = {}, deps = [] }) {
     setError(null);
     try {
       if (!url) throw new Error('Report route is not configured. Please reopen this report from the menu.');
-      const q = new URLSearchParams({ format: 'json', ...params });
+      const requestUrl = new URL(url, window.location.origin);
+      const q = new URLSearchParams(requestUrl.search);
+      q.set('format', 'json');
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') q.set(key, value);
+      });
       // inject global filters
       const pf = localStorage.getItem('production_for_filter') || '';
       const loc = localStorage.getItem('plant_location_filter') || '';
       if (pf)  q.set('production_for', pf);
       if (loc) q.set('location', loc);
 
-      const res = await fetch(`${url}?${q}`, {
+      const requestPath = `${requestUrl.pathname}?${q}`;
+      const res = await fetch(requestPath, {
         credentials: 'include',
         redirect: 'follow',
         headers: { Accept: 'application/json' },
@@ -152,9 +159,30 @@ export function KPIGrid({ children }) {
   return <div className="erp-report-kpi-row" style={styles.kpiGrid}>{children}</div>;
 }
 
-export function KPICard({ label, value, accent = 'var(--corp-rep)' }) {
+export function KPICard({ label, value, accent = 'var(--corp-rep)', onClick, title, stacked = false }) {
   return (
-    <div className="erp-report-kpi-card" style={{ ...styles.kpiCard, borderLeft: `3px solid ${accent}` }}>
+    <div
+      className="erp-report-kpi-card"
+      style={{
+        ...styles.kpiCard,
+        borderLeft: `3px solid ${accent}`,
+        cursor: onClick ? 'pointer' : 'default',
+        flexDirection: stacked ? 'column' : styles.kpiCard.flexDirection,
+        alignItems: stacked ? 'flex-start' : styles.kpiCard.alignItems,
+        justifyContent: stacked ? 'center' : styles.kpiCard.justifyContent,
+        gap: stacked ? 3 : styles.kpiCard.gap,
+      }}
+      onClick={onClick}
+      title={title || (onClick ? `View ${label} details` : undefined)}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={onClick ? (event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick();
+        }
+      } : undefined}
+    >
       <span style={styles.kpiLabel}>{label}</span>
       <span style={styles.kpiValue}>{value}</span>
     </div>
@@ -211,8 +239,8 @@ export function FinYearSelect({ value, onChange, list }) {
     : [String(new Date().getFullYear() - 1), String(new Date().getFullYear())];
   return (
     <FilterSelect value={value} onChange={onChange}>
-      <option value="">-- Select FY --</option>
-      {years.map(y => <option key={y} value={y}>{y}–{Number(y) + 1}</option>)}
+      <option value="">-- SELECT FY --</option>
+      {years.map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)}
     </FilterSelect>
   );
 }
@@ -502,7 +530,7 @@ export function AuditDrawer({ isOpen, onClose, auditUrl }) {
                   </div>
                   <div style={{ fontWeight: 600 }}>Field: <span style={{ color: 'var(--corp-rep)' }}>{log.field}</span></div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                    {log.field === 'DELETE' ? 'DELETED' : <>{log.old} &rarr; {log.new}</>}
+                    {log.field === 'DELETE' ? 'CANCELLED' : <>{log.old} &rarr; {log.new}</>}
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>By: {logUser}</div>
                 </div>

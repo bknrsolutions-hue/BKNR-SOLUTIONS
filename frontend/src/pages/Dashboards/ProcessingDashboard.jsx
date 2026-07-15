@@ -726,14 +726,11 @@ export default function ProcessingDashboard({ theme }) {
         </div>
 
         {/* Current Floor Balance Report */}
-        <div style={sectionHeaderStyle}>
-          <span>Floor Balance Snapshot — {data?.floor_snapshot_date || selectedDate} · 09:00 IST</span>
-          <div style={sectionHeaderLineStyle}></div>
-        </div>
         <div className="card" style={{ padding: '16px', display: 'flex', flexDirection: 'column' }}>
           <FloorBalanceReport
             activeRoute="/reports/floor_balance_report"
             params={{ snapshot_date: selectedDate }}
+            hideSnapshotStatus
           />
         </div>
       </main>

@@ -12,7 +12,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/bknr-charts.js"></script>
-<script src="/static/js/ui-color-customizer.js"></script>
+<script src="/static/js/ui-color-customizer.js?v=2.4"></script>
 
     <script>
         function syncThemeFromParent() {
@@ -355,7 +355,7 @@
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 <link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/dashboard-ui.css">
-<link rel="stylesheet" href="/static/css/ui-color-customizer.css">
+<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
 </head>
 <body class="processing-dashboard">
 
@@ -685,6 +685,7 @@
         
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.set('view', 'dashboard'); 
+        urlParams.set('embedded', 'true');
         
         const iframeUrl = url + "?" + urlParams.toString();
         

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Clock, Plus, Trash2, RefreshCw, Eye } from 'lucide-react';
+import { Fragment, useState, useEffect } from 'react';
+import { Clock, Plus, RefreshCw, Eye } from 'lucide-react';
 
 export default function PendingOrders() {
   const [loading, setLoading] = useState(false);
@@ -8,7 +8,9 @@ export default function PendingOrders() {
   const [activeRows, setActiveRows] = useState([]);
   const [completedRows, setCompletedRows] = useState([]);
   const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showPoActions, setShowPoActions] = useState(false);
   const [selectedPo, setSelectedPo] = useState('');
+  const [orderView, setOrderView] = useState('pending');
 
   // Dropdowns
   const [uniqueCompanies, setUniqueCompanies] = useState([]);
@@ -76,7 +78,7 @@ export default function PendingOrders() {
   };
 
   useEffect(() => {
-    fetchData();
+    void Promise.resolve().then(fetchData);
   }, []);
 
   const handleAddRow = () => {
@@ -127,11 +129,12 @@ export default function PendingOrders() {
         body: fd,
         redirect: 'manual',
       });
+      if (!res.ok && res.status !== 0 && res.status !== 303) throw new Error('Unable to save pending order');
       setMsg('✅ Pending PO saved successfully!');
       setShowForm(false);
       setItems([{ brand: '', packing_style: '', freezer: '', count_glaze: '', weight_glaze: '', species: '', variety: '', grade: '', no_of_pieces: '0', no_of_mc: 0, selling_price: 0 }]);
       await fetchData();
-    } catch (err) {
+    } catch {
       setMsg('❌ Error saving PO');
     } finally {
       setLoading(false);
@@ -156,6 +159,7 @@ export default function PendingOrders() {
         body: fd,
         redirect: 'manual',
       });
+      if (!res.ok && res.status !== 0 && res.status !== 303) throw new Error('Unable to move PO to dispatch');
       setMsg('✅ Dispatch details logged and moved to Sales & Journals!');
       setShowMoveModal(false);
       setInvoiceNo('');
@@ -163,7 +167,7 @@ export default function PendingOrders() {
       setShippingBill('');
       setContainerNo('');
       await fetchData();
-    } catch (err) {
+    } catch {
       setMsg('❌ Failed to post dispatch details');
     } finally {
       setLoading(false);
@@ -171,35 +175,45 @@ export default function PendingOrders() {
   };
 
   const handleDeletePo = async (poNum) => {
-    if (!window.confirm(`Cancel PO ${poNum} permanently?`)) return;
+    if (!window.confirm(`Do you want to cancel PO ${poNum}?`)) return;
     setLoading(true);
     try {
-      await fetch(`/inventory/pending_orders/delete_po/${poNum}`, {
+      const response = await fetch(`/inventory/pending_orders/delete_po/${poNum}`, {
         method: 'POST',
         credentials: 'include',
         redirect: 'manual',
       });
-      setMsg('✅ PO Cancelled');
+      if (!response.ok && response.status !== 0 && response.status !== 303) throw new Error('Unable to cancel PO');
+      setMsg('PO cancelled successfully.');
+      setShowPoActions(false);
       await fetchData();
-    } catch (err) {
+    } catch {
       setMsg('❌ Error cancelling PO');
     } finally {
       setLoading(false);
     }
   };
 
-  // Group by PO Number locally
-  const groupActive = activeRows.reduce((acc, r) => {
-    acc[r.po_number] = acc[r.po_number] || [];
-    acc[r.po_number].push(r);
-    return acc;
-  }, {});
-
-  const groupCompleted = completedRows.reduce((acc, r) => {
-    acc[r.po_number] = acc[r.po_number] || [];
-    acc[r.po_number].push(r);
-    return acc;
-  }, {});
+  const handleStatusChange = async (poNum, status) => {
+    if (!window.confirm(`Change PO ${poNum} status to ${status.toUpperCase()}?`)) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/inventory/update_po_status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ po_number: poNum, status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || data.message || 'Unable to update PO status');
+      setMsg(`✅ PO ${poNum} status updated to ${status.toUpperCase()}`);
+      await fetchData();
+    } catch (err) {
+      setMsg(`❌ ${err.message || 'Unable to update PO status'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
@@ -220,7 +234,7 @@ export default function PendingOrders() {
       </div>
 
       {msg && (
-        <div style={{ padding: '10px 16px', borderRadius: 8, background: msg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: msg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: 13, fontWeight: 700 }}>
+        <div style={{ padding: '10px 16px', borderRadius: 8, background: (msg.startsWith('✅') || msg === 'PO cancelled successfully.') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: (msg.startsWith('✅') || msg === 'PO cancelled successfully.') ? '#10b981' : '#ef4444', fontSize: 13, fontWeight: 700 }}>
           {msg}
           <button style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => setMsg('')}>✕</button>
         </div>
@@ -297,53 +311,73 @@ export default function PendingOrders() {
         </form>
       )}
 
+      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+        <button
+          type="button"
+          className={`btn ${orderView === 'pending' ? 'btn-primary' : 'btn-clear'}`}
+          onClick={() => setOrderView('pending')}
+        >
+          Pending Orders ({activeRows.length})
+        </button>
+        <button
+          type="button"
+          className={`btn ${orderView === 'completed' ? 'btn-primary' : 'btn-clear'}`}
+          onClick={() => setOrderView('completed')}
+        >
+          Completed Dispatch ({completedRows.length})
+        </button>
+      </div>
+
       {/* ACTIVE PO LIST */}
-      <div>
+      {orderView === 'pending' && <div>
         <h3 style={{ fontSize: 13, fontWeight: 800, margin: '10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Active Pending Backlogs
         </h3>
-        {Object.keys(groupActive).length === 0 ? (
+        {activeRows.length === 0 ? (
           <div className="card text-center" style={{ padding: 20, color: 'var(--text-secondary)' }}>No active pending orders.</div>
         ) : (
-          Object.keys(groupActive).map(poNum => {
-            const grp = groupActive[poNum];
-            return (
-              <div key={poNum} className="card" style={{ marginBottom: 12, padding: 14 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: 8, marginBottom: 10 }}>
-                  <div>
-                    <strong style={{ fontSize: 14, color: 'var(--corp-ops)' }}>PO: {poNum}</strong>
-                    <span style={{ marginLeft: 12, fontSize: 11, color: 'var(--text-secondary)' }}>Buyer: {grp[0].buyer} ({grp[0].country})</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn btn-primary" style={{ height: 28, padding: '2px 10px', fontSize: 11 }}
-                      onClick={() => { setSelectedPo(poNum); setShowMoveModal(true); }}>
-                      <Eye size={12} style={{ marginRight: 4 }} /> Move to Dispatch & Ledger
-                    </button>
-                    <button className="btn btn-clear" style={{ height: 28, padding: '2px 8px', fontSize: 11, color: '#ef4444' }}
-                      onClick={() => handleDeletePo(poNum)}>
-                      Cancel PO
-                    </button>
-                  </div>
-                </div>
-                <table className="bknr-table">
-                  <thead><tr>
-                    <th>Species</th><th>Variety</th><th>Grade</th><th>Brand</th><th>Pack Style</th>
-                    <th className="text-right">Ordered MC</th><th className="text-right">Selling Price ($)</th>
-                  </tr></thead>
-                  <tbody>
-                    {grp.map(r => (
-                      <tr key={r.id}>
-                        <td>{r.species}</td><td>{r.variety}</td><td>{r.grade}</td><td>{r.brand}</td><td>{r.packing_style}</td>
-                        <td className="text-right">{r.no_of_mc}</td><td className="text-right">${Number(r.selling_price || 0).toFixed(2)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            );
-          })
+          <div className="card" style={{ padding: 14 }}>
+            <OrdersTable
+              rows={activeRows}
+              onStatusChange={handleStatusChange}
+              onRowClick={row => { setSelectedPo(row.po_number); setShowPoActions(true); }}
+            />
+          </div>
         )}
-      </div>
+      </div>}
+
+      {/* COMPLETED PO LIST */}
+      {orderView === 'completed' && <div>
+        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Completed Dispatch
+        </h3>
+        {completedRows.length === 0 ? (
+          <div className="card text-center" style={{ padding: 20, color: 'var(--text-secondary)' }}>No completed dispatch orders.</div>
+        ) : (
+          <div className="card" style={{ padding: 14 }}>
+            <OrdersTable rows={completedRows} completed />
+          </div>
+        )}
+      </div>}
+
+      {/* PENDING PO ACTIONS */}
+      {showPoActions && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9998 }} onClick={() => setShowPoActions(false)}>
+          <div className="card" style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={event => event.stopPropagation()}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>PO {selectedPo}</h3>
+              <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: 11 }}>Select an action for this purchase order.</p>
+            </div>
+            <button className="btn btn-primary" type="button" onClick={() => { setShowPoActions(false); setShowMoveModal(true); }}>
+              <Eye size={13} /> Move to Dispatch &amp; Ledger
+            </button>
+            <button className="btn btn-clear" type="button" style={{ color: '#ef4444' }} onClick={() => handleDeletePo(selectedPo)}>
+              Cancel PO
+            </button>
+            <button className="btn btn-clear" type="button" onClick={() => setShowPoActions(false)}>Close</button>
+          </div>
+        </div>
+      )}
 
       {/* DISPATCH/SALES MODAL OVERLAY */}
       {showMoveModal && (
@@ -373,6 +407,97 @@ export default function PendingOrders() {
           </form>
         </div>
       )}
+    </div>
+  );
+}
+
+function OrdersTable({ rows, completed = false, onStatusChange, onRowClick }) {
+  const groupedRows = rows.reduce((groups, row) => {
+    const poNumber = row.po_number || 'NO-PO';
+    if (!groups[poNumber]) groups[poNumber] = [];
+    groups[poNumber].push(row);
+    return groups;
+  }, {});
+
+  return (
+    <div style={{ width: '100%', overflowX: 'auto' }}>
+      <table className="bknr-table" style={{ minWidth: 1900 }}>
+        <thead>
+          <tr>
+            <th>Sl</th><th>Company</th><th>Location</th><th>PO Number</th><th>Buyer</th><th>Agent</th><th>Ship.Date</th>
+            <th>Brand</th><th>Packing</th><th>Freezer</th><th>C.G</th><th>W.G</th><th>Species</th><th>Variety</th>
+            <th>Grade</th><th>Pieces</th><th className="text-right">M.C Box</th><th className="text-right">Price</th>
+            <th className="text-right">Exch Rate</th><th>{completed ? 'Status' : 'Workflow Architecture'}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(groupedRows).map(([poNumber, poRows]) => {
+            const totalMc = poRows.reduce((sum, row) => sum + Number(row.no_of_mc || 0), 0);
+            const totalPrice = poRows.reduce((sum, row) => sum + Number(row.selling_price || 0), 0);
+            const averageExchange = poRows.length
+              ? poRows.reduce((sum, row) => sum + Number(row.exchange_rate || 0), 0) / poRows.length
+              : 0;
+            return (
+              <Fragment key={poNumber}>
+                {poRows.map((row, index) => (
+                  <tr
+                    key={row.id}
+                    role={onRowClick ? 'button' : undefined}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onClick={() => onRowClick?.(row)}
+                    onKeyDown={event => event.key === 'Enter' && onRowClick?.(row)}
+                    style={{ cursor: onRowClick ? 'pointer' : 'default' }}
+                  >
+                    <td>{row.sl_no || index + 1}</td>
+                    <td>{row.company_name || '—'}</td>
+                    <td>{row.production_at || '—'}</td>
+                    <td style={{ fontWeight: 800, color: completed ? 'var(--success)' : 'var(--accent)' }}>{row.po_number || '—'}</td>
+                    <td>{row.buyer || '—'}</td>
+                    <td>{row.agent_name || '—'}</td>
+                    <td>{row.shipment_date || '—'}</td>
+                    <td>{row.brand || '—'}</td>
+                    <td>{row.packing_style || '—'}</td>
+                    <td>{row.freezer || '—'}</td>
+                    <td>{row.count_glaze || '—'}</td>
+                    <td>{row.weight_glaze || '—'}</td>
+                    <td>{row.species || '—'}</td>
+                    <td>{row.variety || '—'}</td>
+                    <td>{row.grade || '—'}</td>
+                    <td>{row.no_of_pieces ?? 0}</td>
+                    <td className="text-right" style={{ fontWeight: 800 }}>{Number(row.no_of_mc || 0).toLocaleString('en-IN')}</td>
+                    <td className="text-right" style={{ fontWeight: 800, color: 'var(--success)' }}>${Number(row.selling_price || 0).toFixed(2)}</td>
+                    <td className="text-right" style={{ fontWeight: 800, color: 'var(--accent)' }}>₹{Number(row.exchange_rate || 0).toFixed(2)}</td>
+                    <td>
+                      {completed ? (
+                        <span className="status-badge" style={{ color: 'var(--success)', fontWeight: 800 }}>COMPLETED</span>
+                      ) : (
+                        <select
+                          className="form-control"
+                          style={{ minWidth: 120, height: 30, padding: '2px 7px', fontSize: 10, fontWeight: 800 }}
+                          value={String(row.progress_steps || 'pending').toLowerCase()}
+                          onClick={event => event.stopPropagation()}
+                          onChange={event => onStatusChange?.(row.po_number, event.target.value)}
+                        >
+                          <option value="pending">PENDING</option>
+                          <option value="processing">PROCESSING</option>
+                          <option value="completed">COMPLETED</option>
+                        </select>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                <tr style={{ background: 'var(--table-header-bg)', borderTop: '2px solid var(--border-light)' }}>
+                  <td colSpan="16" style={{ textAlign: 'right', fontWeight: 900 }}>PO {poNumber} SUBTOTAL · {poRows.length} LINE{poRows.length === 1 ? '' : 'S'}</td>
+                  <td className="text-right" style={{ fontWeight: 900 }}>{totalMc.toLocaleString('en-IN')} MC</td>
+                  <td className="text-right" style={{ fontWeight: 900, color: 'var(--success)' }}>${totalPrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ fontWeight: 900, color: 'var(--accent)' }}>₹{averageExchange.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td></td>
+                </tr>
+              </Fragment>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -31,6 +31,19 @@ def general_items_page(request: Request, db: Session = Depends(get_db)):
         .order_by(GeneralStoreItems.id.desc())
         .all()
     )
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "items": [
+                {
+                    "id": item.id,
+                    "item_name": item.item_name,
+                    "unit_name": item.unit_name,
+                    "minimum_level": float(item.minimum_level or 0),
+                }
+                for item in items
+            ]
+        })
 
     return templates.TemplateResponse(
         request=request,

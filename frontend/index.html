@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // Some Chromium WebView/DevTools builds inject a metrics script without
+      // installing its reporter callback. Keep that tooling-only failure from
+      // flooding the console or interrupting document-start evaluations.
+      if (typeof window.__chromium_devtools_metrics_reporter !== 'function') {
+        window.__chromium_devtools_metrics_reporter = function () {};
+      }
+    </script>
     <!-- ⚡ Blocking theme init — must run before CSS renders to avoid flash -->
     <script>
       (function() {
@@ -21,9 +29,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.3">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="/static/js/ui-color-customizer.js?v=2.3"></script>
   </head>
   <body>
     <div id="root"></div>

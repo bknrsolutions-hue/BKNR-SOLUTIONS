@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Boxes, Plus, Trash2, RefreshCw, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
+import { Boxes, Plus, Ban, RefreshCw, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
 export default function StockEntry() {
   const [loading, setLoading] = useState(false);
@@ -370,7 +370,7 @@ export default function StockEntry() {
                     {!row.is_cancelled && (
                       <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
                         onClick={() => handleDelete(row.id)} title="Cancel">
-                        <Trash2 size={13} />
+                        <Ban size={13} />
                       </button>
                     )}
                   </td>

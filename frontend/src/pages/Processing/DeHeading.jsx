@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Scissors, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function DeHeading() {
   const [date, setDate] = useState('');
@@ -663,7 +663,7 @@ export default function DeHeading() {
                               style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
                               title="Cancel entry"
                             >
-                              <Trash2 size={13} />
+                              <Ban size={13} />
                             </button>
                           )}
                         </td>

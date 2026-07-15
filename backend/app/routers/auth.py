@@ -430,7 +430,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "last_activity": get_ist_time().timestamp(),
         "session_id": session_id
     })
-    return JSONResponse({"status": "success", "setup_completed": True, "next_page": "/home"})
+    return JSONResponse({"status": "success", "setup_completed": True, "next_page": "/app/#/page/dashboard_processing"})
 
 @router.get("/session-info")
 def session_info(request: Request):

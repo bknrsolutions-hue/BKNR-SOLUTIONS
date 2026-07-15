@@ -15,6 +15,8 @@ depends_on = None
 
 
 def upgrade():
+    if "supplier_batch_expenses" in sa.inspect(op.get_bind()).get_table_names():
+        return
     op.create_table(
         "supplier_batch_expenses",
         sa.Column("id", sa.Integer(), primary_key=True, index=True),

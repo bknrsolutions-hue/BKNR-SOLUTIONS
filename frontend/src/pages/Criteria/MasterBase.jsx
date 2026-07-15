@@ -133,7 +133,7 @@ export default function MasterBase({
 
   const handleDelete = async () => {
     if (!selectedRow) return;
-    if (!window.confirm('Are you sure you want to delete this profile record?')) return;
+    if (!window.confirm('Are you sure you want to cancel this profile record?')) return;
 
     try {
       const res = await fetch(`/criteria/api/${modelName}/delete/${selectedRow.id}`, {
@@ -141,14 +141,14 @@ export default function MasterBase({
       });
 
       if (res.ok) {
-        showNotification('success', 'Record deleted successfully.');
+        showNotification('success', 'Record cancelled successfully.');
         clearForm();
         loadData();
       } else {
         showNotification('error', 'Database deletion request failed.');
       }
     } catch (err) {
-      showNotification('error', 'Network failure during delete.');
+      showNotification('error', 'Network failure during cancellation.');
     }
   };
 
@@ -283,7 +283,6 @@ export default function MasterBase({
         <div className="master-header-titles">
           <h2><i className="fa-solid fa-layer-group"></i> {title}</h2>
         </div>
-        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-secondary)' }}>SVBK IT Solutions</div>
       </div>
 
       {/* Dynamic Form Area */}
@@ -395,7 +394,7 @@ export default function MasterBase({
                         <i className="fa-solid fa-file-excel"></i> Export Excel
                       </div>
                       <div className="master-menu-item danger" onClick={handleDelete}>
-                        <i className="fa-solid fa-trash"></i> Delete Record
+                        <i className="fa-solid fa-ban"></i> Cancel Record
                       </div>
                     </div>
                   )}

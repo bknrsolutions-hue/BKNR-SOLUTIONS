@@ -254,7 +254,8 @@
             <select id="f_fy" name="fy" onchange="document.getElementById('filterForm').submit();">
                 <option value="">-- ALL FY --</option>
                 {% for f in financial_years %}
-                    <option value="{{ f }}" {% if selected_fy == f %}selected{% endif %}>FY {{ f }}</option>
+                    {% set fy_start = f.split('-')[0]|int %}
+                    <option value="{{ f }}" {% if selected_fy == f %}selected{% endif %}>FY {{ fy_start }}-{{ fy_start + 1 }}</option>
                 {% endfor %}
             </select>
         </div>

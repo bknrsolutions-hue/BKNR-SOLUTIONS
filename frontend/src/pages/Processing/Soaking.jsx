@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Droplet, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { Droplet, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function Soaking() {
   const [date, setDate] = useState('');
@@ -670,7 +670,7 @@ export default function Soaking() {
                           style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
                           title="Cancel entry"
                         >
-                          <Trash2 size={13} />
+                          <Ban size={13} />
                         </button>
                       )}
                     </td>

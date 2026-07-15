@@ -19,7 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/static/js/ui-color-customizer.js?v=2.3"></script>
+<script src="/static/js/ui-color-customizer.js?v=2.4"></script>
 
 <script>
     window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'ERP')|tojson }};
@@ -618,7 +618,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 <link rel="stylesheet" href="/static/css/app-splash.css?v=skel8">
-<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.3">
+<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
 </head>
 <body>
 
@@ -1609,6 +1609,7 @@ const sidebarMenuData = [
                 name: "Export Documents",
                 items: [
                     ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Dashboard', 'ExpOp'],
+                    ['proforma_invoice', '/export_documents/proforma_invoice/entry', 'fa-file-invoice-dollar', 'Proforma Invoices', 'ExpOp'],
                     ['export_shipment', '/export_documents/export_shipment/entry', 'fa-ship', 'Export Shipments', 'ExpOp'],
                     ['commercial_invoice', '/export_documents/commercial_invoice/entry', 'fa-file-invoice', 'Commercial Invoices', 'ExpOp'],
                     ['packing_list', '/export_documents/packing_list/entry', 'fa-file-lines', 'Packing Lists', 'ExpOp'],
@@ -1616,6 +1617,7 @@ const sidebarMenuData = [
                     ['shipping_bill', '/export_documents/shipping_bill/entry', 'fa-clipboard-check', 'Shipping Bills', 'ExpOp'],
                     ['bill_of_lading', '/export_documents/bill_of_lading/entry', 'fa-file-contract', 'Bills of Lading', 'ExpOp'],
                     ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp'],
+                    ['export_requirement_forms', '/export_documents/requirement-pages/entry', 'fa-list-check', 'Document Entry Forms', 'ExpOp'],
                     ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp']
                 ]
             }

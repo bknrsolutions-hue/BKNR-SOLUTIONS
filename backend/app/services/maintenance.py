@@ -48,6 +48,9 @@ def _refresh_cache(db: Session):
     except Exception as e:
         logger.error("maintenance cache refresh error: %s", e)
         _cache["level"] = MAINTENANCE_OFF
+        # Avoid retrying and logging on every request during a temporary DB
+        # outage. The normal TTL will trigger the next refresh attempt.
+        _cache["ts"] = time.time()
 
 
 def _ensure_fresh(db: Session):

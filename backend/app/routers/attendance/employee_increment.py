@@ -1,6 +1,6 @@
 # app/routers/attendance/employee_increment.py
 
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -37,11 +37,13 @@ def calculate_and_apply_salary_breakup(emp: EmployeeRegistration, gross_salary: 
 # 1️⃣ 📄 INCREMENT PAGE
 # ==================================================
 @router.get("/employee-increment", response_class=HTMLResponse)
-def increment_page(request: Request, db: Session = Depends(get_db)):
+def increment_page(request: Request, format: str = Query(default="html"), db: Session = Depends(get_db)):
     email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
+        if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"error": "Session expired"}, status_code=401)
         return RedirectResponse("/", status_code=303)
 
     error_param = request.query_params.get("error")
@@ -60,6 +62,27 @@ def increment_page(request: Request, db: Session = Depends(get_db)):
     increment_records = db.query(EmployeeIncrement).filter(
         EmployeeIncrement.company_id == company_code
     ).order_by(EmployeeIncrement.id.desc()).all()
+
+    if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({
+            "status": "success",
+            "message": system_message,
+            "records": [
+                {
+                    "id": r.id,
+                    "employee_id": r.employee_id,
+                    "old_salary": r.old_salary,
+                    "increment_type": r.increment_type,
+                    "increment_value": r.increment_value,
+                    "new_salary": r.new_salary,
+                    "effective_from": r.effective_from.isoformat() if r.effective_from else "",
+                    "reason": r.reason,
+                    "approved_by": r.approved_by,
+                    "status": r.status
+                }
+                for r in increment_records
+            ]
+        })
 
     return templates.TemplateResponse(
         request=request,
@@ -89,6 +112,7 @@ def save_increment(
 ):
     company_id = request.session.get("company_code")
     session_user = request.session.get("email")
+    wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
 
     if not company_id or not session_user:
         return JSONResponse({"error": "Session expired"}, status_code=401)
@@ -100,6 +124,8 @@ def save_increment(
     ).first()
 
     if not emp:
+        if wants_json:
+            return JSONResponse({"status": "error", "message": "Active Employee Number Not Found in Database!"}, status_code=404)
         return RedirectResponse("/attendance/employee-increment?error=employee_not_found", status_code=303)
 
     old_salary = float(emp.current_salary or 0)
@@ -130,6 +156,8 @@ def save_increment(
         calculate_and_apply_salary_breakup(emp, new_salary)
 
     db.commit()
+    if wants_json:
+        return JSONResponse({"status": "success", "message": "Salary Increment Logged & Applied Successfully!"})
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
 
 
@@ -177,6 +205,7 @@ def save_update_increment(
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
+    wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
     if not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
@@ -187,6 +216,8 @@ def save_update_increment(
     ).first()
 
     if not record:
+        if wants_json:
+            return JSONResponse({"status": "error", "message": "Transaction Record Not Found!"}, status_code=404)
         return RedirectResponse("/attendance/employee-increment?error=record_not_found", status_code=303)
 
     emp = db.query(EmployeeRegistration).filter(
@@ -214,6 +245,8 @@ def save_update_increment(
         calculate_and_apply_salary_breakup(emp, record.new_salary)
 
     db.commit()
+    if wants_json:
+        return JSONResponse({"status": "success", "message": "Salary Increment Logged & Applied Successfully!"})
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
 
 

@@ -230,6 +230,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     async function sendPdfUpload(file) {
         if (!file || !ensureSelection()) return;
+        const uploadConfirm = await Swal.fire({ title: "Do you want to import and save this PDF?", icon: "question", showCancelButton: true, confirmButtonText: "Yes" });
+        if (!uploadConfirm.isConfirmed) return;
         const formData = new FormData();
         formData.append("file", file);
         formData.append("document_kind", "SIGNED_COPY");
@@ -259,6 +261,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     async function saveShipment(e) {
         e.preventDefault();
+        const saveConfirm = await Swal.fire({ title: "Do you want to save this shipment?", icon: "question", showCancelButton: true, confirmButtonText: "Yes" });
+        if (!saveConfirm.isConfirmed) return;
         const payload = {
             shipment_no: document.getElementById("shipment_no").value,
             po_number: document.getElementById("po_number").value,

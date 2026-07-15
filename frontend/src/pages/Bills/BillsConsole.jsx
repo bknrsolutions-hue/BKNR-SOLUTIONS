@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FileText, Plus, Trash2 } from 'lucide-react';
+import { Ban, FileText, Plus } from 'lucide-react';
 
 export default function BillsConsole({ activePage }) {
   const getInitialTab = () => {
@@ -95,7 +95,7 @@ export default function BillsConsole({ activePage }) {
   };
 
   return (
-    <div>
+    <div className="report-viewer-card bills-console-page">
       <h2 style={{ marginBottom: '20px', color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: '8px' }}>
         <FileText /> Utilities & Material Bills
       </h2>
@@ -149,7 +149,7 @@ export default function BillsConsole({ activePage }) {
                       <td className="text-left">{row.supplier}</td>
                       <td className="text-right" style={{ fontWeight: '750' }}>₹{row.value.toLocaleString()}</td>
                       <td className="text-center">
-                        <button onClick={() => setPurchaseBills(purchaseBills.filter(p => p.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setPurchaseBills(purchaseBills.filter(p => p.id !== row.id))} style={removeBtnStyle} title="Cancel bill" aria-label="Cancel purchase bill"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -201,7 +201,7 @@ export default function BillsConsole({ activePage }) {
                       <td className="text-right">₹{row.rate.toFixed(2)}</td>
                       <td className="text-right" style={{ fontWeight: '750' }}>₹{row.total.toLocaleString()}</td>
                       <td className="text-center">
-                        <button onClick={() => setDieselEntries(dieselEntries.filter(d => d.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setDieselEntries(dieselEntries.filter(d => d.id !== row.id))} style={removeBtnStyle} title="Cancel entry" aria-label="Cancel diesel entry"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -251,7 +251,7 @@ export default function BillsConsole({ activePage }) {
                       <td className="text-right">{row.units.toLocaleString()} Units</td>
                       <td className="text-right" style={{ fontWeight: '750', color: 'var(--corp-ops)' }}>₹{row.total.toLocaleString()}</td>
                       <td className="text-center">
-                        <button onClick={() => setElectricityEntries(electricityEntries.filter(e => e.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setElectricityEntries(electricityEntries.filter(e => e.id !== row.id))} style={removeBtnStyle} title="Cancel bill" aria-label="Cancel electricity bill"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}

@@ -1,0 +1,25 @@
+.native-finance-page { height: 100%; min-height: 0; overflow-y: auto; }
+.native-finance-page .attendance-page-header p { margin: 5px 0 0; color: var(--att-muted); font-size: 11px; }
+.native-finance-form { padding: 16px; margin-bottom: 16px; border: 1px solid var(--att-border); }
+.native-finance-fields { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.native-finance-fields label { min-width: 0; display: flex; flex-direction: column; gap: 5px; color: var(--att-muted); font-size: 9px; font-weight: 800; letter-spacing: .35px; text-transform: uppercase; }
+.native-finance-fields .attendance-input, .native-finance-fields .attendance-select { width: 100%; min-width: 0; box-sizing: border-box; text-transform: none; }
+.native-finance-wide { grid-column: span 2; }
+.native-finance-checkbox { width: 18px; height: 18px; margin: 6px 0; accent-color: var(--att-accent); }
+.native-finance-form-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--att-border); }
+.native-finance-table { margin-bottom: 0; }
+.native-finance-table-title { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--att-border); font-size: 11px; }
+.native-finance-table-title span { color: var(--att-muted); }
+.native-upload { position: relative; padding: 5px 8px; }
+.native-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.native-flow-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.native-flow-card { position: relative; display: flex; align-items: flex-start; gap: 10px; min-height: 92px; padding: 15px; border: 1px solid var(--att-border); }
+.native-flow-card p, .native-flow-status p { margin: 5px 0 0; color: var(--att-muted); font-size: 10px; line-height: 1.5; }
+.native-flow-number { flex: 0 0 28px; height: 28px; display: grid; place-items: center; border-radius: 8px; background: color-mix(in srgb, var(--att-accent) 13%, transparent); color: var(--att-accent); font-size: 11px; font-weight: 900; }
+.native-flow-arrow { position: absolute; right: -15px; top: calc(50% - 8px); z-index: 2; color: var(--att-muted); }
+.native-flow-status { display: flex; gap: 10px; align-items: flex-start; margin-top: 14px; padding: 15px; color: var(--att-success); border: 1px solid color-mix(in srgb, var(--att-success) 35%, var(--att-border)); }
+.native-flow-status p { color: var(--att-muted); }
+.native-payment-modal { width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow-y: auto; padding: 16px; background: var(--att-card); border: 1px solid var(--att-border); border-radius: 12px; }
+.native-payment-summary { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 14px; padding: 10px; border-radius: 8px; background: var(--att-table-header-bg); font-size: 11px; }
+@media (max-width: 1100px) { .native-finance-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } .native-flow-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .native-finance-fields, .native-flow-grid { grid-template-columns: 1fr; } .native-finance-wide { grid-column: auto; } .native-flow-arrow { display: none; } }

@@ -1,13 +1,13 @@
 from fastapi import APIRouter, Request, Depends, HTTPException, Query, UploadFile, File
 from fastapi.responses import JSONResponse, StreamingResponse
-from sqlalchemy import case, func
-from sqlalchemy.orm import Session
+from sqlalchemy import case, func, or_, and_
+from sqlalchemy.orm import Session, joinedload
 from datetime import date, datetime
 import openpyxl
 import io
 import pandas as pd
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 
 from app.database import get_db
 from app.database.models.enterprise_finance import (
@@ -27,6 +27,19 @@ def require_company_code(request: Request) -> str:
     if not company_code:
         raise HTTPException(status_code=401, detail="Company session is required")
     return company_code
+
+
+def require_finance_admin(request: Request) -> None:
+    role = str(request.session.get("role") or "").strip().lower().replace(" ", "_")
+    email = str(request.session.get("email") or "").strip().lower()
+    if role not in {"admin", "super_admin"} and email != "bknr.solutions@gmail.com":
+        raise HTTPException(status_code=403, detail="Finance administrator approval is required")
+
+
+def current_financial_period() -> tuple[date, date]:
+    today = ist_now().date()
+    start = date(today.year if today.month >= 4 else today.year - 1, 4, 1)
+    return start, today
 
 DEFAULT_ACCOUNT_GROUPS = [
     ("Capital Account", "EQUITY", None),
@@ -77,6 +90,16 @@ DEFAULT_LEDGERS = [
     ("Finished Goods Inventory A/c", "Stock-in-hand", "ASSET"),
     ("Work In Progress A/c", "Stock-in-hand", "ASSET"),
     ("Cost of Goods Sold A/c", "Direct Expenses", "EXPENSE"),
+    ("Processing Labour Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Production Power Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Production Ice Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Production Water Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Soaking Chemical Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Other Production Cost A/c", "Direct Expenses", "EXPENSE"),
+    ("Bank Charges A/c", "Indirect Expenses", "EXPENSE"),
+    ("Settlement Adjustments A/c", "Indirect Expenses", "EXPENSE"),
+    ("Unrealised Forex Gain A/c", "Indirect Incomes", "INCOME"),
+    ("Unrealised Forex Loss A/c", "Indirect Expenses", "EXPENSE"),
     ("Export Incentive Receivable A/c", "Loans & Advances", "ASSET"),
     ("Export Incentive Income A/c", "Indirect Incomes", "INCOME"),
     ("Fixed Assets A/c", "Fixed Assets", "ASSET"),
@@ -156,6 +179,22 @@ class VoucherCreate(BaseModel):
     reference_no: Optional[str] = None
     narration: Optional[str] = None
     details: List[VoucherDetailCreate]
+
+
+class FinancialYearCreate(BaseModel):
+    year_name: str
+    start_date: date
+    end_date: date
+
+    @model_validator(mode="after")
+    def validate_dates(self):
+        if self.start_date > self.end_date:
+            raise ValueError("Financial year start date must be before end date")
+        return self
+
+
+class VoucherDecision(BaseModel):
+    remarks: Optional[str] = None
 
 # =========================================================================
 # 1. CHART OF ACCOUNTS / GROUPS APIs
@@ -402,10 +441,10 @@ def create_voucher_entry(request: Request, payload: VoucherCreate, db: Session =
             details=details_mapped,
             reference_no=payload.reference_no,
             created_by=email,
-            status='POSTED'
+            status='SUBMITTED'
         )
         db.commit()
-        return {"success": True, "message": f"Voucher posted successfully: {voucher.voucher_no}", "voucher_id": voucher.id}
+        return {"success": True, "message": f"Voucher submitted for approval: {voucher.voucher_no}", "voucher_id": voucher.id, "status": voucher.status}
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(e))
@@ -438,6 +477,7 @@ def submit_voucher(voucher_id: int, request: Request, db: Session = Depends(get_
 @router.post("/vouchers/{voucher_id}/approve")
 def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
+    require_finance_admin(request)
     email = request.session.get("email", "system@bknr.com")
     
     voucher = db.query(VoucherHeader).filter(
@@ -449,6 +489,8 @@ def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get
         
     if voucher.status != 'SUBMITTED':
         raise HTTPException(status_code=400, detail="Only SUBMITTED vouchers can be approved")
+    if str(voucher.created_by or "").strip().lower() == str(email or "").strip().lower():
+        raise HTTPException(status_code=400, detail="Maker and approver must be different users")
         
     old_status = voucher.status
     voucher.status = 'APPROVED'
@@ -465,6 +507,82 @@ def approve_voucher(voucher_id: int, request: Request, db: Session = Depends(get
     db.commit()
     return {"success": True, "message": "Voucher approved and posted successfully"}
 
+
+@router.post("/vouchers/{voucher_id}/reject")
+def reject_voucher(voucher_id: int, payload: VoucherDecision, request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    email = request.session.get("email", "system@bknr.com")
+    voucher = db.query(VoucherHeader).filter(
+        VoucherHeader.id == voucher_id,
+        VoucherHeader.company_id == comp_code,
+    ).first()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Voucher not found")
+    if voucher.status != "SUBMITTED":
+        raise HTTPException(status_code=400, detail="Only SUBMITTED vouchers can be rejected")
+    old_status = voucher.status
+    voucher.status = "REJECTED"
+    PostingEngineService.write_finance_audit(
+        db, comp_code, "voucher_headers", voucher.id, "REJECT",
+        {"status": old_status}, {"status": "REJECTED", "remarks": payload.remarks}, email,
+    )
+    db.commit()
+    return {"success": True, "message": "Voucher rejected successfully"}
+
+
+@router.post("/vouchers/{voucher_id}/reverse")
+def reverse_voucher(voucher_id: int, payload: VoucherDecision, request: Request, db: Session = Depends(get_db)):
+    """Post an immutable contra voucher instead of deleting a posted transaction."""
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    email = request.session.get("email", "system@bknr.com")
+    reason = str(payload.remarks or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Reversal reason is required")
+    voucher = db.query(VoucherHeader).options(
+        joinedload(VoucherHeader.details).joinedload(VoucherDetail.ledger).joinedload(LedgerMaster.group),
+        joinedload(VoucherHeader.voucher_type),
+    ).filter(
+        VoucherHeader.id == voucher_id,
+        VoucherHeader.company_id == comp_code,
+        VoucherHeader.status == "POSTED",
+    ).first()
+    if not voucher:
+        raise HTTPException(status_code=404, detail="Posted voucher not found")
+    already_reversed = db.query(FinanceAuditTrail.id).filter(
+        FinanceAuditTrail.company_id == comp_code,
+        FinanceAuditTrail.table_name == "voucher_headers",
+        FinanceAuditTrail.record_id == voucher.id,
+        FinanceAuditTrail.action == "REVERSE",
+    ).first()
+    if already_reversed:
+        raise HTTPException(status_code=400, detail="Voucher has already been reversed")
+    lines = [{
+        "ledger_name": line.ledger.ledger_name,
+        "group_name": line.ledger.group.group_name,
+        "group_type": line.ledger.group.group_type,
+        "cost_center_id": line.cost_center_id,
+        "debit_amount": float(line.credit_amount or 0),
+        "credit_amount": float(line.debit_amount or 0),
+        "remarks": f"Reversal of {voucher.voucher_no}: {reason}",
+    } for line in voucher.details]
+    try:
+        reversal = PostingEngineService.create_voucher(
+            db, comp_code, "Journal", ist_now().date(),
+            f"Reversal of {voucher.voucher_no}: {reason}", lines,
+            reference_no=f"REV-{voucher.voucher_no}", created_by=email, status="POSTED",
+        )
+        PostingEngineService.write_finance_audit(
+            db, comp_code, "voucher_headers", voucher.id, "REVERSE",
+            {"status": "POSTED"}, {"reversal_voucher_id": reversal.id, "reason": reason}, email,
+        )
+        db.commit()
+        return {"success": True, "message": f"Reversal posted successfully: {reversal.voucher_no}", "voucher_id": reversal.id}
+    except Exception as error:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
 # =========================================================================
 # 4. REPORT APIs
 # =========================================================================
@@ -475,8 +593,10 @@ def report_trial_balance(request: Request, as_of_date: Optional[date] = None, db
     return {"success": True, "data": tb}
 
 @router.get("/reports/profit-loss")
-def report_profit_loss(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
+def report_profit_loss(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
+    default_start, default_end = current_financial_period()
+    start_date, end_date = start_date or default_start, end_date or default_end
     pl = AccountingReportsService.get_profit_and_loss(db, comp_code, start_date, end_date)
     return {"success": True, "data": pl}
 
@@ -500,9 +620,82 @@ def report_day_book(request: Request, target_date: Optional[date] = None, db: Se
     return {"success": True, "data": AccountingReportsService.get_day_book(db, comp_code, target_date or ist_now().date())}
 
 @router.get("/reports/gst-summary")
-def report_gst_summary(request: Request, start_date: date, end_date: date, db: Session = Depends(get_db)):
+def report_gst_summary(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
+    default_start, default_end = current_financial_period()
+    start_date, end_date = start_date or default_start, end_date or default_end
     return {"success": True, "data": AccountingReportsService.get_gst_summary(db, comp_code, start_date, end_date)}
+
+
+@router.get("/reports/voucher-register")
+def report_voucher_register(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    default_start, default_end = current_financial_period()
+    return {"success": True, "data": AccountingReportsService.get_voucher_register(db, comp_code, start_date or default_start, end_date or default_end)}
+
+
+@router.get("/reports/cash-flow")
+def report_cash_flow(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    default_start, default_end = current_financial_period()
+    return {"success": True, "data": AccountingReportsService.get_cash_flow(db, comp_code, start_date or default_start, end_date or default_end)}
+
+
+@router.get("/reports/aging")
+def report_aging(request: Request, as_of_date: Optional[date] = None, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    return {"success": True, "data": AccountingReportsService.get_aging_report(db, comp_code, as_of_date or ist_now().date())}
+
+
+@router.get("/controls/audit")
+def accounting_control_audit(request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    return {"success": True, "data": AccountingReportsService.get_control_audit(db, comp_code)}
+
+
+@router.get("/financial-years")
+def list_financial_years(request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    rows = db.query(FinancialYearMaster).filter(
+        FinancialYearMaster.company_id == comp_code
+    ).order_by(FinancialYearMaster.start_date.desc()).all()
+    return {"success": True, "data": [{
+        "id": row.id, "year_name": row.year_name,
+        "start_date": row.start_date.isoformat(), "end_date": row.end_date.isoformat(),
+        "is_locked": bool(row.is_locked),
+    } for row in rows]}
+
+
+@router.post("/financial-years")
+def create_financial_year(payload: FinancialYearCreate, request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    overlap = db.query(FinancialYearMaster.id).filter(
+        FinancialYearMaster.company_id == comp_code,
+        FinancialYearMaster.start_date <= payload.end_date,
+        FinancialYearMaster.end_date >= payload.start_date,
+    ).first()
+    if overlap:
+        raise HTTPException(status_code=400, detail="Financial year overlaps an existing period")
+    row = FinancialYearMaster(company_id=comp_code, **payload.model_dump())
+    db.add(row)
+    db.commit()
+    return {"success": True, "message": "Financial year created successfully", "id": row.id}
+
+
+@router.post("/financial-years/{year_id}/lock")
+def set_financial_year_lock(year_id: int, locked: bool, request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    row = db.query(FinancialYearMaster).filter(
+        FinancialYearMaster.id == year_id,
+        FinancialYearMaster.company_id == comp_code,
+    ).first()
+    if not row:
+        raise HTTPException(status_code=404, detail="Financial year not found")
+    row.is_locked = locked
+    db.commit()
+    return {"success": True, "message": f"Financial year {'locked' if locked else 'unlocked'} successfully"}
 
 @router.get("/dashboard/summary")
 def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)):
@@ -528,6 +721,7 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
     payables = abs(sum(
         row["balance"] for row in tb
         if row["type"] == "LEDGER" and row["group_type"] == "LIABILITY"
+        and row.get("group_name") == "Sundry Creditors"
     ))
 
     return {
@@ -552,7 +746,7 @@ def accounting_dashboard_summary(request: Request, db: Session = Depends(get_db)
 @router.get("/dashboard/summary/details")
 def accounting_dashboard_summary_details(
     request: Request,
-    metric: str = Query(..., pattern="^(income|expense|assets|liabilities_equity)$"),
+    metric: str = Query(..., pattern="^(income|expense|assets|liabilities_equity|cash_bank|receivables|payables|net_profit)$"),
     db: Session = Depends(get_db),
 ):
     comp_code = require_company_code(request)
@@ -565,13 +759,26 @@ def accounting_dashboard_summary_details(
         "expense": "Total Expense",
         "assets": "Assets",
         "liabilities_equity": "Liabilities + Equity",
+        "cash_bank": "Cash & Bank",
+        "receivables": "Receivables",
+        "payables": "Payables",
+        "net_profit": "Net Profit",
     }
     group_types = {
         "income": ["INCOME"],
         "expense": ["EXPENSE"],
         "assets": ["ASSET"],
         "liabilities_equity": ["LIABILITY", "EQUITY"],
+        "cash_bank": ["ASSET"],
+        "receivables": ["ASSET"],
+        "payables": ["LIABILITY"],
+        "net_profit": ["INCOME", "EXPENSE"],
     }[metric]
+    group_name_filters = {
+        "cash_bank": ["Cash-in-hand", "Bank Accounts"],
+        "receivables": ["Sundry Debtors"],
+        "payables": ["Sundry Creditors"],
+    }
 
     posted_debit = case((VoucherHeader.id.isnot(None), VoucherDetail.debit_amount), else_=0.0)
     posted_credit = case((VoucherHeader.id.isnot(None), VoucherDetail.credit_amount), else_=0.0)
@@ -594,13 +801,16 @@ def accounting_dashboard_summary_details(
         & (VoucherHeader.status == "POSTED")
         & (
             VoucherHeader.voucher_date.between(fy_start, as_of_date)
-            if metric in {"income", "expense"}
+            if metric in {"income", "expense", "net_profit"}
             else (VoucherHeader.voucher_date <= as_of_date)
         ),
     ).filter(
         LedgerMaster.company_id == comp_code,
         AccountGroup.group_type.in_(group_types),
-    ).group_by(
+    )
+    if metric in group_name_filters:
+        ledger_rows = ledger_rows.filter(AccountGroup.group_name.in_(group_name_filters[metric]))
+    ledger_rows = ledger_rows.group_by(
         LedgerMaster.id,
         LedgerMaster.ledger_name,
         LedgerMaster.opening_balance,
@@ -617,10 +827,12 @@ def accounting_dashboard_summary_details(
             opening = -opening
         debits = float(row.debits or 0.0)
         credits = float(row.credits or 0.0)
-        balance = (0.0 if metric in {"income", "expense"} else opening) + debits - credits
+        balance = (0.0 if metric in {"income", "expense", "net_profit"} else opening) + debits - credits
         if metric == "income":
             amount = credits - debits
-        elif metric in {"expense", "assets"}:
+        elif metric == "net_profit":
+            amount = credits - debits if row.group_type == "INCOME" else -(debits - credits)
+        elif metric in {"expense", "assets", "cash_bank", "receivables"}:
             amount = balance
         else:
             amount = -balance
@@ -674,7 +886,9 @@ def accounting_dashboard_summary_details(
         VoucherHeader.status == "POSTED",
         AccountGroup.group_type.in_(group_types),
     )
-    if metric in {"income", "expense"}:
+    if metric in group_name_filters:
+        tx_query = tx_query.filter(AccountGroup.group_name.in_(group_name_filters[metric]))
+    if metric in {"income", "expense", "net_profit"}:
         tx_query = tx_query.filter(VoucherHeader.voucher_date.between(fy_start, as_of_date))
     else:
         tx_query = tx_query.filter(VoucherHeader.voucher_date <= as_of_date)
@@ -685,7 +899,9 @@ def accounting_dashboard_summary_details(
         credit = float(row.credit_amount or 0.0)
         if metric == "income":
             contribution = credit - debit
-        elif metric in {"expense", "assets"}:
+        elif metric == "net_profit":
+            contribution = credit - debit if row.group_type == "INCOME" else -(debit - credit)
+        elif metric in {"expense", "assets", "cash_bank", "receivables"}:
             contribution = debit - credit
         else:
             contribution = credit - debit
@@ -706,7 +922,7 @@ def accounting_dashboard_summary_details(
         "success": True,
         "metric": metric,
         "title": labels[metric],
-        "period": f"{fy_start.isoformat()} to {as_of_date.isoformat()}" if metric in {"income", "expense"} else f"Up to {as_of_date.isoformat()}",
+        "period": f"{fy_start.isoformat()} to {as_of_date.isoformat()}" if metric in {"income", "expense", "net_profit"} else f"Up to {as_of_date.isoformat()}",
         "total_amount": round(total_amount, 2),
         "ledger_summary": ledger_summary,
         "transactions": transactions,
@@ -723,6 +939,105 @@ def setup_default_accounting(request: Request, db: Session = Depends(get_db)):
 # =========================================================================
 # 5. BANK RECONCILIATION API
 # =========================================================================
+@router.get("/bank/statements")
+def list_bank_statements(request: Request, bank_ledger_id: int, matched: Optional[bool] = None, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    query = db.query(BankReconciliation).filter(
+        BankReconciliation.company_id == comp_code,
+        BankReconciliation.bank_ledger_id == bank_ledger_id,
+    )
+    if matched is not None:
+        query = query.filter(BankReconciliation.is_matched == matched)
+    rows = query.order_by(BankReconciliation.statement_date.desc(), BankReconciliation.id.desc()).limit(2000).all()
+    return {"success": True, "data": [{
+        "id": row.id,
+        "statement_date": row.statement_date.isoformat(),
+        "reference_no": row.reference_no,
+        "debit": row.debit,
+        "credit": row.credit,
+        "is_matched": row.is_matched,
+        "matched_date": row.matched_date.isoformat() if row.matched_date else None,
+        "voucher_detail_id": row.voucher_detail_id,
+        "remarks": row.remarks,
+    } for row in rows]}
+
+
+@router.post("/bank/statements/import")
+async def import_bank_statement(
+    request: Request,
+    bank_ledger_id: int,
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    """Import CSV/XLSX statements using Date, Reference, Debit and Credit columns."""
+    comp_code = require_company_code(request)
+    email = request.session.get("email", "SYSTEM")
+    bank_ledger = db.query(LedgerMaster).filter(
+        LedgerMaster.id == bank_ledger_id,
+        LedgerMaster.company_id == comp_code,
+    ).first()
+    if not bank_ledger:
+        raise HTTPException(status_code=404, detail="Bank ledger not found")
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Statement file is empty")
+    try:
+        name = str(file.filename or "").lower()
+        frame = pd.read_csv(io.BytesIO(content)) if name.endswith(".csv") else pd.read_excel(io.BytesIO(content))
+        aliases = {
+            "date": {"date", "transaction date", "txn date", "value date", "statement date"},
+            "reference": {"reference", "reference no", "utr", "utr no", "cheque no", "transaction id", "ref no"},
+            "debit": {"debit", "withdrawal", "withdrawal amount", "dr"},
+            "credit": {"credit", "deposit", "deposit amount", "cr"},
+            "remarks": {"remarks", "description", "narration", "particulars"},
+        }
+        columns = {str(column).strip().lower(): column for column in frame.columns}
+        selected = {key: next((columns[value] for value in values if value in columns), None) for key, values in aliases.items()}
+        if not selected["date"] or (not selected["debit"] and not selected["credit"]):
+            raise ValueError("Required columns: Date and at least one of Debit/Credit")
+        imported = skipped = 0
+        for _, data in frame.iterrows():
+            parsed_date = pd.to_datetime(data[selected["date"]], errors="coerce")
+            if pd.isna(parsed_date):
+                skipped += 1
+                continue
+            debit = round(float(pd.to_numeric(data[selected["debit"]], errors="coerce") or 0), 2) if selected["debit"] else 0.0
+            credit = round(float(pd.to_numeric(data[selected["credit"]], errors="coerce") or 0), 2) if selected["credit"] else 0.0
+            if pd.isna(debit): debit = 0.0
+            if pd.isna(credit): credit = 0.0
+            if (debit <= 0) == (credit <= 0):
+                skipped += 1
+                continue
+            reference = str(data[selected["reference"]]).strip() if selected["reference"] and not pd.isna(data[selected["reference"]]) else None
+            exists = db.query(BankReconciliation.id).filter(
+                BankReconciliation.company_id == comp_code,
+                BankReconciliation.bank_ledger_id == bank_ledger_id,
+                BankReconciliation.statement_date == parsed_date.date(),
+                func.coalesce(BankReconciliation.reference_no, "") == (reference or ""),
+                BankReconciliation.debit == debit,
+                BankReconciliation.credit == credit,
+            ).first()
+            if exists:
+                skipped += 1
+                continue
+            remarks = str(data[selected["remarks"]]).strip() if selected["remarks"] and not pd.isna(data[selected["remarks"]]) else None
+            db.add(BankReconciliation(
+                company_id=comp_code, bank_ledger_id=bank_ledger_id,
+                statement_date=parsed_date.date(), reference_no=reference,
+                debit=debit, credit=credit, remarks=remarks,
+            ))
+            imported += 1
+        PostingEngineService.write_finance_audit(
+            db, comp_code, "bank_reconciliations", bank_ledger_id, "IMPORT", None,
+            {"file": file.filename, "imported": imported, "skipped": skipped}, email,
+        )
+        db.commit()
+        return {"success": True, "message": f"Imported {imported} statement entries; skipped {skipped}.", "imported": imported, "skipped": skipped}
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.post("/bank/auto-match")
 def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
@@ -748,9 +1063,11 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
             VoucherHeader.company_id == comp_code,
             VoucherHeader.status == 'POSTED',
             VoucherDetail.ledger_id == bank_ledger_id,
-            VoucherDetail.debit_amount == stmt.debit,
-            VoucherDetail.credit_amount == stmt.credit,
-            VoucherHeader.reference_no == stmt.reference_no
+            or_(
+                and_(VoucherDetail.debit_amount == stmt.credit, VoucherDetail.credit_amount == 0),
+                and_(VoucherDetail.credit_amount == stmt.debit, VoucherDetail.debit_amount == 0),
+            ),
+            or_(VoucherHeader.reference_no == stmt.reference_no, stmt.reference_no == None),
         ).first()
 
         if match:
@@ -761,6 +1078,47 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
 
     db.commit()
     return {"success": True, "message": f"Auto-matched {matched_count} statement entries."}
+
+
+@router.post("/bank/statements/{statement_id}/match/{voucher_detail_id}")
+def match_bank_statement(statement_id: int, voucher_detail_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    statement = db.query(BankReconciliation).filter(
+        BankReconciliation.id == statement_id,
+        BankReconciliation.company_id == comp_code,
+    ).with_for_update().first()
+    detail = db.query(VoucherDetail).join(VoucherHeader).filter(
+        VoucherDetail.id == voucher_detail_id,
+        VoucherHeader.company_id == comp_code,
+        VoucherHeader.status == "POSTED",
+        VoucherDetail.ledger_id == statement.bank_ledger_id if statement else False,
+    ).first()
+    if not statement or not detail:
+        raise HTTPException(status_code=404, detail="Statement or bank voucher line not found")
+    if round(float(detail.debit_amount or 0), 2) != round(float(statement.credit or 0), 2) or round(float(detail.credit_amount or 0), 2) != round(float(statement.debit or 0), 2):
+        raise HTTPException(status_code=400, detail="Statement amount does not match the selected bank voucher line")
+    statement.is_matched = True
+    statement.matched_date = date.today()
+    statement.voucher_detail_id = detail.id
+    db.commit()
+    return {"success": True, "message": "Bank statement matched successfully"}
+
+
+@router.post("/bank/statements/{statement_id}/unmatch")
+def unmatch_bank_statement(statement_id: int, request: Request, db: Session = Depends(get_db)):
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    statement = db.query(BankReconciliation).filter(
+        BankReconciliation.id == statement_id,
+        BankReconciliation.company_id == comp_code,
+    ).first()
+    if not statement:
+        raise HTTPException(status_code=404, detail="Statement entry not found")
+    statement.is_matched = False
+    statement.matched_date = None
+    statement.voucher_detail_id = None
+    db.commit()
+    return {"success": True, "message": "Bank statement match removed"}
 
 # =========================================================================
 # 6. HTML PAGE LOADERS

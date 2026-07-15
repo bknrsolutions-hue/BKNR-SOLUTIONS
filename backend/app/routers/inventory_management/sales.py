@@ -133,6 +133,12 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     sales_q = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
     if production_for_filter:
         sales_q = sales_q.filter(func.trim(sales_dispatch.company_name) == func.trim(production_for_filter))
+    if location:
+        sales_q = sales_q.filter(func.trim(sales_dispatch.production_at) == func.trim(location))
+    elif user_allowed_locations:
+        sales_q = sales_q.filter(
+            func.upper(func.trim(sales_dispatch.production_at)).in_(user_allowed_locations)
+        )
     sales_data = sales_q.order_by(sales_dispatch.po_number, sales_dispatch.invoice_date.desc()).all()
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
@@ -160,33 +166,45 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
         
     raw_stock = stock_q.all()
-    stock_map = {}
+    stock_in_map = {}
+    stock_out_map = {}
     for row in raw_stock:
         po = clean_po(row.po_number)
         if po:
             val = float(row.inventory_value or 0)
             if val == 0: 
                 val = float(row.quantity or 0) * float(row.product_kg_value or 0)
-            stock_map[po] = stock_map.get(po, 0) + val
+            movement = str(row.cargo_movement_type or "IN").strip().upper()
+            if movement == "OUT":
+                stock_out_map[po] = stock_out_map.get(po, 0.0) + abs(val)
+            else:
+                stock_in_map[po] = stock_in_map.get(po, 0.0) + abs(val)
+
+    # Dispatched OUT value is the actual COGS. Fall back to produced IN value
+    # for older records that were created before OUT valuation was available.
+    stock_map = {
+        po: stock_out_map.get(po) or stock_in_map.get(po, 0.0)
+        for po in set(stock_in_map) | set(stock_out_map)
+    }
 
     # Freight & Packing Maps
     freight_rows = db.query(ContainerLog.po_number, ContainerLog.lended_total).filter(
         ContainerLog.company_id == company_code
     ).all()
-    freight_map = {
-        clean_po(po_number): float(lended_total or 0)
-        for po_number, lended_total in freight_rows
-        if clean_po(po_number)
-    }
+    freight_map = {}
+    for po_number, lended_total in freight_rows:
+        po = clean_po(po_number)
+        if po:
+            freight_map[po] = freight_map.get(po, 0.0) + float(lended_total or 0)
 
     packing_rows = db.query(PurchaseInvoice.po_number, PurchaseInvoice.grand_total).filter(
         PurchaseInvoice.company_id == company_code
     ).all()
-    packing_map = {
-        clean_po(po_number): float(grand_total or 0)
-        for po_number, grand_total in packing_rows
-        if clean_po(po_number)
-    }
+    packing_map = {}
+    for po_number, grand_total in packing_rows:
+        po = clean_po(po_number)
+        if po:
+            packing_map[po] = packing_map.get(po, 0.0) + float(grand_total or 0)
 
     processed = []
     current_po, sl_no = None, 0
@@ -207,11 +225,11 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         total_qty_for_po = po_total_kg.get(sale_po, 1) or 1
         qty_ratio = qty / total_qty_for_po
 
-        stock_val = stock_map.get(sale_po, 0) * qty_ratio
-        f_cost = freight_map.get(sale_po, 0) * qty_ratio
-        p_cost = packing_map.get(sale_po, 0) * qty_ratio
+        stock_val = round(stock_map.get(sale_po, 0) * qty_ratio, 2)
+        f_cost = round(freight_map.get(sale_po, 0) * qty_ratio, 2)
+        p_cost = round(packing_map.get(sale_po, 0) * qty_ratio, 2)
         
-        pl = inr - (stock_val + f_cost + p_cost)
+        pl = round(inr - (stock_val + f_cost + p_cost), 2)
 
         s.sales_quantity = qty
         s.amount_usd = usd
@@ -264,12 +282,23 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
 async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     sale_id = data.get("id")
-    new_rate = float(data.get("exchange_rate", 83.50))
+    company_code = request.session.get("company_code")
+    if not company_code:
+        raise HTTPException(status_code=401, detail="Session expired")
+    try:
+        new_rate = float(data.get("exchange_rate"))
+    except (TypeError, ValueError):
+        raise HTTPException(status_code=400, detail="Enter a valid exchange rate")
+    if new_rate <= 0 or new_rate > 1000:
+        raise HTTPException(status_code=400, detail="Exchange rate must be between 0 and 1000")
     ensure_bill_accounting_schema(db)
     
-    sale_item = db.query(sales_dispatch).filter(sales_dispatch.id == sale_id).first()
+    sale_item = db.query(sales_dispatch).filter(
+        sales_dispatch.id == sale_id,
+        sales_dispatch.company_id == company_code,
+    ).first()
     if not sale_item:
-        return {"status": "error", "message": "Record not found"}
+        raise HTTPException(status_code=404, detail="Sales record not found")
     
     p_style = db.query(packing_styles).filter(
         packing_styles.company_id == sale_item.company_id,
@@ -313,13 +342,34 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
 async def update_status(request: Request, db: Session = Depends(get_db)):
     data = await request.json()
     sale_id = data.get("id")
-    new_status = data.get("status")
+    company_code = request.session.get("company_code")
+    if not company_code:
+        raise HTTPException(status_code=401, detail="Session expired")
+    raw_status = str(data.get("status") or "").strip().title()
+    new_status = "Received" if raw_status == "Paid" else raw_status
+    if new_status not in {"Unpaid", "Received"}:
+        raise HTTPException(status_code=400, detail="Status must be Unpaid or Received")
     ensure_bill_accounting_schema(db)
     
-    sale_item = db.query(sales_dispatch).filter(sales_dispatch.id == sale_id).first()
+    sale_item = db.query(sales_dispatch).filter(
+        sales_dispatch.id == sale_id,
+        sales_dispatch.company_id == company_code,
+    ).first()
     if not sale_item:
-        return {"status": "error", "message": "Record not found"}
+        raise HTTPException(status_code=404, detail="Sales record not found")
     
-    sale_item.status = new_status
+    invoice_rows = [sale_item]
+    if sale_item.invoice_no:
+        invoice_rows = db.query(sales_dispatch).filter(
+            sales_dispatch.company_id == company_code,
+            sales_dispatch.invoice_no == sale_item.invoice_no,
+        ).all()
+    for row in invoice_rows:
+        row.status = new_status
     db.commit()
-    return {"status": "success"}
+    return {
+        "status": "success",
+        "invoice_no": sale_item.invoice_no,
+        "new_status": new_status,
+        "updated_ids": [row.id for row in invoice_rows],
+    }

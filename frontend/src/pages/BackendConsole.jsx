@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 // ─── PLACEHOLDER when route is unknown ───────────────────────────────────────
 function NoRoutePlaceholder({ page }) {
@@ -27,9 +27,25 @@ function NoRoutePlaceholder({ page }) {
 //   theme       – "dark" | "light"
 export default function BackendConsole({ activePage, activeRoute, theme }) {
   const iframeRef = useRef(null);
+  const [filterVersion, setFilterVersion] = useState(0);
 
-  // The URL to load: prefer the explicit route passed from sidebar, else fallback to key-based heuristic
-  const iframeUrl = activeRoute || null;
+  // Match menu.html loadPage(): propagate the universal filters to every
+  // legacy route that is rendered through the fallback iframe.
+  const iframeUrl = useMemo(() => {
+    if (!activeRoute) return null;
+    const productionFor = localStorage.getItem('production_for_filter') || '';
+    const location = localStorage.getItem('plant_location_filter') || '';
+    const url = new URL(activeRoute, window.location.origin);
+    if (productionFor) url.searchParams.set('production_for', productionFor);
+    if (location) {
+      url.searchParams.set('location', location);
+      url.searchParams.set('peeling_at', location);
+      url.searchParams.set('production_at', location);
+      url.searchParams.set('receiving_center', location);
+      url.searchParams.set('cold_storage_name', location);
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  }, [activeRoute, filterVersion]);
 
   const syncTheme = () => {
     try {
@@ -47,6 +63,12 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
   };
 
   useEffect(() => { syncTheme(); }, [theme, activePage]);
+
+  useEffect(() => {
+    const handleFilterChange = () => setFilterVersion(version => version + 1);
+    window.addEventListener('filter_change', handleFilterChange);
+    return () => window.removeEventListener('filter_change', handleFilterChange);
+  }, []);
 
   if (!iframeUrl) {
     return <NoRoutePlaceholder page={activePage} />;

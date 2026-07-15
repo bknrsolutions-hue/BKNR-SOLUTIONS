@@ -1,6 +1,6 @@
 /**
  * BKNR ERP - Theme Management System
- * ఈ స్క్రిప్ట్ యూజర్ ఎంపికను LocalStorageలో సేవ్ చేస్తుంది.
+ * Saves the user's theme preference in LocalStorage.
  */
 
 function toggleTheme() {
@@ -8,13 +8,13 @@ function toggleTheme() {
     const currentTheme = htmlElement.getAttribute('data-theme');
     const newTheme = (currentTheme === 'dark') ? 'light' : 'dark';
 
-    // 1. HTML ట్యాగ్‌కి థీమ్ సెట్ చేయడం
+    // 1. Set the theme on the HTML element.
     htmlElement.setAttribute('data-theme', newTheme);
     
-    // 2. యూజర్ ఎంపికను బ్రౌజర్‌లో సేవ్ చేయడం (అన్ని పేజీలకు వర్తిస్తుంది)
+    // 2. Save the user's selection in the browser for all pages.
     localStorage.setItem('erp-theme', newTheme);
     
-    // 3. బటన్ ఐకాన్ మరియు టెక్స్ట్ మార్చడం
+    // 3. Update the button icon and text.
     updateThemeUI(newTheme);
 }
 
@@ -24,7 +24,7 @@ function updateThemeUI(theme) {
         if (theme === 'dark') {
             icon.classList.remove('fa-moon');
             icon.classList.add('fa-sun');
-            icon.style.color = '#ffcf40'; // సన్ ఐకాన్ కోసం ఎల్లో కలర్
+            icon.style.color = '#ffcf40'; // Yellow for the sun icon.
         } else {
             icon.classList.remove('fa-sun');
             icon.classList.add('fa-moon');
@@ -33,12 +33,12 @@ function updateThemeUI(theme) {
     }
 }
 
-// పేజీ లోడ్ అయిన వెంటనే సేవ్ చేసిన థీమ్‌ను అప్లై చేసే Self-Invoking Function
+// Apply the saved theme immediately when the page loads.
 (function() {
     const savedTheme = localStorage.getItem('erp-theme') || 'light';
     document.documentElement.setAttribute('data-theme', savedTheme);
     
-    // DOM లోడ్ అయిన తర్వాత ఐకాన్ సెట్ చేయడం
+    // Set the icon after the DOM loads.
     window.addEventListener('DOMContentLoaded', () => {
         updateThemeUI(savedTheme);
     });

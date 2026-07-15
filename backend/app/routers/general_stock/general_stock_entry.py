@@ -1,6 +1,7 @@
 
 from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import case, func, text
 from datetime import datetime
@@ -16,6 +17,7 @@ from app.services.posting_engine import PostingEngineService
 
 # 🔥 URL లో Duplicate రాకుండా prefix తీసేశాం, కేవలం tags మాత్రమే ఉంచాం
 router = APIRouter(tags=["GENERAL STOCK"])
+templates = Jinja2Templates(directory="app/templates")
 
 
 def ensure_general_stock_accounting_schema(db: Session) -> None:
@@ -368,9 +370,24 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
             return d
         
         v_list = [{"id": v.id, "name": v.name} for v in vendor_list]
-        h_list = [{"id": h.id, "hsn_code": h.hsn_code, "description": h.description or ""} for h in hsn_list]
+        h_list = [
+            {
+                "id": h.id,
+                "hsn_code": h.hsn_code,
+                "description": h.description or "",
+                "gst_percent": float(h.gst_percent or 0),
+            }
+            for h in hsn_list
+        ]
         l_list = [{"id": loc.id, "production_at": loc.production_at} for loc in location_list]
-        pl_list = [{"id": p["ledger_id"], "ledger_name": p["ledger_name"]} for p in posting_ledgers]
+        pl_list = [
+            {
+                "id": ledger.id,
+                "ledger_name": ledger.ledger_name,
+                "group_name": ledger.group.group_name if ledger.group else "",
+            }
+            for ledger in posting_ledgers
+        ]
 
         return JSONResponse({
             "grn_list": grn_list,

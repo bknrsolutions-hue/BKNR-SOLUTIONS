@@ -3,6 +3,47 @@ from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, For
 from sqlalchemy.orm import relationship
 from app.database import Base  # Fixed: use central Base (was declarative_base())
 
+
+class ProformaInvoice(Base):
+    """Pre-shipment commercial offer issued to an export buyer."""
+    __tablename__ = "proforma_invoices"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True, nullable=False)
+    pi_no = Column(String, index=True, nullable=False)
+    pi_date = Column(Date, nullable=False)
+    validity_date = Column(Date, nullable=True)
+    po_number = Column(String, index=True, nullable=True)
+    buyer_name = Column(String, index=True, nullable=False)
+    buyer_address = Column(Text, nullable=False)
+    country = Column(String, index=True, nullable=False)
+    currency = Column(String, default="USD", nullable=False)
+    incoterm = Column(String, nullable=False)
+    payment_terms = Column(String, nullable=False)
+    port_of_loading = Column(String, nullable=True)
+    port_of_discharge = Column(String, nullable=True)
+    product_description = Column(Text, nullable=False)
+    quantity = Column(Numeric(18, 3), default=0, nullable=False)
+    unit = Column(String, default="KG", nullable=False)
+    unit_price = Column(Numeric(18, 4), default=0, nullable=False)
+    total_amount = Column(Numeric(18, 2), default=0, nullable=False)
+    status = Column(String, default="DRAFT", index=True, nullable=False)
+    approval_status = Column(String, default="PENDING", index=True, nullable=False)
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    approval_remarks = Column(Text, nullable=True)
+    remarks = Column(Text, nullable=True)
+    created_by = Column(String, nullable=False)
+    updated_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False, index=True, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "pi_no", name="uq_proforma_invoices_company_pi_no"),
+    )
+
+
 class ExportShipment(Base):
     """
     The Central Backbone Table for all Seafood Export Operations.
@@ -101,6 +142,57 @@ class ExportDocumentFile(Base):
     uploaded_by = Column(String, nullable=True)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     remarks = Column(Text, nullable=True)
+    approval_status = Column(String, default="PENDING", index=True, nullable=False)
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    approval_remarks = Column(Text, nullable=True)
+    document_date = Column(Date, nullable=True)
+    expiry_date = Column(Date, nullable=True)
+    issuer_name = Column(String, nullable=True)
+    reference_no = Column(String, nullable=True)
+    currency = Column(String, nullable=True)
+    amount = Column(Numeric(18, 2), nullable=True)
+    details_json = Column(Text, nullable=True)
+
+
+class ExportDocumentApproval(Base):
+    """Email-wise unanimous approval assignment for an uploaded export document."""
+    __tablename__ = "export_document_approvals"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True, nullable=False)
+    file_id = Column(Integer, ForeignKey("export_document_files.id", ondelete="CASCADE"), index=True, nullable=False)
+    approver_email = Column(String, index=True, nullable=False)
+    decision = Column(String, default="PENDING", index=True, nullable=False)
+    remarks = Column(Text, nullable=True)
+    assigned_by = Column(String, nullable=True)
+    assigned_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    decided_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("file_id", "approver_email", name="uq_export_document_approvals_file_email"),
+    )
+
+
+class ExportRequiredDocument(Base):
+    """PO-wise export document checklist configured by the operations team."""
+    __tablename__ = 'export_required_documents'
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True, nullable=False)
+    po_number = Column(String, index=True, nullable=False)
+    document_kind = Column(String, index=True, nullable=False)
+    document_label = Column(String, nullable=False)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint(
+            'company_id', 'po_number', 'document_kind',
+            name='uq_export_required_documents_company_po_kind',
+        ),
+    )
 
 
 class CommercialInvoice(Base):

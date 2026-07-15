@@ -85,7 +85,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
     <div class="grand-total" id="grandTotal">TOTAL: ₹ 0.00</div>
     <div class="grand-total" id="paidTotal">PAID: ₹ 0.00</div>
     <div class="grand-total" id="monthOutstanding">MONTH DUE: ₹ 0.00</div>
-    <div class="grand-total" id="previousOutstanding">PREV DUE: ₹ 0.00</div>
+    <div class="grand-total" id="previousOutstanding">EARLIER DUE: ₹ 0.00</div>
     <div class="grand-total" id="totalOutstanding">TOTAL DUE: ₹ 0.00</div>
   </div>
 </div>
@@ -128,7 +128,7 @@ body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,system-ui
         <th>Grand Total</th>
         <th>Paid Amount</th>
         <th>Current Month Outstanding</th>
-        <th>Previous Month Outstanding</th>
+        <th>Earlier Months Outstanding</th>
         <th>Total Outstanding</th>
         <th>Accounts</th>
       </tr>
@@ -281,7 +281,7 @@ function renderContractorRows(){
   document.getElementById('grandTotal').textContent = `TOTAL: ₹ ${fmt.format(grand)}`;
   document.getElementById('paidTotal').textContent = `PAID: ₹ ${fmt.format(paid)}`;
   document.getElementById('monthOutstanding').textContent = `MONTH DUE: ₹ ${fmt.format(monthDue)}`;
-  document.getElementById('previousOutstanding').textContent = `PREV DUE: ₹ ${fmt.format(previousDue)}`;
+  document.getElementById('previousOutstanding').textContent = `EARLIER DUE: ₹ ${fmt.format(previousDue)}`;
   document.getElementById('totalOutstanding').textContent = `TOTAL DUE: ₹ ${fmt.format(totalDue)}`;
 
   if(!rows.length){
@@ -290,7 +290,7 @@ function renderContractorRows(){
   }
 
   tbody.innerHTML = rows.map(row => `
-    <tr class="${row.payment_status === 'PAID' ? 'row-paid' : (row.payment_status === 'PARTIAL' ? 'row-partial' : '')}">
+    <tr class="${row.overall_payment_status === 'PAID' ? 'row-paid' : (row.overall_payment_status === 'PARTIAL' ? 'row-partial' : '')}">
       <td>${row.contractor_name || '-'}</td>
       <td>${amountCell(row.deheading, 'deheading', row.contractor_name, month)}</td>
       <td>${amountCell(row.peeling, 'peeling', row.contractor_name, month)}</td>
@@ -298,12 +298,15 @@ function renderContractorRows(){
       <td><button class="amount-link" onclick="openPayModal('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">₹ ${fmt.format(row.grand_total || 0)}</button></td>
       <td><button class="amount-link ${Number(row.paid_amount || 0) <= 0 ? 'empty' : ''}" onclick="openPaymentHistory('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">₹ ${fmt.format(row.paid_amount || 0)}</button></td>
       <td>₹ ${fmt.format(row.current_outstanding || 0)}</td>
-      <td>₹ ${fmt.format(row.previous_outstanding || 0)}</td>
+      <td>
+        <div>₹ ${fmt.format(row.previous_outstanding || 0)}</div>
+        ${(row.previous_pending_months || []).map(item => `<div style="margin-top:2px;font-size:9px;color:var(--muted);white-space:nowrap">${item.month}: ₹ ${fmt.format(item.outstanding || 0)}</div>`).join('')}
+      </td>
       <td>₹ ${fmt.format(row.total_outstanding || 0)}</td>
       <td>
         <div class="bill-action">
           <button class="amount-link ${Number(row.current_outstanding || 0) <= 0 ? 'empty' : ''}" onclick="openPayModal('${String(row.contractor_name || '').replace(/'/g, "\\'")}')">Pay</button>
-          <span class="badge ${row.payment_status === 'PAID' ? 'posted' : ''} ${row.payment_status === 'PARTIAL' ? 'partial' : ''}">${row.payment_voucher_no || row.payment_status || 'UNPAID'}</span>
+          <span class="badge ${row.overall_payment_status === 'PAID' ? 'posted' : ''} ${row.overall_payment_status === 'PARTIAL' ? 'partial' : ''}">${row.payment_voucher_no || row.overall_payment_status || 'UNPAID'}</span>
         </div>
       </td>
     </tr>

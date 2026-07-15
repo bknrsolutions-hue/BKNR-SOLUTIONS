@@ -1,6 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { lazy, Suspense, useState, useEffect, useRef } from 'react';
 
-export default function Header({ theme, toggleTheme, user, handleLogout, sidebarOpen, setSidebarOpen, setActivePage }) {
+const TicketDesk = lazy(() => import('../pages/Admin/AdminConsole').then(module => ({ default: module.TicketDesk })));
+
+const DEFAULT_QUICK_ACTION_IDS = [
+  'raw_material_purchasing',
+  'production',
+  'proforma_invoice',
+  'commercial_invoice',
+  'export_shipment',
+  'finance_journal_entry',
+];
+
+function readQuickActions(email) {
+  try {
+    const saved = localStorage.getItem(`quick_actions_${email || 'default'}`);
+    return saved === null ? DEFAULT_QUICK_ACTION_IDS : JSON.parse(saved);
+  } catch {
+    return DEFAULT_QUICK_ACTION_IDS;
+  }
+}
+
+export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen, setActivePage, availableMenuItems = [] }) {
   const companyName = user?.company || 'SVBK IT Solutions';
   const userName = user?.name || 'Administrator';
   
@@ -8,6 +28,10 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
   const [notifOpen, setNotifOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [qaPanelOpen, setQaPanelOpen] = useState(false);
+  const [supportPanelOpen, setSupportPanelOpen] = useState(false);
+  const [supportTarget, setSupportTarget] = useState(null);
+  const [qaSearch, setQaSearch] = useState('');
+  const [quickActionIds, setQuickActionIds] = useState(() => readQuickActions(user?.email));
 
   const [companies, setCompanies] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -23,8 +47,9 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
   const [headerColor, setHeaderColor] = useState('#060913');
   const [dashboardColor, setDashboardColor] = useState('#0f172a');
 
-  useEffect(() => {
-    if (colorOpen && window.BKNRColorCustomizer) {
+  const toggleColorCustomizer = () => {
+    const nextOpen = !colorOpen;
+    if (nextOpen && window.BKNRColorCustomizer) {
       const activeColors = window.BKNRColorCustomizer.read();
       if (activeColors) {
         setAccentColor(activeColors.accent || '#2563eb');
@@ -33,7 +58,10 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
         setDashboardColor(activeColors.dashboard || '#0f172a');
       }
     }
-  }, [colorOpen]);
+    setColorOpen(nextOpen);
+    setDropdownOpen(false);
+    setNotifOpen(false);
+  };
 
   const handleColorChange = (key, value) => {
     const updated = {
@@ -145,9 +173,12 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
 
   // Permission pipe matching allow() helper
   const permissions = user?.permissions || [];
-  const isDefaultSuperAdmin = user?.email === "bknr.solutions@gmail.com" || user?.email === "bknr.solutions@gmail.com";
+  const isDefaultSuperAdmin = user?.email === "bknr.solutions@gmail.com";
 
   const allow = (key) => {
+    if (['admin_helpdesk', 'manage_support', 'user_activity'].includes(key)) {
+      return isDefaultSuperAdmin;
+    }
     if (isDefaultSuperAdmin) return true;
     if (!permissions) return false;
     if (typeof permissions === 'string') {
@@ -206,7 +237,7 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
         { id: 'admin_add_user', perm: 'add_user', icon: 'fa-user-gear', label: 'User Configuration', route: '/admin/add_user' },
         { id: 'admin_shifts', perm: 'shifts', icon: 'fa-business-time', label: 'Shifts', route: '/attendance/shifts' },
         { id: 'admin_data_management', perm: 'data_management', icon: 'fa-database', label: 'Data Management', route: '/data-management' },
-        { id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' },
+        ...(isDefaultSuperAdmin ? [{ id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' }] : []),
         { id: 'admin_raise_ticket', perm: 'raise_ticket', icon: 'fa-headset', label: 'My Complaints', route: '/support/my_tickets' },
         { id: 'admin_helpdesk', perm: 'admin_helpdesk', icon: 'fa-ticket', label: 'Helpdesk', route: '/admin/all_tickets' },
         { id: 'admin_manage_support', perm: 'manage_support', icon: 'fa-users-gear', label: 'Support Team', route: '/admin/support_team' },
@@ -214,6 +245,59 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
       ]
     }
   ];
+
+  const quickActionStorageKey = `quick_actions_${user?.email || 'default'}`;
+  const allQuickActionOptions = Array.from(new Map([
+    ...availableMenuItems,
+    ...dropdownConsoleMenuConfig.flatMap(category => category.items.map(item => ({
+      ...item,
+      category: `MASTERS > ${category.title}`,
+    }))),
+  ]
+    .filter(item => allow(item.perm))
+    .map(item => [item.id, item])).values());
+
+  const updateQuickActions = (itemId) => {
+    setQuickActionIds(current => {
+      const next = current.includes(itemId)
+        ? current.filter(id => id !== itemId)
+        : [...current, itemId];
+      localStorage.setItem(quickActionStorageKey, JSON.stringify(next));
+      return next;
+    });
+  };
+
+  const selectedQuickActions = quickActionIds
+    .map(id => allQuickActionOptions.find(item => item.id === id))
+    .filter(Boolean);
+  const cleanQaSearch = qaSearch.trim().toLowerCase();
+  const quickActionSearchResults = cleanQaSearch
+    ? allQuickActionOptions.filter(item =>
+        item.label.toLowerCase().includes(cleanQaSearch)
+        || item.category.toLowerCase().includes(cleanQaSearch))
+    : [];
+
+  const openSupportPanel = (pageId) => {
+    const target = pageId === 'admin_helpdesk'
+      ? { id: 'admin_helpdesk', route: '/admin/all_tickets', title: 'Support Helpdesk Queue' }
+      : { id: 'admin_raise_ticket', route: '/support/my_tickets', title: 'My Complaints' };
+    setSupportTarget(target);
+    setSupportPanelOpen(true);
+    setQaPanelOpen(false);
+    setDropdownOpen(false);
+    setNotifOpen(false);
+    setColorOpen(false);
+  };
+
+  const openMenuItem = (item) => {
+    if (item.id === 'admin_raise_ticket' || item.id === 'admin_helpdesk') {
+      openSupportPanel(item.id);
+      return;
+    }
+    setActivePage(item.id, item.route);
+    setDropdownOpen(false);
+    setQaPanelOpen(false);
+  };
 
   return (
     <>
@@ -336,25 +420,45 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
         }
 
         /* 🌟 PANELS (QUICK ACTIONS & COMPLAINTS) 🌟 */
+        .side-panel-overlay {
+          position: fixed; inset: 0; z-index: 99999998;
+          background: rgba(2, 6, 23, 0.28); backdrop-filter: blur(1px);
+          -webkit-backdrop-filter: blur(1px);
+        }
         .quick-action-panel {
-          position: fixed; top: 0; right: -320px; width: 320px; height: 100vh;
+          position: fixed; top: 0; right: -380px; width: 380px; max-width: 100vw; height: 100vh;
           background: var(--surface-panel); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
           box-shadow: none; border-left: 1px solid var(--border-light);
           z-index: 99999999; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column;
         }
         .quick-action-panel.open { right: 0 !important; }
+        .quick-action-panel.support-panel { right: -760px; width: 760px; max-width: 100vw; }
+        .quick-action-panel.support-panel.open { right: 0 !important; }
+        .support-panel-body { flex: 1; min-height: 0; overflow: hidden; }
         
         .qa-header { height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; border-bottom: 1px solid var(--border-light); flex-shrink: 0;}
         .qa-title { font-size: 14px; font-weight: 800; color: var(--text-primary); }
-        .qa-body { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .qa-body { padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .qa-search-box { position: relative; margin-bottom: 6px; }
+        .qa-search-box > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-tertiary); font-size: 12px; }
+        .qa-search-input { width: 100%; height: 40px; padding: 0 12px 0 34px; border: 1px solid var(--border-light); border-radius: 8px; background: rgba(255,255,255,0.03); color: var(--text-primary); font: inherit; font-size: 12px; outline: none; box-sizing: border-box; }
+        .qa-search-input:focus { border-color: var(--corp-dash); box-shadow: 0 0 0 2px color-mix(in srgb, var(--corp-dash) 15%, transparent); }
+        [data-theme="light"] .qa-search-input { background: #fff; }
+        .qa-section-title { margin: 5px 2px 2px; color: var(--text-tertiary); font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
         .qa-btn {
           background: rgba(255,255,255,0.03); border: 1px solid var(--border-light); border-radius: 8px;
-          padding: 12px 16px; display: flex; align-items: center; gap: 12px; color: var(--text-primary); font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s;
+          padding: 10px 12px; display: flex; align-items: center; gap: 10px; color: var(--text-primary); font-size: 12px; font-weight: 700; cursor: pointer; transition: 0.2s;
           text-align: left;
         }
         [data-theme="light"] .qa-btn { background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .qa-btn:hover { border-color: var(--corp-dash); transform: translateY(-2px); }
         .qa-btn i { color: var(--corp-dash); font-size: 16px; }
+        .qa-btn-content { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+        .qa-btn-content small { color: var(--text-tertiary); font-size: 9px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .qa-toggle-btn { width: 27px; height: 27px; flex: 0 0 27px; display: grid; place-items: center; border: 1px solid var(--border-light); border-radius: 7px; background: transparent; color: var(--corp-dash); cursor: pointer; }
+        .qa-toggle-btn.remove { color: #ef4444; }
+        .qa-toggle-btn:hover { background: color-mix(in srgb, currentColor 10%, transparent); border-color: currentColor; }
+        .qa-empty { padding: 24px 12px; text-align: center; color: var(--text-tertiary); font-size: 11px; border: 1px dashed var(--border-light); border-radius: 8px; }
 
         /* Notification elements styles */
         .notification-dot {
@@ -438,7 +542,7 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
 
           <div
             className="icon-action-btn"
-            onClick={() => setActivePage('admin_raise_ticket', '/support/my_tickets')}
+            onClick={() => openSupportPanel(isDefaultSuperAdmin ? 'admin_helpdesk' : 'admin_raise_ticket')}
             title="Support & Helpdesk"
             style={{ cursor: 'pointer' }}
           >
@@ -469,7 +573,7 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
           {/* Customize Colors Trigger */}
           <div 
             className="icon-action-btn" 
-            onClick={() => { setColorOpen(!colorOpen); setDropdownOpen(false); setNotifOpen(false); }}
+            onClick={toggleColorCustomizer}
             title="Customize Colors"
             style={{ cursor: 'pointer' }}
           >
@@ -531,22 +635,27 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
                   return (
                     <div key={idx} className="dropdown-pillar-block">
                       <div className="dropdown-pillar-title">{cat.title}</div>
-                      {allowedItems.map((item) => (
+                      {allowedItems.map((item) => {
+                        const hasExplicitIcon = cat.title === 'Admin & Support' && item.icon;
+                        return (
                         <div key={item.id} className="dropdown-item-row">
                           <a 
                             className="dropdown-submenu-item" 
                             href="#" 
                             onClick={(e) => {
                               e.preventDefault();
-                              setActivePage(item.id, item.route);
-                              setDropdownOpen(false);
+                              openMenuItem(item);
                             }}
                           >
-                            <i className={`fa-solid ${item.icon}`} style={{ fontSize: '12px', marginRight: '8px', color: 'var(--corp-dash)' }}></i>
+                            <i
+                              className={`fa-solid ${hasExplicitIcon ? item.icon : 'fa-circle'}`}
+                              style={{ fontSize: hasExplicitIcon ? '12px' : '5px', marginRight: '8px', color: 'var(--corp-dash)' }}
+                            ></i>
                             {item.label}
                           </a>
                         </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   );
                 })}
@@ -640,6 +749,15 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
         </div>
       </header>
 
+      {(qaPanelOpen || supportPanelOpen) && (
+        <div
+          className="side-panel-overlay"
+          onClick={() => { setQaPanelOpen(false); setSupportPanelOpen(false); }}
+          onTouchEnd={() => { setQaPanelOpen(false); setSupportPanelOpen(false); }}
+          aria-hidden="true"
+        />
+      )}
+
       {/* ── Quick Actions Sidebar Panel ── */}
       <div className={`quick-action-panel ${qaPanelOpen ? 'open' : ''}`}>
         <div className="qa-header">
@@ -647,11 +765,85 @@ export default function Header({ theme, toggleTheme, user, handleLogout, sidebar
           <i className="fa-solid fa-xmark" style={{ cursor: 'pointer', color: 'var(--text-tertiary)' }} onClick={() => setQaPanelOpen(false)}></i>
         </div>
         <div className="qa-body">
-          <div className="qa-btn" onClick={() => { setActivePage('raw_material_purchasing', '/processing/raw_material_purchasing'); setQaPanelOpen(false); }}><i className="fa-solid fa-truck-ramp-box"></i> RM Purchase Entry</div>
-          <div className="qa-btn" onClick={() => { setActivePage('production', '/processing/production'); setQaPanelOpen(false); }}><i className="fa-solid fa-industry"></i> Production Entry</div>
-          <div className="qa-btn" onClick={() => { setActivePage('finance_packaging_bills', '/api/purchase/entry'); setQaPanelOpen(false); }}><i className="fa-solid fa-file-invoice"></i> Create Invoice</div>
-          <div className="qa-btn" onClick={() => { setActivePage('export_shipment', '/export_documents/export_shipment/entry'); setQaPanelOpen(false); }}><i className="fa-solid fa-ship"></i> New Shipment</div>
-          <div className="qa-btn" onClick={() => { setActivePage('finance_journal_entry', '/finance_accounts/journal_entry/entry'); setQaPanelOpen(false); }}><i className="fa-solid fa-book"></i> Journal Voucher</div>
+          <div className="qa-search-box">
+            <i className="fa-solid fa-magnifying-glass"></i>
+            <input
+              className="qa-search-input"
+              value={qaSearch}
+              onChange={event => setQaSearch(event.target.value)}
+              placeholder="Search pages to add..."
+              autoFocus={qaPanelOpen}
+            />
+          </div>
+
+          {cleanQaSearch ? (
+            <>
+              <div className="qa-section-title">Search Results</div>
+              {quickActionSearchResults.length ? quickActionSearchResults.map(item => {
+                const isSelected = quickActionIds.includes(item.id);
+                return (
+                  <div className="qa-btn" key={item.id}>
+                    <i className={`fa-solid ${item.icon || 'fa-file'}`}></i>
+                    <div className="qa-btn-content">
+                      <span>{item.label}</span>
+                      <small>{item.category}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className={`qa-toggle-btn ${isSelected ? 'remove' : ''}`}
+                      onClick={() => updateQuickActions(item.id)}
+                      title={isSelected ? 'Remove from Quick Actions' : 'Add to Quick Actions'}
+                      aria-label={isSelected ? `Remove ${item.label}` : `Add ${item.label}`}
+                    >
+                      <i className={`fa-solid ${isSelected ? 'fa-minus' : 'fa-plus'}`}></i>
+                    </button>
+                  </div>
+                );
+              }) : <div className="qa-empty">No matching pages found.</div>}
+            </>
+          ) : (
+            <>
+              <div className="qa-section-title">Added Quick Actions</div>
+              {selectedQuickActions.length ? selectedQuickActions.map(item => (
+                <div
+                  className="qa-btn"
+                  key={item.id}
+                  onClick={() => openMenuItem(item)}
+                >
+                  <i className={`fa-solid ${item.icon || 'fa-file'}`}></i>
+                  <div className="qa-btn-content">
+                    <span>{item.label}</span>
+                    <small>{item.category}</small>
+                  </div>
+                  <button
+                    type="button"
+                    className="qa-toggle-btn remove"
+                    onClick={event => { event.stopPropagation(); updateQuickActions(item.id); }}
+                    title="Remove from Quick Actions"
+                    aria-label={`Remove ${item.label}`}
+                  >
+                    <i className="fa-solid fa-minus"></i>
+                  </button>
+                </div>
+              )) : <div className="qa-empty">Search for a page and click + to add it here.</div>}
+            </>
+          )}
+        </div>
+      </div>
+
+      <div className={`quick-action-panel support-panel ${supportPanelOpen ? 'open' : ''}`}>
+        <div className="qa-header">
+          <span className="qa-title"><i className="fa-solid fa-headset" style={{ color: 'var(--corp-dash)', marginRight: 8 }}></i>{supportTarget?.title || 'Support & Complaints'}</span>
+          <button type="button" className="qa-toggle-btn remove" onClick={() => setSupportPanelOpen(false)} title="Close support panel"><i className="fa-solid fa-xmark"></i></button>
+        </div>
+        <div className="support-panel-body">
+          <Suspense fallback={<div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 12 }}>Loading support...</div>}>
+            <TicketDesk
+              compact
+              activePage={supportTarget?.id || 'admin_raise_ticket'}
+              activeRoute={supportTarget?.route || '/support/my_tickets'}
+            />
+          </Suspense>
         </div>
       </div>
     </>

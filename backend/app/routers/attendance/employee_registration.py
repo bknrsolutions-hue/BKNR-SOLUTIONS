@@ -1,6 +1,6 @@
 # app/routers/attendance/employees.py
 
-from fastapi import APIRouter, Request, Form, Depends, HTTPException, Response
+from fastapi import APIRouter, Request, Form, Depends, HTTPException, Response, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -30,14 +30,68 @@ def get_session_context(request: Request, db: Session):
     company_info = db.query(Company).filter(Company.company_code == comp_code).first()
     return { "comp_code": comp_code, "email": email, "company_info": company_info }
 
+def serialize_employee(e):
+    if not e: return None
+    return {
+        "id": e.id,
+        "production_at": e.production_at,
+        "employee_id": e.employee_id,
+        "employee_name": e.employee_name,
+        "designation": e.designation,
+        "department": e.department,
+        "employee_type": e.employee_type,
+        "contractor_name": e.contractor_name,
+        "joining_date": e.joining_date.isoformat() if e.joining_date else None,
+        "resignation_date": e.resignation_date.isoformat() if e.resignation_date else None,
+        "current_salary": e.current_salary,
+        "basic_salary": e.basic_salary,
+        "hra": e.hra,
+        "conveyance_allowance": e.conveyance_allowance,
+        "other_expenses": e.other_expenses,
+        "tds": e.tds,
+        "bank_name": e.bank_name,
+        "account_number": e.account_number,
+        "ifsc_code": e.ifsc_code,
+        "branch_name": e.branch_name,
+        "account_holder_name": e.account_holder_name,
+        "pan_number": e.pan_number,
+        "aadhar_number": e.aadhar_number,
+        "uan_number": e.uan_number,
+        "mobile": e.mobile,
+        "email": e.email,
+        "status": e.status,
+        "company_id": e.company_id,
+        "created_at": e.created_at.isoformat() if e.created_at else None,
+        "date": e.date.isoformat() if e.date else None,
+        "time": e.time.strftime("%H:%M:%S") if e.time else None,
+        "gender": e.gender,
+        "personal_email": e.personal_email,
+        "dob": e.dob.isoformat() if e.dob else None,
+        "blood_group": e.blood_group,
+        "marital_status": e.marital_status,
+        "emergency_name": e.emergency_name,
+        "emergency_mobile": e.emergency_mobile,
+        "official_email": e.official_email,
+        "about": e.about,
+        "skills": e.skills,
+        "present_address": e.present_address,
+        "permanent_address": e.permanent_address,
+        "reporting_to": e.reporting_to,
+        "location": e.location,
+        "photo_path": e.photo_path
+    }
+
 # =========================================================
 # 1. MAIN ROUTER (GET) - REGISTER & EDIT
 # =========================================================
 @router.get("/employee/register", response_class=HTMLResponse)
 @router.get("/employee/edit/{emp_id}", response_class=HTMLResponse)
-def employee_master_page(request: Request, emp_id: Optional[str] = None, db: Session = Depends(get_db)):
+def employee_master_page(request: Request, emp_id: Optional[str] = None, format: str = Query(default="html"), db: Session = Depends(get_db)):
     ctx = get_session_context(request, db)
-    if not ctx: return RedirectResponse("/auth/login", status_code=302)
+    if not ctx: 
+        if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"status": "error", "message": "Session expired"}, status_code=401)
+        return RedirectResponse("/auth/login", status_code=302)
 
     comp = ctx["comp_code"]
     contractor_list = db.query(contractors).filter(contractors.company_id == comp).all()
@@ -52,6 +106,16 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, db: Ses
     edit_row = None
     if emp_id:
         edit_row = db.query(EmployeeRegistration).filter(EmployeeRegistration.company_id == comp, EmployeeRegistration.employee_id == emp_id).first()
+
+    if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({
+            "status": "success",
+            "contractors": [{"contractor_name": c.contractor_name} for c in contractor_list],
+            "sites": [{"production_at": s.production_at} for s in site_list],
+            "next_employee_id": next_employee_id,
+            "employees": [serialize_employee(emp) for emp in all_employees],
+            "edit_data": serialize_employee(edit_row) if edit_row else None
+        })
 
     return templates.TemplateResponse(
         request=request, name="attendance/employees.html", 
@@ -83,7 +147,10 @@ async def save_or_update_employee(
     reporting_to: Optional[str] = Form(None), location: Optional[str] = Form(None), db: Session = Depends(get_db)
 ):
     ctx = get_session_context(request, db)
-    if not ctx: return RedirectResponse("/auth/login", status_code=302)
+    wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
+    if not ctx: 
+        if wants_json: return JSONResponse({"status": "error", "message": "Session expired"}, status_code=401)
+        return RedirectResponse("/auth/login", status_code=302)
     comp = ctx["comp_code"]
 
     # 🟢 🔴 PYTHON BACKEND STRICT VALIDATION
@@ -91,11 +158,15 @@ async def save_or_update_employee(
     ifsc_code_upper = ifsc_code.upper().strip() if ifsc_code else None
 
     if pan_number_upper and not re.match(r"^[A-Z]{5}[0-9]{4}[A-Z]{1}$", pan_number_upper):
-        request.session["message"] = "❌ Invalid PAN Card Format! Must be 5 letters, 4 digits, 1 letter."
+        msg = "❌ Invalid PAN Card Format! Must be 5 letters, 4 digits, 1 letter."
+        if wants_json: return JSONResponse({"status": "error", "message": msg}, status_code=400)
+        request.session["message"] = msg
         return RedirectResponse("/attendance/employee/register", status_code=303)
 
     if ifsc_code_upper and not re.match(r"^[A-Z]{4}0[A-Z0-9]{6}$", ifsc_code_upper):
-        request.session["message"] = "❌ Invalid IFSC Code Format! (e.g., SBIN0001234)"
+        msg = "❌ Invalid IFSC Code Format! (e.g., SBIN0001234)"
+        if wants_json: return JSONResponse({"status": "error", "message": msg}, status_code=400)
+        request.session["message"] = msg
         return RedirectResponse("/attendance/employee/register", status_code=303)
 
     def parse_dt(d): return date.fromisoformat(d) if d and d.strip() else None
@@ -109,7 +180,9 @@ async def save_or_update_employee(
         msg = "Saved"
 
     if not row:
-        request.session["message"] = "❌ Record not found!"
+        msg_err = "❌ Record not found!"
+        if wants_json: return JSONResponse({"status": "error", "message": msg_err}, status_code=404)
+        request.session["message"] = msg_err
         return RedirectResponse("/attendance/employee/register", status_code=303)
 
     try:
@@ -156,12 +229,16 @@ async def save_or_update_employee(
         row.time = ist_now().time()
 
         db.commit()
-        request.session["message"] = f"✅ Employee {msg} Successfully!"
+        success_msg = f"✅ Employee {msg} Successfully!"
+        if wants_json: return JSONResponse({"status": "success", "message": success_msg})
+        request.session["message"] = success_msg
     except Exception as e:
         db.rollback()
-        request.session["message"] = f"❌ Error: {str(e)}"
+        err_msg = f"❌ Error: {str(e)}"
+        if wants_json: return JSONResponse({"status": "error", "message": err_msg}, status_code=500)
+        request.session["message"] = err_msg
 
-    return RedirectResponse("/attendance/employee/register", status_code=303)
+
 
 # =========================================================
 # 3. DELETE (POST)

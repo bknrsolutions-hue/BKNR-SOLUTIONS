@@ -1,7 +1,7 @@
 import logging
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import json
 
@@ -228,6 +228,94 @@ class PostingEngineService:
         )
         db.flush()
         return header
+
+    @staticmethod
+    def reverse_voucher(
+        db: Session,
+        company_id: str,
+        voucher_id: int,
+        reason: str,
+        reversed_by: str = "SYSTEM",
+        reversal_date: date | None = None,
+    ) -> VoucherHeader | None:
+        """Create an immutable contra entry for a posted source voucher.
+
+        The original voucher remains POSTED so the audit trail is preserved.  The
+        contra voucher neutralises it in every accounting report.  Repeating the
+        operation is idempotent and returns the existing reversal.
+        """
+        voucher = (
+            db.query(VoucherHeader)
+            .options(
+                joinedload(VoucherHeader.details)
+                .joinedload(VoucherDetail.ledger)
+                .joinedload(LedgerMaster.group)
+            )
+            .filter(
+                VoucherHeader.id == voucher_id,
+                VoucherHeader.company_id == company_id,
+            )
+            .first()
+        )
+        if not voucher:
+            return None
+        if voucher.status != "POSTED":
+            if voucher.status not in {"CANCELLED", "REJECTED"}:
+                voucher.status = "CANCELLED"
+            return None
+
+        existing_audit = db.query(FinanceAuditTrail).filter(
+            FinanceAuditTrail.company_id == company_id,
+            FinanceAuditTrail.table_name == "voucher_headers",
+            FinanceAuditTrail.record_id == voucher.id,
+            FinanceAuditTrail.action == "REVERSE",
+        ).order_by(FinanceAuditTrail.id.desc()).first()
+        if existing_audit and existing_audit.new_value:
+            try:
+                reversal_id = int(json.loads(existing_audit.new_value).get("reversal_voucher_id"))
+                return db.query(VoucherHeader).filter(
+                    VoucherHeader.id == reversal_id,
+                    VoucherHeader.company_id == company_id,
+                ).first()
+            except (TypeError, ValueError, json.JSONDecodeError):
+                pass
+
+        clean_reason = str(reason or "Source transaction cancelled").strip()
+        lines = []
+        for line in voucher.details:
+            if not line.ledger or not line.ledger.group:
+                raise ValueError("Cannot reverse a voucher with an invalid ledger link")
+            lines.append({
+                "ledger_name": line.ledger.ledger_name,
+                "group_name": line.ledger.group.group_name,
+                "group_type": line.ledger.group.group_type,
+                "cost_center_id": line.cost_center_id,
+                "debit_amount": float(line.credit_amount or 0),
+                "credit_amount": float(line.debit_amount or 0),
+                "remarks": f"Reversal of {voucher.voucher_no}: {clean_reason}",
+            })
+        reversal = PostingEngineService.create_voucher(
+            db,
+            company_id,
+            "Journal",
+            reversal_date or date.today(),
+            f"Reversal of {voucher.voucher_no}: {clean_reason}",
+            lines,
+            reference_no=f"REV-{voucher.voucher_no}"[:50],
+            created_by=reversed_by or "SYSTEM",
+            status="POSTED",
+        )
+        PostingEngineService.write_finance_audit(
+            db,
+            company_id,
+            "voucher_headers",
+            voucher.id,
+            "REVERSE",
+            {"status": voucher.status},
+            {"reversal_voucher_id": reversal.id, "reason": clean_reason},
+            reversed_by or "SYSTEM",
+        )
+        return reversal
 
     # =========================================================================
     # ERP SEAFOOD AUTO-POSTING RULES

@@ -286,11 +286,10 @@ def processing_salary_rows(db: Session, company_id: str, month: str, contractor_
     return result
 
 
-def previous_month_key(month: str) -> str:
-    year, month_no, _ = parse_month(month)
-    first_day = date(year, month_no, 1)
-    previous_day = first_day - timedelta(days=1)
-    return previous_day.strftime("%Y-%m")
+def next_month_start(value: date) -> date:
+    if value.month == 12:
+        return date(value.year + 1, 1, 1)
+    return date(value.year, value.month + 1, 1)
 
 
 def contractor_month_grand_total(db: Session, company_id: str, month: str, contractor_name: str, company_info: dict) -> float:
@@ -313,6 +312,68 @@ def contractor_month_grand_total(db: Session, company_id: str, month: str, contr
     subtotal = round(float(deheading_total or 0.0) + float(peeling_total or 0.0) + processing_total, 2)
     _, grand_total = tax_breakup(subtotal, contractor_context(db, company_id, contractor_name), company_info)
     return grand_total
+
+
+def contractor_earlier_outstanding(
+    db: Session,
+    company_id: str,
+    selected_month: str,
+    contractor_name: str,
+    company_info: dict,
+):
+    """Return every unpaid contractor bill month before the selected month."""
+    selected_year, selected_month_no, _ = parse_month(selected_month)
+    selected_start = date(selected_year, selected_month_no, 1)
+
+    first_deheading = db.query(func.min(DeHeading.date)).filter(
+        DeHeading.company_id == company_id,
+        DeHeading.contractor == contractor_name,
+        DeHeading.is_cancelled != True,
+        DeHeading.date < selected_start,
+    ).scalar()
+    first_peeling = db.query(func.min(Peeling.date)).filter(
+        Peeling.company_id == company_id,
+        Peeling.contractor_name == contractor_name,
+        Peeling.is_cancelled != True,
+        Peeling.date < selected_start,
+    ).scalar()
+    first_payment_month = db.query(func.min(ContractorBillPayment.month_year)).filter(
+        ContractorBillPayment.company_id == company_id,
+        ContractorBillPayment.contractor_name == contractor_name,
+        ContractorBillPayment.month_year < selected_month,
+        ContractorBillPayment.is_cancelled != True,
+    ).scalar()
+
+    starts = [date(value.year, value.month, 1) for value in (first_deheading, first_peeling) if value]
+    if first_payment_month:
+        try:
+            payment_year, payment_month_no, _ = parse_month(first_payment_month)
+            starts.append(date(payment_year, payment_month_no, 1))
+        except (TypeError, ValueError):
+            pass
+    if not starts:
+        return 0.0, []
+
+    pending_months = []
+    cursor = min(starts)
+    while cursor < selected_start:
+        month_key = cursor.strftime("%Y-%m")
+        bill_total = contractor_month_grand_total(
+            db, company_id, month_key, contractor_name, company_info
+        )
+        paid_amount = db.query(func.coalesce(func.sum(ContractorBillPayment.paid_amount), 0.0)).filter(
+            ContractorBillPayment.company_id == company_id,
+            ContractorBillPayment.contractor_name == contractor_name,
+            ContractorBillPayment.month_year == month_key,
+            ContractorBillPayment.is_cancelled != True,
+        ).scalar() or 0.0
+        outstanding = max(round(bill_total - float(paid_amount), 2), 0.0)
+        if outstanding > 0.01:
+            pending_months.append({"month": month_key, "outstanding": outstanding})
+        cursor = next_month_start(cursor)
+
+    total = round(sum(item["outstanding"] for item in pending_months), 2)
+    return total, pending_months
 
 
 def operation_summary(db: Session, company_id: str, month: str):
@@ -371,15 +432,9 @@ def operation_summary(db: Session, company_id: str, month: str):
             voucher_map = {voucher.id: voucher.voucher_no for voucher in vouchers}
             voucher_no = ", ".join(voucher.voucher_no for voucher in vouchers if voucher.voucher_no)
         current_outstanding = max(round(grand_total - paid_amount, 2), 0.0)
-        prev_month = previous_month_key(month)
-        previous_bill_total = contractor_month_grand_total(db, company_id, prev_month, name, company_info)
-        previous_paid = db.query(func.coalesce(func.sum(ContractorBillPayment.paid_amount), 0.0)).filter(
-            ContractorBillPayment.company_id == company_id,
-            ContractorBillPayment.contractor_name == name,
-            ContractorBillPayment.month_year == prev_month,
-            ContractorBillPayment.is_cancelled != True,
-        ).scalar() or 0.0
-        previous_outstanding = max(round(previous_bill_total - float(previous_paid or 0.0), 2), 0.0)
+        previous_outstanding, previous_pending_months = contractor_earlier_outstanding(
+            db, company_id, month, name, company_info
+        )
         if current_outstanding <= 0.01 and grand_total > 0:
             payment_status = "PAID"
         elif paid_amount > 0:
@@ -389,6 +444,13 @@ def operation_summary(db: Session, company_id: str, month: str):
         paid_count = len(payments)
         if paid_count > 1 and voucher_no:
             voucher_no = f"{paid_count} Payments"
+        total_outstanding = max(round(previous_outstanding + current_outstanding, 2), 0.0)
+        if total_outstanding <= 0.01 and grand_total > 0:
+            overall_payment_status = "PAID"
+        elif paid_amount > 0:
+            overall_payment_status = "PARTIAL"
+        else:
+            overall_payment_status = "UNPAID"
         bank_ledger_ids = [payment.bank_cash_ledger_id for payment in payments if payment.bank_cash_ledger_id]
         bank_ledger_map = {}
         if bank_ledger_ids:
@@ -418,9 +480,11 @@ def operation_summary(db: Session, company_id: str, month: str):
             "grand_total": grand_total,
             "paid_amount": paid_amount,
             "previous_outstanding": previous_outstanding,
+            "previous_pending_months": previous_pending_months,
             "current_outstanding": current_outstanding,
-            "total_outstanding": max(round(previous_outstanding + current_outstanding, 2), 0.0),
+            "total_outstanding": total_outstanding,
             "payment_status": payment_status,
+            "overall_payment_status": overall_payment_status,
             "payment_mode": latest_payment.payment_mode if latest_payment else "BANK",
             "payment_date": latest_payment.payment_date.isoformat() if latest_payment and latest_payment.payment_date else "",
             "utr_reference": latest_payment.utr_reference if latest_payment else "",

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, 
+  Settings, Plus, Ban, Calendar, Clock, Mail, RefreshCw, 
   ChevronDown, ChevronRight, Check, X, FileText, AlertTriangle, 
   Info, BarChart2, Eye, EyeOff 
 } from 'lucide-react';
@@ -1074,7 +1074,7 @@ export default function Production() {
                           style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
                           title="Cancel entry"
                         >
-                          <Trash2 size={13} />
+                          <Ban size={13} />
                         </button>
                       )}
                     </td>

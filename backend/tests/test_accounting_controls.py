@@ -22,6 +22,7 @@ from app.database.models.enterprise_finance import (
     VoucherType,
 )
 from app.services.posting_engine import PostingEngineService
+from app.services.accounting_reports import AccountingReportsService
 
 
 class AccountingControlTests(unittest.TestCase):
@@ -77,6 +78,23 @@ class AccountingControlTests(unittest.TestCase):
         self.assertEqual(sum(line.debit_amount for line in voucher.details), 100)
         self.assertEqual(sum(line.credit_amount for line in voucher.details), 100)
 
+    def test_posted_voucher_cancellation_creates_idempotent_contra(self):
+        source = PostingEngineService.create_voucher(
+            self.db, "C1", "Journal", date(2026, 7, 11), "Source", self.lines()
+        )
+        reversal = PostingEngineService.reverse_voucher(
+            self.db, "C1", source.id, "Source cancelled", "admin@example.com", date(2026, 7, 12)
+        )
+        repeated = PostingEngineService.reverse_voucher(
+            self.db, "C1", source.id, "Source cancelled again", "admin@example.com", date(2026, 7, 12)
+        )
+        self.db.commit()
+        self.assertEqual(source.status, "POSTED")
+        self.assertEqual(reversal.id, repeated.id)
+        self.assertEqual(len(self.db.query(VoucherHeader).all()), 2)
+        net_debit = sum(float(line.debit_amount) - float(line.credit_amount) for voucher in self.db.query(VoucherHeader).all() for line in voucher.details)
+        self.assertEqual(net_debit, 0)
+
     def test_invalid_lines_are_rejected(self):
         invalid_cases = (
             [],
@@ -120,6 +138,27 @@ class AccountingControlTests(unittest.TestCase):
                 "Wrong tenant",
                 self.lines(cost_center_id=center.id),
             )
+
+    def test_control_audit_passes_for_balanced_posted_voucher(self):
+        PostingEngineService.create_voucher(
+            self.db, "C1", "Journal", date(2026, 7, 11), "Audit", self.lines()
+        )
+        self.db.commit()
+        audit = AccountingReportsService.get_control_audit(self.db, "C1")
+        self.assertEqual(audit["status"], "PASS")
+        self.assertEqual(audit["posted_vouchers_checked"], 1)
+        self.assertEqual(audit["unbalanced_vouchers"], [])
+
+    def test_voucher_register_exposes_balance_control_totals(self):
+        PostingEngineService.create_voucher(
+            self.db, "C1", "Journal", date(2026, 7, 11), "Register", self.lines()
+        )
+        self.db.commit()
+        rows = AccountingReportsService.get_voucher_register(
+            self.db, "C1", date(2026, 7, 1), date(2026, 7, 31)
+        )
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["total_debit"], rows[0]["total_credit"])
 
 
 if __name__ == "__main__":

@@ -10,11 +10,25 @@ let initialSessionRequest;
 
 function loadInitialSession() {
   if (!initialSessionRequest) {
-    initialSessionRequest = fetch('/auth/session-info', { credentials: 'include' })
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+
+    initialSessionRequest = fetch('/auth/session-info', {
+      credentials: 'include',
+      signal: controller.signal,
+      headers: { Accept: 'application/json' },
+    })
       .then(async response => {
         if (!response.ok) throw new Error('Unable to read session');
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) throw new Error('Invalid session response');
         return response.json();
-      });
+      })
+      .catch(error => {
+        initialSessionRequest = undefined;
+        throw error;
+      })
+      .finally(() => window.clearTimeout(timeoutId));
   }
   return initialSessionRequest;
 }
@@ -83,6 +97,57 @@ const PendingOrders = lazy(() => import('./pages/Processing/PendingOrders'));
 const ColdStorageHolding = lazy(() => import('./pages/Processing/ColdStorageHolding'));
 const GeneralStoreEntry = lazy(() => import('./pages/Processing/GeneralStoreEntry'));
 const DailyAttendance = lazy(() => import('./pages/Attendance/DailyAttendance'));
+const AdminConsole = lazy(() => import('./pages/Admin/AdminConsole'));
+const StaffRegistration = lazy(() => import('./pages/Attendance/StaffRegistration'));
+const IncrementDetails = lazy(() => import('./pages/Attendance/IncrementDetails'));
+const MonthlySalarySheet = lazy(() => import('./pages/Attendance/MonthlySalarySheet'));
+const StatutoryMaster = lazy(() => import('./pages/Attendance/StatutoryMaster'));
+const SalaryAdvance = lazy(() => import('./pages/Attendance/SalaryAdvance'));
+const SalaryProcessing = lazy(() => import('./pages/Attendance/SalaryProcessing'));
+
+// Finance & Accounts Components
+const LedgerDirectory = lazy(() => import('./pages/FinanceAccounts/LedgerDirectory'));
+const JournalEntries = lazy(() => import('./pages/FinanceAccounts/JournalEntries'));
+const BankTransactions = lazy(() => import('./pages/FinanceAccounts/BankTransactions'));
+const PaymentReceipts = lazy(() => import('./pages/FinanceAccounts/PaymentReceipts'));
+const CustomerReceivables = lazy(() => import('./pages/FinanceAccounts/CustomerReceivables'));
+const VendorPayments = lazy(() => import('./pages/FinanceAccounts/VendorPayments'));
+const ExpenseVouchers = lazy(() => import('./pages/FinanceAccounts/ExpenseVouchers'));
+const TallyDashboard = lazy(() => import('./pages/FinanceAccounts/TallyDashboard'));
+const ProductionCostAutomation = lazy(() => import('./pages/FinanceAccounts/ProductionCostAutomation'));
+const AccountsFlowGuide = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.AccountsFlowGuide })));
+const BankMasterPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.BankMasterPage })));
+const ItemAccountingLinkPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.ItemAccountingLinkPage })));
+const ExportIncentivePage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.ExportIncentivePage })));
+const LcTrackingPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.LcTrackingPage })));
+const GstRegisterPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.GstRegisterPage })));
+const FixedAssetsPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.FixedAssetsPage })));
+const ContractorBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.ContractorBillsPage })));
+const SalaryBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.SalaryBillsPage })));
+const VendorBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.VendorBillsPage })));
+const SupplierBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.SupplierBillsPage })));
+const PaymentLogsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.PaymentLogsPage })));
+
+// Commercial Bills Components
+const ElectricityBills = lazy(() => import('./pages/FinanceAccounts/ElectricityBills'));
+const DieselConsumption = lazy(() => import('./pages/FinanceAccounts/DieselConsumption'));
+const PurchasePackaging = lazy(() => import('./pages/FinanceAccounts/PurchasePackaging'));
+const LogisticsFreight = lazy(() => import('./pages/FinanceAccounts/LogisticsFreight'));
+const QaTestingCharges = lazy(() => import('./pages/FinanceAccounts/QaTestingCharges'));
+const OtherExpenses = lazy(() => import('./pages/FinanceAccounts/OtherExpenses'));
+
+// Export Documents Components
+const ProformaInvoices = lazy(() => import('./pages/ExportDocuments/ProformaInvoices'));
+const ExportShipments = lazy(() => import('./pages/ExportDocuments/ExportShipments'));
+const CommercialInvoices = lazy(() => import('./pages/ExportDocuments/CommercialInvoices'));
+const PackingLists = lazy(() => import('./pages/ExportDocuments/PackingLists'));
+const ContainerStuffing = lazy(() => import('./pages/ExportDocuments/ContainerStuffing'));
+const ShippingBills = lazy(() => import('./pages/ExportDocuments/ShippingBills'));
+const BillsOfLading = lazy(() => import('./pages/ExportDocuments/BillsOfLading'));
+const HealthCertificates = lazy(() => import('./pages/ExportDocuments/HealthCertificates'));
+const SupportingDocuments = lazy(() => import('./pages/ExportDocuments/SupportingDocuments'));
+const RequirementForms = lazy(() => import('./pages/ExportDocuments/RequirementForms'));
+const RequirementDocumentPage = lazy(() => import('./pages/ExportDocuments/RequirementDocumentPage'));
 
 const CRITERIA_COMPONENTS = {
   criteria_buyers: Buyers,
@@ -127,6 +192,55 @@ const CRITERIA_COMPONENTS = {
   cold_storage_holding: ColdStorageHolding,
   general_store_entry: GeneralStoreEntry,
   attendance_daily_attendance: DailyAttendance,
+  attendance_employee_register: StaffRegistration,
+  attendance_employee_increment: IncrementDetails,
+  attendance_salary_report: MonthlySalarySheet,
+  attendance_tax_master: StatutoryMaster,
+  attendance_salary_advance: SalaryAdvance,
+  finance_salary_processing: SalaryProcessing,
+
+  // Finance & Accounts
+  finance_ledger_master: LedgerDirectory,
+  finance_journal_entry: JournalEntries,
+  finance_bank_transaction: BankTransactions,
+  finance_payment_receipt: PaymentReceipts,
+  finance_customer_receivable: CustomerReceivables,
+  finance_vendor_payment: VendorPayments,
+  finance_expense_voucher: ExpenseVouchers,
+  finance_production_cost_allocation: ProductionCostAutomation,
+  finance_accounts_flow_guide: AccountsFlowGuide,
+  finance_bank_master: BankMasterPage,
+  finance_item_accounting_link: ItemAccountingLinkPage,
+  finance_fixed_assets: FixedAssetsPage,
+  finance_gst_register: GstRegisterPage,
+  finance_export_incentive_register: ExportIncentivePage,
+  finance_lc_tracking: LcTrackingPage,
+  finance_contractor_bills: ContractorBillsPage,
+  finance_salaries: SalaryBillsPage,
+  finance_vendor_bills: VendorBillsPage,
+  finance_supplier_bills: SupplierBillsPage,
+  finance_payment_logs: PaymentLogsPage,
+  tally_dashboard: TallyDashboard,
+
+  // Commercial Bills
+  finance_electricity_bills: ElectricityBills,
+  finance_diesel_bills: DieselConsumption,
+  finance_packaging_bills: PurchasePackaging,
+  finance_logistics_bills: LogisticsFreight,
+  finance_qa_testing: QaTestingCharges,
+  finance_other_expenses: OtherExpenses,
+
+  // Export Documents
+  proforma_invoice: ProformaInvoices,
+  export_shipment: ExportShipments,
+  commercial_invoice: CommercialInvoices,
+  packing_list: PackingLists,
+  container_stuffing: ContainerStuffing,
+  shipping_bill: ShippingBills,
+  bill_of_lading: BillsOfLading,
+  health_certificate: HealthCertificates,
+  export_supporting_documents: SupportingDocuments,
+  export_requirement_forms: RequirementForms,
 };
 
 const REPORT_COMPONENTS = {
@@ -165,11 +279,14 @@ export default function App() {
   const [user, setUser]                 = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
+  const [availableMenuItems, setAvailableMenuItems] = useState([]);
+  const [appNotice, setAppNotice]       = useState(null);
 
   const activePage = location.pathname.startsWith('/page/')
     ? decodeURIComponent(location.pathname.slice('/page/'.length))
     : 'dashboard_processing';
   const activeRoute = new URLSearchParams(location.search).get('backend');
+  const isEmbedded = new URLSearchParams(location.search).get('embedded') === 'true';
 
   const setActivePage = useCallback((id, route) => {
     const search = route ? `?backend=${encodeURIComponent(route)}` : '';
@@ -179,12 +296,44 @@ export default function App() {
   // Sync theme to <html data-theme>
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
+    window.applyBKNRUiColors?.();
   }, [theme]);
+
+  useEffect(() => {
+    if (!appNotice) return undefined;
+    const timeout = window.setTimeout(() => setAppNotice(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [appNotice]);
+
+  useEffect(() => {
+    const originalAlert = window.alert.bind(window);
+    const successPattern = /success|saved|created|updated|cancelled|completed|registered|recorded|uploaded/i;
+    const notify = (message, type = 'success') => setAppNotice({ message: String(message || 'Action completed successfully.'), type });
+    const appAlert = message => {
+      if (successPattern.test(String(message || ''))) notify(message, 'success');
+      else originalAlert(message);
+    };
+    window.BKNRNotify = notify;
+    window.alert = appAlert;
+    return () => {
+      if (window.alert === appAlert) window.alert = originalAlert;
+      if (window.BKNRNotify === notify) delete window.BKNRNotify;
+    };
+  }, []);
 
   // Load session on mount
   useEffect(() => {
+    let active = true;
+    // Some mobile WebViews do not reliably reject a fetch after AbortController
+    // fires, especially when a service worker has intercepted the request. Keep
+    // the workspace loader bounded independently so the app can always recover.
+    const loadingDeadline = window.setTimeout(() => {
+      if (active) setLoadingSession(false);
+    }, 6000);
+
     loadInitialSession()
       .then(data => {
+        if (!active) return;
         if (data.authenticated) {
           document.documentElement.setAttribute('data-user-email', data.email || '');
           document.documentElement.setAttribute('data-company-code', data.company_code || '');
@@ -202,8 +351,18 @@ export default function App() {
           setUser(null);
         }
       })
-      .catch(() => { setUser(null); })
-      .finally(() => { setLoadingSession(false); });
+      .catch(() => {
+        if (active) setUser(null);
+      })
+      .finally(() => {
+        window.clearTimeout(loadingDeadline);
+        if (active) setLoadingSession(false);
+      });
+
+    return () => {
+      active = false;
+      window.clearTimeout(loadingDeadline);
+    };
   }, []);
 
   const toggleTheme = () => setTheme(prev => {
@@ -255,12 +414,26 @@ export default function App() {
   // ── Page Router ──────────────────────────────────────────────────────────
   const renderActivePage = () => {
     // Dashboards — full React components (no iframe needed)
-    if (activePage.startsWith('dashboard_')) {
+    if (activePage === 'dashboard_processing' || activePage === 'dashboard_inventory') {
       return (
         <DashboardsConsole
           key={activePage}
           activeDashboard={activePage.replace('dashboard_', '')}
           theme={theme}
+          setActivePage={setActivePage}
+        />
+      );
+    }
+
+    if (activePage.startsWith('admin_')) {
+      return (
+        <AdminConsole
+          key={activePage}
+          activePage={activePage}
+          activeRoute={activeRoute}
+          user={user}
+          theme={theme}
+          setActivePage={setActivePage}
         />
       );
     }
@@ -273,6 +446,15 @@ export default function App() {
           key={activePage}
           user={user}
           theme={theme}
+        />
+      );
+    }
+
+    if (activePage.startsWith('export_requirement_') && activePage !== 'export_requirement_forms') {
+      return (
+        <RequirementDocumentPage
+          key={activePage}
+          documentKind={activePage.slice('export_requirement_'.length)}
         />
       );
     }
@@ -340,6 +522,27 @@ export default function App() {
     );
   }
 
+  const noticePopup = appNotice && (
+    <div className={`app-success-popup ${appNotice.type === 'error' ? 'error' : 'success'}`} role="status" aria-live="polite">
+      <span className="app-success-popup-icon" aria-hidden="true">{appNotice.type === 'error' ? '!' : '✓'}</span>
+      <span>{appNotice.message}</span>
+      <button type="button" onClick={() => setAppNotice(null)} aria-label="Close notification">×</button>
+    </div>
+  );
+
+  if (isEmbedded) {
+    return (
+      <div className="embedded-app-shell">
+        <main className="embedded-app-content">
+          <Suspense fallback={<PageLoading />}>
+            {renderActivePage()}
+          </Suspense>
+        </main>
+        {noticePopup}
+      </div>
+    );
+  }
+
   // ── Main ERP Layout ──────────────────────────────────────────────────────
   return (
     <React.Fragment>
@@ -354,6 +557,7 @@ export default function App() {
         user={user}
         sidebarOpen={sidebarOpen}
         setSidebarOpen={setSidebarOpen}
+        onMenuItemsReady={setAvailableMenuItems}
       />
 
       <div className="app-container">
@@ -365,6 +569,7 @@ export default function App() {
           sidebarOpen={sidebarOpen}
           setSidebarOpen={setSidebarOpen}
           setActivePage={setActivePage}
+          availableMenuItems={availableMenuItems}
         />
 
         <main className="main-content">
@@ -373,6 +578,7 @@ export default function App() {
           </Suspense>
         </main>
       </div>
+      {noticePopup}
     </React.Fragment>
   );
 }

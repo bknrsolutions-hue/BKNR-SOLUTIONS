@@ -3,8 +3,9 @@ from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func, and_
 from app.database.models.enterprise_finance import (
-    AccountGroup, LedgerMaster, VoucherHeader, VoucherDetail, VoucherType
+    AccountGroup, LedgerMaster, VoucherHeader, VoucherDetail, VoucherType, FinancialYearMaster
 )
+from app.database.models.payments import CustomerReceivable, VendorPayment
 
 class AccountingReportsService:
 
@@ -152,6 +153,7 @@ class AccountingReportsService:
 
         rows = db.query(
             LedgerMaster.ledger_name,
+            AccountGroup.group_name,
             AccountGroup.group_type,
             func.coalesce(func.sum(VoucherDetail.debit_amount), 0.0).label("debits"),
             func.coalesce(func.sum(VoucherDetail.credit_amount), 0.0).label("credits"),
@@ -163,10 +165,14 @@ class AccountingReportsService:
             VoucherHeader.status == "POSTED",
             VoucherHeader.voucher_date.between(start_date, end_date),
             AccountGroup.group_type.in_(["INCOME", "EXPENSE"]),
-        ).group_by(LedgerMaster.id, LedgerMaster.ledger_name, AccountGroup.group_type).all()
+        ).group_by(LedgerMaster.id, LedgerMaster.ledger_name, AccountGroup.group_name, AccountGroup.group_type).all()
 
         income = 0.0
         expense = 0.0
+        direct_income = 0.0
+        indirect_income = 0.0
+        direct_expense = 0.0
+        indirect_expense = 0.0
         details = {"income_ledgers": [], "expense_ledgers": []}
 
         for row in rows:
@@ -174,16 +180,28 @@ class AccountingReportsService:
             if row.group_type == "INCOME":
                 val = -net
                 income += val
+                if row.group_name in {"Sales Accounts", "Direct Incomes"}:
+                    direct_income += val
+                else:
+                    indirect_income += val
                 details["income_ledgers"].append({"name": row.ledger_name, "amount": val})
             else:
                 val = net
                 expense += val
+                if row.group_name in {"Purchase Accounts", "Direct Expenses"}:
+                    direct_expense += val
+                else:
+                    indirect_expense += val
                 details["expense_ledgers"].append({"name": row.ledger_name, "amount": val})
 
         net_profit = income - expense
         return {
             "total_income": income,
             "total_expense": expense,
+            "direct_income": direct_income,
+            "indirect_income": indirect_income,
+            "direct_expense": direct_expense,
+            "indirect_expense": indirect_expense,
             "net_profit": net_profit,
             "details": details
         }
@@ -341,3 +359,174 @@ class AccountingReportsService:
                 "transactions": len(bal_res.get("transactions", []))
             }
         return summary
+
+    @staticmethod
+    def get_voucher_register(db: Session, company_id: str, start_date: date, end_date: date) -> list:
+        """Return a complete voucher register with balance-control totals."""
+        rows = db.query(VoucherHeader).options(
+            joinedload(VoucherHeader.details), joinedload(VoucherHeader.voucher_type)
+        ).filter(
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.voucher_date.between(start_date, end_date),
+        ).order_by(VoucherHeader.voucher_date, VoucherHeader.id).all()
+        return [{
+            "id": row.id,
+            "voucher_no": row.voucher_no,
+            "voucher_date": row.voucher_date.isoformat(),
+            "voucher_type": row.voucher_type.name if row.voucher_type else "Journal",
+            "reference_no": row.reference_no or "",
+            "narration": row.narration or "",
+            "status": row.status,
+            "created_by": row.created_by,
+            "approved_by": row.approved_by,
+            "total_debit": round(sum(float(line.debit_amount or 0) for line in row.details), 2),
+            "total_credit": round(sum(float(line.credit_amount or 0) for line in row.details), 2),
+        } for row in rows]
+
+    @staticmethod
+    def get_cash_flow(db: Session, company_id: str, start_date: date, end_date: date) -> dict:
+        """Classify posted cash/bank movements into operating, investing and financing flows."""
+        vouchers = db.query(VoucherHeader).options(
+            joinedload(VoucherHeader.details).joinedload(VoucherDetail.ledger).joinedload(LedgerMaster.group)
+        ).filter(
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.status == "POSTED",
+            VoucherHeader.voucher_date.between(start_date, end_date),
+        ).all()
+        totals = {"operating": 0.0, "investing": 0.0, "financing": 0.0}
+        transactions = []
+        for voucher in vouchers:
+            cash_lines = [line for line in voucher.details if line.ledger and line.ledger.group and line.ledger.group.group_name in {"Cash-in-hand", "Bank Accounts"}]
+            if not cash_lines:
+                continue
+            movement = sum(float(line.debit_amount or 0) - float(line.credit_amount or 0) for line in cash_lines)
+            counterpart_groups = {
+                line.ledger.group.group_name for line in voucher.details
+                if line not in cash_lines and line.ledger and line.ledger.group
+            }
+            counterpart_types = {
+                line.ledger.group.group_type for line in voucher.details
+                if line not in cash_lines and line.ledger and line.ledger.group
+            }
+            if "Fixed Assets" in counterpart_groups:
+                category = "investing"
+            elif counterpart_types.intersection({"EQUITY"}) or counterpart_groups.intersection({"Loans", "Capital Account"}):
+                category = "financing"
+            else:
+                category = "operating"
+            totals[category] += movement
+            transactions.append({
+                "date": voucher.voucher_date.isoformat(), "voucher_no": voucher.voucher_no,
+                "category": category.upper(), "amount": round(movement, 2),
+                "narration": voucher.narration or "",
+            })
+        return {
+            **{key: round(value, 2) for key, value in totals.items()},
+            "net_change": round(sum(totals.values()), 2),
+            "transactions": transactions,
+        }
+
+    @staticmethod
+    def get_control_audit(db: Session, company_id: str) -> dict:
+        """Run non-mutating integrity checks over the general ledger."""
+        voucher_totals = db.query(
+            VoucherHeader.id,
+            VoucherHeader.voucher_no,
+            VoucherHeader.voucher_date,
+            func.coalesce(func.sum(VoucherDetail.debit_amount), 0).label("debit"),
+            func.coalesce(func.sum(VoucherDetail.credit_amount), 0).label("credit"),
+        ).outerjoin(VoucherDetail, VoucherDetail.voucher_id == VoucherHeader.id).filter(
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.status == "POSTED",
+        ).group_by(VoucherHeader.id, VoucherHeader.voucher_no, VoucherHeader.voucher_date).all()
+        unbalanced = [{
+            "voucher_id": row.id, "voucher_no": row.voucher_no,
+            "date": row.voucher_date.isoformat(),
+            "difference": round(float(row.debit or 0) - float(row.credit or 0), 2),
+        } for row in voucher_totals if abs(float(row.debit or 0) - float(row.credit or 0)) >= 0.01]
+
+        locked_years = db.query(FinancialYearMaster).filter(
+            FinancialYearMaster.company_id == company_id,
+            FinancialYearMaster.is_locked.is_(True),
+        ).all()
+        locked_period_postings = []
+        for year in locked_years:
+            count = db.query(VoucherHeader.id).filter(
+                VoucherHeader.company_id == company_id,
+                VoucherHeader.status == "POSTED",
+                VoucherHeader.voucher_date.between(year.start_date, year.end_date),
+                VoucherHeader.modified_at.isnot(None),
+                VoucherHeader.modified_at > year.created_at,
+            ).count()
+            if count:
+                locked_period_postings.append({"year": year.year_name, "count": count})
+
+        inactive_ledger_lines = db.query(VoucherDetail.id).join(LedgerMaster).join(VoucherHeader).filter(
+            VoucherHeader.company_id == company_id,
+            VoucherHeader.status == "POSTED",
+            LedgerMaster.status != "ACTIVE",
+        ).count()
+        issues = len(unbalanced) + len(locked_period_postings) + (1 if inactive_ledger_lines else 0)
+        return {
+            "status": "PASS" if issues == 0 else "ATTENTION",
+            "issue_count": issues,
+            "posted_vouchers_checked": len(voucher_totals),
+            "unbalanced_vouchers": unbalanced,
+            "locked_period_postings": locked_period_postings,
+            "inactive_ledger_lines": inactive_ledger_lines,
+        }
+
+    @staticmethod
+    def get_aging_report(db: Session, company_id: str, as_of_date: date) -> dict:
+        """Bill-wise receivable and payable ageing using source-document due dates."""
+        buckets = ("CURRENT", "1-30", "31-60", "61-90", "90+")
+        result = {
+            "receivables": {key: 0.0 for key in buckets},
+            "payables": {key: 0.0 for key in buckets},
+            "receivable_items": [], "payable_items": [],
+        }
+
+        def bucket_for(due_date):
+            overdue = max((as_of_date - due_date).days, 0)
+            if overdue == 0:
+                return "CURRENT", overdue
+            if overdue <= 30:
+                return "1-30", overdue
+            if overdue <= 60:
+                return "31-60", overdue
+            if overdue <= 90:
+                return "61-90", overdue
+            return "90+", overdue
+
+        receivables = db.query(CustomerReceivable).filter(
+            CustomerReceivable.company_id == company_id,
+            CustomerReceivable.is_cancelled.is_(False),
+            CustomerReceivable.balance_amount > 0,
+        ).all()
+        for row in receivables:
+            bucket, overdue = bucket_for(row.due_date)
+            amount = float(row.balance_amount or 0)
+            result["receivables"][bucket] += amount
+            result["receivable_items"].append({
+                "party": row.buyer_name, "document_no": row.invoice_no,
+                "due_date": row.due_date.isoformat(), "overdue_days": overdue,
+                "bucket": bucket, "amount": round(amount, 2),
+            })
+
+        payables = db.query(VendorPayment).filter(
+            VendorPayment.company_id == company_id,
+            VendorPayment.is_cancelled.is_(False),
+            VendorPayment.balance > 0,
+        ).all()
+        for row in payables:
+            bucket, overdue = bucket_for(row.due_date)
+            amount = float(row.balance or 0)
+            result["payables"][bucket] += amount
+            result["payable_items"].append({
+                "party": row.vendor_name, "document_no": row.bill_no,
+                "due_date": row.due_date.isoformat(), "overdue_days": overdue,
+                "bucket": bucket, "amount": round(amount, 2),
+            })
+        result["receivables"] = {key: round(value, 2) for key, value in result["receivables"].items()}
+        result["payables"] = {key: round(value, 2) for key, value in result["payables"].items()}
+        return result

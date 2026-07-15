@@ -413,7 +413,8 @@ tr:hover td { background-color: var(--table-hover-bg); }
                 <label>Financial Year</label>
                 <select name="fy" id="f_fy" onchange="savePeriodicViewState(); this.form.submit()">
                     {% for year in financial_years %}
-                    <option value="{{ year }}" {% if selected_fy == year %}selected{% endif %}>{{ year }}</option>
+                    {% set fy_start = year.split('-')[0]|int %}
+                    <option value="{{ year }}" {% if selected_fy == year %}selected{% endif %}>FY {{ fy_start }}-{{ fy_start + 1 }}</option>
                     {% endfor %}
                 </select>
             </div>

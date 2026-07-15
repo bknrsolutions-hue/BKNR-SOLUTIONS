@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { currentFinancialYearStart, formatFinancialYear } from '../../utils/financialYear';
 
 const fmt = (val, dec = 2) => {
   const n = parseFloat(val ?? 0);
@@ -415,11 +416,23 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         '/reports/production_report': 'report_production_report',
         '/reports/floor_balance_report': 'report_floor_balance_report',
       };
-      const pageId = routeMap[route];
+      const routePath = String(route || '').split('?')[0];
+      const pageId = routeMap[routePath];
       if (pageId) {
         setActivePage(pageId, route);
       }
     }
+  };
+
+  const kpiSourceRoute = (route) => {
+    const params = new URLSearchParams({
+      sel_fy: String(data?.sel_fy || selFy || 'ALL'),
+      sel_species: String(selSpecies || 'ALL'),
+      sel_variety: String(selVariety || 'ALL'),
+      sel_grade: String(selGrade || 'ALL'),
+      sel_prod_for: String(selectedCompany || data?.sel_prod_for || 'ALL'),
+    });
+    return `${route}?${params.toString()}`;
   };
 
   const getAgeLabelClass = (age) => {
@@ -514,7 +527,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
             </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
-            {data?.sel_fy || '—'}
+            {data?.sel_fy ? formatFinancialYear(data.sel_fy) : '—'}
           </div>
         </div>
       </div>
@@ -529,7 +542,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       {/* 8 Premium KPI Cards matching legacy layout with INR sub-totals */}
       <div className="kpi-grid">
         {/* 1. Opening */}
-        <div className="kpi-card kpi-blue" onClick={() => document.getElementById('openingStockBox')?.scrollIntoView({ behavior: 'smooth' })}>
+        <div className="kpi-card kpi-blue" title="View opening stock source" onClick={() => document.getElementById('openingStockBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
           <div className="kpi-header">
             <h4>Opening</h4>
             <div className="kpi-icon"><i className="fa-solid fa-box-open"></i></div>
@@ -541,7 +554,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
 
         {/* 2. Closing */}
-        <div className="kpi-card kpi-green" onClick={() => document.getElementById('liveInventoryBox')?.scrollIntoView({ behavior: 'smooth' })}>
+        <div className="kpi-card kpi-green" title="View closing stock source" onClick={() => document.getElementById('liveInventoryBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
           <div className="kpi-header">
             <h4>Closing</h4>
             <div className="kpi-icon"><i className="fa-solid fa-boxes-stacked"></i></div>
@@ -553,7 +566,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
 
         {/* 3. Sales */}
-        <div className="kpi-card kpi-blue" onClick={() => openModal('/inventory/sales_report')}>
+        <div className="kpi-card kpi-blue" title="Open Sales Report source" onClick={() => openModal(kpiSourceRoute('/inventory/sales_report'))}>
           <div className="kpi-header">
             <h4>Sales</h4>
             <div className="kpi-icon"><i className="fa-solid fa-truck-ramp-box"></i></div>
@@ -565,7 +578,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
 
         {/* 4. Reprocess */}
-        <div className="kpi-card kpi-blue" onClick={() => openModal('/reports/re-process')}>
+        <div className="kpi-card kpi-blue" title="Open Reprocess Report source" onClick={() => openModal(kpiSourceRoute('/reports/re-process'))}>
           <div className="kpi-header">
             <h4>Reprocess</h4>
             <div className="kpi-icon"><i className="fa-solid fa-arrows-rotate"></i></div>
@@ -577,7 +590,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
 
         {/* 5. Fresh Stock */}
-        <div className="kpi-card kpi-blue" onClick={() => openModal('/inventory/stock_report')}>
+        <div className="kpi-card kpi-blue" title="Open Stock Status Report source" onClick={() => openModal(kpiSourceRoute('/inventory/stock_report'))}>
           <div className="kpi-header">
             <h4>Fresh Stock</h4>
             <div className="kpi-icon"><i className="fa-solid fa-seedling"></i></div>
@@ -712,8 +725,8 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         <div style={filterGrp}>
           <label style={filterLbl}>Financial Year</label>
           <select style={filterSelect} value={selFy} onChange={e => setSelFy(e.target.value)}>
-            <option value="ALL">Current FY</option>
-            {['2024-25','2023-24','2022-23'].map(y => <option key={y} value={y}>{y}</option>)}
+            <option value="ALL">{formatFinancialYear(currentFinancialYearStart())}</option>
+            {['2024-25','2023-24','2022-23'].map(y => <option key={y} value={y}>{formatFinancialYear(y)}</option>)}
           </select>
         </div>
         <div style={filterGrp}>
@@ -778,7 +791,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       )}
 
       {/* Live Closing Inventory Table */}
-      <div style={secHeader}>
+      <div style={secHeader} id="liveInventoryBox">
         <span style={secTitle}><i className="fa-solid fa-boxes-stacked"></i> Live Closing Inventory</span>
         <div style={secLine}></div>
         <button 
