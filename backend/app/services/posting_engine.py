@@ -1,4 +1,5 @@
 import logging
+import calendar
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from sqlalchemy.orm import Session, joinedload
@@ -187,6 +188,22 @@ class PostingEngineService:
             if valid_count != len(cost_center_ids):
                 raise ValueError("One or more cost centers are invalid for this company")
 
+        resolved_ledgers = []
+        for detail in details:
+            ledger = PostingEngineService.get_or_create_ledger(
+                db,
+                company_id,
+                detail["ledger_name"],
+                detail["group_name"],
+                detail["group_type"],
+                detail.get("parent_group_name"),
+            )
+            if str(ledger.status or "ACTIVE").upper() != "ACTIVE":
+                raise ValueError(f"Ledger {ledger.ledger_name} is inactive")
+            if ledger.cost_center_required and not detail.get("cost_center_id"):
+                raise ValueError(f"Cost center is required for ledger {ledger.ledger_name}")
+            resolved_ledgers.append(ledger)
+
         v_type = PostingEngineService.get_or_create_voucher_type(
             db, company_id, voucher_type_name, voucher_type_name[:3].upper()
         )
@@ -207,10 +224,7 @@ class PostingEngineService:
         db.add(header)
         db.flush()
 
-        for d in details:
-            ledger = PostingEngineService.get_or_create_ledger(
-                db, company_id, d['ledger_name'], d['group_name'], d['group_type'], d.get('parent_group_name')
-            )
+        for d, ledger in zip(details, resolved_ledgers):
             detail = VoucherDetail(
                 voucher_id=header.id,
                 ledger_id=ledger.id,
@@ -509,17 +523,22 @@ class PostingEngineService:
         """
         Auto-posts salary approval journal.
         Double entry:
-          Debit: Salaries & Wages Expense A/c (Gross Salary + Employer PF + Employer ESI)
+          Debit: Salaries & Wages Expense A/c (Gross Salary + Employer PF/EPS + EDLI + Employer ESI)
           Credit: Salaries Payable A/c (Net Payable)
-          Credit: PF Payable A/c (Employer + Employee PF)
+          Credit: PF Payable A/c (Employee EPF + Employer EPF)
+          Credit: EPS Payable A/c (Employer EPS)
+          Credit: EDLI Payable A/c (Employer EDLI)
           Credit: ESI Payable A/c (Employer + Employee ESI)
           Credit: PT Payable A/c (Professional Tax)
           Credit: TDS Payable A/c (TDS on Salary)
           Credit: Salary Advance A/c (Advance Deduction)
           Credit: LWF Payable A/c (Employee + Employer LWF)
         """
-        salaries_wages_expense = round(entry.gross_salary + entry.pf_employer + entry.esi_employer + entry.lwf_employer, 2)
-        total_pf_payable = round(entry.pf_employee + entry.pf_employer, 2)
+        employer_epf = float(getattr(entry, "epf_employer", 0.0) or 0.0)
+        employer_eps = float(getattr(entry, "eps_employer", 0.0) or 0.0)
+        employer_edli = float(getattr(entry, "edli_employer", 0.0) or 0.0)
+        salaries_wages_expense = round(entry.gross_salary + entry.pf_employer + employer_edli + entry.esi_employer + entry.lwf_employer, 2)
+        total_pf_payable = round(entry.pf_employee + employer_epf, 2)
         total_esi_payable = round(entry.esi_employee + entry.esi_employer, 2)
         total_lwf_payable = round(entry.lwf_employee + entry.lwf_employer, 2)
         
@@ -553,7 +572,29 @@ class PostingEngineService:
                 "parent_group_name": "Current Liabilities",
                 "debit_amount": 0.0,
                 "credit_amount": total_pf_payable,
-                "remarks": f"PF contribution (Emp + Empr)"
+                "remarks": "Employee EPF + Employer EPF contribution"
+            })
+
+        if employer_eps > 0:
+            details.append({
+                "ledger_name": "Employees Pension Scheme (EPS) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": employer_eps,
+                "remarks": "Employer EPS contribution"
+            })
+
+        if employer_edli > 0:
+            details.append({
+                "ledger_name": "EDLI Contribution Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": employer_edli,
+                "remarks": "Employer EDLI contribution"
             })
             
         # Credit ESI Payable
@@ -628,9 +669,14 @@ class PostingEngineService:
             })
 
         narration = f"Auto-posted Salary Approval for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}."
+        try:
+            salary_year, salary_month = (int(part) for part in str(entry.month_year).split("-", 1))
+            voucher_date = date(salary_year, salary_month, calendar.monthrange(salary_year, salary_month)[1])
+        except (TypeError, ValueError):
+            voucher_date = date.today()
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Journal", date.today(), narration, details, reference_no=f"SAL-{entry.employee_id}-{entry.month_year}"
+            db, company_id, "Journal", voucher_date, narration, details, reference_no=f"SAL-{entry.employee_id}-{entry.month_year}"
         )
 
     @staticmethod

@@ -462,7 +462,7 @@ export default function BankTransactions({ theme }) {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Transaction
+                  Save
                 </button>
               </div>
             </form>

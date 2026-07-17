@@ -437,7 +437,7 @@ async function showAttendance(empId, name, day = null){
  data.forEach(d => {
    let timeline = "";
    if(d.movements && d.movements.length > 0) {
-      timeline = d.movements.map(m => `<span class="chip">${m.type} ${m.time}</span>`).join('<i class="fa-solid fa-chevron-right" style="font-size:7px; margin:0 4px; color:var(--text-tertiary)"></i>');
+      timeline = d.movements.map(m => `<span class="chip">${m.type} ${m.display_date || m.date || d.date} ${m.time}</span>`).join('<i class="fa-solid fa-chevron-right" style="font-size:7px; margin:0 4px; color:var(--text-tertiary)"></i>');
    } else {
       timeline = `<span style="color:var(--text-secondary); font-style:italic">Manual Entry</span>`;
    }
@@ -502,6 +502,6 @@ function closeModal(){document.getElementById("attModal").style.display="none";}
 window.onclick = function(event) { if (event.target == document.getElementById("attModal")) closeModal(); }
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

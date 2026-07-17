@@ -31,6 +31,8 @@ TABLES = [
     "payment_receipts",
     "gst_register",
     "fixed_asset_masters",
+    "daily_attendance",
+    "employee_statutory_master",
     "export_incentive_register",
     "lc_tracking",
     "salary_processing",
@@ -93,6 +95,10 @@ TABLE_COLUMNS = {
     "daily_attendance": [
         ("journal_id", "INTEGER"),
         ("approved_duty_credit", "DOUBLE PRECISION DEFAULT 0"),
+        ("salary_adjustment_reason", "TEXT"),
+    ],
+    "employee_statutory_master": [
+        ("eps_applicable", "BOOLEAN DEFAULT TRUE"),
     ],
     "salary_processing": [
         ("salary_journal_id", "INTEGER"),
@@ -100,6 +106,9 @@ TABLE_COLUMNS = {
         ("payment_date", "DATE"),
         ("utr_reference", "VARCHAR(50)"),
         ("paid_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("epf_employer", "DOUBLE PRECISION DEFAULT 0"),
+        ("eps_employer", "DOUBLE PRECISION DEFAULT 0"),
+        ("edli_employer", "DOUBLE PRECISION DEFAULT 0"),
     ],
     "journal_entries": [
         ("journal_id", "INTEGER"),
@@ -174,7 +183,12 @@ def run_migration():
             ("is_active", "BOOLEAN DEFAULT TRUE"),
             ("data_management_access", "BOOLEAN DEFAULT FALSE"),
             ("ui_colors", "TEXT"),
-            ("current_session_id", "VARCHAR")
+            ("current_session_id", "VARCHAR"),
+            ("date_of_birth", "DATE"),
+            ("blood_group", "VARCHAR(10)"),
+            ("working_location", "VARCHAR(255)"),
+            ("unit", "VARCHAR(255)"),
+            ("address", "TEXT")
         ]
         
         for col_name, col_type in user_migrations:
@@ -187,6 +201,30 @@ def run_migration():
                     print(f"  ❌ Error adding column '{col_name}' to users table: {e}")
             else:
                 print(f"  ✔ Column '{col_name}' already exists in table 'users'.")
+
+        # Company tenant code and statutory MPEDA code are intentionally
+        # separate: company_code is the ERP tenant key, MPEDA is for reports.
+        print("Checking table: companies")
+        res = conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'companies';
+        """))
+        existing_company_columns = {row[0] for row in res.fetchall()}
+        if "mpeda_registration_code" not in existing_company_columns:
+            conn.execute(text(
+                "ALTER TABLE companies "
+                "ADD COLUMN mpeda_registration_code VARCHAR(80)"
+            ))
+            print("  ✔ Column 'mpeda_registration_code' added successfully to companies table.")
+        else:
+            print("  ✔ Column 'mpeda_registration_code' already exists in table 'companies'.")
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS "
+            "ix_companies_mpeda_registration_code "
+            "ON companies (mpeda_registration_code) "
+            "WHERE mpeda_registration_code IS NOT NULL"
+        ))
                     
     # -----------------------------------------------------
     # Create required indexes on critical lookup columns

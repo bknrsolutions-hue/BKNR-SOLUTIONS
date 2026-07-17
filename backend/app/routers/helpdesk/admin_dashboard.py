@@ -144,6 +144,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
@@ -164,6 +165,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
@@ -208,6 +210,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",

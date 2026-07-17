@@ -363,7 +363,7 @@ tr.selected-row { background: var(--processing-bg) !important; }
             </div>
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
                 <button type="button" class="btn-add" style="background:var(--text-muted); flex: 1;" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add" style="flex: 1;" id="submitBtn">Save Entry</button>
+                <button type="submit" class="btn-add" style="flex: 1;" id="submitBtn">Save</button>
             </div>
         </form>
     </div>
@@ -948,13 +948,13 @@ async function proceedSoakingSave() {
         }
     } catch (error) {
         document.getElementById('inlineConfirmPanel').style.display = 'none';
-        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
-        if (btn) { btn.disabled = false; btn.innerHTML = 'Save Entry'; }
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'Save'; }
         Swal.fire('Error', error.message || 'Connection failed.', 'error');
     }
 }
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

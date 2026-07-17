@@ -1,3 +1,5 @@
+@import url('/static/css/premium-kpi.css?v=3');
+
 :root {
   --dashboard-font: "Plus Jakarta Sans", Arial, sans-serif;
   --dashboard-radius: 8px;
@@ -244,3 +246,37 @@ table td,
 @media print {
   body { font-size: 10pt !important; color: #000 !important; background: #fff !important; }
 }
+
+/* SAP Fiori Morning Horizon-inspired dashboard baseline. */
+:root:not([data-theme="dark"]),
+:root[data-theme="light"] {
+  --dashboard-font: "72", "72full", Arial, Helvetica, sans-serif;
+  --dashboard-text: #1d2d3e;
+  --dashboard-muted: #475e75;
+  --dashboard-surface: #ffffff;
+  --dashboard-canvas: #f5f6f7;
+  --dashboard-border: #d5dadd;
+  --corp-primary: var(--ui-accent, #0070f2);
+  --accent-blue: var(--ui-accent, #0070f2);
+  --accent: var(--ui-accent, #0070f2);
+  --bg: #f5f6f7;
+  --card-bg: #ffffff;
+  --header-bg: #eef0f2;
+  --text: #1d2d3e;
+  --text-muted: #475e75;
+  --border: #d5dadd;
+  --table-line: #e5e8ea;
+}
+
+body { font-size: 14px !important; line-height: 1.4; }
+.header-title h1, .header-title h2, .header h1, .header > div > h2, .header-dash h2 { font-size: 20px !important; font-weight: 700 !important; }
+.section-header, .section-head, .panel-header h3, .chart-title, .panel-title, .panel-head, .tally-panel h3 { font-size: 14px !important; font-weight: 700 !important; }
+.label, .strip-label, .card-meta .label, .kpi-title, .mini-card h4, .kpi-card h4, .kpi-top, label { font-size: 12px !important; font-weight: 600 !important; }
+.subtitle, .helper-text, .meta, small { font-size: 12px !important; color: var(--dashboard-muted) !important; }
+.kpi-card h2, .kpi-val, .kpi-card .value, .value, .card-meta .value, .kpi-value { font-size: 16px !important; font-weight: 700 !important; }
+button, .btn-action, .refresh-btn, input, select, textarea, .choices__inner, .choices__item { font-size: 13px !important; }
+table th { font-size: 12px !important; font-weight: 700 !important; background: var(--header-bg) !important; }
+table td, .data-table td, .data-row { font-size: 13px !important; }
+.module-rail .rail-title, .module-rail .rail-link { font-size: 13px !important; font-weight: 600 !important; }
+.module-rail .rail-label { font-size: 11px !important; }
+.card, .kpi-card, .mini-card, .header-panel, .filter-panel, .chart-container, .table-container, .panel, .kpi, .tally-panel, .module-rail { border-radius: 8px !important; box-shadow: 0 1px 2px rgb(34 53 72 / 10%) !important; }

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
@@ -172,6 +172,8 @@ def costing_dashboard(
     cache_key = f"bknr:costing_dashboard:{comp_code}:{selected_fy}:{location or 'ALL'}:{from_date}:{to_date}"
     cached_context = cache_get(cache_key)
     if cached_context is not None:
+        if request.query_params.get("format") == "json":
+            return JSONResponse(cached_context)
         cached_context["request"] = request
         return templates.TemplateResponse(
             request=request,
@@ -582,6 +584,9 @@ def costing_dashboard(
         }
     cache_context = dict(context)
     cache_set(cache_key, cache_context, ttl=60)
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse(context)
 
     return templates.TemplateResponse(
         request=request,

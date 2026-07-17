@@ -517,7 +517,7 @@ export default function ProcessingDashboard({ theme }) {
 
           <div className="kpi-card kpi-gray" onClick={() => handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report')}>
             <div className="kpi-header">
-              <h4>Floor Snapshot (9 AM)</h4>
+              <h4>Floor Balance</h4>
               <div className="kpi-icon"><i className="fa-solid fa-snowflake"></i></div>
             </div>
             <div>
@@ -538,7 +538,7 @@ export default function ProcessingDashboard({ theme }) {
         </div>
         <div style={attendanceViewportStyle}>
           <div style={attendanceStatsContainerStyle}>
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-gray">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Total Staff</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.total ?? 0}</div>
@@ -548,7 +548,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-green">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>On Duty</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.inside ?? 0}</div>
@@ -558,7 +558,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-orange">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>On Break</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.away ?? 0}</div>
@@ -568,7 +568,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-red">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Half Day</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.half ?? 0}</div>
@@ -578,7 +578,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-blue">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Single Shift Workers</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.single ?? 0}</div>
@@ -588,7 +588,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card">
+            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-purple">
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Double Shift Workers</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.double ?? 0}</div>
@@ -611,10 +611,10 @@ export default function ProcessingDashboard({ theme }) {
                     <tr key={dept} style={summaryRowStyle}>
                       <td style={summaryTdStyle}>{dept}</td>
                       <td style={{ ...summaryTdStyle, textAlign: 'right', color: '#10b981' }}>
-                        Present: <strong>{vals.active}</strong>
+                        Present: <strong>{vals.present}</strong>
                       </td>
                       <td style={{ ...summaryTdStyle, textAlign: 'right', color: '#e11d48' }}>
-                        Absent: <strong>{vals.closed}</strong>
+                        Absent: <strong>{vals.absent}</strong>
                       </td>
                     </tr>
                   ))
@@ -638,10 +638,10 @@ export default function ProcessingDashboard({ theme }) {
                     <tr key={desg} style={summaryRowStyle}>
                       <td style={summaryTdStyle}>{desg}</td>
                       <td style={{ ...summaryTdStyle, textAlign: 'right', color: '#10b981' }}>
-                        Present: <strong>{vals.active}</strong>
+                        Present: <strong>{vals.present}</strong>
                       </td>
                       <td style={{ ...summaryTdStyle, textAlign: 'right', color: '#e11d48' }}>
-                        Absent: <strong>{vals.closed}</strong>
+                        Absent: <strong>{vals.absent}</strong>
                       </td>
                     </tr>
                   ))
@@ -979,7 +979,7 @@ const kpiLabelStyle = {
 };
 
 const kpiValueStyle = {
-  fontSize: '19px',
+  fontSize: '16px',
   fontWeight: '800',
   color: 'var(--text-primary)',
   marginTop: '4px',

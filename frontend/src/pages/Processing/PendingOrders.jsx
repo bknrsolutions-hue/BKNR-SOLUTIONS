@@ -305,7 +305,7 @@ export default function PendingOrders() {
 
           <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
             <button type="button" className="btn btn-secondary" onClick={handleAddRow}>+ Add Item Specifications</button>
-            <button type="submit" className="btn btn-primary">Save Sales Order</button>
+            <button type="submit" className="btn btn-primary">Save</button>
             <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </form>

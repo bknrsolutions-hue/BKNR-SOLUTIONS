@@ -805,6 +805,7 @@ def production_page(
                     "po_number": r.po_number,
                     "buyer": r.buyer,
                     "date": safe_isoformat(r.date),
+                    "shipment_date": safe_isoformat(r.shipment_date),
                     "company_name": r.company_name,
                     "production_at": r.production_at,
                     "brand": r.brand,

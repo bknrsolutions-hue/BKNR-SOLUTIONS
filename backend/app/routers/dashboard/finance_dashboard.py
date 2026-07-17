@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
@@ -369,10 +369,7 @@ def finance_dashboard(
         )
         raise
 
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard/finance_dashboard.html",
-        context={
+    context = {
             "comp_code": comp_code,
             "email": email,
             "available_companies": available_companies,
@@ -411,4 +408,12 @@ def finance_dashboard(
             "from_date": from_date,
             "to_date": to_date
         }
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse(context)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/finance_dashboard.html",
+        context=context
     )

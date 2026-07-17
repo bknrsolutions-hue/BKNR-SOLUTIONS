@@ -30,7 +30,6 @@
     </section>
     <section class="panel">
       <h3><i class="fa-solid fa-file-arrow-up"></i> Details & Document Upload</h3>
-      <p class="note">Every requirement now has its own complete entry form, PDF upload and selected-email approval workflow.</p>
       <a class="btn primary" href="/export_documents/requirement-pages/entry">Open Document Entry Forms</a>
     </section>
   </div>
@@ -61,6 +60,6 @@ async function saveRequirements(e){e.preventDefault();const po=document.getEleme
 async function uploadDoc(e){e.preventDefault();const btn=e.submitter,file=document.getElementById('pdf_file').files[0];const confirmation=await Swal.fire({title:'Do you want to import and save this PDF?',icon:'question',showCancelButton:true,confirmButtonText:'Yes'});if(!confirmation.isConfirmed)return;btn.disabled=true;const body=new FormData();body.append('shipment_id',document.getElementById('shipment_id').value);body.append('document_kind',document.getElementById('document_kind').value);body.append('document_no',document.getElementById('document_no').value);body.append('remarks',document.getElementById('remarks').value);body.append('file',file);try{const res=await fetch('/export_documents/supporting_documents/upload',{method:'POST',body});const out=await res.json();if(out.success){await Swal.fire('Uploaded','Document is pending admin approval.','success');location.reload()}else Swal.fire('Error',out.message||'Upload failed','error')}finally{btn.disabled=false}}
 async function decideApproval(fileId,decision){const remarks=prompt(decision==='REJECTED'?'Rejection reason (required):':'Approval remarks (optional):')||'';if(decision==='REJECTED'&&!remarks.trim())return;const res=await fetch(`/export_documents/supporting_documents/files/${fileId}/approval`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision,remarks})});const out=await res.json();if(out.success){await Swal.fire('Updated',out.message,'success');location.reload()}else Swal.fire('Error',out.message||'Approval failed','error')}
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

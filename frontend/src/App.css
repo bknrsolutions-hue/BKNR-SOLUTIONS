@@ -2,8 +2,6 @@
    BKNR CORPORATE ERP STYLESHEET (DUAL MODE COMPATIBLE)
 ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
 :root {
   --bg-app: #060913;
   --surface-panel: rgba(15, 23, 42, 0.95);
@@ -44,6 +42,37 @@
   --input-bg: rgba(255, 255, 255, 0.03);
   --input-border: rgba(255, 255, 255, 0.1);
   --row-hover: rgba(255, 255, 255, 0.02);
+}
+
+/* Standard enterprise form columns: 3 desktop, 2 tablet, 1 mobile. */
+.main-content .attendance-modal-content .attendance-form-grid,
+.main-content .export-workspace-content .attendance-form-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.main-content .attendance-modal-content .attendance-form-grid > .attendance-form-section-title,
+.main-content .attendance-modal-content .attendance-form-grid > .pi-span-4,
+.main-content .attendance-modal-content .attendance-form-grid > .full-width,
+.main-content .attendance-modal-content .attendance-form-grid > .requirement-approver-field,
+.main-content .attendance-modal-content .attendance-form-grid > .requirement-save-row,
+.main-content .export-workspace-content .attendance-form-grid > .attendance-form-section-title,
+.main-content .export-workspace-content .attendance-form-grid > .pi-span-4,
+.main-content .export-workspace-content .attendance-form-grid > .full-width {
+  grid-column: 1 / -1 !important;
+}
+
+@media (max-width: 900px) {
+  .main-content .attendance-modal-content .attendance-form-grid,
+  .main-content .export-workspace-content .attendance-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .main-content .attendance-modal-content .attendance-form-grid,
+  .main-content .export-workspace-content .attendance-form-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
 }
 
 [data-theme="light"] {
@@ -1212,15 +1241,80 @@ body {
     border: 1px solid var(--border-light);
     color: var(--text-secondary); 
     border-radius: var(--radius-element, 8px);
-    width: 36px;
-    height: 36px;
-    font-size: 14px;
+    width: 48px;
+    height: 42px;
+    gap: 2px;
+    flex-direction: column;
+    font-size: 13px;
     cursor: pointer; 
     display: flex;
     align-items: center;
     justify-content: center;
     transition: all 0.2s ease;
     position: relative;
+}
+
+.icon-action-label {
+    display: block;
+    max-width: 44px;
+    overflow: hidden;
+    color: var(--text-tertiary);
+    font-size: 7.5px;
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: .15px;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.icon-action-btn:hover .icon-action-label {
+    color: var(--text-primary);
+}
+
+.icon-action-btn.action-quick { --action-color: #2563eb; }
+.icon-action-btn.action-support { --action-color: #8b5cf6; }
+.icon-action-btn.action-alerts { --action-color: #f59e0b; }
+.icon-action-btn.action-theme { --action-color: #06b6d4; }
+.icon-action-btn.action-colors { --action-color: #ec4899; }
+
+.icon-action-btn[class*="action-"] > i {
+    display: grid;
+    width: 18px;
+    height: 18px;
+    flex: 0 0 18px;
+    place-items: center;
+    color: var(--action-color);
+    font-size: 14px;
+    line-height: 18px;
+}
+
+.icon-action-btn.action-support > i.fa-support-agent {
+    width: 18px;
+    height: 18px;
+    flex-basis: 18px;
+    border: 1px solid color-mix(in srgb, var(--action-color) 70%, #ffffff);
+    border-radius: 50%;
+    background-image: url('/support-agent.png');
+    background-position: center 30%;
+    background-size: 112%;
+    box-shadow: 0 1px 4px color-mix(in srgb, var(--action-color) 35%, transparent);
+    vertical-align: initial;
+}
+
+.icon-action-btn[class*="action-"] .icon-action-label {
+    color: color-mix(in srgb, var(--action-color) 78%, var(--text-secondary));
+}
+
+.icon-action-btn[class*="action-"]:hover {
+    border-color: color-mix(in srgb, var(--action-color) 55%, var(--border-light));
+    background: color-mix(in srgb, var(--action-color) 12%, transparent);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--action-color) 18%, transparent);
+}
+
+.icon-action-btn[class*="action-"]:hover > i,
+.icon-action-btn[class*="action-"]:hover .icon-action-label {
+    color: var(--action-color);
 }
 
 [data-theme="light"] .icon-action-btn {
@@ -1241,6 +1335,19 @@ body {
     background: #ef4444;
     border-radius: 50%;
     border: 2px solid var(--glass-bg, #0f172a);
+}
+
+@media (max-width: 1024px) {
+    .icon-action-btn {
+        width: 36px;
+        height: 36px;
+        flex-direction: row;
+        font-size: 14px;
+    }
+
+    .icon-action-label {
+        display: none;
+    }
 }
 
 /* 🌟 CORPORATE USER PROFILE 🌟 */
@@ -1504,7 +1611,7 @@ body {
   flex-shrink: 0;
 }
 .kpi-card .value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.5px;
@@ -1871,6 +1978,14 @@ body {
   gap: 5px !important;
 }
 
+/* Keep application page headers compact: titles and actions only. */
+.attendance-page-header > div:first-child > p,
+.enterprise-head > div:first-child > p,
+.admin-page-head > div:first-child > p,
+.report-page-header > div:first-child > div > p {
+  display: none !important;
+}
+
 .main-content > .attendance-container .attendance-btn {
   height: 28px !important;
   min-height: 28px !important;
@@ -2086,4 +2201,328 @@ body {
   border-color: #fecaca !important;
   background: #fef2f2 !important;
   color: #991b1b !important;
+}
+
+@media not all {
+/* =========================================================
+   PREMIUM ENTERPRISE KPI SYSTEM
+   Shared by dashboards, reports, finance and operational cards.
+========================================================= */
+:root {
+  --erp-kpi-blue: #2563eb;
+  --erp-kpi-green: #059669;
+  --erp-kpi-red: #dc2626;
+  --erp-kpi-amber: #d97706;
+  --erp-kpi-purple: #7c3aed;
+  --erp-kpi-neutral: #64748b;
+  --erp-kpi-surface: #ffffff;
+  --erp-kpi-border: #e2e8f0;
+  --erp-kpi-label: #64748b;
+  --erp-kpi-value: #0f172a;
+  --erp-kpi-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+[data-theme="dark"] {
+  --erp-kpi-surface: #172033;
+  --erp-kpi-border: #334155;
+  --erp-kpi-label: #94a3b8;
+  --erp-kpi-value: #f8fafc;
+  --erp-kpi-shadow: 0 1px 2px rgba(0, 0, 0, .22), 0 10px 28px rgba(0, 0, 0, .2);
+}
+
+.main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"]) {
+  --erp-kpi-accent: var(--ui-accent, var(--erp-kpi-blue));
+  appearance: none;
+  min-width: 0 !important;
+  min-height: 92px !important;
+  padding: 12px !important;
+  border: 1px solid var(--erp-kpi-border) !important;
+  border-radius: 14px !important;
+  background: var(--erp-kpi-surface) !important;
+  color: var(--erp-kpi-value) !important;
+  box-shadow: var(--erp-kpi-shadow) !important;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+.main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"])::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--erp-kpi-accent);
+  opacity: .82;
+}
+
+.main-content :is(.kpi-card, .erp-report-kpi-card.is-clickable, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .attendance-card[role="button"]):hover {
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in srgb, var(--erp-kpi-accent) 45%, var(--erp-kpi-border)) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 14px 30px rgba(15, 23, 42, .1) !important;
+}
+
+.main-content .kpi-blue,
+.main-content .tally-kpi-blue { --erp-kpi-accent: var(--erp-kpi-blue); }
+.main-content .kpi-green,
+.main-content .tally-kpi-green { --erp-kpi-accent: var(--erp-kpi-green); }
+.main-content .kpi-red,
+.main-content .tally-kpi-red { --erp-kpi-accent: var(--erp-kpi-red); }
+.main-content :is(.kpi-yellow, .kpi-orange, .tally-kpi-orange, .supporting-summary-card.pending) { --erp-kpi-accent: var(--erp-kpi-amber); }
+.main-content .kpi-purple { --erp-kpi-accent: var(--erp-kpi-purple); }
+.main-content :is(.kpi-cyan, .kpi-teal, .tally-kpi-cyan) { --erp-kpi-accent: #0891b2; }
+.main-content .kpi-pink { --erp-kpi-accent: #a855f7; }
+.main-content .kpi-gray { --erp-kpi-accent: var(--erp-kpi-neutral); }
+
+.main-content .kpi-header,
+.erp-kpi-heading {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  width: 100%;
+  margin: 0 0 8px !important;
+}
+
+.main-content :is(.kpi-title, .kpi-card h4, .erp-kpi-label, .tally-kpi-label, .supporting-summary-card > span, .admin-kpi > span) {
+  margin: 0 !important;
+  color: var(--erp-kpi-label) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: .055em !important;
+  text-transform: uppercase !important;
+}
+
+.main-content .kpi-icon,
+.erp-kpi-icon,
+.main-content .tally-kpi-icon {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  color: var(--erp-kpi-accent) !important;
+  background: color-mix(in srgb, var(--erp-kpi-accent) 10%, transparent) !important;
+  font-size: 13px !important;
+}
+
+.main-content :is(.kpi-value, .kpi-card .value, .erp-kpi-value, .tally-kpi-value, .supporting-summary-card strong, .admin-kpi strong) {
+  margin: 0 !important;
+  color: var(--erp-kpi-value) !important;
+  font-size: 16px !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.035em !important;
+  font-variant-numeric: tabular-nums;
+  white-space: normal !important;
+}
+
+.main-content .kpi-card .amt-sub {
+  margin-top: 8px !important;
+  padding: 0 !important;
+  background: transparent !important;
+  color: var(--erp-kpi-label) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.erp-report-kpi-card { display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: space-between !important; gap: 7px !important; }
+.erp-report-kpi-card.is-stacked { flex-direction: column !important; align-items: flex-start !important; justify-content: center !important; gap: 3px !important; }
+.erp-kpi-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.erp-kpi-sparkline { width: 72px; height: 30px; flex: 0 0 72px; overflow: visible; }
+.erp-kpi-trend { display: flex; align-items: center; gap: 4px; margin-top: 10px; color: var(--erp-kpi-label); font-size: 10px; font-weight: 700; }
+.erp-kpi-trend.is-positive { color: var(--erp-kpi-green); }
+.erp-kpi-trend.is-negative { color: var(--erp-kpi-red); }
+.erp-kpi-trend span { color: var(--erp-kpi-label); font-weight: 600; }
+.erp-kpi-submetrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--erp-kpi-border); }
+.erp-kpi-submetrics > span { display: flex; flex-direction: column; gap: 2px; }
+.erp-kpi-submetrics small { color: var(--erp-kpi-label); font-size: 9px; font-weight: 700; }
+.erp-kpi-submetrics strong { color: var(--erp-kpi-value); font-size: 11px; font-weight: 800; }
+.erp-kpi-details { margin-top: 12px; color: var(--erp-kpi-accent); font-size: 10px; font-weight: 800; }
+
+.main-content .tally-kpi-card { display: grid !important; grid-template-columns: 28px minmax(0, 1fr) auto !important; align-items: center !important; gap: 10px !important; }
+.main-content .tally-kpi-content { gap: 7px; }
+.main-content .tally-kpi-side { color: var(--erp-kpi-accent); background: color-mix(in srgb, var(--erp-kpi-accent) 10%, transparent); }
+
+@media (max-width: 767px) {
+  .main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"]) {
+    min-height: 82px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+  }
+  .main-content .kpi-icon,
+  .erp-kpi-icon,
+  .main-content .tally-kpi-icon { width: 26px !important; height: 26px !important; flex-basis: 26px; }
+  .main-content :is(.kpi-value, .kpi-card .value, .erp-kpi-value, .tally-kpi-value, .supporting-summary-card strong, .admin-kpi strong) { font-size: 16px !important; }
+  .erp-kpi-sparkline,
+  .erp-kpi-submetrics { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"]) { transition: none !important; }
+}
+}
+.fa-solid.fa-support-agent {
+  position: relative;
+  display: inline-block;
+  width: 2.15em;
+  height: 2.15em;
+  line-height: 1;
+  vertical-align: -0.58em;
+  border: 1px solid color-mix(in srgb, #06b6d4 55%, var(--border-light));
+  border-radius: 50%;
+  background: url('/support-agent.png') center 34% / cover no-repeat;
+  box-shadow: 0 1px 4px rgb(6 182 212 / 30%);
+}
+
+.fa-solid.fa-support-agent::before,
+.fa-solid.fa-support-agent::after {
+  content: none;
+}
+
+/* Mobile header: company identity on top, controls in one aligned row below. */
+@media (max-width: 767px) {
+  :root {
+    --header-h: 94px;
+  }
+
+  .app-container {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .app-header {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: 32px 44px;
+    width: 100%;
+    height: var(--header-h);
+    min-height: var(--header-h);
+    gap: 4px 6px;
+    padding: 6px 8px;
+    border-radius: 12px;
+  }
+
+  .header-left-meta {
+    display: contents;
+  }
+
+  .header-brand-title-box {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    min-width: 0;
+    margin: 0;
+    padding: 0 8px 4px;
+    align-items: center;
+    border-left: 0;
+    border-bottom: 1px solid var(--border-light);
+    text-align: center;
+  }
+
+  .header-premium-title {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    font-size: 12px;
+    line-height: 14px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header-premium-subtitle {
+    font-size: 7px;
+    line-height: 9px;
+    letter-spacing: .7px;
+  }
+
+  .hamburger-trigger-btn {
+    display: none;
+  }
+
+  .mobile-top-menu-btn {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: center;
+    height: 32px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
+  .header-home-btn {
+    display: flex;
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+  }
+
+  .header-right-actions {
+    grid-column: 3;
+    grid-row: 2;
+    min-width: 0;
+    justify-content: flex-end;
+    gap: 3px;
+  }
+
+  .header-right-actions .icon-action-btn {
+    width: 30px;
+    height: 32px;
+    flex: 0 0 30px;
+    padding: 0;
+    border-radius: 7px;
+  }
+
+  .header-right-actions .icon-action-btn[class*="action-"] > i {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+    font-size: 12px;
+    line-height: 16px;
+  }
+
+  .header-right-actions .icon-action-btn.action-support > i.fa-support-agent {
+    width: 16px;
+    height: 16px;
+    flex-basis: 16px;
+  }
+
+  .header-right-actions .corp-profile-btn {
+    width: 30px;
+    height: 32px;
+    flex: 0 0 30px;
+    gap: 0;
+    padding: 0;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .header-right-actions .corp-avatar {
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    font-size: 11px;
+  }
+
+  .header-right-actions .corp-info,
+  .header-right-actions .corp-profile-btn > .fa-chevron-down {
+    display: none !important;
+  }
+
+  .notification-dot {
+    top: -3px;
+    right: -3px;
+    width: 9px;
+    height: 9px;
+  }
+
+  .profile-dropdown-console,
+  .dropdown-console-custom {
+    top: calc(var(--header-h) + 10px);
+  }
 }

@@ -2,7 +2,42 @@ import React, { useState, useEffect } from 'react';
 import { 
   Users, RefreshCw, Printer, FileText, CheckCircle, AlertCircle, X, ChevronRight 
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
+import './PayrollPayslip.css';
+
+const ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+const TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+function belowHundred(value) {
+  const number = Math.floor(Number(value || 0));
+  if (number < 20) return ONES[number];
+  return `${TENS[Math.floor(number / 10)]}${number % 10 ? ` ${ONES[number % 10]}` : ''}`;
+}
+
+function belowThousand(value) {
+  const number = Math.floor(Number(value || 0));
+  const hundreds = Math.floor(number / 100);
+  const remainder = number % 100;
+  return `${hundreds ? `${ONES[hundreds]} Hundred` : ''}${hundreds && remainder ? ' ' : ''}${belowHundred(remainder)}`.trim();
+}
+
+function indianAmountInWords(value) {
+  const amount = Math.max(0, Number(value || 0));
+  let whole = Math.floor(amount);
+  const paise = Math.round((amount - whole) * 100);
+  if (!whole && !paise) return 'Zero Rupees Only';
+  const parts = [];
+  const crore = Math.floor(whole / 10000000); whole %= 10000000;
+  const lakh = Math.floor(whole / 100000); whole %= 100000;
+  const thousand = Math.floor(whole / 1000); whole %= 1000;
+  if (crore) parts.push(`${belowThousand(crore)} Crore`);
+  if (lakh) parts.push(`${belowHundred(lakh)} Lakh`);
+  if (thousand) parts.push(`${belowHundred(thousand)} Thousand`);
+  if (whole) parts.push(belowThousand(whole));
+  const rupees = `${parts.join(' ') || 'Zero'} Rupees`;
+  return `${rupees}${paise ? ` and ${belowHundred(paise)} Paise` : ''} Only`;
+}
 
 export default function MonthlySalarySheet({ theme }) {
   const [month, setMonth] = useState('');
@@ -16,6 +51,17 @@ export default function MonthlySalarySheet({ theme }) {
   const [monthName, setMonthName] = useState('');
   const [employees, setEmployees] = useState([]);
   const [selectedRow, setSelectedRow] = useState(null);
+  const [reportMeta, setReportMeta] = useState({
+    company_name: '',
+    company_address: '',
+    company_code: '',
+    mpeda_registration_code: '',
+    adjustment_start: '',
+    adjustment_deadline: '',
+    adjustment_open: false,
+    adjustment_closed: false,
+    adjustment_window_status: '',
+  });
   
   // Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -42,8 +88,8 @@ export default function MonthlySalarySheet({ theme }) {
   const loadFilters = async () => {
     try {
       const [locRes, deptRes] = await Promise.all([
-        fetch('/api/salary/get-locations'),
-        fetch('/api/salary/get-departments')
+        sessionFetch('/api/salary/get-locations'),
+        sessionFetch('/api/salary/get-departments')
       ]);
       const locs = await locRes.json();
       const depts = await deptRes.json();
@@ -57,11 +103,22 @@ export default function MonthlySalarySheet({ theme }) {
   const generateSheet = async (targetMonth = month, targetLoc = selectedLocation, targetDept = selectedDept) => {
     if (!targetMonth) return;
     try {
-      const res = await fetch(`/api/salary/get-report?month=${targetMonth}&dept=${targetDept}&location=${targetLoc}`);
+      const res = await sessionFetch(`/api/salary/get-report?month=${targetMonth}&dept=${targetDept}&location=${targetLoc}`);
       const data = await res.json();
       setDaysInMonth(data.days_in_month || 30);
       setMonthName(data.month_name || '');
       setEmployees(data.employees || []);
+      setReportMeta({
+        company_name: data.company_name || '',
+        company_address: data.company_address || '',
+        company_code: data.company_code || '',
+        mpeda_registration_code: data.mpeda_registration_code || '',
+        adjustment_start: data.adjustment_start || '',
+        adjustment_deadline: data.adjustment_deadline || '',
+        adjustment_open: Boolean(data.adjustment_open),
+        adjustment_closed: Boolean(data.adjustment_closed),
+        adjustment_window_status: data.adjustment_window_status || '',
+      });
       setSelectedRow(null);
     } catch (e) {
       showNotification('❌ Failed to calculate payroll summary!', 'danger');
@@ -113,7 +170,7 @@ export default function MonthlySalarySheet({ theme }) {
     if (day) url += `&day=${day}`;
 
     try {
-      const res = await fetch(url);
+      const res = await sessionFetch(url);
       const data = await res.json();
       setAttendanceLogs(data || []);
       setIsModalOpen(true);
@@ -123,24 +180,53 @@ export default function MonthlySalarySheet({ theme }) {
   };
 
   const saveAdjustment = async (empId, val, prevVal, targetInput) => {
-    const decision = window.confirm(`Confirm Adjustment\nSave salary adjustment ${val} days for this employee?`);
+    if (reportMeta.adjustment_closed) {
+      targetInput.value = Number(prevVal || 0).toFixed(1);
+      const message = reportMeta.adjustment_window_status === 'NOT_OPEN'
+        ? `Adjustment window opens on ${reportMeta.adjustment_start}.`
+        : `Adjustment window closed on ${reportMeta.adjustment_deadline || 'the 10th'}.`;
+      showNotification(message, 'danger');
+      return;
+    }
+    const parsedValue = Number.parseFloat(val);
+    const previousValue = Number.parseFloat(prevVal || 0);
+    if (!Number.isFinite(parsedValue)) {
+      targetInput.value = previousValue.toFixed(1);
+      showNotification('Enter a valid adjustment value.', 'danger');
+      return;
+    }
+    if (parsedValue === previousValue) return;
+
+    const reason = window.prompt('Adjustment reason (compulsory):', '');
+    if (!reason || !reason.trim()) {
+      targetInput.value = previousValue.toFixed(1);
+      showNotification('Adjustment reason is compulsory.', 'danger');
+      return;
+    }
+
+    const decision = window.confirm(`Confirm & Lock Adjustment\nSave ${parsedValue} days for this employee?\n\nReason: ${reason.trim()}\n\nThis monthly adjustment cannot be edited again.`);
     if (!decision) {
-      targetInput.value = Number(prevVal).toFixed(1);
+      targetInput.value = previousValue.toFixed(1);
       return;
     }
 
     try {
-      const res = await fetch('/api/salary/save-adjustment', {
+      const res = await sessionFetch('/api/salary/save-adjustment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_id: empId, month: month, adjustment: parseFloat(val) })
+        body: JSON.stringify({
+          employee_id: empId,
+          month,
+          adjustment: parsedValue,
+          reason: reason.trim(),
+        })
       });
       const out = await res.json();
       if (!res.ok || out.status !== 'success') {
         throw new Error(out.message || 'Adjustment Save Failed!');
       }
       
-      showNotification('✅ Salary adjustment saved successfully.', 'success');
+      showNotification('✅ Monthly adjustment saved and locked.', 'success');
       generateSheet();
     } catch (e) {
       targetInput.value = Number(prevVal).toFixed(1);
@@ -230,7 +316,7 @@ export default function MonthlySalarySheet({ theme }) {
       {/* CORPORATE LEDGER TABLE */}
       <div className="attendance-table-container">
         <div className="attendance-table-wrapper">
-          <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 1500}px` }}>
+          <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 1700}px` }}>
             <thead>
               <tr>
                 <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
@@ -239,7 +325,7 @@ export default function MonthlySalarySheet({ theme }) {
                 <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Attendance</th>
                 <th colSpan="8" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty Summary</th>
                 <th colSpan="2" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Overtime</th>
-                <th colSpan="4" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Financials (₹)</th>
+                <th colSpan="5" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Financials (₹)</th>
                 <th colSpan="6" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Deductions (₹)</th>
                 <th rowSpan="2" className="payout-col" style={{ borderBottom: '2px solid var(--att-border)', minWidth: '120px' }}>Net Payout</th>
               </tr>
@@ -247,7 +333,7 @@ export default function MonthlySalarySheet({ theme }) {
                 {dayHeaders}
                 <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>2.5P</th><th>3P</th><th>Duty Credit</th><th>Worked Days</th>
                 <th>OT Hrs</th><th>OT Pay</th>
-                <th>Gross</th><th>Bonus</th><th>Adj</th><th>Earned</th>
+                <th>Gross</th><th>Bonus</th><th>Adj</th><th>Adjustment Reason</th><th>Earned</th>
                 <th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th>
               </tr>
             </thead>
@@ -308,20 +394,44 @@ export default function MonthlySalarySheet({ theme }) {
                   <td>₹{fmt(emp.base_sal)}</td>
                   <td style={{ color: 'var(--att-success)' }}>+{emp.extra_holidays}</td>
                   <td>
-                    <input 
-                      aria-label={`Adjustment for ${emp.name}`}
-                      className="adjust-input" 
-                      type="number" 
-                      step="0.5" 
-                      defaultValue={parseFloat(emp.saved_adjustment || 0).toFixed(1)} 
-                      onBlur={(e) => saveAdjustment(emp.id, e.target.value, emp.saved_adjustment || 0, e.target)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          saveAdjustment(emp.id, e.target.value, emp.saved_adjustment || 0, e.target);
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()} 
-                    />
+                    <div style={{ minWidth: '110px' }}>
+                      <input
+                        key={`${month}-${emp.id}-${emp.saved_adjustment || 0}-${emp.adjustment_locked ? 'locked' : 'open'}`}
+                        aria-label={`Adjustment for ${emp.name}`}
+                        className="adjust-input"
+                        type="number"
+                        step="0.5"
+                        defaultValue={parseFloat(emp.saved_adjustment || 0).toFixed(1)}
+                        disabled={Boolean(emp.adjustment_locked || reportMeta.adjustment_closed)}
+                        title={emp.adjustment_locked
+                          ? `Locked: ${emp.adjustment_reason || 'Monthly adjustment saved'}`
+                          : reportMeta.adjustment_closed
+                            ? reportMeta.adjustment_window_status === 'NOT_OPEN'
+                              ? `Adjustment window opens on ${reportMeta.adjustment_start}`
+                              : `Adjustment window closed on ${reportMeta.adjustment_deadline}`
+                            : `Open ${reportMeta.adjustment_start} to ${reportMeta.adjustment_deadline}`}
+                        onBlur={(e) => saveAdjustment(emp.id, e.target.value, emp.saved_adjustment || 0, e.target)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            e.currentTarget.blur();
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                  </td>
+                  <td
+                    title={emp.adjustment_reason || ''}
+                    style={{ minWidth: '170px', maxWidth: '220px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--att-muted)' }}
+                  >
+                    {emp.adjustment_locked
+                      ? `🔒 ${emp.adjustment_reason || 'Locked'}`
+                      : reportMeta.adjustment_closed
+                        ? reportMeta.adjustment_window_status === 'NOT_OPEN'
+                          ? `⏳ Opens ${reportMeta.adjustment_start}`
+                          : `🔒 Closed ${reportMeta.adjustment_deadline}`
+                        : '—'}
                   </td>
                   <td style={{ fontWeight: '800' }}>₹{fmt(emp.earned_gross)}</td>
 
@@ -339,7 +449,7 @@ export default function MonthlySalarySheet({ theme }) {
               ))}
               {!employees.length && (
                 <tr>
-                  <td colSpan={daysInMonth + 19} className="attendance-empty">
+                  <td colSpan={daysInMonth + 23} className="attendance-empty">
                     No active employees registered under this criteria.
                   </td>
                 </tr>
@@ -394,7 +504,7 @@ export default function MonthlySalarySheet({ theme }) {
                                       fontSize: '9px'
                                     }}
                                   >
-                                    {m.type} {m.time}
+                                    {m.type} {m.display_date || m.date || d.date} {m.time}
                                   </span>
                                 </React.Fragment>
                               ))}
@@ -428,80 +538,55 @@ export default function MonthlySalarySheet({ theme }) {
 
       {/* payslip print section */}
       {selectedRow && (
-        <div id="printSection">
-          <div style={{ padding: '20px', fontFamily: 'sans-serif', background: '#fff', color: '#000' }}>
-            <h2 style={{ color: '#0f172a', borderBottom: '2px solid #0f172a', paddingBottom: '8px', textAlign: 'center', fontWeight: '800' }}>
-              PAYROLL PAYSLIP MASTER
-            </h2>
-            <br />
-            <table style={{ width: '100%', marginBottom: '20px', fontSize: '12px' }}>
+        <div id="printSection" className="pay-slip-print">
+          <div className="pay-slip-sheet">
+            <header className="pay-slip-company">
+              <h1>{reportMeta.company_name || 'ERP COMPANY'}</h1>
+              {reportMeta.company_address ? <p>{reportMeta.company_address}</p> : null}
+              <h2>PAY SLIP FOR THE MONTH OF {monthName.toUpperCase()} - {month.split('-')[0]}</h2>
+            </header>
+
+            <table className="pay-slip-details">
               <tbody>
-                <tr>
-                  <td style={{ textAlign: 'left', fontWeight: '800', width: '150px', padding: '4px 0' }}>Employee Name:</td>
-                  <td style={{ textAlign: 'left', padding: '4px 0' }}>{selectedRow.name}</td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>Employee ID:</td>
-                  <td style={{ textAlign: 'left', padding: '4px 0' }}>{selectedRow.id}</td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>Department:</td>
-                  <td style={{ textAlign: 'left', padding: '4px 0' }}>{selectedRow.dept}</td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>Duty Credit:</td>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>{parseFloat(selectedRow.actual_duties || 0).toFixed(1)} Days</td>
-                </tr>
-                <tr>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>Worked Days:</td>
-                  <td style={{ textAlign: 'left', fontWeight: '800', padding: '4px 0' }}>{selectedRow.worked_days} Days</td>
-                </tr>
+                <tr><th>Employee Name</th><td>{selectedRow.name}</td><th>Pay Mode</th><td>{selectedRow.pay_mode || 'BANK'}</td></tr>
+                <tr><th>Employee Code</th><td>{selectedRow.id}</td><th>Bank Name</th><td>{selectedRow.bank_name || '—'}</td></tr>
+                <tr><th>Designation</th><td>{selectedRow.designation || '—'}</td><th>Bank A/C No</th><td>{selectedRow.account_number || '—'}</td></tr>
+                <tr><th>Department</th><td>{selectedRow.dept}</td><th>UAN / PF No</th><td>{selectedRow.uan_number || '—'}</td></tr>
+                <tr><th>Location</th><td>{selectedRow.location || '—'}</td><th>MPEDA Registration Code</th><td>{reportMeta.mpeda_registration_code || 'NOT REGISTERED'}</td></tr>
+                <tr><th>Date of Joining</th><td>{selectedRow.joining_date ? new Intl.DateTimeFormat('en-GB').format(new Date(`${selectedRow.joining_date}T00:00:00`)) : '—'}</td><th>Employee Type</th><td>{selectedRow.employee_type || 'REGULAR'}</td></tr>
               </tbody>
             </table>
-            <table style={{ width: '100%', border: '1px solid #d6dde7', borderCollapse: 'collapse', fontSize: '12px' }}>
-              <thead>
-                <tr style={{ background: '#f1f5f9' }}>
-                  <th style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>Component Description</th>
-                  <th style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right' }}>Amount (₹)</th>
-                </tr>
-              </thead>
+
+            <table className="pay-slip-attendance">
+              <thead><tr><th>Worked Days</th><th>LWP / Absent</th><th>Leave</th><th>EL</th><th>SL</th><th>CL</th><th>Duty Credit</th><th>OT Hours</th></tr></thead>
+              <tbody><tr><td>{selectedRow.worked_days}</td><td>{Math.max(0, daysInMonth - Number(selectedRow.worked_days || 0))}</td><td>0</td><td>0</td><td>0</td><td>0</td><td>{Number(selectedRow.actual_duties || 0).toFixed(1)}</td><td>{fmt(selectedRow.ot_hours)}</td></tr></tbody>
+            </table>
+
+            <table className="pay-slip-money">
+              <thead><tr><th colSpan="2">EARNINGS</th><th colSpan="2">DEDUCTIONS</th></tr></thead>
               <tbody>
-                <tr>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>Gross Base Salary (Monthly)</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right' }}>₹{fmt(selectedRow.base_sal)}</td>
-                </tr>
-                {selectedRow.ot_hours > 0 && (
-                  <tr>
-                    <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>
-                      Overtime (OT) Pay <span style={{ fontSize: '10px', color: '#64748b' }}>({selectedRow.ot_hours} Hrs)</span>
-                    </td>
-                    <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right', fontWeight: '700', color: '#ea580c' }}>
-                      +₹{fmt(selectedRow.ot_earnings)}
-                    </td>
-                  </tr>
-                )}
-                <tr>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>Earned Gross Total</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right', fontWeight: '800' }}>₹{fmt(selectedRow.earned_gross)}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left', color: '#dc2626' }}>Salary Advance</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right', color: '#dc2626' }}>-₹{fmt(selectedRow.salary_advance)}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>Provident Fund (PF)</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right' }}>-₹{fmt(selectedRow.pf)}</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left' }}>Employee State Insurance (ESI)</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right' }}>-₹{fmt(selectedRow.esi)}</td>
-                </tr>
-                <tr style={{ background: '#f0fdf4', fontSize: '14px', fontWeight: '800' }}>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'left', color: '#16a34a' }}>Net Disbursed Payout</td>
-                  <td style={{ padding: '10px', border: '1px solid #d6dde7', textAlign: 'right', color: '#16a34a' }}>₹{fmt(selectedRow.net_pay)}</td>
-                </tr>
+                <tr><th>Basic Salary</th><td>₹ {fmt(selectedRow.basic_earned)}</td><th>Employee PF</th><td>₹ {fmt(selectedRow.pf)}</td></tr>
+                <tr><th>HRA</th><td>₹ {fmt(selectedRow.hra_earned)}</td><th>ESI</th><td>₹ {fmt(selectedRow.esi)}</td></tr>
+                <tr><th>Conveyance Allowance</th><td>₹ {fmt(selectedRow.conveyance_earned)}</td><th>Professional Tax</th><td>₹ {fmt(selectedRow.pt)}</td></tr>
+                <tr><th>Other Allowance</th><td>₹ {fmt(selectedRow.other_earned)}</td><th>Salary Advance</th><td>₹ {fmt(selectedRow.salary_advance)}</td></tr>
+                <tr><th>Overtime Pay ({fmt(selectedRow.ot_hours)} Hrs)</th><td>₹ {fmt(selectedRow.ot_earnings)}</td><th>LWF</th><td>₹ {fmt(selectedRow.lwf)}</td></tr>
+                <tr><th>Holiday / Adjustment Days</th><td>{Number(selectedRow.extra_holidays || 0) + Number(selectedRow.saved_adjustment || 0)}</td><th>TDS</th><td>₹ {fmt(selectedRow.tds)}</td></tr>
+                {selectedRow.adjustment_locked && <tr><th>Adjustment Reason</th><td colSpan="3">{selectedRow.adjustment_reason || 'Monthly adjustment locked'}</td></tr>}
+                <tr className="pay-slip-total"><th>Total Earnings</th><td>₹ {fmt(selectedRow.earned_gross)}</td><th>Total Deductions</th><td>₹ {fmt(Number(selectedRow.pf || 0) + Number(selectedRow.esi || 0) + Number(selectedRow.pt || 0) + Number(selectedRow.lwf || 0) + Number(selectedRow.tds || 0) + Number(selectedRow.salary_advance || 0))}</td></tr>
               </tbody>
             </table>
+
+            <table className="pay-slip-attendance">
+              <thead><tr><th>Employer EPF</th><th>Employer EPS</th><th>Employer PF Total</th><th>Employer EDLI</th><th>Employer ESI</th></tr></thead>
+              <tbody><tr><td>₹ {fmt(selectedRow.employer_epf)}</td><td>₹ {fmt(selectedRow.employer_eps)}</td><td>₹ {fmt(selectedRow.employer_pf)}</td><td>₹ {fmt(selectedRow.employer_edli)}</td><td>₹ {fmt(selectedRow.employer_esi)}</td></tr></tbody>
+            </table>
+
+            <div className="pay-slip-net">
+              <span>Net Pay</span><strong>₹ {fmt(selectedRow.net_pay)}</strong>
+            </div>
+            <div className="pay-slip-words"><strong>In Words:</strong> {indianAmountInWords(selectedRow.net_pay)}</div>
+            <div className="pay-slip-signatures"><span>Employee Signature</span><span>Prepared By</span><span>Authorised Signatory</span></div>
+            <p className="pay-slip-note">This is a computer-generated payslip.</p>
           </div>
         </div>
       )}

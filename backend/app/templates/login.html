@@ -2659,6 +2659,38 @@
                 animation-duration: 14s;
             }
 
+            .login-page .site-nav {
+                align-items: center;
+                flex-direction: row;
+                padding: 10px 14px;
+            }
+
+            .login-page .brand-wordmark {
+                width: min(220px, 68vw) !important;
+                height: auto !important;
+            }
+
+            .login-page .nav-actions-container {
+                gap: 8px !important;
+                margin-left: auto !important;
+            }
+
+            .login-page .nav-action { display: none; }
+            .login-page .login-showcase { display: none; }
+
+            .login-page .login-section {
+                grid-template-columns: minmax(0, 1fr);
+                align-items: center;
+                min-height: calc(100vh - 82px);
+                padding: 16px 14px 28px;
+            }
+
+            .login-page .login-section .auth-panel {
+                width: 100%;
+                max-width: 520px;
+                justify-self: center;
+            }
+
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -2682,7 +2714,7 @@
 <body class="{% if show_login|default(false) %}login-page{% else %}website-page{% endif %}">
     <div class="site-shell">
         <nav class="site-nav">
-            <a class="brand" href="/" aria-label="SVBK IT SOLUTIONS home">
+            <a class="brand" href="/auth/landing" aria-label="SVBK IT SOLUTIONS home">
                 <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.png" alt="SVBK IT Solutions"
                     style="width:340px;height:72px">
             </a>
@@ -2705,7 +2737,7 @@
                 {% if not show_login|default(false) %}
                 <a class="nav-action" href="/auth/login" style="margin-left: 0;">Login / Register</a>
                 {% else %}
-                <a class="nav-action" href="/" style="margin-left: 0;">Back to Website</a>
+                <a class="nav-action" href="/auth/landing" style="margin-left: 0;">Back to Website</a>
                 {% endif %}
             </div>
         </nav>
@@ -2800,6 +2832,9 @@
                         <h2>Company Registration</h2>
                         <div class="form-group"><label>Company Name</label><input id="company_name" type="text"
                                 required></div>
+                        <div class="form-group"><label>MPEDA Registration Code</label><input
+                                id="mpeda_registration_code" type="text" minlength="4" maxlength="4"
+                                placeholder="4-character code" required></div>
                         <div class="form-group"><label>Your Name</label><input id="user_name" type="text" required>
                         </div>
                         <div class="form-group"><label>Designation</label><input id="designation" type="text" required>
@@ -2841,7 +2876,7 @@
                     <div id="loginBox" class="card">
                         <h2>Login</h2>
                         <form id="loginForm" onsubmit="doLogin(event)">
-                            <div class="form-group"><label>Company ID</label><input id="login_company_id" type="text"
+                            <div class="form-group"><label>ERP Tenant Code</label><input id="login_company_id" type="text"
                                     autocomplete="organization" required></div>
                             <div class="form-group"><label>Email</label><input id="login_email" type="email"
                                     autocomplete="email" required></div>
@@ -3242,8 +3277,16 @@
             const emailInput = document.getElementById("email").value.trim();
             const mobileInput = document.getElementById("mobile").value.trim();
 
-            if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim()) {
+            const mpedaCode = document.getElementById("mpeda_registration_code").value
+                .trim().toUpperCase().replace(/\s+/g, "");
+
+            if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim() || !mpedaCode) {
                 regErr.innerHTML = "Please fill out all required fields.";
+                regErr.style.display = "block";
+                return;
+            }
+            if (!/^[A-Z0-9]{4}$/.test(mpedaCode)) {
+                regErr.innerHTML = "MPEDA Registration Code must contain exactly 4 letters or numbers.";
                 regErr.style.display = "block";
                 return;
             }
@@ -3258,6 +3301,7 @@
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         company_name: document.getElementById("company_name").value.trim(),
+                        mpeda_registration_code: mpedaCode,
                         user_name: document.getElementById("user_name").value.trim(),
                         designation: document.getElementById("designation").value.trim(),
                         address: document.getElementById("address").value.trim(),
@@ -3377,7 +3421,7 @@
 
                 if (res.ok) {
                     sessionStorage.removeItem("bknr_reg_email");
-                    passOk.innerHTML = `Account registered. Company ID: <b>${data.company_id}</b><br>Pending approval by Super Admin. You will be able to log in once approved.`;
+                    passOk.innerHTML = `Account registered. ERP Tenant Code: <b>${data.company_id}</b><br>MPEDA code will be used on reports and prints. Pending approval by Super Admin.`;
                     passOk.style.display = "block";
                     setTimeout(() => showBox("loginBox"), 8000);
                 } else {

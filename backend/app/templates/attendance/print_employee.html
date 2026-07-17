@@ -157,7 +157,7 @@
             </td>
             <td style="text-align: right; vertical-align: top;">
                 <div style="font-size: 9px; margin-bottom: 4px;"><b>Printed:</b> {{ printed_on }}</div>
-                <div style="font-size: 11px; font-weight: 800; color: #143465;">CODE: {{ company.company_code if company else '-' }}</div>
+                <div style="font-size: 11px; font-weight: 800; color: #143465;">MPEDA: {{ company.mpeda_registration_code if company and company.mpeda_registration_code else 'NOT REGISTERED' }}</div>
                 <div style="margin-top: 10px;">
                     <span style="padding: 3px 8px; border-radius: 3px; font-weight: 800; border: 1.5px solid #143465; color: #143465;">
                         {{ e.status if e else 'ACTIVE' }}
@@ -269,6 +269,6 @@
     };
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

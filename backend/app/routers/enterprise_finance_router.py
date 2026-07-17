@@ -3,8 +3,11 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import case, func, or_, and_
 from sqlalchemy.orm import Session, joinedload
 from datetime import date, datetime
+import html
+import json
 import openpyxl
 import io
+import re
 import pandas as pd
 from typing import List, Optional
 from pydantic import BaseModel, model_validator
@@ -17,6 +20,7 @@ from app.database.models.enterprise_finance import (
 )
 from app.services.posting_engine import PostingEngineService
 from app.services.accounting_reports import AccountingReportsService
+from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.timezone import ist_now
 
 router = APIRouter()
@@ -40,6 +44,188 @@ def current_financial_period() -> tuple[date, date]:
     today = ist_now().date()
     start = date(today.year if today.month >= 4 else today.year - 1, 4, 1)
     return start, today
+
+
+def _pdf_column_position(line: str, aliases: tuple[str, ...]) -> int | None:
+    lowered = line.lower()
+    positions = [lowered.find(alias) for alias in aliases if lowered.find(alias) >= 0]
+    return min(positions) if positions else None
+
+
+def _pdf_amount(value: str) -> float:
+    raw = str(value or "").strip()
+    if not raw or raw in {"-", "—"}:
+        return 0.0
+    negative = raw.startswith("(") and raw.endswith(")")
+    cleaned = re.sub(r"[^0-9.\-]", "", raw)
+    if not cleaned or cleaned in {"-", ".", "-."}:
+        return 0.0
+    amount = float(cleaned)
+    return -abs(amount) if negative else amount
+
+
+def _statement_text(value, limit: int) -> str | None:
+    if value is None or pd.isna(value):
+        return None
+    cleaned = str(value).strip()
+    return cleaned[:limit] or None
+
+
+def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
+    """Extract standard text-based bank tables with labelled debit/credit columns."""
+    from pypdf import PdfReader
+
+    reader = PdfReader(io.BytesIO(content))
+    parsed_rows = []
+    seen_rows = set()
+    date_pattern = re.compile(
+        r"(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})"
+    )
+    amount_pattern = re.compile(r"(?<![A-Za-z0-9])(?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?(?:\s*(?:DR|CR))?", re.I)
+    tagged_amount_pattern = re.compile(
+        r"((?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?)\s*(DR|CR)\b",
+        re.I,
+    )
+    debit_aliases = (
+        "debit", "withdrawal", "withdrawals", "withdrawal amt", "withdrawal amount",
+        "dr amount", "dr amt", "debit amount", "debit amt",
+    )
+    credit_aliases = (
+        "credit", "deposit", "deposits", "deposit amt", "deposit amount",
+        "cr amount", "cr amt", "credit amount", "credit amt",
+    )
+    balance_aliases = ("balance", "closing balance", "running balance", "available balance")
+
+    def append_row(raw_date: str, description: str, debit: float, credit: float) -> None:
+        if (debit > 0) == (credit > 0):
+            return
+        reference_match = re.search(
+            r"\b(?:UTR|UPI|NEFT|IMPS|RTGS|CHQ|CHEQUE)[\s:/#-]*([A-Z0-9-]{5,})",
+            description.upper(),
+        )
+        reference = _statement_text(reference_match.group(1) if reference_match else description, 50)
+        key = (raw_date, reference, round(debit, 2), round(credit, 2))
+        if key in seen_rows:
+            return
+        seen_rows.add(key)
+        parsed_rows.append({
+            "Date": raw_date,
+            "Reference": reference or None,
+            "Debit": round(debit, 2),
+            "Credit": round(credit, 2),
+            "Remarks": _statement_text(description, 255),
+        })
+
+    for page in reader.pages:
+        try:
+            page_text = page.extract_text(extraction_mode="layout") or ""
+        except TypeError:
+            page_text = page.extract_text() or ""
+        lines = [line.rstrip() for line in page_text.splitlines() if line.strip()]
+        header_index = None
+        debit_position = credit_position = balance_position = None
+        debit_header_index = credit_header_index = 0
+        for index, line in enumerate(lines):
+            if debit_position is None:
+                debit_position = _pdf_column_position(line, debit_aliases)
+                if debit_position is not None:
+                    debit_header_index = index
+            if credit_position is None:
+                credit_position = _pdf_column_position(line, credit_aliases)
+                if credit_position is not None:
+                    credit_header_index = index
+            if balance_position is None:
+                balance_position = _pdf_column_position(line, balance_aliases)
+            if debit_position is not None and credit_position is not None:
+                header_index = max(debit_header_index, credit_header_index)
+                break
+
+        if header_index is not None:
+            amount_positions = sorted(
+                position for position in (debit_position, credit_position, balance_position)
+                if position is not None
+            )
+            first_amount_position = amount_positions[0]
+
+            def column_slice(line: str, start: int) -> str:
+                following = [position for position in amount_positions if position > start]
+                end = min(following) if following else len(line)
+                return line[start:end]
+
+            for line in lines[header_index + 1:]:
+                date_match = date_pattern.search(line[:35])
+                if not date_match:
+                    continue
+                debit = abs(_pdf_amount(column_slice(line, debit_position)))
+                credit = abs(_pdf_amount(column_slice(line, credit_position)))
+                description = line[date_match.end():first_amount_position].strip(" |")
+                append_row(date_match.group(1), description, debit, credit)
+
+        # Fallback 1: statements that print transaction amount with an explicit DR/CR suffix.
+        for line in lines:
+            date_match = date_pattern.search(line[:35])
+            if not date_match:
+                continue
+            tagged = tagged_amount_pattern.findall(line[date_match.end():])
+            if not tagged:
+                continue
+            transaction_amount, transaction_side = tagged[0]
+            amount = abs(_pdf_amount(transaction_amount))
+            description_end = line.upper().find(transaction_amount.strip().upper(), date_match.end())
+            description = line[date_match.end():description_end if description_end >= 0 else len(line)].strip(" |")
+            append_row(
+                date_match.group(1),
+                description,
+                amount if transaction_side.upper() == "DR" else 0.0,
+                amount if transaction_side.upper() == "CR" else 0.0,
+            )
+
+        # Fallback 2: compact rows containing transaction amount + running balance.
+        compact_candidates = []
+        opening_balance = None
+        opening_match = re.search(
+            r"opening\s+balance[^0-9]{0,20}((?:INR|Rs\.?|₹)?\s*\d[\d,]*\.\d{2})",
+            page_text,
+            re.I,
+        )
+        if opening_match:
+            opening_balance = abs(_pdf_amount(opening_match.group(1)))
+        for line in lines:
+            date_match = date_pattern.search(line[:35])
+            if not date_match:
+                continue
+            amounts = amount_pattern.findall(line[date_match.end():])
+            if len(amounts) < 2:
+                continue
+            transaction_amount = abs(_pdf_amount(amounts[-2]))
+            running_balance = abs(_pdf_amount(amounts[-1]))
+            amount_start = line.find(amounts[-2], date_match.end())
+            description = line[date_match.end():amount_start if amount_start >= 0 else len(line)].strip(" |")
+            compact_candidates.append((date_match.group(1), description, transaction_amount, running_balance))
+
+        previous_balance = opening_balance
+        for raw_date, description, transaction_amount, running_balance in compact_candidates:
+            debit = credit = 0.0
+            if previous_balance is not None:
+                difference = round(running_balance - previous_balance, 2)
+                if abs(abs(difference) - transaction_amount) <= 0.05:
+                    credit = transaction_amount if difference > 0 else 0.0
+                    debit = transaction_amount if difference < 0 else 0.0
+            if debit == 0 and credit == 0:
+                upper_description = description.upper()
+                if re.search(r"\b(?:CREDIT|DEPOSIT|SALARY|REFUND|INWARD|INTEREST)\b", upper_description):
+                    credit = transaction_amount
+                elif re.search(r"\b(?:DEBIT|WITHDRAWAL|ATM|POS|CHARGES|OUTWARD|PAYMENT)\b", upper_description):
+                    debit = transaction_amount
+            append_row(raw_date, description, debit, credit)
+            previous_balance = running_balance
+
+    if not parsed_rows:
+        raise ValueError(
+            "Bank rows could not be identified. Use a text-based statement PDF with Debit/Credit columns or export the bank statement as CSV/Excel."
+        )
+    return pd.DataFrame(parsed_rows)
+
 
 DEFAULT_ACCOUNT_GROUPS = [
     ("Capital Account", "EQUITY", None),
@@ -103,7 +289,7 @@ DEFAULT_LEDGERS = [
     ("Export Incentive Receivable A/c", "Loans & Advances", "ASSET"),
     ("Export Incentive Income A/c", "Indirect Incomes", "INCOME"),
     ("Fixed Assets A/c", "Fixed Assets", "ASSET"),
-    ("Accumulated Depreciation A/c", "Provisions", "LIABILITY"),
+    ("Accumulated Depreciation A/c", "Fixed Assets", "ASSET"),
     ("Depreciation Expense A/c", "Indirect Expenses", "EXPENSE"),
     ("Fixed Asset Payable A/c", "Sundry Creditors", "LIABILITY"),
 ]
@@ -138,6 +324,10 @@ def ensure_default_accounting_setup(db: Session, company_id: str, email: str = "
         if not ledger:
             PostingEngineService.get_or_create_ledger(db, company_id, ledger_name, group_name, group_type)
             created["ledgers"] += 1
+        elif ledger_name == "Accumulated Depreciation A/c":
+            expected_group = PostingEngineService.get_or_create_group(db, company_id, group_name, group_type)
+            if ledger.group_id != expected_group.id:
+                ledger.group_id = expected_group.id
 
     db.commit()
     return created
@@ -962,6 +1152,104 @@ def list_bank_statements(request: Request, bank_ledger_id: int, matched: Optiona
     } for row in rows]}
 
 
+@router.get("/bank/statements/export/pdf")
+def export_bank_reconciliation_pdf(
+    request: Request,
+    bank_ledger_id: int,
+    matched: Optional[bool] = None,
+    db: Session = Depends(get_db),
+):
+    comp_code = require_company_code(request)
+    bank_ledger = db.query(LedgerMaster).filter(
+        LedgerMaster.id == bank_ledger_id,
+        LedgerMaster.company_id == comp_code,
+    ).first()
+    if not bank_ledger:
+        raise HTTPException(status_code=404, detail="Bank ledger not found")
+    query = db.query(BankReconciliation).filter(
+        BankReconciliation.company_id == comp_code,
+        BankReconciliation.bank_ledger_id == bank_ledger_id,
+    )
+    if matched is not None:
+        query = query.filter(BankReconciliation.is_matched == matched)
+    rows = query.order_by(BankReconciliation.statement_date, BankReconciliation.id).all()
+    debit_total = round(sum(float(row.debit or 0) for row in rows), 2)
+    credit_total = round(sum(float(row.credit or 0) for row in rows), 2)
+    matched_count = sum(1 for row in rows if row.is_matched)
+    status_label = "Matched" if matched is True else ("Unmatched" if matched is False else "All Entries")
+    company_name = str(request.session.get("company_name") or comp_code)
+
+    body_rows = "".join(
+        "<tr>"
+        f"<td>{html.escape(row.statement_date.strftime('%d-%m-%Y'))}</td>"
+        f"<td>{html.escape(str(row.reference_no or '—'))}</td>"
+        f"<td class='num'>₹{float(row.debit or 0):,.2f}</td>"
+        f"<td class='num'>₹{float(row.credit or 0):,.2f}</td>"
+        f"<td class='status {'matched' if row.is_matched else 'unmatched'}'>{'MATCHED' if row.is_matched else 'UNMATCHED'}</td>"
+        f"<td>{html.escape(str(row.remarks or '—'))}</td>"
+        "</tr>"
+        for row in rows
+    )
+    if not body_rows:
+        body_rows = "<tr><td colspan='6' class='empty'>No reconciliation entries found for the selected filter.</td></tr>"
+    report_html = f"""
+    <!doctype html>
+    <html><head><meta charset="utf-8"><style>
+    @page {{ size:A4 portrait; margin:10mm; }}
+    * {{ box-sizing:border-box; }}
+    body {{ margin:0; color:#172033; font-family:Arial,sans-serif; font-size:8.5pt; }}
+    .brand {{ height:5px; margin-bottom:10px; background:#123b5d; }}
+    .header {{ display:flex; justify-content:space-between; gap:20px; padding-bottom:8px; border-bottom:2px solid #123b5d; }}
+    h1 {{ margin:0; color:#123b5d; font-size:16pt; text-transform:uppercase; }}
+    h2 {{ margin:2px 0 0; color:#176b87; font-size:10pt; }}
+    .meta {{ text-align:right; color:#52677a; line-height:1.45; }}
+    .summary {{ display:grid; grid-template-columns:repeat(4,1fr); margin:10px 0; border:1px solid #b9c9d4; }}
+    .summary div {{ padding:7px; border-right:1px solid #b9c9d4; }}
+    .summary div:last-child {{ border-right:0; }}
+    .summary small {{ display:block; color:#607181; font-size:6.5pt; font-weight:bold; text-transform:uppercase; }}
+    .summary strong {{ display:block; margin-top:2px; color:#123b5d; font-size:9pt; }}
+    table {{ width:100%; border-collapse:collapse; }}
+    th,td {{ padding:5px 6px; border:1px solid #b9c9d4; vertical-align:top; }}
+    th {{ color:#fff; background:#123b5d; font-size:7pt; text-transform:uppercase; }}
+    tbody tr:nth-child(even) {{ background:#f5f8fa; }}
+    .num {{ text-align:right; white-space:nowrap; }}
+    .status {{ text-align:center; font-size:7pt; font-weight:bold; }}
+    .matched {{ color:#047857; }} .unmatched {{ color:#b45309; }}
+    tfoot td {{ color:#123b5d; background:#eaf5f8; font-weight:bold; }}
+    .empty {{ padding:24px; text-align:center; color:#607181; }}
+    .footer {{ margin-top:10px; padding-top:5px; border-top:1px solid #b9c9d4; color:#607181; font-size:6.5pt; text-align:center; }}
+    </style></head><body>
+      <div class="brand"></div>
+      <div class="header">
+        <div><h1>{html.escape(company_name)}</h1><h2>Bank Reconciliation Statement</h2></div>
+        <div class="meta"><b>{html.escape(bank_ledger.ledger_name)}</b><br>Filter: {status_label}<br>Generated: {ist_now().strftime('%d-%m-%Y %I:%M %p')}</div>
+      </div>
+      <div class="summary">
+        <div><small>Statement Entries</small><strong>{len(rows)}</strong></div>
+        <div><small>Matched Entries</small><strong>{matched_count}</strong></div>
+        <div><small>Total Debit</small><strong>₹{debit_total:,.2f}</strong></div>
+        <div><small>Total Credit</small><strong>₹{credit_total:,.2f}</strong></div>
+      </div>
+      <table>
+        <thead><tr><th>Date</th><th>Reference</th><th>Debit</th><th>Credit</th><th>Status</th><th>Remarks</th></tr></thead>
+        <tbody>{body_rows}</tbody>
+        <tfoot><tr><td colspan="2">TOTAL</td><td class="num">₹{debit_total:,.2f}</td><td class="num">₹{credit_total:,.2f}</td><td colspan="2">{matched_count} of {len(rows)} matched</td></tr></tfoot>
+      </table>
+      <div class="footer">System-generated bank reconciliation control report · {html.escape(comp_code)}</div>
+    </body></html>
+    """
+    try:
+        pdf = render_pdf_from_html(report_html)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Unable to generate reconciliation PDF: {exc}") from exc
+    safe_ledger = "".join(char if char.isalnum() else "_" for char in bank_ledger.ledger_name).strip("_") or "Bank"
+    return StreamingResponse(
+        io.BytesIO(pdf),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Bank_Reconciliation_{safe_ledger}.pdf"'},
+    )
+
+
 @router.post("/bank/statements/import")
 async def import_bank_statement(
     request: Request,
@@ -983,7 +1271,14 @@ async def import_bank_statement(
         raise HTTPException(status_code=400, detail="Statement file is empty")
     try:
         name = str(file.filename or "").lower()
-        frame = pd.read_csv(io.BytesIO(content)) if name.endswith(".csv") else pd.read_excel(io.BytesIO(content))
+        if name.endswith(".pdf"):
+            frame = extract_bank_statement_pdf(content)
+        elif name.endswith(".csv"):
+            frame = pd.read_csv(io.BytesIO(content))
+        elif name.endswith((".xlsx", ".xls")):
+            frame = pd.read_excel(io.BytesIO(content))
+        else:
+            raise ValueError("Supported statement formats are PDF, CSV, XLSX and XLS")
         aliases = {
             "date": {"date", "transaction date", "txn date", "value date", "statement date"},
             "reference": {"reference", "reference no", "utr", "utr no", "cheque no", "transaction id", "ref no"},
@@ -996,6 +1291,7 @@ async def import_bank_statement(
         if not selected["date"] or (not selected["debit"] and not selected["credit"]):
             raise ValueError("Required columns: Date and at least one of Debit/Credit")
         imported = skipped = 0
+        imported_rows = []
         for _, data in frame.iterrows():
             parsed_date = pd.to_datetime(data[selected["date"]], errors="coerce")
             if pd.isna(parsed_date):
@@ -1008,7 +1304,7 @@ async def import_bank_statement(
             if (debit <= 0) == (credit <= 0):
                 skipped += 1
                 continue
-            reference = str(data[selected["reference"]]).strip() if selected["reference"] and not pd.isna(data[selected["reference"]]) else None
+            reference = _statement_text(data[selected["reference"]], 50) if selected["reference"] else None
             exists = db.query(BankReconciliation.id).filter(
                 BankReconciliation.company_id == comp_code,
                 BankReconciliation.bank_ledger_id == bank_ledger_id,
@@ -1020,22 +1316,127 @@ async def import_bank_statement(
             if exists:
                 skipped += 1
                 continue
-            remarks = str(data[selected["remarks"]]).strip() if selected["remarks"] and not pd.isna(data[selected["remarks"]]) else None
-            db.add(BankReconciliation(
+            remarks = _statement_text(data[selected["remarks"]], 255) if selected["remarks"] else None
+            statement_row = BankReconciliation(
                 company_id=comp_code, bank_ledger_id=bank_ledger_id,
                 statement_date=parsed_date.date(), reference_no=reference,
                 debit=debit, credit=credit, remarks=remarks,
-            ))
+            )
+            db.add(statement_row)
+            imported_rows.append(statement_row)
             imported += 1
+        db.flush()
         PostingEngineService.write_finance_audit(
             db, comp_code, "bank_reconciliations", bank_ledger_id, "IMPORT", None,
-            {"file": file.filename, "imported": imported, "skipped": skipped}, email,
+            {
+                "file": file.filename,
+                "imported": imported,
+                "skipped": skipped,
+                "row_ids": [row.id for row in imported_rows],
+            },
+            email,
         )
         db.commit()
         return {"success": True, "message": f"Imported {imported} statement entries; skipped {skipped}.", "imported": imported, "skipped": skipped}
     except Exception as exc:
         db.rollback()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/bank/statements/rollback-last-pdf-import")
+def rollback_last_bank_pdf_import(
+    request: Request,
+    bank_ledger_id: int,
+    db: Session = Depends(get_db),
+):
+    comp_code = require_company_code(request)
+    require_finance_admin(request)
+    email = request.session.get("email", "SYSTEM")
+    imports = db.query(FinanceAuditTrail).filter(
+        FinanceAuditTrail.company_id == comp_code,
+        FinanceAuditTrail.table_name == "bank_reconciliations",
+        FinanceAuditTrail.record_id == bank_ledger_id,
+        FinanceAuditTrail.action == "IMPORT",
+    ).order_by(FinanceAuditTrail.id.desc()).limit(100).all()
+    latest_pdf_audit = None
+    latest_pdf_payload = None
+    for audit in imports:
+        try:
+            payload = json.loads(audit.new_value or "{}")
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if str(payload.get("file") or "").lower().endswith(".pdf"):
+            latest_pdf_audit = audit
+            latest_pdf_payload = payload
+            break
+    if not latest_pdf_audit:
+        raise HTTPException(status_code=404, detail="No PDF bank statement import found for this ledger")
+
+    rollback_audits = db.query(FinanceAuditTrail).filter(
+        FinanceAuditTrail.company_id == comp_code,
+        FinanceAuditTrail.table_name == "bank_reconciliations",
+        FinanceAuditTrail.record_id == bank_ledger_id,
+        FinanceAuditTrail.action == "ROLLBACK",
+    ).all()
+    for audit in rollback_audits:
+        try:
+            old_value = json.loads(audit.old_value or "{}")
+        except (TypeError, json.JSONDecodeError):
+            continue
+        if old_value.get("import_audit_id") == latest_pdf_audit.id:
+            raise HTTPException(status_code=400, detail="Latest PDF import has already been rolled back")
+
+    row_ids = [int(row_id) for row_id in latest_pdf_payload.get("row_ids", []) if row_id]
+    imported_count = int(latest_pdf_payload.get("imported") or 0)
+    if imported_count <= 0:
+        raise HTTPException(status_code=400, detail="Latest PDF import did not add any statement entries")
+    if not row_ids:
+        if not imports or imports[0].id != latest_pdf_audit.id:
+            raise HTTPException(
+                status_code=400,
+                detail="This legacy PDF import cannot be rolled back after a newer statement import",
+            )
+        row_ids = [
+            row.id for row in db.query(BankReconciliation).filter(
+                BankReconciliation.company_id == comp_code,
+                BankReconciliation.bank_ledger_id == bank_ledger_id,
+            ).order_by(BankReconciliation.id.desc()).limit(imported_count).all()
+        ]
+    rows = db.query(BankReconciliation).filter(
+        BankReconciliation.company_id == comp_code,
+        BankReconciliation.bank_ledger_id == bank_ledger_id,
+        BankReconciliation.id.in_(row_ids),
+    ).with_for_update().all()
+    if len(rows) != len(set(row_ids)):
+        raise HTTPException(status_code=400, detail="Latest PDF import rows could not be identified safely")
+    if any(row.is_matched for row in rows):
+        raise HTTPException(
+            status_code=400,
+            detail="Latest PDF import contains matched entries. Unmatch them before rollback.",
+        )
+    deleted_ids = [row.id for row in rows]
+    for row in rows:
+        db.delete(row)
+    PostingEngineService.write_finance_audit(
+        db,
+        comp_code,
+        "bank_reconciliations",
+        bank_ledger_id,
+        "ROLLBACK",
+        {
+            "import_audit_id": latest_pdf_audit.id,
+            "file": latest_pdf_payload.get("file"),
+            "row_ids": deleted_ids,
+        },
+        {"deleted": len(deleted_ids)},
+        email,
+    )
+    db.commit()
+    return {
+        "success": True,
+        "message": f"Rolled back {len(deleted_ids)} entries from {latest_pdf_payload.get('file') or 'latest PDF import'}.",
+        "deleted": len(deleted_ids),
+    }
 
 
 @router.post("/bank/auto-match")
@@ -1053,13 +1454,21 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
         BankReconciliation.company_id == comp_code,
         BankReconciliation.bank_ledger_id == bank_ledger_id,
         BankReconciliation.is_matched == False
-    ).all()
+    ).with_for_update().all()
 
     matched_count = 0
+    used_detail_ids = {
+        row[0] for row in db.query(BankReconciliation.voucher_detail_id).filter(
+            BankReconciliation.company_id == comp_code,
+            BankReconciliation.bank_ledger_id == bank_ledger_id,
+            BankReconciliation.is_matched.is_(True),
+            BankReconciliation.voucher_detail_id.isnot(None),
+        ).all()
+    }
     
     for stmt in unmatched_stmts:
         # Search matching Voucher Details by reference UTR and debit/credit amounts
-        match = db.query(VoucherDetail).join(VoucherHeader).filter(
+        match_query = db.query(VoucherDetail).join(VoucherHeader).filter(
             VoucherHeader.company_id == comp_code,
             VoucherHeader.status == 'POSTED',
             VoucherDetail.ledger_id == bank_ledger_id,
@@ -1068,12 +1477,16 @@ def auto_match_bank_statement(request: Request, bank_ledger_id: int, db: Session
                 and_(VoucherDetail.credit_amount == stmt.debit, VoucherDetail.debit_amount == 0),
             ),
             or_(VoucherHeader.reference_no == stmt.reference_no, stmt.reference_no == None),
-        ).first()
+        )
+        if used_detail_ids:
+            match_query = match_query.filter(~VoucherDetail.id.in_(used_detail_ids))
+        match = match_query.with_for_update(skip_locked=True).first()
 
         if match:
             stmt.is_matched = True
             stmt.matched_date = date.today()
             stmt.voucher_detail_id = match.id
+            used_detail_ids.add(match.id)
             matched_count += 1
 
     db.commit()
@@ -1095,6 +1508,14 @@ def match_bank_statement(statement_id: int, voucher_detail_id: int, request: Req
     ).first()
     if not statement or not detail:
         raise HTTPException(status_code=404, detail="Statement or bank voucher line not found")
+    existing_match = db.query(BankReconciliation.id).filter(
+        BankReconciliation.company_id == comp_code,
+        BankReconciliation.id != statement.id,
+        BankReconciliation.is_matched.is_(True),
+        BankReconciliation.voucher_detail_id == detail.id,
+    ).first()
+    if existing_match:
+        raise HTTPException(status_code=400, detail="This bank voucher line is already matched to another statement entry")
     if round(float(detail.debit_amount or 0), 2) != round(float(statement.credit or 0), 2) or round(float(detail.credit_amount or 0), 2) != round(float(statement.debit or 0), 2):
         raise HTTPException(status_code=400, detail="Statement amount does not match the selected bank voucher line")
     statement.is_matched = True

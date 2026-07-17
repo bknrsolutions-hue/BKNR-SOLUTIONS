@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request, Depends, Body, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import extract, and_
+from sqlalchemy import extract, and_, or_
 import calendar
 from datetime import date, datetime, timedelta
 from collections import defaultdict
@@ -19,11 +19,21 @@ from app.database.models.attendance import (
 )
 from app.database.models.criteria import contractors
 from app.database.models.enterprise_finance import VoucherHeader
+from app.database.models.users import Company
 from app.services.bill_accounting import amount_line, cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
 from app.services.posting_engine import PostingEngineService
+from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.salary_advance_recovery import preview_monthly_advance_recovery
+from app.utils.timezone import ist_now
 
 router = APIRouter(tags=["SALARY_REPORTS"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def monthly_adjustment_window(year: int, month_no: int) -> tuple[date, date]:
+    if month_no == 12:
+        return date(year + 1, 1, 1), date(year + 1, 1, 10)
+    return date(year, month_no + 1, 1), date(year, month_no + 1, 10)
 
 
 def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
@@ -35,7 +45,7 @@ def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -
 
 
 def replace_contract_salary_adjustment_voucher(db: Session, company_id: str, emp: EmployeeRegistration, month: str, adjustment_days: float, email: str):
-    if str(emp.employee_type or "").upper() != "CONTRACT" or not emp.contractor_name:
+    if str(emp.employee_type or "").strip().upper() not in {"CONTRACT", "CONTRACTOR"} or not emp.contractor_name:
         return
 
     reference_no = f"ATT-ADJ-{emp.employee_id}-{month}"[:50]
@@ -127,16 +137,27 @@ def salary_sheet_page(request: Request):
 @router.get("/api/salary/get-locations")
 def get_locations(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    if not company_id: return []
-    locations = db.query(EmployeeRegistration.location).filter(
-        EmployeeRegistration.company_id == company_id, EmployeeRegistration.location != None
+    if not company_id:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
+    production_locations = db.query(EmployeeRegistration.production_at).filter(
+        EmployeeRegistration.company_id == company_id,
+        EmployeeRegistration.production_at != None,
     ).distinct().all()
-    return [loc[0] for loc in locations if loc[0]]
+    work_locations = db.query(EmployeeRegistration.location).filter(
+        EmployeeRegistration.company_id == company_id,
+        EmployeeRegistration.location != None,
+    ).distinct().all()
+    return sorted({
+        str(loc[0]).strip()
+        for loc in [*production_locations, *work_locations]
+        if loc[0] and str(loc[0]).strip()
+    })
 
 @router.get("/api/salary/get-departments")
 def get_departments(request: Request, db: Session = Depends(get_db)):
     company_id = request.session.get("company_code")
-    if not company_id: return []
+    if not company_id:
+        return JSONResponse({"error": "Session expired"}, status_code=401)
     depts = db.query(EmployeeRegistration.department).filter(
         EmployeeRegistration.company_id == company_id, EmployeeRegistration.department != None
     ).distinct().all()
@@ -153,9 +174,14 @@ def get_salary_report(
     company_id = request.session.get("company_code")
     if not company_id: return JSONResponse({"error": "Unauthorized"}, status_code=401)
     ensure_bill_accounting_schema(db)
+    company = db.query(Company).filter(Company.company_code == company_id).first()
 
     year, month_no = map(int, month.split("-"))
     days_in_month = calendar.monthrange(year, month_no)[1]
+    adjustment_start, adjustment_deadline = monthly_adjustment_window(year, month_no)
+    today = ist_now().date()
+    adjustment_open = adjustment_start <= today <= adjustment_deadline
+    adjustment_window_status = "OPEN" if adjustment_open else ("NOT_OPEN" if today < adjustment_start else "CLOSED")
 
     shift_map = get_company_shift_map(db, company_id)
 
@@ -165,7 +191,11 @@ def get_salary_report(
     )
 
     if dept != "ALL": emp_query = emp_query.filter(EmployeeRegistration.department == dept)
-    if location != "ALL": emp_query = emp_query.filter(EmployeeRegistration.location == location)
+    if location != "ALL":
+        emp_query = emp_query.filter(or_(
+            EmployeeRegistration.production_at == location,
+            EmployeeRegistration.location == location,
+        ))
 
     employees = emp_query.all()
     result = []
@@ -180,6 +210,8 @@ def get_salary_report(
 
         daily_att_values = defaultdict(float)
         adjustment = 0.0
+        adjustment_reason = ""
+        adjustment_locked = False
         total_approved_ot = 0.0
         ot_earnings = 0.0
 
@@ -188,8 +220,20 @@ def get_salary_report(
         per_day_rate = base_gross / 26.0
 
         for rec in attendance_records:
-            if rec.salary_adjustment is not None and float(rec.salary_adjustment or 0.0) != 0.0:
+            is_adjustment_row = str(rec.status or "").strip().upper() == "ADJUSTMENT"
+            if is_adjustment_row:
                 adjustment = float(rec.salary_adjustment or 0.0)
+                adjustment_locked = True
+                adjustment_reason = str(rec.salary_adjustment_reason or "").strip()
+                if not adjustment_reason:
+                    for movement in list(rec.movements or []):
+                        if isinstance(movement, dict) and movement.get("type") == "SALARY_ADJUSTMENT":
+                            adjustment_reason = str(movement.get("reason") or "").strip()
+                            break
+                continue
+            elif rec.salary_adjustment is not None and float(rec.salary_adjustment or 0.0) != 0.0:
+                adjustment = float(rec.salary_adjustment or 0.0)
+                adjustment_locked = True
             
             shift_name = rec.shift_name or "GENERAL"
             req_hours = shift_map.get(shift_name, 8.0)
@@ -212,6 +256,9 @@ def get_salary_report(
                 duty_credit = 2.5
             else:
                 duty_credit = 3.0
+
+            if str(getattr(rec, "duty_type", "") or "").strip().upper() == "ABSENT":
+                duty_credit = 0.0
             
             if duty_credit < 0.5:
                 val = 0.0
@@ -279,42 +326,61 @@ def get_salary_report(
 
         # Total Earned Gross
         total_payable_days = actual_present_count + extra_holidays + adjustment
-        earned_gross = (total_payable_days * per_day_rate) + ot_earnings
+        earned_salary_before_ot = total_payable_days * per_day_rate
+        earned_gross = earned_salary_before_ot + ot_earnings
+
+        monthly_components = {
+            "basic": float(emp.basic_salary or 0),
+            "hra": float(emp.hra or 0),
+            "conveyance": float(emp.conveyance_allowance or 0),
+            "other": float(emp.other_expenses or 0),
+        }
+        component_total = sum(monthly_components.values())
+        component_factor = (earned_salary_before_ot / component_total) if component_total > 0 else 0.0
+        earned_components = {
+            key: round(value * component_factor, 2)
+            for key, value in monthly_components.items()
+        }
+        if component_total <= 0:
+            earned_components["basic"] = round(earned_salary_before_ot, 2)
 
         # TDS
         tds_percent = float(emp.tds or 0)
         tds_amount = (earned_gross * tds_percent / 100)
 
         # Statutory
-        stat = db.query(EmployeeStatutoryMaster).filter(
-            EmployeeStatutoryMaster.employee_id == emp.employee_id, EmployeeStatutoryMaster.company_id == company_id, EmployeeStatutoryMaster.status == "ACTIVE"
-        ).first()
+        stat = effective_statutory_record(
+            db,
+            company_id,
+            emp.employee_id,
+            date(year, month_no, days_in_month),
+        )
 
         pf = esi = pt = lwf = 0.0
-        employer_pf = employer_esi = 0.0 
+        employer_pf = employer_epf = employer_eps = employer_edli = employer_esi = 0.0
         
         if stat:
-            if stat.pf_applicable:
-                pf_wage = min(stat.pf_wage_limit, float(emp.basic_salary or 0))
-                pf = pf_wage * (stat.pf_employee_percent / 100)
-                employer_pf = pf_wage * (getattr(stat, 'pf_employer_percent', 13.0) / 100) 
-                
-            if stat.esi_applicable and earned_gross <= stat.esi_wage_limit:
-                esi = earned_gross * (stat.esi_employee_percent / 100)
-                employer_esi = earned_gross * (getattr(stat, 'esi_employer_percent', 3.25) / 100) 
-                
+            statutory_values = calculate_pf_esi(
+                stat,
+                monthly_pf_wages=float(emp.basic_salary or 0.0),
+                earned_pf_wages=earned_components["basic"],
+                monthly_esi_wages=base_gross,
+                earned_esi_wages=earned_gross,
+                employee_dob=emp.dob,
+                effective_date=date(year, month_no, 1),
+            )
+            pf = statutory_values["pf_employee"]
+            employer_pf = statutory_values["pf_employer"]
+            employer_epf = statutory_values["epf_employer"]
+            employer_eps = statutory_values["eps_employer"]
+            employer_edli = statutory_values["edli_employer"]
+            esi = statutory_values["esi_employee"]
+            employer_esi = statutory_values["esi_employer"]
             pt, lwf = (stat.pt_amount or 0), (stat.lwf_employee_amount or 0)
 
-        adv_rec = db.query(EmployeeSalaryAdvance).filter(
-            EmployeeSalaryAdvance.employee_id == emp.employee_id, 
-            EmployeeSalaryAdvance.company_id == company_id, 
-            EmployeeSalaryAdvance.status == "APPROVED",
-            EmployeeSalaryAdvance.remaining_balance > 0,
-            EmployeeSalaryAdvance.deduct_from <= month,
-            getattr(EmployeeSalaryAdvance, 'deduct_to', month) >= month 
-        ).first()
-        
-        salary_advance = min(adv_rec.monthly_deduction, adv_rec.remaining_balance) if adv_rec else 0
+        salary_advance, _ = preview_monthly_advance_recovery(
+            db, company_id, emp.employee_id, month
+        )
 
         net_pay = earned_gross - (pf + esi + pt + lwf + tds_amount + salary_advance)
 
@@ -322,23 +388,57 @@ def get_salary_report(
             "id": emp.employee_id,
             "name": emp.employee_name,
             "dept": emp.department or "GENERAL",
+            "designation": emp.designation or "—",
+            "employee_type": emp.employee_type or "REGULAR",
+            "location": emp.production_at or emp.location or "—",
+            "joining_date": emp.joining_date.isoformat() if emp.joining_date else None,
+            "bank_name": emp.bank_name or "—",
+            "account_number": emp.account_number or "—",
+            "uan_number": (stat.uan_number if stat and stat.uan_number else emp.uan_number) or "—",
+            "pay_mode": "BANK" if emp.account_number else "CASH",
             "base_sal": round(base_gross, 2),
+            "basic_earned": earned_components["basic"],
+            "hra_earned": earned_components["hra"],
+            "conveyance_earned": earned_components["conveyance"],
+            "other_earned": earned_components["other"],
             "earned_gross": round(earned_gross, 2),
             "actual_duties": actual_present_count,
             "duty_counts": duty_counts,
             "worked_days": worked_days_count,
             "extra_holidays": extra_holidays,
             "saved_adjustment": adjustment,
+            "adjustment_reason": adjustment_reason or ("Legacy monthly adjustment" if adjustment_locked else ""),
+            "adjustment_locked": adjustment_locked,
             "ot_hours": round(total_approved_ot, 2),
             "ot_earnings": round(ot_earnings, 2), 
             "pf": round(pf, 2), "esi": round(esi, 2), "pt": pt, "lwf": lwf, "tds": round(tds_amount, 2),
             "employer_pf": round(employer_pf, 2), "employer_esi": round(employer_esi, 2),
+            "employer_epf": round(employer_epf, 2),
+            "employer_eps": round(employer_eps, 2),
+            "employer_edli": round(employer_edli, 2),
             "salary_advance": round(salary_advance, 2),
             "net_pay": round(net_pay, 2),
             "att_map": att_map
         })
 
-    return {"days_in_month": days_in_month, "month_name": calendar.month_name[month_no], "employees": result}
+    return {
+        "days_in_month": days_in_month,
+        "month_name": calendar.month_name[month_no],
+        "company_name": company.company_name if company else (request.session.get("company_name") or company_id),
+        "company_address": company.address if company else "",
+        "company_code": company_id,
+        "mpeda_registration_code": (
+            company.mpeda_registration_code
+            if company and company.mpeda_registration_code
+            else ""
+        ),
+        "adjustment_start": adjustment_start.isoformat(),
+        "adjustment_deadline": adjustment_deadline.isoformat(),
+        "adjustment_open": adjustment_open,
+        "adjustment_closed": not adjustment_open,
+        "adjustment_window_status": adjustment_window_status,
+        "employees": result,
+    }
 
 
 # ==================================================
@@ -377,7 +477,9 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         elif raw_credit < 3.0: duty_credit = 2.5
         else: duty_credit = 3.0
 
-        if duty_credit == 3.0: status = "3P"
+        if str(getattr(r, "duty_type", "") or "").strip().upper() == "ABSENT":
+            status = "A"
+        elif duty_credit == 3.0: status = "3P"
         elif duty_credit == 2.5: status = "2.5P"
         elif duty_credit == 2.0: status = "2P"
         elif duty_credit == 1.5: status = "1.5P"
@@ -385,12 +487,43 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         elif duty_credit == 0.5: status = "HP"
         else: status = "A"
 
+        movement_rows = []
+        movement_date = r.duty_date
+        previous_minutes = None
+        for movement in list(r.movements) if r.movements else []:
+            movement_copy = dict(movement) if isinstance(movement, dict) else {"type": "LOG", "time": str(movement)}
+            time_value = str(movement_copy.get("time") or "")
+            try:
+                hour, minute = [int(part) for part in time_value.split(":")[:2]]
+                current_minutes = (hour * 60) + minute
+            except (TypeError, ValueError):
+                current_minutes = None
+
+            explicit_date = movement_copy.get("date")
+            if explicit_date:
+                parsed_date = None
+                for date_format in ("%Y-%m-%d", "%d-%m-%Y"):
+                    try:
+                        parsed_date = datetime.strptime(str(explicit_date), date_format).date()
+                        break
+                    except ValueError:
+                        continue
+                if parsed_date:
+                    movement_date = parsed_date
+            elif current_minutes is not None and previous_minutes is not None and current_minutes < previous_minutes:
+                movement_date += timedelta(days=1)
+
+            movement_copy["display_date"] = movement_date.strftime("%d-%m-%Y") if movement_date else ""
+            movement_rows.append(movement_copy)
+            if current_minutes is not None:
+                previous_minutes = current_minutes
+
         data.append({
             "date": r.duty_date.strftime("%d-%m-%Y"),
             "shift": shift_name,
             "hours": round(wh, 2),
             "status": status,
-            "movements": list(r.movements) if r.movements else []
+            "movements": movement_rows
         })
 
     return data
@@ -404,45 +537,80 @@ def save_adjustment(request: Request, payload: dict = Body(...), db: Session = D
 
     emp_id = payload.get("employee_id")
     month = payload.get("month")
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        return JSONResponse({"status": "error", "message": "Adjustment reason is compulsory."}, status_code=400)
     try:
         value = float(payload.get("adjustment", 0) or 0)
         year, month_no = map(int, str(month or "").split("-"))
     except Exception:
         return JSONResponse({"status": "error", "message": "Invalid adjustment/month"}, status_code=400)
+    window_start, deadline = monthly_adjustment_window(year, month_no)
+    today = ist_now().date()
+    if today < window_start:
+        return JSONResponse({
+            "status": "error",
+            "message": f"Adjustment window opens on {window_start.strftime('%d-%m-%Y')}.",
+        }, status_code=403)
+    if today > deadline:
+        return JSONResponse({
+            "status": "error",
+            "message": f"Adjustment window closed on {deadline.strftime('%d-%m-%Y')}.",
+        }, status_code=403)
     ensure_bill_accounting_schema(db)
 
     emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.employee_id == emp_id,
         EmployeeRegistration.company_id == company_id,
-    ).first()
+    ).with_for_update().first()
     if not emp:
         return JSONResponse({"status": "error", "message": "Employee not found"}, status_code=404)
 
-    updated = db.query(DailyAttendance).filter(
+    existing_adjustment = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == emp_id, DailyAttendance.company_id == company_id,
-        extract("year", DailyAttendance.duty_date) == year, extract("month", DailyAttendance.duty_date) == month_no
-    ).update({"salary_adjustment": value}, synchronize_session=False)
+        extract("year", DailyAttendance.duty_date) == year,
+        extract("month", DailyAttendance.duty_date) == month_no,
+        or_(
+            DailyAttendance.status == "ADJUSTMENT",
+            DailyAttendance.salary_adjustment != 0,
+        ),
+    ).first()
+    if existing_adjustment:
+        return JSONResponse({
+            "status": "error",
+            "message": "This employee's monthly adjustment is already saved and locked.",
+        }, status_code=409)
 
-    if updated == 0:
-        db.add(DailyAttendance(
-            company_id=company_id,
-            employee_id=emp.employee_id,
-            employee_name=emp.employee_name,
-            designation=emp.designation,
-            employee_type=emp.employee_type,
-            production_at=emp.production_at or emp.location,
-            duty_date=date(year, month_no, 1),
-            shift_name="ADJUSTMENT",
-            working_hours=0.0,
-            salary_adjustment=value,
-            status="ADJUSTMENT",
-            movements=[],
-        ))
+    db.add(DailyAttendance(
+        company_id=company_id,
+        employee_id=emp.employee_id,
+        employee_name=emp.employee_name,
+        designation=emp.designation,
+        employee_type=emp.employee_type,
+        production_at=emp.production_at or emp.location,
+        duty_date=date(year, month_no, 1),
+        shift_name="ADJUSTMENT",
+        working_hours=0.0,
+        salary_adjustment=value,
+        salary_adjustment_reason=reason,
+        duty_status="APPROVED",
+        duty_approved_by=email,
+        status="ADJUSTMENT",
+        movements=[{
+            "type": "SALARY_ADJUSTMENT",
+            "month": month,
+            "value": value,
+            "reason": reason,
+            "approved_by": email,
+            "locked": True,
+            "saved_at": datetime.utcnow().isoformat(),
+        }],
+    ))
 
     replace_contract_salary_adjustment_voucher(db, company_id, emp, month, value, email)
     
     db.commit()
-    return {"status": "success", "adjustment": value}
+    return {"status": "success", "adjustment": value, "reason": reason, "locked": True}
 
 # ==================================================
 # 5️⃣ 24-HOUR AUTO-EXIT PUNCH LOGIC

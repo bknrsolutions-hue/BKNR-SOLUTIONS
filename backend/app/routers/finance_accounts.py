@@ -40,6 +40,8 @@ from app.database.models.assets import FixedAssetMaster, DepreciationSchedule
 from app.database.models.invoices import ExportDocumentFile
 from app.services.posting_engine import PostingEngineService
 from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
+from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.salary_advance_recovery import preview_monthly_advance_recovery, sync_monthly_advance_recovery
 from app.database.models.processing import AuditLog  # Audit trails
 from app.database.models.attendance import (
     EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance, EmployeeStatutoryMaster
@@ -55,6 +57,33 @@ templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
 
+def cancel_salary_payment_vouchers(db: Session, comp_code: str, entry: SalaryProcessing, email: str) -> None:
+    """Reverse every active partial/full salary payment, not only the latest link."""
+    ensure_bill_accounting_schema(db)
+    payment_rows = db.execute(text("""
+        SELECT id, journal_id
+        FROM salary_payment_logs
+        WHERE company_id = :company_id
+          AND salary_id = :salary_id
+          AND COALESCE(is_cancelled, FALSE) = FALSE
+        FOR UPDATE
+    """), {"company_id": comp_code, "salary_id": entry.id}).mappings().all()
+    journal_ids = {int(row["journal_id"]) for row in payment_rows if row["journal_id"]}
+    if entry.payment_journal_id:
+        journal_ids.add(int(entry.payment_journal_id))
+    for journal_id in journal_ids:
+        cancel_linked_bill_voucher(db, comp_code, journal_id, email)
+    if payment_rows:
+        db.execute(text("""
+            UPDATE salary_payment_logs
+            SET is_cancelled = TRUE
+            WHERE company_id = :company_id
+              AND salary_id = :salary_id
+              AND COALESCE(is_cancelled, FALSE) = FALSE
+        """), {"company_id": comp_code, "salary_id": entry.id})
+    entry.payment_journal_id = None
+
+
 def is_contract_employee(employee: EmployeeRegistration) -> bool:
     return str(getattr(employee, "employee_type", "") or "").strip().upper() in {"CONTRACT", "CONTRACTOR"}
 
@@ -64,14 +93,10 @@ def repost_salary_processing_accounts(db: Session, comp_code: str, entry: Salary
         if entry.salary_journal_id:
             cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
             entry.salary_journal_id = None
-        if entry.payment_journal_id:
-            cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
-            entry.payment_journal_id = None
+        cancel_salary_payment_vouchers(db, comp_code, entry, email)
         return
 
-    if entry.payment_journal_id:
-        cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
-        entry.payment_journal_id = None
+    cancel_salary_payment_vouchers(db, comp_code, entry, email)
     if entry.salary_journal_id:
         cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
         entry.salary_journal_id = None
@@ -80,6 +105,7 @@ def repost_salary_processing_accounts(db: Session, comp_code: str, entry: Salary
     payroll_expense = round(
         float(entry.gross_salary or 0.0)
         + float(entry.pf_employer or 0.0)
+        + float(entry.edli_employer or 0.0)
         + float(entry.esi_employer or 0.0)
         + float(entry.lwf_employer or 0.0),
         2,
@@ -372,6 +398,9 @@ class SalaryProcessingSchema(BaseModel):
     other_deductions: float = 0.0
     total_deductions: float = 0.0
     pf_employer: float = 0.0
+    epf_employer: float = 0.0
+    eps_employer: float = 0.0
+    edli_employer: float = 0.0
     esi_employer: float = 0.0
     lwf_employer: float = 0.0
     net_payable: float = 0.0
@@ -510,6 +539,7 @@ def native_finance_data(module_key: str, request: Request, db: Session = Depends
     comp_code = request.session.get("company_code")
     if not comp_code:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
     model = NATIVE_FINANCE_MODELS.get(module_key)
     if not model:
         return JSONResponse({"success": False, "message": "Unknown finance module"}, status_code=404)
@@ -1632,6 +1662,7 @@ def lc_tracking_save(request: Request, payload: LCTrackingSchema, db: Session = 
     exists = db.query(LCTracking).filter(LCTracking.company_id == comp_code, LCTracking.lc_number == payload.lc_number).first()
     if exists:
         # Update existing
+        exists.is_cancelled = False
         for k, v in payload.dict().items():
             setattr(exists, k, v)
         write_audit(db, "lc_tracking", exists.id, comp_code, "UPDATE", f"LC: {payload.lc_number}", "UPDATED", email)
@@ -1763,6 +1794,7 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     comp_code = request.session.get("company_code")
     if not comp_code:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.employee_id == employee_id,
@@ -1802,29 +1834,28 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
 
             for row in att_rows:
                 s = (row.duty_status or "").upper()
-                if s in ("APPROVED", "PRESENT", "CLOSED"):
-                    att_present += 1.0
-                elif s in ("ABSENT",):
+                duty_type = str(row.duty_type or "").strip().upper()
+                if duty_type == "ABSENT" or s == "ABSENT":
                     att_absent += 1.0
-                # Count approved OT; fall back to calculated_ot_hours
-                ot_h = row.approved_ot_hours or row.calculated_ot_hours or 0.0
-                att_ot_hrs += ot_h
+                    continue
+                if s in ("APPROVED", "PRESENT", "CLOSED"):
+                    approved_credit = float(row.approved_duty_credit or 0.0)
+                    if approved_credit in {0.5, 1.0, 1.5, 2.0, 2.5, 3.0}:
+                        att_present += approved_credit
+                    elif duty_type == "HALF":
+                        att_present += 0.5
+                    elif duty_type in {"SINGLE", "PRESENT"}:
+                        att_present += 1.0
+                    elif duty_type == "DOUBLE":
+                        # Multiple-duty credit must come from HR approval.
+                        att_present += 1.0
+                if str(row.ot_status or "").strip().upper() == "APPROVED":
+                    att_ot_hrs += float(row.approved_ot_hours or 0.0)
 
             # Salary advance: active advance monthly_deduction for this employee
-            adv = db.query(EmployeeSalaryAdvance).filter(
-                EmployeeSalaryAdvance.employee_id == employee_id,
-                EmployeeSalaryAdvance.company_id == comp_code,
-                EmployeeSalaryAdvance.status == "APPROVED",
-                EmployeeSalaryAdvance.remaining_balance > 0,
-                EmployeeSalaryAdvance.deduct_from <= month_year,
-            ).filter(
-                (EmployeeSalaryAdvance.deduct_to == None) |
-                (EmployeeSalaryAdvance.deduct_to >= month_year)
-            ).all()
-            advance_ded = round(sum(
-                min(float(a.monthly_deduction or 0.0), float(a.remaining_balance or 0.0))
-                for a in adv
-            ), 2)
+            advance_ded, _ = preview_monthly_advance_recovery(
+                db, comp_code, employee_id, month_year
+            )
 
         except Exception:
             pass  # If any parsing fails, leave at 0
@@ -1879,6 +1910,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 "total_deductions": totals["total_deductions"],
                 "net_payable": totals["net_payable"],
                 "pf_employer": exact.pf_employer,
+                "epf_employer": exact.epf_employer,
+                "eps_employer": exact.eps_employer,
+                "edli_employer": exact.edli_employer,
                 "esi_employer": exact.esi_employer,
                 "lwf_employer": exact.lwf_employer,
                 "payment_mode": exact.payment_mode,
@@ -1887,6 +1921,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 "payment_status": exact.payment_status or "UNPAID",
                 "status": exact.status,
             }
+
+    effective_date = period_end or date.today()
+    statutory = effective_statutory_record(db, comp_code, employee_id, effective_date)
 
     # ── Priority 2: Latest salary record (any month) → salary structure + live att ─
     latest = db.query(SalaryProcessing).filter(
@@ -1902,8 +1939,18 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         other_earn = latest.other_earnings or 0.0
         ot_amount = 0.0
         gross    = basic + hra + conveyance + special + ot_amount + other_earn
-        pf_emp   = latest.pf_employee or round(basic * 0.12, 2)
-        esi_emp  = latest.esi_employee or (round(gross * 0.0075, 2) if gross <= 21000 else 0.0)
+        earned_monthly = gross * att_present / 26.0
+        statutory_values = calculate_pf_esi(
+            statutory,
+            monthly_pf_wages=basic,
+            earned_pf_wages=basic * att_present / 26.0,
+            monthly_esi_wages=gross,
+            earned_esi_wages=earned_monthly + ot_amount,
+            employee_dob=emp.dob,
+            effective_date=effective_date.replace(day=1),
+        )
+        pf_emp = statutory_values["pf_employee"]
+        esi_emp = statutory_values["esi_employee"]
         pt       = latest.professional_tax or 0.0
         tds      = latest.tds_salary or 0.0
         lwf      = latest.lwf_employee or 0.0
@@ -1947,8 +1994,11 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             "other_deductions": latest.other_deductions or 0.0,
             "total_deductions": totals["total_deductions"],
             "net_payable": totals["net_payable"],
-            "pf_employer": latest.pf_employer or 0.0,
-            "esi_employer": latest.esi_employer or 0.0,
+            "pf_employer": statutory_values["pf_employer"],
+            "epf_employer": statutory_values["epf_employer"],
+            "eps_employer": statutory_values["eps_employer"],
+            "edli_employer": statutory_values["edli_employer"],
+            "esi_employer": statutory_values["esi_employer"],
             "lwf_employer": latest.lwf_employer or 0.0,
             "payment_mode": latest.payment_mode or "BANK",
             "payment_date": "",
@@ -1963,26 +2013,25 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     conveyance = emp.conveyance_allowance or 0.0
     other_earn = emp.other_expenses or 0.0
     gross = basic + hra + conveyance + other_earn
-    effective_date = period_end or date.today()
-    statutory = db.query(EmployeeStatutoryMaster).filter(
-        EmployeeStatutoryMaster.employee_id == employee_id,
-        EmployeeStatutoryMaster.company_id == comp_code,
-        EmployeeStatutoryMaster.status == "ACTIVE",
-        EmployeeStatutoryMaster.applicable_from <= effective_date,
-    ).filter(
-        (EmployeeStatutoryMaster.applicable_to == None) |
-        (EmployeeStatutoryMaster.applicable_to >= effective_date)
-    ).order_by(desc(EmployeeStatutoryMaster.applicable_from)).first()
-
-    pf_emp = esi_emp = pt = lwf = pf_employer = esi_employer = lwf_employer = 0.0
+    pf_emp = esi_emp = pt = lwf = pf_employer = epf_employer = eps_employer = edli_employer = esi_employer = lwf_employer = 0.0
     if statutory:
-        if statutory.pf_applicable:
-            pf_wage = min(float(statutory.pf_wage_limit or basic), float(basic))
-            pf_emp = round(pf_wage * float(statutory.pf_employee_percent or 0.0) / 100, 2)
-            pf_employer = round(pf_wage * float(statutory.pf_employer_percent or 0.0) / 100, 2)
-        if statutory.esi_applicable and gross <= float(statutory.esi_wage_limit or 0.0):
-            esi_emp = round(gross * float(statutory.esi_employee_percent or 0.0) / 100, 2)
-            esi_employer = round(gross * float(statutory.esi_employer_percent or 0.0) / 100, 2)
+        earned_monthly = gross * att_present / 26.0
+        statutory_values = calculate_pf_esi(
+            statutory,
+            monthly_pf_wages=basic,
+            earned_pf_wages=basic * att_present / 26.0,
+            monthly_esi_wages=gross,
+            earned_esi_wages=earned_monthly,
+            employee_dob=emp.dob,
+            effective_date=effective_date.replace(day=1),
+        )
+        pf_emp = statutory_values["pf_employee"]
+        pf_employer = statutory_values["pf_employer"]
+        epf_employer = statutory_values["epf_employer"]
+        eps_employer = statutory_values["eps_employer"]
+        edli_employer = statutory_values["edli_employer"]
+        esi_emp = statutory_values["esi_employee"]
+        esi_employer = statutory_values["esi_employer"]
         pt = float(statutory.pt_amount or 0.0) if statutory.pt_applicable else 0.0
         lwf = float(statutory.lwf_employee_amount or 0.0) if statutory.lwf_applicable else 0.0
         lwf_employer = float(statutory.lwf_employer_amount or 0.0) if statutory.lwf_applicable else 0.0
@@ -2027,6 +2076,9 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         "total_deductions": totals["total_deductions"],
         "net_payable": totals["net_payable"],
         "pf_employer": pf_employer,
+        "epf_employer": epf_employer,
+        "eps_employer": eps_employer,
+        "edli_employer": edli_employer,
         "esi_employer": esi_employer,
         "lwf_employer": lwf_employer,
         "payment_mode": "BANK",
@@ -2057,20 +2109,9 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     if normalized_status == "PAID" and not payload.payment_date:
         return JSONResponse({"success": False, "message": "Payment date is required when salary status is PAID"}, status_code=400)
 
-    active_advances = db.query(EmployeeSalaryAdvance).filter(
-        EmployeeSalaryAdvance.company_id == comp_code,
-        EmployeeSalaryAdvance.employee_id == payload.employee_id,
-        EmployeeSalaryAdvance.status == "APPROVED",
-        EmployeeSalaryAdvance.remaining_balance > 0,
-        EmployeeSalaryAdvance.deduct_from <= payload.month_year,
-    ).filter(
-        (EmployeeSalaryAdvance.deduct_to == None) |
-        (EmployeeSalaryAdvance.deduct_to >= payload.month_year)
-    ).all()
-    advance_deduction = round(sum(
-        min(float(row.monthly_deduction or 0.0), float(row.remaining_balance or 0.0))
-        for row in active_advances
-    ), 2)
+    advance_deduction, _ = preview_monthly_advance_recovery(
+        db, comp_code, payload.employee_id, payload.month_year
+    )
     values = payload.dict()
     values["status"] = normalized_status
     values["payment_status"] = "PAID" if normalized_status == "PAID" else "UNPAID"
@@ -2078,6 +2119,38 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     submitted_net = float(payload.net_payable or 0.0)
     values["employee_name"] = employee.employee_name
     values["advance_deduction"] = advance_deduction
+    year, month_no = map(int, payload.month_year.split("-"))
+    effective_date = date(year, month_no, calendar.monthrange(year, month_no)[1])
+    statutory = effective_statutory_record(db, comp_code, payload.employee_id, effective_date)
+    monthly_statutory_wages = sum(
+        float(values.get(field, 0.0) or 0.0)
+        for field in SALARY_MONTHLY_EARNING_FIELDS
+    )
+    present_days = float(values.get("present_days", 0.0) or 0.0)
+    earned_monthly_wages = monthly_statutory_wages * present_days / 26.0
+    earned_pf_wages = float(values.get("basic_salary", 0.0) or 0.0) * present_days / 26.0
+    earned_esi_wages = max(
+        0.0,
+        earned_monthly_wages
+        + float(values.get("ot_amount", 0.0) or 0.0)
+        + float(values.get("salary_adjustment", 0.0) or 0.0),
+    )
+    statutory_values = calculate_pf_esi(
+        statutory,
+        monthly_pf_wages=float(values.get("basic_salary", 0.0) or 0.0),
+        earned_pf_wages=earned_pf_wages,
+        monthly_esi_wages=monthly_statutory_wages,
+        earned_esi_wages=earned_esi_wages,
+        employee_dob=employee.dob,
+        effective_date=effective_date.replace(day=1),
+    )
+    values["pf_employee"] = statutory_values["pf_employee"]
+    values["pf_employer"] = statutory_values["pf_employer"]
+    values["epf_employer"] = statutory_values["epf_employer"]
+    values["eps_employer"] = statutory_values["eps_employer"]
+    values["edli_employer"] = statutory_values["edli_employer"]
+    values["esi_employee"] = statutory_values["esi_employee"]
+    values["esi_employer"] = statutory_values["esi_employer"]
     try:
         values.update(calculate_salary_totals(values))
     except ValueError as exc:
@@ -2128,6 +2201,21 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
         save_mode = "CREATED"
         write_audit(db, "salary_processing", entry.id, comp_code, "CREATE", "NONE", f"Emp: {payload.employee_name} Month: {payload.month_year}", email)
 
+    should_recover_advance = normalized_status in {"APPROVED", "PAID"}
+    recovered_amount = sync_monthly_advance_recovery(
+        db,
+        comp_code,
+        payload.employee_id,
+        payload.month_year,
+        record.id,
+        should_recover_advance,
+    )
+    if should_recover_advance and abs(recovered_amount - float(values["advance_deduction"] or 0.0)) > 0.001:
+        values["advance_deduction"] = recovered_amount
+        values.update(calculate_salary_totals(values))
+        for key in ("advance_deduction", "total_deductions", "net_payable", "gross_salary"):
+            setattr(record, key, values[key])
+
     repost_salary_processing_accounts(db, comp_code, record, employee, email)
 
     if has_variance:
@@ -2171,15 +2259,21 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     entry = db.query(SalaryProcessing).filter(SalaryProcessing.id == log_id, SalaryProcessing.company_id == comp_code).first()
     if entry:
         write_audit(db, "salary_processing", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        sync_monthly_advance_recovery(
+            db,
+            comp_code,
+            entry.employee_id,
+            entry.month_year,
+            entry.id,
+            False,
+        )
         entry.is_cancelled = True
         entry.paid_amount = 0.0
         entry.payment_status = "UNPAID"
         if entry.salary_journal_id:
             cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
             entry.salary_journal_id = None
-        if entry.payment_journal_id:
-            cancel_linked_bill_voucher(db, comp_code, entry.payment_journal_id, email)
-            entry.payment_journal_id = None
+        cancel_salary_payment_vouchers(db, comp_code, entry, email)
         db.commit()
         return {"success": True, "message": "Salary record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -2429,7 +2523,14 @@ def gst_register_save(request: Request, payload: GSTRegisterSchema, db: Session 
         party = payload.party_name or "GST Party"
         details = []
 
-        if tx_type in ("PURCHASE", "RCM"):
+        if tx_type == "RCM":
+            details.append(amount_line(db, comp_code, taxable, 0.0, f"RCM purchase taxable value - {payload.invoice_no}", ledger_name="GST Purchase A/c", group_name="Purchase Accounts", group_type="EXPENSE"))
+            if total_tax > 0:
+                details.append(amount_line(db, comp_code, total_tax, 0.0, f"RCM input GST - {payload.invoice_no}", ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+                details.append(amount_line(db, comp_code, 0.0, total_tax, f"RCM GST payable - {payload.invoice_no}", ledger_name="RCM Output GST Payable A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+            details.append(amount_line(db, comp_code, 0.0, taxable, f"RCM supplier payable - {payload.invoice_no}", ledger_name=f"{party} - Supplier A/c", group_name="Sundry Creditors", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+            voucher_type = "Purchase"
+        elif tx_type == "PURCHASE":
             details.append(amount_line(db, comp_code, taxable, 0.0, f"Purchase taxable value - {payload.invoice_no}", ledger_name="GST Purchase A/c", group_name="Purchase Accounts", group_type="EXPENSE"))
             if total_tax > 0:
                 details.append(amount_line(db, comp_code, total_tax, 0.0, f"Input GST - {payload.invoice_no}", ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
@@ -2474,9 +2575,13 @@ def gst_register_delete(log_id: int, request: Request, db: Session = Depends(get
     entry = db.query(GSTRegister).filter(GSTRegister.id == log_id, GSTRegister.company_id == comp_code).first()
     if entry:
         if entry.journal_id:
-            voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.journal_id, VoucherHeader.company_id == comp_code).first()
-            if voucher:
-                db.delete(voucher)
+            PostingEngineService.reverse_voucher(
+                db,
+                comp_code,
+                entry.journal_id,
+                f"GST register entry {entry.invoice_no} cancelled",
+                email or "SYSTEM",
+            )
         write_audit(db, "gst_register", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -2559,6 +2664,18 @@ def fixed_assets_save(request: Request, payload: FixedAssetSchema, db: Session =
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     exists = db.query(FixedAssetMaster).filter(FixedAssetMaster.company_id == comp_code, FixedAssetMaster.asset_code == payload.asset_code).first()
     if exists: return JSONResponse({"success": False, "message": "Asset code already registered"}, status_code=400)
+    if payload.purchase_cost <= 0:
+        return JSONResponse({"success": False, "message": "Purchase cost must be greater than zero"}, status_code=400)
+    if payload.salvage_value < 0 or payload.salvage_value > payload.purchase_cost:
+        return JSONResponse({"success": False, "message": "Salvage value must be between zero and purchase cost"}, status_code=400)
+    ledger_rules = (
+        (payload.asset_ledger_id, {"ASSET"}, "Select a valid fixed asset ledger"),
+        (payload.acc_dep_ledger_id, {"ASSET"}, "Accumulated depreciation must use a contra-asset ledger"),
+        (payload.dep_expense_ledger_id, {"EXPENSE"}, "Select a valid depreciation expense ledger"),
+    )
+    for ledger_id, group_types, message in ledger_rules:
+        if ledger_id and not account_lookup(db, comp_code, ledger_id, group_types=group_types):
+            return JSONResponse({"success": False, "message": message}, status_code=400)
     entry = FixedAssetMaster(
         company_id=comp_code,
         created_by=email or "SYSTEM",
@@ -2602,9 +2719,13 @@ def fixed_assets_delete(log_id: int, request: Request, db: Session = Depends(get
         if dep_exists:
             return JSONResponse({"success": False, "message": "Asset has depreciation runs. Reverse depreciation before deleting asset."}, status_code=400)
         if entry.purchase_journal_id:
-            voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.purchase_journal_id, VoucherHeader.company_id == comp_code).first()
-            if voucher:
-                db.delete(voucher)
+            PostingEngineService.reverse_voucher(
+                db,
+                comp_code,
+                entry.purchase_journal_id,
+                f"Fixed asset {entry.asset_code} cancelled",
+                email or "SYSTEM",
+            )
         write_audit(db, "fixed_asset_masters", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -2617,9 +2738,22 @@ def fixed_assets_run_depreciation(request: Request, payload: DepreciationRunSche
     email = request.session.get("email") or "SYSTEM"
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     run_date = payload.run_date or date.today()
+    fixed_assets_group = PostingEngineService.get_or_create_group(db, comp_code, "Fixed Assets", "ASSET")
+    default_acc_dep = db.query(LedgerMaster).filter(
+        LedgerMaster.company_id == comp_code,
+        LedgerMaster.ledger_name == "Accumulated Depreciation A/c",
+    ).first()
+    if default_acc_dep and default_acc_dep.group_id != fixed_assets_group.id:
+        default_acc_dep.group_id = fixed_assets_group.id
     assets = db.query(FixedAssetMaster).filter(FixedAssetMaster.company_id == comp_code, FixedAssetMaster.status == "ACTIVE").all()
     created_count = 0
     for asset in assets:
+        if asset.acc_dep_ledger_id and not account_lookup(db, comp_code, asset.acc_dep_ledger_id, group_types={"ASSET"}):
+            db.rollback()
+            return JSONResponse({"success": False, "message": f"Accumulated depreciation ledger for {asset.asset_code} must be a contra-asset ledger"}, status_code=400)
+        if asset.dep_expense_ledger_id and not account_lookup(db, comp_code, asset.dep_expense_ledger_id, group_types={"EXPENSE"}):
+            db.rollback()
+            return JSONResponse({"success": False, "message": f"Depreciation ledger for {asset.asset_code} must be an expense ledger"}, status_code=400)
         exists = db.query(DepreciationSchedule).filter(
             DepreciationSchedule.company_id == comp_code,
             DepreciationSchedule.asset_id == asset.id,
@@ -2653,7 +2787,7 @@ def fixed_assets_run_depreciation(request: Request, payload: DepreciationRunSche
         try:
             details = [
                 amount_line(db, comp_code, dep_amount, 0.0, f"Depreciation expense - {asset.asset_code} {payload.period_month}", ledger_id=asset.dep_expense_ledger_id, ledger_name="Depreciation Expense A/c", group_name="Indirect Expenses", group_type="EXPENSE"),
-                amount_line(db, comp_code, 0.0, dep_amount, f"Accumulated depreciation - {asset.asset_code} {payload.period_month}", ledger_id=asset.acc_dep_ledger_id, ledger_name="Accumulated Depreciation A/c", group_name="Provisions", group_type="LIABILITY", parent_group_name="Current Liabilities"),
+                amount_line(db, comp_code, 0.0, dep_amount, f"Accumulated depreciation - {asset.asset_code} {payload.period_month}", ledger_id=asset.acc_dep_ledger_id, ledger_name="Accumulated Depreciation A/c", group_name="Fixed Assets", group_type="ASSET"),
             ]
             voucher = PostingEngineService.create_voucher(
                 db=db,

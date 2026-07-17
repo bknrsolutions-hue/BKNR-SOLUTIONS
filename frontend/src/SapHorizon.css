@@ -1,0 +1,213 @@
+/* SAP Fiori Morning Horizon-inspired application baseline. */
+:root,
+[data-theme="light"] {
+  --sap-font-family: "72", "72full", Arial, Helvetica, sans-serif;
+  --sap-accent: var(--ui-accent, #0070f2);
+  --bg-app: #f5f6f7;
+  --surface-panel: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.96);
+  --text-primary: #1d2d3e;
+  --text-secondary: #475e75;
+  --text-tertiary: #5b738b;
+  --border-light: #d5dadd;
+  --table-line: #e5e8ea;
+  --border-highlight: #a8b3bd;
+  --input-bg: #ffffff;
+  --input-border: #8996a3;
+  --row-hover: #eaf3fc;
+  --shadow-soft: 0 1px 2px rgb(34 53 72 / 10%);
+  --shadow-float: 0 4px 14px rgb(34 53 72 / 14%);
+  --erp-accent: var(--sap-accent);
+  --corp-dash: var(--sap-accent);
+  --corp-ops: var(--sap-accent);
+  --corp-fin: var(--sap-accent);
+  --corp-rep: var(--sap-accent);
+  --corp-hr: var(--sap-accent);
+  --radius-panel: 8px;
+  --radius-element: 6px;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --sap-accent: var(--ui-accent, #4db1ff);
+  --bg-app: #12171c;
+  --surface-panel: #1d232a;
+  --glass-bg: rgba(29, 35, 42, 0.96);
+  --text-primary: #f5f6f7;
+  --text-secondary: #c2c8ce;
+  --text-tertiary: #9da4aa;
+  --border-light: #3a424a;
+  --table-line: #323a42;
+  --border-highlight: #69747e;
+  --input-bg: #242b33;
+  --input-border: #687682;
+  --row-hover: #253b50;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 32%);
+  --shadow-float: 0 4px 16px rgb(0 0 0 / 38%);
+  color-scheme: dark;
+}
+
+html,
+body,
+#root,
+button,
+input,
+select,
+textarea,
+table {
+  font-family: var(--sap-font-family) !important;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+@media screen {
+  .app-container,
+  .main-content,
+  .enterprise-dashboard,
+  .attendance-page,
+  .report-viewer-page {
+    background: var(--bg-app) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .main-content :is(.card, .attendance-card, .enterprise-panel, .admin-card, .tally-panel, .chart-box, .table-responsive, .enterprise-table-wrap) {
+    border-color: var(--border-light) !important;
+    border-radius: 8px !important;
+    background: var(--surface-panel) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  .main-content :is(h1, .attendance-page-header h1, .enterprise-head h1) {
+    color: var(--text-primary) !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(h2, .attendance-card h2, .enterprise-panel-head h2) {
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(h3, .section-header, .section-head, .panel-title, .table-title) {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(.attendance-page-header p, .enterprise-head p, .subtitle, .helper-text, small) {
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+  }
+
+  .main-content :is(label, .attendance-form-group label, .enterprise-field label, .field label, .filter-label) {
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(input, select, textarea, button, .btn, .attendance-btn) {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  .main-content :is(input, select, textarea) {
+    border-color: var(--input-border) !important;
+    border-radius: 6px !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .main-content :is(table, .attendance-table, .enterprise-table, .bknr-table, .rm-table) {
+    color: var(--text-primary) !important;
+    font-size: 13px !important;
+  }
+
+  .main-content :is(th, .attendance-table th, .enterprise-table th, .bknr-table th, .rm-table th) {
+    background: #eef0f2 !important;
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  [data-theme="dark"] .main-content :is(th, .attendance-table th, .enterprise-table th, .bknr-table th, .rm-table th) {
+    background: #252c34 !important;
+  }
+
+  .main-content :is(td, .attendance-table td, .enterprise-table td, .bknr-table td, .rm-table td) {
+    border-color: var(--table-line) !important;
+    font-size: 13px !important;
+  }
+
+  .main-content tbody tr:hover {
+    background: var(--row-hover) !important;
+  }
+
+  .main-content :is(.kpi-title, .kpi-card h4, .erp-kpi-label, .tally-kpi-label, .enterprise-kpi-top) {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(.kpi-value, .kpi-card .value, .erp-kpi-value, .tally-kpi-value, .enterprise-kpi strong) {
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar,
+  .app-header,
+  .premium-header {
+    border-color: var(--border-light) !important;
+    background: var(--surface-panel) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  .sidebar :is(.pillar-heading, .submenu-heading-text, .nav-link),
+  .module-rail :is(.rail-title, .rail-link) {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar .brand-subtitle,
+  .module-rail .rail-label {
+    font-size: 11px !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar :is(.nav-link, .submenu-heading-text):hover,
+  .module-rail .rail-link:hover,
+  .module-rail .rail-link.active {
+    background: #eaf3fc !important;
+    color: var(--sap-accent) !important;
+  }
+
+  [data-theme="dark"] .sidebar :is(.nav-link, .submenu-heading-text):hover,
+  [data-theme="dark"] .module-rail .rail-link:hover,
+  [data-theme="dark"] .module-rail .rail-link.active {
+    background: #253b50 !important;
+  }
+
+  .main-content :is(.btn-primary, .attendance-btn.primary, button.primary) {
+    border-color: var(--sap-accent) !important;
+    background: var(--sap-accent) !important;
+    color: #ffffff !important;
+  }
+}
+
+@media (max-width: 767px) {
+  body { font-size: 13px; }
+  .main-content :is(h1, .attendance-page-header h1, .enterprise-head h1) { font-size: 18px !important; }
+  .main-content :is(h2, .attendance-card h2, .enterprise-panel-head h2) { font-size: 15px !important; }
+}

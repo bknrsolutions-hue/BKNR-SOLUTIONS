@@ -12,6 +12,7 @@ python-multipart
 openpyxl
 weasyprint
 pandas
+pypdf>=6.0.0
 xhtml2pdf
 gunicorn
 APScheduler==3.11.2

@@ -1,0 +1,47 @@
+.hr-react-dashboard .enterprise-dashboard{font-size:12px}.hr-kpis{grid-template-columns:repeat(7,minmax(105px,1fr))}.hr-kpis .enterprise-kpi{min-height:78px;padding:10px 12px}.hr-kpis .enterprise-kpi:before{display:none}.hr-kpis .enterprise-kpi small{display:none}.hr-kpis .enterprise-kpi strong{margin-top:6px;font-size:19px}.hr-kpis .enterprise-kpi-icon{width:26px;height:26px}.hr-tabs{display:flex;gap:6px;margin:0 0 10px;padding:6px;overflow-x:auto;border:1px solid var(--border-light);border-radius:12px;background:var(--surface-panel);box-shadow:var(--shadow-soft)}.hr-tabs button{height:35px;display:inline-flex;align-items:center;justify-content:center;gap:7px;flex:1;min-width:150px;padding:0 12px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--text-secondary);font:inherit;font-size:11px;font-weight:800;white-space:nowrap;cursor:pointer}.hr-tabs button:hover{background:var(--bg-app);color:var(--corp-dash)}.hr-tabs button.active{border-color:color-mix(in srgb,var(--corp-dash) 35%,var(--border-light));background:color-mix(in srgb,var(--corp-dash) 10%,var(--surface-panel));color:var(--corp-dash)}.hr-tabs button>span{min-width:20px;padding:2px 5px;border-radius:20px;background:#f59e0b;color:white;font-size:9px}.hr-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.hr-grid .enterprise-panel{padding:14px}.hr-grid .enterprise-panel-head h2{font-size:12px}.hr-react-dashboard .enterprise-table{font-size:10px}.hr-react-dashboard .enterprise-table th{font-size:9px}.hr-react-dashboard .enterprise-table th,.hr-react-dashboard .enterprise-table td{height:36px;padding:0 10px}.hr-heat{display:inline-grid;min-width:32px;height:25px;place-items:center;border-radius:6px;font-weight:850}.hr-heat.high{background:#dcfce7;color:#15803d}.hr-heat.mid{background:#dbeafe;color:#1d4ed8}.hr-heat.zero{background:var(--bg-app);color:var(--text-tertiary)}.hr-pill{display:inline-flex;align-items:center;margin:1px 2px;padding:3px 7px;border-radius:99px;background:#dbeafe;color:#1d4ed8;font-size:9px;font-weight:850;white-space:nowrap}.hr-pill.green{background:#dcfce7;color:#15803d}.hr-pill.amber{background:#fef3c7;color:#b45309}.hr-pill.red{background:#fee2e2;color:#dc2626}.hr-pill.purple{background:#ede9fe;color:#7c3aed}.hr-stat-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:12px}.hr-stat-tiles>div{padding:11px;border:1px solid var(--border-light);border-top:3px solid #2563eb;border-radius:9px;background:var(--bg-app)}.hr-stat-tiles>div.green{border-top-color:#16a34a}.hr-stat-tiles>div.red{border-top-color:#dc2626}.hr-stat-tiles>div.amber{border-top-color:#f59e0b}.hr-stat-tiles>div.purple{border-top-color:#7c3aed}.hr-stat-tiles span{display:block;color:var(--text-tertiary);font-size:9px;font-weight:800;text-transform:uppercase}.hr-stat-tiles strong{display:block;margin-top:6px;font-size:18px}.hr-gauge{margin-top:11px}.hr-gauge>div{display:flex;justify-content:space-between;margin-bottom:5px;font-size:10px}.hr-gauge>span{display:block;height:8px;overflow:hidden;border-radius:99px;background:var(--bg-app)}.hr-gauge>span i{display:block;height:100%;border-radius:inherit}.hr-info-rows{margin-top:8px}.hr-info-rows>div,.hr-data-row{min-height:36px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-light)}.hr-info-rows span,.hr-data-row span{color:var(--text-secondary)}.hr-info-rows strong,.hr-data-row strong{font-size:11px}.hr-info-rows .green,.hr-data-row .green{color:#16a34a}.hr-info-rows .red,.hr-data-row .red{color:#dc2626}.hr-info-rows .amber{color:#d97706}.hr-info-rows .blue{color:#2563eb}.hr-data-row.compact{min-height:31px;font-size:10px}.hr-filter-bar{display:grid;grid-template-columns:repeat(3,minmax(130px,180px)) minmax(220px,1fr);gap:8px;margin-bottom:10px}.hr-filter-bar input,.hr-filter-bar select,.hr-inline-input{height:36px;padding:0 10px;border:1px solid var(--border-light);border-radius:8px;background:var(--surface-panel);color:var(--text-primary);font:inherit;font-size:10px;font-weight:700}.hr-inline-input{width:76px;height:29px;padding:0 6px}.hr-directory-table{max-height:520px}.hr-tall-table{max-height:390px}.hr-employee{display:flex;align-items:center;gap:7px}.hr-employee>span{width:28px;height:28px;display:grid;place-items:center;border-radius:8px;background:hsl(var(--avatar-hue),60%,48%);color:#fff;font-weight:900}.hr-actions{display:flex;gap:5px}.hr-actions button{height:28px;padding:0 9px;border:0;border-radius:6px;color:#fff;font:inherit;font-size:9px;font-weight:850;cursor:pointer}.hr-actions .approve{background:#16a34a}.hr-actions .reject{background:#dc2626}.hr-actions button:disabled{opacity:.55}.hr-empty{height:80px!important;color:var(--text-tertiary);text-align:center!important}.hr-react-dashboard .enterprise-bars{height:170px}.hr-react-dashboard .enterprise-bar-label{font-size:9px}@media(max-width:1100px){.hr-kpis{grid-template-columns:repeat(4,minmax(125px,1fr))}}@media(max-width:900px){.hr-kpis{grid-template-columns:repeat(2,minmax(145px,1fr))}.hr-grid{grid-template-columns:1fr}.hr-filter-bar{grid-template-columns:1fr 1fr}.hr-tabs button{flex:0 0 auto}}@media(max-width:560px){.hr-kpis{grid-template-columns:1fr 1fr}.hr-filter-bar{grid-template-columns:1fr}.hr-react-dashboard .enterprise-kpi{min-height:76px}.hr-tabs{margin-left:-3px;margin-right:-3px}}
+
+.hr-kpis .enterprise-kpi strong { font-size: 16px; }
+
+.hr-analytics-chart {
+  width: 100%;
+  overflow-x: auto;
+  padding: 4px 0 3px;
+}
+
+.hr-analytics-chart .enterprise-bars {
+  min-width: max(100%, 820px);
+  height: 190px;
+  padding: 22px 4px 0;
+}
+
+.hr-analytics-chart .enterprise-bar-group {
+  min-width: 24px;
+}
+
+.hr-analytics-chart .enterprise-bar-track {
+  position: relative;
+}
+
+.hr-analytics-chart .enterprise-bar-value {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--text-secondary);
+  font-size: 8px;
+  font-weight: 850;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.hr-analytics-chart .enterprise-bar-label {
+  overflow: visible;
+  font-size: 8px;
+  text-overflow: clip;
+}
+
+@media (max-width: 560px) {
+  .hr-analytics-chart .enterprise-bars {
+    min-width: 760px;
+  }
+}

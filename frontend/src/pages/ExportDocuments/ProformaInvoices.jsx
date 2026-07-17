@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Ban, Download, FileText, Pencil, Plus, Printer, Search, X } from 'lucide-react';
+import { Ban, Building2, Calculator, Download, FileText, Pencil, Plus, Printer, Ship, X } from 'lucide-react';
 import '../Attendance/Attendance.css';
+import './ProformaInvoices.css';
+import ExportSearchPanel from './ExportSearchPanel';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const emptyForm = () => ({
-  pi_no: '', pi_date: today(), validity_date: '', po_number: '', buyer_name: '',
+const emptyForm = (piNo = '') => ({
+  pi_no: piNo, pi_date: today(), validity_date: '', po_number: '', buyer_name: '',
   buyer_address: '', country: '', currency: 'USD', incoterm: 'FOB', payment_terms: '',
   port_of_loading: '', port_of_discharge: '', product_description: '', quantity: '',
   unit: 'KG', unit_price: '', status: 'DRAFT', remarks: '',
@@ -24,6 +26,9 @@ export default function ProformaInvoices() {
   const [canApprove, setCanApprove] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
   const [showAudit, setShowAudit] = useState(false);
+  const [buyerOptions, setBuyerOptions] = useState([]);
+  const [countryOptions, setCountryOptions] = useState([]);
+  const [nextPiNo, setNextPiNo] = useState('');
 
   const notify = useCallback((msg, type = 'success') => {
     setNotice({ msg, type });
@@ -38,6 +43,9 @@ export default function ProformaInvoices() {
       setRows(data.rows || []);
       setCanApprove(Boolean(data.can_approve));
       setAuditLogs(data.audit_logs || []);
+      setBuyerOptions(data.buyers || []);
+      setCountryOptions(data.countries || []);
+      setNextPiNo(data.next_pi_no || '');
     } catch (error) {
       notify(error.message || 'Unable to load proforma invoices', 'error');
     }
@@ -64,7 +72,7 @@ export default function ProformaInvoices() {
 
   const openNew = () => {
     setEditingId(null);
-    setForm(emptyForm());
+    setForm(emptyForm(nextPiNo));
     setModalOpen(true);
   };
 
@@ -81,8 +89,33 @@ export default function ProformaInvoices() {
 
   const change = event => setForm(current => ({ ...current, [event.target.name]: event.target.value }));
 
+  const changeBuyer = event => {
+    const buyerName = event.target.value;
+    const buyer = buyerOptions.find(item => item.name === buyerName);
+    setForm(current => ({
+      ...current,
+      buyer_name: buyerName,
+      buyer_address: buyer?.address || '',
+      country: buyer?.country || current.country,
+      currency: buyer?.currency || current.currency,
+      payment_terms: buyer?.payment_terms || current.payment_terms,
+    }));
+  };
+
   const save = async event => {
     event.preventDefault();
+    if (form.validity_date && form.validity_date < form.pi_date) {
+      notify('Valid Until date cannot be before PI Date.', 'error');
+      return;
+    }
+    if (!form.buyer_name.trim() || !form.buyer_address.trim() || !form.product_description.trim()) {
+      notify('Buyer, buyer address and product description are required.', 'error');
+      return;
+    }
+    if ((Number(form.quantity) || 0) <= 0 || Number(form.unit_price) < 0) {
+      notify('Quantity must be greater than zero and unit price cannot be negative.', 'error');
+      return;
+    }
     if (!window.confirm(`Do you want to ${editingId ? 'update' : 'save'} this invoice?`)) return;
     setSaving(true);
     try {
@@ -176,7 +209,7 @@ export default function ProformaInvoices() {
       {showAudit && <div className="attendance-table-container" style={{ marginBottom: 14 }}>
         <div className="attendance-table-wrapper"><table className="attendance-table">
           <thead><tr><th>Time</th><th>PI Record</th><th>Action</th><th>Previous</th><th>New Value</th><th>User</th></tr></thead>
-          <tbody>{auditLogs.map(log => <tr key={log.id}><td>{log.edited_at}</td><td>#{log.record_id}</td><td><strong>{log.action}</strong></td><td>{log.old_value || '—'}</td><td>{log.new_value || '—'}</td><td>{log.edited_by || '—'}</td></tr>)}
+          <tbody>{auditLogs.map(log => <tr key={log.id} data-audit-record-id={log.record_id} onClick={() => { setShowAudit(false); window.setTimeout(() => window.openAuditRecord?.(log.record_id), 80); }} style={{ cursor: 'pointer' }}><td>{log.edited_at}</td><td>Row ID #{log.record_id}</td><td><strong>{log.action}</strong></td><td>{log.old_value || '—'}</td><td>{log.new_value || '—'}</td><td>{log.edited_by || '—'}</td></tr>)}
           {!auditLogs.length && <tr><td colSpan="6" className="attendance-empty">No audit activity yet.</td></tr>}</tbody>
         </table></div>
       </div>}
@@ -190,13 +223,14 @@ export default function ProformaInvoices() {
         ))}
       </div>
 
-      <div className="attendance-filters-bar" style={{ maxWidth: 390 }}>
-        <div className="attendance-filter-group" style={{ position: 'relative' }}>
-          <label htmlFor="pi-search">Search PI / Buyer / PO</label>
-          <Search size={15} style={{ position: 'absolute', left: 10, bottom: 9, color: 'var(--att-muted)' }} />
-          <input id="pi-search" className="attendance-input" style={{ paddingLeft: 32 }} value={query} onChange={event => setQuery(event.target.value)} placeholder="Search..." />
-        </div>
-      </div>
+      <ExportSearchPanel
+        id="pi-search"
+        label="Search PI / Buyer / PO"
+        value={query}
+        onChange={setQuery}
+        count={filteredRows.length}
+        placeholder="PI number, buyer or PO…"
+      />
 
       <div className="attendance-table-container">
         <div className="attendance-table-wrapper">
@@ -208,7 +242,7 @@ export default function ProformaInvoices() {
             </tr></thead>
             <tbody>
               {filteredRows.map(row => (
-                <tr key={row.id}>
+                <tr key={row.id} data-record-id={row.id}>
                   <td style={{ fontWeight: 800, color: 'var(--att-accent)' }}>{row.pi_no}</td>
                   <td>{row.pi_date}</td><td><strong>{row.buyer_name}</strong><br /><small>{row.country}</small></td>
                   <td>{row.po_number || '—'}</td><td style={{ maxWidth: 220 }}>{row.product_description}</td>
@@ -234,35 +268,74 @@ export default function ProformaInvoices() {
       </div>
 
       {modalOpen && <div className="attendance-modal-overlay">
-        <div className="attendance-modal-content" style={{ maxWidth: 930 }}>
-          <div className="attendance-modal-header"><h2>{editingId ? 'Edit' : 'Create'} Proforma Invoice</h2>
+        <div className="attendance-modal-content pi-form-modal">
+          <div className="attendance-modal-header"><div><h2>{editingId ? 'Edit' : 'Create'} Proforma Invoice</h2>
+            <p>Complete buyer, trade, shipment and commercial value details.</p></div>
             <button className="attendance-modal-close-btn" onClick={() => setModalOpen(false)}><X size={20} /></button>
           </div>
           <form onSubmit={save}>
-            <div className="attendance-modal-body">
-              <div className="attendance-form-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+            <div className="attendance-modal-body pi-form-body">
+              <section className="pi-form-section">
+                <div className="pi-form-section-title"><FileText size={15} /><span>Document Details</span></div>
+                <div className="attendance-form-grid pi-form-grid">
                 <Field label="PI Number" name="pi_no" value={form.pi_no} onChange={change} required placeholder="PI-2026-0001" />
                 <Field label="PI Date" name="pi_date" type="date" value={form.pi_date} onChange={change} required />
-                <Field label="Valid Until" name="validity_date" type="date" value={form.validity_date} onChange={change} />
-                <Field label="Buyer Name" name="buyer_name" value={form.buyer_name} onChange={change} required />
-                <Field label="Country" name="country" value={form.country} onChange={change} required />
+                <Field label="Valid Until" name="validity_date" type="date" min={form.pi_date} value={form.validity_date} onChange={change} />
                 <Field label="Buyer PO (Optional)" name="po_number" value={form.po_number} onChange={change} />
-                <div className="attendance-form-group" style={{ gridColumn: 'span 3' }}><label>Buyer Address</label><textarea className="attendance-input" name="buyer_address" value={form.buyer_address} onChange={change} required rows="2" /></div>
-                <Select label="Currency" name="currency" value={form.currency} onChange={change} options={['USD', 'EUR', 'GBP', 'AED', 'JPY', 'INR']} />
-                <Select label="Incoterm" name="incoterm" value={form.incoterm} onChange={change} options={['FOB', 'CFR', 'CIF', 'EXW', 'FCA', 'CPT', 'CIP', 'DDP']} />
-                <Field label="Payment Terms" name="payment_terms" value={form.payment_terms} onChange={change} required placeholder="30% advance, balance against documents" />
-                <Field label="Port of Loading" name="port_of_loading" value={form.port_of_loading} onChange={change} />
-                <Field label="Port of Discharge" name="port_of_discharge" value={form.port_of_discharge} onChange={change} />
-                <Select label="Status" name="status" value={form.status} onChange={change} options={statuses} />
-                <div className="attendance-form-group" style={{ gridColumn: 'span 3' }}><label>Product Description</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="2" placeholder="Species, grade, freezing and packing details" /></div>
+                {editingId
+                  ? <Select label="PI Status" name="status" value={form.status} onChange={change} options={statuses} />
+                  : <div className="attendance-form-group"><label>PI Status</label><div className="attendance-input pi-readonly-value">DRAFT</div></div>}
+                </div>
+              </section>
+
+              <section className="pi-form-section">
+                <div className="pi-form-section-title"><Building2 size={15} /><span>Buyer Details</span></div>
+                <div className="attendance-form-grid pi-form-grid">
+                  <div className="attendance-form-group">
+                    <label>Buyer Name</label>
+                    <select className="attendance-select" name="buyer_name" value={form.buyer_name} onChange={changeBuyer} required>
+                      <option value="">Select Buyer</option>
+                      {buyerOptions.map(buyer => <option key={buyer.name} value={buyer.name}>{buyer.name}{buyer.country ? ` · ${buyer.country}` : ''}</option>)}
+                      {form.buyer_name && !buyerOptions.some(buyer => buyer.name === form.buyer_name) && <option value={form.buyer_name}>{form.buyer_name}</option>}
+                    </select>
+                  </div>
+                  <div className="attendance-form-group">
+                    <label>Country</label>
+                    <select className="attendance-select" name="country" value={form.country} onChange={change} required>
+                      <option value="">Select Country</option>
+                      {countryOptions.map(country => <option key={country} value={country}>{country}</option>)}
+                      {form.country && !countryOptions.includes(form.country) && <option value={form.country}>{form.country}</option>}
+                    </select>
+                  </div>
+                  <Select label="Currency" name="currency" value={form.currency} onChange={change} options={['USD', 'EUR', 'GBP', 'AED', 'JPY', 'INR']} />
+                  <div className="attendance-form-group pi-span-4"><label>Buyer Address</label><textarea className="attendance-input" name="buyer_address" value={form.buyer_address} onChange={change} required rows="2" placeholder="Complete buyer billing address" /></div>
+                </div>
+              </section>
+
+              <section className="pi-form-section">
+                <div className="pi-form-section-title"><Ship size={15} /><span>Trade & Shipment Terms</span></div>
+                <div className="attendance-form-grid pi-form-grid">
+                  <Select label="Incoterm" name="incoterm" value={form.incoterm} onChange={change} options={['FOB', 'CFR', 'CIF', 'EXW', 'FCA', 'CPT', 'CIP', 'DDP']} />
+                  <Field label="Payment Terms" name="payment_terms" value={form.payment_terms} onChange={change} required placeholder="Advance / LC / documents" />
+                  <Field label="Port of Loading" name="port_of_loading" value={form.port_of_loading} onChange={change} placeholder="Loading port" />
+                  <Field label="Port of Discharge" name="port_of_discharge" value={form.port_of_discharge} onChange={change} placeholder="Destination port" />
+                </div>
+              </section>
+
+              <section className="pi-form-section">
+                <div className="pi-form-section-title"><Calculator size={15} /><span>Product & Commercial Value</span></div>
+                <div className="attendance-form-grid pi-form-grid">
+                  <div className="attendance-form-group pi-span-4"><label>Product Description</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="3" placeholder="Product, species, grade, glaze, freezing type and packing specification" /></div>
                 <Field label="Quantity" name="quantity" type="number" min="0.001" step="0.001" value={form.quantity} onChange={change} required />
                 <Select label="Unit" name="unit" value={form.unit} onChange={change} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
                 <Field label="Unit Price" name="unit_price" type="number" min="0" step="0.0001" value={form.unit_price} onChange={change} required />
-                <div className="attendance-form-group"><label>Calculated Total</label><div className="attendance-input" style={{ fontWeight: 800 }}>{form.currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div></div>
-                <div className="attendance-form-group" style={{ gridColumn: 'span 2' }}><label>Remarks</label><input className="attendance-input" name="remarks" value={form.remarks} onChange={change} /></div>
-              </div>
+                  <div className="attendance-form-group"><label>Total PI Value</label><div className="pi-total-value"><small>{form.currency}</small><strong>{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div></div>
+                  <div className="attendance-form-group pi-span-4"><label>Remarks / Special Conditions</label><textarea className="attendance-input" name="remarks" value={form.remarks} onChange={change} rows="2" placeholder="Quality, delivery, documentation or offer conditions" /></div>
+                </div>
+              </section>
             </div>
             <div className="attendance-modal-footer">
+              <div className="pi-footer-total"><span>Offer Value</span><strong>{form.currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
               <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => setModalOpen(false)}>CANCEL</button>
               <button type="submit" className="attendance-btn attendance-btn-primary" disabled={saving}>{saving ? 'SAVING...' : editingId ? 'UPDATE PI' : 'CREATE PI'}</button>
             </div>

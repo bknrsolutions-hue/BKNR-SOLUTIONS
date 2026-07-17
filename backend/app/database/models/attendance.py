@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Time, Text, ForeignKey, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, Time, Text, ForeignKey, Boolean, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
 from app.database import Base
@@ -86,6 +86,7 @@ class DailyAttendance(Base, metacolumns):
     exit_time = Column(DateTime, nullable=True)
     working_hours = Column(Float, default=0.0)
     salary_adjustment = Column(Float, default=0.0)
+    salary_adjustment_reason = Column(Text, nullable=True)
     journal_id = Column(Integer, nullable=True)
     movements = Column(JSONB, default=list) 
     status = Column(String(20), default="OPEN") 
@@ -120,6 +121,7 @@ class EmployeeStatutoryMaster(Base, metacolumns):
     pf_employee_percent = Column(Float, default=12.0)
     pf_employer_percent = Column(Float, default=12.0)
     pf_wage_limit = Column(Float, default=15000)
+    eps_applicable = Column(Boolean, default=True)
     esi_applicable = Column(Boolean, default=False)
     esi_number = Column(String(50))
     esi_employee_percent = Column(Float, default=0.75)
@@ -157,7 +159,26 @@ class EmployeeSalaryAdvance(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, onupdate=datetime.utcnow)
 
-from sqlalchemy import Column, Integer, String, Time, Boolean, Date, UniqueConstraint
+
+class EmployeeSalaryAdvanceRecovery(Base):
+    __tablename__ = "employee_salary_advance_recovery"
+    __table_args__ = (
+        UniqueConstraint("company_id", "advance_id", "month_year", name="uq_advance_recovery_month"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), nullable=False, index=True)
+    employee_id = Column(String(50), nullable=False, index=True)
+    advance_id = Column(Integer, nullable=False, index=True)
+    salary_processing_id = Column(Integer, nullable=True, index=True)
+    month_year = Column(String(7), nullable=False, index=True)
+    amount = Column(Float, default=0.0, nullable=False)
+    status = Column(String(20), default="ACTIVE", nullable=False)
+    recovered_at = Column(DateTime, default=datetime.utcnow)
+    reversed_at = Column(DateTime, nullable=True)
+
+
+from sqlalchemy import Column, Integer, String, Time, Boolean, Date
 # మీ బేస్ ఇంపోర్ట్ ఇక్కడ ఉంచుకోండి (ఉదా: from app.database import Base)
 
 class Shift(Base):

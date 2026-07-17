@@ -317,7 +317,7 @@ async def attendance_entry(
     duty_count = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
-        DailyAttendance.duty_date == date.today(),
+        DailyAttendance.duty_date == now.date(),
         DailyAttendance.status == "CLOSED"
     ).count()
 
@@ -333,7 +333,7 @@ async def attendance_entry(
 
             if duty: 
                 movements = list(duty.movements) if duty.movements else []
-                movements.append({"type": "IN", "time": time_str, "shift": shift_name})
+                movements.append({"type": "IN", "time": time_str, "date": now.strftime("%Y-%m-%d"), "shift": shift_name})
                 duty.movements = movements
                 duty.status = "OPEN"
                 flag_modified(duty, "movements")
@@ -346,10 +346,10 @@ async def attendance_entry(
                     designation=emp.designation, 
                     employee_type=emp.employee_type, 
                     production_at=actual_location,   
-                    duty_date=date.today(),
+                    duty_date=now.date(),
                     first_in=now,
                     shift_name=shift_name,
-                    movements=[{"type": "IN", "time": time_str, "shift": shift_name}],
+                    movements=[{"type": "IN", "time": time_str, "date": now.strftime("%Y-%m-%d"), "shift": shift_name}],
                     status="OPEN",
                     duty_status="OPEN",
                 )
@@ -363,7 +363,7 @@ async def attendance_entry(
                 return JSONResponse({"success": False, "error": "ALREADY_ON_BREAK"}, status_code=400)
             
             movements = list(duty.movements) if duty.movements else []
-            movements.append({"type": "OUT", "time": time_str})
+            movements.append({"type": "OUT", "time": time_str, "date": now.strftime("%Y-%m-%d")})
             duty.movements = movements
             duty.status = "AWAY"
             flag_modified(duty, "movements")
@@ -386,7 +386,7 @@ async def attendance_entry(
             audit_details = f"Final Shift Close at {time_str} ({wh} Hrs Worked - Duty: {duty.duty_type})"
 
             if (
-                str(emp.employee_type or "").upper() == "CONTRACT"
+                str(emp.employee_type or "").strip().upper() in {"CONTRACT", "CONTRACTOR"}
                 and emp.contractor_name
                 and not duty.journal_id
                 and duty.duty_status == "APPROVED"
@@ -437,6 +437,7 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
     if not company_id: 
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     ensure_bill_accounting_schema(db)
+    today = ist_now().date()
 
     # 🟢 🔴 Support query param location if fetch drops cookie
     backend_location, user_allowed_locations = get_strict_location(request)
@@ -463,7 +464,7 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
     ).filter(
         DailyAttendance.company_id == company_id,
         or_(
-            DailyAttendance.duty_date == date.today(),
+            DailyAttendance.duty_date == today,
             DailyAttendance.status != "CLOSED"
         )
     )
@@ -481,6 +482,7 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
         duty_type = da.duty_type if da.status == "CLOSED" else "ON-DUTY"
         
         results.append({
+            "id": da.id,
             "employee_id": da.employee_id,
             "employee_name": da.employee_name,
             "department": dept or "GENERAL", 
@@ -511,10 +513,11 @@ async def get_all_attendance_audit(request: Request, db: Session = Depends(get_d
     )
 
     return [{
+        "record_id": l.record_id,
         "timestamp": l.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.edited_by.split('@')[0] if l.edited_by else "System",
         "email": l.edited_by if l.edited_by else "System",
-        "batch": f"Field: {l.field_name}" if l.field_name else f"ID Ref: {l.record_id}",
+        "batch": f"Row ID #{l.record_id} • Field: {l.field_name}" if l.field_name else f"Row ID #{l.record_id}",
         "action": "PUNCH TRANSACTION",
         "details": l.new_value
     } for l in logs]
@@ -528,6 +531,7 @@ def export_attendance_excel(request: Request, location: str = None, db: Session 
 
     backend_location, user_allowed_locations = get_strict_location(request)
     actual_location = location.strip().upper() if location else backend_location
+    today = ist_now().date()
 
     query = db.query(
         DailyAttendance, 
@@ -540,7 +544,7 @@ def export_attendance_excel(request: Request, location: str = None, db: Session 
         )
     ).filter(
         DailyAttendance.company_id == company_id,
-        DailyAttendance.duty_date == date.today()
+        DailyAttendance.duty_date == today
     )
 
     if actual_location and actual_location != "ALL":

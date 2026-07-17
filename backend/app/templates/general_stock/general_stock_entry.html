@@ -876,7 +876,7 @@
       <input type="hidden" id="record_id" name="id">
 
       <div class="actions movement-dependent" id="formActions">
-        <button class="btn" id="saveEntryBtn" type="submit">SAVE ENTRY</button>
+        <button class="btn" id="saveEntryBtn" type="submit">SAVE</button>
         <button class="btn btn-clear" type="button" onclick="clearForm()">CANCEL</button>
       </div>
     </div>
@@ -995,7 +995,7 @@
           value="0.00"></div>
       <div class="modal-buttons">
         <button class="cancel" type="button" onclick="closeItemMasterModal()">Cancel</button>
-        <button class="save" type="button" onclick="saveNewItemFromPopup()">Save Item</button>
+        <button class="save" type="button" onclick="saveNewItemFromPopup()">Save</button>
       </div>
     </div>
   </div>
@@ -1280,7 +1280,7 @@
         moveFieldToStockGrid("minimumLevelField");
       } else {
         if (infoTitle) infoTitle.innerHTML = '<i class="fa-solid fa-boxes-stacked"></i> Stock Allocation Info';
-        if (saveBtn) saveBtn.innerHTML = 'SAVE ENTRY';
+        if (saveBtn) saveBtn.innerHTML = 'SAVE';
         restoreFieldHome("locationField");
         restoreFieldHome("poField");
         restoreFieldHome("itemField");
@@ -1712,7 +1712,7 @@
       checkStockLevel();
     }
   </script>
-  <script src="/static/js/global-loader.js?v=skel8"></script>
+  <script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 
 </html>

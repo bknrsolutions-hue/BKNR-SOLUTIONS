@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, Plus, MoreVertical, Edit2, Printer, Ban, X, FileText 
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
 
 export default function IncrementDetails({ theme }) {
@@ -38,7 +39,7 @@ export default function IncrementDetails({ theme }) {
 
   const loadData = async (successMsg = null) => {
     try {
-      const res = await fetch('/attendance/employee-increment?format=json');
+      const res = await sessionFetch('/attendance/employee-increment?format=json');
       const data = await res.json();
       if (data.status === 'success') {
         setRecords(data.records || []);
@@ -69,7 +70,7 @@ export default function IncrementDetails({ theme }) {
   const openForm = (editMode = false) => {
     if (editMode && selectedRow) {
       setIsEditMode(true);
-      fetch(`/attendance/employee-increment/edit/${selectedRow.id}`)
+      sessionFetch(`/attendance/employee-increment/edit/${selectedRow.id}`)
         .then(res => res.json())
         .then(data => {
           setFormData({
@@ -122,7 +123,7 @@ export default function IncrementDetails({ theme }) {
         }
       });
 
-      const res = await fetch(url, {
+      const res = await sessionFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString()
@@ -159,7 +160,7 @@ export default function IncrementDetails({ theme }) {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`/attendance/employee-increment/delete/${selectedRow.id}`, { method: 'POST' });
+      const res = await sessionFetch(`/attendance/employee-increment/delete/${selectedRow.id}`, { method: 'POST' });
       const data = await res.json();
       if (data.status === 'ok') {
         loadData('🗑️ Increment transaction rolled back & purged!');

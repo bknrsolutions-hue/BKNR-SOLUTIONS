@@ -567,7 +567,7 @@ export default function PaymentReceipts({ theme }) {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Receipt
+                  Save
                 </button>
               </div>
             </form>

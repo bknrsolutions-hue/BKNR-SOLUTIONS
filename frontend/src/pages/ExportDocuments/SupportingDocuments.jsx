@@ -19,7 +19,12 @@ const makeCustomCode = label => {
 const isPendingUpload = row => row.required && row.status === 'PENDING';
 const isPendingApproval = row => row.required && row.file_id && (row.approval_status || 'PENDING') !== 'APPROVED';
 
-export default function SupportingDocuments() {
+export default function SupportingDocuments({
+  initialStatus = 'ATTENTION',
+  pageTitle = 'Shipment Status',
+  pageSubtitle = '',
+  approvalsOnly = false,
+}) {
   const navigate = useNavigate();
   const [poOptions, setPoOptions] = useState([]);
   const [documentTypes, setDocumentTypes] = useState([]);
@@ -27,14 +32,13 @@ export default function SupportingDocuments() {
   const [poGroups, setPoGroups] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [companyId, setCompanyId] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [poFilter, setPoFilter] = useState('ALL');
-  const [statusFilter, setStatusFilter] = useState('ATTENTION');
+  const [statusFilter, setStatusFilter] = useState(initialStatus);
   const [expandedPo, setExpandedPo] = useState('');
   const [showAuditLogs, setShowAuditLogs] = useState(false);
 
@@ -70,7 +74,6 @@ export default function SupportingDocuments() {
       setPoGroups(result.po_groups || []);
       setAuditLogs(result.audit_logs || []);
       setIsAdmin(Boolean(result.is_admin));
-      setCompanyId(result.company_id || '');
     } catch (error) {
       showNotification(error.message || 'Failed to load supporting documents.', 'error');
     } finally {
@@ -318,37 +321,37 @@ export default function SupportingDocuments() {
 
       <div className="attendance-page-header">
         <div>
-          <h1 className="supporting-title"><FolderOpen size={22} /> Shipment Status</h1>
-          <p className="supporting-subtitle">
-            PO-wise required documents, pending uploads and pending approvals
-            {companyId ? ` · ${companyId}` : ''}
-          </p>
+          <h1 className="supporting-title"><FolderOpen size={22} /> {pageTitle}</h1>
+          {pageSubtitle && <p className="supporting-subtitle">{pageSubtitle}</p>}
         </div>
         <div className="attendance-page-header-actions">
-          <button className="attendance-btn attendance-btn-secondary" type="button" onClick={openUploadForm}>
+          {!approvalsOnly && <button className="attendance-btn attendance-btn-secondary" type="button" onClick={openUploadForm}>
             <FileText size={15} /> Document Entry Forms
-          </button>
+          </button>}
           <button className="attendance-btn attendance-btn-secondary" type="button" onClick={loadData} disabled={loading}>
             <RefreshCw size={15} /> Refresh
           </button>
-          <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => openRequiredForm()}>
+          {!approvalsOnly && <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => openRequiredForm()}>
             <CheckSquare size={16} /> Set Required Documents
-          </button>
+          </button>}
           <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setShowAuditLogs(current => !current)}>
             <History size={16} /> Audit Logs
           </button>
-          <button className="attendance-btn attendance-btn-primary" type="button" onClick={() => openUploadForm()}>
+          {!approvalsOnly && <button className="attendance-btn attendance-btn-primary" type="button" onClick={() => openUploadForm()}>
             <Upload size={16} /> Upload Document
-          </button>
+          </button>}
         </div>
       </div>
 
-      <div className="supporting-summary-grid">
+      {!approvalsOnly ? <div className="supporting-summary-grid">
         <button type="button" className={`supporting-summary-card ${statusFilter === 'REQUIRED' ? 'active' : ''}`} onClick={() => setStatusFilter('REQUIRED')}><span>Required Documents</span><strong>{summary.required}</strong></button>
         <button type="button" className={`supporting-summary-card pending ${statusFilter === 'PENDING_UPLOAD' ? 'active' : ''}`} onClick={() => setStatusFilter('PENDING_UPLOAD')}><span>Pending Uploads</span><strong>{summary.pendingUploads}</strong></button>
         <button type="button" className={`supporting-summary-card pending ${statusFilter === 'PENDING_APPROVAL' ? 'active' : ''}`} onClick={() => setStatusFilter('PENDING_APPROVAL')}><span>Pending Approvals</span><strong>{summary.pendingApprovals}</strong></button>
         <button type="button" className={`supporting-summary-card pending ${statusFilter === 'ATTENTION' ? 'active' : ''}`} onClick={() => setStatusFilter('ATTENTION')}><span>POs Requiring Action</span><strong>{summary.attentionPos}</strong></button>
-      </div>
+      </div> : <div className="supporting-summary-grid approvals-summary-grid">
+        <div className="supporting-summary-card pending active"><span>Pending Approvals</span><strong>{summary.pendingApprovals}</strong></div>
+        <div className="supporting-summary-card"><span>Required Documents</span><strong>{summary.required}</strong></div>
+      </div>}
 
       <div className="attendance-filters-bar supporting-filters">
         <div className="attendance-filter-group">
@@ -361,10 +364,13 @@ export default function SupportingDocuments() {
         <div className="attendance-filter-group">
           <label htmlFor="support-status-filter">Document View</label>
           <select id="support-status-filter" className="attendance-select" value={statusFilter} onChange={event => setStatusFilter(event.target.value)}>
+            {approvalsOnly && <option value="PENDING_APPROVAL">Pending Approvals</option>}
+            {!approvalsOnly && <>
             <option value="ATTENTION">Pending Uploads & Approvals</option>
             <option value="REQUIRED">All Required Documents</option>
             <option value="PENDING_UPLOAD">Pending Uploads</option>
             <option value="PENDING_APPROVAL">Pending Approvals</option>
+            </>}
           </select>
         </div>
         <div className="attendance-filter-group supporting-search-field">
@@ -415,8 +421,8 @@ export default function SupportingDocuments() {
                             <div className="supporting-po-detail-head">
                               <strong>{group.po_number} · Document Details</strong>
                               <div>
-                                <button className="attendance-btn attendance-btn-secondary supporting-row-action" type="button" onClick={event => { event.stopPropagation(); openRequiredForm(group.po_number); }}><CheckSquare size={13} /> Requirements</button>
-                                <button className="attendance-btn attendance-btn-primary supporting-row-action" type="button" onClick={event => { event.stopPropagation(); openUploadForm({ po_number: group.po_number }); }}><Upload size={13} /> Upload</button>
+                                {!approvalsOnly && <button className="attendance-btn attendance-btn-secondary supporting-row-action" type="button" onClick={event => { event.stopPropagation(); openRequiredForm(group.po_number); }}><CheckSquare size={13} /> Requirements</button>}
+                                {!approvalsOnly && <button className="attendance-btn attendance-btn-primary supporting-row-action" type="button" onClick={event => { event.stopPropagation(); openUploadForm({ po_number: group.po_number }); }}><Upload size={13} /> Upload</button>}
                               </div>
                             </div>
                             <div className="attendance-table-wrapper">
@@ -433,7 +439,7 @@ export default function SupportingDocuments() {
                                       <td>{row.approved_by || '-'}<small className="supporting-cell-note">{row.approved_at ? new Date(row.approved_at).toLocaleString() : ''}</small></td>
                                       <td>
                                         <div className="supporting-detail-actions">
-                                          {row.status === 'PENDING' ? <button className="attendance-btn attendance-btn-primary supporting-row-action" type="button" onClick={() => openDocumentForm(row)}><Upload size={13} /> Enter & Upload</button> : <a className="attendance-btn attendance-btn-secondary supporting-row-action" href={row.download_url} target="_blank" rel="noreferrer" onClick={event => confirmPdfExport(event, row)}><Download size={13} /> PDF</a>}
+                                          {row.status === 'PENDING' && !approvalsOnly ? <button className="attendance-btn attendance-btn-primary supporting-row-action" type="button" onClick={() => openDocumentForm(row)}><Upload size={13} /> Enter & Upload</button> : row.file_id ? <a className="attendance-btn attendance-btn-secondary supporting-row-action" href={row.download_url} target="_blank" rel="noreferrer" onClick={event => confirmPdfExport(event, row)}><Download size={13} /> PDF</a> : null}
                                           {(row.can_current_user_approve || (isAdmin && !row.approvals?.length)) && row.file_id && <><button className="attendance-btn attendance-btn-secondary supporting-row-action supporting-approve" type="button" disabled={saving} onClick={() => decideApproval(row, 'APPROVED')}><ShieldCheck size={13} /> Approve</button><button className="attendance-btn attendance-btn-secondary supporting-row-action supporting-reject" type="button" disabled={saving} onClick={() => decideApproval(row, 'REJECTED')}>Reject</button></>}
                                         </div>
                                       </td>
@@ -461,7 +467,7 @@ export default function SupportingDocuments() {
       {showAuditLogs && (
         <div className="attendance-table-container supporting-audit-table">
           <div className="supporting-po-detail-head"><strong><History size={15} /> Supporting Document Audit Logs</strong><span>{auditLogs.length} latest events</span></div>
-          <div className="attendance-table-wrapper"><table className="attendance-table"><thead><tr><th>Time</th><th>Action</th><th>Record</th><th>Previous</th><th>New Value</th><th>User</th></tr></thead><tbody>{auditLogs.map(log => <tr key={log.id}><td>{log.edited_at ? new Date(log.edited_at).toLocaleString() : '-'}</td><td><strong>{log.action}</strong></td><td>#{log.record_id}</td><td>{log.old_value || '-'}</td><td>{log.new_value || '-'}</td><td>{log.edited_by || '-'}</td></tr>)}{!auditLogs.length && <tr><td colSpan="6" className="attendance-empty">No audit events yet.</td></tr>}</tbody></table></div>
+          <div className="attendance-table-wrapper"><table className="attendance-table"><thead><tr><th>Time</th><th>Action</th><th>Record</th><th>Previous</th><th>New Value</th><th>User</th></tr></thead><tbody>{auditLogs.map(log => <tr key={log.id} data-audit-record-id={log.record_id} onClick={() => { setShowAuditLogs(false); window.setTimeout(() => window.openAuditRecord?.(log.record_id), 80); }} style={{ cursor: 'pointer' }}><td>{log.edited_at ? new Date(log.edited_at).toLocaleString() : '-'}</td><td><strong>{log.action}</strong></td><td>Row ID #{log.record_id}</td><td>{log.old_value || '-'}</td><td>{log.new_value || '-'}</td><td>{log.edited_by || '-'}</td></tr>)}{!auditLogs.length && <tr><td colSpan="6" className="attendance-empty">No audit events yet.</td></tr>}</tbody></table></div>
         </div>
       )}
 
@@ -516,7 +522,7 @@ export default function SupportingDocuments() {
               </div>
               <div className="attendance-modal-footer">
                 <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setRequiredModalOpen(false)} disabled={saving}>Cancel</button>
-                <button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}><CheckSquare size={15} /> {saving ? 'Saving...' : 'Save Required List'}</button>
+                <button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}><CheckSquare size={15} /> {saving ? 'Saving...' : 'Save'}</button>
               </div>
             </form>
           </div>
@@ -563,7 +569,7 @@ export default function SupportingDocuments() {
               </div>
               <div className="attendance-modal-footer">
                 <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setUploadModalOpen(false)} disabled={saving}>Cancel</button>
-                <button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}><Upload size={15} /> {saving ? 'Uploading...' : 'Save PDF in DB'}</button>
+                <button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}><Upload size={15} /> {saving ? 'Uploading...' : 'Save'}</button>
               </div>
             </form>
           </div>

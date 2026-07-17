@@ -63,7 +63,10 @@ tfoot td{font-weight:bold;background:#f2f6ff}
 
 <body>
 
-<h2>DE-HEADING REPORT</h2>
+<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #003366;padding-bottom:8px;margin-bottom:12px;">
+  <div><h2 style="margin:0;">{{ company_name or 'DE-HEADING REPORT' }}</h2><div style="font-size:10px;font-weight:700;color:#475569;">MPEDA: {{ mpeda_registration_code or 'NOT REGISTERED' }}</div></div>
+  <div style="text-align:right;"><strong>DE-HEADING REPORT</strong><br><small>Printed: {{ printed_on.strftime('%d-%m-%Y %H:%M') }}</small></div>
+</div>
 
 <!-- ================= CONTRACTOR TOTAL ================= -->
 <div class="section">
@@ -188,6 +191,6 @@ document.querySelectorAll("#batchTable tr").forEach((r,i)=>{
 window.print();
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

@@ -1,0 +1,313 @@
+.storage-cost-report {
+  page: storage-full-report;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.storage-control-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 8px 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: var(--surface-panel);
+}
+
+.storage-filter-fields,
+.storage-inline-kpis {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  min-width: 0;
+}
+
+.storage-filter-fields {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.storage-filter-fields label {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.storage-filter-fields label > span {
+  color: var(--text-tertiary);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.storage-filter-fields select,
+.storage-filter-fields input {
+  width: 145px;
+  height: 29px;
+  padding: 0 7px;
+  border: 1px solid var(--border-light);
+  border-radius: 5px;
+  outline: none;
+  background: var(--bg-app);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 11px;
+}
+
+.storage-filter-fields input[type='month'] { width: 128px; }
+.storage-filter-fields label:nth-child(3) select { width: 105px; }
+
+.storage-generate-btn,
+.storage-bill-actions button {
+  height: 29px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 5px;
+  background: var(--corp-rep, #2563eb);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.storage-inline-kpis {
+  flex: 0 0 auto;
+  align-items: stretch;
+}
+
+.storage-inline-kpi {
+  min-width: 112px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-light);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+}
+
+.storage-inline-kpi span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--text-tertiary);
+  font-size: 8px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.storage-inline-kpi strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 16px;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.storage-inline-kpi.amber strong, .storage-inline-kpi.amber span { color: #d97706; }
+.storage-inline-kpi.indigo strong, .storage-inline-kpi.indigo span { color: #2563eb; }
+.storage-inline-kpi.green { border-left: 3px solid #059669; }
+.storage-inline-kpi.green strong, .storage-inline-kpi.green span { color: #059669; }
+
+.storage-cost-report > .storage-tabs {
+  position: relative;
+  z-index: 5;
+  display: flex !important;
+  visibility: visible !important;
+  flex: 0 0 auto;
+  min-height: 42px;
+  gap: 2px;
+  margin-top: 10px;
+  overflow-x: auto;
+  opacity: 1 !important;
+  scrollbar-width: none;
+}
+
+.storage-tab-btn {
+  flex: 0 0 auto;
+  padding: 10px 17px;
+  border: 1px solid var(--border-light);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: var(--bg-app);
+  color: var(--text-tertiary);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.storage-tab-btn.active {
+  border-top: 3px solid var(--corp-rep, #2563eb);
+  background: var(--surface-panel);
+  color: var(--text-primary);
+}
+
+.storage-tab-panel {
+  display: none;
+  min-width: 0;
+  border: 1px solid var(--border-light);
+  border-radius: 0 0 8px 8px;
+  background: var(--surface-panel);
+}
+
+.storage-tab-panel.active { display: block; }
+
+.storage-table-wrap {
+  width: 100%;
+  min-height: 220px;
+  max-height: calc(100vh - 285px);
+  overflow: auto;
+  scrollbar-gutter: stable both-edges;
+}
+
+.storage-cost-report .storage-table-wrap table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 11px;
+}
+
+.storage-wide-table { width: 2800px !important; min-width: 2800px !important; }
+.storage-original-table { width: 1900px !important; min-width: 1900px !important; }
+
+.storage-cost-report .storage-table-wrap th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  height: 35px;
+  padding: 0 9px;
+  background: var(--header-bg, var(--bg-app));
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  font-size: 10px;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.storage-cost-report .storage-table-wrap td {
+  height: 33px;
+  padding: 0 9px;
+  border-right: 1px solid var(--border-light);
+  border-bottom: 1px solid var(--border-light);
+  text-align: center;
+  white-space: nowrap;
+}
+
+.storage-batch { font-weight: 800; }
+.storage-row-in { color: #059669 !important; font-weight: 800; }
+.storage-row-out { color: #dc2626 !important; font-weight: 800; }
+.storage-opening { background: color-mix(in srgb, var(--bg-app) 70%, transparent); }
+.storage-closing { background: color-mix(in srgb, var(--header-bg) 70%, transparent); font-weight: 800; }
+.storage-holding { color: #d97706 !important; font-weight: 800; }
+.storage-production { color: #2563eb !important; font-weight: 800; }
+.storage-grand { background: color-mix(in srgb, #059669 8%, transparent); color: #059669 !important; font-weight: 900; }
+
+.storage-summary-table tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  height: 35px;
+  border-top: 2px solid var(--text-primary);
+  border-bottom: 2px solid var(--text-primary);
+  background: var(--header-bg, var(--bg-app));
+  font-weight: 800;
+}
+
+.storage-bill-panel { padding: 16px; }
+.storage-bill-actions { max-width: 950px; margin: 0 auto 10px; text-align: right; }
+.storage-bill-actions button { background: #0284c7; }
+.storage-bill-warning { padding: 15px; border: 1px solid #f6d88a; border-radius: 6px; background: #fff8db; color: #856404; text-align: center; font-weight: 800; }
+
+.storage-monthly-invoice {
+  page: storage-monthly-bill;
+  max-width: 950px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  box-shadow: 0 2px 5px rgb(15 23 42 / 7%);
+  color: #000;
+  font-family: Arial, sans-serif;
+}
+
+.storage-invoice-title { margin-bottom: 12px; text-align: center; }
+.storage-invoice-title h2 { margin: 0 0 5px; color: #003366; font-size: 16px; letter-spacing: .5px; text-transform: uppercase; }
+.storage-invoice-title strong { font-size: 13px; text-transform: uppercase; }
+.storage-invoice-meta { display: flex; justify-content: space-between; gap: 20px; padding: 10px 0 8px; border-bottom: 1px solid #cbd5e1; font-size: 9.5px; line-height: 1.5; }
+.storage-invoice-meta > div { width: 48%; }
+.storage-invoice-meta > div:last-child { text-align: right; }
+.storage-monthly-invoice h3 { margin: 14px 0 4px; color: #003366; font-size: 10.5px; text-transform: uppercase; }
+.storage-invoice-table-wrap { width: 100%; overflow-x: auto; }
+.storage-invoice-table { width: 100%; min-width: 0; border-collapse: collapse; color: #000; font-size: 9px; }
+.storage-invoice-table th { padding: 4px 3px; border-bottom: 1.5px solid #000; color: #003366; text-align: left; font-size: 8.5px; text-transform: uppercase; white-space: nowrap; }
+.storage-invoice-table td { padding: 4px 3px; border-bottom: 1px solid #e2e8f0; text-align: right; white-space: nowrap; }
+.storage-invoice-table th:first-child, .storage-invoice-table td:first-child, .storage-invoice-table th:nth-child(2), .storage-invoice-table td:nth-child(2), .storage-invoice-table th:nth-child(3), .storage-invoice-table td:nth-child(3) { text-align: left; }
+.storage-invoice-table tfoot td { border-top: 1.5px solid #000; border-bottom: 1.5px solid #000; background: #f8fafc; font-weight: 800; }
+.storage-invoice-totals { display: flex; justify-content: flex-end; margin-top: 14px; }
+.storage-invoice-totals table { width: 48%; border-collapse: collapse; font-size: 9.5px; }
+.storage-invoice-totals td, .storage-invoice-totals th { padding: 5px 0; border-bottom: 1px solid #ccc; text-align: right; }
+.storage-invoice-totals td:first-child, .storage-invoice-totals th:first-child { text-align: left; }
+.storage-invoice-totals tr:last-child th { border-top: 1.5px solid #000; border-bottom: 3px double #000; color: #003366; font-size: 10.5px; }
+.storage-invoice-terms { margin-top: 16px; padding-top: 8px; border-top: 1px solid #cbd5e1; color: #334155; font-size: 9px; }
+.storage-invoice-terms h4 { margin: 0 0 3px; color: #003366; font-size: 9.5px; text-transform: uppercase; }
+.storage-invoice-terms ol { margin: 0; padding-left: 15px; line-height: 1.35; }
+.storage-invoice-signatures { display: flex; justify-content: space-between; gap: 50px; margin-top: 55px; font-size: 9.5px; }
+.storage-invoice-signatures div { width: 40%; padding-top: 4px; border-top: 1px solid #000; color: #475569; text-align: center; font-weight: 800; }
+
+@media (max-width: 1150px) {
+  .storage-control-panel { align-items: stretch; flex-direction: column; }
+  .storage-inline-kpis { display: grid; grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+}
+
+@media (max-width: 650px) {
+  .storage-control-panel { padding: 8px; }
+  .storage-inline-kpis { grid-template-columns: repeat(2, minmax(125px, 1fr)); }
+  .storage-tab-btn { padding: 9px 12px; }
+  .storage-bill-panel { padding: 8px; }
+  .storage-monthly-invoice { padding: 16px; }
+  .storage-invoice-meta { flex-direction: column; }
+  .storage-invoice-meta > div { width: 100%; }
+  .storage-invoice-meta > div:last-child { text-align: left; }
+}
+
+@page storage-full-report { size: A4 landscape; margin: 7mm; }
+@page storage-monthly-bill { size: A4 portrait; margin: 10mm 8mm; }
+
+@media print {
+  body:not(.storage-monthly-print-mode) .storage-cost-report > :first-child,
+  body:not(.storage-monthly-print-mode) .storage-control-panel,
+  body:not(.storage-monthly-print-mode) .storage-tabs,
+  body:not(.storage-monthly-print-mode) .storage-bill-actions,
+  body:not(.storage-monthly-print-mode) .storage-bill-warning {
+    display: none !important;
+  }
+
+  body:not(.storage-monthly-print-mode) .storage-cost-report,
+  body:not(.storage-monthly-print-mode) .storage-tab-panel {
+    display: block !important;
+    width: 100% !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: #fff !important;
+  }
+
+  body:not(.storage-monthly-print-mode) .storage-tab-panel { page-break-after: always; }
+  body:not(.storage-monthly-print-mode) .storage-table-wrap { max-height: none !important; overflow: visible !important; }
+  body:not(.storage-monthly-print-mode) .storage-table-wrap table { width: 100% !important; min-width: 100% !important; table-layout: auto !important; color: #000 !important; }
+  body:not(.storage-monthly-print-mode) .storage-table-wrap th { position: static !important; height: auto !important; padding: 3px !important; border: 1px solid #000 !important; background: #f1f5f9 !important; color: #000 !important; font-size: 6.5px !important; }
+  body:not(.storage-monthly-print-mode) .storage-table-wrap td { position: static !important; height: auto !important; padding: 3px !important; border: 1px solid #cbd5e1 !important; color: #000 !important; font-size: 6.5px !important; }
+
+  body.storage-monthly-print-mode * { visibility: hidden !important; }
+  body.storage-monthly-print-mode .storage-monthly-invoice,
+  body.storage-monthly-print-mode .storage-monthly-invoice * { visibility: visible !important; }
+  body.storage-monthly-print-mode .storage-monthly-invoice { position: absolute; inset: 0 auto auto 0; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
+  body.storage-monthly-print-mode .storage-invoice-table-wrap { overflow: visible !important; }
+}

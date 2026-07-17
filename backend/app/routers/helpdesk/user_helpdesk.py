@@ -38,6 +38,9 @@ async def my_tickets_page(request: Request, db: Session = Depends(get_db)):
             "date": t.created_at.strftime("%d %b, %Y") if t.created_at else ""
         })
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse(content={"status": "success", "tickets": tickets_data})
+
     c_info = db.query(Company).filter(Company.company_code == comp_code).first()
 
     context = {

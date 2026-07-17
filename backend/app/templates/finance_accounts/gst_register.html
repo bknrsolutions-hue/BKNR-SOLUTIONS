@@ -110,6 +110,6 @@ function saveItc(e){e.preventDefault();postJson('/finance_accounts/itc_utilizati
 async function cancelGst(id){if((await Swal.fire({title:'Cancel GST entry?',showCancelButton:true,icon:'warning'})).isConfirmed){await fetch(`/finance_accounts/gst_register/delete/${id}`,{method:'POST'});location.reload()}}
 applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

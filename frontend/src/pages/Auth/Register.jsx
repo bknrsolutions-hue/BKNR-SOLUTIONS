@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Layers } from 'lucide-react';
 
 export default function Register({ handleRegister, navigateToLogin }) {
   const [companyName, setCompanyName] = useState('');
+  const [mpedaRegistrationCode, setMpedaRegistrationCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [designation, setDesignation] = useState('');
   const [email, setEmail] = useState('');
@@ -10,11 +11,18 @@ export default function Register({ handleRegister, navigateToLogin }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!companyName || !fullName || !email || !phone) {
-      alert('Please fill in all required fields.');
+    if (!companyName || !/^[A-Z0-9]{4}$/.test(mpedaRegistrationCode) || !fullName || !email || !phone) {
+      alert('Please fill in all required fields. MPEDA code must contain exactly 4 letters or numbers.');
       return;
     }
-    handleRegister({ companyName, fullName, designation, email, phone });
+    handleRegister({
+      companyName,
+      mpedaRegistrationCode: mpedaRegistrationCode.trim().toUpperCase().replace(/\s+/g, ''),
+      fullName,
+      designation,
+      email,
+      phone,
+    });
   };
 
   return (
@@ -54,6 +62,20 @@ export default function Register({ handleRegister, navigateToLogin }) {
               value={fullName}
               onChange={e => setFullName(e.target.value)}
               required 
+            />
+          </div>
+
+          <div className="form-group">
+            <label>MPEDA Registration Code *</label>
+            <input
+              type="text"
+              className="form-control"
+      placeholder="Registered MPEDA code"
+              value={mpedaRegistrationCode}
+              onChange={e => setMpedaRegistrationCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
+              minLength={4}
+              maxLength={4}
+              required
             />
           </div>
 

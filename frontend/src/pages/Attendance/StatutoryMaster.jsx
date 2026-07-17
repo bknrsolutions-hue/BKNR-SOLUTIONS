@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Edit2, X, CheckCircle, AlertCircle, ShieldAlert 
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
 
 export default function StatutoryMaster({ theme }) {
@@ -24,6 +25,7 @@ export default function StatutoryMaster({ theme }) {
     uan_number: '',
     pf_employee_percent: 12.0,
     pf_employer_percent: 12.0,
+    eps_applicable: 'YES',
     esi_applicable: 'NO',
     esi_number: '',
     esi_employee_percent: 0.75,
@@ -44,7 +46,7 @@ export default function StatutoryMaster({ theme }) {
 
   const loadData = async (successMsg = null) => {
     try {
-      const res = await fetch('/attendance/tax-master?format=json');
+      const res = await sessionFetch('/attendance/tax-master?format=json');
       const data = await res.json();
       if (data.status === 'success') {
         setRecords(data.records || []);
@@ -57,7 +59,7 @@ export default function StatutoryMaster({ theme }) {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/attendance/api/employees');
+      const res = await sessionFetch('/attendance/api/employees');
       const data = await res.json();
       setEmployees(data || []);
     } catch (e) {
@@ -100,7 +102,7 @@ export default function StatutoryMaster({ theme }) {
   const openForm = (editMode = false, rowData = null) => {
     if (editMode && rowData) {
       setIsEditMode(true);
-      fetch(`/attendance/tax-master/edit/${rowData.id}?format=json`)
+      sessionFetch(`/attendance/tax-master/edit/${rowData.id}?format=json`)
         .then(res => res.json())
         .then(data => {
           const editItem = data.edit_data;
@@ -115,6 +117,7 @@ export default function StatutoryMaster({ theme }) {
               uan_number: editItem.uan_number || '',
               pf_employee_percent: editItem.pf_employee_percent,
               pf_employer_percent: editItem.pf_employer_percent,
+              eps_applicable: editItem.eps_applicable ? 'YES' : 'NO',
               esi_applicable: editItem.esi_applicable ? 'YES' : 'NO',
               esi_number: editItem.esi_number || '',
               esi_employee_percent: editItem.esi_employee_percent,
@@ -140,6 +143,7 @@ export default function StatutoryMaster({ theme }) {
         uan_number: '',
         pf_employee_percent: 12.0,
         pf_employer_percent: 12.0,
+        eps_applicable: 'YES',
         esi_applicable: 'NO',
         esi_number: '',
         esi_employee_percent: 0.75,
@@ -175,7 +179,7 @@ export default function StatutoryMaster({ theme }) {
         }
       });
 
-      const res = await fetch(url, {
+      const res = await sessionFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString()
@@ -238,6 +242,7 @@ export default function StatutoryMaster({ theme }) {
                 <th style={{ width: '150px' }}>Dept</th>
                 <th style={{ width: '110px' }}>From</th>
                 <th style={{ width: '90px' }}>PF</th>
+                <th style={{ width: '90px' }}>EPS</th>
                 <th style={{ width: '150px' }}>UAN</th>
                 <th style={{ width: '90px' }}>ESI</th>
                 <th style={{ width: '100px', textAlign: 'right' }}>PT</th>
@@ -255,6 +260,11 @@ export default function StatutoryMaster({ theme }) {
                   <td>
                     <span className={`attendance-badge ${r.pf_applicable ? 'attendance-badge-success' : 'attendance-badge-danger'}`}>
                       {r.pf_applicable ? 'YES' : 'NO'}
+                    </span>
+                  </td>
+                  <td>
+                    <span className={`attendance-badge ${r.eps_applicable ? 'attendance-badge-success' : 'attendance-badge-danger'}`}>
+                      {r.eps_applicable ? 'YES' : 'NO'}
                     </span>
                   </td>
                   <td style={{ fontWeight: '700' }}>{r.uan_number || '-'}</td>
@@ -279,7 +289,7 @@ export default function StatutoryMaster({ theme }) {
               ))}
               {!records.length && (
                 <tr>
-                  <td colSpan="10" className="attendance-empty">
+                  <td colSpan="11" className="attendance-empty">
                     No statutory configurations found.
                   </td>
                 </tr>
@@ -423,6 +433,19 @@ export default function StatutoryMaster({ theme }) {
                         onChange={handleInputChange} 
                       />
                     </div>
+                    <div className="attendance-form-group">
+                      <label htmlFor="stat-eps-app">EPS Applicable</label>
+                      <select
+                        id="stat-eps-app"
+                        className="attendance-select"
+                        name="eps_applicable"
+                        value={formData.eps_applicable}
+                        onChange={handleInputChange}
+                      >
+                        <option value="YES">YES</option>
+                        <option value="NO">NO</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -542,7 +565,7 @@ export default function StatutoryMaster({ theme }) {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  {isEditMode ? 'Update' : 'Save Configuration'}
+                  {isEditMode ? 'Update' : 'Save'}
                 </button>
               </div>
             </form>

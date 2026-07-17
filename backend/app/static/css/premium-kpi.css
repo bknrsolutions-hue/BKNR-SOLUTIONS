@@ -1,0 +1,227 @@
+/* Shared enterprise KPI system for template-rendered ERP screens. */
+:root {
+  --erp-kpi-blue: #2563eb;
+  --erp-kpi-green: #059669;
+  --erp-kpi-red: #dc2626;
+  --erp-kpi-amber: #d97706;
+  --erp-kpi-purple: #7c3aed;
+  --erp-kpi-neutral: #64748b;
+  --erp-kpi-surface: #ffffff;
+  --erp-kpi-border: #e2e8f0;
+  --erp-kpi-title: #64748b;
+  --erp-kpi-value: #0f172a;
+  --erp-kpi-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .055);
+}
+
+html[data-theme="dark"] {
+  --erp-kpi-surface: #172033;
+  --erp-kpi-border: #334155;
+  --erp-kpi-title: #94a3b8;
+  --erp-kpi-value: #f8fafc;
+  --erp-kpi-shadow: 0 1px 2px rgba(0, 0, 0, .2), 0 10px 28px rgba(0, 0, 0, .2);
+}
+
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi) {
+  --erp-kpi-accent: var(--kpi-color, var(--erp-kpi-blue));
+  min-width: 0;
+  min-height: 92px;
+  padding: 12px !important;
+  border: 1px solid var(--erp-kpi-border) !important;
+  border-radius: 14px !important;
+  background: var(--erp-kpi-surface) !important;
+  color: var(--erp-kpi-value) !important;
+  box-shadow: var(--erp-kpi-shadow) !important;
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi)::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--erp-kpi-accent);
+  opacity: .72;
+}
+
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi)[onclick],
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi).clickable,
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi)[role="button"] { cursor: pointer; }
+
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi)[onclick]:hover,
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi).clickable:hover,
+:is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi)[role="button"]:hover {
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in srgb, var(--erp-kpi-accent) 45%, var(--erp-kpi-border)) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 14px 30px rgba(15, 23, 42, .1) !important;
+}
+
+.kpi-header,
+.kpi-top,
+.kpi-icon-row {
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  margin: 0 0 8px !important;
+}
+
+:is(.kpi-title, .kpi-label, .kpi-card h4, .ref-kpi-meta, .automation-kpi .label, .automation-kpi span, .kpi-column-card .label, .stat-card h4, .kpi-top span) {
+  margin: 0 !important;
+  color: var(--erp-kpi-title) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: .055em !important;
+  text-transform: uppercase !important;
+}
+
+.kpi-icon,
+.kpi-top i,
+.ref-kpi-meta i {
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  display: inline-flex !important;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  color: var(--erp-kpi-accent) !important;
+  background: color-mix(in srgb, var(--erp-kpi-accent) 10%, transparent) !important;
+  font-size: 13px !important;
+}
+
+:is(.kpi-value, .kpi-val, .kpi-card .value, .kpi-card h2, .ref-kpi-value, .automation-kpi .value, .automation-kpi strong, .kpi-column-card .value, .stat-card h2) {
+  margin: 0 !important;
+  color: var(--erp-kpi-value) !important;
+  font-size: clamp(18px, 1.6vw, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.035em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.kpi-value small,
+.kpi-card .value small,
+.ref-kpi-value small { color: var(--erp-kpi-title) !important; font-size: 11px !important; font-weight: 700 !important; letter-spacing: 0 !important; }
+.kpi-card .amt-sub,
+.kpi-submetric { margin-top: 8px !important; color: var(--erp-kpi-title) !important; background: transparent !important; font-size: 11px !important; font-weight: 700 !important; }
+
+.kpi-blue, .card-blue { --erp-kpi-accent: var(--erp-kpi-blue); }
+.kpi-green, .card-green { --erp-kpi-accent: var(--erp-kpi-green); }
+.kpi-red, .card-red { --erp-kpi-accent: var(--erp-kpi-red); }
+.kpi-yellow, .kpi-orange { --erp-kpi-accent: var(--erp-kpi-amber); }
+.kpi-purple, .card-purple { --erp-kpi-accent: var(--erp-kpi-purple); }
+.kpi-cyan, .kpi-teal, .card-cyan { --erp-kpi-accent: #0891b2; }
+.kpi-pink { --erp-kpi-accent: #a855f7; }
+.kpi-gray { --erp-kpi-accent: var(--erp-kpi-neutral); }
+
+/* Legacy server dashboards use a generic `.card` name. Keep the override
+   deliberately scoped so forms and content panels retain their own styling. */
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards {
+  align-items: stretch;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card {
+  --erp-kpi-accent: var(--erp-kpi-blue);
+  min-width: 0;
+  min-height: 92px !important;
+  padding: 12px 46px 12px 12px !important;
+  border: 1px solid var(--erp-kpi-border) !important;
+  border-radius: 14px !important;
+  background: var(--erp-kpi-surface) !important;
+  color: var(--erp-kpi-value) !important;
+  box-shadow: var(--erp-kpi-shadow) !important;
+  position: relative;
+  overflow: hidden;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease !important;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card::after,
+.costing-dashboard .quick-summary-strip > .strip-item::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: var(--erp-kpi-accent);
+  opacity: .72;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card:hover {
+  transform: translateY(-2px) !important;
+  border-color: color-mix(in srgb, var(--erp-kpi-accent) 45%, var(--erp-kpi-border)) !important;
+  box-shadow: 0 2px 4px rgba(15, 23, 42, .05), 0 14px 30px rgba(15, 23, 42, .1) !important;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card .card-icon-zone {
+  width: 28px !important;
+  height: 28px !important;
+  top: 12px !important;
+  right: 12px !important;
+  border-radius: 8px !important;
+  color: var(--erp-kpi-accent) !important;
+  background: color-mix(in srgb, var(--erp-kpi-accent) 10%, transparent) !important;
+  font-size: 13px !important;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card .label {
+  color: var(--erp-kpi-title) !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  line-height: 1.35 !important;
+  letter-spacing: .055em !important;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card .value {
+  margin-top: 10px !important;
+  color: var(--erp-kpi-value) !important;
+  font-size: clamp(18px, 1.6vw, 22px) !important;
+  font-weight: 800 !important;
+  line-height: 1.08 !important;
+  letter-spacing: -.035em !important;
+  font-variant-numeric: tabular-nums;
+}
+
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card.green { --erp-kpi-accent: var(--erp-kpi-green); }
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card.red { --erp-kpi-accent: var(--erp-kpi-red); }
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card:is(.amber, .orange) { --erp-kpi-accent: var(--erp-kpi-amber); }
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card:is(.purple, .violet, .pink, .indigo) { --erp-kpi-accent: var(--erp-kpi-purple); }
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card:is(.gray) { --erp-kpi-accent: var(--erp-kpi-neutral); }
+:is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card:is(.teal) { --erp-kpi-accent: #0891b2; }
+
+.costing-dashboard .quick-summary-strip {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+
+.costing-dashboard .quick-summary-strip > .strip-item {
+  --erp-kpi-accent: var(--erp-kpi-blue);
+  min-width: 0;
+  min-height: 72px;
+  padding: 10px !important;
+  border: 1px solid var(--erp-kpi-border) !important;
+  border-radius: 12px !important;
+  background: var(--erp-kpi-surface) !important;
+  box-shadow: var(--erp-kpi-shadow) !important;
+  position: relative;
+  overflow: hidden;
+  text-align: left !important;
+}
+
+.costing-dashboard .strip-label { color: var(--erp-kpi-title) !important; }
+.costing-dashboard .strip-value { color: var(--erp-kpi-value); font-variant-numeric: tabular-nums; }
+
+@media (max-width: 767px) {
+  :is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi) { min-height: 82px; padding: 10px !important; border-radius: 12px !important; }
+  :is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card { min-height: 82px !important; padding: 10px 42px 10px 10px !important; border-radius: 12px !important; }
+  .kpi-icon, .kpi-top i, .ref-kpi-meta i { width: 26px !important; height: 26px !important; flex-basis: 26px; }
+  :is(.kpi-value, .kpi-val, .kpi-card .value, .kpi-card h2, .ref-kpi-value, .automation-kpi .value, .automation-kpi strong, .kpi-column-card .value, .stat-card h2) { font-size: 18px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.kpi-card, .ref-kpi-card, .automation-kpi, .kpi-column-card, .stat-card, .kpi) { transition: none !important; }
+  :is(.costing-dashboard, .finance-dashboard, .hr-dashboard) .cards > .card { transition: none !important; }
+}

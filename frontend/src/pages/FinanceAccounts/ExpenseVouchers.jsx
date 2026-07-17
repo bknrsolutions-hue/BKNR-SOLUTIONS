@@ -531,7 +531,7 @@ export default function ExpenseVouchers({ theme }) {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Voucher
+                  Save
                 </button>
               </div>
             </form>

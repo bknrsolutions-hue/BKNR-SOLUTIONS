@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   Plus, Ban, X, AlertCircle, CheckCircle 
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
 
 export default function SalaryAdvance({ theme }) {
@@ -35,7 +36,7 @@ export default function SalaryAdvance({ theme }) {
 
   const loadData = async (successMsg = null) => {
     try {
-      const res = await fetch('/attendance/salary-advance?format=json');
+      const res = await sessionFetch('/attendance/salary-advance?format=json');
       const data = await res.json();
       if (data.status === 'success') {
         setRecords(data.records || []);
@@ -48,7 +49,7 @@ export default function SalaryAdvance({ theme }) {
 
   const fetchEmployees = async () => {
     try {
-      const res = await fetch('/attendance/api/employees');
+      const res = await sessionFetch('/attendance/api/employees');
       const data = await res.json();
       setEmployees(data || []);
     } catch (e) {
@@ -120,7 +121,7 @@ export default function SalaryAdvance({ theme }) {
         }
       });
 
-      const res = await fetch('/attendance/salary-advance/save?format=json', {
+      const res = await sessionFetch('/attendance/salary-advance/save?format=json', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString()
@@ -143,7 +144,7 @@ export default function SalaryAdvance({ theme }) {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`/attendance/salary-advance/delete/${r.id}`, { method: 'POST' });
+      const res = await sessionFetch(`/attendance/salary-advance/delete/${r.id}`, { method: 'POST' });
       const data = await res.json();
       if (data.status === 'ok') {
         showNotification('Salary advance cancelled successfully!', 'success');

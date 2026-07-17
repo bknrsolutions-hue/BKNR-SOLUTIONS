@@ -273,6 +273,7 @@ export default function SoakingReport({ activeRoute }) {
                     return (
                       <tr
                         key={row.id}
+                        data-record-id={row.id}
                         onClick={() => {
                           if (!isEditing) {
                             setSelectedRow(row);

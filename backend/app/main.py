@@ -37,11 +37,11 @@ application = FastAPI(
 # =====================================================
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
-# Keep the signed cookie lifetime and server-side idle policy aligned. The
-# value can be reduced per deployment without changing application code.
+# Keep the signed cookie lifetime and server-side idle policy configurable
+# independently for each deployment.
 SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(8 * 60 * 60)))
 SESSION_IDLE_TIMEOUT_SECONDS = int(
-    os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(SESSION_MAX_AGE_SECONDS))
+    os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60))
 )
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
 

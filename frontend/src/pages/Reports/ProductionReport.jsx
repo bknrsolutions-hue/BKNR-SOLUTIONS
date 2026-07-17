@@ -179,6 +179,7 @@ export default function ProductionReport({ activeRoute }) {
       result.push(
         <tr
           key={r.id}
+          data-record-id={r.id}
           onClick={() => {
             if (!isEditing) setSelectedRow(r);
           }}
@@ -395,6 +396,7 @@ export default function ProductionReport({ activeRoute }) {
       result.push(
         <tr
           key={r.id}
+          data-record-id={r.id}
           onClick={() => {
             if (!isEditing) setSelectedRow(r);
           }}

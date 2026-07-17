@@ -395,6 +395,7 @@ export default function ElectricityBills({ theme }) {
               {filteredRecords.map((row, idx) => (
                 <tr 
                   key={row.id} 
+                  data-record-id={row.id}
                   className={`${selectedRow?.id === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
                   onClick={() => setSelectedRow(row)}
                   style={row.is_cancelled ? { opacity: 0.62, textDecoration: 'line-through' } : {}}
@@ -564,7 +565,7 @@ export default function ElectricityBills({ theme }) {
               ) : auditLogs.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {auditLogs.map((log, idx) => (
-                    <div key={idx} style={{ borderLeft: '3px solid var(--att-accent)', background: 'var(--att-table-header-bg)', padding: '10px', fontSize: '12px', borderRadius: '4px', lineHeight: '1.4' }}>
+                    <div key={idx} data-audit-record-id={log.record_id} onClick={() => { setAuditOpen(false); window.setTimeout(() => window.openAuditRecord?.(log.record_id), 80); }} style={{ borderLeft: '3px solid var(--att-accent)', background: 'var(--att-table-header-bg)', padding: '10px', fontSize: '12px', borderRadius: '4px', lineHeight: '1.4', cursor: 'pointer' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: '700', color: 'var(--att-heading)', marginBottom: '4px' }}>
                         <span>{log.timestamp}</span>
                         <span>{log.batch}</span>

@@ -221,6 +221,7 @@
     </style>
     <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 <body>
 
@@ -1122,7 +1123,7 @@
         </tbody>
     </table>
 </div>
-<div class="section-title" style="color:var(--danger)"><i class="fas fa-balance-scale"></i> 9. LIVE FLOOR BALANCE</div>
+<div class="section-title" style="color:var(--danger)"><i class="fas fa-balance-scale"></i> 9. FLOOR BALANCE</div>
 <div class="table-wrap" style="border: 1.5px solid var(--danger);">
     <table>
         <thead>
@@ -1152,7 +1153,7 @@
             </tr>
             {% endfor %}
             <tr class="subtotal-row" style="background:#fef2f2 !important; border-top:1.5px solid #fca5a5;">
-                <td colspan="5" style="text-align:right; font-weight:800; color:var(--danger);">TOTAL LIVE FLOOR BALANCE:</td>
+                <td colspan="5" style="text-align:right; font-weight:800; color:var(--danger);">TOTAL FLOOR BALANCE:</td>
                 <td class="qty-column" style="color:var(--danger); background:#fee2e2;">{{ "%.2f"|format(tot_floor.qty) }}</td>
                 <td class="money-column" style="color:var(--danger);">₹ {{ "{:,.2f}".format(tot_floor.val) }}</td>
             </tr>
@@ -1410,6 +1411,6 @@ function clearReconFilter(stage, rowClass) {
 }
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

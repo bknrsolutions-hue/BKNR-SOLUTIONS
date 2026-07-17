@@ -251,6 +251,7 @@ def build_monthly_production_cost_preview(
         monthly_expense = (
             float(row.gross_salary or 0.0)
             + float(row.pf_employer or 0.0)
+            + float(getattr(row, "edli_employer", 0.0) or 0.0)
             + float(row.esi_employer or 0.0)
             + float(row.lwf_employer or 0.0)
         )
@@ -386,6 +387,7 @@ def build_monthly_production_cost_preview(
                 (
                     float(row.gross_salary or 0.0)
                     + float(row.pf_employer or 0.0)
+                    + float(getattr(row, "edli_employer", 0.0) or 0.0)
                     + float(row.esi_employer or 0.0)
                     + float(row.lwf_employer or 0.0)
                 )

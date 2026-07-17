@@ -40,11 +40,12 @@ templates = Jinja2Templates(directory="app/templates")
 def get_company_info(db: Session, comp_code: str):
     company = db.query(Company).filter(Company.company_code == comp_code).first()
     if not company:
-        return {"name": "BKNR ERP", "address": "", "email": ""}
+        return {"name": "BKNR ERP", "address": "", "email": "", "mpeda_registration_code": ""}
     return {
         "name": company.company_name,
         "address": company.address,
-        "email": company.email
+        "email": company.email,
+        "mpeda_registration_code": company.mpeda_registration_code or "",
     }
 
 def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
@@ -214,10 +215,11 @@ def fetch_all_audit_logs(request: Request, db: Session = Depends(get_db)):
         .order_by(AuditLog.edited_at.desc()).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -429,6 +431,7 @@ def print_table_view(
             "rows": rows, 
             "company_name": comp["name"], 
             "company_address": comp["address"], 
+            "mpeda_registration_code": comp["mpeda_registration_code"],
             "printed_on": ist_now()
         }
     )
@@ -465,7 +468,7 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
         supplier = get_supplier_info(db, comp_code, s_name)
         final_batches.append({"batch_number": b_no, "vehicle_number": g.vehicle_number if g else "N/A", "challan_number": g.challan_number if g else "N/A", "location": g.purchasing_location if g else "N/A", "date": g.date if g else b_rows[0].date, "rows": b_rows, "supplier": supplier, "total_quantity": round(sum(active_number(x, x.received_qty) for x in b_rows), 2), "total_amount": round(sum(active_number(x, x.amount) for x in b_rows), 2)})
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": ist_now()})
+    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "company_email": comp["email"], "mpeda_registration_code": comp["mpeda_registration_code"], "printed_on": ist_now()})
 
 @router.get("/export_pdf")
 async def export_rmp_pdf(

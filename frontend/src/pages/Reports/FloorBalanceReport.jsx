@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
+  Loader, ErrorBox, SearchInput, EmptyRow,
   useReport, fmt
 } from './ReportShell';
 
@@ -173,11 +173,6 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
 
       {!loading && !error && (
         <>
-          <KPIGrid>
-            <KPICard label="Total SKUs" value={filteredRows.length} accent="var(--corp-dash)" />
-            <KPICard label="Total Balance (Kg)" value={fmt.number(grandTotalQty)} accent="var(--corp-ops)" />
-          </KPIGrid>
-          
           <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
             <table className="bknr-table" style={{ width: '100%' }}>
               <thead>

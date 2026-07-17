@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import Chart from 'chart.js/auto';
 
 export default function DeHeading() {
   const [date, setDate] = useState('');
@@ -45,6 +46,8 @@ export default function DeHeading() {
   // Tree collapse state
   const [collapsedComps, setCollapsedComps] = useState({});
   const [collapsedLocs, setCollapsedLocs] = useState({});
+  const balanceChartCanvasRef = useRef(null);
+  const balanceChartInstanceRef = useRef(null);
 
   const fetchBackendData = async () => {
     setLoading(true);
@@ -359,6 +362,74 @@ export default function DeHeading() {
 
   const { hierarchy, grandTotal, uniqueBatches, uniqueCounts, chartMap } = getProcessedFloorData();
 
+  useEffect(() => {
+    if (balanceChartInstanceRef.current) {
+      balanceChartInstanceRef.current.destroy();
+      balanceChartInstanceRef.current = null;
+    }
+
+    const counts = Object.keys(chartMap).sort();
+    if (!balanceChartCanvasRef.current || !counts.length) return undefined;
+
+    const locations = Array.from(new Set(counts.flatMap(count => Object.keys(chartMap[count] || {}))));
+    const rootStyles = getComputedStyle(document.documentElement);
+    const textColor = rootStyles.getPropertyValue('--text-secondary').trim() || '#64748b';
+    const gridColor = rootStyles.getPropertyValue('--border-light').trim() || 'rgba(148, 163, 184, 0.2)';
+
+    balanceChartInstanceRef.current = new Chart(balanceChartCanvasRef.current, {
+      type: 'bar',
+      data: {
+        labels: counts,
+        datasets: locations.map(location => ({
+          label: location,
+          data: counts.map(count => Number(chartMap[count]?.[location] || 0)),
+          backgroundColor: getLocationColor(location),
+          borderWidth: 0,
+          borderRadius: 3,
+          barThickness: 16,
+        })),
+      },
+      options: {
+        indexAxis: 'x',
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: { duration: 250 },
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: textColor, boxWidth: 10, boxHeight: 10, padding: 12, font: { size: 10, weight: 600 } },
+          },
+          tooltip: {
+            callbacks: { label: context => `${context.dataset.label}: ${Number(context.raw || 0).toFixed(2)} Kg` },
+          },
+        },
+        scales: {
+          x: {
+            stacked: true,
+            ticks: { color: textColor, font: { size: 10, weight: 700 } },
+            grid: { display: false },
+            title: { display: true, text: 'Count', color: textColor, font: { size: 10, weight: 700 } },
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { color: textColor, font: { size: 10 } },
+            grid: { color: gridColor },
+            title: { display: true, text: 'Quantity (KG)', color: textColor, font: { size: 10, weight: 700 } },
+          },
+        },
+      },
+    });
+
+    return () => {
+      if (balanceChartInstanceRef.current) {
+        balanceChartInstanceRef.current.destroy();
+        balanceChartInstanceRef.current = null;
+      }
+    };
+  }, [hosoFloorBalance, filterCompany, filterLocation, filterSpecies]);
+
   // Subtotal grouping for today's log entries
   const getSubtotaledEntries = () => {
     let grouped = {};
@@ -372,7 +443,7 @@ export default function DeHeading() {
 
   const groupedEntries = getSubtotaledEntries();
 
-  // Rendering custom horizontal stacked bar chart
+  // Rendering a stacked column chart with count labels on the bottom axis
   const renderCustomBarChart = () => {
     const sortedCounts = Object.keys(chartMap).sort();
     if (sortedCounts.length === 0) {
@@ -383,55 +454,9 @@ export default function DeHeading() {
       );
     }
 
-    // Find maximum count total to scale the width
-    let maxTotal = 0;
-    sortedCounts.forEach(c => {
-      const cTot = Object.values(chartMap[c]).reduce((a, b) => a + b, 0);
-      if (cTot > maxTotal) maxTotal = cTot;
-    });
-
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '10px' }}>
-        {sortedCounts.map(cnt => {
-          const locsQty = chartMap[cnt];
-          const countTotal = Object.values(locsQty).reduce((a, b) => a + b, 0);
-
-          return (
-            <div key={cnt} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '60px', fontSize: '11px', fontWeight: '800', textAlign: 'right', whiteSpace: 'nowrap' }}>{cnt}</div>
-              <div style={{ flex: 1, display: 'flex', height: '16px', background: 'rgba(255,255,255,0.03)', borderRadius: '4px', overflow: 'hidden' }}>
-                {Object.entries(locsQty).map(([loc, qty]) => {
-                  const widthPct = (qty / maxTotal) * 100;
-                  if (widthPct <= 0) return null;
-                  return (
-                    <div 
-                      key={loc} 
-                      style={{ 
-                        width: `${widthPct}%`, 
-                        background: getLocationColor(loc),
-                        height: '100%' 
-                      }} 
-                      title={`${loc}: ${qty.toFixed(2)} Kg`}
-                    />
-                  );
-                })}
-              </div>
-              <div style={{ width: '70px', fontSize: '11px', fontWeight: '700', color: 'var(--text-secondary)' }}>
-                {countTotal.toFixed(2)} Kg
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Legend */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginTop: '10px', justifyContent: 'center' }}>
-          {Array.from(new Set(hosoFloorBalance.map(i => i.peeling_at || 'Purchased Stock'))).map(loc => (
-            <div key={loc} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '10px' }}>
-              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: getLocationColor(loc) }} />
-              <span style={{ color: 'var(--text-secondary)' }}>{loc}</span>
-            </div>
-          ))}
-        </div>
+      <div style={{ position: 'relative', width: '100%', height: '250px' }}>
+        <canvas ref={balanceChartCanvasRef} />
       </div>
     );
   };
@@ -499,7 +524,7 @@ export default function DeHeading() {
       </div>
 
       {/* Main Grid Dashboard */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: '16px', marginBottom: '25px', flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.65fr 1.35fr', gap: '16px', marginBottom: '25px', flexShrink: 0 }}>
         {/* HOSO Floor Balance Tree Panel */}
         <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
@@ -567,10 +592,10 @@ export default function DeHeading() {
         {/* Live Stats Panel */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filtered Batches</div>
-          <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--corp-dash)', margin: '8px 0 20px 0' }}>{uniqueBatches}</div>
+          <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash)', margin: '8px 0 20px 0' }}>{uniqueBatches}</div>
           <div style={{ width: '80%', height: '1px', background: 'var(--border-light)', marginBottom: '20px' }} />
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Unique Count Grades</div>
-          <div style={{ fontSize: '36px', fontWeight: '900', color: 'var(--corp-dash)', marginTop: '8px' }}>{uniqueCounts}</div>
+          <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash)', marginTop: '8px' }}>{uniqueCounts}</div>
         </div>
 
         {/* Chart Panel */}
@@ -578,7 +603,7 @@ export default function DeHeading() {
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
             Count-Wise Stacked Balance (KG)
           </div>
-          <div style={{ flex: 1, padding: '10px', overflowY: 'auto' }}>
+          <div style={{ flex: 1, padding: '10px', overflow: 'hidden' }}>
             {renderCustomBarChart()}
           </div>
         </div>
@@ -835,7 +860,7 @@ export default function DeHeading() {
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '15px' }}>
                 <button type="button" className="btn btn-clear" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>Save Entry</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
               </div>
             </form>
           </div>

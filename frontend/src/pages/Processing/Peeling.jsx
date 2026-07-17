@@ -905,7 +905,7 @@ export default function Peeling() {
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '15px' }}>
                 <button type="button" className="btn btn-clear" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>Save Entry</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
               </div>
             </form>
           </div>

@@ -15,7 +15,8 @@
 
 .requirement-form-selector {
   display: grid;
-  grid-template-columns: minmax(220px, 0.7fr) minmax(320px, 1.3fr);
+  grid-template-columns: minmax(240px, 1fr) auto;
+  align-items: end;
   gap: 12px;
   padding: 12px;
   margin-bottom: 12px;
@@ -25,6 +26,205 @@
   position: sticky;
   top: 0;
   z-index: 20;
+}
+
+.requirement-result-count {
+  min-width: 110px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 12px;
+  border: 1px solid var(--att-border);
+  border-radius: 8px;
+  background: var(--att-table-header-bg);
+}
+
+.requirement-result-count strong {
+  color: var(--att-accent);
+  font-size: 18px;
+}
+
+.requirement-result-count span {
+  color: var(--att-muted);
+  font-size: 8px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.requirement-stage-tabs {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(125px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.requirement-stage-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 44px;
+  padding: 9px 11px;
+  border: 1px solid var(--att-border);
+  border-radius: 9px;
+  color: var(--att-muted);
+  background: var(--att-card);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.requirement-stage-tabs button strong {
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--att-accent);
+  background: color-mix(in srgb, var(--att-accent) 10%, var(--att-card));
+  font-size: 12px;
+}
+
+.requirement-stage-tabs button.active {
+  color: var(--att-accent);
+  border-color: var(--att-accent);
+  background: color-mix(in srgb, var(--att-accent) 7%, var(--att-card));
+}
+
+.requirement-document-cards {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(110px, 1fr));
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.requirement-document-cards > button {
+  min-width: 0;
+  min-height: 40px;
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 6px;
+  border: 1px solid var(--att-border);
+  border-radius: 8px;
+  color: var(--att-text);
+  background: var(--att-card);
+  box-shadow: 0 1px 2px color-mix(in srgb, var(--att-text) 6%, transparent);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.requirement-document-cards > button:hover,
+.requirement-document-cards > button.active {
+  border-color: color-mix(in srgb, var(--att-accent) 55%, var(--att-border));
+  background: color-mix(in srgb, var(--att-accent) 6%, var(--att-card));
+  transform: translateY(-1px);
+}
+
+.requirement-document-card-icon {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  color: var(--att-accent);
+  background: color-mix(in srgb, var(--att-accent) 10%, transparent);
+}
+
+.requirement-document-card-icon svg {
+  width: 13px;
+  height: 13px;
+}
+
+.requirement-document-card-copy {
+  min-width: 0;
+}
+
+.requirement-document-card-copy strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.requirement-document-card-copy strong {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.requirement-document-cards > button em {
+  min-width: 17px;
+  height: 17px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  color: #fff;
+  background: #f59e0b;
+  font-size: 7px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.requirement-card-empty {
+  grid-column: 1 / -1;
+}
+
+.requirement-active-form {
+  scroll-margin-top: 12px;
+  border: 1px solid var(--att-border);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--att-bg);
+}
+
+.requirement-active-form-bar {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 7px 11px;
+  border-bottom: 1px solid var(--att-border);
+  background: var(--att-card);
+}
+
+.requirement-active-form-bar small,
+.requirement-active-form-bar strong {
+  display: block;
+}
+
+.requirement-active-form-bar small {
+  color: var(--att-muted);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .08em;
+}
+
+.requirement-active-form-bar strong {
+  margin-top: 2px;
+  font-size: 12px;
+}
+
+.requirement-active-form-bar button {
+  height: 29px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 9px;
+  border: 1px solid var(--att-border);
+  border-radius: 7px;
+  color: var(--att-muted);
+  background: transparent;
+  font: inherit;
+  font-size: 9px;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 .requirement-inline-form {
@@ -61,8 +261,17 @@
 }
 
 @media (max-width: 850px) {
+  .requirement-stage-tabs { display: flex; overflow-x: auto; }
+  .requirement-stage-tabs button { flex: 0 0 150px; }
   .requirement-form-selector,
   .requirement-fields-grid,
   .requirement-email-grid,
   .requirement-lookup-multi-grid { grid-template-columns: 1fr; }
+  .requirement-document-cards { grid-template-columns: repeat(3, minmax(125px, 1fr)); }
+}
+
+@media (max-width: 520px) {
+  .requirement-form-selector { grid-template-columns: 1fr; }
+  .requirement-result-count { min-width: 0; }
+  .requirement-document-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

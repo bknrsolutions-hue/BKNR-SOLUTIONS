@@ -3,10 +3,15 @@
   "version": "1.0.0",
   "main": "index.js",
   "dependencies": {
+    "@expo/vector-icons": "^15.1.1",
     "expo": "~56.0.12",
+    "expo-document-picker": "~56.0.4",
+    "expo-file-system": "~56.0.8",
+    "expo-linear-gradient": "~56.0.4",
+    "expo-sharing": "~56.0.22",
+    "expo-speech": "~56.0.3",
     "react": "19.2.3",
-    "react-native": "0.85.3",
-    "react-native-webview": "13.16.1"
+    "react-native": "0.85.3"
   },
   "scripts": {
     "start": "expo start",

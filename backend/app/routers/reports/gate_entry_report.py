@@ -181,6 +181,8 @@ async def gate_export_pdf(
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     company_name = request.session.get("company_name", "BKNR ENTERPRISES")
+    company = db.query(Company).filter(Company.company_code == company_id).first()
+    mpeda_registration_code = company.mpeda_registration_code if company and company.mpeda_registration_code else ""
     if not fy: 
         raise HTTPException(status_code=400, detail="Financial Year parameter missing")
         
@@ -212,6 +214,7 @@ async def gate_export_pdf(
     html_content = templates.get_template("reports/gate_entry_print.html").render({
         "request": request,
         "company_name": company_name,
+        "mpeda_registration_code": mpeda_registration_code,
         "rows": rows,
         "printed_on": ist_now(),
         "auto": 0  
@@ -423,10 +426,11 @@ async def get_gate_audit(request: Request, db: Session = Depends(get_db)):
         .order_by(AuditLog.edited_at.desc()).limit(100).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]

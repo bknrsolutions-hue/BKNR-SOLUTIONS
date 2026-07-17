@@ -12,6 +12,7 @@ from zipfile import ZIP_DEFLATED, ZipFile
 import re
 import json
 import logging
+import textwrap
 import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
@@ -473,12 +474,264 @@ def set_document_path(row, path: str):
         row.document_path = path
 
 
-def build_document_payload(cfg, row):
+EXPORT_FIELD_LABELS = {
+    "id": "Internal Reference ID",
+    "company_id": "Company Code",
+    "pi_no": "PI Number",
+    "po_number": "Buyer PO Number",
+    "bl_no": "B/L Number",
+    "no_of_original_bl": "Number of Original B/L",
+    "etd": "ETD",
+    "eta": "ETA",
+    "hs_code": "HS Code",
+    "total_mc": "Total Master Cartons",
+    "gstr1_updated": "GSTR-1 Updated",
+    "journal_id": "Sales Journal ID",
+    "cogs_journal_id": "COGS Journal ID",
+    "customer_ledger_id": "Customer Ledger ID",
+    "sales_ledger_id": "Sales Ledger ID",
+    "document_path": "Stored Document Reference",
+    "photo_path": "Stuffing Photo Reference",
+}
+
+EXPORT_DOCUMENT_PREFIXES = {
+    ProformaInvoice: "PI",
+    ExportShipment: "ES",
+    CommercialInvoice: "CI",
+    PackingList: "PL",
+    ContainerStuffing: "CS",
+    ShippingBill: "SB",
+    BillOfLading: "BL",
+    HealthCertificate: "HC",
+}
+
+EXPORT_INTERNAL_PATH_FIELDS = {"document_path", "photo_path"}
+EXPORT_REFERENCE_FIELDS = {
+    "id", "company_id", "pi_no", "shipment_no", "invoice_no", "packing_no",
+    "shipping_bill_no", "bl_no", "certificate_no", "po_number", "container_no",
+    "seal_no", "cha_bill_no", "stock_entry_no", "inventory_batch_id",
+    "invoice_item_no",
+}
+EXPORT_PARTY_FIELDS = {
+    "buyer_name", "buyer_address", "consignee_name", "notify_party", "country",
+    "company_name", "authority", "issued_by", "cha_name", "driver_name",
+    "loading_supervisor",
+}
+EXPORT_FINANCIAL_FIELDS = {
+    "currency", "exchange_rate", "quantity", "unit", "unit_price", "total_amount",
+    "invoice_value_inr", "shipping_bill_value", "drawback_amount", "scheme",
+    "payment_terms", "payment_status", "incoterm", "shipment_terms",
+}
+EXPORT_CARGO_FIELDS = {
+    "product_description", "product_name", "grade", "batch_no", "lot_no", "glaze",
+    "freezing_type", "hs_code", "packing_style", "inner_pack", "outer_pack",
+    "master_cartons", "total_mc", "net_weight", "gross_weight", "total_net_weight",
+    "total_gross_weight", "pallet_count", "species", "marks_and_numbers",
+    "packages_description", "manufacturing_date", "expiry_date",
+}
+EXPORT_LOGISTICS_FIELDS = {
+    "port_of_loading", "port_of_discharge", "final_destination", "shipment_type",
+    "shipping_line", "stuffing_date", "stuffing_location", "container_type",
+    "container_size", "container_condition", "start_time", "end_time",
+    "temperature_before_loading", "temperature_after_loading", "temperature",
+    "vehicle_no", "port", "vessel_name", "voyage_no", "etd", "eta",
+    "completion_date", "bl_date", "onboard_date", "place_of_receipt",
+    "place_of_delivery", "freight_terms", "no_of_original_bl",
+    "temperature_verified", "shipping_bill_date", "issue_date", "pi_date",
+    "validity_date", "invoice_date",
+}
+EXPORT_CONTROL_FIELDS = {
+    "status", "customs_status", "approval_status", "approved_by", "approved_at",
+    "approval_remarks", "remarks", "is_completed", "is_cancelled",
+}
+EXPORT_AUDIT_FIELDS = {
+    "created_by", "updated_by", "created_at", "updated_at", "journal_id",
+    "cogs_journal_id", "gstr1_updated", "customer_ledger_id", "sales_ledger_id",
+    "document_path", "photo_path",
+}
+EXPORT_FULL_WIDTH_PRINT_FIELDS = {
+    "buyer_address", "notify_party", "product_description", "remarks",
+    "approval_remarks", "marks_and_numbers", "packages_description",
+}
+EXPORT_MEDIUM_WIDTH_PRINT_FIELDS = {
+    "buyer_name", "consignee_name", "authority", "issued_by", "cha_name",
+    "payment_terms", "shipment_terms", "port_of_loading", "port_of_discharge",
+    "final_destination", "stuffing_location", "shipping_line",
+}
+
+
+def humanize_export_field(field_name: str) -> str:
+    if field_name in EXPORT_FIELD_LABELS:
+        return EXPORT_FIELD_LABELS[field_name]
+    return str(field_name).replace("_", " ").title()
+
+
+def export_display_value(value):
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, bool):
+        return "YES" if value else "NO"
+    if isinstance(value, datetime):
+        return value.strftime("%d-%b-%Y %I:%M %p")
+    if isinstance(value, date):
+        return value.strftime("%d-%b-%Y")
+    if isinstance(value, Decimal):
+        return f"{value:,.2f}"
+    if isinstance(value, float):
+        return f"{value:,.2f}"
+    return value
+
+
+def export_field_section(field_name: str) -> str:
+    if field_name in EXPORT_REFERENCE_FIELDS:
+        return "Document References"
+    if field_name in EXPORT_PARTY_FIELDS:
+        return "Buyer, Parties & Authorities"
+    if field_name in EXPORT_FINANCIAL_FIELDS:
+        return "Commercial & Financial Details"
+    if field_name in EXPORT_CARGO_FIELDS:
+        return "Cargo, Packing & Traceability"
+    if field_name in EXPORT_LOGISTICS_FIELDS:
+        return "Shipping, Dates & Logistics"
+    if field_name in EXPORT_CONTROL_FIELDS:
+        return "Status, Approval & Remarks"
+    if field_name in EXPORT_AUDIT_FIELDS:
+        return "Document Control & Audit Trail"
+    return "Additional Document Details"
+
+
+def export_print_field_span(field_name: str, value) -> int:
+    """Return a six-column print-grid span based on field content/type."""
+    text_value = str(value or "")
+    if field_name in EXPORT_FULL_WIDTH_PRINT_FIELDS or len(text_value) > 72:
+        return 6
+    if field_name in EXPORT_MEDIUM_WIDTH_PRINT_FIELDS or len(text_value) > 30:
+        return 3
+    return 2
+
+
+def pack_export_print_rows(fields: list[dict]) -> list[list[dict]]:
+    """Pack homogeneous 3-up, 2-up or full-width fields without broken gaps."""
+    rows = []
+    current = []
+    used = 0
+    current_span = None
+    for field in fields:
+        item = {**field, "span": export_print_field_span(field["name"], field["value"])}
+        span = item["span"]
+        if current and (current_span != span or used + span > 6):
+            if used < 6:
+                current.append({"empty": True, "span": 6 - used})
+            rows.append(current)
+            current, used = [], 0
+        current.append(item)
+        current_span = span
+        used += span
+        if used == 6:
+            rows.append(current)
+            current, used, current_span = [], 0, None
+    if current:
+        if used < 6:
+            current.append({"empty": True, "span": 6 - used})
+        rows.append(current)
+    return rows
+
+
+def get_export_company_profile(db: Session, company_id: str) -> dict:
+    company = db.query(Company).filter(Company.company_code == company_id).first()
+    return {
+        "name": company.company_name if company else company_id,
+        "address": company.address if company else "",
+        "email": company.email if company else "",
+        "code": (
+            company.mpeda_registration_code
+            if company and company.mpeda_registration_code
+            else "MPEDA CODE NOT REGISTERED"
+        ),
+        "tenant_code": company_id,
+    }
+
+
+PACKING_SCHEDULE_FIELDS = {
+    "packing_no", "invoice_item_no", "inventory_batch_id", "stock_entry_no",
+    "product_name", "grade", "batch_no", "lot_no", "glaze", "freezing_type",
+    "hs_code", "manufacturing_date", "expiry_date", "packing_style",
+    "inner_pack", "outer_pack", "master_cartons", "net_weight", "gross_weight",
+    "pallet_count",
+}
+
+
+def get_invoice_packing_rows(db: Session, row) -> list[PackingList]:
+    if not isinstance(row, PackingList):
+        return []
+    return db.query(PackingList).filter(
+        PackingList.company_id == row.company_id,
+        PackingList.invoice_no == row.invoice_no,
+        PackingList.is_cancelled != True,
+    ).order_by(PackingList.invoice_item_no, PackingList.id).all()
+
+
+def build_document_payload(cfg, row, packing_rows: list[PackingList] | None = None):
+    configured_labels = {attr: label for label, attr in cfg["fields"]}
+    ordered_attrs = [attr for _, attr in cfg["fields"]]
+    for column in row.__table__.columns:
+        if column.name not in ordered_attrs:
+            ordered_attrs.append(column.name)
+
+    grouped = {}
+    for attr in ordered_attrs:
+        # Accounting links, storage references and creation metadata are useful
+        # inside ERP screens, but must not appear on customer-facing documents.
+        if attr in EXPORT_AUDIT_FIELDS:
+            continue
+        value = getattr(row, attr, None)
+        if attr in EXPORT_INTERNAL_PATH_FIELDS:
+            value = "AVAILABLE IN SYSTEM" if value else "NOT ATTACHED"
+        grouped.setdefault(export_field_section(attr), []).append({
+            "name": attr,
+            "label": configured_labels.get(attr, humanize_export_field(attr)),
+            "value": export_display_value(value),
+        })
+
+    section_order = [
+        "Document References",
+        "Buyer, Parties & Authorities",
+        "Commercial & Financial Details",
+        "Cargo, Packing & Traceability",
+        "Shipping, Dates & Logistics",
+        "Status, Approval & Remarks",
+        "Additional Document Details",
+        "Document Control & Audit Trail",
+    ]
+    sections = [
+        {"title": title, "fields": grouped[title]}
+        for title in section_order
+        if grouped.get(title)
+    ]
+    if isinstance(row, PackingList):
+        for section in sections:
+            section["fields"] = [
+                field for field in section["fields"]
+                if field["name"] not in PACKING_SCHEDULE_FIELDS
+            ]
+        sections = [section for section in sections if section["fields"]]
+    for section in sections:
+        section["rows"] = pack_export_print_rows(section["fields"])
+    field_count = sum(len(section["fields"]) for section in sections)
     payload = {
         "title": cfg["title"],
         "document_no": getattr(row, cfg["no"], ""),
         "document_date": getattr(row, cfg["date"], None),
-        "fields": [(label, getattr(row, attr, None)) for label, attr in cfg["fields"]],
+        "fields": [
+            (configured_labels.get(attr, humanize_export_field(attr)), export_display_value(getattr(row, attr, None)))
+            for attr in ordered_attrs
+            if attr not in EXPORT_AUDIT_FIELDS
+        ],
+        "sections": sections,
+        "field_count": field_count,
+        "document_reference": (
+            f"{EXPORT_DOCUMENT_PREFIXES.get(cfg['model'], 'DOC')}-{int(getattr(row, 'id', 0) or 0):06d}"
+        ),
     }
     if isinstance(row, CommercialInvoice):
         payload["line_items"] = [
@@ -494,14 +747,59 @@ def build_document_payload(cfg, row):
             for item in row.packing_items
             if not item.is_cancelled
         ]
+    if isinstance(row, PackingList):
+        source_rows = packing_rows or [row]
+        payload["packing_line_items"] = [
+            {
+                "packing_no": item.packing_no,
+                "invoice_item_no": item.invoice_item_no,
+                "inventory_batch_id": item.inventory_batch_id,
+                "stock_entry_no": item.stock_entry_no,
+                "product_name": item.product_name,
+                "grade": item.grade,
+                "batch_no": item.batch_no,
+                "lot_no": item.lot_no,
+                "glaze": item.glaze,
+                "freezing_type": item.freezing_type,
+                "hs_code": item.hs_code,
+                "manufacturing_date": export_display_value(item.manufacturing_date),
+                "expiry_date": export_display_value(item.expiry_date),
+                "packing_style": item.packing_style,
+                "inner_pack": item.inner_pack,
+                "outer_pack": item.outer_pack,
+                "master_cartons": int(item.master_cartons or 0),
+                "net_weight": float(item.net_weight or 0),
+                "gross_weight": float(item.gross_weight or 0),
+                "pallet_count": int(item.pallet_count or 0),
+            }
+            for item in source_rows
+        ]
+    line_item_count = len(payload.get("line_items", []))
+    line_item_count += len(payload.get("packing_line_items", []))
+    estimated_rows = (
+        sum(len(section["rows"]) + 1 for section in sections)
+        + line_item_count
+        + 16
+    )
+    payload["line_item_count"] = line_item_count
+    payload["fit_scale"] = min(1.0, round(40 / max(40, estimated_rows), 3))
+    payload["fit_font_size"] = max(3.2, min(6.8, round(7.0 * payload["fit_scale"], 2)))
     return payload
 
 
-def render_document_pdf(cfg, row, company_id: str, doc_type: str) -> bytes:
-    payload = build_document_payload(cfg, row)
+def render_document_pdf(
+    cfg,
+    row,
+    company_id: str,
+    doc_type: str,
+    company_profile: dict | None = None,
+    packing_rows: list[PackingList] | None = None,
+) -> bytes:
+    payload = build_document_payload(cfg, row, packing_rows)
     html = templates.env.get_template("export_documents/print_document_pdf.html").render(
         **payload,
         company_id=company_id,
+        company=company_profile or {"name": company_id, "address": "", "email": "", "code": company_id},
         record=row,
         doc_type=doc_type,
         generated_at=datetime.utcnow(),
@@ -516,11 +814,39 @@ def render_document_pdf(cfg, row, company_id: str, doc_type: str) -> bytes:
     except Exception as exc:
         logger.warning("HTML PDF rendering failed for %s: %s", doc_type, exc)
 
-    lines = [f"{label}: {value}" for label, value in payload["fields"] if value not in (None, "")]
-    return make_simple_pdf(payload["title"], payload["document_no"], lines)
+    lines = []
+    for section in payload["sections"]:
+        lines.append(f"## {section['title']}")
+        lines.extend(f"{field['label']}: {field['value']}" for field in section["fields"])
+    if payload.get("packing_line_items"):
+        lines.append("## Consolidated Packing Schedule")
+        for index, item in enumerate(payload["packing_line_items"], start=1):
+            lines.append(
+                f"{index}. {item['packing_no']} / Item {item['invoice_item_no'] or '—'} | "
+                f"{item['product_name']} / HS {item['hs_code'] or '—'} | "
+                f"Grade {item['grade']} / {item['glaze'] or '—'} / {item['freezing_type'] or '—'} | "
+                f"Batch {item['batch_no'] or '—'} / Lot {item['lot_no'] or '—'} | "
+                f"Mfg {item['manufacturing_date']} / Exp {item['expiry_date']} | "
+                f"{item['packing_style']} / Inner {item['inner_pack'] or '—'} / Outer {item['outer_pack'] or '—'} | "
+                f"Inventory {item['inventory_batch_id'] or '—'} / Stock {item['stock_entry_no'] or '—'} | "
+                f"MC {item['master_cartons']} / Pallet {item['pallet_count']} | "
+                f"NW {item['net_weight']:,.2f} / GW {item['gross_weight']:,.2f}"
+            )
+    return make_simple_pdf(
+        payload["title"],
+        payload["document_no"],
+        lines,
+        (company_profile or {}).get("name") or company_id,
+    )
 
 
-def render_requirement_pdf(definition: dict, details: dict, company_id: str, reference) -> bytes:
+def render_requirement_pdf(
+    definition: dict,
+    details: dict,
+    company_id: str,
+    reference,
+    company_profile: dict | None = None,
+) -> bytes:
     """Render a controlled PDF from a generic requirement data model."""
     document_no = str(details.get("document_no") or getattr(reference, "shipment_no", None) or getattr(reference, "pi_no", reference.id))
     fields = [
@@ -528,10 +854,19 @@ def render_requirement_pdf(definition: dict, details: dict, company_id: str, ref
         for field in definition["fields"]
         if requirement_field_values(details.get(field["name"]))
     ]
+    requirement_section = {"title": "Document Particulars", "fields": [
+        {"name": field["name"], "label": field["label"], "value": export_display_value(details.get(field["name"]))}
+        for field in definition["fields"]
+    ]}
+    requirement_section["rows"] = pack_export_print_rows(requirement_section["fields"])
     html = templates.env.get_template("export_documents/print_document_pdf.html").render(
         title=definition["label"], document_no=document_no,
         document_date=details.get("document_date"), fields=fields,
-        line_items=[], company_id=company_id, record=reference,
+        sections=[requirement_section],
+        document_reference=f"DOC-{int(getattr(reference, 'id', 0) or 0):06d}",
+        line_items=[], company_id=company_id,
+        company=company_profile or {"name": company_id, "address": "", "email": "", "code": company_id},
+        record=reference,
         doc_type=definition["code"].lower(), generated_at=datetime.utcnow(),
     )
     try:
@@ -543,7 +878,12 @@ def render_requirement_pdf(definition: dict, details: dict, company_id: str, ref
             return output.getvalue()
     except Exception as exc:
         logger.warning("Requirement PDF rendering failed for %s: %s", definition["code"], exc)
-    return make_simple_pdf(definition["label"], document_no, [f"{label}: {value}" for label, value in fields])
+    return make_simple_pdf(
+        definition["label"],
+        document_no,
+        [f"{label}: {value}" for label, value in fields],
+        (company_profile or {}).get("name") or company_id,
+    )
 
 
 def style_register_sheet(sheet, title: str, company_id: str, fields: list[tuple[str, str]], rows: list) -> None:
@@ -576,12 +916,19 @@ def document_register_workbook(db: Session, company_id: str, doc_type: str | Non
     selected = {doc_type: configs[doc_type]} if doc_type in configs else configs
     workbook = openpyxl.Workbook()
     workbook.remove(workbook.active)
+    company_profile = get_export_company_profile(db, company_id)
     for key, cfg in selected.items():
         rows = db.query(cfg["model"]).filter(
             cfg["model"].company_id == company_id
         ).order_by(desc(cfg["model"].id)).all()
         sheet = workbook.create_sheet(title=cfg["title"][:31])
-        style_register_sheet(sheet, cfg["title"], company_id, cfg["fields"], rows)
+        style_register_sheet(
+            sheet,
+            cfg["title"],
+            company_profile["code"],
+            cfg["fields"],
+            rows,
+        )
     output = BytesIO()
     workbook.save(output)
     output.seek(0)
@@ -592,35 +939,86 @@ def pdf_escape(value) -> str:
     return str(value if value is not None else "").replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
 
 
-def make_simple_pdf(title: str, document_no: str, lines: list[str]) -> bytes:
-    content_lines = [
-        "BT",
-        "/F1 16 Tf",
-        "50 800 Td",
-        f"({pdf_escape(title)}) Tj",
-        "/F1 10 Tf",
-        "0 -18 Td",
-        f"(Document No: {pdf_escape(document_no)}) Tj",
-        "0 -18 Td",
-        "(BKNR SOLUTIONS - International Export Document) Tj",
-    ]
-    y_lines = 0
+def make_simple_pdf(title: str, document_no: str, lines: list[str], company_name: str = "COMPANY") -> bytes:
+    """Dependency-free corporate single-page portrait PDF fallback."""
+    wrapped_lines = []
     for line in lines:
-        text = pdf_escape(line)[:105]
-        if y_lines and y_lines % 38 == 0:
-            content_lines.extend(["ET", "BT", "/F1 10 Tf", "50 800 Td"])
-        content_lines.append("0 -16 Td")
-        content_lines.append(f"({text}) Tj")
-        y_lines += 1
-    content_lines.append("ET")
-    stream = "\n".join(content_lines).encode("latin-1", "replace")
+        if line.startswith("## "):
+            wrapped_lines.append(line)
+            continue
+        chunks = textwrap.wrap(str(line), width=29, break_long_words=False, break_on_hyphens=False) or ["—"]
+        wrapped_lines.extend(chunks)
+    column_count = 3
+    rows_per_column = max(1, (len(wrapped_lines) + column_count - 1) // column_count)
+    y_step = min(13.0, max(3.8, 585 / rows_per_column))
+    font_size = min(7.2, max(3.8, y_step * 0.62))
+    columns = [
+        wrapped_lines[index * rows_per_column:(index + 1) * rows_per_column]
+        for index in range(column_count)
+    ]
     objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>",
-        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+        b"<< /Type /Pages /Kids [5 0 R] /Count 1 >>",
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream",
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>",
     ]
+    commands = [
+        "0.071 0.231 0.365 rg",
+        "0 785 595 57 re f",
+        "1 1 1 rg",
+        "BT /F2 16 Tf 34 815 Td",
+        f"({pdf_escape(str(company_name).upper())}) Tj",
+        "/F1 7 Tf 0 -15 Td (CONTROLLED CORPORATE DOCUMENT) Tj ET",
+        "0.071 0.231 0.365 rg",
+        "BT /F2 13 Tf 330 815 Td",
+        f"({pdf_escape(title.upper())}) Tj",
+        "/F1 9 Tf 0 -17 Td",
+        f"(Document No: {pdf_escape(document_no)}) Tj ET",
+        "0.70 0.78 0.82 RG 34 763 527 1 re f",
+    ]
+    column_x = [38, 213, 388]
+    for column_index, page_lines in enumerate(columns):
+        y = 747
+        for line in page_lines:
+            if line.startswith("## "):
+                commands.extend([
+                    "0.918 0.961 0.973 rg",
+                    f"{column_x[column_index]} {y - 2} 164 {max(9, y_step)} re f",
+                    "0.071 0.231 0.365 rg",
+                    f"BT /F2 {max(4.2, font_size)} Tf {column_x[column_index] + 4} {y + 1} Td ({pdf_escape(line[3:].upper())}) Tj ET",
+                ])
+                y -= y_step + 3
+            else:
+                commands.extend([
+                    "0.09 0.13 0.20 rg",
+                    f"BT /F1 {font_size} Tf {column_x[column_index] + 4} {y} Td ({pdf_escape(line)}) Tj ET",
+                ])
+                y -= y_step
+    commands.extend([
+        "0.20 0.28 0.34 RG",
+        "38 83 160 1 re f",
+        "213 83 160 1 re f",
+        "388 83 164 1 re f",
+        "0.09 0.13 0.20 rg",
+        "BT /F2 6 Tf 38 69 Td (PREPARED BY) Tj ET",
+        "BT /F2 6 Tf 213 69 Td (VERIFIED BY) Tj ET",
+        "BT /F2 6 Tf 388 69 Td (AUTHORISED SIGNATORY) Tj ET",
+        "0.35 0.43 0.49 rg",
+        "BT /F1 5 Tf 38 59 Td (Export Documentation) Tj ET",
+        "BT /F1 5 Tf 213 59 Td (Commercial / Logistics / Compliance) Tj ET",
+        "BT /F1 5 Tf 388 59 Td (Company Seal) Tj ET",
+        "0.70 0.78 0.82 RG 34 30 527 1 re f",
+        "0.35 0.43 0.49 rg",
+        f"BT /F1 6 Tf 34 18 Td (CONTROLLED DOCUMENT COPY - {pdf_escape(title)} - {pdf_escape(document_no)}) Tj ET",
+        "BT /F1 6 Tf 500 18 Td (Page 1 of 1) Tj ET",
+    ])
+    stream = "\n".join(commands).encode("latin-1", "replace")
+    objects.append(
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] "
+        b"/Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 6 0 R >>"
+    )
+    objects.append(b"<< /Length " + str(len(stream)).encode() + b" >>\nstream\n" + stream + b"\nendstream")
+
     pdf = bytearray(b"%PDF-1.4\n")
     offsets = [0]
     for idx, obj in enumerate(objects, start=1):
@@ -702,68 +1100,171 @@ def ensure_export_document_schema(db: Session = Depends(get_db)) -> None:
 router.dependencies.append(Depends(ensure_export_document_schema))
 
 
+def build_export_dashboard_context(db: Session, comp_code: str) -> dict:
+    active_shipments = db.query(ExportShipment).filter(
+        ExportShipment.company_id == comp_code,
+        ExportShipment.is_cancelled != True,
+    )
+    packing_filter = (
+        PackingList.company_id == comp_code,
+        PackingList.is_cancelled != True,
+    )
+    compliance_rows = db.query(ExportComplianceTracker).filter(
+        ExportComplianceTracker.company_id == comp_code,
+    ).all()
+    packing_documents = db.query(func.count(func.distinct(PackingList.packing_no))).filter(
+        *packing_filter,
+    ).scalar() or 0
+    packing_lines = db.query(PackingList).filter(*packing_filter).count()
+    stats = {
+        "proforma_invoices": db.query(ProformaInvoice).filter(
+            ProformaInvoice.company_id == comp_code,
+            ProformaInvoice.is_cancelled != True,
+        ).count(),
+        "shipments": active_shipments.count(),
+        "invoices": db.query(CommercialInvoice).filter(
+            CommercialInvoice.company_id == comp_code,
+            CommercialInvoice.is_cancelled != True,
+        ).count(),
+        "packing_lists": int(packing_documents),
+        "packing_lines": packing_lines,
+        "stuffing": db.query(ContainerStuffing).filter(
+            ContainerStuffing.company_id == comp_code,
+            ContainerStuffing.is_cancelled != True,
+        ).count(),
+        "shipping_bills": db.query(ShippingBill).filter(
+            ShippingBill.company_id == comp_code,
+            ShippingBill.is_cancelled != True,
+        ).count(),
+        "bill_of_lading": db.query(BillOfLading).filter(
+            BillOfLading.company_id == comp_code,
+            BillOfLading.is_cancelled != True,
+        ).count(),
+        "health_certificates": db.query(HealthCertificate).filter(
+            HealthCertificate.company_id == comp_code,
+            HealthCertificate.is_cancelled != True,
+        ).count(),
+        "compliance": len(compliance_rows),
+        "pending_approvals": db.query(ExportDocumentFile).filter(
+            ExportDocumentFile.company_id == comp_code,
+            ExportDocumentFile.is_current == True,
+            ExportDocumentFile.approval_status == "PENDING",
+        ).count(),
+    }
+    recent_shipments = [
+        {
+            "id": row.id,
+            "shipment_no": row.shipment_no,
+            "invoice_no": row.invoice_no,
+            "buyer_name": row.buyer_name,
+            "country": row.country,
+            "status": row.status or "OPEN",
+            "etd": _dt(row.etd),
+            "eta": _dt(row.eta),
+        }
+        for row in active_shipments.order_by(desc(ExportShipment.id)).limit(10).all()
+    ]
+    recent_invoices = [
+        {
+            "invoice_no": row.invoice_no,
+            "shipment_no": row.shipment_no,
+            "buyer_name": row.buyer_name,
+            "invoice_date": _dt(row.invoice_date),
+            "currency": row.currency or "USD",
+            "total_amount": float(row.total_amount or 0),
+            "payment_status": row.payment_status or "PENDING",
+            "approval_status": row.approval_status or "PENDING",
+        }
+        for row in db.query(CommercialInvoice)
+        .filter(
+            CommercialInvoice.company_id == comp_code,
+            CommercialInvoice.is_cancelled != True,
+        )
+        .order_by(desc(CommercialInvoice.id))
+        .limit(10)
+        .all()
+    ]
+    shipment_status = [
+        {"label": status or "OPEN", "value": int(count or 0)}
+        for status, count in db.query(ExportShipment.status, func.count(ExportShipment.id))
+        .filter(
+            ExportShipment.company_id == comp_code,
+            ExportShipment.is_cancelled != True,
+        )
+        .group_by(ExportShipment.status)
+        .order_by(desc(func.count(ExportShipment.id)))
+        .all()
+    ]
+    currency_totals = [
+        {
+            "label": currency or "USD",
+            "value": float(total or 0),
+            "count": int(count or 0),
+        }
+        for currency, total, count in db.query(
+            CommercialInvoice.currency,
+            func.sum(CommercialInvoice.total_amount),
+            func.count(CommercialInvoice.id),
+        )
+        .filter(
+            CommercialInvoice.company_id == comp_code,
+            CommercialInvoice.is_cancelled != True,
+        )
+        .group_by(CommercialInvoice.currency)
+        .order_by(desc(func.sum(CommercialInvoice.total_amount)))
+        .all()
+    ]
+    compliance_fields = (
+        ("Commercial Invoice", "invoice_pending"),
+        ("Packing List", "packing_list_pending"),
+        ("Health Certificate", "health_cert_pending"),
+        ("Shipping Bill", "shipping_bill_pending"),
+        ("Bill of Lading", "bl_pending"),
+        ("Payment Closure", "payment_pending"),
+    )
+    document_completion = []
+    for label, field_name in compliance_fields:
+        pending = sum(1 for row in compliance_rows if bool(getattr(row, field_name, False)))
+        document_completion.append({
+            "label": label,
+            "complete": max(0, len(compliance_rows) - pending),
+            "pending": pending,
+            "total": len(compliance_rows),
+        })
+    return {
+        "stats": stats,
+        "shipment_status": shipment_status,
+        "document_completion": document_completion,
+        "currency_totals": currency_totals,
+        "recent_shipments": recent_shipments,
+        "recent_invoices": recent_invoices,
+        "company_id": comp_code,
+    }
+
+
+@router.get("/dashboard/data")
+def export_documents_dashboard_data(request: Request, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return cache_get_or_set(
+        f"bknr:export_documents:{comp_code}:dashboard:v2",
+        lambda: build_export_dashboard_context(db, comp_code),
+        ttl=45,
+    )
+
+
 @router.get("/dashboard", response_class=HTMLResponse)
 def export_documents_dashboard(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/auth/login")
 
-    def build_dashboard_context():
-        stats = {
-            "shipments": db.query(ExportShipment).filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True).count(),
-            "invoices": db.query(CommercialInvoice).filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True).count(),
-            "packing_lists": db.query(PackingList).filter(PackingList.company_id == comp_code, PackingList.is_cancelled != True).count(),
-            "stuffing": db.query(ContainerStuffing).filter(ContainerStuffing.company_id == comp_code, ContainerStuffing.is_cancelled != True).count(),
-            "shipping_bills": db.query(ShippingBill).filter(ShippingBill.company_id == comp_code, ShippingBill.is_cancelled != True).count(),
-            "bill_of_lading": db.query(BillOfLading).filter(BillOfLading.company_id == comp_code, BillOfLading.is_cancelled != True).count(),
-            "health_certificates": db.query(HealthCertificate).filter(HealthCertificate.company_id == comp_code, HealthCertificate.is_cancelled != True).count(),
-            "compliance": (
-                db.query(ExportComplianceTracker)
-                .join(ExportShipment, and_(
-                    ExportComplianceTracker.company_id == ExportShipment.company_id,
-                    ExportComplianceTracker.shipment_no == ExportShipment.shipment_no,
-                ))
-                .filter(ExportComplianceTracker.company_id == comp_code, ExportShipment.company_id == comp_code)
-                .count()
-            ),
-        }
-        recent_shipments = [
-            {
-                "id": row.id,
-                "shipment_no": row.shipment_no,
-                "invoice_no": row.invoice_no,
-                "buyer_name": row.buyer_name,
-                "etd": _dt(row.etd),
-                "eta": _dt(row.eta),
-            }
-            for row in db.query(ExportShipment)
-            .filter(ExportShipment.company_id == comp_code, ExportShipment.is_cancelled != True)
-            .order_by(desc(ExportShipment.id))
-            .limit(8)
-            .all()
-        ]
-        recent_invoices = [
-            {
-                "invoice_no": row.invoice_no,
-                "shipment_no": row.shipment_no,
-                "buyer_name": row.buyer_name,
-                "currency": row.currency,
-                "total_amount": float(row.total_amount or 0),
-            }
-            for row in db.query(CommercialInvoice)
-            .filter(CommercialInvoice.company_id == comp_code, CommercialInvoice.is_cancelled != True)
-            .order_by(desc(CommercialInvoice.id))
-            .limit(8)
-            .all()
-        ]
-        return {
-            "stats": stats,
-            "recent_shipments": recent_shipments,
-            "recent_invoices": recent_invoices,
-            "company_id": comp_code,
-        }
-
-    context = cache_get_or_set(f"bknr:export_documents:{comp_code}:dashboard", build_dashboard_context, ttl=45)
+    context = cache_get_or_set(
+        f"bknr:export_documents:{comp_code}:dashboard:v2",
+        lambda: build_export_dashboard_context(db, comp_code),
+        ttl=45,
+    )
     return templates.TemplateResponse(
         request=request,
         name="export_documents/dashboard.html",
@@ -1174,7 +1675,13 @@ def export_requirement_page_generate(
         return JSONResponse({"success": False, "message": "Amount must be a valid non-negative number"}, status_code=400)
 
     document_no = str(details.get("document_no") or getattr(reference, "pi_no", None) or getattr(reference, "shipment_no", reference.id)).strip()[:160]
-    pdf_bytes = render_requirement_pdf(definition, details, comp_code, reference)
+    pdf_bytes = render_requirement_pdf(
+        definition,
+        details,
+        comp_code,
+        reference,
+        get_export_company_profile(db, comp_code),
+    )
     module_name = "export_proforma_requirement" if is_pre_po else "export_supporting"
     file_row = store_export_pdf(
         db=db, company_id=comp_code, module_name=module_name, record_id=reference.id,
@@ -1950,20 +2457,69 @@ class PackingListSchema(BaseModel):
     lot_no: str = None
     glaze: str = None
     freezing_type: str = None
+    hs_code: str = None
+    manufacturing_date: date = None
+    expiry_date: date = None
     packing_style: str
     inner_pack: str = None
     outer_pack: str = None
     master_cartons: int = 0
     net_weight: float = 0.0
     gross_weight: float = 0.0
+    pallet_count: int = 0
+    inventory_batch_id: str = None
+    stock_entry_no: str = None
+    invoice_item_no: int = None
 
     @model_validator(mode="after")
     def validate_quantities(self):
-        if self.master_cartons < 0 or self.net_weight < 0 or self.gross_weight < 0:
-            raise ValueError("Cartons and weights cannot be negative")
+        if self.master_cartons < 0 or self.pallet_count < 0 or self.net_weight < 0 or self.gross_weight < 0:
+            raise ValueError("Cartons, pallets and weights cannot be negative")
         if self.gross_weight < self.net_weight:
             raise ValueError("Gross weight cannot be less than net weight")
+        if self.manufacturing_date and self.expiry_date and self.expiry_date < self.manufacturing_date:
+            raise ValueError("Expiry date cannot be before manufacturing date")
         return self
+
+
+class PackingListBulkLineSchema(BaseModel):
+    product_name: str
+    grade: str
+    batch_no: str = None
+    lot_no: str = None
+    glaze: str = None
+    freezing_type: str = None
+    hs_code: str = None
+    manufacturing_date: date = None
+    expiry_date: date = None
+    packing_style: str
+    inner_pack: str = None
+    outer_pack: str = None
+    master_cartons: int = 0
+    net_weight: float = 0.0
+    gross_weight: float = 0.0
+    pallet_count: int = 0
+    inventory_batch_id: str = None
+    stock_entry_no: str = None
+
+    @model_validator(mode="after")
+    def validate_line(self):
+        if self.master_cartons < 0 or self.pallet_count < 0 or self.net_weight < 0 or self.gross_weight < 0:
+            raise ValueError("Cartons, pallets and weights cannot be negative")
+        if self.gross_weight < self.net_weight:
+            raise ValueError("Gross weight cannot be less than net weight")
+        if self.manufacturing_date and self.expiry_date and self.expiry_date < self.manufacturing_date:
+            raise ValueError("Expiry date cannot be before manufacturing date")
+        return self
+
+
+class PackingListBulkSchema(BaseModel):
+    packing_no: str
+    invoice_no: str
+    po_number: str = None
+    container_no: str = None
+    buyer_name: str = None
+    items: list[PackingListBulkLineSchema] = Field(..., min_length=1, max_length=100)
 
 class ContainerStuffingSchema(BaseModel):
     container_no: str
@@ -2185,9 +2741,40 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
         AuditLog.company_id == comp_code,
         AuditLog.table_name == "proforma_invoices",
     ).order_by(desc(AuditLog.edited_at), desc(AuditLog.id)).limit(100).all()
+    buyer_rows = db.query(buyers).filter(
+        buyers.company_id == comp_code,
+    ).order_by(buyers.buyer_name).all()
+    country_rows = db.query(countries).filter(
+        countries.company_id == comp_code,
+    ).order_by(countries.country_name).all()
+    current_year = date.today().year
+    existing_numbers = [
+        row.pi_no for row in db.query(ProformaInvoice.pi_no).filter(
+            ProformaInvoice.company_id == comp_code,
+            ProformaInvoice.pi_no.ilike(f"PI-{current_year}-%"),
+        ).all()
+    ]
+    sequence_values = []
+    for number in existing_numbers:
+        match = re.search(r"(\d+)$", str(number or ""))
+        if match:
+            sequence_values.append(int(match.group(1)))
+    next_pi_no = f"PI-{current_year}-{max(sequence_values, default=0) + 1:04d}"
     return {
         "success": True,
         "can_approve": is_supporting_document_admin(request),
+        "next_pi_no": next_pi_no,
+        "buyers": [{
+            "name": row.buyer_name,
+            "address": row.address or "",
+            "country": row.country or "",
+            "currency": row.currency_code or "USD",
+            "payment_terms": f"{int(row.payment_terms_days or 0)} Days" if row.payment_terms_days else "",
+            "contact_person": row.contact_person or "",
+            "email": row.buyer_email or "",
+            "iec_code": row.iec_code or "",
+        } for row in buyer_rows],
+        "countries": [row.country_name for row in country_rows],
         "rows": [serialize_proforma(row) for row in rows],
         "audit_logs": [{
             "id": audit.id,
@@ -2522,6 +3109,61 @@ def packing_list_save(request: Request, payload: PackingListSchema, db: Session 
     db.commit()
     return {"success": True, "message": "Packing list and COGS accounting recorded successfully", "cogs_value": cogs_value}
 
+
+@router.post("/packing_list/save-bulk")
+def packing_list_save_bulk(request: Request, payload: PackingListBulkSchema, db: Session = Depends(get_db)):
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        invoice = require_company_invoice(db, comp_code, payload.invoice_no)
+        created_entries = []
+        common = {
+            "company_id": comp_code,
+            "packing_no": payload.packing_no.strip(),
+            "invoice_no": payload.invoice_no,
+            "po_number": payload.po_number,
+            "container_no": payload.container_no,
+            "buyer_name": payload.buyer_name,
+            "created_by": email,
+        }
+        if not common["packing_no"]:
+            raise ValueError("Packing document number is required")
+        for index, item in enumerate(payload.items, start=1):
+            entry = PackingList(
+                **common,
+                invoice_item_no=index,
+                **item.model_dump(),
+            )
+            db.add(entry)
+            db.flush()
+            created_entries.append(entry)
+            write_audit(
+                db,
+                "packing_lists",
+                entry.id,
+                comp_code,
+                "CREATE",
+                "NONE",
+                f"Packing {payload.packing_no} · Line {index} · {item.product_name} · {item.grade}",
+                email,
+            )
+        cogs_value = repost_invoice_cogs(db, comp_code, invoice, email)
+        refresh_compliance(db, comp_code, invoice.shipment_no)
+        db.commit()
+        invalidate_export_cache(comp_code)
+        return {
+            "success": True,
+            "message": f"Packing list saved successfully with {len(created_entries)} line items",
+            "record_ids": [entry.id for entry in created_entries],
+            "cogs_value": cogs_value,
+        }
+    except Exception as exc:
+        db.rollback()
+        logger.exception("Bulk packing list save failed")
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
+
 @router.post("/packing_list/delete/{log_id}")
 def packing_list_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
@@ -2810,13 +3452,24 @@ def export_shipment_dossier(shipment_id: int, request: Request, db: Session = De
             records.extend((doc_type, row) for row in linked_rows)
 
     output = BytesIO()
+    company_profile = get_export_company_profile(db, comp_code)
     manifest_rows = []
     with ZipFile(output, "w", ZIP_DEFLATED) as archive:
         for index, (doc_type, row) in enumerate(records, start=1):
             cfg = export_doc_config()[doc_type]
             document_no = str(getattr(row, cfg["no"], row.id))
             file_name = f"{index:02d}_{safe_filename(cfg['title'])}_{safe_filename(document_no)}.pdf"
-            archive.writestr(file_name, render_document_pdf(cfg, row, comp_code, doc_type))
+            archive.writestr(
+                file_name,
+                render_document_pdf(
+                    cfg,
+                    row,
+                    comp_code,
+                    doc_type,
+                    company_profile,
+                    get_invoice_packing_rows(db, row),
+                ),
+            )
             manifest_rows.append((cfg["title"], document_no, "SYSTEM GENERATED", file_name))
 
         supporting = db.query(ExportDocumentFile).filter(
@@ -2874,13 +3527,15 @@ def export_shipment_dossier(shipment_id: int, request: Request, db: Session = De
 @router.get("/{doc_type}/print/{record_id}", response_class=HTMLResponse)
 def export_document_print(doc_type: str, record_id: int, request: Request, db: Session = Depends(get_db)):
     cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
-    payload = build_document_payload(cfg, row)
+    payload = build_document_payload(cfg, row, get_invoice_packing_rows(db, row))
+    company = get_export_company_profile(db, comp_code)
     return templates.TemplateResponse(
         request=request,
         name=cfg["template"],
         context={
             **payload,
             "company_id": comp_code,
+            "company": company,
             "record": row,
             "doc_type": doc_type,
             "generated_at": datetime.utcnow(),
@@ -2891,7 +3546,14 @@ def export_document_print(doc_type: str, record_id: int, request: Request, db: S
 @router.get("/{doc_type}/pdf/{record_id}")
 def export_document_pdf(doc_type: str, record_id: int, request: Request, db: Session = Depends(get_db)):
     cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
-    pdf_bytes = render_document_pdf(cfg, row, comp_code, doc_type)
+    pdf_bytes = render_document_pdf(
+        cfg,
+        row,
+        comp_code,
+        doc_type,
+        get_export_company_profile(db, comp_code),
+        get_invoice_packing_rows(db, row),
+    )
     document_no = str(getattr(row, cfg["no"], record_id))
     file_row = store_export_pdf(
         db=db,

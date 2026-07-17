@@ -5,6 +5,9 @@ import '../../backend/app/static/css/ui-color-customizer.css'
 import '../../backend/app/static/js/ui-color-customizer.js'
 import './index.css'
 import App from './App.jsx'
+import { installActionFeedback } from './utils/actionFeedback.js'
+
+installActionFeedback()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

@@ -8,6 +8,7 @@ import {
   useReport, fmt
 } from './ReportShell';
 import Chart from 'chart.js/auto';
+import './SalesReport.css';
 
 const currentFYStart = (() => {
   const today = new Date();
@@ -486,7 +487,7 @@ export default function SalesReport({ activeRoute }) {
   });
 
   return (
-    <div className="report-viewer-card">
+    <div className="report-viewer-card sales-dispatch-report">
       {notice && (
         <div className={`attendance-toast ${notice.type === 'error' ? 'error' : 'success'}`} role="status" style={{ top: 80 }}>
           {notice.message}
@@ -562,7 +563,7 @@ export default function SalesReport({ activeRoute }) {
         </FilterBox>
       </FilterBar>
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div className="sales-dispatch-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <button
           onClick={() => setShowCharts(!showCharts)}
           style={{
@@ -572,34 +573,34 @@ export default function SalesReport({ activeRoute }) {
         >
           {showCharts ? 'Hide Analytics Dashboard' : 'Show Analytics Dashboard'}
         </button>
-        <div id="rowCount" style={{ fontSize: 12, fontWeight: 700, color: 'var(--corp-rep)' }}>
+        <div id="rowCount" className="sales-dispatch-row-count" style={{ fontSize: 12, fontWeight: 700, color: 'var(--corp-rep)' }}>
           {filtered.length} line items found
         </div>
       </div>
 
       {showCharts && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, marginBottom: 16 }}>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+        <div className="sales-dispatch-chart-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14, marginBottom: 16 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>REVENUE TREND (MONTHLY)</span>
             <div style={{ height: 200 }}><canvas ref={revenueTrendRef} /></div>
           </div>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>COUNTRY MARKET SHARE (REV)</span>
             <div style={{ height: 200 }}><canvas ref={countryShareRef} /></div>
           </div>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>VARIETY PERFORMANCE (REV)</span>
             <div style={{ height: 200 }}><canvas ref={varietyPerfRef} /></div>
           </div>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>TOP GRADES BY VOLUME (KG)</span>
             <div style={{ height: 200 }}><canvas ref={topGradesRef} /></div>
           </div>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>TOP BUYERS BY REVENUE</span>
             <div style={{ height: 200 }}><canvas ref={topBuyersRef} /></div>
           </div>
-          <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
+          <div className="sales-dispatch-chart-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 12, height: 240 }}>
             <span style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-secondary)' }}>REVENUE VS NET PROFIT</span>
             <div style={{ height: 200 }}><canvas ref={revenueProfitRef} /></div>
           </div>
@@ -612,18 +613,18 @@ export default function SalesReport({ activeRoute }) {
       {!loading && !error && (
         <>
           <KPIGrid>
-            <KPICard stacked label="Gross Revenue" value={fmt.currency(totalInr)} accent="var(--corp-fin)" onClick={() => setKpiDetail('revenue')} />
-            <KPICard stacked label="Net Profit" value={fmt.currency(totalPL)} accent={totalPL >= 0 ? 'var(--corp-fin)' : '#ef4444'} onClick={() => setKpiDetail('profit')} />
+            <KPICard stacked label="Gross Revenue" value={fmt.currency(totalInr)} accent="#2563eb" onClick={() => setKpiDetail('revenue')} />
+            <KPICard stacked label="Net Profit" value={fmt.currency(totalPL)} accent={totalPL >= 0 ? '#16a34a' : '#ef4444'} onClick={() => setKpiDetail('profit')} />
             <KPICard stacked label="Pending Due" value={fmt.currency(pendingDue)} accent="#ef4444" onClick={() => setKpiDetail('pending')} />
-            <KPICard stacked label="Profit / KG" value={totalQty > 0 ? fmt.currency(totalPL / totalQty) : '₹0.00'} accent="var(--corp-ops)" onClick={() => setKpiDetail('profitKg')} />
-            <KPICard stacked label="Landed Freight" value={fmt.currency(totalFreight)} accent="var(--corp-dash)" onClick={() => setKpiDetail('freight')} />
-            <KPICard stacked label="Packing Cost" value={fmt.currency(totalPacking)} accent="var(--corp-rep)" onClick={() => setKpiDetail('packing')} />
-            <KPICard stacked label="Volume Sold" value={`${fmt.number(totalQty)} KG`} accent="var(--corp-ops)" onClick={() => setKpiDetail('volume')} />
-            <KPICard stacked label="Total Invoices" value={uniqueInvoices} accent="var(--corp-dash)" onClick={() => setKpiDetail('invoices')} />
+            <KPICard stacked label="Profit / KG" value={totalQty > 0 ? fmt.currency(totalPL / totalQty) : '₹0.00'} accent="#f59e0b" onClick={() => setKpiDetail('profitKg')} />
+            <KPICard stacked label="Landed Freight" value={fmt.currency(totalFreight)} accent="#7c3aed" onClick={() => setKpiDetail('freight')} />
+            <KPICard stacked label="Packing Cost" value={fmt.currency(totalPacking)} accent="#0891b2" onClick={() => setKpiDetail('packing')} />
+            <KPICard stacked label="Volume Sold" value={`${fmt.number(totalQty)} KG`} accent="#0d9488" onClick={() => setKpiDetail('volume')} />
+            <KPICard stacked label="Total Invoices" value={uniqueInvoices} accent="#a855f7" onClick={() => setKpiDetail('invoices')} />
           </KPIGrid>
 
           {kpiDetail && (
-            <div style={{ border: '1px solid var(--border)', borderRadius: 7, marginBottom: 8, overflow: 'hidden' }}>
+            <div className="sales-dispatch-kpi-detail" style={{ border: '1px solid var(--border)', borderRadius: 7, marginBottom: 8, overflow: 'hidden' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'var(--header-bg)' }}>
                 <strong style={{ fontSize: 11 }}>{kpiLabels[kpiDetail]}</strong>
                 <button type="button" onClick={() => setKpiDetail(null)} style={{ border: '1px solid var(--border)', background: 'var(--card-bg)', color: 'var(--text-primary)', borderRadius: 5, cursor: 'pointer', fontSize: 10, padding: '3px 8px' }}>Close</button>
@@ -640,8 +641,11 @@ export default function SalesReport({ activeRoute }) {
             </div>
           )}
 
-          <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            <table className="bknr-table" style={{ minWidth: 2000, width: '100%' }}>
+          <div className="table-responsive sales-dispatch-table-wrap" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+            <table className="bknr-table sales-dispatch-table" style={{ minWidth: 2000, width: '100%' }}>
+              <colgroup>
+                {[45, 110, 115, 95, 170, 110, 110, 155, 95, 120, 110, 110, 170, 70, 100, 90, 115, 135, 135, 115, 125, 135, 120, 135].map((width, index) => <col key={index} style={{ width }} />)}
+              </colgroup>
               <thead>
                 <tr>
                   <th style={{ width: 45 }}>#</th>

@@ -1,8 +1,26 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ArrowLeft, Check, Download, FileText, Plus, Search, Upload } from 'lucide-react';
+import { ArrowLeft, Check, Download, FileText, Plus, Upload } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import '../Attendance/Attendance.css';
 import './RequirementDocuments.css';
+import ProformaInvoices from './ProformaInvoices';
+import CommercialInvoices from './CommercialInvoices';
+import PackingLists from './PackingLists';
+import ContainerStuffing from './ContainerStuffing';
+import ShippingBills from './ShippingBills';
+import BillsOfLading from './BillsOfLading';
+import HealthCertificates from './HealthCertificates';
+import ExportSearchPanel from './ExportSearchPanel';
+
+const STRUCTURED_DOCUMENT_COMPONENTS = {
+  PROFORMA_INVOICE: ProformaInvoices,
+  COMMERCIAL_INVOICE: CommercialInvoices,
+  PACKING_LIST: PackingLists,
+  CONTAINER_STUFFING_REPORT: ContainerStuffing,
+  SHIPPING_BILL: ShippingBills,
+  BL_COPY: BillsOfLading,
+  HEALTH_CERTIFICATE_COPY: HealthCertificates,
+};
 
 const initialValue = field => field.multiple ? [] : field.type === 'date' && field.name === 'document_date'
   ? new Date().toISOString().slice(0, 10)
@@ -10,7 +28,13 @@ const initialValue = field => field.multiple ? [] : field.type === 'date' && fie
 
 const displayValue = value => Array.isArray(value) ? value.join(', ') : value;
 
-export default function RequirementDocumentPage({ documentKind, embedded = false }) {
+export default function RequirementDocumentPage(props) {
+  const StructuredDocument = STRUCTURED_DOCUMENT_COMPONENTS[String(props.documentKind || '').toUpperCase()];
+  if (StructuredDocument) return <StructuredDocument embedded={props.embedded} />;
+  return <GenericRequirementDocumentPage {...props} />;
+}
+
+function GenericRequirementDocumentPage({ documentKind, embedded = false }) {
   const location = useLocation();
   const navigate = useNavigate();
   const [definition, setDefinition] = useState(null);
@@ -213,9 +237,14 @@ export default function RequirementDocumentPage({ documentKind, embedded = false
       </div></form>
     </section>}
 
-    <div className="attendance-filters-bar" style={{ maxWidth: 420 }}><div className="attendance-filter-group" style={{ position: 'relative' }}><label htmlFor="document-entry-search">Search Records</label>
-      <Search size={15} style={{ position: 'absolute', left: 10, bottom: 9 }} /><input id="document-entry-search" className="attendance-input" style={{ paddingLeft: 32 }} value={query} onChange={event => setQuery(event.target.value)} placeholder="PO, buyer, reference, approval..." />
-    </div></div>
+    <ExportSearchPanel
+      id="document-entry-search"
+      label="Search Records"
+      value={query}
+      onChange={setQuery}
+      count={filteredEntries.length}
+      placeholder="PO, buyer, reference or approval…"
+    />
     <div className="attendance-table-container"><div className="attendance-table-wrapper"><table className="attendance-table"><thead><tr>
       <th>{definition.reference_label}</th><th>Buyer</th>{definition.fields.map(field => <th key={field.name}>{field.label}</th>)}<th>PDF</th><th>Approval</th><th>Pending With</th><th>Approval Emails</th><th>Action</th>
     </tr></thead><tbody>{filteredEntries.map(row => <tr key={row.id}>

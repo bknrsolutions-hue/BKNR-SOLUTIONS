@@ -35,6 +35,7 @@ def serialize_statutory(r):
         "pf_employee_percent": r.pf_employee_percent,
         "pf_employer_percent": r.pf_employer_percent,
         "pf_wage_limit": r.pf_wage_limit,
+        "eps_applicable": True if r.eps_applicable is None else r.eps_applicable,
         "esi_applicable": r.esi_applicable,
         "esi_number": r.esi_number,
         "esi_employee_percent": r.esi_employee_percent,
@@ -55,7 +56,7 @@ def serialize_statutory(r):
 def employee_dropdown(request: Request, db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
-        return []
+        return JSONResponse({"error": "Session expired"}, status_code=401)
 
     employees = (
         db.query(EmployeeRegistration)
@@ -131,6 +132,7 @@ def save_tax_master(
     uan_number: str = Form(None),
     pf_employee_percent: float = Form(12.0),
     pf_employer_percent: float = Form(12.0),
+    eps_applicable: str = Form("YES"),
     esi_applicable: str = Form(...),
     esi_number: str = Form(None),
     esi_employee_percent: float = Form(0.75),
@@ -165,6 +167,7 @@ def save_tax_master(
         uan_number=uan_number,
         pf_employee_percent=pf_employee_percent,
         pf_employer_percent=pf_employer_percent,
+        eps_applicable=(eps_applicable == "YES"),
         esi_applicable=(esi_applicable == "YES"),
         esi_number=esi_number,
         esi_employee_percent=esi_employee_percent,
@@ -242,6 +245,7 @@ def update_tax_master(
     uan_number: str = Form(None),
     pf_employee_percent: float = Form(12.0),
     pf_employer_percent: float = Form(12.0),
+    eps_applicable: str = Form("YES"),
     esi_applicable: str = Form(...),
     esi_number: str = Form(None),
     esi_employee_percent: float = Form(0.75),
@@ -268,6 +272,7 @@ def update_tax_master(
             record.uan_number = uan_number
             record.pf_employee_percent = pf_employee_percent
             record.pf_employer_percent = pf_employer_percent
+            record.eps_applicable = (eps_applicable == "YES")
             record.esi_applicable = (esi_applicable == "YES")
             record.esi_number = esi_number
             record.esi_employee_percent = esi_employee_percent

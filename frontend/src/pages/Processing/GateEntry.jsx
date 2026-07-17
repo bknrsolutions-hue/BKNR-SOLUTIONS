@@ -413,7 +413,7 @@ export default function GateEntry() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Gate Entry
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel

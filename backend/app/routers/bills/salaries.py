@@ -21,6 +21,8 @@ from app.database.models.enterprise_finance import AccountGroup, LedgerMaster, S
 from app.database.models.users import Company
 from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
 from app.services.posting_engine import PostingEngineService
+from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.salary_advance_recovery import preview_monthly_advance_recovery, sync_monthly_advance_recovery
 from app.utils.timezone import ist_now
 
 router = APIRouter(prefix="/salaries", tags=["Salaries"])
@@ -133,6 +135,7 @@ def company_context(db: Session, company_code: str):
         "name": company.company_name if company else company_code,
         "address": company.address if company else "",
         "email": company.email if company else "",
+        "mpeda_registration_code": company.mpeda_registration_code if company else "",
     }
 
 
@@ -196,6 +199,8 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
                 duty_credit = 2.5
             else:
                 duty_credit = 3.0
+            if str(getattr(rec, "duty_type", "") or "").strip().upper() == "ABSENT":
+                duty_credit = 0.0
             if duty_credit > 1.0 and getattr(rec, "duty_status", "APPROVED") != "APPROVED":
                 duty_credit = 1.0
             daily_att_values[rec.duty_date.day] += duty_credit if duty_credit >= 0.5 else 0.0
@@ -222,33 +227,42 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
         total_payable_days = actual_present_count + extra_holidays + adjustment
         earned_gross = (total_payable_days * per_day_rate) + ot_earnings
         tds_amount = earned_gross * float(emp.tds or 0.0) / 100
-        stat = db.query(EmployeeStatutoryMaster).filter(
-            EmployeeStatutoryMaster.employee_id == emp.employee_id,
-            EmployeeStatutoryMaster.company_id == company_id,
-            EmployeeStatutoryMaster.status == "ACTIVE",
-        ).first()
+        stat = effective_statutory_record(
+            db,
+            company_id,
+            emp.employee_id,
+            date(year, month_no, days_in_month),
+        )
 
-        pf = esi = pt = lwf = employer_pf = employer_esi = 0.0
+        pf = esi = pt = lwf = employer_pf = employer_epf = employer_eps = employer_edli = employer_esi = 0.0
         if stat:
-            if stat.pf_applicable:
-                pf_wage = min(stat.pf_wage_limit, float(emp.basic_salary or 0.0))
-                pf = pf_wage * (stat.pf_employee_percent / 100)
-                employer_pf = pf_wage * (getattr(stat, "pf_employer_percent", 13.0) / 100)
-            if stat.esi_applicable and earned_gross <= stat.esi_wage_limit:
-                esi = earned_gross * (stat.esi_employee_percent / 100)
-                employer_esi = earned_gross * (getattr(stat, "esi_employer_percent", 3.25) / 100)
+            earned_salary_before_ot = total_payable_days * per_day_rate
+            earned_basic = (
+                earned_salary_before_ot * float(emp.basic_salary or 0.0) / base_gross
+                if base_gross > 0 else earned_salary_before_ot
+            )
+            statutory_values = calculate_pf_esi(
+                stat,
+                monthly_pf_wages=float(emp.basic_salary or 0.0),
+                earned_pf_wages=earned_basic,
+                monthly_esi_wages=base_gross,
+                earned_esi_wages=earned_gross,
+                employee_dob=emp.dob,
+                effective_date=date(year, month_no, 1),
+            )
+            pf = statutory_values["pf_employee"]
+            employer_pf = statutory_values["pf_employer"]
+            employer_epf = statutory_values["epf_employer"]
+            employer_eps = statutory_values["eps_employer"]
+            employer_edli = statutory_values["edli_employer"]
+            esi = statutory_values["esi_employee"]
+            employer_esi = statutory_values["esi_employer"]
             pt = stat.pt_amount or 0.0
             lwf = stat.lwf_employee_amount or 0.0
 
-        adv_rec = db.query(EmployeeSalaryAdvance).filter(
-            EmployeeSalaryAdvance.employee_id == emp.employee_id,
-            EmployeeSalaryAdvance.company_id == company_id,
-            EmployeeSalaryAdvance.status == "APPROVED",
-            EmployeeSalaryAdvance.remaining_balance > 0,
-            EmployeeSalaryAdvance.deduct_from <= month,
-            getattr(EmployeeSalaryAdvance, "deduct_to", month) >= month,
-        ).first()
-        salary_advance = min(adv_rec.monthly_deduction, adv_rec.remaining_balance) if adv_rec else 0.0
+        salary_advance, _ = preview_monthly_advance_recovery(
+            db, company_id, emp.employee_id, month
+        )
         net_pay = earned_gross - (pf + esi + pt + lwf + tds_amount + salary_advance)
         result.append({
             "id": emp.employee_id,
@@ -264,6 +278,9 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
             "lwf": lwf,
             "tds": round(tds_amount, 2),
             "employer_pf": round(employer_pf, 2),
+            "employer_epf": round(employer_epf, 2),
+            "employer_eps": round(employer_eps, 2),
+            "employer_edli": round(employer_edli, 2),
             "employer_esi": round(employer_esi, 2),
             "salary_advance": round(salary_advance, 2),
             "net_pay": round(net_pay, 2),
@@ -318,6 +335,9 @@ def _sync_monthly_sheet_salary(db: Session, company_id: str, month: str, emp: Em
             2,
         ),
         "pf_employer": float(row.get("employer_pf") or 0.0),
+        "epf_employer": float(row.get("employer_epf") or 0.0),
+        "eps_employer": float(row.get("employer_eps") or 0.0),
+        "edli_employer": float(row.get("employer_edli") or 0.0),
         "esi_employer": float(row.get("employer_esi") or 0.0),
         "lwf_employer": 0.0,
         "net_payable": float(row.get("net_pay") or 0.0),
@@ -592,6 +612,15 @@ def salary_payment_entry(salary_id: int, payload: SalaryPaymentPayload, request:
             salary.status = "PAID"
         elif status == "PAID":
             salary.status = "APPROVED"
+
+        sync_monthly_advance_recovery(
+            db,
+            company_id,
+            salary.employee_id,
+            salary.month_year,
+            salary.id,
+            True,
+        )
 
         payment_voucher = PostingEngineService.post_salary_payment(db, company_id, salary, amount=amount, bank_cash_ledger=bank_cash_ledger)
         salary.payment_journal_id = payment_voucher.id

@@ -158,6 +158,7 @@ async def cold_storage_report_page(
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
     c_info = db.query(Company).filter(Company.company_code == comp_code).first()
+    company_name = c_info.company_name if c_info else (request.session.get("company_name") or "")
     
     is_json = format == "json" or request.query_params.get("format") == "json"
 
@@ -235,6 +236,7 @@ async def cold_storage_report_page(
         return JSONResponse({
             "rows": [row_to_dict_cs(r) for r in rows],
             "combo_rows": combo_rows,
+            "company_name": company_name,
             "from_date": from_date,
             "to_date": to_date,
             "selected_production_for": production_for,
@@ -254,7 +256,7 @@ async def cold_storage_report_page(
         "varieties_list": get_list(varieties, "variety_name"),
         "grades_list": get_list(grades, "grade_name"),
         "packing_styles_list": get_list(packing_styles, "packing_style"),
-        "company_name": c_info.company_name if c_info else "BKNR ERP",
+        "company_name": company_name,
         "role": role
     }
     

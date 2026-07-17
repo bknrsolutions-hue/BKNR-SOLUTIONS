@@ -3,6 +3,7 @@ import {
   Plus, MoreVertical, X, Printer, FileText, Download, Upload, Ban 
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
+import ExportSearchPanel from './ExportSearchPanel';
 
 export default function ExportShipments() {
   const [history, setHistory] = useState([]);
@@ -243,25 +244,10 @@ export default function ExportShipments() {
       </div>
 
       {/* SEARCH / FILTERS */}
-      <div className="attendance-filters-bar" style={{ maxWidth: '300px' }}>
-        <div className="attendance-filter-group">
-          <label htmlFor="search-shipments">Search Shipment / Buyer</label>
-          <input 
-            id="search-shipments"
-            className="attendance-input" 
-            type="text" 
-            placeholder="Search..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
-        </div>
-      </div>
+      <ExportSearchPanel id="search-shipments" label="Search Shipment / Buyer" value={searchQuery} onChange={setSearchQuery} count={filteredRecords.length} placeholder="Shipment, buyer or vessel…" />
 
       {/* ACTION BAR */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', color: 'var(--att-heading)' }}>
-          {filteredRecords.length} Entries Found
-        </h3>
+      <div className="export-records-toolbar">
         
         {selectedRow && (
           <div className="attendance-actions-cell" ref={dropdownRef}>
@@ -451,7 +437,7 @@ export default function ExportShipments() {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Shipment
+                  Save
                 </button>
               </div>
             </form>

@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
+import './SapHorizon.css';
 
 // Components
 import Sidebar from './components/Sidebar';
@@ -37,6 +38,7 @@ const AuthContainer = lazy(() => import('./pages/Auth/AuthContainer'));
 const DashboardsConsole = lazy(() => import('./pages/Dashboards/DashboardsConsole'));
 const BackendConsole = lazy(() => import('./pages/BackendConsole'));
 const ReportViewer = lazy(() => import('./pages/Reports/ReportViewer'));
+const UserProfile = lazy(() => import('./pages/Profile/Profile'));
 
 const GateEntryReport = lazy(() => import('./pages/Reports/GateEntryReport'));
 const RMPReport = lazy(() => import('./pages/Reports/RMPReport'));
@@ -148,6 +150,10 @@ const HealthCertificates = lazy(() => import('./pages/ExportDocuments/HealthCert
 const SupportingDocuments = lazy(() => import('./pages/ExportDocuments/SupportingDocuments'));
 const RequirementForms = lazy(() => import('./pages/ExportDocuments/RequirementForms'));
 const RequirementDocumentPage = lazy(() => import('./pages/ExportDocuments/RequirementDocumentPage'));
+const ExportWorkspace = lazy(() => import('./pages/ExportDocuments/ExportWorkspace'));
+const ExportApprovals = lazy(() => import('./pages/ExportDocuments/ExportApprovals'));
+const ExportRegisters = lazy(() => import('./pages/ExportDocuments/ExportRegisters'));
+const ExportDashboard = lazy(() => import('./pages/Dashboards/ExportDashboard'));
 
 const CRITERIA_COMPONENTS = {
   criteria_buyers: Buyers,
@@ -231,6 +237,7 @@ const CRITERIA_COMPONENTS = {
   finance_other_expenses: OtherExpenses,
 
   // Export Documents
+  export_documents_dashboard: ExportDashboard,
   proforma_invoice: ProformaInvoices,
   export_shipment: ExportShipments,
   commercial_invoice: CommercialInvoices,
@@ -241,6 +248,9 @@ const CRITERIA_COMPONENTS = {
   health_certificate: HealthCertificates,
   export_supporting_documents: SupportingDocuments,
   export_requirement_forms: RequirementForms,
+  export_shipment_workspace: ExportWorkspace,
+  export_document_approvals: ExportApprovals,
+  export_registers: ExportRegisters,
 };
 
 const REPORT_COMPONENTS = {
@@ -275,7 +285,7 @@ function PageLoading() {
 export default function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [theme, setTheme]               = useState(() => localStorage.getItem('theme') || 'dark');
+  const [theme, setTheme]               = useState(() => localStorage.getItem('theme') || 'light');
   const [user, setUser]                 = useState(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [sidebarOpen, setSidebarOpen]   = useState(false);
@@ -309,13 +319,19 @@ export default function App() {
     const originalAlert = window.alert.bind(window);
     const successPattern = /success|saved|created|updated|cancelled|completed|registered|recorded|uploaded/i;
     const notify = (message, type = 'success') => setAppNotice({ message: String(message || 'Action completed successfully.'), type });
+    const handleApiFeedback = event => {
+      const detail = event.detail || {};
+      notify(detail.message, detail.type === 'error' ? 'error' : 'success');
+    };
     const appAlert = message => {
       if (successPattern.test(String(message || ''))) notify(message, 'success');
       else originalAlert(message);
     };
     window.BKNRNotify = notify;
     window.alert = appAlert;
+    window.addEventListener('bknr:api-feedback', handleApiFeedback);
     return () => {
+      window.removeEventListener('bknr:api-feedback', handleApiFeedback);
       if (window.alert === appAlert) window.alert = originalAlert;
       if (window.BKNRNotify === notify) delete window.BKNRNotify;
     };
@@ -342,6 +358,7 @@ export default function App() {
             email: data.email,
             company: data.company_name,
             company_code: data.company_code,
+            mpeda_registration_code: data.mpeda_registration_code,
             name: data.name,
             role: data.role,
             permissions: data.permissions
@@ -363,6 +380,19 @@ export default function App() {
       active = false;
       window.clearTimeout(loadingDeadline);
     };
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      initialSessionRequest = undefined;
+      document.documentElement.removeAttribute('data-user-email');
+      document.documentElement.removeAttribute('data-company-code');
+      localStorage.removeItem('user_email');
+      setUser(null);
+      setLoadingSession(false);
+    };
+    window.addEventListener('bknr:session-expired', handleSessionExpired);
+    return () => window.removeEventListener('bknr:session-expired', handleSessionExpired);
   }, []);
 
   const toggleTheme = () => setTheme(prev => {
@@ -388,6 +418,7 @@ export default function App() {
             email: data.email,
             company: data.company_name,
             company_code: data.company_code,
+            mpeda_registration_code: data.mpeda_registration_code,
             name: data.name,
             role: data.role,
             permissions: data.permissions
@@ -414,13 +445,27 @@ export default function App() {
   // ── Page Router ──────────────────────────────────────────────────────────
   const renderActivePage = () => {
     // Dashboards — full React components (no iframe needed)
-    if (activePage === 'dashboard_processing' || activePage === 'dashboard_inventory') {
+    if (['dashboard_processing', 'dashboard_inventory', 'dashboard_hr', 'dashboard_costing', 'dashboard_finance'].includes(activePage)) {
       return (
         <DashboardsConsole
           key={activePage}
           activeDashboard={activePage.replace('dashboard_', '')}
           theme={theme}
           setActivePage={setActivePage}
+        />
+      );
+    }
+
+    if (activePage === 'user_profile') {
+      return (
+        <UserProfile
+          key="user_profile"
+          onProfileUpdated={profile => setUser(current => current ? {
+            ...current,
+            name: profile.name,
+            email: profile.email,
+            designation: profile.designation,
+          } : current)}
         />
       );
     }
@@ -446,6 +491,7 @@ export default function App() {
           key={activePage}
           user={user}
           theme={theme}
+          setActivePage={setActivePage}
         />
       );
     }

@@ -186,6 +186,13 @@ tbody tr:hover { background: #f8fafc; cursor: pointer; }
     <label>Employer PF %</label>
     <input name="pf_employer_percent" type="number" step="0.01" value="{{ edit_data.pf_employer_percent if edit_data else 12.0 }}">
   </div>
+  <div class="field">
+    <label>EPS Applicable</label>
+    <select name="eps_applicable">
+        <option value="YES" {% if not edit_data or edit_data.eps_applicable %}selected{% endif %}>YES</option>
+        <option value="NO" {% if edit_data and not edit_data.eps_applicable %}selected{% endif %}>NO</option>
+    </select>
+  </div>
 </div>
 </div>
 
@@ -358,6 +365,6 @@ function closeModal() {
 }
 </script>
 
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

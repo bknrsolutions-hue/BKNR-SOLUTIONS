@@ -693,8 +693,13 @@ def supplier_bill_detail_rows(db: Session, company_id: str, bill_key: str):
 def company_info(db: Session, company_id: str):
     company = db.query(Company).filter(Company.company_code == company_id).first()
     if not company:
-        return {"name": "BKNR ERP", "address": "", "email": ""}
-    return {"name": company.company_name or "", "address": company.address or "", "email": company.email or ""}
+        return {"name": "BKNR ERP", "address": "", "email": "", "mpeda_registration_code": ""}
+    return {
+        "name": company.company_name or "",
+        "address": company.address or "",
+        "email": company.email or "",
+        "mpeda_registration_code": company.mpeda_registration_code or "",
+    }
 
 
 def supplier_info(db: Session, company_id: str, supplier_name: str):
@@ -941,6 +946,7 @@ def vendor_bill_print(
             "company_name": company["name"],
             "company_address": company["address"],
             "company_email": company["email"],
+            "mpeda_registration_code": company["mpeda_registration_code"],
             "printed_on": ist_now(),
         },
     )
@@ -985,6 +991,7 @@ def supplier_bill_print(
             "company_name": company["name"],
             "company_address": company["address"],
             "company_email": company["email"],
+            "mpeda_registration_code": company["mpeda_registration_code"],
             "printed_on": ist_now(),
         },
     )

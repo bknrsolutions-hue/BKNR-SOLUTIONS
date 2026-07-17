@@ -3,6 +3,7 @@ import {
   Plus, MoreVertical, X, FileText, Printer, Download, Upload, Ban 
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
+import ExportSearchPanel from './ExportSearchPanel';
 
 export default function CommercialInvoices() {
   const [history, setHistory] = useState([]);
@@ -303,25 +304,10 @@ export default function CommercialInvoices() {
       </div>
 
       {/* SEARCH / FILTERS */}
-      <div className="attendance-filters-bar" style={{ maxWidth: '300px' }}>
-        <div className="attendance-filter-group">
-          <label htmlFor="search-invoices">Search Invoice / Buyer</label>
-          <input 
-            id="search-invoices"
-            className="attendance-input" 
-            type="text" 
-            placeholder="Search..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
-        </div>
-      </div>
+      <ExportSearchPanel id="search-invoices" label="Search Invoice / Buyer" value={searchQuery} onChange={setSearchQuery} count={filteredRecords.length} placeholder="Invoice number, buyer or PO…" />
 
       {/* ACTION BAR */}
-      <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', color: 'var(--att-heading)' }}>
-          {filteredRecords.length} Entries Found
-        </h3>
+      <div className="export-records-toolbar">
         
         {selectedRow && (
           <div className="attendance-actions-cell" ref={dropdownRef}>

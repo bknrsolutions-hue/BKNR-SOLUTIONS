@@ -1,6 +1,4 @@
-import { lazy, Suspense, useState, useEffect, useRef } from 'react';
-
-const TicketDesk = lazy(() => import('../pages/Admin/AdminConsole').then(module => ({ default: module.TicketDesk })));
+import { useState, useEffect, useRef } from 'react';
 
 const DEFAULT_QUICK_ACTION_IDS = [
   'raw_material_purchasing',
@@ -28,10 +26,12 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
   const [notifOpen, setNotifOpen] = useState(false);
   const [colorOpen, setColorOpen] = useState(false);
   const [qaPanelOpen, setQaPanelOpen] = useState(false);
-  const [supportPanelOpen, setSupportPanelOpen] = useState(false);
-  const [supportTarget, setSupportTarget] = useState(null);
   const [qaSearch, setQaSearch] = useState('');
   const [quickActionIds, setQuickActionIds] = useState(() => readQuickActions(user?.email));
+  const [commandOpen, setCommandOpen] = useState(false);
+  const [commandSearch, setCommandSearch] = useState('');
+  const [entityResults, setEntityResults] = useState([]);
+  const [entitySearchLoading, setEntitySearchLoading] = useState(false);
 
   const [companies, setCompanies] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -40,6 +40,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
   const [prodForFilter, setProdForFilter] = useState('');
   const [plantLocFilter, setPlantLocFilter] = useState('');
   const dropdownRef = useRef(null);
+  const commandInputRef = useRef(null);
 
   // Customizer States
   const [accentColor, setAccentColor] = useState('#2563eb');
@@ -131,6 +132,28 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    const handleCommandShortcut = (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setCommandOpen(true);
+      } else if (event.key === 'Escape') {
+        setCommandOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleCommandShortcut);
+    return () => window.removeEventListener('keydown', handleCommandShortcut);
+  }, []);
+
+  useEffect(() => {
+    if (commandOpen) {
+      requestAnimationFrame(() => commandInputRef.current?.focus());
+    } else {
+      setCommandSearch('');
+      setEntityResults([]);
+    }
+  }, [commandOpen]);
 
   // Fetch dropdown options and notifications on load
   useEffect(() => {
@@ -238,7 +261,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         { id: 'admin_shifts', perm: 'shifts', icon: 'fa-business-time', label: 'Shifts', route: '/attendance/shifts' },
         { id: 'admin_data_management', perm: 'data_management', icon: 'fa-database', label: 'Data Management', route: '/data-management' },
         ...(isDefaultSuperAdmin ? [{ id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' }] : []),
-        { id: 'admin_raise_ticket', perm: 'raise_ticket', icon: 'fa-headset', label: 'My Complaints', route: '/support/my_tickets' },
+        { id: 'admin_raise_ticket', perm: 'raise_ticket', icon: 'fa-support-agent', label: 'My Complaints', route: '/support/my_tickets' },
         { id: 'admin_helpdesk', perm: 'admin_helpdesk', icon: 'fa-ticket', label: 'Helpdesk', route: '/admin/all_tickets' },
         { id: 'admin_manage_support', perm: 'manage_support', icon: 'fa-users-gear', label: 'Support Team', route: '/admin/support_team' },
         { id: 'admin_user_activity', perm: 'user_activity', icon: 'fa-clock-rotate-left', label: 'User Activity Logs', route: '/admin/activities' }
@@ -276,13 +299,52 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         item.label.toLowerCase().includes(cleanQaSearch)
         || item.category.toLowerCase().includes(cleanQaSearch))
     : [];
+  const cleanCommandSearch = commandSearch.trim().toLowerCase();
+  const commandPageResults = cleanCommandSearch
+    ? allQuickActionOptions.filter(item =>
+        item.label.toLowerCase().includes(cleanCommandSearch)
+        || item.category.toLowerCase().includes(cleanCommandSearch))
+    : allQuickActionOptions.slice(0, 6);
 
-  const openSupportPanel = (pageId) => {
+  useEffect(() => {
+    if (!commandOpen || cleanCommandSearch.length < 2) {
+      setEntityResults([]);
+      setEntitySearchLoading(false);
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setEntitySearchLoading(true);
+      try {
+        const response = await fetch(`/menu/search_entities?query=${encodeURIComponent(commandSearch.trim())}`, {
+          signal: controller.signal,
+          headers: { Accept: 'application/json' },
+        });
+        if (response.ok) {
+          const payload = await response.json();
+          setEntityResults(Array.isArray(payload) ? payload : []);
+        } else {
+          setEntityResults([]);
+        }
+      } catch (error) {
+        if (error.name !== 'AbortError') setEntityResults([]);
+      } finally {
+        if (!controller.signal.aborted) setEntitySearchLoading(false);
+      }
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [commandOpen, commandSearch, cleanCommandSearch]);
+
+  const openSupportPage = (pageId) => {
     const target = pageId === 'admin_helpdesk'
-      ? { id: 'admin_helpdesk', route: '/admin/all_tickets', title: 'Support Helpdesk Queue' }
-      : { id: 'admin_raise_ticket', route: '/support/my_tickets', title: 'My Complaints' };
-    setSupportTarget(target);
-    setSupportPanelOpen(true);
+      ? { id: 'admin_helpdesk', route: '/admin/all_tickets' }
+      : { id: 'admin_raise_ticket', route: '/support/my_tickets' };
+    setActivePage(target.id, target.route);
     setQaPanelOpen(false);
     setDropdownOpen(false);
     setNotifOpen(false);
@@ -291,12 +353,22 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
   const openMenuItem = (item) => {
     if (item.id === 'admin_raise_ticket' || item.id === 'admin_helpdesk') {
-      openSupportPanel(item.id);
+      openSupportPage(item.id);
       return;
     }
     setActivePage(item.id, item.route);
     setDropdownOpen(false);
     setQaPanelOpen(false);
+  };
+
+  const openCommandResult = (item) => {
+    const menuItem = item.id ? item : allQuickActionOptions.find(option => option.route === item.route);
+    if (menuItem) {
+      openMenuItem(menuItem);
+    } else if (item.route) {
+      window.location.assign(item.route);
+    }
+    setCommandOpen(false);
   };
 
   return (
@@ -492,6 +564,30 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         .color-reset-btn { background: transparent; color: var(--text-secondary); }
         .color-swatches { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
         .color-swatch { height: 26px; border-radius: 7px; border: 1px solid var(--border-light); cursor: pointer; }
+
+        .global-search-container { flex: 1; max-width: 450px; min-width: 220px; margin: 0 24px; position: relative; display: flex; align-items: center; cursor: text; }
+        .global-search-container input { width: 100%; height: 40px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-light); border-radius: var(--radius-element); padding: 0 66px 0 42px; font: inherit; font-size: 12px; color: var(--text-primary); outline: none; cursor: text; }
+        [data-theme="light"] .global-search-container input { background: rgba(0,0,0,0.03); }
+        .global-search-container:hover input { border-color: color-mix(in srgb, var(--corp-dash) 55%, var(--border-light)); }
+        .global-search-container > i { position: absolute; left: 14px; color: var(--text-tertiary); font-size: 13px; z-index: 1; }
+        .cmd-k-hint { position: absolute; right: 10px; font-size: 9px; font-weight: 800; color: var(--text-tertiary); background: rgba(255,255,255,0.08); border: 1px solid var(--border-light); padding: 3px 6px; border-radius: 5px; pointer-events: none; }
+        [data-theme="light"] .cmd-k-hint { background: rgba(0,0,0,0.04); }
+        .command-palette-overlay { position: fixed; inset: 0; z-index: 100000000; display: flex; align-items: flex-start; justify-content: center; padding: min(15vh, 120px) 16px 16px; background: rgba(2,6,23,.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .command-palette-box { width: min(680px, 100%); max-height: min(620px, 76vh); display: flex; flex-direction: column; overflow: hidden; background: var(--surface-panel); border: 1px solid var(--border-light); border-radius: 14px; box-shadow: var(--shadow-float); }
+        .command-palette-head { height: 58px; flex: 0 0 58px; display: flex; align-items: center; gap: 12px; padding: 0 16px; border-bottom: 1px solid var(--border-light); }
+        .command-palette-head > i { color: var(--corp-dash); }
+        .command-palette-head input { flex: 1; min-width: 0; height: 100%; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 14px; }
+        .command-palette-head kbd { color: var(--text-tertiary); border: 1px solid var(--border-light); border-radius: 5px; padding: 3px 6px; font: inherit; font-size: 9px; font-weight: 800; }
+        .command-results { overflow-y: auto; padding: 10px; }
+        .command-section-title { display: block; padding: 6px 9px; color: var(--text-tertiary); font-size: 9px; font-weight: 800; letter-spacing: .8px; text-transform: uppercase; }
+        .command-result-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px; border: 0; border-radius: 9px; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; font: inherit; }
+        .command-result-item:hover { background: color-mix(in srgb, var(--corp-dash) 9%, transparent); }
+        .command-result-item > i { width: 34px; height: 34px; flex: 0 0 34px; display: grid; place-items: center; border-radius: 8px; color: var(--corp-dash); background: color-mix(in srgb, var(--corp-dash) 10%, transparent); }
+        .command-result-copy { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .command-result-copy strong { font-size: 12px; }
+        .command-result-copy small { color: var(--text-tertiary); font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .command-empty { padding: 24px; color: var(--text-tertiary); font-size: 11px; text-align: center; }
+        @media (max-width: 900px) { .global-search-container { display: none; } }
       `}</style>
 
       <header className="app-header" ref={dropdownRef}>
@@ -527,57 +623,82 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
           </div>
         </div>
 
+        <div
+          className="global-search-container"
+          role="button"
+          tabIndex={0}
+          onClick={() => setCommandOpen(true)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' || event.key === ' ') setCommandOpen(true);
+          }}
+          aria-label="Open global search"
+        >
+          <i className="fa-solid fa-magnifying-glass"></i>
+          <input
+            type="text"
+            placeholder="Search Customer, Supplier, Batch, Invoice..."
+            readOnly
+            tabIndex={-1}
+          />
+          <span className="cmd-k-hint">Ctrl + K</span>
+        </div>
+
         {/* Right side actions */}
         <div className="header-right-actions">
           
           {/* Quick Actions Trigger */}
-          <div 
-            className="icon-action-btn" 
-            onClick={() => setQaPanelOpen(true)} 
+          <div
+            className="icon-action-btn action-quick"
+            onClick={() => setQaPanelOpen(true)}
             title="Quick Actions"
             style={{ cursor: 'pointer' }}
           >
             <i className="fa-solid fa-plus"></i>
+            <span className="icon-action-label">Quick</span>
           </div>
 
           <div
-            className="icon-action-btn"
-            onClick={() => openSupportPanel(isDefaultSuperAdmin ? 'admin_helpdesk' : 'admin_raise_ticket')}
+            className="icon-action-btn action-support"
+            onClick={() => openSupportPage(isDefaultSuperAdmin ? 'admin_helpdesk' : 'admin_raise_ticket')}
             title="Support & Helpdesk"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-headset" style={{ color: 'var(--corp-dash)' }}></i>
+            <i className="fa-solid fa-support-agent"></i>
+            <span className="icon-action-label">Support</span>
           </div>
 
           {/* Notifications Trigger */}
-          <div 
-            className="icon-action-btn" 
+          <div
+            className="icon-action-btn action-alerts"
             onClick={() => { setNotifOpen(!notifOpen); setDropdownOpen(false); setColorOpen(false); }}
             title="Notifications"
             style={{ cursor: 'pointer', position: 'relative' }}
           >
             <i className="fa-solid fa-bell"></i>
+            <span className="icon-action-label">Alerts</span>
             {notifications.length > 0 && <div className="notification-dot"></div>}
           </div>
 
           {/* Theme switch button */}
-          <div 
-            className="icon-action-btn" 
-            onClick={toggleTheme} 
+          <div
+            className="icon-action-btn action-theme"
+            onClick={toggleTheme}
             title="Switch Mode"
             style={{ cursor: 'pointer' }}
           >
             <i className="fa-solid fa-circle-half-stroke"></i>
+            <span className="icon-action-label">Theme</span>
           </div>
 
           {/* Customize Colors Trigger */}
-          <div 
-            className="icon-action-btn" 
+          <div
+            className="icon-action-btn action-colors"
             onClick={toggleColorCustomizer}
             title="Customize Colors"
             style={{ cursor: 'pointer' }}
           >
             <i className="fa-solid fa-palette"></i>
+            <span className="icon-action-label">Colors</span>
           </div>
 
           {/* User profile dropdown button */}
@@ -663,6 +784,16 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
               {/* Profile logout at bottom */}
               <div className="profile-logout-section">
+                <button
+                  style={{ width: '100%', marginBottom: '8px', padding: '10px', background: 'var(--surface-panel)', color: 'var(--corp-dash)', border: '1px solid var(--border-light)', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}
+                  onClick={() => {
+                    setActivePage('user_profile', '/auth/profile');
+                    setDropdownOpen(false);
+                  }}
+                >
+                  <i className="fa-solid fa-user" style={{ marginRight: '7px' }}></i>
+                  MY PROFILE
+                </button>
                 <button style={{ width: '100%', padding: '10px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }} onClick={handleLogout}>
                   SIGN OUT
                 </button>
@@ -749,11 +880,72 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         </div>
       </header>
 
-      {(qaPanelOpen || supportPanelOpen) && (
+      {commandOpen && (
+        <div className="command-palette-overlay" onMouseDown={() => setCommandOpen(false)}>
+          <div className="command-palette-box" onMouseDown={event => event.stopPropagation()}>
+            <div className="command-palette-head">
+              <i className="fa-solid fa-magnifying-glass"></i>
+              <input
+                ref={commandInputRef}
+                value={commandSearch}
+                onChange={event => setCommandSearch(event.target.value)}
+                placeholder="Search Customer, Supplier, Batch, Invoice..."
+                autoComplete="off"
+              />
+              <kbd>ESC</kbd>
+            </div>
+            <div className="command-results">
+              <span className="command-section-title">
+                {cleanCommandSearch ? 'Matching Pages' : 'Available Pages'}
+              </span>
+              {commandPageResults.map(item => (
+                <button
+                  type="button"
+                  className="command-result-item"
+                  key={`page-${item.id}`}
+                  onClick={() => openCommandResult(item)}
+                >
+                  <i className={`fa-solid ${item.icon || 'fa-file'}`}></i>
+                  <span className="command-result-copy">
+                    <strong>{item.label}</strong>
+                    <small>{item.category}</small>
+                  </span>
+                </button>
+              ))}
+
+              {cleanCommandSearch.length >= 2 && (
+                <>
+                  <span className="command-section-title">Matching Database Records</span>
+                  {entityResults.map((item, index) => (
+                    <button
+                      type="button"
+                      className="command-result-item"
+                      key={`entity-${item.route}-${item.title}-${index}`}
+                      onClick={() => openCommandResult(item)}
+                    >
+                      <i className={`fa-solid ${item.icon || 'fa-database'}`}></i>
+                      <span className="command-result-copy">
+                        <strong>{item.title}</strong>
+                        <small>{item.desc}</small>
+                      </span>
+                    </button>
+                  ))}
+                  {!entitySearchLoading && entityResults.length === 0 && commandPageResults.length === 0 && (
+                    <div className="command-empty">No matching pages or database records found.</div>
+                  )}
+                  {entitySearchLoading && <div className="command-empty">Searching records…</div>}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {qaPanelOpen && (
         <div
           className="side-panel-overlay"
-          onClick={() => { setQaPanelOpen(false); setSupportPanelOpen(false); }}
-          onTouchEnd={() => { setQaPanelOpen(false); setSupportPanelOpen(false); }}
+          onClick={() => setQaPanelOpen(false)}
+          onTouchEnd={() => setQaPanelOpen(false)}
           aria-hidden="true"
         />
       )}
@@ -831,21 +1023,6 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         </div>
       </div>
 
-      <div className={`quick-action-panel support-panel ${supportPanelOpen ? 'open' : ''}`}>
-        <div className="qa-header">
-          <span className="qa-title"><i className="fa-solid fa-headset" style={{ color: 'var(--corp-dash)', marginRight: 8 }}></i>{supportTarget?.title || 'Support & Complaints'}</span>
-          <button type="button" className="qa-toggle-btn remove" onClick={() => setSupportPanelOpen(false)} title="Close support panel"><i className="fa-solid fa-xmark"></i></button>
-        </div>
-        <div className="support-panel-body">
-          <Suspense fallback={<div style={{ padding: 24, color: 'var(--text-tertiary)', fontSize: 12 }}>Loading support...</div>}>
-            <TicketDesk
-              compact
-              activePage={supportTarget?.id || 'admin_raise_ticket'}
-              activeRoute={supportTarget?.route || '/support/my_tickets'}
-            />
-          </Suspense>
-        </div>
-      </div>
     </>
   );
 }

@@ -435,6 +435,7 @@ export default function StockReport({ activeRoute, user }) {
                   return (
                     <tr
                       key={row.id || index}
+                      data-record-id={row.id}
                       onClick={() => { if (!isEditing) setSelectedRow(row); }}
                       style={{
                         background: selected ? 'rgba(139,92,246,0.12)' : (outRow ? 'rgba(239,68,68,0.05)' : undefined),
@@ -512,6 +513,7 @@ export default function StockReport({ activeRoute, user }) {
                     return (
                       <tr
                         key={row.id}
+                        data-record-id={row.id}
                         onClick={() => {
                           if (!isEditing) {
                             setSelectedRow(row);

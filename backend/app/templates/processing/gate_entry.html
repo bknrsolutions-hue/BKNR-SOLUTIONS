@@ -314,7 +314,7 @@ tr.selected { background: var(--processing-bg) !important; }
     </div>
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit" id="saveBtn">SAVE GATE ENTRY</button>
+      <button class="btn btn-primary" type="submit" id="saveBtn">SAVE</button>
       <button class="btn btn-clear" type="button" onclick="clearFormWork()">CANCEL</button>
     </div>
   </div>
@@ -554,14 +554,14 @@ async function proceedGateEntrySave() {
             });
         } else {
             document.getElementById('inlineConfirmPanel').style.display = 'none';
-            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
-            if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE GATE ENTRY'; }
+            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
+            if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE'; }
             Swal.fire({icon: 'error', title: data.error || 'Execution Error'});
         }
     } catch (err) {
         document.getElementById('inlineConfirmPanel').style.display = 'none';
-        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
-        if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE GATE ENTRY'; }
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'SAVE'; }
         Swal.fire({icon: 'error', title: 'Local Connection Error'});
     }
 };
@@ -644,6 +644,6 @@ window.onclick = () => {
     if(d) d.style.display = "none";
 }
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

@@ -579,6 +579,9 @@ class SalaryProcessing(Base):
 
     # Employer Contributions (Expense side)
     pf_employer = Column(Float, default=0.0)                     # Employer PF 12%
+    epf_employer = Column(Float, default=0.0)                    # Employer EPF portion
+    eps_employer = Column(Float, default=0.0)                    # Employer EPS portion
+    edli_employer = Column(Float, default=0.0)                   # Employer EDLI 0.5%
     esi_employer = Column(Float, default=0.0)                    # Employer ESI 3.25%
     lwf_employer = Column(Float, default=0.0)
 

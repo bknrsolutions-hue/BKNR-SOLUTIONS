@@ -1,12 +1,19 @@
 /**
  * InventoryCosting.jsx – Inventory Costing Report (DATA GRID vs GRADE DASHBOARD)
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput,
-  FinYearSelect, useReport, fmt, EmptyRow
+  Loader, ErrorBox, useReport, fmt, EmptyRow
 } from './ReportShell';
+import './CostingReports.css';
+
+function ViewTab({ active, onClick, children }) {
+  return (
+    <button type="button" className={`tab-btn ${active ? 'active' : ''}`} onClick={onClick}>
+      {children}
+    </button>
+  );
+}
 
 export default function InventoryCosting({ activeRoute }) {
   const [currentView, setCurrentView] = useState('table'); // 'table' or 'dashboard'
@@ -66,7 +73,6 @@ export default function InventoryCosting({ activeRoute }) {
   let totalInQty = 0;
   let totalInVal = 0;
   let totalOutQty = 0;
-  let totalOutVal = 0;
 
   filteredRows.forEach(r => {
     const q = Number(r.quantity || 0);
@@ -76,7 +82,6 @@ export default function InventoryCosting({ activeRoute }) {
       totalInVal += v;
     } else {
       totalOutQty += q;
-      totalOutVal += q; // absolute weight out
     }
   });
 
@@ -121,129 +126,113 @@ export default function InventoryCosting({ activeRoute }) {
 
   const dashboardEntries = Object.values(dashboardGroups);
 
-  // Tab switcher component
-  const TabBtn = ({ id, label }) => (
-    <button
-      className={`tab-btn ${currentView === id ? 'active' : ''}`}
-      onClick={() => {
-        setCurrentView(id);
-        // Reset sub-filters when switching views
-        if (id === 'table') {
-          setSpecies('');
-          setVariety('');
-          setGrade('');
-          setGlaze('');
-        }
-      }}
-      style={{
-        padding: '5px 14px',
-        border: 'none',
-        background: currentView === id ? 'var(--brand-primary, var(--text-primary))' : 'transparent',
-        color: currentView === id ? '#ffffff' : 'var(--text-secondary)',
-        fontSize: '9px',
-        fontWeight: '700',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        textTransform: 'uppercase',
-        transition: '0.2s',
-      }}
-    >
-      {label}
-    </button>
-  );
+  const switchView = id => {
+    setCurrentView(id);
+    if (id === 'table') {
+      setSpecies('');
+      setVariety('');
+      setGrade('');
+      setGlaze('');
+    }
+  };
 
   return (
-    <div className="report-viewer-card" style={{ display: 'flex', flexDirection: 'column', minHeight: 'calc(100vh - 120px)', position: 'relative' }}>
-      <ReportHeader
-        title="Inventory Costing & Analysis"
-        loading={loading}
-        onReload={reload}
-        onPrint={() => window.print()}
-      />
+    <div className="costing-inventory-report">
+      <header className="inventory-template-header">
+        <h1>Inventory Analysis</h1>
+        <span>{new Intl.DateTimeFormat('en-IN', { dateStyle: 'medium' }).format(new Date())}</span>
+      </header>
 
       {/* Control bar containing view tabs & filters */}
-      <div className="control-bar" style={{ background: 'var(--surface-panel)', padding: '12px', borderRadius: '8px', border: '1px solid var(--border-light)', marginBottom: '8px' }}>
-        <div style={{ display: 'flex', background: 'var(--input-bg, rgba(0,0,0,0.05))', padding: '3px', borderRadius: '6px', width: 'max-content', marginBottom: '12px' }}>
-          <TabBtn id="table" label="DATA GRID" />
-          <TabBtn id="dashboard" label="GRADE DASHBOARD" />
+      <div className="inventory-control-bar">
+        <div className="inventory-nav-tabs">
+          <ViewTab active={currentView === 'table'} onClick={() => switchView('table')}>DATA GRID</ViewTab>
+          <ViewTab active={currentView === 'dashboard'} onClick={() => switchView('dashboard')}>GRADE DASHBOARD</ViewTab>
         </div>
 
-        <FilterBar>
+        <div className="inventory-filters-group">
           {currentView === 'table' && (
-            <FilterBox label="Year Filter">
-              <FinYearSelect value={fy} onChange={setFy} list={data?.financial_years} />
-            </FilterBox>
+            <label className="inventory-fbox inventory-fy-box">
+              <span>Financial Year</span>
+              <select value={fy} onChange={event => setFy(event.target.value)}>
+                <option value="">-- ALL YEARS --</option>
+                {(data?.financial_years || []).map(year => <option key={year} value={year}>FY {year}-{Number(year) + 1}</option>)}
+              </select>
+            </label>
           )}
 
-          <FilterBox label="Production For">
-            <FilterSelect value={prodFor} onChange={setProdFor}>
+          <label className="inventory-fbox">
+            <span>Production For</span>
+            <select value={prodFor} onChange={event => setProdFor(event.target.value)}>
               <option value="">-- All Companies --</option>
               {productionForList.map(item => <option key={item} value={item}>{item}</option>)}
-            </FilterSelect>
-          </FilterBox>
+            </select>
+          </label>
 
           {currentView === 'table' && (
-            <FilterBox label="Production At">
-              <FilterSelect value={prodAt} onChange={setProdAt}>
+            <label className="inventory-fbox">
+              <span>Production At</span>
+              <select value={prodAt} onChange={event => setProdAt(event.target.value)}>
                 <option value="">-- All Locations --</option>
                 {productionAtList.map(item => <option key={item} value={item}>{item}</option>)}
-              </FilterSelect>
-            </FilterBox>
+              </select>
+            </label>
           )}
 
           {currentView === 'dashboard' && (
             <>
-              <FilterBox label="Species">
-                <FilterSelect value={species} onChange={setSpecies}>
+              <label className="inventory-fbox"><span>Species</span>
+                <select value={species} onChange={event => setSpecies(event.target.value)}>
                   <option value="">All Species</option>
                   {speciesList.map(item => <option key={item} value={item}>{item}</option>)}
-                </FilterSelect>
-              </FilterBox>
+                </select>
+              </label>
 
-              <FilterBox label="Variety">
-                <FilterSelect value={variety} onChange={setVariety}>
+              <label className="inventory-fbox"><span>Variety</span>
+                <select value={variety} onChange={event => setVariety(event.target.value)}>
                   <option value="">All Varieties</option>
                   {varietiesList.map(item => <option key={item} value={item}>{item}</option>)}
-                </FilterSelect>
-              </FilterBox>
+                </select>
+              </label>
 
-              <FilterBox label="Grade">
-                <FilterSelect value={grade} onChange={setGrade}>
+              <label className="inventory-fbox"><span>Grade</span>
+                <select value={grade} onChange={event => setGrade(event.target.value)}>
                   <option value="">All Grades</option>
                   {gradesList.map(item => <option key={item} value={item}>{item}</option>)}
-                </FilterSelect>
-              </FilterBox>
+                </select>
+              </label>
 
-              <FilterBox label="Glaze">
-                <FilterSelect value={glaze} onChange={setGlaze}>
+              <label className="inventory-fbox"><span>Glaze</span>
+                <select value={glaze} onChange={event => setGlaze(event.target.value)}>
                   <option value="">All Glazes</option>
                   {glazesList.map(item => <option key={item} value={item}>{item}</option>)}
-                </FilterSelect>
-              </FilterBox>
+                </select>
+              </label>
             </>
           )}
 
-          <FilterBox label="Local Search">
-            <SearchInput value={search} onChange={setSearch} />
-          </FilterBox>
-        </FilterBar>
+          <label className="inventory-fbox inventory-search-box">
+            <span>Local Search</span>
+            <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search Grade, Batch..." />
+          </label>
+        </div>
       </div>
 
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
       {!loading && !error && (
-        <div style={{ flex: 1, overflowY: 'auto', marginBottom: '60px' }}>
+        <main className="inventory-template-main">
 
           {/* VIEW 1: DATA GRID */}
           {currentView === 'table' && (
-            <div className="card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
-              <div className="table-responsive">
-                <table className="bknr-table">
+            <div className="inventory-table-container">
+              <div className="inventory-scroll-box">
+                <table className="inventory-template-table">
                   <thead>
                     <tr>
-                      <th style={{ width: 45 }}>SL</th>
-                      <th style={{ width: 100 }}>Batch #</th>
+                      <th className="sticky-id" style={{ width: 45 }}>SL</th>
+                      <th className="sticky-batch" style={{ width: 100 }}>Batch #</th>
                       <th>Date</th>
                       <th>Prod Type</th>
                       <th>Movement</th>
@@ -278,10 +267,10 @@ export default function InventoryCosting({ activeRoute }) {
                     ) : (
                       filteredRows.map((r, idx) => (
                         <tr key={idx}>
-                          <td className="text-center" style={{ color: 'var(--text-tertiary)' }}>
+                          <td className="text-center sticky-id">
                             {filteredRows.length - idx}
                           </td>
-                          <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{r.batch_number}</td>
+                          <td className="sticky-batch">{r.batch_number}</td>
                           <td>{r.date}</td>
                           <td>{r.type_of_production}</td>
                           <td className="text-center">
@@ -434,22 +423,18 @@ export default function InventoryCosting({ activeRoute }) {
             </div>
           )}
 
-        </div>
+        </main>
       )}
 
       {/* STICKY STATUS FOOTER */}
       {!loading && !error && (
-        <div className="status-footer" style={{
-          position: 'fixed', bottom: 0, left: '260px', right: 0, background: 'var(--surface-panel)',
-          padding: '10px 20px', borderTop: '2px solid var(--border-light)', display: 'flex', flexWrap: 'wrap',
-          gap: '24px', alignItems: 'center', boxShadow: '0 -4px 12px rgba(0,0,0,0.08)', zIndex: 1000
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRight: '1px solid var(--border-light)', paddingRight: '16px' }}>
+        <div className="inventory-status-footer">
+          <div className="inventory-stat-group">
             <span style={{ fontSize: '8px', color: 'var(--text-secondary)', textTransform: 'uppercase', display: 'block' }}>Total Items</span>
             <span style={{ fontSize: '14px', fontWeight: '800', color: 'var(--text-primary)' }}>{filteredRows.length}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', borderRight: '1px solid var(--border-light)', paddingRight: '16px' }}>
+          <div className="inventory-stat-group">
             <div>
               <span style={{ fontSize: '8px', color: '#16a34a', textTransform: 'uppercase', display: 'block' }}>Total Stock IN</span>
               <span style={{ fontSize: '13px', fontWeight: '800', color: '#16a34a' }}>{fmt.number(totalInQty)} Kg</span>
@@ -460,7 +445,7 @@ export default function InventoryCosting({ activeRoute }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '16px', borderRight: '1px solid var(--border-light)', paddingRight: '16px' }}>
+          <div className="inventory-stat-group">
             <div>
               <span style={{ fontSize: '8px', color: '#dc2626', textTransform: 'uppercase', display: 'block' }}>Total Stock OUT</span>
               <span style={{ fontSize: '13px', fontWeight: '800', color: '#dc2626' }}>{fmt.number(totalOutQty)} Kg</span>
@@ -471,7 +456,7 @@ export default function InventoryCosting({ activeRoute }) {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '20px' }}>
+          <div className="inventory-stat-group inventory-stat-group-last">
             <div>
               <span style={{ fontSize: '8px', color: 'var(--corp-dash)', textTransform: 'uppercase', display: 'block' }}>Available Stock</span>
               <span style={{ fontSize: '13px', fontWeight: '800', color: 'var(--corp-dash)' }}>{fmt.number(availableQty)} Kg</span>

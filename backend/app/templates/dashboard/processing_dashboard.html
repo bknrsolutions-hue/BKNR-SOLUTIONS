@@ -356,6 +356,7 @@
 <link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/dashboard-ui.css">
 <link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 <body class="processing-dashboard">
 
@@ -441,7 +442,7 @@
         </div>
         <div class="kpi-card" style="--kpi-color: var(--text-secondary);">
             <div class="kpi-header">
-                <span class="kpi-title">Floor Snapshot (9 AM)</span>
+                <span class="kpi-title">Floor Balance</span>
                 <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
             </div>
             <div class="kpi-value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
@@ -490,8 +491,8 @@
                     {% for dept, vals in dept_summary.items() %}
                     <tr>
                         <td>{{ dept }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.present }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.absent }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -504,8 +505,8 @@
                     {% for desg, vals in desg_summary.items() %}
                     <tr>
                         <td>{{ desg }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.present }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.absent }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -781,6 +782,6 @@
         });
     }
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

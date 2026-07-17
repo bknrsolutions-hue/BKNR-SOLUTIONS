@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { 
   BarChart2, FolderTree, Receipt, FileText, ShieldCheck,
   RefreshCw, Settings, Plus, X, Lock, Unlock, Landmark,
-  TrendingUp, HandCoins, CircleDollarSign
+  TrendingUp, HandCoins, CircleDollarSign, Download
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
 import './TallyDashboard.css';
@@ -34,6 +34,7 @@ export default function TallyDashboard() {
   const [bankLedgerId, setBankLedgerId] = useState('');
   const [bankFile, setBankFile] = useState(null);
   const [bankStatements, setBankStatements] = useState([]);
+  const [bankMatchFilter, setBankMatchFilter] = useState('ALL');
   const [forexDate, setForexDate] = useState(new Date().toISOString().split('T')[0]);
   const [forexRates, setForexRates] = useState('USD: 83.50');
 
@@ -57,6 +58,7 @@ export default function TallyDashboard() {
   const [drillMeta, setDrillMeta] = useState('');
   const [drillData, setDrillData] = useState({ ledger_summary: [], transactions: [] });
   const [isDrillLoading, setIsDrillLoading] = useState(false);
+  const [drillTab, setDrillTab] = useState('ledger');
 
   // Toast Notification State
   const [notification, setNotification] = useState(null);
@@ -178,6 +180,7 @@ export default function TallyDashboard() {
   const handleDrilldown = async (metric) => {
     setIsDrillOpen(true);
     setIsDrillLoading(true);
+    setDrillTab('ledger');
     
     // Set placeholder title
     const labels = {
@@ -380,16 +383,23 @@ export default function TallyDashboard() {
     }
   };
 
-  const loadBankStatements = async (ledgerId = bankLedgerId) => {
+  const loadBankStatements = async (ledgerId = bankLedgerId, matchFilter = bankMatchFilter) => {
     if (!ledgerId) return;
     try {
-      const response = await fetch(`/finance_accounts/bank/statements?bank_ledger_id=${ledgerId}`);
+      const matchedQuery = matchFilter === 'ALL' ? '' : `&matched=${matchFilter === 'MATCHED'}`;
+      const response = await fetch(`/finance_accounts/bank/statements?bank_ledger_id=${ledgerId}${matchedQuery}`);
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Unable to load bank statement');
       setBankStatements(data.data || []);
     } catch (error) {
       showNotification(error.message, 'danger');
     }
+  };
+
+  const exportBankReconciliationPdf = () => {
+    if (!bankLedgerId) return showNotification('Select a bank ledger before exporting PDF.', 'danger');
+    const matchedQuery = bankMatchFilter === 'ALL' ? '' : `&matched=${bankMatchFilter === 'MATCHED'}`;
+    window.open(`/finance_accounts/bank/statements/export/pdf?bank_ledger_id=${bankLedgerId}${matchedQuery}`, '_blank', 'noopener');
   };
 
   const importBankStatement = async event => {
@@ -403,6 +413,21 @@ export default function TallyDashboard() {
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Import failed');
       showNotification(data.message, 'success');
+      await loadBankStatements();
+    } catch (error) {
+      showNotification(error.message, 'danger');
+    }
+  };
+
+  const rollbackLastBankPdf = async () => {
+    if (!bankLedgerId) return showNotification('Select the bank ledger used for the PDF import.', 'danger');
+    if (!window.confirm('Rollback the latest imported PDF statement for this bank ledger?')) return;
+    try {
+      const response = await fetch(`/finance_accounts/bank/statements/rollback-last-pdf-import?bank_ledger_id=${bankLedgerId}`, { method: 'POST' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Rollback failed');
+      showNotification(data.message, 'success');
+      setBankFile(null);
       await loadBankStatements();
     } catch (error) {
       showNotification(error.message, 'danger');
@@ -458,7 +483,7 @@ export default function TallyDashboard() {
   };
 
   return (
-    <div className="attendance-container" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 0, padding: 0, overflow: 'hidden' }}>
+    <div className="attendance-container tally-dashboard" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 0, padding: 0, overflow: 'hidden' }}>
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: '80px' }}>
           {notification.msg}
@@ -485,7 +510,7 @@ export default function TallyDashboard() {
 
       <div style={{ display: 'flex', flex: '1 1 0', minHeight: 0, overflow: 'hidden' }}>
         {/* SIDEBAR TABS */}
-        <div style={{ flex: '0 0 220px', minHeight: 0, overflowY: 'auto', background: 'var(--att-card)', borderRight: '1px solid var(--att-border)', padding: '16px 8px' }}>
+        <div className="tally-sidebar-nav" style={{ flex: '0 0 220px', minHeight: 0, overflowY: 'auto', background: 'var(--att-card)', borderRight: '1px solid var(--att-border)', padding: '16px 8px' }}>
           <button className={`attendance-btn ${activeTab === 'dashboard' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`} style={{ width: '100%', justifyContent: 'flex-start', gap: '8px', marginBottom: '8px', textAlign: 'left' }} onClick={() => setActiveTab('dashboard')}>
             <BarChart2 size={16} /> Dashboard
           </button>
@@ -564,7 +589,7 @@ export default function TallyDashboard() {
                       <tr>
                         <td style={{ fontWeight: '700', textalign: 'left' }}>Total Income</td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleDrilldown('income')}>
+                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleDrilldown('income')}>
                             ₹{parseFloat(kpis.income || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </button>
                         </td>
@@ -574,7 +599,7 @@ export default function TallyDashboard() {
                       <tr>
                         <td style={{ fontWeight: '700', textalign: 'left' }}>Total Expense</td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleDrilldown('expense')}>
+                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleDrilldown('expense')}>
                             ₹{parseFloat(kpis.expense || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </button>
                         </td>
@@ -584,7 +609,7 @@ export default function TallyDashboard() {
                       <tr>
                         <td style={{ fontWeight: '700', textalign: 'left' }}>Assets</td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleDrilldown('assets')}>
+                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleDrilldown('assets')}>
                             ₹{parseFloat(kpis.assets || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </button>
                         </td>
@@ -594,7 +619,7 @@ export default function TallyDashboard() {
                       <tr>
                         <td style={{ fontWeight: '700', textalign: 'left' }}>Liabilities + Equity</td>
                         <td style={{ textAlign: 'right' }}>
-                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '12px' }} onClick={() => handleDrilldown('liabilities_equity')}>
+                          <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px' }} onClick={() => handleDrilldown('liabilities_equity')}>
                             ₹{parseFloat((kpis.liabilities || 0) + (kpis.equity || 0)).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </button>
                         </td>
@@ -775,7 +800,7 @@ export default function TallyDashboard() {
               <h2 style={{ fontSize: '14px', fontWeight: '800', margin: '0 0 16px 0', borderBottom: '1px solid var(--att-border)', paddingBottom: '12px', color: 'var(--att-heading)' }}>
                 Financial Statements Reports
               </h2>
-              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+              <div className="tally-report-nav" style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
                 <button className={`attendance-btn ${activeReport === 'trial-balance' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`} onClick={() => loadReport('trial-balance')}>
                   Trial Balance
                 </button>
@@ -950,11 +975,14 @@ export default function TallyDashboard() {
             <div style={{ display: 'grid', gap: 16 }}>
               <div className="attendance-card" style={{ padding: 18, border: '1px solid var(--att-border)', borderRadius: 8 }}>
                 <h2 style={{ fontSize: 14, marginTop: 0 }}>Bank Statement Reconciliation</h2>
-                <form onSubmit={importBankStatement} className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr auto auto', alignItems: 'end', marginBottom: 14 }}>
+                <form onSubmit={importBankStatement} className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 150px 1fr auto auto auto auto', alignItems: 'end', marginBottom: 14 }}>
                   <div className="attendance-form-group"><label>Bank Ledger</label><select className="attendance-select" value={bankLedgerId} onChange={event => { setBankLedgerId(event.target.value); loadBankStatements(event.target.value); }} required><option value="">Select bank account</option>{ledgers.filter(row => row.group_name === 'Bank Accounts').map(row => <option key={row.id} value={row.id}>{row.ledger_name}</option>)}</select></div>
-                  <div className="attendance-form-group"><label>CSV / Excel Statement</label><input className="attendance-input" type="file" accept=".csv,.xlsx,.xls" onChange={event => setBankFile(event.target.files?.[0] || null)} required /></div>
+                  <div className="attendance-form-group"><label>Status</label><select className="attendance-select" value={bankMatchFilter} onChange={event => { setBankMatchFilter(event.target.value); loadBankStatements(bankLedgerId, event.target.value); }}><option value="ALL">All Entries</option><option value="MATCHED">Matched</option><option value="UNMATCHED">Unmatched</option></select></div>
+                  <div className="attendance-form-group"><label>PDF / CSV / Excel Statement</label><input className="attendance-input" type="file" accept=".pdf,.csv,.xlsx,.xls" onChange={event => setBankFile(event.target.files?.[0] || null)} required /></div>
                   <button className="attendance-btn attendance-btn-primary" type="submit">Import</button>
                   <button className="attendance-btn attendance-btn-secondary" type="button" onClick={autoMatchBank}>Auto Match</button>
+                  <button className="attendance-btn attendance-btn-secondary" type="button" onClick={exportBankReconciliationPdf}><Download size={14} /> Export PDF</button>
+                  <button className="attendance-btn attendance-btn-danger" type="button" onClick={rollbackLastBankPdf}>Rollback Last PDF</button>
                 </form>
                 <div className="attendance-table-wrapper"><table className="attendance-table"><thead><tr><th>Date</th><th>Reference</th><th style={{ textAlign: 'right' }}>Debit</th><th style={{ textAlign: 'right' }}>Credit</th><th>Status</th><th>Remarks</th></tr></thead><tbody>
                   {bankStatements.map(row => <tr key={row.id}><td>{row.statement_date}</td><td>{row.reference_no || '—'}</td><td style={{ textAlign: 'right' }}>₹{Number(row.debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td><td style={{ textAlign: 'right' }}>₹{Number(row.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td><td>{row.is_matched ? 'MATCHED' : 'UNMATCHED'}</td><td>{row.remarks || '—'}</td></tr>)}
@@ -983,8 +1011,8 @@ export default function TallyDashboard() {
           <div className="attendance-modal-content" style={{ maxWidth: '1100px', width: '95vw', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
             <div className="attendance-modal-header" style={{ padding: '16px 24px', borderBottom: '1px solid var(--att-border)' }}>
               <div>
-                <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>{drillTitle}</h2>
-                <div style={{ fontSize: '11px', color: 'var(--att-muted)', marginTop: '4px' }}>{drillMeta}</div>
+                <h2 style={{ margin: 0, fontSize: '16px', fontWeight: '800' }}>{drillTitle}</h2>
+                <div style={{ fontSize: '10px', color: 'var(--att-muted)', marginTop: '4px' }}>{drillMeta}</div>
               </div>
               <button className="attendance-modal-close-btn" onClick={() => setIsDrillOpen(false)} aria-label="Close modal">
                 <X size={20} />
@@ -996,67 +1024,94 @@ export default function TallyDashboard() {
                 <div className="attendance-empty">Loading ledger balances and transaction lines...</div>
               ) : (
                 <div>
-                  <div className="attendance-form-section-title" style={{ marginTop: 0 }}>Ledger Summary</div>
-                  <div className="attendance-table-wrapper" style={{ marginBottom: '24px' }}>
-                    <table className="attendance-table">
-                      <thead>
-                        <tr>
-                          <th style={{ textalign: 'left' }}>Ledger</th>
-                          <th style={{ textalign: 'left' }}>Group</th>
-                          <th style={{ textAlign: 'right' }}>Opening</th>
-                          <th style={{ textAlign: 'right' }}>Debit</th>
-                          <th style={{ textAlign: 'right' }}>Credit</th>
-                          <th style={{ textAlign: 'right' }}>Amount</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {drillData.ledger_summary.map((row, i) => (
-                          <tr key={i}>
-                            <td style={{ textalign: 'left', fontWeight: '700' }}>{row.ledger_name}</td>
-                            <td style={{ textalign: 'left' }}>{row.group_name}</td>
-                            <td style={{ textAlign: 'right' }}>₹{parseFloat(row.opening || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textAlign: 'right', color: 'var(--att-success)' }}>₹{parseFloat(row.debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textAlign: 'right', color: 'var(--att-danger)' }}>₹{parseFloat(row.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textAlign: 'right', fontWeight: '800' }}>₹{parseFloat(row.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div className="tally-drill-tabs" role="tablist" aria-label={`${drillTitle} details`}>
+                    <button
+                      type="button"
+                      className={`tally-drill-tab${drillTab === 'ledger' ? ' active' : ''}`}
+                      role="tab"
+                      aria-selected={drillTab === 'ledger'}
+                      aria-controls="tally-ledger-panel"
+                      onClick={() => setDrillTab('ledger')}
+                    >
+                      Ledger Summary <span>{drillData.ledger_summary.length}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className={`tally-drill-tab${drillTab === 'vouchers' ? ' active' : ''}`}
+                      role="tab"
+                      aria-selected={drillTab === 'vouchers'}
+                      aria-controls="tally-vouchers-panel"
+                      onClick={() => setDrillTab('vouchers')}
+                    >
+                      Posted Voucher Details <span>{drillData.transactions.length}</span>
+                    </button>
                   </div>
 
-                  <div className="attendance-form-section-title">Posted Voucher Details</div>
-                  <div className="attendance-table-wrapper">
-                    <table className="attendance-table">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th style={{ textalign: 'left' }}>Voucher No</th>
-                          <th>Type</th>
-                          <th style={{ textalign: 'left' }}>Ledger</th>
-                          <th style={{ textalign: 'left' }}>Group</th>
-                          <th style={{ textAlign: 'right' }}>Debit</th>
-                          <th style={{ textAlign: 'right' }}>Credit</th>
-                          <th style={{ textAlign: 'right' }}>Impact</th>
-                          <th style={{ textalign: 'left' }}>Remarks</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {drillData.transactions.map((row, i) => (
-                          <tr key={i}>
-                            <td>{row.date}</td>
-                            <td style={{ textalign: 'left', fontWeight: '700' }}>{row.voucher_no}</td>
-                            <td>{row.voucher_type}</td>
-                            <td style={{ textalign: 'left' }}>{row.ledger_name}</td>
-                            <td style={{ textalign: 'left' }}>{row.group_name}</td>
-                            <td style={{ textAlign: 'right' }}>₹{parseFloat(row.debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textAlign: 'right' }}>₹{parseFloat(row.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textAlign: 'right', fontWeight: '800' }}>₹{parseFloat(row.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-                            <td style={{ textalign: 'left' }}>{row.remarks}</td>
+                  {drillTab === 'ledger' && (
+                    <div id="tally-ledger-panel" role="tabpanel" className="attendance-table-wrapper tally-drill-panel">
+                      <table className="attendance-table">
+                        <thead>
+                          <tr>
+                            <th style={{ textAlign: 'left' }}>Ledger</th>
+                            <th style={{ textAlign: 'left' }}>Group</th>
+                            <th style={{ textAlign: 'right' }}>Opening</th>
+                            <th style={{ textAlign: 'right' }}>Debit</th>
+                            <th style={{ textAlign: 'right' }}>Credit</th>
+                            <th style={{ textAlign: 'right' }}>Amount</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </thead>
+                        <tbody>
+                          {drillData.ledger_summary.map((row, i) => (
+                            <tr key={i}>
+                              <td style={{ textAlign: 'left', fontWeight: '700' }}>{row.ledger_name}</td>
+                              <td style={{ textAlign: 'left' }}>{row.group_name}</td>
+                              <td style={{ textAlign: 'right' }}>₹{parseFloat(row.opening || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'right', color: 'var(--att-success)' }}>₹{parseFloat(row.debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'right', color: 'var(--att-danger)' }}>₹{parseFloat(row.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'right', fontWeight: '800' }}>₹{parseFloat(row.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                            </tr>
+                          ))}
+                          {!drillData.ledger_summary.length && <tr><td colSpan="6" className="attendance-empty">No ledger summary available.</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+
+                  {drillTab === 'vouchers' && (
+                    <div id="tally-vouchers-panel" role="tabpanel" className="attendance-table-wrapper tally-drill-panel">
+                      <table className="attendance-table">
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th style={{ textAlign: 'left' }}>Voucher No</th>
+                            <th>Type</th>
+                            <th style={{ textAlign: 'left' }}>Ledger</th>
+                            <th style={{ textAlign: 'left' }}>Group</th>
+                            <th style={{ textAlign: 'right' }}>Debit</th>
+                            <th style={{ textAlign: 'right' }}>Credit</th>
+                            <th style={{ textAlign: 'right' }}>Impact</th>
+                            <th style={{ textAlign: 'left' }}>Remarks</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {drillData.transactions.map((row, i) => (
+                            <tr key={i}>
+                              <td>{row.date}</td>
+                              <td style={{ textAlign: 'left', fontWeight: '700' }}>{row.voucher_no}</td>
+                              <td>{row.voucher_type}</td>
+                              <td style={{ textAlign: 'left' }}>{row.ledger_name}</td>
+                              <td style={{ textAlign: 'left' }}>{row.group_name}</td>
+                              <td style={{ textAlign: 'right' }}>₹{parseFloat(row.debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'right' }}>₹{parseFloat(row.credit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'right', fontWeight: '800' }}>₹{parseFloat(row.amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                              <td style={{ textAlign: 'left' }}>{row.remarks}</td>
+                            </tr>
+                          ))}
+                          {!drillData.transactions.length && <tr><td colSpan="9" className="attendance-empty">No posted voucher details available.</td></tr>}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

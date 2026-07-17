@@ -189,7 +189,7 @@ export default function GeneralStoreItems() {
           </div>
           <div className="gs-items-form-actions">
             <button type="submit" className="btn btn-primary" disabled={saving}>
-              {saving ? 'Saving…' : editing ? 'Update Item' : 'Save Item'}
+              {saving ? 'Saving…' : editing ? 'Update Item' : 'Save'}
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>Cancel</button>
           </div>

@@ -39,6 +39,7 @@ th{background:#003366;color:#fff;font-size:11px}
     <p><b>Company:</b> {{ company_name }}</p>
     <p><b>Address:</b> {{ company_address }}</p>
     <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>MPEDA Registration Code:</b> {{ mpeda_registration_code or 'NOT REGISTERED' }}</p>
     <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
   </div>
 </div>

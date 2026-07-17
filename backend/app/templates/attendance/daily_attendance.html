@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>LIVE TERMINAL - SOLUTIONS</title>
+<title>ATTENDANCE TERMINAL - SOLUTIONS</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -251,7 +251,7 @@ html, body {
     <!-- HEADER -->
     <div class="header-dash">
         <div class="header-titles">
-            <h2>Live Terminal Monitor 
+            <h2>Attendance Monitor
                 {% if actual_location %}
                 <span class="plant-badge"><i class="fa-solid fa-location-dot"></i> {{ actual_location }}</span>
                 {% endif %}
@@ -310,7 +310,7 @@ html, body {
                     <button class="menu-trigger" id="dotsBtn" {% if not actual_location %}disabled{% endif %}><i class="fa-solid fa-ellipsis-vertical"></i></button>
                     <div id="dropdownMenu">
                         <div class="menu-item" onclick="showAllAuditLogs()"><i class="fa-solid fa-list-check"></i> Terminal Log</div>
-                        <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export Live List</div>
+                        <div class="menu-item" onclick="executeExcelExport()"><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Export List</div>
                     </div>
                 </div>
             </div>
@@ -556,6 +556,6 @@ html, body {
     setInterval(loadData, 15000);
     {% endif %}
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

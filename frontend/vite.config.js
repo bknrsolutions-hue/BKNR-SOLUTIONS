@@ -16,6 +16,7 @@ export default defineConfig({
       '/export_documents': 'http://127.0.0.1:8000',
       '/attendance':       'http://127.0.0.1:8000',
       '/admin':            'http://127.0.0.1:8000',
+      '/support':          'http://127.0.0.1:8000',
       '/reports':          'http://127.0.0.1:8000',
       '/api':              'http://127.0.0.1:8000',
       '/summary':          'http://127.0.0.1:8000',

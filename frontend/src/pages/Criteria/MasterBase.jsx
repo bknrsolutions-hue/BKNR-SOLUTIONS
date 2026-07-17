@@ -348,7 +348,7 @@ export default function MasterBase({
 
               <div className="master-actions">
                 <button className="master-btn master-btn-primary" type="submit">
-                  <i className="fa-solid fa-check"></i> {formData.id ? 'UPDATE DATA' : 'SAVE DATA'}
+                  <i className="fa-solid fa-check"></i> {formData.id ? 'UPDATE DATA' : 'SAVE'}
                 </button>
                 <button className="master-btn master-btn-clear" type="button" onClick={clearForm}>
                   <i className="fa-solid fa-xmark"></i> CANCEL

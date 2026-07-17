@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { currentFinancialYearStart, formatFinancialYear } from '../../utils/financialYear';
+import './InventoryDashboard.css';
 
 const fmt = (val, dec = 2) => {
   const n = parseFloat(val ?? 0);
@@ -43,6 +44,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
+  const [stockTableTab, setStockTableTab] = useState('closing');
 
   // Interactive chart filter states
   const [varietyChartFilter, setVarietyChartFilter] = useState(null);
@@ -442,6 +444,13 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     return 'age-red';
   };
 
+  const openStockTableTab = (tab) => {
+    setStockTableTab(tab);
+    window.requestAnimationFrame(() => {
+      document.getElementById('inventoryStockTables')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   // Styled helper for cards
   const chartBoxStyle = {
     background: 'var(--surface-panel)',
@@ -487,6 +496,19 @@ export default function InventoryDashboard({ theme, setActivePage }) {
   const secHeader = { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', marginTop: '20px' };
   const secTitle = { fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--text-secondary)', whiteSpace: 'nowrap' };
   const secLine = { flex: 1, height: '1px', background: 'var(--border-light)' };
+  const stockTabStyle = (active) => ({
+    minWidth: '150px',
+    height: '36px',
+    padding: '0 14px',
+    border: active ? '1px solid var(--ui-accent, #0070f2)' : '1px solid transparent',
+    borderRadius: '6px',
+    background: active ? 'color-mix(in srgb, var(--ui-accent, #0070f2) 10%, var(--surface-panel))' : 'transparent',
+    color: active ? 'var(--ui-accent, #0070f2)' : 'var(--text-secondary)',
+    fontSize: '12px',
+    fontWeight: 700,
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  });
 
   const isMobile = windowWidth <= 992;
 
@@ -542,7 +564,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       {/* 8 Premium KPI Cards matching legacy layout with INR sub-totals */}
       <div className="kpi-grid">
         {/* 1. Opening */}
-        <div className="kpi-card kpi-blue" title="View opening stock source" onClick={() => document.getElementById('openingStockBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+        <div className="kpi-card kpi-blue" title="View opening stock source" onClick={() => openStockTableTab('opening')}>
           <div className="kpi-header">
             <h4>Opening</h4>
             <div className="kpi-icon"><i className="fa-solid fa-box-open"></i></div>
@@ -554,7 +576,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
 
         {/* 2. Closing */}
-        <div className="kpi-card kpi-green" title="View closing stock source" onClick={() => document.getElementById('liveInventoryBox')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+        <div className="kpi-card kpi-green" title="View closing stock source" onClick={() => openStockTableTab('closing')}>
           <div className="kpi-header">
             <h4>Closing</h4>
             <div className="kpi-icon"><i className="fa-solid fa-boxes-stacked"></i></div>
@@ -632,7 +654,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
             <div className="kpi-icon"><i className="fa-solid fa-cubes"></i></div>
           </div>
           <div>
-            <div className="value">{data?.closing_stock_mc ? data.closing_stock_mc.toLocaleString() : 0}</div>
+            <div className="value">{data?.closing_stock_mc ? data.closing_stock_mc.toLocaleString('en-IN') : 0}</div>
             <div className="amt-sub">Boxes Active</div>
           </div>
         </div>
@@ -703,19 +725,19 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
           <div style={ageCardStyle(activeAgeCard === 1, '#10b981')} onClick={() => handleAgeFilterClick(0, 30, 1)}>
             <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>0-30 Days</h4>
-            <h2 style={{ fontSize: '24px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_30)}</h2>
+            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_30)}</h2>
           </div>
           <div style={ageCardStyle(activeAgeCard === 2, '#f59e0b')} onClick={() => handleAgeFilterClick(31, 90, 2)}>
             <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>31-90 Days</h4>
-            <h2 style={{ fontSize: '24px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_90)}</h2>
+            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_90)}</h2>
           </div>
           <div style={ageCardStyle(activeAgeCard === 3, '#ea580c')} onClick={() => handleAgeFilterClick(91, 700, 3)}>
             <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>91-700 Days</h4>
-            <h2 style={{ fontSize: '24px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_700)}</h2>
+            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_700)}</h2>
           </div>
           <div style={ageCardStyle(activeAgeCard === 4, '#ef4444')} onClick={() => handleAgeFilterClick(701, 99999, 4)}>
             <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>700+ Days (Dead)</h4>
-            <h2 style={{ fontSize: '24px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.dead_stock_qty)}</h2>
+            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.dead_stock_qty)}</h2>
           </div>
         </div>
       </div>
@@ -790,7 +812,36 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         </div>
       )}
 
+      <div
+        id="inventoryStockTables"
+        role="tablist"
+        aria-label="Inventory stock tables"
+        style={{ ...card, display: 'flex', gap: '6px', padding: '6px', marginTop: '20px', marginBottom: '12px', overflowX: 'auto' }}
+      >
+        <button
+          type="button"
+          role="tab"
+          aria-selected={stockTableTab === 'closing'}
+          style={stockTabStyle(stockTableTab === 'closing')}
+          onClick={() => setStockTableTab('closing')}
+        >
+          <i className="fa-solid fa-boxes-stacked" style={{ marginRight: '7px' }}></i>
+          Closing Inventory
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={stockTableTab === 'opening'}
+          style={stockTabStyle(stockTableTab === 'opening')}
+          onClick={() => setStockTableTab('opening')}
+        >
+          <i className="fa-solid fa-box-open" style={{ marginRight: '7px' }}></i>
+          Opening Stock
+        </button>
+      </div>
+
       {/* Live Closing Inventory Table */}
+      {stockTableTab === 'closing' && <>
       <div style={secHeader} id="liveInventoryBox">
         <span style={secTitle}><i className="fa-solid fa-boxes-stacked"></i> Live Closing Inventory</span>
         <div style={secLine}></div>
@@ -807,7 +858,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       </div>
 
       <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ overflowX: 'auto', maxHeight: '550px' }}>
+        <div className="inventory-stock-table-scroll" style={{ maxHeight: '550px' }}>
           <table className="bknr-table">
             <thead>
               <tr>
@@ -873,12 +924,12 @@ export default function InventoryDashboard({ theme, setActivePage }) {
             <tfoot>
               <tr className="grand-total-row">
                 <td colSpan="9" style={{ textAlign: 'right', fontWeight: 800 }}>GRAND TOTAL</td>
-                <td align="right">{totals.opening_mc.toLocaleString()}</td>
+                <td align="right">{totals.opening_mc.toLocaleString('en-IN')}</td>
                 <td></td>
                 <td align="right">{fmt(totals.opening_qty)}</td>
                 <td></td>
                 <td></td>
-                <td align="right">{totals.closing_mc.toLocaleString()}</td>
+                <td align="right">{totals.closing_mc.toLocaleString('en-IN')}</td>
                 <td></td>
                 <td align="right" style={{ color: 'var(--ui-accent, #3b82f6)', fontWeight: 800 }}>{fmt(totals.closing_qty)}</td>
                 <td></td>
@@ -889,8 +940,10 @@ export default function InventoryDashboard({ theme, setActivePage }) {
           </table>
         </div>
       </div>
+      </>}
 
       {/* Opening Stock Summary Section */}
+      {stockTableTab === 'opening' && <>
       <div style={secHeader} id="openingStockBox">
         <span style={secTitle}><i className="fa-solid fa-box-open"></i> Opening Stock Summary</span>
         <div style={secLine}></div>
@@ -903,7 +956,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       </div>
 
       <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-        <div style={{ overflowX: 'auto', maxHeight: '400px' }}>
+        <div className="inventory-stock-table-scroll" style={{ maxHeight: '400px' }}>
           <table className="bknr-table">
             <thead>
               <tr>
@@ -958,6 +1011,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
           </table>
         </div>
       </div>
+      </>}
         </div>
       </main>
     </div>

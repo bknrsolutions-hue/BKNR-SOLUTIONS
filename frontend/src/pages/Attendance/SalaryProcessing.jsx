@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ban, Calculator, History, MoreVertical, Plus, X } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
 
 const ZERO_FIELDS = {
@@ -8,7 +9,8 @@ const ZERO_FIELDS = {
   conveyance_allowance: 0, special_allowance: 0, other_earnings: 0,
   pf_employee: 0, esi_employee: 0, professional_tax: 0, tds_salary: 0,
   advance_deduction: 0, lwf_employee: 0, other_deductions: 0,
-  pf_employer: 0, esi_employer: 0, lwf_employer: 0,
+  pf_employer: 0, epf_employer: 0, eps_employer: 0, edli_employer: 0,
+  esi_employer: 0, lwf_employer: 0,
 };
 
 const emptyForm = () => ({
@@ -67,7 +69,7 @@ export default function SalaryProcessing() {
   const loadRegister = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch('/finance_accounts/salary_processing/entry', { credentials: 'include' });
+      const response = await sessionFetch('/finance_accounts/salary_processing/entry');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
       const html = await response.text();
       const doc = new DOMParser().parseFromString(html, 'text/html');
@@ -104,7 +106,7 @@ export default function SalaryProcessing() {
 
   const loadEmployees = useCallback(async () => {
     try {
-      const response = await fetch('/finance_accounts/salary_processing/employees', { credentials: 'include' });
+      const response = await sessionFetch('/finance_accounts/salary_processing/employees');
       const data = await response.json();
       if (data.success) setEmployees(data.employees || []);
     } catch {
@@ -156,7 +158,7 @@ export default function SalaryProcessing() {
     if (!employeeId) return;
     try {
       const query = month ? `?month_year=${encodeURIComponent(month)}` : '';
-      const response = await fetch(`/finance_accounts/salary_processing/employee_data/${encodeURIComponent(employeeId)}${query}`, { credentials: 'include' });
+      const response = await sessionFetch(`/finance_accounts/salary_processing/employee_data/${encodeURIComponent(employeeId)}${query}`);
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Employee payroll data unavailable');
       setForm(previous => {
@@ -206,8 +208,8 @@ export default function SalaryProcessing() {
     };
     setSaving(true);
     try {
-      const response = await fetch('/finance_accounts/salary_processing/save', {
-        method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+      const response = await sessionFetch('/finance_accounts/salary_processing/save', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
       });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.message || 'Salary save failed');
@@ -224,7 +226,7 @@ export default function SalaryProcessing() {
   const deleteSelected = async () => {
     if (!selectedId || !window.confirm('Cancel selected salary entry?')) return;
     try {
-      const response = await fetch(`/finance_accounts/salary_processing/delete/${selectedId}`, { method: 'POST', credentials: 'include' });
+      const response = await sessionFetch(`/finance_accounts/salary_processing/delete/${selectedId}`, { method: 'POST' });
       if (!response.ok) throw new Error('Cancellation failed');
       setSelectedId(null);
       setMenuOpen(false);
@@ -331,7 +333,10 @@ export default function SalaryProcessing() {
             <Field label="LWF Contribution (₹)" name="lwf_employee" type="number" step="any" value={form.lwf_employee} onChange={change} />
             <Field label="Other Deductions (₹)" name="other_deductions" type="number" step="any" value={form.other_deductions} onChange={change} />
             <Field label="Total Deductions (₹)" name="total_deductions" value={totals.deductions.toFixed(2)} onChange={() => {}} readOnly />
-            <Field label="Employer PF (₹)" name="pf_employer" type="number" step="any" value={form.pf_employer} onChange={change} />
+            <Field label="Employer PF Total (EPF + EPS)" name="pf_employer" value={form.pf_employer} onChange={() => {}} readOnly />
+            <Field label="Employer EPF (₹)" name="epf_employer" value={form.epf_employer} onChange={() => {}} readOnly />
+            <Field label="Employer EPS (₹)" name="eps_employer" value={form.eps_employer} onChange={() => {}} readOnly />
+            <Field label="Employer EDLI (₹)" name="edli_employer" value={form.edli_employer} onChange={() => {}} readOnly />
             <Field label="Employer ESI (₹)" name="esi_employer" type="number" step="any" value={form.esi_employer} onChange={change} />
             <Field label="Employer LWF (₹)" name="lwf_employer" type="number" step="any" value={form.lwf_employer} onChange={change} />
           </div>}
@@ -343,7 +348,7 @@ export default function SalaryProcessing() {
             <Field label="Payment Date" name="payment_date" type="date" value={form.payment_date} onChange={change} disabled={form.status !== 'PAID'} required={form.status === 'PAID'} />
             <Field label="UTR / Cheque Ref" name="utr_reference" value={form.utr_reference} onChange={change} disabled={form.status !== 'PAID'} />
           </div>}
-        </div><div className="attendance-modal-footer"><button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setModalOpen(false)}>CANCEL</button><button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}>{saving ? 'SAVING…' : 'SAVE PAY SLIP'}</button></div></form>
+        </div><div className="attendance-modal-footer"><button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setModalOpen(false)}>CANCEL</button><button className="attendance-btn attendance-btn-primary" type="submit" disabled={saving}>{saving ? 'SAVING…' : 'SAVE'}</button></div></form>
       </div></div>}
     </div>
   );

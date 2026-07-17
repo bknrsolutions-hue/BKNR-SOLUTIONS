@@ -805,6 +805,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 </div>
                 <div class="mega-menu-grid" id="dropdownMenuScrollBox"></div>
                 <div class="profile-logout-section">
+                    <button style="width:100%; margin-bottom:8px; padding:10px; background:var(--surface-panel, #fff); color:var(--corp-dash, #2563eb); border:1px solid var(--border-light, #dbe3ef); border-radius:8px; font-weight:800; cursor:pointer;" onclick="loadPage('/auth/profile', null, 'My Profile')"><i class="fa-solid fa-user" style="margin-right:7px;"></i>MY PROFILE</button>
                     <button style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
                 </div>
             </div>
@@ -1403,7 +1404,7 @@ frame.addEventListener('load', () => {
         }
         if (!frameDoc.querySelector('script[src*="global-loader.js"]')) {
             const loaderScript = frameDoc.createElement('script');
-            loaderScript.src = '/static/js/global-loader.js?v=skel8';
+            loaderScript.src = '/static/js/global-loader.js?v=skel9';
             frameDoc.body.appendChild(loaderScript);
         }
 
@@ -1572,13 +1573,13 @@ const sidebarMenuData = [
     {
         title: "DASHBOARDS",
         items: [
-            ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', 'LIVE'],
-            ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', 'LIVE'],
-            ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', 'LIVE'],
-            ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Docs', 'LIVE'],
-            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', 'LIVE'],
-            ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', 'LIVE'],
-            ['tally_dashboard', '/finance_accounts/tally_dashboard', 'fa-chart-pie', 'Tally Dashboard', 'LIVE']
+            ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', ''],
+            ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', ''],
+            ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', ''],
+            ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Docs', ''],
+            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', ''],
+            ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', ''],
+            ['tally_dashboard', '/finance_accounts/tally_dashboard', 'fa-chart-pie', 'Tally Dashboard', '']
         ]
     },
     {
@@ -2493,7 +2494,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 <script src="/static/js/app-splash.js"></script>
 </body>
 </html>

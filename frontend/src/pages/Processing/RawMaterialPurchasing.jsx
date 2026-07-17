@@ -613,7 +613,7 @@ export default function RawMaterialPurchasing() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Lot Purchase
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel

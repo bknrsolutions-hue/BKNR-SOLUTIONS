@@ -4,8 +4,9 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from pydantic import BaseModel, Field
-from datetime import datetime, timedelta
-import logging, random, json, os, requests, secrets
+from datetime import date, datetime, timedelta
+from typing import Optional
+import logging, random, json, os, re, requests, secrets
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -14,7 +15,6 @@ from app.database import get_db
 from app.database.models.users import Company, User, OTPTable, UserLoginActivity
 from app.security.password_handler import hash_password, verify_password
 from app.services.setup_service import SetupService
-from app.database.models.criteria import production_at as ProductionAtModel, production_for as ProductionForModel
 from app.services.default_masters import seed_default_masters
 from app.utils.timezone import ist_now
 from app.utils.security_secrets import log_development_secret
@@ -183,6 +183,7 @@ def reset_password_email_html(reset_link: str) -> str:
 # ================= REQUEST MODELS =================
 class RegisterReq(BaseModel):
     company_name: str = Field(..., min_length=2)
+    mpeda_registration_code: str = Field(..., min_length=4, max_length=4)
     user_name: str = Field(..., min_length=2)
     designation: str
     address: str
@@ -201,6 +202,13 @@ class LoginReq(BaseModel):
     company_id: str
     email: str
     password: str
+
+class ProfileUpdateReq(BaseModel):
+    name: str = Field(..., min_length=2, max_length=120)
+    designation: str = Field(default="", max_length=120)
+    date_of_birth: Optional[date] = None
+    blood_group: str = Field(default="", max_length=10)
+    working_location: str = Field(default="", max_length=255)
 
 class ForgotReq(BaseModel):
     email: str
@@ -240,12 +248,23 @@ def get_register(request: Request):
 @router.post("/register")
 def register(data: RegisterReq, db: Session = Depends(get_db)):
     clean_name = data.company_name.strip()
+    mpeda_code = re.sub(r"\s+", "", data.mpeda_registration_code.strip().upper())
+    if not re.fullmatch(r"[A-Z0-9]{4}", mpeda_code):
+        raise HTTPException(
+            status_code=400,
+            detail="MPEDA Registration Code must contain exactly 4 letters or numbers.",
+        )
     active_company = db.query(Company).filter(
         func.lower(func.trim(Company.company_name)) == clean_name.lower(),
         Company.is_active == True
     ).first()
     if active_company:
         raise HTTPException(status_code=400, detail="Company name already registered and active.")
+    registered_mpeda = db.query(Company).filter(
+        func.upper(func.trim(Company.mpeda_registration_code)) == mpeda_code
+    ).first()
+    if registered_mpeda:
+        raise HTTPException(status_code=400, detail="MPEDA Registration Code is already registered.")
 
     existing_user = db.query(User).filter(or_(User.email == data.email, User.mobile == data.mobile)).first()
     if existing_user:
@@ -257,6 +276,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     
     otp = str(random.randint(1000, 9999))
     extra_data = data.model_dump() if hasattr(data, "model_dump") else data.dict()
+    extra_data["mpeda_registration_code"] = mpeda_code
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
     db.add(OTPTable(email=data.email, otp=otp, extra=json.dumps(extra_data), is_used=False, created_at=get_ist_time()))
     db.commit()
@@ -293,18 +313,39 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
     if not rec: raise HTTPException(400, "OTP not verified")
     extra = json.loads(rec.extra)
 
-    # 🟢 Unique Company Code
-    base_code = extra["company_name"][:4].upper()
-    while True:
-        new_company_code = f"{base_code}{random.randint(1000, 9999)}"
-        if not db.query(Company).filter(Company.company_code == new_company_code).first():
-            break
+    # ERP tenant code = normalized company prefix + four-character MPEDA code.
+    base_code = re.sub(r"[^A-Z0-9]", "", extra["company_name"].upper())[:4].ljust(4, "X")
+    new_company_code = f"{base_code}{extra['mpeda_registration_code']}"
+    tenant_owner = db.query(Company).filter(
+        Company.company_code == new_company_code,
+        Company.email != extra["email"],
+    ).first()
+    if tenant_owner:
+        raise HTTPException(400, "Generated ERP Tenant Code is already registered.")
 
     company = db.query(Company).filter(Company.email == extra["email"]).first()
+    mpeda_code = extra.get("mpeda_registration_code")
+    if not mpeda_code:
+        raise HTTPException(400, "MPEDA Registration Code is missing. Please register again.")
+    mpeda_owner = db.query(Company).filter(
+        func.upper(func.trim(Company.mpeda_registration_code)) == mpeda_code,
+        Company.email != extra["email"],
+    ).first()
+    if mpeda_owner:
+        raise HTTPException(400, "MPEDA Registration Code is already registered.")
     if not company:
-        company = Company(company_name=extra["company_name"], address=extra["address"], email=extra["email"], company_code=new_company_code, is_active=False)
+        company = Company(
+            company_name=extra["company_name"],
+            address=extra["address"],
+            email=extra["email"],
+            company_code=new_company_code,
+            mpeda_registration_code=mpeda_code,
+            is_active=False,
+        )
         db.add(company)
         db.flush()
+    elif not company.mpeda_registration_code:
+        company.mpeda_registration_code = mpeda_code
 
     # 🟢 Upsert User
     user = db.query(User).filter(User.email == extra["email"]).first()
@@ -332,12 +373,12 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
             "SVBK - Account Created",
             professional_email_html(
                 title="Your SVBK account has been created",
-                intro="Your company account is ready. Please keep the company ID below for login and admin access.",
+                intro="Your company account is ready. Please keep the ERP tenant code below for login and admin access.",
                 content_html=f"""
                   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:14px;">
                     <tr>
                       <td style="padding:12px;background:#f8fbff;border:1px solid #dbeafe;border-radius:8px;">
-                        <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;">Company ID</div>
+                        <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.06em;">ERP Tenant Code</div>
                         <div style="font-size:24px;font-weight:800;color:#1d4ed8;margin-top:4px;">{company.company_code}</div>
                       </td>
                     </tr>
@@ -468,6 +509,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "company_id": company.id,
         "company_code": company.company_code,
         "company_name": company.company_name,
+        "mpeda_registration_code": company.mpeda_registration_code,
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions,
@@ -478,21 +520,113 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     return JSONResponse({"status": "success", "setup_completed": True, "next_page": "/app/#/page/dashboard_processing"})
 
 @router.get("/session-info")
-def session_info(request: Request):
+def session_info(request: Request, db: Session = Depends(get_db)):
     # Session probing is a state check, not a protected business operation.
     # Returning 200 for guests prevents expected login state from surfacing as
     # a failed network request in React/Vite while protected routes still use
     # their normal 401/redirect guards.
     if not request.session.get("email"):
         return {"authenticated": False}
+    mpeda_code = request.session.get("mpeda_registration_code")
+    if not mpeda_code and request.session.get("company_code"):
+        company = db.query(Company).filter(
+            Company.company_code == request.session.get("company_code")
+        ).first()
+        mpeda_code = company.mpeda_registration_code if company else None
+        if mpeda_code:
+            request.session["mpeda_registration_code"] = mpeda_code
     return {
         "authenticated": True,
         "email": request.session.get("email"),
         "name": request.session.get("name"),
         "company_name": request.session.get("company_name"),
         "company_code": request.session.get("company_code"),
+        "mpeda_registration_code": mpeda_code,
         "role": request.session.get("role"),
         "permissions": request.session.get("permissions") or [],
+    }
+
+def _current_profile(request: Request, db: Session):
+    email = str(request.session.get("email") or "").strip().lower()
+    company_code = request.session.get("company_code")
+    if not email or not company_code:
+        raise HTTPException(status_code=401, detail="Session expired")
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found")
+    user = db.query(User).filter(
+        User.company_id == company.id,
+        func.lower(func.trim(User.email)) == email,
+    ).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User profile not found")
+    return company, user
+
+def _profile_payload(request: Request, db: Session, company: Company, user: User):
+    employee = None
+    try:
+        from app.database.models.attendance import EmployeeRegistration
+        # A savepoint keeps profile loading usable on older tenant schemas even
+        # if their optional employee-detail columns have not been migrated yet.
+        with db.begin_nested():
+            employee = db.query(EmployeeRegistration).filter(
+                EmployeeRegistration.company_id == company.company_code,
+                or_(
+                    func.lower(func.trim(EmployeeRegistration.official_email)) == user.email.strip().lower(),
+                    func.lower(func.trim(EmployeeRegistration.email)) == user.email.strip().lower(),
+                    func.lower(func.trim(EmployeeRegistration.personal_email)) == user.email.strip().lower(),
+                ),
+            ).first()
+    except Exception:
+        employee = None
+    dob = user.date_of_birth or (employee.dob if employee else None)
+    return {
+        "name": user.name or (employee.employee_name if employee else "") or "",
+        "employee_id": (employee.employee_id if employee else "") or "",
+        "email": str(request.session.get("email") or user.email or ""),
+        "designation": user.designation or (employee.designation if employee else "") or "",
+        "date_of_birth": dob.isoformat() if dob else "",
+        "blood_group": user.blood_group or (employee.blood_group if employee else "") or "",
+        "working_location": user.working_location or (employee.location if employee else "") or "",
+        "address": (employee.present_address if employee else "") or (employee.permanent_address if employee else "") or user.address or "",
+        "company_name": company.company_name,
+        "company_code": company.company_code,
+        "role": user.role or "",
+    }
+
+@router.get("/profile", response_class=HTMLResponse)
+def profile_page(request: Request, format: str = "html", db: Session = Depends(get_db)):
+    company, user = _current_profile(request, db)
+    profile = _profile_payload(request, db, company, user)
+    if format.lower() == "json":
+        return JSONResponse({"status": "success", "profile": profile})
+    return templates.TemplateResponse(
+        request=request,
+        name="profile.html",
+        context={"request": request, "profile": profile},
+    )
+
+@router.post("/profile")
+def update_profile(data: ProfileUpdateReq, request: Request, db: Session = Depends(get_db)):
+    company, user = _current_profile(request, db)
+    if data.date_of_birth and data.date_of_birth > date.today():
+        raise HTTPException(status_code=400, detail="Date of Birth cannot be in the future")
+    blood_group = data.blood_group.strip().upper()
+    allowed_blood_groups = {"", "A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"}
+    if blood_group not in allowed_blood_groups:
+        raise HTTPException(status_code=400, detail="Select a valid blood group")
+    user.name = data.name.strip()
+    user.designation = data.designation.strip() or "Staff"
+    user.date_of_birth = data.date_of_birth
+    user.blood_group = blood_group or None
+    user.working_location = data.working_location.strip() or None
+    request.session["name"] = user.name
+    db.commit()
+    db.refresh(user)
+    return {
+        "status": "success",
+        "message": "Profile updated successfully.",
+        "profile": _profile_payload(request, db, company, user),
     }
 
 @router.post("/forgot-password")
@@ -505,8 +639,11 @@ def forgot_password(data: ForgotReq, request: Request, db: Session = Depends(get
     db.add(OTPTable(email=data.email, otp=token, is_used=False, created_at=get_ist_time()))
     db.commit()
 
-    base_url = os.getenv("APP_URL", "https://svbk.in")
-    reset_link = f"{base_url}/auth/reset-password?token={token}"
+    if request.headers.get("x-mobile-app") == "true":
+        reset_link = f"bknrerp://reset-password?token={token}"
+    else:
+        base_url = os.getenv("APP_URL", "https://svbk.in")
+        reset_link = f"{base_url}/auth/reset-password?token={token}"
 
     send_security_email(
         data.email,
@@ -589,6 +726,7 @@ def auto_login(request: Request, db: Session = Depends(get_db)):
         "company_id": company.id,
         "company_code": company.company_code,
         "company_name": company.company_name,
+        "mpeda_registration_code": company.mpeda_registration_code,
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions,

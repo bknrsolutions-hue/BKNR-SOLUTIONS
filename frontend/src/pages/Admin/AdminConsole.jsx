@@ -19,7 +19,7 @@ const ADMIN_NAV_ITEMS = [
   { id: 'admin_shifts', perm: 'shifts', route: '/attendance/shifts', icon: 'fa-business-time', label: 'Shifts' },
   { id: 'admin_data_management', perm: 'data_management', route: '/data-management', icon: 'fa-database', label: 'Data Management' },
   { id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', superAdminOnly: true },
-  { id: 'admin_raise_ticket', perm: 'raise_ticket', route: '/support/my_tickets', icon: 'fa-headset', label: 'My Complaints' },
+  { id: 'admin_raise_ticket', perm: 'raise_ticket', route: '/support/my_tickets', icon: 'fa-support-agent', label: 'My Complaints' },
   { id: 'admin_helpdesk', perm: 'admin_helpdesk', route: '/admin/all_tickets', icon: 'fa-ticket', label: 'Helpdesk', superAdminOnly: true },
   { id: 'admin_manage_support', perm: 'manage_support', route: '/admin/support_team', icon: 'fa-users-gear', label: 'Support Team', superAdminOnly: true },
   { id: 'admin_user_activity', perm: 'user_activity', route: '/admin/activities', icon: 'fa-clock-rotate-left', label: 'User Activity Logs', superAdminOnly: true },
@@ -197,11 +197,34 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
   const [newOpen, setNewOpen] = useState(false);
   const [subject, setSubject] = useState('');
   const [detail, setDetail] = useState('');
+  const [loadingTickets, setLoadingTickets] = useState(true);
+  const [ticketError, setTicketError] = useState('');
 
   const loadTickets = useCallback(async () => {
-    const response = await fetch(activeRoute, { credentials: 'include' });
-    const parsed = parseAdminHtml(await response.text(), activePage);
-    setTickets(parsed.tickets);
+    setLoadingTickets(true);
+    setTicketError('');
+    try {
+      const requestRoute = activePage === 'admin_raise_ticket'
+        ? `${activeRoute}${activeRoute.includes('?') ? '&' : '?'}format=json`
+        : activeRoute;
+      const response = await fetch(requestRoute, {
+        credentials: 'include',
+        headers: { Accept: activePage === 'admin_raise_ticket' ? 'application/json' : 'text/html' },
+      });
+      if (!response.ok) throw new Error(`Unable to load complaints (HTTP ${response.status}).`);
+      if (activePage === 'admin_raise_ticket') {
+        const payload = await response.json();
+        setTickets(payload.tickets || []);
+      } else {
+        const parsed = parseAdminHtml(await response.text(), activePage);
+        setTickets(parsed.tickets);
+      }
+    } catch (error) {
+      setTickets([]);
+      setTicketError(error.message || 'Unable to load complaints.');
+    } finally {
+      setLoadingTickets(false);
+    }
   }, [activePage, activeRoute]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadTickets(); }, [loadTickets]);
@@ -233,8 +256,9 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
   return <div className={`admin-react-page ${compact ? 'support-drawer-page' : ''}`}>
     {compact ? <div className="admin-toolbar support-drawer-toolbar"><h2>{isAdmin ? 'Support Queue' : 'My Complaints'}</h2>{!isAdmin && <button className="admin-btn primary" onClick={() => setNewOpen(value => !value)}>NEW COMPLAINT</button>}</div> : <PageHeader activePage={activePage} actions={!isAdmin && <button className="admin-btn primary" onClick={() => setNewOpen(value => !value)}>NEW COMPLAINT</button>}/>} 
     {newOpen && <div className="admin-card"><form className="admin-form-grid" onSubmit={createTicket}><div className="admin-field"><label>Issue Summary</label><input required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field" style={{ gridColumn: 'span 2' }}><label>Detailed Message</label><textarea required value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
+    {ticketError && <div className="admin-card admin-error" role="alert">{ticketError} <button className="admin-btn" type="button" onClick={loadTickets}>RETRY</button></div>}
     <div className="ticket-layout">
-      <div className="admin-card"><input className="admin-search" style={{ maxWidth: '100%', marginBottom: 10 }} placeholder="Search tickets, subjects..." value={search} onChange={event => setSearch(event.target.value)}/><div className="ticket-list">{visible.map(ticket => <div key={ticket.id} className={`ticket-card ${selected?.id === ticket.id ? 'active' : ''}`} onClick={() => openTicket(ticket)}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><strong>{ticket.ticket_number}</strong><small>{ticket.date}</small></div><span>{ticket.subject}</span><small>{ticket.status}{ticket.user_email ? ` · ${ticket.user_email}` : ''}</small></div>)}</div></div>
+      <div className="admin-card"><input className="admin-search" style={{ maxWidth: '100%', marginBottom: 10 }} placeholder="Search tickets, subjects..." value={search} onChange={event => setSearch(event.target.value)}/><div className="ticket-list">{loadingTickets ? <div className="admin-empty">Loading complaints...</div> : visible.length ? visible.map(ticket => <div key={ticket.id} className={`ticket-card ${selected?.id === ticket.id ? 'active' : ''}`} onClick={() => openTicket(ticket)}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><strong>{ticket.ticket_number}</strong><small>{ticket.date}</small></div><span>{ticket.subject}</span><small>{ticket.status}{ticket.user_email ? ` · ${ticket.user_email}` : ''}</small></div>) : <div className="admin-empty">No complaints found.</div>}</div></div>
       <div className="admin-card">{selected ? <>
         <div className="admin-toolbar"><div><h2>{selected.subject}</h2><small style={{ color: 'var(--text-tertiary)' }}>{selected.ticket_number}{selected.user_email ? ` · ${selected.user_email} · ${selected.company_id}` : ''}</small></div>{isAdmin ? <div className="admin-actions"><select className="admin-search" value={status} onChange={event => setStatus(event.target.value)}><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN PROGRESS</option><option value="RESOLVED">RESOLVED</option></select><button className="admin-btn primary" onClick={updateStatus}>UPDATE STATUS</button></div> : <span className="admin-status">{selected.status}</span>}</div>
         <div className="chat-box">{messages.map((message, index) => <div key={index} className={`chat-msg ${(isAdmin ? message.sender_type === 'ADMIN' : message.sender_type === 'USER') ? 'mine' : ''}`}>{message.message}{message.media_path && <div><a href={message.media_path} target="_blank" rel="noreferrer">Attachment</a></div>}<small>{message.time}</small></div>)}</div>

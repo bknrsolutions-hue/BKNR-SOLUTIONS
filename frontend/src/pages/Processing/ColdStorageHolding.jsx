@@ -262,7 +262,7 @@ export default function ColdStorageHolding() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" className="btn btn-primary" disabled={loading}>Save Entry</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
             <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
         </form>

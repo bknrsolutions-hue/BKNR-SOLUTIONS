@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
+  Loader, ErrorBox, SearchInput, EmptyRow,
   FinYearSelect, useReport, fmt
 } from './ReportShell';
 
@@ -161,12 +161,6 @@ export default function ReprocessReport({ activeRoute }) {
 
       {!loading && !error && (
         <>
-          <KPIGrid>
-            <KPICard label="Total Records" value={filteredRows.length} accent="var(--corp-dash)" />
-            <KPICard label="Total In Qty (Kg)" value={fmt.number(grandQty)} accent="var(--corp-ops)" />
-            <KPICard label="Total Value" value={fmt.currency(grandVal)} accent="var(--corp-fin)" />
-          </KPIGrid>
-
           <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
             <table className="bknr-table" style={{ minWidth: 1300, width: '100%' }}>
               <thead>

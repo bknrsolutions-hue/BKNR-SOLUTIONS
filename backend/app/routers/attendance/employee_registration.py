@@ -190,8 +190,9 @@ async def save_or_update_employee(
         row.production_at = production_at
         row.designation = designation
         row.department = department
-        row.employee_type = employee_type
-        row.contractor_name = contractor_name if employee_type == "CONTRACT" else None
+        normalized_employee_type = str(employee_type or "").strip().upper()
+        row.employee_type = normalized_employee_type
+        row.contractor_name = contractor_name if normalized_employee_type in {"CONTRACT", "CONTRACTOR"} else None
         row.joining_date = parse_dt(joining_date)
         row.resignation_date = parse_dt(resignation_date)
         row.current_salary = current_salary

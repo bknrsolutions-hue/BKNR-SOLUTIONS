@@ -261,6 +261,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 
                 <!-- Employer side columns -->
                 <input type="hidden" id="pf_employer" value="0">
+                <input type="hidden" id="epf_employer" value="0">
+                <input type="hidden" id="eps_employer" value="0">
+                <input type="hidden" id="edli_employer" value="0">
                 <input type="hidden" id="esi_employer" value="0">
                 <input type="hidden" id="lwf_employer" value="0">
                 <input type="hidden" id="payment_status" value="UNPAID">
@@ -324,7 +327,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
          'conveyance_allowance','special_allowance','other_earnings','gross_salary',
          'calculated_salary','salary_adjustment',
          'pf_employee','esi_employee','professional_tax','tds_salary','advance_deduction',
-         'lwf_employee','other_deductions','total_deductions','net_payable','pf_employer','esi_employer','lwf_employer'
+         'lwf_employee','other_deductions','total_deductions','net_payable',
+         'pf_employer','epf_employer','eps_employer','edli_employer','esi_employer','lwf_employer'
         ].forEach(id => { const el = document.getElementById(id); if(el) el.value = 0; });
     }
 
@@ -377,6 +381,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             document.getElementById('lwf_employee').value        = d.lwf_employee    ?? 0;
             document.getElementById('other_deductions').value    = d.other_deductions ?? 0;
             document.getElementById('pf_employer').value         = d.pf_employer     ?? 0;
+            document.getElementById('epf_employer').value        = d.epf_employer    ?? 0;
+            document.getElementById('eps_employer').value        = d.eps_employer    ?? 0;
+            document.getElementById('edli_employer').value       = d.edli_employer   ?? 0;
             document.getElementById('esi_employer').value        = d.esi_employer    ?? 0;
             document.getElementById('lwf_employer').value        = d.lwf_employer    ?? 0;
 
@@ -528,6 +535,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             other_deductions: parseFloat(document.getElementById("other_deductions").value) || 0.0,
             total_deductions: parseFloat(document.getElementById("total_deductions").value) || 0.0,
             pf_employer: parseFloat(document.getElementById("pf_employer").value) || 0.0,
+            epf_employer: parseFloat(document.getElementById("epf_employer").value) || 0.0,
+            eps_employer: parseFloat(document.getElementById("eps_employer").value) || 0.0,
+            edli_employer: parseFloat(document.getElementById("edli_employer").value) || 0.0,
             esi_employer: parseFloat(document.getElementById("esi_employer").value) || 0.0,
             lwf_employer: parseFloat(document.getElementById("lwf_employer").value) || 0.0,
             net_payable: parseFloat(document.getElementById("net_payable").value) || 0.0,
@@ -570,6 +580,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     
     applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel8"></script>
+<script src="/static/js/global-loader.js?v=skel9"></script>
 </body>
 </html>

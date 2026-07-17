@@ -33,10 +33,54 @@ def ensure_bill_accounting_schema(db: Session) -> None:
         "ALTER TABLE peeling ADD COLUMN IF NOT EXISTS journal_id INTEGER",
         "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS journal_id INTEGER",
         "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0",
+        "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS salary_adjustment_reason TEXT",
+        "ALTER TABLE employee_statutory_master ADD COLUMN IF NOT EXISTS eps_applicable BOOLEAN DEFAULT TRUE",
+        """
+        CREATE TABLE IF NOT EXISTS employee_salary_advance_recovery (
+            id SERIAL PRIMARY KEY,
+            company_id VARCHAR(50) NOT NULL,
+            employee_id VARCHAR(50) NOT NULL,
+            advance_id INTEGER NOT NULL,
+            salary_processing_id INTEGER,
+            month_year VARCHAR(7) NOT NULL,
+            amount DOUBLE PRECISION DEFAULT 0 NOT NULL,
+            status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL,
+            recovered_at TIMESTAMP,
+            reversed_at TIMESTAMP,
+            CONSTRAINT uq_advance_recovery_month UNIQUE (company_id, advance_id, month_year)
+        )
+        """,
+        "CREATE INDEX IF NOT EXISTS ix_advance_recovery_employee ON employee_salary_advance_recovery (company_id, employee_id, month_year)",
         "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_date DATE",
         "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS utr_reference VARCHAR(50)",
         "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS paid_amount DOUBLE PRECISION DEFAULT 0",
+        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS epf_employer DOUBLE PRECISION DEFAULT 0",
+        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS eps_employer DOUBLE PRECISION DEFAULT 0",
+        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS edli_employer DOUBLE PRECISION DEFAULT 0",
         "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_journal_id INTEGER",
+        """
+        CREATE TABLE IF NOT EXISTS salary_payment_logs (
+            id SERIAL PRIMARY KEY,
+            company_id VARCHAR(50) NOT NULL,
+            salary_id INTEGER NOT NULL,
+            employee_id VARCHAR(50),
+            employee_name VARCHAR(150),
+            month_year VARCHAR(7) NOT NULL,
+            paid_amount DOUBLE PRECISION DEFAULT 0,
+            payment_mode VARCHAR(20) DEFAULT 'BANK',
+            payment_date DATE,
+            utr_reference VARCHAR(50),
+            payment_status VARCHAR(20) DEFAULT 'PARTIAL',
+            journal_id INTEGER,
+            bank_cash_ledger_id INTEGER,
+            is_cancelled BOOLEAN DEFAULT FALSE,
+            created_by VARCHAR(150),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+        "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER",
+        "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE",
+        "CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)",
     ]
     for statement in statements:
         db.execute(text(statement))

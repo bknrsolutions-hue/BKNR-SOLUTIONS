@@ -26,6 +26,7 @@ from app.database.models.processing import AuditLog
 from app.services.bill_accounting import post_contractor_source_charge
 # 🟢 Global Filters
 from app.utils.global_filters import get_global_filters
+from app.utils.hr_workforce import active_employee_on
 from app.utils.timezone import ist_now
 
 router = APIRouter(tags=["ENTERPRISE HR COMMAND CENTER"])
@@ -212,7 +213,7 @@ def hr_command_center(
         base_emp = secure_hr(db.query(EmployeeRegistration), EmployeeRegistration)
         base_att = secure_hr(db.query(DailyAttendance), DailyAttendance)
         base_stat = secure_hr(db.query(EmployeeStatutoryMaster), EmployeeStatutoryMaster)
-        active_status = func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE"
+        active_status = active_employee_on(EmployeeRegistration, today)
         inactive_status = func.upper(func.trim(EmployeeRegistration.status)) == "INACTIVE"
 
         # ---------------------------------------------------------
@@ -241,7 +242,10 @@ def hr_command_center(
         absent_today = max(0, active_employees - present_today)
         present_pct = (present_today / active_employees * 100) if active_employees > 0 else 0.0
 
-        contract_count = base_emp.filter(and_(active_status, func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR")).count()
+        contract_count = base_emp.filter(and_(
+            active_status,
+            func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"]),
+        )).count()
         perm_count = active_employees - contract_count
         contract_pct = (contract_count / active_employees * 100) if active_employees > 0 else 0.0
         perm_pct = (perm_count / active_employees * 100) if active_employees > 0 else 0.0
@@ -343,7 +347,10 @@ def hr_command_center(
         # ---------------------------------------------------------
         # 🌟 5. CONTRACTOR ANALYTICS
         # ---------------------------------------------------------
-        contractor_data = base_emp.filter(and_(active_status, func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR")).with_entities(
+        contractor_data = base_emp.filter(and_(
+            active_status,
+            func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"]),
+        )).with_entities(
             EmployeeRegistration.contractor_name,
             func.count(EmployeeRegistration.id).label("manpower"),
             func.sum(EmployeeRegistration.current_salary).label("salary")
@@ -490,6 +497,7 @@ def hr_command_center(
 
         attendance_trend_labels = []
         attendance_trend_data = []
+        attendance_trend_counts = []
         for i in range(29, -1, -1):
             loop_date = today - timedelta(days=i)
             loop_day_present = base_att.filter(DailyAttendance.duty_date == loop_date).with_entities(
@@ -498,6 +506,7 @@ def hr_command_center(
             day_pct = (loop_day_present / active_employees * 100) if active_employees > 0 else 0.0
             attendance_trend_labels.append(loop_date.strftime('%d-%b'))
             attendance_trend_data.append(round(day_pct, 1))
+            attendance_trend_counts.append(int(loop_day_present))
 
         # ---------------------------------------------------------
         # 🌟 ANALYTICS GROWTH METRICS
@@ -521,7 +530,12 @@ def hr_command_center(
         # ---------------------------------------------------------
         dir_query = base_emp
         if dept_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.department)) == dept_filter.upper())
-        if type_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == type_filter.upper())
+        if type_filter:
+            normalized_type = type_filter.upper()
+            if normalized_type in {"CONTRACT", "CONTRACTOR"}:
+                dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"]))
+            else:
+                dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == normalized_type)
         if status_filter: dir_query = dir_query.filter(func.upper(func.trim(EmployeeRegistration.status)) == status_filter.upper())
         directory_list = dir_query.order_by(EmployeeRegistration.employee_id).all()
 
@@ -564,6 +578,121 @@ def hr_command_center(
     # Leave masters are not connected to this dashboard yet; never show mock data.
     leave_module = {"cl": 0, "sl": 0, "el": 0, "pending_approvals": 0}
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "company_id": comp_code,
+            "production_for": f"Enterprise HR Suite ({today.strftime('%d-%b-%Y')})",
+            "actual_location": global_location,
+            "total_employees": total_employees,
+            "active_employees": active_employees,
+            "present_today": present_today,
+            "present_pct": round(present_pct, 1),
+            "absent_today": absent_today,
+            "half_day_today": half_day_today,
+            "ot_workers_today": ot_workers_today,
+            "ot_hours_today": round(ot_hours_today, 1),
+            "labor_cost_today": round(labor_cost_today, 0),
+            "cost_per_kg": round(cost_per_kg, 2),
+            "contract_pct": round(contract_pct, 1),
+            "perm_pct": round(perm_pct, 1),
+            "avg_salary": round(avg_salary, 0),
+            "employee_productivity": round(employee_productivity, 1),
+            "attrition_rate": round(attrition_rate, 1),
+            "productivity_data": productivity_data,
+            "salary_tiers": salary_tiers,
+            "gender_labels": gender_labels,
+            "gender_values": gender_values,
+            "blood_groups": blood_groups,
+            "attendance_trend_labels": attendance_trend_labels,
+            "attendance_trend_data": attendance_trend_data,
+            "attendance_trend_counts": attendance_trend_counts,
+            "new_joinings_month": new_joinings_month,
+            "resignations_month": resignations_month,
+            "increments_ytd": increments_ytd,
+            "heatmap_days": [d.strftime('%a %d') for d in past_7_days],
+            "heatmap_data": heatmap_data,
+            "shift_performance": shift_performance,
+            "dept_cost_center": dept_cost_center,
+            "contractor_analytics": contractor_analytics,
+            "ot_center": ot_center,
+            "pending_ot_count": pending_ot_count,
+            "pending_duty_count": pending_duty_count,
+            "pf_coverage_pct": round(pf_coverage_pct, 1),
+            "esi_coverage_pct": round(esi_coverage_pct, 1),
+            "pt_coverage_pct": round(pt_coverage_pct, 1),
+            "risk_no_pan": risk_no_pan,
+            "risk_no_aadhar": risk_no_aadhar,
+            "risk_no_bank": risk_no_bank,
+            "risk_no_photo": risk_no_photo,
+            "risk_no_mobile": risk_no_mobile,
+            "risk_no_email": risk_no_email,
+            "risk_missing_statutory": risk_missing_statutory,
+            "stat_pf_na": stat_pf_na,
+            "stat_missing_uan": stat_missing_uan,
+            "stat_missing_esi": stat_missing_esi,
+            "adv_issued": round(adv_issued, 0),
+            "adv_recovered": round(adv_recovered, 0),
+            "adv_balance": round(adv_balance, 0),
+            "adv_recovery_pct": round(adv_recovery_pct, 1),
+            "leave_module": leave_module,
+            "bday_7": [{
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "date": row.dob.isoformat() if row.dob else None,
+            } for row in bday_7],
+            "bday_30": [{
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "date": row.dob.isoformat() if row.dob else None,
+            } for row in bday_30],
+            "anniv_7": [{
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "date": row.joining_date.isoformat() if row.joining_date else None,
+            } for row in anniv_7],
+            "top_10_advances": [{
+                "id": row.id,
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "department": row.department,
+                "remaining_balance": round(float(row.remaining_balance or 0), 2),
+            } for row in top_10_advances],
+            "pending_ot_rows": [{
+                "id": row.id,
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "department": row.designation or "—",
+                "duty_date": row.duty_date.isoformat() if row.duty_date else None,
+                "shift_name": row.shift_name or "GENERAL",
+                "calculated_ot_hours": round(float(row.calculated_ot_hours or 0), 2),
+            } for row in pending_ot_rows],
+            "pending_duty_rows": [{
+                "id": row.id,
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "duty_date": row.duty_date.isoformat() if row.duty_date else None,
+                "shift_name": row.shift_name or "GENERAL",
+                "duty_status": row.duty_status or "PENDING",
+                "working_hours": round(float(row.working_hours or 0), 2),
+                "extra_hours": round(float(getattr(row, "extra_hours", 0) or 0), 2),
+                "suggested_duty_credit": float(getattr(row, "suggested_duty_credit", 1) or 1),
+                "calculated_ot_hours": round(float(row.calculated_ot_hours or 0), 2),
+                "is_punch_missing": bool(getattr(row, "is_punch_missing", False)),
+            } for row in pending_duty_rows],
+            "directory_list": [{
+                "employee_id": row.employee_id,
+                "employee_name": row.employee_name,
+                "department": row.department or "N/A",
+                "designation": row.designation or "N/A",
+                "employee_type": row.employee_type or "REGULAR",
+                "reporting_to": row.reporting_to or "—",
+                "mobile": row.mobile or "—",
+                "current_salary": round(float(row.current_salary or 0), 2),
+                "joining_date": row.joining_date.isoformat() if row.joining_date else None,
+                "status": row.status or "INACTIVE",
+            } for row in directory_list],
+        })
+
     return templates.TemplateResponse(
         request=request, name="dashboard/hr_command_center.html",
         context={
@@ -584,6 +713,7 @@ def hr_command_center(
             "blood_groups": blood_groups,
             "attendance_trend_labels": attendance_trend_labels,
             "attendance_trend_data": attendance_trend_data,
+            "attendance_trend_counts": attendance_trend_counts,
             "new_joinings_month": new_joinings_month,
             "resignations_month": resignations_month,
             "increments_ytd": increments_ytd,
@@ -661,13 +791,17 @@ async def get_hr_kpi_details(
         if dept_filter:
             emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.department)) == dept_filter.upper())
         if type_filter:
-            emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == type_filter.upper())
+            normalized_type = type_filter.upper()
+            if normalized_type in {"CONTRACT", "CONTRACTOR"}:
+                emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"]))
+            else:
+                emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.employee_type)) == normalized_type)
         if status_filter:
             emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.status)) == status_filter.upper())
 
         if kpi_type.upper() == "ACTIVE_STAFF": emp_q = emp_q.filter(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE")
-        elif kpi_type.upper() == "CONTRACT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", func.upper(func.trim(EmployeeRegistration.employee_type)) == "CONTRACTOR"))
-        elif kpi_type.upper() == "PERMANENT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", func.upper(func.trim(EmployeeRegistration.employee_type)) != "CONTRACTOR"))
+        elif kpi_type.upper() == "CONTRACT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"])))
+        elif kpi_type.upper() == "PERMANENT": emp_q = emp_q.filter(and_(func.upper(func.trim(EmployeeRegistration.status)) == "ACTIVE", ~func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"])))
         elif kpi_type.upper() == "ABSENT":
             today_punched_in = db.query(DailyAttendance.employee_id).filter(and_(DailyAttendance.company_id == comp_code, DailyAttendance.duty_date == today)).subquery()
             emp_q = emp_q.filter(and_(EmployeeRegistration.status == "ACTIVE", ~EmployeeRegistration.employee_id.in_(today_punched_in)))
@@ -740,8 +874,9 @@ def reject_ot_action(att_id: int, request: Request, db: Session = Depends(get_db
 def approve_duty_action(
     att_id: int,
     request: Request,
-    approved_duty_credit: float = Form(1.0),
+    approved_duty_credit: str = Form("1.0"),
     approved_ot_hours: float = Form(0.0),
+    mark_absent: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     comp_code = request.session.get("company_code")
@@ -753,10 +888,18 @@ def approve_duty_action(
         att_record = db.query(DailyAttendance).filter(DailyAttendance.id == att_id, DailyAttendance.company_id == comp_code).first()
         if att_record:
             allowed_credits = {1.0, 1.5, 2.0, 2.5, 3.0}
-            duty_credit = float(approved_duty_credit or 1.0)
-            if duty_credit not in allowed_credits:
-                duty_credit = 1.0
-            ot_hours = max(0.0, min(float(approved_ot_hours or 0.0), 16.0))
+            absent_selected = mark_absent or str(approved_duty_credit or "").strip().upper() == "A"
+            if absent_selected:
+                duty_credit = 0.0
+                ot_hours = 0.0
+            else:
+                try:
+                    duty_credit = float(approved_duty_credit or 1.0)
+                except (TypeError, ValueError):
+                    duty_credit = 1.0
+                if duty_credit not in allowed_credits:
+                    duty_credit = 1.0
+                ot_hours = max(0.0, min(float(approved_ot_hours or 0.0), 16.0))
 
             att_record.duty_status = "APPROVED"
             att_record.duty_approved_by = email
@@ -764,13 +907,15 @@ def approve_duty_action(
             att_record.approved_ot_hours = ot_hours
             att_record.ot_status = "APPROVED" if ot_hours > 0 else "REJECTED"
             att_record.ot_approved_by = email
+            if absent_selected:
+                att_record.duty_type = "ABSENT"
             employee = db.query(EmployeeRegistration).filter(
                 EmployeeRegistration.employee_id == att_record.employee_id,
                 EmployeeRegistration.company_id == comp_code,
             ).first()
             if (
                 employee
-                and str(employee.employee_type or "").upper() == "CONTRACT"
+                and str(employee.employee_type or "").strip().upper() in {"CONTRACT", "CONTRACTOR"}
                 and employee.contractor_name
                 and not att_record.journal_id
             ):

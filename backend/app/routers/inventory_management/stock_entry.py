@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct, and_
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from app.utils.timezone import ist_now
 from typing import Optional
 from app.services.floor_balance_sync import refresh_floor_balance
@@ -163,7 +163,8 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     # JSON API response for React
     if request.query_params.get("format") == "json":
         def ser(v):
-            if isinstance(v, (date, datetime)): return v.isoformat()
+            if isinstance(v, (date, datetime, time)):
+                return v.isoformat()
             return v
         rows_out = []
         for r in table_data:

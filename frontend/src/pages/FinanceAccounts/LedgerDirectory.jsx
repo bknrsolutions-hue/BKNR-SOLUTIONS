@@ -440,7 +440,7 @@ export default function LedgerDirectory({ theme }) {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Ledger
+                  Save
                 </button>
               </div>
             </form>

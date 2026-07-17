@@ -24,6 +24,8 @@ from app.database.models.processing import DeHeading, Peeling
 from app.database.models.users import Company
 from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
 from app.services.posting_engine import PostingEngineService
+from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.salary_advance_recovery import preview_monthly_advance_recovery
 from app.utils.cancel_math import signed_number
 from app.utils.timezone import ist_now
 
@@ -106,6 +108,7 @@ def company_context(db: Session, company_code: str):
         "address": company.address if company else "",
         "email": company.email if company else "",
         "gst_number": getattr(company, "gst_number", None) if company else None,
+        "mpeda_registration_code": company.mpeda_registration_code if company else "",
     }
 
 
@@ -163,7 +166,7 @@ def processing_salary_rows(db: Session, company_id: str, month: str, contractor_
         .filter(
             EmployeeRegistration.company_id == company_id,
             EmployeeRegistration.status == "ACTIVE",
-            EmployeeRegistration.employee_type == "CONTRACT",
+            func.upper(func.trim(EmployeeRegistration.employee_type)).in_(["CONTRACT", "CONTRACTOR"]),
             EmployeeRegistration.contractor_name == contractor_name,
         )
         .order_by(EmployeeRegistration.employee_name)
@@ -211,6 +214,8 @@ def processing_salary_rows(db: Session, company_id: str, month: str, contractor_
             else:
                 duty_credit = 3.0
 
+            if str(getattr(rec, "duty_type", "") or "").strip().upper() == "ABSENT":
+                duty_credit = 0.0
             if duty_credit > 1.0 and getattr(rec, "duty_status", "APPROVED") != "APPROVED":
                 duty_credit = 1.0
 
@@ -240,39 +245,37 @@ def processing_salary_rows(db: Session, company_id: str, month: str, contractor_
         earned_gross = (total_payable_days * per_day_rate) + ot_earnings
         tds_amount = earned_gross * float(emp.tds or 0) / 100
 
-        stat = (
-            db.query(EmployeeStatutoryMaster)
-            .filter(
-                EmployeeStatutoryMaster.employee_id == emp.employee_id,
-                EmployeeStatutoryMaster.company_id == company_id,
-                EmployeeStatutoryMaster.status == "ACTIVE",
-            )
-            .first()
+        stat = effective_statutory_record(
+            db,
+            company_id,
+            emp.employee_id,
+            date(year, month_no, days_in_month),
         )
 
         pf = esi = pt = lwf = 0.0
         if stat:
-            if stat.pf_applicable:
-                pf_wage = min(stat.pf_wage_limit, float(emp.basic_salary or 0))
-                pf = pf_wage * (stat.pf_employee_percent / 100)
-            if stat.esi_applicable and earned_gross <= stat.esi_wage_limit:
-                esi = earned_gross * (stat.esi_employee_percent / 100)
+            earned_salary_before_ot = total_payable_days * per_day_rate
+            earned_basic = (
+                earned_salary_before_ot * float(emp.basic_salary or 0.0) / base_gross
+                if base_gross > 0 else earned_salary_before_ot
+            )
+            statutory_values = calculate_pf_esi(
+                stat,
+                monthly_pf_wages=float(emp.basic_salary or 0.0),
+                earned_pf_wages=earned_basic,
+                monthly_esi_wages=base_gross,
+                earned_esi_wages=earned_gross,
+                employee_dob=emp.dob,
+                effective_date=date(year, month_no, 1),
+            )
+            pf = statutory_values["pf_employee"]
+            esi = statutory_values["esi_employee"]
             pt = stat.pt_amount or 0
             lwf = stat.lwf_employee_amount or 0
 
-        adv_rec = (
-            db.query(EmployeeSalaryAdvance)
-            .filter(
-                EmployeeSalaryAdvance.employee_id == emp.employee_id,
-                EmployeeSalaryAdvance.company_id == company_id,
-                EmployeeSalaryAdvance.status == "APPROVED",
-                EmployeeSalaryAdvance.remaining_balance > 0,
-                EmployeeSalaryAdvance.deduct_from <= month,
-                getattr(EmployeeSalaryAdvance, "deduct_to", month) >= month,
-            )
-            .first()
+        salary_advance, _ = preview_monthly_advance_recovery(
+            db, company_id, emp.employee_id, month
         )
-        salary_advance = min(adv_rec.monthly_deduction, adv_rec.remaining_balance) if adv_rec else 0
         net_pay = earned_gross - (pf + esi + pt + lwf + tds_amount + salary_advance)
 
         result.append(

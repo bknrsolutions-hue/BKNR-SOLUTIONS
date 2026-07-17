@@ -6,6 +6,8 @@
 /* ==========================================================
    1. THEME VARIABLES (DARK DEFAULT, LIGHT OVERRIDE)
 ========================================================== */
+@import url('/static/css/premium-kpi.css?v=3');
+
 :root {
     /* DEFAULT: DARK MODE */
     --primary: #3b82f6;
@@ -1366,4 +1368,58 @@ html[data-theme="light"] .total-row td {
         font-size: 10px !important;
         box-sizing: border-box !important;
     }
+}
+/* Application headers show only the page title and actions. */
+.header-titles > p,
+.header-title > p,
+.report-header > div:first-child > p,
+.dashboard-header > div:first-child > p,
+.page-header > div:first-child > p {
+    display: none !important;
+}
+
+/* SAP Fiori Morning Horizon-inspired global screen baseline. */
+@media screen {
+  :root:not([data-theme="dark"]),
+  :root[data-theme="light"] {
+    --primary: var(--ui-accent, #0070f2);
+    --accent: var(--ui-accent, #0070f2);
+    --focus-ring: rgb(0 112 242 / 25%);
+    --bg: #f5f6f7;
+    --card-bg: #ffffff;
+    --header-bg: #eef0f2;
+    --row-even: #fafafa;
+    --row-hover: #eaf3fc;
+    --border: #d5dadd;
+    --table-line: #e5e8ea;
+    --text: #1d2d3e;
+    --text-muted: #475e75;
+    --surface-panel: #ffffff !important;
+    --bg-app: #f5f6f7 !important;
+    --text-primary: #1d2d3e !important;
+    --text-secondary: #475e75 !important;
+    --border-light: #d5dadd !important;
+  }
+
+  html,
+  body,
+  button,
+  input,
+  select,
+  textarea,
+  table {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+  }
+
+  body { font-size: 14px !important; line-height: 1.4 !important; }
+  .header-title h1, .header-title h2, .header h1, .header > div > h2, .header-dash h2 { font-size: 20px !important; font-weight: 700 !important; }
+  .section-header, .section-head, .panel-header h3, .chart-title, .panel-title, .panel-head, .table-title { font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; }
+  label, .field label, .label, .strip-label, .card-meta .label, .kpi-title, .kpi-card h4, .ref-kpi-meta { font-size: 12px !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+  .subtitle, .helper-text, .meta, small { font-size: 12px !important; color: var(--text-muted) !important; }
+  input, select, textarea, button, .btn, .form-control { font-size: 13px !important; }
+  table, .main-table, .rm-table, #dataTable, .summary-table { font-size: 13px !important; }
+  table th, .main-table th, .rm-table th, #dataTable th, .summary-table th { font-size: 12px !important; font-weight: 700 !important; letter-spacing: 0 !important; background: var(--header-bg) !important; }
+  table td, .main-table td, .rm-table td, #dataTable td, .summary-table td { font-size: 13px !important; }
+  .kpi-value, .kpi-card .value, .card-meta .value, .ref-kpi-value, .strip-value { font-family: "72", "72full", Arial, Helvetica, sans-serif !important; font-size: 16px !important; font-weight: 700 !important; }
+  .card, .kpi-card, .ref-kpi-card, .att-scroll-card, .section, .panel, .chart-box, .table-wrap, .corp-panel { border-radius: 8px !important; box-shadow: 0 1px 2px rgb(34 53 72 / 10%) !important; }
 }

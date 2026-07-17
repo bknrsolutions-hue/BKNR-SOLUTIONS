@@ -1,6 +1,299 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Search, Printer, Download, RefreshCw, Edit2, Ban, Save, X } from 'lucide-react';
 import { formatFinancialYear } from '../../utils/financialYear';
+import './BatchSummaryReport.css';
+import './PeriodicSummaryReport.css';
+
+function Metric({ label, value, accent = false, success = false, purple = false, danger = false }) {
+  const modifiers = [
+    accent ? 'batch-metric-accent' : '',
+    success ? 'batch-metric-success' : '',
+    purple ? 'batch-metric-purple' : '',
+    danger ? 'batch-metric-danger' : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <div className={`batch-metric-card ${modifiers}`}>
+      <span className="batch-metric-label">{label}</span>
+      <strong className="batch-metric-value">{value}</strong>
+    </div>
+  );
+}
+
+function GradingSummaryCards({ rows = [], details = [], selectedBatch = '' }) {
+  const number = value => Number(value || 0).toLocaleString('en-IN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+
+  if (!rows.length) {
+    return <div className="batch-grading-empty">No grading summary available for this batch.</div>;
+  }
+
+  return (
+    <div className="batch-grading-grid">
+      {rows.map((row, index) => {
+        const batch = row.batch_number || selectedBatch;
+        const breakdown = details.filter(detail =>
+          String(detail.batch_number || detail.batch || '').toLowerCase() === String(batch).toLowerCase()
+          && String(detail.species || '').toLowerCase() === String(row.species || '').toLowerCase()
+          && String(detail.hoso_count || '').toLowerCase() === String(row.hoso_count || '').toLowerCase()
+          && String(detail.variety_name || detail.variety || '').toLowerCase() === String(row.variety || '').toLowerCase()
+        );
+        const detailTotal = breakdown.reduce((total, detail) => total + Number(detail.quantity || 0), 0);
+        const diffKg = Number(row.weight_diff_kg || 0);
+
+        return (
+          <article className="batch-grading-card" key={`${batch}-${row.species}-${row.variety}-${row.hoso_count}-${index}`}>
+            <header className="batch-grading-card-head">
+              <div>
+                <strong>Batch: {batch}</strong>
+                <span>{row.species || 'N/A'} | {row.variety || 'N/A'}</span>
+              </div>
+              <div className="batch-grading-count">
+                <small>HOSO Count</small>
+                <b>{row.hoso_count || '-'}</b>
+              </div>
+            </header>
+
+            <div className="batch-grading-card-body">
+              <div className="batch-grading-actual">
+                <span>Actual HOSO Qty:</span>
+                <b>{number(row.hoso_qty)} KG</b>
+              </div>
+              <div className="batch-grading-breakdown-title">Graded Details Breakdown</div>
+              <div className="batch-grading-breakdown">
+                <div className="batch-grading-breakdown-head"><span>Count</span><span>Quantity</span></div>
+                {breakdown.length ? breakdown.map((detail, detailIndex) => (
+                  <div className="batch-grading-breakdown-row" key={`${detail.graded_count}-${detailIndex}`}>
+                    <span>{detail.graded_count || '-'}</span>
+                    <b>{number(detail.quantity)} KG</b>
+                  </div>
+                )) : (
+                  <div className="batch-grading-no-details">No breakdown details available</div>
+                )}
+                {breakdown.length > 0 && (
+                  <div className="batch-grading-total"><span>Total:</span><b>{number(detailTotal)} KG</b></div>
+                )}
+              </div>
+            </div>
+
+            <footer className="batch-grading-card-foot">
+              <span>Workout: <b>{row.workout_count || '-'}</b></span>
+              <span>Yield: <b>{number(row.yield_pct)}%</b></span>
+              <span>Grading HOSO: <b>{number(row.grading_hoso_qty)}</b></span>
+              <span>Diff: <b className={diffKg < 0 ? 'is-negative' : 'is-positive'}>{number(diffKg)} ({number(row.weight_diff_pct)}%)</b></span>
+            </footer>
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
+function PeriodicKpi({ label, primary, secondary, icon, onClick }) {
+  return (
+    <button type="button" className="periodic-kpi-card" onClick={onClick}>
+      <span className="periodic-kpi-label">{label} <i className={`fa-solid ${icon}`} /></span>
+      <strong>{primary}</strong>
+      <small>{secondary}</small>
+    </button>
+  );
+}
+
+function PeriodicFlowPanel({ chart, sectionKey, onPointClick }) {
+  const [mode, setMode] = useState('day');
+  const [hiddenSeries, setHiddenSeries] = useState([]);
+  const [tooltip, setTooltip] = useState(null);
+  if (!chart) return null;
+
+  const colors = ['#2563eb', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444', '#0891b2'];
+  const availableSeries = (chart.series || []).filter(series => Array.isArray(series[mode]) && series[mode].length);
+  const allDatasets = availableSeries.length
+    ? availableSeries.map((series, index) => ({ name: series.name || 'N/A', color: colors[index % colors.length], points: series[mode] }))
+    : [{ name: chart.title || 'Flow', color: colors[0], points: chart[mode] || [] }];
+  const datasets = allDatasets.filter(dataset => !hiddenSeries.includes(dataset.name));
+  const labels = [...new Set(datasets.flatMap(dataset => dataset.points.map(point => point.label)))].sort();
+  const valuesByDataset = datasets.map(dataset => new Map(dataset.points.map(point => [point.label, Number(point.value || 0)])));
+  const maxValue = Math.max(1, ...datasets.flatMap(dataset => dataset.points.map(point => Number(point.value || 0))));
+  const width = 760;
+  const height = 185;
+  const pad = { left: 48, right: 15, top: 15, bottom: 34 };
+  const plotWidth = width - pad.left - pad.right;
+  const plotHeight = height - pad.top - pad.bottom;
+  const x = index => pad.left + (labels.length > 1 ? (plotWidth * index) / (labels.length - 1) : plotWidth / 2);
+  const y = value => pad.top + plotHeight - (Number(value || 0) / maxValue) * plotHeight;
+  const interactivePoints = datasets.flatMap((dataset, datasetIndex) => labels.map((label, index) => {
+    const value = valuesByDataset[datasetIndex].get(label) || 0;
+    return { dataset: dataset.name, color: dataset.color, label, value, x: x(index), y: y(value) };
+  })).filter(point => point.value > 0);
+  const summaryItems = chart.summary || [];
+  const takeGroup = (title, prefix, fallbackItems = []) => ({
+    title,
+    items: prefix === null
+      ? fallbackItems
+      : summaryItems
+        .filter(item => String(item.label || '').startsWith(prefix))
+        .map(item => ({ ...item, label: String(item.label || '').replace(prefix, '') })),
+  });
+  const productionForItems = summaryItems.filter(item => String(item.label || '').startsWith('Production For:'));
+  let summaryGroups;
+  if (sectionKey === 'sec-gate') {
+    summaryGroups = [
+      takeGroup('Entries', null, summaryItems.filter(item => !String(item.label || '').startsWith('Production For:'))),
+      takeGroup('Production For', 'Production For:'),
+    ];
+  } else if (['sec-deh', 'sec-pel'].includes(sectionKey)) {
+    summaryGroups = [takeGroup('Variety Wise', 'Variety:'), takeGroup('Contractor Wise', 'Contractor:'), takeGroup('Production For', 'Production For:')];
+  } else if (sectionKey === 'sec-stk-out') {
+    summaryGroups = [takeGroup('Variety Wise', 'Variety:'), takeGroup('Purpose Wise', 'Purpose:'), takeGroup('Production At', 'Production At:'), takeGroup('Production For', 'Production For:')];
+  } else if (productionForItems.length) {
+    summaryGroups = [
+      takeGroup('Summary', null, summaryItems.filter(item => !String(item.label || '').startsWith('Production For:'))),
+      takeGroup('Production For', 'Production For:'),
+    ];
+  } else {
+    summaryGroups = [takeGroup('Summary', null, summaryItems)];
+  }
+  summaryGroups = summaryGroups.filter(group => group.items.length);
+
+  return (
+    <div className="periodic-flow-panel no-print">
+      <div className="periodic-flow-head">
+        <div className="periodic-flow-title">
+          <i className="fa-solid fa-chart-line" />
+          <span>{chart.title || 'Flow Chart'}</span>
+          <small>FY {chart.fy || ''}</small>
+        </div>
+        <div className="periodic-flow-actions">
+          <button type="button" className={mode === 'day' ? 'is-active' : ''} onClick={() => setMode('day')}>Day</button>
+          <button type="button" className={mode === 'month' ? 'is-active' : ''} onClick={() => setMode('month')}>Month</button>
+        </div>
+      </div>
+
+      <div className="periodic-flow-grid">
+        <div className="periodic-flow-chart">
+          {allDatasets.length > 1 && (
+            <div className="periodic-flow-legend">
+              {allDatasets.map(dataset => (
+                <button
+                  type="button"
+                  key={dataset.name}
+                  className={hiddenSeries.includes(dataset.name) ? 'is-hidden' : ''}
+                  onClick={() => {
+                    setHiddenSeries(current => current.includes(dataset.name)
+                      ? current.filter(name => name !== dataset.name)
+                      : [...current, dataset.name]);
+                    setTooltip(null);
+                  }}
+                  title={`${hiddenSeries.includes(dataset.name) ? 'Show' : 'Hide'} ${dataset.name}`}
+                >
+                  <i style={{ background: dataset.color }} />{dataset.name}
+                </button>
+              ))}
+            </div>
+          )}
+          {labels.length ? (
+            <svg
+              viewBox={`0 0 ${width} ${height}`}
+              role="img"
+              aria-label={`${chart.title || 'Periodic'} trend chart`}
+              onMouseMove={event => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                const pointerX = ((event.clientX - rect.left) / rect.width) * width;
+                const pointerY = ((event.clientY - rect.top) / rect.height) * height;
+                const nearest = interactivePoints.reduce((best, point) => {
+                  const distance = Math.hypot(point.x - pointerX, point.y - pointerY);
+                  return !best || distance < best.distance ? { ...point, distance } : best;
+                }, null);
+                if (nearest && nearest.distance <= 24) {
+                  setTooltip({ ...nearest, left: `${(nearest.x / width) * 100}%`, top: `${(nearest.y / height) * 100}%` });
+                } else {
+                  setTooltip(null);
+                }
+              }}
+              onMouseLeave={() => setTooltip(null)}
+            >
+              {[0, 1, 2, 3].map(step => {
+                const gridY = pad.top + (plotHeight * step) / 3;
+                const gridValue = maxValue - (maxValue * step) / 3;
+                return (
+                  <g key={step}>
+                    <line x1={pad.left} x2={width - pad.right} y1={gridY} y2={gridY} className="periodic-chart-gridline" />
+                    <text x="4" y={gridY + 3} className="periodic-chart-axis">{gridValue >= 10 ? gridValue.toFixed(0) : gridValue.toFixed(1)}</text>
+                  </g>
+                );
+              })}
+              {datasets.map((dataset, datasetIndex) => {
+                const points = labels.map((label, index) => `${x(index)},${y(valuesByDataset[datasetIndex].get(label) || 0)}`).join(' ');
+                return (
+                  <g key={dataset.name}>
+                    <polyline points={points} fill="none" stroke={dataset.color} strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
+                    {labels.map((label, index) => {
+                      const value = valuesByDataset[datasetIndex].get(label) || 0;
+                      return value > 0 ? (
+                        <g
+                          key={label}
+                          className="periodic-chart-point"
+                          role="button"
+                          tabIndex="0"
+                          aria-label={`Filter ${mode}: ${label}`}
+                          onClick={() => onPointClick?.(mode, label)}
+                          onKeyDown={event => {
+                            if (event.key === 'Enter' || event.key === ' ') onPointClick?.(mode, label);
+                          }}
+                        >
+                          <circle cx={x(index)} cy={y(value)} r="10" fill="transparent" />
+                          <circle cx={x(index)} cy={y(value)} r="3.5" fill="white" stroke={dataset.color} strokeWidth="2" />
+                          <title>{`${label}: ${value.toLocaleString('en-IN')} ${chart.unit || ''} — click to filter`}</title>
+                        </g>
+                      ) : null;
+                    })}
+                  </g>
+                );
+              })}
+              {labels.map((label, index) => {
+                const interval = Math.max(1, Math.ceil(labels.length / 8));
+                if (index !== 0 && index !== labels.length - 1 && index % interval !== 0) return null;
+                return <text key={label} x={x(index)} y={height - 10} textAnchor="middle" className="periodic-chart-axis">{label}</text>;
+              })}
+            </svg>
+          ) : (
+            <div className="periodic-flow-empty">No flow data for selected filters.</div>
+          )}
+          {tooltip && (
+            <div className="periodic-chart-tooltip" style={{ left: tooltip.left, top: tooltip.top }}>
+              <span><i style={{ background: tooltip.color }} />{tooltip.dataset}</span>
+              <strong>{tooltip.label}</strong>
+              <b>{tooltip.value.toLocaleString('en-IN', { maximumFractionDigits: 2 })} {chart.unit || ''}</b>
+              <small>Click point to filter</small>
+            </div>
+          )}
+        </div>
+
+        <aside className="periodic-flow-summary">
+          <div className="periodic-flow-summary-title">Summary</div>
+          <div className={`periodic-flow-summary-list periodic-summary-groups-${Math.min(summaryGroups.length, 4)}`}>
+            {summaryGroups.length ? summaryGroups.map(group => (
+              <div className="periodic-flow-summary-group" key={group.title}>
+                <div className="periodic-flow-group-title">{group.title}</div>
+                <div className="periodic-flow-group-list">
+                  {group.items.map((item, index) => (
+                    <div className="periodic-flow-summary-item" key={`${item.label}-${index}`}>
+                      <span>{String(item.label || 'N/A').trim()}</span>
+                      <strong>{Number(item.value || 0).toLocaleString('en-IN', { maximumFractionDigits: Number(item.value || 0) >= 10 ? 0 : 1 })} {item.unit || chart.unit || ''}</strong>
+                      {item.extra && <small>{item.extra}</small>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )) : <div className="periodic-flow-empty">No summary data.</div>}
+          </div>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
 export default function ReportViewer({ reportId, activeRoute }) {
   const [loading, setLoading] = useState(false);
@@ -34,7 +327,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (reportId === 'report_periodic_summary') setActiveTab('opening_floor_balance');
+    if (reportId === 'report_periodic_summary') setActiveTab('closing_floor_balance');
     else if (reportId === 'report_batch_summary') setActiveTab('grading_summary');
   }, [reportId]);
 
@@ -471,7 +764,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   const handleExport = (type) => {
     if (reportId === 'report_periodic_summary' || reportId === 'report_batch_summary') {
-      const table = document.querySelector('.report-viewer-card .card table');
+      const table = document.querySelector('.periodic-table-card table, .batch-table-card table, .batch-reconciliation-card table, .report-viewer-card .card table');
       if (!table) {
         alert('No active report table is available to export.');
         return;
@@ -593,69 +886,82 @@ export default function ReportViewer({ reportId, activeRoute }) {
   
   // 1. BATCH SUMMARY TEMPLATE (report_batch_summary)
   if (reportId === 'report_batch_summary') {
+    const card = data?.card || {};
+    const qty = value => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const money = value => Number(value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', minimumFractionDigits: 2 });
+    const grossProduction = (data?.rows?.production || []).reduce((total, row) => {
+      const netQty = Number(row.production_qty || 0);
+      const glazeText = String(row.glaze || '').trim().toUpperCase();
+      const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+      const glazePct = match ? Number(match[1]) : 0;
+      return total + (glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty);
+    }, 0);
+    const sections = [
+      { id: 'grading_summary', title: 'Grading Summary' },
+      ...(prodType === 'RMP'
+        ? [{ id: 'gate', title: '1. Gate Entry' }, { id: 'rmp', title: '2. Raw Material Purchasing' }]
+        : [{ id: 'reprocess', title: '1. Re-Processing Input' }]),
+      { id: 'deheading', title: '3. De-Heading Process' },
+      { id: 'grading_details', title: '4.1 Grading Breakdown Details' },
+      { id: 'peeling', title: '5. Peeling Process' },
+      { id: 'soaking', title: '6. Soaking Process' },
+      { id: 'production', title: '7. Production Packing' },
+      { id: 'stock', title: '8. Stock Inventory Log' },
+      { id: 'hoso_floor_balance', title: '9. Floor Balance', danger: true },
+    ];
+
     return (
-      <div className="report-viewer-card">
-        {renderHeader('Batch Summary Dashboard')}
+      <div className="report-viewer-card batch-summary-report">
+        {renderHeader('Batch Wise Analysis')}
         {renderBatchSummaryFilters()}
         
         {loading && renderLoader()}
         {error && renderError()}
         
-        {data && (
-          <div style={{ marginTop: '20px' }}>
-            {/* Batch Header Summary Card */}
-            <div style={kpiGridStyle}>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-dash)' }}>
-                <span style={kpiTitleStyle}>Supplier</span>
-                <span style={kpiValueStyle}>{data.card?.supplier_name || 'N/A'}</span>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-ops)' }}>
-                <span style={kpiTitleStyle}>Purchasing Location</span>
-                <span style={kpiValueStyle}>{data.card?.purchasing_location || 'N/A'}</span>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-rep)' }}>
-                <span style={kpiTitleStyle}>Vehicle / Challan</span>
-                <span style={kpiValueStyle}>{data.card?.vehicle_number || 'N/A'} / {data.card?.challan_number || 'N/A'}</span>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-fin)' }}>
-                <span style={kpiTitleStyle}>Produced Qty (Kg)</span>
-                <span style={kpiValueStyle}>{data.card?.production_qty?.toFixed(2) || '0.00'}</span>
-              </div>
+        {data && !selectedBatch && !loading && (
+          <div className="batch-summary-empty">
+            Financial year, production company and batch number select chesi Batch Summary view cheyyandi.
+          </div>
+        )}
+
+        {data && selectedBatch && (
+          <div className="batch-summary-content">
+            <div className="batch-section-title batch-section-title-first">Batch Matrix Metrics</div>
+            <div className="batch-matrix-grid">
+              <Metric label="Batch Number" value={selectedBatch} accent />
+              <Metric label="Supplier | Location" value={`${card.supplier_name || 'N/A'} | ${card.purchasing_location || 'N/A'}`} />
+              <Metric label="Receiving At | Vehicle" value={`${card.receiving_center || 'N/A'} | ${card.vehicle_number || 'N/A'}`} />
+              <Metric label="Boxes | Challan | Gatepass" value={`${card.total_boxes || 0} Box | ${card.challan_number || 'N/A'} | ${card.gate_pass_number || 'N/A'}`} />
+              <Metric label="RM Total Qty / Amount" value={`${qty(card.rmp_qty)} KG | ${money(card.rmp_amount)}`} success />
+              <Metric label="De-Heading Qty / Amount" value={`${qty(card.deheading_qty)} KG | ${money(card.deheading_amount)}`} />
+              <Metric label="Grading | Peeling Qty / Amount" value={`${qty(card.grading_qty)} K | ${qty(card.peeling_qty)} K | ${money(card.peeling_amount)}`} />
+              <Metric label="Soaking | Chem | Salt" value={`${qty(card.soaking_qty)} KG | C: ${qty(card.chemical_qty)} | S: ${qty(card.salt_qty)}`} />
+              <Metric label="Gross Prod | Net Prod | Stock Qty" value={`${qty(grossProduction)} G | ${qty(card.production_qty)} N | ${qty(card.stock_qty)} S`} purple />
+              <Metric label="Stock Inventory Value" value={money(card.stock_amount)} success />
+              <Metric label="Floor Balance Qty | Value" value={`${qty(card.floor_qty)} KG | ${money(card.floor_amount)}`} danger />
             </div>
 
-            {/* Subtotals & Value Metrics */}
-            <div style={kpiGridStyle}>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-fin)' }}>
-                <span style={kpiTitleStyle}>RMP Material Purchased</span>
-                <span style={kpiValueStyle}>{data.card?.rmp_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.rmp_amount?.toLocaleString('en-IN') || '0'})</span>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-rep)' }}>
-                <span style={kpiTitleStyle}>WIP Floor Balance</span>
-                <span style={kpiValueStyle}>{data.card?.floor_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.floor_amount?.toLocaleString('en-IN') || '0'})</span>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid var(--corp-dash)' }}>
-                <span style={kpiTitleStyle}>CS In-Stock Inventory</span>
-                <span style={kpiValueStyle}>{data.card?.stock_qty?.toFixed(2) || '0.00'} Kg (₹ {data.card?.stock_amount?.toLocaleString('en-IN') || '0'})</span>
-              </div>
+            <div className="batch-reconciliation-card">
+              <div className="batch-reconciliation-title">Reconciliation Summary</div>
+              {renderSummaryTabTable('reconciliation', { compact: true })}
             </div>
 
-            {/* Stages Tab Buttons */}
-            <div style={tabsRowStyle}>
-              {['grading_summary', 'gate', 'rmp', 'reprocess', 'deheading', 'grading_details', 'peeling', 'soaking', 'production', 'stock', 'hoso_floor_balance', 'reconciliation'].map(tab => (
-                <button
-                  key={tab}
-                  style={activeTab === tab ? activeTabStyle : inactiveTabStyle}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab.replaceAll('_', ' ').toUpperCase()}
-                </button>
-              ))}
-            </div>
-
-            {/* Tab Data Table Rendering */}
-            <div style={{ marginTop: '16px' }} className="card">
-              {renderSummaryTabTable(activeTab)}
-            </div>
+            {sections.map(section => (
+              <section className="batch-process-section" key={section.id}>
+                <div className={`batch-section-title${section.danger ? ' batch-section-danger' : ''}`}>{section.title}</div>
+                {section.id === 'grading_summary' ? (
+                  <GradingSummaryCards
+                    rows={data.rows?.grading_summary || []}
+                    details={data.rows?.grading_details || []}
+                    selectedBatch={selectedBatch}
+                  />
+                ) : (
+                  <div className="batch-table-card">
+                    {renderSummaryTabTable(section.id, { compact: true })}
+                  </div>
+                )}
+              </section>
+            ))}
           </div>
         )}
       </div>
@@ -664,116 +970,116 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   // 2. PERIODIC SUMMARY TEMPLATE (report_periodic_summary)
   if (reportId === 'report_periodic_summary') {
+    const card = data?.card || {};
+    const quantity = value => Number(value || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const currency = value => Number(value || 0).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
+    const periodicSections = [
+      { id: 'closing_floor_balance', chartKey: 'sec-close-floor', label: 'Closing Floor Balance', icon: 'fa-balance-scale' },
+      { id: 'opening_floor_balance', chartKey: 'sec-open-floor', label: 'Opening Floor Balance', icon: 'fa-hourglass-start' },
+      { id: 'gate', chartKey: 'sec-gate', label: 'Gate Entry', icon: 'fa-door-open' },
+      ...(prodType === 'RMP'
+        ? [{ id: 'rmp', chartKey: 'sec-rmp', label: 'Raw Material Purchasing', icon: 'fa-cart-shopping' }]
+        : [{ id: 'reprocess', chartKey: 'sec-rep', label: 'Reprocess', icon: 'fa-recycle' }]),
+      { id: 'rmp_variety_summary', chartKey: 'sec-rmp-sum1', label: 'RM Variety Summary', icon: 'fa-chart-line' },
+      { id: 'supplier_summary', chartKey: 'sec-rmp-sum2', label: 'Supplier Summary', icon: 'fa-users' },
+      { id: 'reconciliation', chartKey: 'sec-recon', label: 'Reconciliation', icon: 'fa-compress' },
+      { id: 'grading_summary', chartKey: 'sec-grading-cards-wrapper', label: 'Grading Card View', icon: 'fa-layer-group' },
+      { id: 'deheading', chartKey: 'sec-deh', label: 'Deheading', icon: 'fa-scissors' },
+      { id: 'grading_details', chartKey: 'sec-grd', label: 'Grading Output', icon: 'fa-layer-group' },
+      { id: 'peeling', chartKey: 'sec-pel', label: 'Peeling', icon: 'fa-hands' },
+      { id: 'soaking', chartKey: 'sec-soak', label: 'Soaking', icon: 'fa-water' },
+      { id: 'production', chartKey: 'sec-prod', label: 'Production Packing', icon: 'fa-box-open' },
+      { id: 'stock_in', chartKey: 'sec-stk', label: 'Stock IN', icon: 'fa-warehouse' },
+      { id: 'stock_out', chartKey: 'sec-stk-out', label: 'Stock OUT', icon: 'fa-truck-ramp-box' },
+    ];
+    const currentSection = periodicSections.find(section => section.id === activeTab) || periodicSections[0];
+    const sourceRows = activeTab === 'opening_floor_balance'
+      ? (data?.opening_floor_balance || [])
+      : activeTab === 'closing_floor_balance'
+        ? (data?.closing_floor_balance || [])
+        : activeTab === 'stock_in'
+          ? (data?.rows?.stock || []).filter(row => String(row.cargo_movement_type || '').toUpperCase() === 'IN')
+          : activeTab === 'stock_out'
+            ? (data?.rows?.stock || []).filter(row => String(row.cargo_movement_type || '').toUpperCase() === 'OUT')
+            : (data?.rows?.[activeTab] || []);
+
     return (
-      <div className="report-viewer-card">
+      <div className="report-viewer-card periodic-summary-report">
         {renderHeader('Periodic Activity Summary')}
-        {renderPeriodicFilters()}
 
         {loading && renderLoader()}
         {error && renderError()}
 
         {data && (
-          <div style={{ marginTop: '20px' }}>
-            {/* KPI Cards */}
-            <div style={kpiGridStyle}>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #10b981' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>RM Purchased Qty</div>
-                  <div style={kpiValueStyle}>
-                    {data.card?.rmp_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
-                  </div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
-                  <i className="fa-solid fa-truck-ramp-box"></i>
-                </div>
-              </div>
-
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #3b82f6' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>RM Purchase Cost</div>
-                  <div style={kpiValueStyle}>
-                    ₹ {data.card?.rmp_amount?.toLocaleString('en-IN') || '0'}
-                  </div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                  <i className="fa-solid fa-money-bill-wave"></i>
-                </div>
-              </div>
-
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #8b5cf6' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>Processed & Graded</div>
-                  <div style={kpiValueStyle}>
-                    {data.card?.grd_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
-                  </div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
-                  <i className="fa-solid fa-filter"></i>
-                </div>
-              </div>
-
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #6366f1' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>Produced Yield</div>
-                  <div style={kpiValueStyle}>
-                    {data.card?.production_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span>
-                  </div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
-                  <i className="fa-solid fa-industry"></i>
-                </div>
-              </div>
+          <div className="periodic-summary-content">
+            <div className="periodic-kpi-grid no-print">
+              <PeriodicKpi label="Opening Floor Bal" primary={`${quantity(card.floor_opening_qty)} KG`} secondary={currency(card.floor_opening_val)} icon="fa-hourglass-start" onClick={() => setActiveTab('opening_floor_balance')} />
+              <PeriodicKpi label="Gate Boxes" primary={quantity(card.gate_boxes)} secondary="Boxes Received" icon="fa-door-open" onClick={() => setActiveTab('gate')} />
+              {prodType === 'RMP' ? (
+                <PeriodicKpi label="RM Purchasing" primary={`${quantity(card.rmp_qty)} KG`} secondary={currency(card.rmp_amount)} icon="fa-cart-shopping" onClick={() => setActiveTab('rmp')} />
+              ) : (
+                <PeriodicKpi label="Reprocess" primary={`${quantity(card.rep_in)} KG`} secondary={`Out: ${quantity(card.rep_out)} KG`} icon="fa-recycle" onClick={() => setActiveTab('reprocess')} />
+              )}
+              <PeriodicKpi label="Deheading" primary={`${quantity(card.deh_hoso)} KG`} secondary={`HLSO: ${quantity(card.deh_hlso)} KG`} icon="fa-scissors" onClick={() => setActiveTab('deheading')} />
+              <PeriodicKpi label="Grading Output" primary={`${quantity(card.grd_qty)} KG`} secondary="Graded Qty" icon="fa-layer-group" onClick={() => setActiveTab('grading_details')} />
+              <PeriodicKpi label="Peeling Input" primary={`${quantity(card.pel_hlso)} KG`} secondary={`Peeled: ${quantity(card.pel_peeled)} KG`} icon="fa-hands" onClick={() => setActiveTab('peeling')} />
+              <PeriodicKpi label="Soaking Input" primary={`${quantity(card.soaking_qty)} KG`} secondary={`Chem ${quantity(card.chemical_qty)} | Salt ${quantity(card.salt_qty)}`} icon="fa-water" onClick={() => setActiveTab('soaking')} />
+              <PeriodicKpi label="Net Production" primary={`${quantity(card.production_qty)} KG`} secondary="Packed Output" icon="fa-box-open" onClick={() => setActiveTab('production')} />
+              <PeriodicKpi label="Stock Vault Asset" primary={`${quantity(card.stock_qty)} KG`} secondary={`Out: ${quantity(card.stock_out_qty)} KG`} icon="fa-warehouse" onClick={() => setActiveTab('stock_in')} />
+              <PeriodicKpi label="Closing Floor Bal" primary={`${quantity(card.floor_closing_qty)} KG`} secondary={currency(card.floor_closing_val)} icon="fa-balance-scale" onClick={() => setActiveTab('closing_floor_balance')} />
             </div>
 
-            <div style={kpiGridStyle}>
-               <div style={{ ...kpiCardStyle, borderLeft: '4px solid #f97316' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>Opening WIP Floor Balance</div>
-                  <div style={kpiValueStyle}>{data.card?.floor_opening_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
-                  <div style={kpiSubValueStyle}>₹ {data.card?.floor_opening_val?.toLocaleString('en-IN') || '0'}</div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(249, 115, 22, 0.1)', color: '#f97316' }}>
-                   <i className="fa-solid fa-warehouse"></i>
-                </div>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #f59e0b' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>Closing WIP Floor Balance</div>
-                  <div style={kpiValueStyle}>{data.card?.floor_closing_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
-                  <div style={kpiSubValueStyle}>₹ {data.card?.floor_closing_val?.toLocaleString('en-IN') || '0'}</div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
-                  <i className="fa-solid fa-warehouse"></i>
-                </div>
-              </div>
-              <div style={{ ...kpiCardStyle, borderLeft: '4px solid #64748b' }}>
-                <div style={kpiMetaStyle}>
-                  <div style={kpiLabelStyle}>Current CS Inventory</div>
-                  <div style={kpiValueStyle}>{data.card?.stock_qty?.toFixed(2) || '0.00'}<span style={kpiUnitStyle}>Kg</span></div>
-                  <div style={kpiSubValueStyle}>₹ {data.card?.stock_amount?.toLocaleString('en-IN') || '0'}</div>
-                </div>
-                <div style={{ ...kpiIconWrapperStyle, background: 'rgba(100, 116, 139, 0.1)', color: '#64748b' }}>
-                  <i className="fa-solid fa-cubes-stacked"></i>
-                </div>
-              </div>
+            {renderPeriodicFilters()}
+
+            <div className="periodic-row-count no-print">
+              {sourceRows.length.toLocaleString('en-IN')} operational lines found
             </div>
 
-            {/* Stages Tab Buttons */}
-            <div style={tabsRowStyle}>
-              {['opening_floor_balance', 'closing_floor_balance', 'rmp_variety_summary', 'supplier_summary', 'reconciliation', 'grading_summary', 'gate', 'rmp', 'reprocess', 'deheading', 'grading_details', 'peeling', 'soaking', 'production', 'stock_in', 'stock_out'].map(tab => (
-                <button
-                  key={tab}
-                  style={activeTab === tab ? activeTabStyle : inactiveTabStyle}
-                  onClick={() => setActiveTab(tab)}
-                >
-                  {tab.replaceAll('_', ' ').toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <div className="periodic-workspace-react">
+              <aside className="periodic-section-menu no-print">
+                <div className="periodic-menu-title">Periodic Sections</div>
+                {periodicSections.map(section => (
+                  <button
+                    type="button"
+                    key={section.id}
+                    className={activeTab === section.id ? 'is-active' : ''}
+                    onClick={() => { setActiveTab(section.id); setSearchQuery(''); }}
+                  >
+                    <i className={`fa-solid ${section.icon}`} />
+                    <span>{section.label}</span>
+                  </button>
+                ))}
+              </aside>
 
-            {/* Tab Data Table Rendering */}
-            <div style={{ marginTop: '16px' }} className="card">
-              {renderSummaryTabTable(activeTab)}
+              <main className="periodic-section-content">
+                <div className="periodic-section-heading">
+                  <span><i className={`fa-solid ${currentSection.icon}`} /> {currentSection.label}</span>
+                </div>
+                <PeriodicFlowPanel
+                  chart={data.flow_charts?.[currentSection.chartKey]}
+                  sectionKey={currentSection.chartKey}
+                  onPointClick={(chartMode, label) => {
+                    if (chartMode === 'month') {
+                      setDateFilterType('month');
+                      setSelectedMonth(label);
+                      setFromDate('');
+                      setToDate('');
+                    } else {
+                      setDateFilterType('between');
+                      setFromDate(label);
+                      setToDate(label);
+                      setSelectedMonth('');
+                    }
+                  }}
+                />
+                {activeTab === 'grading_summary' ? (
+                  <GradingSummaryCards rows={data.rows?.grading_summary || []} details={data.rows?.grading_details || []} selectedBatch={selectedBatch} />
+                ) : (
+                  <div className="periodic-table-card">
+                    {renderSummaryTabTable(activeTab, { compact: true })}
+                  </div>
+                )}
+              </main>
             </div>
           </div>
         )}
@@ -1094,7 +1400,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   function renderPeriodicFilters() {
     return (
-      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row periodic-summary-filters no-print" style={filtersWrapperStyle}>
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Financial Year</label>
           <select className="form-control" style={selectControlStyle} value={selectedFy} onChange={e => setSelectedFy(e.target.value)}>
@@ -1103,7 +1409,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
           </select>
         </div>
         <div style={filterBoxStyle}>
-          <label style={filterLabelStyle}>Filter Type</label>
+          <label style={filterLabelStyle}>Date Filter</label>
           <select
             className="form-control"
             style={selectControlStyle}
@@ -1172,7 +1478,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
         </div>
 
         <div style={filterBoxStyle}>
-          <label style={filterLabelStyle}>Production Source</label>
+          <label style={filterLabelStyle}>Process Type</label>
           <select
             className="form-control"
             style={selectControlStyle}
@@ -1182,22 +1488,58 @@ export default function ReportViewer({ reportId, activeRoute }) {
               setSelectedBatch('');
             }}
           >
-            <option value="RMP">RMP Purchased Batches</option>
-            <option value="REPROCESS">Reprocess Batches</option>
+            <option value="RMP">RMP (Fresh)</option>
+            <option value="REPROCESS">Re-Processing</option>
           </select>
         </div>
 
         <div style={filterBoxStyle}>
-          <label style={filterLabelStyle}>Select Batch No</label>
+          <label style={filterLabelStyle}>Batch Number</label>
           <select
             className="form-control"
             style={selectControlStyle}
             value={selectedBatch}
             onChange={e => setSelectedBatch(e.target.value)}
           >
-            <option value="">SELECT BATCH (ALL)</option>
+            <option value="">All Batches</option>
             {data?.batches?.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
+        </div>
+
+        <div style={filterBoxStyle}>
+          <label style={filterLabelStyle}>Search Filters</label>
+          <input
+            type="search"
+            className="form-control"
+            style={selectControlStyle}
+            value={searchQuery}
+            onChange={event => setSearchQuery(event.target.value)}
+            placeholder="Batch, brand, grade..."
+          />
+        </div>
+
+        <div className="periodic-filter-actions">
+          <button type="button" className="periodic-filter-button" onClick={fetchData}>
+            <RefreshCw size={11} /> Filter Matrix
+          </button>
+          <button
+            type="button"
+            className="periodic-reset-button"
+            onClick={() => {
+              setSelectedFy('');
+              setDateFilterType('today');
+              setSelectedMonth('');
+              setFromDate('');
+              setToDate('');
+              setSelectedCompany('');
+              setSelectedProductionAt('');
+              setProdType('RMP');
+              setSelectedBatch('');
+              setSearchQuery('');
+            }}
+          >
+            Reset
+          </button>
         </div>
       </div>
     );
@@ -1205,7 +1547,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   function renderBatchSummaryFilters() {
     return (
-      <div className="erp-horizontal-filter-row" style={filtersWrapperStyle}>
+      <div className="erp-horizontal-filter-row batch-summary-filters" style={filtersWrapperStyle}>
         <div style={filterBoxStyle}>
           <label style={filterLabelStyle}>Financial Year</label>
           <select
@@ -1232,7 +1574,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
         </div>
 
         <div style={filterBoxStyle}>
-          <label style={filterLabelStyle}>Production Source</label>
+          <label style={filterLabelStyle}>Process Type</label>
           <select
             className="form-control"
             style={selectControlStyle}
@@ -1242,13 +1584,13 @@ export default function ReportViewer({ reportId, activeRoute }) {
               setSelectedBatch('');
             }}
           >
-            <option value="RMP">RMP Purchased Batches</option>
-            <option value="REPROCESS">Reprocess Batches</option>
+            <option value="RMP">RMP (Fresh)</option>
+            <option value="REPROCESS">Re-Processing</option>
           </select>
         </div>
 
         <div style={filterBoxStyle}>
-          <label style={filterLabelStyle}>Target Batch No</label>
+          <label style={filterLabelStyle}>Batch Number</label>
           <select
             className="form-control"
             style={selectControlStyle}
@@ -1259,13 +1601,30 @@ export default function ReportViewer({ reportId, activeRoute }) {
             {data?.batches?.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
         </div>
+
+        <div className="batch-filter-actions">
+          <button type="button" className="batch-filter-button" onClick={fetchData}>Filter</button>
+          <button
+            type="button"
+            className="batch-reset-button"
+            onClick={() => {
+              setSelectedFy('');
+              setSelectedCompany('');
+              setProdType('RMP');
+              setSelectedBatch('');
+              setSearchQuery('');
+            }}
+          >
+            Reset
+          </button>
+        </div>
       </div>
     );
   }
 
   // RENDER DYNAMIC TABLES FOR SUB-SECTIONS (BATCH SUMMARY, PERIODIC SUMMARY)
 
-  function renderSummaryTabTable(tab) {
+  function renderSummaryTabTable(tab, options = {}) {
     if (!data || !data.rows) return null;
     const sourceRows = data.rows;
     const aggregateRmp = (bySupplier = false) => {
@@ -1449,11 +1808,24 @@ export default function ReportViewer({ reportId, activeRoute }) {
       }
     };
 
-    const schema = (reportId === 'report_batch_summary' ? batchSchemas[tab] : null) || schemas[tab] || schemas.gate;
+    const periodicSchemas = {
+      opening_floor_balance: {
+        headers: ['Sl', 'Batch Number', 'Species', 'Location / Peeling At', 'Variety', 'Count / Grade', 'Opening Qty (KG)', 'Value'],
+        keys: ['__sl', '__batch', 'species', 'peeling_at', 'variety', 'count', 'available_qty', 'value'],
+        formats: { available_qty: 'number', value: 'currency' }
+      },
+      closing_floor_balance: {
+        headers: ['Sl', 'Batch Number', 'Species', 'Location / Peeling At', 'Variety', 'Count / Grade', 'Available Qty (KG)', 'Value'],
+        keys: ['__sl', '__batch', 'species', 'peeling_at', 'variety', 'count', 'available_qty', 'value'],
+        formats: { available_qty: 'number', value: 'currency' }
+      }
+    };
+
+    const schema = (reportId === 'report_batch_summary' ? batchSchemas[tab] : periodicSchemas[tab]) || schemas[tab] || schemas.gate;
 
     return (
-      <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <div className={`summary-table-block summary-table-${tab}`}>
+        {!options.compact && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
             {tab.replaceAll('_', ' ')} DETAILS
           </h4>
@@ -1467,14 +1839,22 @@ export default function ReportViewer({ reportId, activeRoute }) {
               style={searchInputStyle}
             />
           </div>
-        </div>
+        </div>}
 
-        <div className="table-responsive">
-          <table className="bknr-table" style={{ minWidth: Math.max(900, schema.headers.length * 105) }}>
+        <div className="table-responsive summary-table-wrap">
+          <table
+            className="bknr-table summary-data-table"
+            style={{ minWidth: options.compact ? Math.max(700, schema.headers.length * 82) : Math.max(900, schema.headers.length * 105) }}
+          >
             <thead>
               <tr>
                 {schema.headers.map((head, index) => (
-                  <th key={index}>{head}</th>
+                  <th
+                    key={index}
+                    className={schema.keys[index] === '__sl' ? 'text-center' : schema.formats?.[schema.keys[index]] ? 'text-right' : 'text-left'}
+                  >
+                    {head}
+                  </th>
                 ))}
               </tr>
             </thead>
@@ -1487,6 +1867,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
                       let value = row[k];
                       if (k === '__sl') value = rIdx + 1;
                       else if (k === '__batch') value = row.batch_number || row.batch || '';
+                      else if (k === 'peeling_at' && !value) value = row.location || '';
                       else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
                       else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
                       else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
@@ -1828,18 +2209,19 @@ const kpiGridStyle = {
 };
 
 const kpiCardStyle = {
-  background: 'var(--surface-panel)',
-  border: '1px solid var(--border-light)',
-  borderRadius: '6px',
-  padding: '5px 8px',
+  background: 'var(--erp-kpi-surface, var(--surface-panel))',
+  border: '1px solid var(--erp-kpi-border, var(--border-light))',
+  borderRadius: '14px',
+  padding: '12px',
   minWidth: '150px',
-  minHeight: '38px',
+  minHeight: '92px',
   flex: '1 0 150px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
-  boxShadow: '0 4px 12px rgba(15, 23, 42, 0.02)',
-  transition: 'transform 0.2s ease'
+  gap: '12px',
+  boxShadow: 'var(--erp-kpi-shadow, 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.055))',
+  transition: 'transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease'
 };
 
 const kpiMetaStyle = {
@@ -1847,19 +2229,22 @@ const kpiMetaStyle = {
 };
 
 const kpiLabelStyle = {
-  fontSize: '8px',
+  fontSize: '10px',
   textTransform: 'uppercase',
   fontWeight: '800',
-  color: 'var(--text-secondary)',
-  letterSpacing: '0.8px'
+  color: 'var(--erp-kpi-title, var(--text-secondary))',
+  letterSpacing: '0.55px',
+  lineHeight: 1.35
 };
 
 const kpiValueStyle = {
-  fontSize: '12px',
+  fontSize: '16px',
   fontWeight: '800',
-  color: 'var(--text-primary)',
-  marginTop: '1px',
-  letterSpacing: '-0.5px'
+  color: 'var(--erp-kpi-value, var(--text-primary))',
+  marginTop: '8px',
+  lineHeight: 1.08,
+  letterSpacing: '-0.75px',
+  fontVariantNumeric: 'tabular-nums'
 };
 
 const kpiUnitStyle = {

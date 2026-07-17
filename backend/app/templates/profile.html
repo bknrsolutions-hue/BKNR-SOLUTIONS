@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile | ERP</title>
+  <style>
+    :root { --bg:#eef6ff; --card:#fff; --text:#0f172a; --muted:#64748b; --border:#dbe3ef; --primary:#2563eb; --soft:#eff6ff; --success:#15803d; --danger:#dc2626; }
+    [data-theme="dark"] { --bg:#060913; --card:#0f172a; --text:#f8fafc; --muted:#94a3b8; --border:#27364d; --soft:#172554; }
+    * { box-sizing:border-box; }
+    body { margin:0; padding:18px; background:var(--bg); color:var(--text); font-family:Inter,Arial,sans-serif; }
+    .profile-shell { max-width:1020px; margin:0 auto; }
+    .profile-hero { position:relative; overflow:hidden; display:flex; align-items:center; gap:18px; min-height:132px; padding:24px; border-radius:22px; background:linear-gradient(125deg,#0b2345,#15385f 52%,#2563eb 145%); box-shadow:0 16px 38px rgba(15,23,42,.15); }
+    .profile-hero:after { content:""; position:absolute; width:210px; height:210px; right:-70px; top:-120px; border-radius:50%; background:rgba(255,255,255,.08); }
+    .avatar { width:76px; height:76px; display:grid; place-items:center; flex:0 0 auto; border:7px solid rgba(255,255,255,.17); border-radius:25px; background:#fff; color:var(--primary); font-size:29px; font-weight:900; box-shadow:0 10px 24px rgba(2,8,23,.2); }
+    h1 { margin:0; color:#fff; font-size:25px; letter-spacing:-.03em; }
+    .hero-email { margin-top:6px; color:#dbeafe; font-size:12px; font-weight:700; }
+    .badge { display:inline-block; margin-top:10px; padding:5px 10px; border:1px solid rgba(255,255,255,.2); border-radius:999px; background:rgba(255,255,255,.1); color:#eff6ff; font-size:9px; font-weight:900; text-transform:uppercase; }
+    .profile-card { margin-top:16px; padding:22px; border:1px solid var(--border); border-radius:22px; background:var(--card); box-shadow:0 16px 38px rgba(15,23,42,.09); }
+    .section-title { margin-bottom:17px; padding-bottom:12px; border-bottom:1px solid var(--border); color:var(--muted); font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
+    .profile-list { display:flex; flex-direction:column; }
+    .profile-row { display:flex; align-items:center; gap:13px; min-height:66px; padding:10px 4px; border-bottom:1px solid var(--border); }
+    .profile-row:last-child { border-bottom:0; }
+    .row-icon { width:40px; height:40px; display:grid; place-items:center; flex:0 0 auto; border-radius:12px; background:var(--soft); color:var(--primary); font-size:14px; font-weight:900; }
+    .row-copy { min-width:0; }
+    .row-label { color:var(--muted); font-size:9px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+    .row-value { margin-top:4px; color:var(--text); font-size:13px; font-weight:800; overflow-wrap:anywhere; }
+    .row-value.attention { color:#b45309; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+    .field { min-width:0; }
+    label { display:block; margin:0 0 5px 2px; color:var(--muted); font-size:9px; font-weight:900; text-transform:uppercase; }
+    input, select { width:100%; height:46px; padding:0 13px; border:1px solid var(--border); border-radius:12px; outline:none; background:var(--card); color:var(--text); font-size:12px; font-weight:750; transition:.18s ease; }
+    input:focus, select:focus { border-color:var(--primary); box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+    input[readonly] { background:var(--soft); color:var(--muted); cursor:not-allowed; }
+    .actions { display:flex; align-items:center; justify-content:flex-end; gap:10px; margin-top:16px; }
+    button { height:44px; padding:0 22px; border:1px solid var(--border); border-radius:12px; background:var(--card); color:var(--text); font-size:11px; font-weight:900; cursor:pointer; }
+    #saveButton { min-width:105px; border-color:var(--primary); background:linear-gradient(135deg,var(--primary),#1d4ed8); color:#fff; box-shadow:0 8px 18px rgba(37,99,235,.24); }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    .message { flex:1; font-size:11px; font-weight:800; }
+    .message.success { color:var(--success); } .message.error { color:var(--danger); }
+    @media(max-width:620px) { body { padding:10px; } .grid { grid-template-columns:1fr; } .profile-card,.profile-hero { padding:14px; } }
+  </style>
+</head>
+<body>
+  <main class="profile-shell">
+    <section class="profile-hero">
+      <div class="avatar" id="profileInitial">{{ (profile.name or 'U')[0] | upper }}</div>
+      <div>
+        <h1 id="profileHeading">{{ profile.name or 'My Profile' }}</h1>
+        <div class="hero-email">{{ profile.email }}</div>
+        <span class="badge">{{ profile.company_name }} · {{ profile.role }}</span>
+      </div>
+    </section>
+
+    <section class="profile-card">
+      <div class="section-title">Personal & Work Details</div>
+      <div class="profile-list">
+        {% for item in [
+          ('N', 'Name', profile.name, false),
+          ('ID', 'Employee ID', profile.employee_id, false),
+          ('@', 'Login Email', profile.email, false),
+          ('D', 'Designation', profile.designation, false),
+          ('DOB', 'Date of Birth', profile.date_of_birth, false),
+          ('BG', 'Blood Group', profile.blood_group, false),
+          ('L', 'Working Location', profile.working_location, false),
+          ('A', 'Address', profile.address or 'Please update', not profile.address)
+        ] %}
+        <div class="profile-row"><div class="row-icon">{{ item[0] }}</div><div class="row-copy"><div class="row-label">{{ item[1] }}</div><div class="row-value{% if item[3] %} attention{% endif %}">{{ item[2] or '—' }}</div></div></div>
+        {% endfor %}
+      </div>
+    </section>
+  </main>
+</body>
+</html>

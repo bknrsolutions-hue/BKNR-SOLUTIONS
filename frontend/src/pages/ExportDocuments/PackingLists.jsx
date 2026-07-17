@@ -1,8 +1,31 @@
 import { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, MoreVertical, X, FileText, Printer, Download, Upload, Ban 
+  Plus, MoreVertical, X, FileText, Printer, Download, Upload, Ban, Trash2, Copy
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
+import './PackingLists.css';
+import ExportSearchPanel from './ExportSearchPanel';
+
+const newPackingLine = () => ({
+  product_name: '',
+  grade: '',
+  batch_no: '',
+  lot_no: '',
+  glaze: '',
+  freezing_type: '',
+  hs_code: '',
+  manufacturing_date: '',
+  expiry_date: '',
+  packing_style: '',
+  inner_pack: '',
+  outer_pack: '',
+  master_cartons: 0,
+  net_weight: 0,
+  gross_weight: 0,
+  pallet_count: 0,
+  inventory_batch_id: '',
+  stock_entry_no: '',
+});
 
 export default function PackingLists() {
   const [history, setHistory] = useState([]);
@@ -25,19 +48,9 @@ export default function PackingLists() {
     po_number: '',
     container_no: '',
     buyer_name: '',
-    product_name: '',
-    grade: '',
-    batch_no: '',
-    lot_no: '',
-    glaze: '',
-    freezing_type: '',
-    packing_style: '',
-    inner_pack: '',
-    outer_pack: '',
-    master_cartons: 0,
-    net_weight: 0.00,
-    gross_weight: 0.00
   });
+  const [lineItems, setLineItems] = useState([newPackingLine()]);
+  const [saving, setSaving] = useState(false);
 
   // Notification State
   const [notification, setNotification] = useState(null);
@@ -127,6 +140,20 @@ export default function PackingLists() {
     }));
   };
 
+  const updateLine = (index, field, value) => {
+    setLineItems(current => current.map((line, lineIndex) =>
+      lineIndex === index ? { ...line, [field]: value } : line
+    ));
+  };
+
+  const addLine = (source = null) => {
+    setLineItems(current => [...current, source ? { ...source } : newPackingLine()]);
+  };
+
+  const removeLine = index => {
+    setLineItems(current => current.length === 1 ? current : current.filter((_, lineIndex) => lineIndex !== index));
+  };
+
   const openForm = () => {
     setFormData({
       packing_no: '',
@@ -134,19 +161,8 @@ export default function PackingLists() {
       po_number: '',
       container_no: '',
       buyer_name: '',
-      product_name: '',
-      grade: '',
-      batch_no: '',
-      lot_no: '',
-      glaze: '',
-      freezing_type: '',
-      packing_style: '',
-      inner_pack: '',
-      outer_pack: '',
-      master_cartons: 0,
-      net_weight: 0.00,
-      gross_weight: 0.00
     });
+    setLineItems([newPackingLine()]);
     setIsModalOpen(true);
     setMenuOpen(false);
   };
@@ -163,14 +179,22 @@ export default function PackingLists() {
       return;
     }
 
-    if (parseFloat(formData.gross_weight) < parseFloat(formData.net_weight)) {
-      alert('Gross weight cannot be less than Net weight!');
+    const invalidLine = lineItems.findIndex(line =>
+      !line.product_name.trim()
+      || !line.grade.trim()
+      || !line.packing_style.trim()
+      || Number(line.gross_weight || 0) < Number(line.net_weight || 0)
+      || (line.manufacturing_date && line.expiry_date && line.expiry_date < line.manufacturing_date)
+    );
+    if (invalidLine >= 0) {
+      alert(`Complete valid details in packing line ${invalidLine + 1}. Gross weight must be at least net weight and expiry cannot be before manufacturing date.`);
       return;
     }
 
-    const confirmSave = window.confirm(`Save Packing Item?\nAre you sure you want to add this line item?`);
+    const confirmSave = window.confirm(`Save Packing List?\nSave ${lineItems.length} packing line item(s) for ${formData.invoice_no}?`);
     if (!confirmSave) return;
 
+    setSaving(true);
     try {
       const payload = {
         packing_no: formData.packing_no,
@@ -178,21 +202,27 @@ export default function PackingLists() {
         po_number: formData.po_number || null,
         container_no: formData.container_no || null,
         buyer_name: formData.buyer_name || null,
-        product_name: formData.product_name,
-        grade: formData.grade,
-        batch_no: formData.batch_no || null,
-        lot_no: formData.lot_no || null,
-        glaze: formData.glaze || null,
-        freezing_type: formData.freezing_type || null,
-        packing_style: formData.packing_style,
-        inner_pack: formData.inner_pack || null,
-        outer_pack: formData.outer_pack || null,
-        master_cartons: parseInt(formData.master_cartons) || 0,
-        net_weight: parseFloat(formData.net_weight) || 0.0,
-        gross_weight: parseFloat(formData.gross_weight) || 0.0
+        items: lineItems.map(line => ({
+          ...line,
+          batch_no: line.batch_no || null,
+          lot_no: line.lot_no || null,
+          glaze: line.glaze || null,
+          freezing_type: line.freezing_type || null,
+          hs_code: line.hs_code || null,
+          manufacturing_date: line.manufacturing_date || null,
+          expiry_date: line.expiry_date || null,
+          inner_pack: line.inner_pack || null,
+          outer_pack: line.outer_pack || null,
+          inventory_batch_id: line.inventory_batch_id || null,
+          stock_entry_no: line.stock_entry_no || null,
+          master_cartons: Number.parseInt(line.master_cartons, 10) || 0,
+          pallet_count: Number.parseInt(line.pallet_count, 10) || 0,
+          net_weight: Number.parseFloat(line.net_weight) || 0,
+          gross_weight: Number.parseFloat(line.gross_weight) || 0,
+        })),
       };
 
-      const res = await fetch('/export_documents/packing_list/save', {
+      const res = await fetch('/export_documents/packing_list/save-bulk', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -204,10 +234,12 @@ export default function PackingLists() {
         loadData(data.message || '✅ Packing list item successfully saved!');
         setSelectedRow(null);
       } else {
-        showNotification(data.message || '❌ Failed to save packing list item!', 'danger');
+        showNotification(data.message || '❌ Failed to save packing list!', 'danger');
       }
     } catch {
-      showNotification('❌ Network error saving packing line item!', 'danger');
+      showNotification('❌ Network error saving packing list!', 'danger');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -306,31 +338,16 @@ export default function PackingLists() {
         </div>
         <div className="attendance-page-header-actions">
           <button className="attendance-btn attendance-btn-primary" onClick={openForm}>
-            <Plus size={16} /> NEW LINE ITEM
+            <Plus size={16} /> NEW PACKING LIST
           </button>
         </div>
       </div>
 
       {/* SEARCH / FILTERS */}
-      <div className="attendance-filters-bar" style={{ maxWidth: '300px' }}>
-        <div className="attendance-filter-group">
-          <label htmlFor="search-packing">Search Packing / Product</label>
-          <input 
-            id="search-packing"
-            className="attendance-input" 
-            type="text" 
-            placeholder="Search..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
-        </div>
-      </div>
+      <ExportSearchPanel id="search-packing" label="Search Packing / Product" value={searchQuery} onChange={setSearchQuery} count={filteredRecords.length} placeholder="Packing list, invoice or product…" />
 
       {/* ACTION BAR */}
-      <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', color: 'var(--att-heading)' }}>
-          {filteredRecords.length} Entries Found
-        </h3>
+      <div className="export-records-toolbar">
         
         {selectedRow && (
           <div className="attendance-actions-cell" ref={dropdownRef}>
@@ -431,224 +448,122 @@ export default function PackingLists() {
       {/* NEW PACKING MODAL */}
       {isModalOpen && (
         <div className="attendance-modal-overlay">
-          <div className="attendance-modal-content" style={{ maxWidth: '800px' }}>
+          <div className="attendance-modal-content packing-multi-modal" style={{ maxWidth: '1180px', width: 'calc(100vw - 32px)', maxHeight: '94vh' }}>
             <div className="attendance-modal-header">
-              <h2>Add Packing List Item</h2>
+              <div>
+                <h2>Create Multi-Line Packing List</h2>
+                <p>Enter invoice details once, then add every product, grade, batch and packing line.</p>
+              </div>
               <button className="attendance-modal-close-btn" onClick={closeForm} aria-label="Close modal">
                 <X size={20} />
               </button>
             </div>
             
             <form onSubmit={handleFormSubmit}>
-              <div className="attendance-modal-body">
-                <div className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
-                  
+              <div className="attendance-modal-body" style={{ overflowY: 'auto' }}>
+                <div className="attendance-form-grid packing-common-grid" style={{ marginBottom: 14 }}>
                   <div className="attendance-form-group">
                     <label htmlFor="packing_no">Packing Document No</label>
-                    <input 
-                      id="packing_no"
-                      className="attendance-input" 
-                      value={formData.packing_no} 
-                      onChange={handleInputChange} 
-                      placeholder="PL-YYYY-XXXX" 
-                      required 
-                    />
+                    <input id="packing_no" className="attendance-input" value={formData.packing_no} onChange={handleInputChange} placeholder="PL-YYYY-XXXX" required />
                   </div>
-
                   <div className="attendance-form-group">
                     <label htmlFor="invoice_no">Commercial Invoice</label>
-                    <select 
-                      id="invoice_no"
-                      className="attendance-select" 
-                      value={formData.invoice_no} 
-                      onChange={handleInvoiceChange} 
-                      required
-                    >
+                    <select id="invoice_no" className="attendance-select" value={formData.invoice_no} onChange={handleInvoiceChange} required>
                       <option value="" disabled>-- SELECT INVOICE --</option>
                       {invoices.map(i => (
-                        <option key={i.invoice_no} value={i.invoice_no} data-buyer={i.buyer_name} data-po={i.po_number} data-container={i.container_no}>
-                          {i.invoice_no} ({i.buyer_name})
-                        </option>
+                        <option key={i.invoice_no} value={i.invoice_no}>{i.invoice_no} ({i.buyer_name})</option>
                       ))}
                     </select>
                   </div>
-
                   <div className="attendance-form-group">
                     <label htmlFor="po_number">PO Number</label>
-                    <input 
-                      id="po_number"
-                      className="attendance-input" 
-                      value={formData.po_number} 
-                      readOnly 
-                    />
+                    <input id="po_number" className="attendance-input" value={formData.po_number} readOnly />
                   </div>
-
                   <div className="attendance-form-group">
                     <label htmlFor="container_no">Container No</label>
-                    <input 
-                      id="container_no"
-                      className="attendance-input" 
-                      value={formData.container_no} 
-                      readOnly 
-                    />
+                    <input id="container_no" className="attendance-input" value={formData.container_no} readOnly />
                   </div>
-
                   <div className="attendance-form-group">
                     <label htmlFor="buyer_name">Buyer Name</label>
-                    <input 
-                      id="buyer_name"
-                      className="attendance-input" 
-                      value={formData.buyer_name} 
-                      readOnly 
-                    />
+                    <input id="buyer_name" className="attendance-input" value={formData.buyer_name} readOnly />
                   </div>
+                </div>
 
-                  <div className="attendance-form-group">
-                    <label htmlFor="product_name">Product Name</label>
-                    <input 
-                      id="product_name"
-                      className="attendance-input" 
-                      value={formData.product_name} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, margin: '4px 0 10px' }}>
+                  <div>
+                    <strong style={{ color: 'var(--att-heading)', fontSize: 13 }}>Packing Line Items</strong>
+                    <div style={{ color: 'var(--att-muted)', fontSize: 10 }}>{lineItems.length} line(s) · each row is saved under the same packing document number</div>
                   </div>
+                  <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => addLine()}>
+                    <Plus size={14} /> Add Row
+                  </button>
+                </div>
 
-                  <div className="attendance-form-group">
-                    <label htmlFor="grade">Grade / Size</label>
-                    <input 
-                      id="grade"
-                      className="attendance-input" 
-                      value={formData.grade} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="batch_no">Batch Number</label>
-                    <input 
-                      id="batch_no"
-                      className="attendance-input" 
-                      value={formData.batch_no} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="lot_no">Lot Number</label>
-                    <input 
-                      id="lot_no"
-                      className="attendance-input" 
-                      value={formData.lot_no} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="glaze">Glaze %</label>
-                    <input 
-                      id="glaze"
-                      className="attendance-input" 
-                      value={formData.glaze} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="freezing_type">Freezing Type</label>
-                    <input 
-                      id="freezing_type"
-                      className="attendance-input" 
-                      placeholder="e.g. IQF, Block" 
-                      value={formData.freezing_type} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="packing_style">Packing Style</label>
-                    <input 
-                      id="packing_style"
-                      className="attendance-input" 
-                      value={formData.packing_style} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="inner_pack">Inner Pouch Pack</label>
-                    <input 
-                      id="inner_pack"
-                      className="attendance-input" 
-                      value={formData.inner_pack} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="outer_pack">Outer Carton Pack</label>
-                    <input 
-                      id="outer_pack"
-                      className="attendance-input" 
-                      value={formData.outer_pack} 
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="master_cartons">Master Cartons Count</label>
-                    <input 
-                      id="master_cartons"
-                      className="attendance-input" 
-                      type="number" 
-                      value={formData.master_cartons} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="net_weight">Net Weight (Kg)</label>
-                    <input 
-                      id="net_weight"
-                      className="attendance-input" 
-                      type="number" 
-                      step="any" 
-                      value={formData.net_weight} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-
-                  <div className="attendance-form-group">
-                    <label htmlFor="gross_weight">Gross Weight (Kg)</label>
-                    <input 
-                      id="gross_weight"
-                      className="attendance-input" 
-                      type="number" 
-                      step="any" 
-                      value={formData.gross_weight} 
-                      onChange={handleInputChange} 
-                      required 
-                    />
-                  </div>
-
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {lineItems.map((line, index) => (
+                    <section key={index} style={{ border: '1px solid var(--att-border)', borderRadius: 10, background: 'var(--att-card)', overflow: 'hidden' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 10px', background: 'var(--att-table-header-bg)', borderBottom: '1px solid var(--att-border)' }}>
+                        <strong style={{ color: 'var(--att-accent)', fontSize: 11 }}>LINE {index + 1}</strong>
+                        <div style={{ display: 'flex', gap: 5 }}>
+                          <button type="button" className="attendance-action-dots-btn" title="Duplicate row" onClick={() => addLine(line)}><Copy size={13} /></button>
+                          <button type="button" className="attendance-action-dots-btn" title="Remove row" disabled={lineItems.length === 1} onClick={() => removeLine(index)}><Trash2 size={13} /></button>
+                        </div>
+                      </div>
+                      <div className="attendance-form-grid packing-line-grid" style={{ padding: 10, gap: 8 }}>
+                        <LineField label="Product Name" value={line.product_name} onChange={value => updateLine(index, 'product_name', value)} required />
+                        <LineField label="Grade / Size" value={line.grade} onChange={value => updateLine(index, 'grade', value)} required />
+                        <LineField label="Batch Number" value={line.batch_no} onChange={value => updateLine(index, 'batch_no', value)} />
+                        <LineField label="Lot Number" value={line.lot_no} onChange={value => updateLine(index, 'lot_no', value)} />
+                        <LineField label="Glaze %" value={line.glaze} onChange={value => updateLine(index, 'glaze', value)} />
+                        <LineField label="Freezing Type" value={line.freezing_type} onChange={value => updateLine(index, 'freezing_type', value)} placeholder="IQF / Block" />
+                        <LineField label="HS Code" value={line.hs_code} onChange={value => updateLine(index, 'hs_code', value)} />
+                        <LineField label="Manufacturing Date" type="date" value={line.manufacturing_date} onChange={value => updateLine(index, 'manufacturing_date', value)} />
+                        <LineField label="Expiry Date" type="date" value={line.expiry_date} onChange={value => updateLine(index, 'expiry_date', value)} />
+                        <LineField label="Packing Style" value={line.packing_style} onChange={value => updateLine(index, 'packing_style', value)} required />
+                        <LineField label="Inner Pack" value={line.inner_pack} onChange={value => updateLine(index, 'inner_pack', value)} />
+                        <LineField label="Outer Pack" value={line.outer_pack} onChange={value => updateLine(index, 'outer_pack', value)} />
+                        <LineField label="Master Cartons" type="number" min="0" value={line.master_cartons} onChange={value => updateLine(index, 'master_cartons', value)} required />
+                        <LineField label="Pallet Count" type="number" min="0" value={line.pallet_count} onChange={value => updateLine(index, 'pallet_count', value)} />
+                        <LineField label="Net Weight (Kg)" type="number" min="0" step="any" value={line.net_weight} onChange={value => updateLine(index, 'net_weight', value)} required />
+                        <LineField label="Gross Weight (Kg)" type="number" min="0" step="any" value={line.gross_weight} onChange={value => updateLine(index, 'gross_weight', value)} required />
+                        <LineField label="Inventory Batch ID" value={line.inventory_batch_id} onChange={value => updateLine(index, 'inventory_batch_id', value)} />
+                        <LineField label="Stock Entry No" value={line.stock_entry_no} onChange={value => updateLine(index, 'stock_entry_no', value)} />
+                      </div>
+                    </section>
+                  ))}
                 </div>
               </div>
               <div className="attendance-modal-footer">
-                <button type="button" className="attendance-btn attendance-btn-secondary" onClick={closeForm}>
+                <div style={{ marginRight: 'auto', color: 'var(--att-muted)', fontSize: 10 }}>
+                  Total: {lineItems.reduce((sum, line) => sum + (Number(line.master_cartons) || 0), 0)} MC · {lineItems.reduce((sum, line) => sum + (Number(line.net_weight) || 0), 0).toLocaleString()} Kg Net
+                </div>
+                <button type="button" className="attendance-btn attendance-btn-secondary" onClick={closeForm} disabled={saving}>
                   Cancel
                 </button>
-                <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Add Line Item
+                <button type="submit" className="attendance-btn attendance-btn-primary" disabled={saving}>
+                  {saving ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function LineField({ label, value, onChange, type = 'text', required = false, ...inputProps }) {
+  return (
+    <div className="attendance-form-group">
+      <label>{label}</label>
+      <input
+        className="attendance-input"
+        type={type}
+        value={value}
+        onChange={event => onChange(event.target.value)}
+        required={required}
+        {...inputProps}
+      />
     </div>
   );
 }

@@ -21,6 +21,11 @@
   margin-bottom: 18px;
 }
 
+.supporting-summary-grid.approvals-summary-grid {
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  max-width: 620px;
+}
+
 .supporting-summary-card {
   padding: 13px 15px;
   border: 1px solid var(--att-border);

@@ -673,7 +673,7 @@ export default function Grading() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Grading Lot
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-secondary" onClick={clearForm}>
               Cancel

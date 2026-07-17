@@ -273,7 +273,7 @@ export default function StockEntry() {
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
             <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#10b981', borderColor: '#10b981' }}>
-              <ArrowDownToLine size={14} /> Save Stock IN
+              <ArrowDownToLine size={14} /> Save
             </button>
             <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
@@ -324,7 +324,7 @@ export default function StockEntry() {
               </table>
               <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
                 <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#ef4444', borderColor: '#ef4444' }}>
-                  <ArrowUpFromLine size={14} /> Save Stock OUT
+                  <ArrowUpFromLine size={14} /> Save
                 </button>
                 <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
               </div>

@@ -25,7 +25,7 @@ from app.database.models.inventory_management import stock_entry
 from app.database.models.users import Company
 from app.database.models.processing import AuditLog, GateEntry 
 from app.database.models.criteria import (
-    production_for, production_at, freezers, packing_styles, production_types,
+    production_for as production_for_model, production_at, freezers, packing_styles, production_types,
     glazes, varieties, grades, brands, species as species_model
 )
 
@@ -49,6 +49,11 @@ def signed_stock_movement(column):
 def get_company_info(db: Session, comp_code: str):
     c = db.query(Company).filter(Company.company_code == comp_code).first()
     return (c.company_name or "", c.address or "") if c else ("", "")
+
+
+def get_company_mpeda_code(db: Session, comp_code: str):
+    c = db.query(Company).filter(Company.company_code == comp_code).first()
+    return c.mpeda_registration_code if c and c.mpeda_registration_code else ""
 
 # ------------------------------------------------------------
 # HELPER: CHECK STOCK AVAILABILITY
@@ -78,10 +83,14 @@ async def stock_report_page(
     db: Session = Depends(get_db),
     from_date: str = "",
     to_date: str = "",
-    fy: str = Query(None)
+    fy: str = Query(None),
+    production_for: str | None = Query(None),
+    location: str | None = Query(None),
 ):
     # 🟢 FETCH ACTIVE UNIVERSAL FILTERS FROM CONTEXT LAYER
-    global_production_for, global_location = get_global_filters(request)
+    cookie_production_for, cookie_location = get_global_filters(request)
+    global_production_for = production_for if production_for is not None else cookie_production_for
+    global_location = location if location is not None else cookie_location
 
     email = request.session.get("email")
     comp_code = request.session.get("company_code")
@@ -118,7 +127,7 @@ async def stock_report_page(
             "financial_years": sorted(list(fy_set), reverse=True),
             "species_list": get_list(species_model, "species_name"),
             "brands_list": get_list(brands, "brand_name"),
-            "production_for_list": sorted({x.production_for for x in db.query(production_for).filter(production_for.company_id == comp_code).all() if x.production_for}),
+            "production_for_list": sorted({x.production_for for x in db.query(production_for_model).filter(production_for_model.company_id == comp_code).all() if x.production_for}),
             "type_of_production_list": prod_types_list,
             "production_at_list": get_list(production_at, "production_at"),
             "freezers_list": get_list(freezers, "freezer_name"),
@@ -354,7 +363,9 @@ def export_pdf(
     
     html = request.app.state.templates.get_template("inventory_management/stock_report_print.html").render({
         "request": request, "rows": rows, "company_name": company_name, 
-        "company_address": company_address, "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
+        "company_address": company_address,
+        "mpeda_registration_code": get_company_mpeda_code(db, comp_code),
+        "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     
     pdf_file = render_pdf_from_html(html)
@@ -376,10 +387,11 @@ async def get_stock_audits(request: Request, db: Session = Depends(get_db)):
             .filter(AuditLog.table_name == "stock_entry", AuditLog.company_id == comp_code)
             .order_by(AuditLog.edited_at.desc()).limit(100).all())
     return JSONResponse([{
+        "record_id": l.AuditLog.record_id,
         "timestamp": format_audit_timestamp(l.AuditLog.edited_at),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs])

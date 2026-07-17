@@ -20,17 +20,19 @@ const number = value => Number(value || 0).toLocaleString('en-IN', {
 function KpiCard({ label, value, emphasis = false, onClick }) {
   return (
     <div
-      className="attendance-card"
+      className={`attendance-card erp-report-kpi-card is-clickable is-stacked ${emphasis ? 'kpi-purple' : 'kpi-blue'}`}
       role="button"
       tabIndex={0}
       onClick={onClick}
       onKeyDown={event => event.key === 'Enter' && onClick?.()}
-      style={{ padding: 14, border: '1px solid var(--att-border)', borderRadius: 8, minWidth: 0, cursor: 'pointer' }}
+      style={{ '--erp-kpi-accent': emphasis ? '#7c3aed' : '#2563eb' }}
     >
-      <div style={{ fontSize: 9, fontWeight: 800, color: 'var(--att-muted)', textTransform: 'uppercase', letterSpacing: '.45px' }}>
-        {label}
+      <div className="erp-kpi-heading">
+        <span className="erp-kpi-label">{label}</span>
+        <span className="erp-kpi-icon"><Calculator size={16} /></span>
       </div>
-      <div style={{ marginTop: 7, fontSize: 17, lineHeight: 1.2, fontWeight: 800, color: emphasis ? 'var(--att-accent)' : 'var(--att-heading)' }}>{value}</div>
+      <div className="erp-kpi-value">{value}</div>
+      <span className="erp-kpi-details">View details <span aria-hidden="true">→</span></span>
     </div>
   );
 }

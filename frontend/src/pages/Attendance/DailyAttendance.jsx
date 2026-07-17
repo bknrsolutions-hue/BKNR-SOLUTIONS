@@ -14,6 +14,7 @@ import {
   VolumeX,
   X,
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './DailyAttendance.css';
 
 const ERROR_MESSAGES = {
@@ -93,7 +94,7 @@ export default function DailyAttendance() {
       return;
     }
     try {
-      const response = await fetch(`/attendance/today_all?location=${encodeURIComponent(targetLocation)}`, {
+      const response = await sessionFetch(`/attendance/today_all?location=${encodeURIComponent(targetLocation)}`, {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
@@ -112,7 +113,7 @@ export default function DailyAttendance() {
       const selectedLocation = locationOverride ?? localStorage.getItem('plant_location_filter') ?? '';
       const params = new URLSearchParams({ format: 'json' });
       if (selectedLocation) params.set('location', selectedLocation);
-      const response = await fetch(`/attendance/daily?${params.toString()}`, {
+      const response = await sessionFetch(`/attendance/daily?${params.toString()}`, {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
@@ -171,7 +172,7 @@ export default function DailyAttendance() {
 
     setSubmitting(true);
     try {
-      const response = await fetch('/attendance/entry', {
+      const response = await sessionFetch('/attendance/entry', {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -200,7 +201,7 @@ export default function DailyAttendance() {
     setAuditOpen(true);
     setAuditLoading(true);
     try {
-      const response = await fetch('/attendance/audit_all', {
+      const response = await sessionFetch('/attendance/audit_all', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
@@ -237,7 +238,7 @@ export default function DailyAttendance() {
 
       <header className="attendance-header">
         <h1>
-          Live Terminal Monitor
+          Attendance Monitor
           {location && <span className="attendance-plant-badge"><MapPin size={11} /> {location}</span>}
         </h1>
         <div className="attendance-header-actions">
@@ -312,7 +313,7 @@ export default function DailyAttendance() {
               {menuOpen && (
                 <div className="attendance-menu">
                   <button type="button" onClick={() => { setMenuOpen(false); openAudit(); }}><History size={15} /> Terminal Log</button>
-                  <button type="button" onClick={() => { setMenuOpen(false); exportExcel(); }}><FileSpreadsheet size={15} /> Export Live List</button>
+                  <button type="button" onClick={() => { setMenuOpen(false); exportExcel(); }}><FileSpreadsheet size={15} /> Export List</button>
                 </div>
               )}
             </div>
@@ -325,7 +326,7 @@ export default function DailyAttendance() {
               </thead>
               <tbody>
                 {visibleRows.map((row) => (
-                  <tr key={`${row.employee_id}-${row.shift_name}`}>
+                  <tr key={`${row.employee_id}-${row.shift_name}`} data-record-id={row.id}>
                     <td><strong>{row.employee_name}</strong><small>{row.employee_id}</small></td>
                     <td><span className={`attendance-shift-pill shift-pill-${Math.max(0, (meta?.shifts || []).findIndex((shift) => shift.shift_name === row.shift_name)) % 5}`}>{row.shift_name || 'GENERAL'}</span></td>
                     <td>
@@ -360,7 +361,7 @@ export default function DailyAttendance() {
             <div className="attendance-audit-body">
               {auditLoading && <div className="attendance-audit-loading">Loading audit trail…</div>}
               {!auditLoading && audits.map((audit, index) => (
-                <article key={`${audit.timestamp}-${index}`}>
+                <article key={`${audit.timestamp}-${index}`} data-audit-record-id={audit.record_id} onClick={() => { setAuditOpen(false); window.setTimeout(() => window.openAuditRecord?.(audit.record_id), 80); }} style={{ cursor: 'pointer' }}>
                   <p><strong>{audit.timestamp}</strong> | {audit.batch}<br />{audit.action}: {audit.details}</p>
                   <small>By: {audit.user} ({audit.email})</small>
                 </article>

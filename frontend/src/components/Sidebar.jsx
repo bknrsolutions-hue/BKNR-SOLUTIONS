@@ -8,6 +8,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
 
   const allow = (key) => {
     if (isDefaultSuperAdmin) return true;
+    if (Array.isArray(key)) return key.some(permission => allow(permission));
     if (!permissions) return false;
     if (typeof permissions === 'string') {
       return permissions === 'ALL' || permissions.split(',').includes(key);
@@ -50,12 +51,12 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     {
       title: "DASHBOARDS",
       items: [
-        { id: 'dashboard_processing', perm: 'processing_dashboard', route: '/dashboard/processing_dashboard', icon: 'fa-chart-simple', label: 'Processing', badge: 'LIVE' },
-        { id: 'dashboard_inventory', perm: 'inventory_dashboard', route: '/dashboard/inventory_dashboard', icon: 'fa-warehouse', label: 'Inventory', badge: 'LIVE' },
-        { id: 'dashboard_hr', perm: 'hr_command_center', route: '/dashboard/hr_command_center', icon: 'fa-user-tie', label: 'HR & Staff', badge: 'LIVE' },
-        { id: 'dashboard_costing', perm: 'costing_dashboard', route: '/dashboard/costing_dashboard', icon: 'fa-file-invoice-dollar', label: 'Costing & Fin', badge: 'LIVE' },
-        { id: 'dashboard_finance', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard', badge: 'LIVE' },
-        { id: 'tally_dashboard', perm: 'tally_dashboard', route: '/finance_accounts/tally_dashboard', icon: 'fa-chart-pie', label: 'Tally Dashboard', badge: 'LIVE' }
+        { id: 'dashboard_processing', perm: 'processing_dashboard', route: '/dashboard/processing_dashboard', icon: 'fa-chart-simple', label: 'Processing' },
+        { id: 'dashboard_inventory', perm: 'inventory_dashboard', route: '/dashboard/inventory_dashboard', icon: 'fa-warehouse', label: 'Inventory' },
+        { id: 'dashboard_hr', perm: 'hr_command_center', route: '/dashboard/hr_command_center', icon: 'fa-user-tie', label: 'HR & Staff' },
+        { id: 'dashboard_costing', perm: 'costing_dashboard', route: '/dashboard/costing_dashboard', icon: 'fa-file-invoice-dollar', label: 'Costing & Fin' },
+        { id: 'dashboard_finance', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard' },
+        { id: 'tally_dashboard', perm: 'tally_dashboard', route: '/finance_accounts/tally_dashboard', icon: 'fa-chart-pie', label: 'Tally Dashboard' }
       ]
     },
     {
@@ -86,16 +87,10 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
           name: "Export Documents",
           items: [
             { id: 'export_documents_dashboard', perm: 'export_documents_dashboard', route: '/export_documents/dashboard', icon: 'fa-file-export', label: 'Export Dashboard', badge: 'ExpOp' },
-            { id: 'proforma_invoice', perm: 'proforma_invoice', route: '/export_documents/proforma_invoice/entry', icon: 'fa-file-invoice-dollar', label: 'Proforma Invoices', badge: 'ExpOp' },
-            { id: 'export_shipment', perm: 'export_shipment', route: '/export_documents/export_shipment/entry', icon: 'fa-ship', label: 'Export Shipments', badge: 'ExpOp' },
-            { id: 'commercial_invoice', perm: 'commercial_invoice', route: '/export_documents/commercial_invoice/entry', icon: 'fa-file-invoice', label: 'Commercial Invoices', badge: 'ExpOp' },
-            { id: 'packing_list', perm: 'packing_list', route: '/export_documents/packing_list/entry', icon: 'fa-file-lines', label: 'Packing Lists', badge: 'ExpOp' },
-            { id: 'container_stuffing', perm: 'container_stuffing', route: '/export_documents/container_stuffing/entry', icon: 'fa-truck-ramp-box', label: 'Container Stuffing', badge: 'ExpOp' },
-            { id: 'shipping_bill', perm: 'shipping_bill', route: '/export_documents/shipping_bill/entry', icon: 'fa-clipboard-check', label: 'Shipping Bills', badge: 'ExpOp' },
-            { id: 'bill_of_lading', perm: 'bill_of_lading', route: '/export_documents/bill_of_lading/entry', icon: 'fa-file-contract', label: 'Bills of Lading', badge: 'ExpOp' },
-            { id: 'health_certificate', perm: 'health_certificate', route: '/export_documents/health_certificate/entry', icon: 'fa-file-medical', label: 'Health Certificates', badge: 'ExpOp' },
-            { id: 'export_supporting_documents', perm: 'export_supporting_documents', route: '/export_documents/supporting_documents/entry', icon: 'fa-ship', label: 'Shipment Status', badge: 'Action' },
-            { id: 'export_requirement_forms', perm: 'export_documents_dashboard', route: '/export_documents/requirement-pages/entry', icon: 'fa-folder-tree', label: 'Document Center', badge: 'ExpOp' }
+            { id: 'export_shipment_workspace', perm: ['export_documents_dashboard', 'proforma_invoice', 'export_shipment', 'commercial_invoice', 'packing_list', 'container_stuffing', 'shipping_bill', 'bill_of_lading', 'health_certificate'], route: '/export_documents/workspace', icon: 'fa-ship', label: 'Shipment Workspace', badge: 'Flow' },
+            { id: 'export_requirement_forms', perm: ['export_documents_dashboard', 'export_supporting_documents'], route: '/export_documents/requirement-pages/entry', icon: 'fa-folder-tree', label: 'Document Center', badge: 'Docs' },
+            { id: 'export_document_approvals', perm: ['export_documents_dashboard', 'export_supporting_documents'], route: '/export_documents/approvals', icon: 'fa-user-check', label: 'Approvals', badge: 'Action' },
+            { id: 'export_registers', perm: ['export_documents_dashboard', 'proforma_invoice', 'export_shipment', 'commercial_invoice', 'packing_list', 'container_stuffing', 'shipping_bill', 'bill_of_lading', 'health_certificate'], route: '/export_documents/registers', icon: 'fa-file-excel', label: 'Registers', badge: 'XLSX' }
           ]
         }
       ]

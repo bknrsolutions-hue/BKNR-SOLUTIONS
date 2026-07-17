@@ -22,6 +22,7 @@ from app.services.bill_accounting import ensure_bill_accounting_schema
 from app.services.floor_balance import get_floor_balance_snapshot_rows
 from app.utils.global_filters import get_global_filters
 from app.utils.cancel_math import active_sum
+from app.utils.hr_workforce import active_employee_on
 from app.utils.timezone import ist_now
 
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
@@ -211,42 +212,71 @@ def processing_dashboard(
     # =====================================================
     # 5. ATTENDANCE LOGIC
     # =====================================================
-    att_rows_q = db.query(
-        DailyAttendance, EmployeeRegistration.department, EmployeeRegistration.designation
-    ).join(
-        EmployeeRegistration,
-        and_(
-            DailyAttendance.employee_id == EmployeeRegistration.employee_id,
-            DailyAttendance.company_id == EmployeeRegistration.company_id,
-        ),
+    # The staff summary is a comparison of the active employee master against
+    # attendance recorded for the selected date. A CLOSED attendance row means
+    # the employee completed the shift; it must still count as present.
+    employee_q = db.query(
+        EmployeeRegistration.employee_id,
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+    ).filter(
+        EmployeeRegistration.company_id == company_id,
+        active_employee_on(EmployeeRegistration, to_date),
     )
 
-    att_rows_q = att_rows_q.filter(
-        DailyAttendance.company_id == company_id,
-        or_(DailyAttendance.duty_date == to_date, DailyAttendance.status != "CLOSED"),
-    )
-
-    # 🟢 🔴 FIX: Apply Strict Location Isolation for Attendance
+    # Apply strict location isolation to both the employee population and the
+    # selected-date attendance rows so totals cannot leak across plants.
     g_loc_clean = global_location.strip().upper() if global_location else None
-    
+
     if g_loc_clean and g_loc_clean != "ALL":
-        att_rows_q = att_rows_q.filter(func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean)
+        employee_q = employee_q.filter(
+            func.upper(func.trim(EmployeeRegistration.production_at)) == g_loc_clean
+        )
     elif user_allowed_locations:
-        att_rows_q = att_rows_q.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations))
+        employee_q = employee_q.filter(
+            func.upper(func.trim(EmployeeRegistration.production_at)).in_(user_allowed_locations)
+        )
 
-    att_rows = att_rows_q.all()
+    employee_rows = employee_q.order_by(
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+        EmployeeRegistration.employee_id,
+    ).all()
+    employee_ids = [row.employee_id for row in employee_rows]
 
-    att_stats = {"total": len(att_rows), "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
+    att_rows_q = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.duty_date == to_date,
+        DailyAttendance.employee_id.in_(employee_ids),
+    )
+
+    if g_loc_clean and g_loc_clean != "ALL":
+        att_rows_q = att_rows_q.filter(
+            func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean
+        )
+    elif user_allowed_locations:
+        att_rows_q = att_rows_q.filter(
+            func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations)
+        )
+
+    # Keep one selected-date record per employee if legacy data contains
+    # duplicates. The latest punch record represents the current/final state.
+    attendance_by_employee = {}
+    for attendance in att_rows_q.order_by(DailyAttendance.first_in, DailyAttendance.id).all():
+        attendance_by_employee[attendance.employee_id] = attendance
+
+    att_stats = {"total": len(employee_ids), "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
     dept_map, desg_map = {}, {}
 
-    for da, dept, desg in att_rows:
-        if da.status == "OPEN":
+    for da in attendance_by_employee.values():
+        attendance_status = str(da.status or "").strip().upper()
+        if attendance_status == "OPEN":
             att_stats["inside"] += 1
-        elif da.status == "AWAY":
+        elif attendance_status == "AWAY":
             att_stats["away"] += 1
 
         wh = float(da.working_hours or 0)
-        if da.status == "CLOSED":
+        if attendance_status == "CLOSED":
             if wh >= 14:
                 att_stats["double"] += 1
             elif wh >= 6:
@@ -254,16 +284,15 @@ def processing_dashboard(
             elif wh >= 4:
                 att_stats["half"] += 1
 
-        d_name = dept or "GENERAL"
-        ds_name = desg or "STAFF"
-
+    present_employee_ids = set(attendance_by_employee)
+    for employee_id, department, designation in employee_rows:
+        d_name = str(department or "GENERAL").strip() or "GENERAL"
+        ds_name = str(designation or "STAFF").strip() or "STAFF"
+        attendance_key = "present" if employee_id in present_employee_ids else "absent"
         for m, key in [(dept_map, d_name), (desg_map, ds_name)]:
             if key not in m:
-                m[key] = {"active": 0, "closed": 0}
-            if da.status == "CLOSED":
-                m[key]["closed"] += 1
-            else:
-                m[key]["active"] += 1
+                m[key] = {"present": 0, "absent": 0}
+            m[key][attendance_key] += 1
 
     # =====================================================
     # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)

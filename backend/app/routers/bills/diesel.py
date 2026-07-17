@@ -299,10 +299,11 @@ async def get_all_diesel_audit(request: Request, db: Session = Depends(get_db)):
     )
 
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Unit: {l.production_at}" if l.production_at else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Unit: {l.production_at}" if l.production_at else f"Row ID #{l.AuditLog.record_id}",
         "action": l.AuditLog.field_name,
         "details": l.AuditLog.new_value if l.AuditLog.old_value == "NONE" else f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]

@@ -2,15 +2,16 @@
   "expo": {
     "name": "BKNR ERP",
     "slug": "bknr-erp",
+    "scheme": "bknrerp",
     "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "dark",
-    "backgroundColor": "#060913",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#f4f7fb",
     "splash": {
       "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#060913"
+      "backgroundColor": "#f4f7fb"
     },
     "ios": {
       "supportsTablet": true,
@@ -38,6 +39,9 @@
       "eas": {
         "projectId": "1ed9ceb0-0c30-43d2-b2bc-00c960aafcdc"
       }
-    }
+    },
+    "plugins": [
+      "expo-sharing"
+    ]
   }
 }

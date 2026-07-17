@@ -1,12 +1,13 @@
-// The native app is a thin shell around the deployed ERP frontend.
-// Production /app currently returns 404, so use the working server entry point
-// until the React bundle is deployed. Override this for local React testing with
-// EXPO_PUBLIC_FRONTEND_URL=http://<LAN-IP>:5174/app/.
-const configuredFrontendUrl = process.env.EXPO_PUBLIC_FRONTEND_URL || 'https://bknrerp.in/home';
+const localApiUrl = 'http://127.0.0.1:8000';
+const liveApiUrl = 'https://bknrerp.in';
+const requestedApiUrl = process.env.EXPO_PUBLIC_API_URL || (__DEV__ ? localApiUrl : liveApiUrl);
+const liveDevAllowed = process.env.EXPO_PUBLIC_ALLOW_LIVE_API === 'true';
 
-export const FRONTEND_URL = `${configuredFrontendUrl.replace(/\/+$/, '')}/`;
+// Development builds must never write to production unless the developer
+// explicitly opts in. This prevents a missing .env.local from mutating live ERP data.
+const configuredApiUrl = __DEV__ && !liveDevAllowed && /^https?:\/\/(www\.)?bknrerp\.in/i.test(requestedApiUrl)
+  ? localApiUrl
+  : requestedApiUrl;
 
-// Keep released app builds usable while the React bundle is being deployed.
-// The server-rendered ERP is available at /home on the same backend.
-const configuredFallbackUrl = process.env.EXPO_PUBLIC_FALLBACK_URL || 'https://bknrerp.in/home';
-export const FALLBACK_URL = configuredFallbackUrl.replace(/\/+$/, '');
+export const API_URL = configuredApiUrl.replace(/\/+$/, '');
+export const IS_LIVE_API = /^https?:\/\/(www\.)?bknrerp\.in/i.test(API_URL);

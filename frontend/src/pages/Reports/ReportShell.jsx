@@ -103,7 +103,7 @@ export function useReport({ url, params = {}, deps = [] }) {
 /* ── ReportHeader ────────────────────────────────────────── */
 export function ReportHeader({ title, subtitle, loading, onReload, onPrint, exportUrl }) {
   return (
-    <div style={styles.header}>
+    <div className="report-page-header" style={styles.header}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <div style={styles.iconBox}><FileText size={18} color="#fff" /></div>
         <div>
@@ -165,7 +165,7 @@ export function KPICard({ label, value, accent = 'var(--corp-rep)', onClick, tit
       className="erp-report-kpi-card"
       style={{
         ...styles.kpiCard,
-        borderLeft: `3px solid ${accent}`,
+        borderBottom: `3px solid ${accent}`,
         cursor: onClick ? 'pointer' : 'default',
         flexDirection: stacked ? 'column' : styles.kpiCard.flexDirection,
         alignItems: stacked ? 'flex-start' : styles.kpiCard.alignItems,
@@ -349,7 +349,7 @@ const styles = {
     display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7, boxShadow: 'var(--shadow-soft)',
   },
   kpiLabel: { fontSize: 8, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.35px', whiteSpace: 'nowrap' },
-  kpiValue: { fontSize: 12, fontWeight: 900, color: 'var(--text-primary)', whiteSpace: 'nowrap' },
+  kpiValue: { fontSize: 16, fontWeight: 900, color: 'var(--text-primary)', whiteSpace: 'nowrap' },
   center: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: 60 },
   errBox: {
     background: 'rgba(220,38,38,0.1)', border: '1px solid rgba(220,38,38,0.25)',
@@ -481,6 +481,26 @@ export function AuditDrawer({ isOpen, onClose, auditUrl }) {
 
   if (!isOpen) return null;
 
+  const openRecord = recordId => {
+    if (recordId === null || recordId === undefined || recordId === '') return;
+    onClose();
+    window.setTimeout(() => {
+      const safeId = window.CSS?.escape ? window.CSS.escape(String(recordId)) : String(recordId).replace(/["\\]/g, '\\$&');
+      const row = document.querySelector(`[data-record-id="${safeId}"], [data-row-id="${safeId}"], tr[data-id="${safeId}"]`);
+      if (!row) return;
+      row.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      row.click?.();
+      const previousOutline = row.style.outline;
+      const previousOffset = row.style.outlineOffset;
+      row.style.outline = '3px solid #f59e0b';
+      row.style.outlineOffset = '-2px';
+      window.setTimeout(() => {
+        row.style.outline = previousOutline;
+        row.style.outlineOffset = previousOffset;
+      }, 2400);
+    }, 80);
+  };
+
   return (
     <>
       <div style={styles.drawerOverlay} onClick={onClose} />
@@ -508,32 +528,34 @@ export function AuditDrawer({ isOpen, onClose, auditUrl }) {
             // Format B: { record_id, field, old, new, user, time/timestamp }
             const logTime = log.timestamp || log.time || '';
             const logUser = log.user || 'System';
+            const recordId = log.record_id ?? log.row_id ?? log.source_id;
             
             if (log.action || log.details) {
               return (
-                <div key={i} style={styles.auditItem}>
+                <button type="button" key={i} onClick={() => openRecord(recordId)} disabled={recordId === null || recordId === undefined || recordId === ''} style={{ ...styles.auditItem, width: '100%', border: 0, borderLeft: '2px solid var(--corp-rep)', color: 'inherit', textAlign: 'left', cursor: recordId === null || recordId === undefined || recordId === '' ? 'default' : 'pointer' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-tertiary)' }}>
                     <span>{logTime}</span>
-                    {log.batch && <span>Batch: {log.batch}</span>}
+                    <strong>Row ID: #{recordId ?? '—'}</strong>
                   </div>
+                  {log.batch && <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{log.batch}</div>}
                   <div style={{ fontWeight: 600 }}>{log.action}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{log.details}</div>
                   <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>By: {logUser}</div>
-                </div>
+                </button>
               );
             } else {
               return (
-                <div key={i} style={styles.auditItem}>
+                <button type="button" key={i} onClick={() => openRecord(recordId)} disabled={recordId === null || recordId === undefined || recordId === ''} style={{ ...styles.auditItem, width: '100%', border: 0, borderLeft: '2px solid var(--corp-rep)', color: 'inherit', textAlign: 'left', cursor: recordId === null || recordId === undefined || recordId === '' ? 'default' : 'pointer' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-tertiary)' }}>
                     <span>{logTime}</span>
-                    <span>ID: {log.record_id}</span>
+                    <strong>Row ID: #{recordId ?? '—'}</strong>
                   </div>
                   <div style={{ fontWeight: 600 }}>Field: <span style={{ color: 'var(--corp-rep)' }}>{log.field}</span></div>
                   <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                     {log.field === 'DELETE' ? 'CANCELLED' : <>{log.old} &rarr; {log.new}</>}
                   </div>
                   <div style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>By: {logUser}</div>
-                </div>
+                </button>
               );
             }
           })}

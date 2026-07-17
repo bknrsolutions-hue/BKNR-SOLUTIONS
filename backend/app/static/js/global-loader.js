@@ -365,6 +365,56 @@
         return Promise.resolve(confirmation).then(() => window.location.reload());
     };
 
+    function openAuditRecord(recordId, auditItem) {
+        if (recordId === null || recordId === undefined || recordId === "") return false;
+        const safeId = window.CSS && window.CSS.escape
+            ? window.CSS.escape(String(recordId))
+            : String(recordId).replace(/["\\]/g, "\\$&");
+        const row = document.querySelector(
+            `[data-record-id="${safeId}"], [data-row-id="${safeId}"], tr[data-id="${safeId}"]`
+        );
+        if (!row) return false;
+
+        const panel = auditItem && auditItem.closest
+            ? auditItem.closest(".audit-panel, .attendance-modal-overlay, .attendance-drawer-backdrop, .modal, [role='dialog']")
+            : null;
+        if (panel) {
+            panel.style.display = "none";
+            panel.classList.remove("show", "open", "active");
+        }
+
+        row.style.removeProperty("display");
+        row.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        if (typeof row.click === "function") row.click();
+        const oldOutline = row.style.outline;
+        const oldOffset = row.style.outlineOffset;
+        row.style.outline = "3px solid #f59e0b";
+        row.style.outlineOffset = "-2px";
+        window.setTimeout(() => {
+            row.style.outline = oldOutline;
+            row.style.outlineOffset = oldOffset;
+        }, 2400);
+        return true;
+    }
+
+    window.openAuditRecord = function (recordId) {
+        return openAuditRecord(recordId, null);
+    };
+
+    document.addEventListener("click", (event) => {
+        const item = event.target.closest(
+            "[data-audit-record-id], .audit-item, .audit-log-item, .attendance-audit-body article"
+        );
+        if (!item) return;
+        const text = item.textContent || "";
+        const match = text.match(/(?:Row\s*ID|Record(?:\s*ID)?|ID\s*Ref)\s*[:#]?\s*#?(\d+)/i);
+        const recordId = item.dataset.auditRecordId || (match ? match[1] : "");
+        if (!recordId) return;
+        item.setAttribute("role", "button");
+        item.setAttribute("tabindex", "0");
+        openAuditRecord(recordId, item);
+    });
+
     function reopenNewEntryAfterSave() {
         const reopenKey = `bknr:new-entry:${window.location.pathname}`;
         if (sessionStorage.getItem(reopenKey) !== "1") return;

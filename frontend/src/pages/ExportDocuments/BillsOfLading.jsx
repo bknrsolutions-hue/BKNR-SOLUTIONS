@@ -3,6 +3,7 @@ import {
   Plus, MoreVertical, X, Printer, Download, Upload, Ban 
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
+import ExportSearchPanel from './ExportSearchPanel';
 
 export default function BillsOfLading() {
   const [history, setHistory] = useState([]);
@@ -293,25 +294,10 @@ export default function BillsOfLading() {
       </div>
 
       {/* SEARCH / FILTERS */}
-      <div className="attendance-filters-bar" style={{ maxWidth: '300px' }}>
-        <div className="attendance-filter-group">
-          <label htmlFor="search-bl">Search BL Number</label>
-          <input 
-            id="search-bl"
-            className="attendance-input" 
-            type="text" 
-            placeholder="Search..." 
-            value={searchQuery} 
-            onChange={(e) => setSearchQuery(e.target.value)} 
-          />
-        </div>
-      </div>
+      <ExportSearchPanel id="search-bl" label="Search BL Number" value={searchQuery} onChange={setSearchQuery} count={filteredRecords.length} placeholder="BL number, consignee or vessel…" />
 
       {/* ACTION BAR */}
-      <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-        <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', color: 'var(--att-heading)' }}>
-          {filteredRecords.length} Entries Found
-        </h3>
+      <div className="export-records-toolbar">
         
         {selectedRow && (
           <div className="attendance-actions-cell" ref={dropdownRef}>
@@ -575,7 +561,7 @@ export default function BillsOfLading() {
                   Cancel
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  Save Bill of Lading
+                  Save
                 </button>
               </div>
             </form>

@@ -2,12 +2,11 @@
  * FloorBalanceValue.jsx – Floor Balance Costing Report
  * Grouped hierarchically: Location -> Production For -> Variety.
  */
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
-  ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
-  useReport, fmt,
+  Loader, ErrorBox, EmptyRow, useReport, fmt,
 } from './ReportShell';
+import './CostingReports.css';
 
 export default function FloorBalanceValue({ activeRoute }) {
   const [fLocation, setFLocation] = useState('');
@@ -146,65 +145,54 @@ export default function FloorBalanceValue({ activeRoute }) {
   });
 
   return (
-    <div className="report-viewer-card">
-      <ReportHeader
-        title="Floor Balance Valuation Report"
-        loading={loading}
-        onReload={reload}
-        onPrint={() => window.print()}
-      />
-
-      {/* Filters bar */}
-      <FilterBar>
-        <FilterBox label="Location">
-          <FilterSelect value={fLocation} onChange={setFLocation}>
+    <div className="costing-floor-report">
+      <aside className="floor-template-sidebar">
+        <h2>Report Filters</h2>
+        <div className="floor-template-filters">
+          <label className="floor-template-fbox"><span>Location</span>
+          <select value={fLocation} onChange={event => setFLocation(event.target.value)}>
             <option value="">All Locations</option>
             {locationsList.map(l => <option key={l} value={l}>{l}</option>)}
-          </FilterSelect>
-        </FilterBox>
+          </select>
+          </label>
 
-        <FilterBox label="Production For">
-          <FilterSelect value={fProduction} onChange={setFProduction}>
+          <label className="floor-template-fbox"><span>Production For</span>
+          <select value={fProduction} onChange={event => setFProduction(event.target.value)}>
             <option value="">All Stocks</option>
             {productionList.map(p => <option key={p} value={p}>{p}</option>)}
-          </FilterSelect>
-        </FilterBox>
+          </select>
+          </label>
 
-        <FilterBox label="Variety">
-          <FilterSelect value={fVariety} onChange={setFVariety}>
+          <label className="floor-template-fbox"><span>Variety</span>
+          <select value={fVariety} onChange={event => setFVariety(event.target.value)}>
             <option value="">All Varieties</option>
             {varietiesList.map(v => <option key={v} value={v}>{v}</option>)}
-          </FilterSelect>
-        </FilterBox>
+          </select>
+          </label>
 
-        <FilterBox label="Global Filter">
-          <SearchInput value={search} onChange={setSearch} />
-        </FilterBox>
-      </FilterBar>
+          <label className="floor-template-fbox"><span>Global Filter</span>
+          <input value={search} onChange={event => setSearch(event.target.value)} placeholder="Search by Batch, Species, Source..." />
+          </label>
+        </div>
+      </aside>
 
-      {loading && <Loader />}
-      {error && <ErrorBox msg={error} onRetry={reload} />}
-
-      {!loading && !error && (
-        <>
-          {/* KPI indicators */}
-          <KPIGrid>
-            <KPICard label="SKU Lines" value={filtered.length} accent="var(--corp-dash)" />
-            <KPICard label="Total Qty (Kg)" value={`${fmt.number(grandQty)} Kg`} accent="var(--corp-ops)" />
-            <KPICard label="Total Value (₹)" value={fmt.currency(grandValue)} accent="var(--corp-fin)" />
-            <KPICard label="Avg Rate (₹/Kg)"
-              value={fmt.currency(grandQty > 0 ? grandValue / grandQty : 0)}
-              accent="var(--corp-rep)" />
-          </KPIGrid>
-
-          <div style={{ margin: '8px 0', fontSize: '11px', fontWeight: '700', color: 'var(--corp-dash)' }}>
-            {filtered.length} Records Found
+      <main className="floor-template-main">
+        <header className="floor-template-header">
+          <h2>Floor Balance Value Summary</h2>
+          <div className="floor-template-meta">
+            <span>Company: {data?.company_id || '—'}</span>
+            <span>{filtered.length} Records Found</span>
+            <button type="button" onClick={() => window.print()}><i className="fas fa-print" /> Print</button>
           </div>
+        </header>
 
-          {/* Hierarchical Table */}
-          <div className="card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
-            <div className="table-responsive">
-              <table className="bknr-table" style={{ minWidth: 1100 }}>
+        {loading && <Loader />}
+        {error && <ErrorBox msg={error} onRetry={reload} />}
+
+        {!loading && !error && (
+          <section className="floor-template-section">
+            <div className="floor-template-table-wrap">
+              <table className="floor-template-table">
                 <thead>
                   <tr>
                     <th style={{ width: 50 }}>#</th>
@@ -226,8 +214,8 @@ export default function FloorBalanceValue({ activeRoute }) {
                     renderedRows.map((row, idx) => {
                       if (row.isGroupRow) {
                         return (
-                          <tr key={idx} className={row.className} style={row.style}>
-                            <td colSpan={8} style={{ paddingLeft: '12px', textAlign: 'left', fontWeight: 800 }}>
+                          <tr key={idx} className={row.className}>
+                            <td colSpan={8}>
                               {row.label}
                             </td>
                             <td className="text-right" style={{ fontWeight: 800, paddingRight: '8px' }}>
@@ -241,31 +229,27 @@ export default function FloorBalanceValue({ activeRoute }) {
                       }
                       return (
                         <tr key={idx}>
-                          <td className="text-center" style={{ color: 'var(--text-tertiary)' }}>{row.sl}</td>
-                          <td style={{ textAlign: 'left' }}>{row.location}</td>
-                          <td style={{ textAlign: 'left' }}>{row.production_for}</td>
-                          <td style={{ fontWeight: 700 }}>{row.batch}</td>
-                          <td className="text-center">
-                            <span className="source-tag" style={{
-                              padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px',
-                              background: row.source === 'RMP' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(124, 58, 237, 0.1)',
-                              color: row.source === 'RMP' ? '#3b82f6' : '#7c3aed'
-                            }}>{row.source}</span>
+                          <td>{row.sl}</td>
+                          <td>{row.location}</td>
+                          <td>{row.production_for}</td>
+                          <td className="batch-bold">{row.batch}</td>
+                          <td>
+                            <span className="source-tag">{row.source}</span>
                           </td>
                           <td>{row.species}</td>
-                          <td style={{ textAlign: 'left' }}>
-                            <span className="tag" style={{ fontWeight: 600 }}>{row.variety}</span>
+                          <td>
+                            <span className="tag">{row.variety}</span>
                           </td>
                           <td>{row.count}</td>
-                          <td className="text-right" style={{ fontWeight: 800 }}>{fmt.number(row.qty)}</td>
-                          <td className="text-right" style={{ color: 'var(--completed-text)' }}>{fmt.currency(row.val)}</td>
+                          <td className="qty-bold">{fmt.number(row.qty)}</td>
+                          <td className="val-column">{fmt.currency(row.val)}</td>
                         </tr>
                       );
                     })
                   )}
                 </tbody>
                 <tfoot>
-                  <tr style={{ fontWeight: 800 }}>
+                  <tr>
                     <td colSpan={8} style={{ textAlign: 'right', paddingRight: '8px' }}>GRAND TOTAL:</td>
                     <td className="text-right" style={{ fontWeight: 800 }}>{fmt.number(grandQty)}</td>
                     <td className="text-right" style={{ color: 'var(--completed-text)', fontWeight: 800 }}>{fmt.currency(grandValue)}</td>
@@ -273,9 +257,9 @@ export default function FloorBalanceValue({ activeRoute }) {
                 </tfoot>
               </table>
             </div>
-          </div>
-        </>
-      )}
+          </section>
+        )}
+      </main>
     </div>
   );
 }

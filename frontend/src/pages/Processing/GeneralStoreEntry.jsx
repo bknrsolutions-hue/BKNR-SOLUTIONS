@@ -459,7 +459,7 @@ export default function GeneralStoreEntry() {
           </div>
 
           <div className="general-stock-form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save Entry'}</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save'}</button>
             <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
             <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(true)}>+ Add New Item</button>
           </div>
@@ -513,7 +513,7 @@ export default function GeneralStoreEntry() {
               <input type="number" min="0" step="0.01" className="form-control" value={newItem.minimumLevel} onChange={(e) => setNewItem((current) => ({ ...current, minimumLevel: number(e.target.value) }))} />
             </Field>
             <div className="general-stock-form-actions">
-              <button type="submit" className="btn btn-primary" disabled={loading}>Save Item</button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
               <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(false)}>Cancel</button>
             </div>
           </form>

@@ -3,6 +3,7 @@ import {
   Search, Plus, UserCheck, MoreVertical, Edit2, Printer, 
   FileText, FileSpreadsheet, Ban, CheckCircle, AlertCircle, X 
 } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './Attendance.css';
 
 const getRejoinDate = (employee) => {
@@ -87,7 +88,7 @@ export default function StaffRegistration({ theme }) {
 
   const loadData = async () => {
     try {
-      const res = await fetch('/attendance/employee/register?format=json');
+      const res = await sessionFetch('/attendance/employee/register?format=json');
       const data = await res.json();
       if (data.status === 'success') {
         setEmployees(data.employees || []);
@@ -236,7 +237,7 @@ export default function StaffRegistration({ theme }) {
         }
       });
 
-      const res = await fetch(url, {
+      const res = await sessionFetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: payload.toString()
@@ -289,7 +290,7 @@ export default function StaffRegistration({ theme }) {
     if (!confirmDelete) return;
 
     try {
-      const res = await fetch(`/attendance/employee/delete/${selectedRow.id}`, { method: 'POST' });
+      const res = await sessionFetch(`/attendance/employee/delete/${selectedRow.id}`, { method: 'POST' });
       const data = await res.json();
       if (data.status === 'ok') {
         showNotification('🗑️ Employee Purged Successfully!', 'success');
@@ -1052,7 +1053,7 @@ export default function StaffRegistration({ theme }) {
                   CANCEL
                 </button>
                 <button type="submit" className="attendance-btn attendance-btn-primary">
-                  {isEditMode ? 'UPDATE RECORD' : 'SAVE MASTER'}
+                  {isEditMode ? 'UPDATE RECORD' : 'SAVE'}
                 </button>
               </div>
             </form>

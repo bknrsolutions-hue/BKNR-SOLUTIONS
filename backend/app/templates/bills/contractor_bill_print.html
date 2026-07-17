@@ -49,7 +49,8 @@ button{background:#3b82f6;color:#fff;border:0;border-radius:7px;padding:10px 16p
     <div class="meta">
       <strong>{{ company.name }}</strong><br>
       {{ company.address or '' }}<br>
-      {{ company.email or '' }}
+      {{ company.email or '' }}<br>
+      MPEDA: {{ company.mpeda_registration_code or 'NOT REGISTERED' }}
     </div>
   </section>
 
@@ -69,6 +70,7 @@ button{background:#3b82f6;color:#fff;border:0;border-radius:7px;padding:10px 16p
       <div class="muted">
         {{ company.address or '-' }}<br>
         Email: {{ company.email or '-' }}
+        <br>MPEDA: {{ company.mpeda_registration_code or 'NOT REGISTERED' }}
       </div>
     </div>
   </section>
