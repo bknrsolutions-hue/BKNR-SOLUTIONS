@@ -73,5 +73,5 @@ function AppContent() {
 const styles = StyleSheet.create({
   loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, backgroundColor: '#f4f7fb' },
   logo: { width: 64, height: 64, borderRadius: 18 },
-  loadingText: { color: '#475569', fontSize: 13, fontWeight: '700' },
+  loadingText: { color: '#475569', fontSize: 14, fontWeight: '700' },
 });
