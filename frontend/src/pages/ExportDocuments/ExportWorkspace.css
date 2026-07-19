@@ -259,3 +259,35 @@
 .export-document-page .attendance-page-header p {
   font-size: 10px !important;
 }
+
+/* Gate Entry / RMP Form Grid Multi-Column Alignment (170px minwidth, 8px gap) */
+.export-document-page .attendance-form-grid,
+.export-document-page .pi-form-grid,
+.export-document-page .form-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
+  gap: 8px !important;
+}
+
+.export-document-page .attendance-form-group,
+.export-document-page .attendance-filter-group,
+.export-document-page .form-group {
+  gap: 4px !important;
+  min-width: 0 !important;
+}
+
+/* Modal and Card Padding Alignment */
+.export-document-page .attendance-modal-content,
+.export-document-page .card {
+  padding: 12px 16px !important;
+  border-radius: 10px !important;
+}
+
+.export-document-page .attendance-modal-body {
+  padding: 14px 16px !important;
+}
+
+.export-document-page .pi-form-section-title {
+  margin-top: 10px !important;
+  margin-bottom: 6px !important;
+  font-size: 11px !important;
+}
