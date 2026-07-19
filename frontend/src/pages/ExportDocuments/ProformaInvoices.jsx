@@ -366,28 +366,28 @@ export default function ProformaInvoices() {
                     {(form.items || []).map((it, idx) => (
                       <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: 'var(--att-card)', border: '1px solid var(--att-border)', borderRadius: 8, padding: 10 }}>
                         <div style={{ minWidth: 120, flex: '1 1 120px' }}>
-                          <Select label="Brand" value={it.brand} onChange={e => handleItemRowChange(idx, 'brand', e.target.value)} options={['', ...brandOptions]} />
+                          <Select label="Brand" value={it.brand} onChange={e => handleItemRowChange(idx, 'brand', e.target.value)} options={brandOptions} />
                         </div>
                         <div style={{ minWidth: 125, flex: '1 1 125px' }}>
-                          <Select label="Pack Style" value={it.packing_style} onChange={e => handleItemRowChange(idx, 'packing_style', e.target.value)} options={['', ...packingOptions]} />
+                          <Select label="Pack Style" value={it.packing_style} onChange={e => handleItemRowChange(idx, 'packing_style', e.target.value)} options={packingOptions} />
                         </div>
                         <div style={{ minWidth: 110, flex: '1 1 110px' }}>
-                          <Select label="Freezer" value={it.freezer} onChange={e => handleItemRowChange(idx, 'freezer', e.target.value)} options={['', ...freezerOptions]} />
+                          <Select label="Freezer" value={it.freezer} onChange={e => handleItemRowChange(idx, 'freezer', e.target.value)} options={freezerOptions} />
                         </div>
                         <div style={{ minWidth: 115, flex: '1 1 115px' }}>
-                          <Select label="Count Glaze" value={it.count_glaze} onChange={e => handleItemRowChange(idx, 'count_glaze', e.target.value)} options={['', ...glazeOptions]} />
+                          <Select label="Count Glaze" value={it.count_glaze} onChange={e => handleItemRowChange(idx, 'count_glaze', e.target.value)} options={glazeOptions} />
                         </div>
                         <div style={{ minWidth: 115, flex: '1 1 115px' }}>
-                          <Select label="Weight Glaze" value={it.weight_glaze} onChange={e => handleItemRowChange(idx, 'weight_glaze', e.target.value)} options={['', ...glazeOptions]} />
+                          <Select label="Weight Glaze" value={it.weight_glaze} onChange={e => handleItemRowChange(idx, 'weight_glaze', e.target.value)} options={glazeOptions} />
                         </div>
                         <div style={{ minWidth: 115, flex: '1 1 115px' }}>
-                          <Select label="Species" value={it.species} onChange={e => handleItemRowChange(idx, 'species', e.target.value)} options={['', ...speciesOptions]} />
+                          <Select label="Species" value={it.species} onChange={e => handleItemRowChange(idx, 'species', e.target.value)} options={speciesOptions} />
                         </div>
                         <div style={{ minWidth: 115, flex: '1 1 115px' }}>
-                          <Select label="Variety" value={it.variety} onChange={e => handleItemRowChange(idx, 'variety', e.target.value)} options={['', ...varietyOptions]} />
+                          <Select label="Variety" value={it.variety} onChange={e => handleItemRowChange(idx, 'variety', e.target.value)} options={varietyOptions} />
                         </div>
                         <div style={{ minWidth: 100, flex: '1 1 100px' }}>
-                          <Select label="Grade" value={it.grade} onChange={e => handleItemRowChange(idx, 'grade', e.target.value)} options={['', ...gradeOptions]} />
+                          <Select label="Grade" value={it.grade} onChange={e => handleItemRowChange(idx, 'grade', e.target.value)} options={gradeOptions} />
                         </div>
                         <div style={{ minWidth: 85, flex: '1 1 85px' }}>
                           <Field label="Pcs / Lb" value={it.no_of_pieces} onChange={e => handleItemRowChange(idx, 'no_of_pieces', e.target.value)} placeholder="16/20" />
@@ -444,9 +444,25 @@ export default function ProformaInvoices() {
 }
 
 function Field({ label, ...props }) {
-  return <div className="attendance-form-group"><label>{label}</label><input className="attendance-input" {...props} /></div>;
+  const cleanLabel = (label || '').replace(' *', '');
+  return (
+    <div className="attendance-form-group">
+      {label && <label>{label}</label>}
+      <input className="attendance-input" placeholder={props.placeholder || cleanLabel} {...props} />
+    </div>
+  );
 }
 
-function Select({ label, options, ...props }) {
-  return <div className="attendance-form-group"><label>{label}</label><select className="attendance-select" {...props}>{options.map(option => <option key={option}>{option}</option>)}</select></div>;
+function Select({ label, options, placeholder, ...props }) {
+  const cleanLabel = (label || '').replace(' *', '');
+  const cleanOptions = (options || []).filter(Boolean);
+  return (
+    <div className="attendance-form-group">
+      {label && <label>{label}</label>}
+      <select className="attendance-select" {...props}>
+        <option value="">{placeholder || (cleanLabel ? `Select ${cleanLabel}` : 'Select')}</option>
+        {cleanOptions.map(option => <option key={option} value={option}>{option}</option>)}
+      </select>
+    </div>
+  );
 }
