@@ -507,8 +507,8 @@ export default function GoodsGateMovements() {
                 <td className="text-left">{row.vehicle_number || '—'}</td>
                 <td className="text-left">{row.driver_name || '—'}</td>
                 <td className="goods-summary" style={{ whiteSpace: 'normal', lineHeight: 1.3 }}>{row.item_summary || '—'}</td>
-                <td className="text-right">{fmt.number(row.total_quantity)}</td>
-                <td className="text-right">{fmt.number(row.total_packages)}</td>
+                <td className="text-right">{(Number(row.total_quantity) || 0).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 3 })}</td>
+                <td className="text-right">{(Number(row.total_packages) || 0).toLocaleString()}</td>
                 <td className="text-left" style={{ whiteSpace: 'normal' }}>{row.purpose || '—'}</td>
                 <td className="text-center">
                   <span style={{ ...returnStatusStyle(row.return_status) }}>
