@@ -11,6 +11,8 @@ const emptyForm = (piNo = '') => ({
   buyer_address: '', country: '', currency: 'USD', incoterm: 'FOB', payment_terms: '',
   port_of_loading: '', port_of_discharge: '', product_description: '', quantity: '',
   unit: 'KG', unit_price: '', status: 'DRAFT', remarks: '',
+  brand: '', packing_style: '', freezer: '', count_glaze: '', weight_glaze: '',
+  species: '', variety: '', grade: '', no_of_pieces: '', no_of_mc: '',
 });
 
 const statuses = ['DRAFT', 'SENT', 'ACCEPTED', 'EXPIRED'];
@@ -29,6 +31,13 @@ export default function ProformaInvoices() {
   const [showAudit, setShowAudit] = useState(false);
   const [buyerOptions, setBuyerOptions] = useState([]);
   const [countryOptions, setCountryOptions] = useState([]);
+  const [brandOptions, setBrandOptions] = useState([]);
+  const [packingOptions, setPackingOptions] = useState([]);
+  const [freezerOptions, setFreezerOptions] = useState([]);
+  const [glazeOptions, setGlazeOptions] = useState([]);
+  const [speciesOptions, setSpeciesOptions] = useState([]);
+  const [varietyOptions, setVarietyOptions] = useState([]);
+  const [gradeOptions, setGradeOptions] = useState([]);
   const [nextPiNo, setNextPiNo] = useState('');
 
   const notify = useCallback((msg, type = 'success') => {
@@ -46,6 +55,13 @@ export default function ProformaInvoices() {
       setAuditLogs(data.audit_logs || []);
       setBuyerOptions(data.buyers || []);
       setCountryOptions(data.countries || []);
+      setBrandOptions(data.brands || []);
+      setPackingOptions(data.packing_styles || []);
+      setFreezerOptions(data.freezers || []);
+      setGlazeOptions(data.glazes || []);
+      setSpeciesOptions(data.species || []);
+      setVarietyOptions(data.varieties || []);
+      setGradeOptions(data.grades || []);
       setNextPiNo(data.next_pi_no || '');
     } catch (error) {
       notify(error.message || 'Unable to load proforma invoices', 'error');
@@ -265,11 +281,21 @@ export default function ProformaInvoices() {
               <section className="pi-form-section">
                 <div className="pi-form-section-title"><Calculator size={15} /><span>3. Product & Commercial Value</span></div>
                 <div className="pi-form-grid-organized">
-                  <div className="attendance-form-group pi-full-row"><label>Product Description *</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="2" placeholder="Product, species, grade, glaze, freezing type and packing specification" /></div>
+                  <Select label="Brand" name="brand" value={form.brand} onChange={change} options={['', ...brandOptions]} />
+                  <Select label="Packing Style" name="packing_style" value={form.packing_style} onChange={change} options={['', ...packingOptions]} />
+                  <Select label="Freezer" name="freezer" value={form.freezer} onChange={change} options={['', ...freezerOptions]} />
+                  <Select label="Count / Glaze" name="count_glaze" value={form.count_glaze} onChange={change} options={['', ...glazeOptions]} />
+                  <Field label="Weight / Glaze" name="weight_glaze" value={form.weight_glaze} onChange={change} placeholder="e.g. 100% NW / 80% NW" />
+                  <Select label="Species" name="species" value={form.species} onChange={change} options={['', ...speciesOptions]} />
+                  <Select label="Variety" name="variety" value={form.variety} onChange={change} options={['', ...varietyOptions]} />
+                  <Select label="Grade" name="grade" value={form.grade} onChange={change} options={['', ...gradeOptions]} />
+                  <Field label="Pcs / Lb" name="no_of_pieces" value={form.no_of_pieces} onChange={change} placeholder="e.g. 16/20" />
+                  <Field label="Order MC (Boxes)" name="no_of_mc" type="number" min="0" value={form.no_of_mc} onChange={change} placeholder="0" />
                   <Field label="Quantity *" name="quantity" type="number" min="0.001" step="0.001" value={form.quantity} onChange={change} required placeholder="0.000" />
                   <Select label="Unit *" name="unit" value={form.unit} onChange={change} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
                   <Field label="Unit Price *" name="unit_price" type="number" min="0" step="0.0001" value={form.unit_price} onChange={change} required placeholder="0.00" />
                   <div className="attendance-form-group"><label>Total PI Value</label><div className="pi-total-value"><small>{form.currency}</small><strong>{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div></div>
+                  <div className="attendance-form-group pi-full-row"><label>Product Description *</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="2" placeholder="Product, species, grade, glaze, freezing type and packing specification" /></div>
                   <div className="attendance-form-group pi-full-row"><label>Remarks / Special Conditions</label><textarea className="attendance-input" name="remarks" value={form.remarks} onChange={change} rows="2" placeholder="Quality, delivery, documentation or offer conditions" /></div>
                 </div>
               </section>

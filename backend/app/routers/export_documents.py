@@ -18,6 +18,8 @@ from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
 from app.database import get_db
+from app.utils.download_security import require_download_grant
+from app.utils.data_management_audit import log_data_management_action
 from app.database.models.invoices import (
     ProformaInvoice,
     ExportShipment,
@@ -2410,6 +2412,16 @@ class ProformaInvoiceSchema(BaseModel):
     unit_price: Decimal
     status: str = "DRAFT"
     remarks: str = None
+    brand: str = None
+    packing_style: str = None
+    freezer: str = None
+    count_glaze: str = None
+    weight_glaze: str = None
+    species: str = None
+    variety: str = None
+    grade: str = None
+    no_of_pieces: str = None
+    no_of_mc: int = 0
 
     @model_validator(mode="after")
     def validate_proforma(self):
@@ -2707,6 +2719,16 @@ def serialize_proforma(row: ProformaInvoice) -> dict:
         "approved_at": _dt(row.approved_at),
         "approval_remarks": row.approval_remarks,
         "remarks": row.remarks,
+        "brand": getattr(row, "brand", "") or "",
+        "packing_style": getattr(row, "packing_style", "") or "",
+        "freezer": getattr(row, "freezer", "") or "",
+        "count_glaze": getattr(row, "count_glaze", "") or "",
+        "weight_glaze": getattr(row, "weight_glaze", "") or "",
+        "species": getattr(row, "species", "") or "",
+        "variety": getattr(row, "variety", "") or "",
+        "grade": getattr(row, "grade", "") or "",
+        "no_of_pieces": getattr(row, "no_of_pieces", "") or "",
+        "no_of_mc": getattr(row, "no_of_mc", 0) or 0,
         "created_by": row.created_by,
         "created_at": _dt(row.created_at),
     }
@@ -2733,6 +2755,7 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    ensure_bill_accounting_schema(db)
     rows = db.query(ProformaInvoice).filter(
         ProformaInvoice.company_id == comp_code,
         ProformaInvoice.is_cancelled != True,
@@ -2775,6 +2798,13 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
             "iec_code": row.iec_code or "",
         } for row in buyer_rows],
         "countries": [row.country_name for row in country_rows],
+        "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == comp_code).order_by(brands.brand_name).all()],
+        "packing_styles": [p.packing_style for p in db.query(packing_styles).filter(packing_styles.company_id == comp_code).order_by(packing_styles.packing_style).all()],
+        "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == comp_code).order_by(freezers.freezer_name).all()],
+        "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == comp_code).order_by(glazes.glaze_name).all()],
+        "species": [s.species_name for s in db.query(species).filter(species.company_id == comp_code).order_by(species.species_name).all()],
+        "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == comp_code).order_by(varieties.variety_name).all()],
+        "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == comp_code).order_by(grades.grade_name).all()],
         "rows": [serialize_proforma(row) for row in rows],
         "audit_logs": [{
             "id": audit.id,
@@ -3390,10 +3420,12 @@ def health_certificate_delete(log_id: int, request: Request, db: Session = Depen
 # ============================================================
 @router.get("/registers.xlsx")
 def export_all_document_registers(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     comp_code = request.session.get("company_code")
     if not comp_code:
         raise HTTPException(status_code=401, detail="Unauthorized")
     content = document_register_workbook(db, comp_code)
+    log_data_management_action(comp_code, "REGISTER", "All Export Registers", "Success", "Downloaded complete export-document workbook")
     return StreamingResponse(
         BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -3403,12 +3435,15 @@ def export_all_document_registers(request: Request, db: Session = Depends(get_db
 
 @router.get("/{doc_type}/register.xlsx")
 def export_document_register(doc_type: str, request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     comp_code = request.session.get("company_code")
     if not comp_code:
         raise HTTPException(status_code=401, detail="Unauthorized")
     if doc_type not in export_doc_config():
         raise HTTPException(status_code=404, detail="Unsupported document type")
     content = document_register_workbook(db, comp_code, doc_type)
+    label = doc_type.replace("_", " ").title()
+    log_data_management_action(comp_code, "REGISTER", f"{label} Register", "Success", f"Downloaded {label} tenant register")
     return StreamingResponse(
         BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
@@ -3418,6 +3453,7 @@ def export_document_register(doc_type: str, request: Request, db: Session = Depe
 
 @router.get("/shipment/{shipment_id}/dossier.zip")
 def export_shipment_dossier(shipment_id: int, request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     comp_code = request.session.get("company_code")
     if not comp_code:
         raise HTTPException(status_code=401, detail="Unauthorized")
@@ -3516,6 +3552,7 @@ def export_shipment_dossier(shipment_id: int, request: Request, db: Session = De
         f"Exported {len(manifest_rows)} documents", request.session.get("email"),
     )
     db.commit()
+    log_data_management_action(comp_code, "DOSSIER", f"Shipment {shipment.shipment_no}", "Success", "Downloaded complete shipment dossier")
     output.seek(0)
     return StreamingResponse(
         output,

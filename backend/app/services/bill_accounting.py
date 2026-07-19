@@ -35,6 +35,16 @@ def ensure_bill_accounting_schema(db: Session) -> None:
         "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0",
         "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS salary_adjustment_reason TEXT",
         "ALTER TABLE employee_statutory_master ADD COLUMN IF NOT EXISTS eps_applicable BOOLEAN DEFAULT TRUE",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS brand VARCHAR(150)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS packing_style VARCHAR(150)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS freezer VARCHAR(150)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS count_glaze VARCHAR(100)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS weight_glaze VARCHAR(100)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS species VARCHAR(150)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS variety VARCHAR(150)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS grade VARCHAR(100)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100)",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0",
         """
         CREATE TABLE IF NOT EXISTS employee_salary_advance_recovery (
             id SERIAL PRIMARY KEY,
