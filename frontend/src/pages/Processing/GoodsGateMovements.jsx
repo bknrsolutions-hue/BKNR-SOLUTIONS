@@ -298,33 +298,102 @@ export default function GoodsGateMovements() {
 
         <div className="form-grid">
           <Field label="Production For *">
-            <SearchableDropdown
+            <select
+              className="form-control"
               value={form.production_for}
-              onChange={value => updateForm('production_for', value)}
-              options={withCurrent(masters.productionFor, form.production_for)}
-              placeholder="Select company"
+              onChange={e => updateForm('production_for', e.target.value)}
               required
-            />
+            >
+              <option value="">Select Company</option>
+              {withCurrent(masters.productionFor, form.production_for).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
           </Field>
           <Field label="Plant Location *">
-            <SearchableDropdown
+            <select
+              className="form-control"
               value={form.plant_location}
-              onChange={value => updateForm('plant_location', value)}
-              options={masters.plants}
-              placeholder="Select Peeling At"
+              onChange={e => updateForm('plant_location', e.target.value)}
               required
-            />
+            >
+              <option value="">Select Peeling At</option>
+              {withCurrent(masters.plants, form.plant_location).map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
           </Field>
-          <Field label="Party / Vendor Name *"><SearchableDropdown value={form.party_name} onChange={value => updateForm('party_name', value)} options={masters.parties} placeholder="Select or type party" allowCustom required /></Field>
-          <Field label={form.movement_type === 'IN' ? 'Source / From Location' : 'Destination / To Location'}><SearchableDropdown value={form.source_destination} onChange={value => updateForm('source_destination', value)} options={masters.sourceLocations} placeholder="Select or type location" allowCustom /></Field>
-          <Field label="Purpose *"><SearchableDropdown value={form.purpose} onChange={value => updateForm('purpose', value)} options={masters.purposes} placeholder="Select or type purpose" allowCustom required /></Field>
-          <Field label={form.movement_type === 'IN' ? 'Received By' : 'Authorized By'}><SearchableDropdown value={form.authorized_received_by} onChange={value => updateForm('authorized_received_by', value)} options={masters.employees} placeholder="Select employee" allowCustom /></Field>
+          <Field label="Party / Vendor Name *">
+            <select
+              className="form-control"
+              value={form.party_name}
+              onChange={e => updateForm('party_name', e.target.value)}
+              required
+            >
+              <option value="">Select Party</option>
+              {withCurrent(masters.parties, form.party_name).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
+          <Field label={form.movement_type === 'IN' ? 'Source / From Location' : 'Destination / To Location'}>
+            <select
+              className="form-control"
+              value={form.source_destination}
+              onChange={e => updateForm('source_destination', e.target.value)}
+            >
+              <option value="">Select Location</option>
+              {withCurrent(masters.sourceLocations, form.source_destination).map(l => <option key={l} value={l}>{l}</option>)}
+            </select>
+          </Field>
+          <Field label="Purpose *">
+            <select
+              className="form-control"
+              value={form.purpose}
+              onChange={e => updateForm('purpose', e.target.value)}
+              required
+            >
+              <option value="">Select Purpose</option>
+              {withCurrent(masters.purposes, form.purpose).map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </Field>
+          <Field label={form.movement_type === 'IN' ? 'Received By' : 'Authorized By'}>
+            <select
+              className="form-control"
+              value={form.authorized_received_by}
+              onChange={e => updateForm('authorized_received_by', e.target.value)}
+            >
+              <option value="">Select Employee</option>
+              {withCurrent(masters.employees, form.authorized_received_by).map(e => <option key={e} value={e}>{e}</option>)}
+            </select>
+          </Field>
           <Field label="PO Number"><input className="form-control" value={form.po_number} onChange={e => updateForm('po_number', e.target.value)} /></Field>
           <Field label="Challan Number"><input className="form-control" value={form.challan_number} onChange={e => updateForm('challan_number', e.target.value)} /></Field>
           <Field label="Invoice Number"><input className="form-control" value={form.invoice_number} onChange={e => updateForm('invoice_number', e.target.value)} /></Field>
-          <Field label="Vehicle Number"><SearchableDropdown value={form.vehicle_number} onChange={value => updateForm('vehicle_number', value)} options={masters.vehicles} placeholder="Select or type vehicle" allowCustom /></Field>
-          <Field label="Driver Name"><SearchableDropdown value={form.driver_name} onChange={value => updateForm('driver_name', value)} options={masters.drivers} placeholder="Select or type driver" allowCustom /></Field>
-          <Field label="Department"><SearchableDropdown value={form.department} onChange={value => updateForm('department', value)} options={masters.departments} placeholder="Select department" allowCustom /></Field>
+          <Field label="Vehicle Number">
+            <select
+              className="form-control"
+              value={form.vehicle_number}
+              onChange={e => updateForm('vehicle_number', e.target.value)}
+            >
+              <option value="">Select Vehicle</option>
+              {withCurrent(masters.vehicles, form.vehicle_number).map(v => <option key={v} value={v}>{v}</option>)}
+            </select>
+          </Field>
+          <Field label="Driver Name">
+            <select
+              className="form-control"
+              value={form.driver_name}
+              onChange={e => updateForm('driver_name', e.target.value)}
+            >
+              <option value="">Select Driver</option>
+              {withCurrent(masters.drivers, form.driver_name).map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </Field>
+          <Field label="Department">
+            <select
+              className="form-control"
+              value={form.department}
+              onChange={e => updateForm('department', e.target.value)}
+            >
+              <option value="">Select Department</option>
+              {withCurrent(masters.departments, form.department).map(d => <option key={d} value={d}>{d}</option>)}
+            </select>
+          </Field>
           <Field label="Linked Return Movement">
             <select className="form-control" value={form.linked_movement_id} onChange={e => chooseLinkedMovement(e.target.value)}>
               <option value="">Not linked</option>
