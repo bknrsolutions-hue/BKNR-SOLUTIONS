@@ -194,7 +194,7 @@ export default function GoodsGateMovements() {
         items: items.map(item => ({
           ...item,
           quantity: Number(item.quantity || 0),
-          packages: Number(item.packages || 0),
+          packages: item.packages || '0',
         })),
       };
       const payload = await readJson(await fetch('/processing/gate_entry/goods', {
@@ -450,7 +450,7 @@ export default function GoodsGateMovements() {
               <input className="form-control" value={item.description} onChange={e => updateItem(index, 'description', e.target.value)} placeholder="Description" />
               <input className="form-control" type="number" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} placeholder="Qty *" required />
               <select className="form-control" value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} required>{units.map(value => <option key={value}>{value}</option>)}</select>
-              <input className="form-control" type="number" min="0" step="0.001" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="Packages" />
+              <input className="form-control" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="Packages (e.g. 10 Boxes)" />
               <input className="form-control" value={item.material_condition} onChange={e => updateItem(index, 'material_condition', e.target.value)} placeholder="Condition" />
               <button type="button" className="goods-remove" onClick={() => setItems(current => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index))} disabled={items.length === 1}><Trash2 size={14} /></button>
             </div>
