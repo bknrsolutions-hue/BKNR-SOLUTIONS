@@ -108,11 +108,12 @@ body {
   .main-content :is(label, .attendance-form-group label, .enterprise-field label, .field label, .filter-label) {
     color: var(--text-secondary) !important;
     font-size: 12px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     letter-spacing: 0 !important;
   }
 
-  .main-content :is(input, select, textarea, button, .btn, .attendance-btn) {
+  /* Form controls: 13px for full forms, but filter bar controls stay compact via inline styles */
+  .main-content :is(input, select, textarea, button, .btn, .attendance-btn):not(.erp-filter-control):not([class*="filter"]) {
     font-size: 13px !important;
     line-height: 1.35 !important;
   }
@@ -122,28 +123,6 @@ body {
     border-radius: 6px !important;
     background: var(--input-bg) !important;
     color: var(--text-primary) !important;
-  }
-
-  .main-content :is(table, .attendance-table, .enterprise-table, .bknr-table, .rm-table) {
-    color: var(--text-primary) !important;
-    font-size: 13px !important;
-  }
-
-  .main-content :is(th, .attendance-table th, .enterprise-table th, .bknr-table th, .rm-table th) {
-    background: #eef0f2 !important;
-    color: var(--text-secondary) !important;
-    font-size: 12px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0 !important;
-  }
-
-  [data-theme="dark"] .main-content :is(th, .attendance-table th, .enterprise-table th, .bknr-table th, .rm-table th) {
-    background: #252c34 !important;
-  }
-
-  .main-content :is(td, .attendance-table td, .enterprise-table td, .bknr-table td, .rm-table td) {
-    border-color: var(--table-line) !important;
-    font-size: 13px !important;
   }
 
   .main-content tbody tr:hover {
@@ -203,6 +182,123 @@ body {
     border-color: var(--sap-accent) !important;
     background: var(--sap-accent) !important;
     color: #ffffff !important;
+  }
+}
+
+/* Corporate application chrome
+   Keep the existing header/sidebar geometry; only align their visual palette
+   with the Admin Console's blue active state. Tenant-saved colors still win
+   through the --ui-* customizer variables. */
+@media screen {
+  .app-header {
+    background: var(--ui-header-bg, #0b1f3a) !important;
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 32%, #294866) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+    box-shadow: 0 2px 8px rgb(2 20 39 / 18%) !important;
+  }
+
+  .sidebar {
+    background: var(--ui-sidebar-bg, #102a43) !important;
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 28%, #34516c) !important;
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+    box-shadow: 0 8px 24px rgb(2 20 39 / 24%) !important;
+  }
+
+  .sidebar .sidebar-brand,
+  .sidebar .sidebar-footer,
+  .sidebar .menu-wrapper,
+  .sidebar .reports-container {
+    border-color: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 14%, transparent) !important;
+  }
+
+  .sidebar :is(.brand-title, .sidebar-footer .footer-powered),
+  .app-header :is(.header-premium-title, .corp-name) {
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+  }
+
+  .app-header :is(.header-premium-title, .corp-name) {
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .sidebar :is(.brand-subtitle, .footer-quote, .pillar-title, .submenu-heading-text, .submenu-item),
+  .sidebar :is(.pillar-chevron, .pillar-folder, .sub-chevron, .sub-folder, .submenu-item i) {
+    color: var(--ui-sidebar-muted, #b8c8d8) !important;
+  }
+
+  .sidebar :is(.pillar-title, .submenu-heading-text, .submenu-item):hover {
+    background: color-mix(in srgb, var(--ui-accent, #2563eb) 15%, transparent) !important;
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+  }
+
+  .sidebar .submenu-item.active {
+    background: var(--ui-accent, #2563eb) !important;
+    border-left-color: color-mix(in srgb, var(--ui-accent, #2563eb) 55%, #ffffff) !important;
+    color: #ffffff !important;
+  }
+
+  .sidebar .submenu-item.active :is(div, span, i) {
+    color: #ffffff !important;
+  }
+
+  .sidebar :is(.pillar-title:hover, .submenu-heading-text:hover) i,
+  .sidebar :is(.pillar-block.open > .pillar-title, .submenu-heading-block.open > .submenu-heading-text) i {
+    color: color-mix(in srgb, var(--ui-accent, #2563eb) 58%, #ffffff) !important;
+  }
+
+  .sidebar .close-sidebar-btn,
+  .app-header :is(
+    .hamburger-trigger-btn,
+    .header-home-btn,
+    .mobile-top-menu-btn,
+    .icon-action-btn,
+    .corp-profile-btn
+  ) {
+    border-color: color-mix(in srgb, var(--ui-header-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-header-text, #f8fafc) 7%, transparent) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .sidebar .close-sidebar-btn {
+    border-color: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 7%, transparent) !important;
+    color: var(--ui-sidebar-muted, #b8c8d8) !important;
+  }
+
+  .app-header :is(
+    .hamburger-trigger-btn,
+    .header-home-btn,
+    .mobile-top-menu-btn,
+    .icon-action-btn,
+    .corp-profile-btn
+  ):hover,
+  .app-header .corp-profile-btn.active {
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 70%, #ffffff) !important;
+    background: color-mix(in srgb, var(--ui-accent, #2563eb) 28%, transparent) !important;
+    color: #ffffff !important;
+  }
+
+  .app-header .header-brand-title-box {
+    border-left-color: var(--ui-accent, #2563eb) !important;
+  }
+
+  .app-header :is(.header-premium-subtitle, .corp-role, .icon-action-label),
+  .app-header .corp-profile-btn > .fa-chevron-down,
+  .app-header .global-search-container > i {
+    color: var(--ui-header-muted, #b8c8d8) !important;
+  }
+
+  .app-header .icon-action-btn[class*="action-"] {
+    --action-color: color-mix(in srgb, var(--ui-accent, #2563eb) 48%, #ffffff);
+  }
+
+  .app-header .global-search-container input {
+    border-color: color-mix(in srgb, var(--ui-header-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-header-text, #f8fafc) 8%, transparent) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .app-header .global-search-container input::placeholder {
+    color: var(--ui-header-muted, #b8c8d8) !important;
   }
 }
 

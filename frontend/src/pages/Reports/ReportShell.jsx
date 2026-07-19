@@ -2,8 +2,7 @@
  * ReportShell.jsx
  * ─────────────────────────────────────────────────────────
  * Shared scaffold for every BKNR report page.
- * Provides: fetch lifecycle, header, loader, error, filter bar,
- *           search, generic table, currency/number formatting.
+ * [Force rebuild cache buster: 104]
  * ─────────────────────────────────────────────────────────
  */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,6 +11,7 @@ import { formatFinancialYear } from '../../utils/financialYear';
 
 /* ── Formatters ─────────────────────────────────────────── */
 export const fmt = {
+  cb: 'bknr-cb-104',
   currency: (v) =>
     v == null ? '—' : Number(v).toLocaleString('en-IN', {
       style: 'currency', currency: 'INR', minimumFractionDigits: 2
@@ -139,7 +139,7 @@ export function FilterBox({ label, children }) {
 
 export function FilterSelect({ value, onChange, children, style }) {
   return (
-    <select value={value} onChange={e => onChange(e.target.value)}
+    <select className="erp-filter-control" value={value} onChange={e => onChange(e.target.value)}
       style={{ ...styles.select, ...style }}>
       {children}
     </select>
@@ -148,7 +148,7 @@ export function FilterSelect({ value, onChange, children, style }) {
 
 export function FilterInput({ type = 'text', value, onChange, placeholder, style }) {
   return (
-    <input type={type} value={value} placeholder={placeholder}
+    <input className="erp-filter-control" type={type} value={value} placeholder={placeholder}
       onChange={e => onChange(e.target.value)}
       style={{ ...styles.select, ...style }} />
   );
@@ -215,7 +215,7 @@ export function SearchInput({ value, onChange }) {
   return (
     <div style={styles.searchWrap}>
       <Search size={13} style={styles.searchIcon} />
-      <input type="text" placeholder="Search…" value={value}
+      <input className="erp-filter-control" type="text" placeholder="Search…" value={value}
         onChange={e => onChange(e.target.value)} style={styles.searchInput} />
     </div>
   );
@@ -324,19 +324,20 @@ const styles = {
   actions: { display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' },
   filterBar: {
     display: 'flex', flexWrap: 'nowrap', gap: 6,
-    background: 'var(--glass-bg)', padding: '4px 7px',
-    borderRadius: 'var(--radius-element)', border: '1px solid var(--border-light)',
+    background: 'var(--surface-panel)', padding: '5px 10px',
+    borderBottom: '1px solid var(--border-light)',
     marginBottom: 6, alignItems: 'flex-end', overflowX: 'auto', overflowY: 'hidden',
     WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin',
   },
-  filterBox: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 108, flex: '0 0 108px' },
+  filterBox: { display: 'flex', flexDirection: 'column', gap: 2, minWidth: 110, flex: '0 0 110px' },
   filterLabel: {
     fontSize: 8, fontWeight: 800, color: 'var(--text-secondary)',
-    textTransform: 'uppercase', letterSpacing: '0.35px',
+    textTransform: 'uppercase', letterSpacing: '0.4px',
+    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
   },
   select: {
-    height: 27, padding: '0 7px', fontSize: 10, fontWeight: 700,
-    borderRadius: 5, border: '1px solid var(--input-border)',
+    height: 26, padding: '0 6px', fontSize: 10, fontWeight: 550,
+    borderRadius: 4, border: '1px solid var(--input-border)',
     background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none', width: '100%',
   },
   kpiGrid: {
@@ -357,12 +358,12 @@ const styles = {
     display: 'flex', alignItems: 'center', marginBottom: 12,
   },
   searchWrap: { position: 'relative', display: 'flex', alignItems: 'center' },
-  searchIcon: { position: 'absolute', left: 7, color: 'var(--text-tertiary)' },
+  searchIcon: { position: 'absolute', left: 6, color: 'var(--text-tertiary)' },
   searchInput: {
-    padding: '0 7px 0 25px', fontSize: 10,
-    border: '1px solid var(--input-border)', borderRadius: 5,
+    padding: '0 6px 0 22px', fontSize: 10, fontWeight: 550,
+    border: '1px solid var(--input-border)', borderRadius: 4,
     background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none',
-    width: 150, height: 27,
+    width: 180, height: 26,
   },
   subtotalRow: { background: 'rgba(139,92,246,0.06)' },
   modalOverlay: {

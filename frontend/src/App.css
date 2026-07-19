@@ -30,14 +30,14 @@
 
   /* Reports are the sizing baseline for every app filter. */
   --erp-filter-width: 108px;
-  --erp-filter-height: 27px;
+  --erp-filter-height: 26px;
   --erp-filter-label-size: 8px;
   --erp-control-text-size: 10px;
-  --erp-table-text-size: 10px;
-  --erp-table-heading-size: 9px;
+  --erp-table-text-size: 12px;
+  --erp-table-heading-size: 11px;
   --erp-table-header-height: 30px;
   --erp-table-row-height: 30px;
-  --erp-table-cell-padding-x: 10px;
+  --erp-table-cell-padding-x: 8px;
   
   --input-bg: rgba(255, 255, 255, 0.03);
   --input-border: rgba(255, 255, 255, 0.1);
@@ -324,6 +324,7 @@ body {
   min-height: 180px;
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 10px;
@@ -332,13 +333,47 @@ body {
   font-weight: 700;
 }
 
-.route-loading-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid var(--border-light);
-  border-top-color: var(--corp-primary);
-  border-radius: 50%;
-  animation: spin 0.7s linear infinite;
+.tenant-loading-screen {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 24px;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 48%, #e2e8f0 100%);
+  color: #0f172a;
+  text-align: center;
+}
+
+.tenant-loading-logo {
+  width: 112px;
+  height: 112px;
+  margin-bottom: 4px;
+  object-fit: contain;
+  border-radius: 18px;
+}
+
+.tenant-loading-logo.compact {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+}
+
+.tenant-loading-screen h2,
+.route-loading > strong {
+  margin: 0;
+  color: #0f172a;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.tenant-loading-screen p {
+  margin: 0;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 /* Form Styles */
@@ -458,11 +493,11 @@ body {
 .bknr-table th {
   background: rgba(255, 255, 255, 0.02);
   border-bottom: 1px solid var(--table-line);
-  padding: 8px 10px;
-  font-size: 10px;
+  padding: 5px 8px;
+  font-size: 11px;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.3px;
   color: var(--text-secondary);
 }
 
@@ -471,8 +506,8 @@ body {
 }
 
 .bknr-table td {
-  padding: 8px 10px;
-  font-size: 11px;
+  padding: 4px 8px;
+  font-size: 12px;
   border-bottom: 1px solid var(--table-line);
   color: var(--text-primary);
 }
@@ -1376,14 +1411,8 @@ body {
 .corp-avatar {
     width: 34px;
     height: 34px;
-    background: var(--corp-dash, #3b82f6);
-    color: #FFF;
     border-radius: 6px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 800;
+    box-shadow: 0 4px 12px rgba(13, 45, 114, .2);
 }
 
 .corp-info {
@@ -1713,7 +1742,7 @@ body {
   border-radius: 5px !important;
   font-size: var(--erp-control-text-size) !important;
   line-height: normal !important;
-  font-weight: 700 !important;
+  font-weight: 550 !important;
 }
 
 .main-content .attendance-filters-bar > .attendance-btn,
@@ -1795,88 +1824,6 @@ body {
   font-size: 9px !important;
 }
 
-/* Same readable density across all React data grids. */
-.main-content .attendance-table-container,
-.main-content .attendance-table-wrapper,
-.main-content .table-responsive,
-.main-content .master-table-wrap,
-.main-content .attendance-table-wrap,
-.main-content .general-stock-table-wrap,
-.main-content .gs-items-table-wrap {
-  width: 100% !important;
-  max-width: 100% !important;
-}
-
-.main-content .attendance-table-wrapper,
-.main-content .table-responsive,
-.main-content .master-table-wrap,
-.main-content .attendance-table-wrap,
-.main-content .general-stock-table-wrap,
-.main-content .gs-items-table-wrap {
-  overflow-x: auto !important;
-  overflow-y: auto;
-}
-
-.main-content .attendance-table,
-.main-content .bknr-table,
-.main-content .master-table,
-.main-content .attendance-table-wrap table,
-.main-content .general-stock-table,
-.main-content .gs-items-table {
-  width: 100% !important;
-  min-width: 100% !important;
-  max-width: none !important;
-  table-layout: auto !important;
-  border-collapse: collapse !important;
-  font-size: var(--erp-table-text-size) !important;
-}
-
-.main-content .attendance-table th,
-.main-content .bknr-table th,
-.main-content .master-table th,
-.main-content .attendance-table-wrap th,
-.main-content .general-stock-table th,
-.main-content .gs-items-table th {
-  font-size: var(--erp-table-heading-size) !important;
-  height: var(--erp-table-header-height) !important;
-  min-height: var(--erp-table-header-height) !important;
-  padding: 0 var(--erp-table-cell-padding-x) !important;
-  line-height: 1.2 !important;
-  vertical-align: middle !important;
-}
-
-.main-content .attendance-table td,
-.main-content .bknr-table td,
-.main-content .master-table td,
-.main-content .attendance-table-wrap td,
-.main-content .general-stock-table td,
-.main-content .gs-items-table td {
-  font-size: var(--erp-table-text-size) !important;
-  height: var(--erp-table-row-height) !important;
-  min-height: var(--erp-table-row-height) !important;
-  padding: 4px var(--erp-table-cell-padding-x) !important;
-  line-height: 1.2 !important;
-  vertical-align: middle !important;
-}
-
-.main-content .attendance-table thead tr,
-.main-content .bknr-table thead tr,
-.main-content .master-table thead tr,
-.main-content .attendance-table-wrap thead tr,
-.main-content .general-stock-table thead tr,
-.main-content .gs-items-table thead tr {
-  height: var(--erp-table-header-height) !important;
-}
-
-.main-content .attendance-table tbody tr,
-.main-content .bknr-table tbody tr,
-.main-content .master-table tbody tr,
-.main-content .attendance-table-wrap tbody tr,
-.main-content .general-stock-table tbody tr,
-.main-content .gs-items-table tbody tr {
-  height: var(--erp-table-row-height) !important;
-}
-
 @media (max-width: 700px) {
   .main-content .attendance-filters-bar,
   .main-content .card:has(> .form-control),
@@ -1884,46 +1831,6 @@ body {
     scrollbar-width: thin;
     -webkit-overflow-scrolling: touch;
   }
-}
-
-/* Universal table fallback: covers dashboard/modal tables without module classes. */
-.main-content table {
-  width: 100% !important;
-  min-width: 100% !important;
-  max-width: none !important;
-  border-collapse: collapse !important;
-  table-layout: auto !important;
-  font-size: var(--erp-table-text-size) !important;
-}
-
-.main-content table thead tr {
-  height: var(--erp-table-header-height) !important;
-}
-
-.main-content table thead th {
-  height: var(--erp-table-header-height) !important;
-  min-height: var(--erp-table-header-height) !important;
-  padding: 0 var(--erp-table-cell-padding-x) !important;
-  font-size: var(--erp-table-heading-size) !important;
-  font-weight: 800 !important;
-  line-height: 1.2 !important;
-  letter-spacing: 0.35px !important;
-  text-transform: uppercase !important;
-  vertical-align: middle !important;
-  white-space: nowrap !important;
-}
-
-.main-content table tbody tr {
-  height: var(--erp-table-row-height) !important;
-}
-
-.main-content table tbody td {
-  height: var(--erp-table-row-height) !important;
-  min-height: var(--erp-table-row-height) !important;
-  padding: 4px var(--erp-table-cell-padding-x) !important;
-  font-size: var(--erp-table-text-size) !important;
-  line-height: 1.2 !important;
-  vertical-align: middle !important;
 }
 
 /* Converted list pages use the remaining viewport like report screens. */
@@ -2003,13 +1910,33 @@ body {
   box-shadow: none !important;
 }
 
-.main-content table thead th {
+.main-content :is(
+  .bknr-table,
+  .attendance-table,
+  .master-table,
+  .enterprise-table,
+  .admin-table,
+  .rm-table,
+  .general-stock-table,
+  .gs-items-table,
+  .erp-data-table
+) thead th {
   border-bottom: 1px solid var(--table-line, var(--border-light)) !important;
   color: var(--text-secondary) !important;
   background: var(--header-bg) !important;
 }
 
-.main-content table tbody td {
+.main-content :is(
+  .bknr-table,
+  .attendance-table,
+  .master-table,
+  .enterprise-table,
+  .admin-table,
+  .rm-table,
+  .general-stock-table,
+  .gs-items-table,
+  .erp-data-table
+) tbody td {
   border-bottom: 1px solid var(--table-line, var(--border-light)) !important;
   color: var(--text-primary) !important;
 }
@@ -2525,4 +2452,217 @@ body {
   .dropdown-console-custom {
     top: calc(var(--header-h) + 10px);
   }
+}
+.react-support-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 100001;
+  pointer-events: none;
+}
+
+.react-support-drawer-panel {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  width: 30vw;
+  min-width: min(260px, 30vw);
+  max-width: 30vw;
+  min-height: 360px;
+  max-height: calc(100vh - 24px);
+  height: calc(100vh - 24px);
+  overflow: hidden;
+  color: var(--text-primary);
+  background: var(--bg-app);
+  border: 1px solid var(--border-light);
+  border-radius: 12px;
+  box-shadow: 0 18px 55px rgba(15, 23, 42, 0.24);
+  pointer-events: auto;
+  resize: both;
+}
+
+.react-support-drawer-head {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  right: 0;
+  left: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 58px;
+  padding: 0 14px;
+  color: #fff;
+  background: var(--header-bg, #060913);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.react-support-drawer-head > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.react-support-drawer-head span {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.react-support-drawer-head strong {
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+.react-support-drawer-head button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+}
+
+body.support-drawer-dragging,
+body.support-drawer-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+.react-support-resize-hint {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  z-index: 4;
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+  background: var(--surface-panel);
+  box-shadow: 0 0 0 1px var(--border-light);
+  font-size: 7px;
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+.floating-support-launcher {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100002;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  color: var(--text-primary);
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  transition: transform 160ms ease;
+}
+
+.floating-support-launcher:hover,
+.floating-support-launcher:focus-visible {
+  transform: translateY(-2px);
+}
+
+.floating-support-launcher.active {
+  display: none;
+}
+
+.floating-support-launcher i {
+  display: grid;
+  flex: 0 0 69px;
+  width: 69px;
+  height: 69px;
+  place-items: center;
+  border: 1px solid #60a5fa;
+  border-radius: 999px;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.32);
+  font-size: 24px;
+}
+
+body.floating-support-dragging,
+body.floating-support-dragging * {
+  cursor: grabbing !important;
+  user-select: none !important;
+}
+
+.react-support-drawer-content {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  padding-top: 58px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.react-support-drawer .support-drawer-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout {
+  flex: 1 1 auto;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(135px, 32%) minmax(0, 1fr);
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout > .admin-card {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.react-support-drawer .support-drawer-page .ticket-list {
+  flex: 1 1 auto;
+  max-height: 100%;
+}
+
+.react-support-drawer .support-drawer-page .chat-box {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 70px;
+}
+
+.react-support-drawer .support-drawer-page .admin-form-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.react-support-drawer .support-drawer-page .admin-field {
+  grid-column: auto !important;
+}
+
+.react-support-drawer .support-drawer-page .admin-toolbar {
+  align-items: flex-start;
+}
+
+.react-support-drawer .support-drawer-page .admin-actions {
+  align-items: stretch;
+  flex-direction: column;
 }

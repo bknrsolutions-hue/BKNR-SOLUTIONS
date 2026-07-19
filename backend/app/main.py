@@ -18,6 +18,7 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+from app.utils.access_control import has_permission, required_permission_for_path
 from sqlalchemy import func
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -176,8 +177,15 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        exact_paths = ["/", "/app", "/health", "/health/live", "/health/ready", "/docs", "/openapi.json", "/robots.txt", "/sitemap.xml"]
-        prefix_paths = ["/app/", "/auth/", "/static/", "/create-all", "/admin/maintenance"]
+        exact_paths = [
+            "/", "/app", "/health", "/health/live", "/health/ready", "/docs",
+            "/openapi.json", "/robots.txt", "/sitemap.xml",
+            "/auth/login", "/auth/landing", "/auth/register", "/auth/verify-otp",
+            "/auth/set-password", "/auth/verify-login-otp", "/auth/session-info",
+            "/auth/forgot-password", "/auth/reset-password", "/auth/auto-login",
+            "/auth/logout",
+        ]
+        prefix_paths = ["/app/", "/static/", "/create-all", "/admin/maintenance"]
 
         # Check deployment token header bypass
         deploy_token = request.headers.get("X-Deploy-Token")
@@ -300,14 +308,34 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # SINGLE ACTIVE SESSION CHECK
         session_id = request.session.get("session_id")
+        if not session_id:
+            request.session.clear()
+            if wants_json:
+                return JSONResponse(
+                    {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+                    status_code=401,
+                )
+            return RedirectResponse("/auth/login", status_code=303)
         if session_id:
             from app.database.models.users import User
             db = SessionLocal()
             try:
-                user = db.query(User).filter(User.email == email).first()
-                if user and getattr(user, "current_session_id", None) != session_id:
+                user = db.query(User).filter(
+                    User.company_id == request.session.get("company_id"),
+                    func.lower(func.trim(User.email)) == str(email or "").strip().lower(),
+                ).first()
+                if not user or not getattr(user, "is_active", True) or getattr(user, "current_session_id", None) != session_id:
                     request.session.clear()
+                    if wants_json:
+                        return JSONResponse(
+                            {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+                            status_code=401,
+                        )
                     return RedirectResponse("/auth/login", status_code=303)
+                request.session["email"] = user.email
+                request.session["name"] = user.name
+                request.session["role"] = user.role
+                request.session["permissions"] = user.permissions or ""
             except Exception as e:
                 logger.error("Active session validation error: %s", e)
             finally:
@@ -315,6 +343,21 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         company_code = request.session.get("company_code")
         request.session["setup_completed"] = True
+
+        required_permission = required_permission_for_path(path, request.method)
+        if required_permission and not has_permission(request.session, required_permission):
+            if wants_json:
+                return JSONResponse(
+                    {
+                        "detail": "This account is not assigned to the requested module.",
+                        "required_permission": required_permission,
+                    },
+                    status_code=403,
+                )
+            return HTMLResponse(
+                "<h2>Access Denied</h2><p>This account is not assigned to the requested module.</p>",
+                status_code=403,
+            )
 
         response = await call_next(request)
         response.headers.setdefault("X-Robots-Tag", "noindex, nofollow")
@@ -330,8 +373,8 @@ class PerformanceHeadersMiddleware(BaseHTTPMiddleware):
 
         if path.startswith("/static/"):
             response.headers.setdefault("Cache-Control", "public, max-age=31536000, immutable")
-        elif request.method == "GET" and "text/html" in response.headers.get("content-type", ""):
-            response.headers.setdefault("Cache-Control", "no-cache")
+        elif request.method == "GET" and ("text/html" in response.headers.get("content-type", "").lower() or path.rstrip("/") == "/app"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
 
         response.headers.setdefault("X-Content-Type-Options", "nosniff")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
@@ -370,6 +413,9 @@ application.add_middleware(PerformanceHeadersMiddleware)
 
 @application.on_event("startup")
 def on_startup():
+    if os.getenv("SVBK_SKIP_STARTUP_TASKS", "").strip().lower() in {"1", "true", "yes"}:
+        logger.info("Startup schedulers and background migrations disabled by environment")
+        return
     start_snapshot_scheduler()
 
     # Do not block Render's public port while PostgreSQL is waking up or
@@ -410,7 +456,7 @@ def on_shutdown():
 application.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
-# ✅ VERY IMPORTANT: దీన్ని స్టేట్‌లో స్టోర్ చేయాలి, అప్పుడే రూటర్లు దీన్ని వాడగలవు
+# ✅ VERY IMPORTANT:  ‌  ,
 application.state.templates = templates
 
 
@@ -447,7 +493,7 @@ from app.routers.admin_feature_flags import router as feature_flags_router
 from app.routers.admin_maintenance import router as maintenance_router
 from app.routers.admin_deploy import router as deploy_router
 
-# రూటర్లను ఇంక్లూడ్ చేయడం
+#
 application.include_router(auth_router)
 application.include_router(menu_router)
 application.include_router(criteria_router)
@@ -560,7 +606,7 @@ async def public_stats():
         user_count = 0
     finally:
         db.close()
-    
+
     return {
         "production_weight": "14,842 KG",
         "active_users": f"{36 + user_count} Active",
@@ -775,12 +821,29 @@ def record_version(request: Request, payload: dict = Body(default={})):
         db.close()
 
 
+# Custom StaticFiles subclass to ensure correct cache control headers.
+# This prevents browsers from caching the React entry HTML page (index.html)
+# while allowing compiled chunk assets to be cached long-term.
+class NoCacheStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope) -> Response:
+        response = await super().get_response(path, scope)
+        if response.status_code == 200:
+            content_type = response.headers.get("content-type", "")
+            if "text/html" in content_type.lower() or path == "" or path.endswith(".html"):
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+                response.headers["Pragma"] = "no-cache"
+                response.headers["Expires"] = "0"
+            elif "assets/" in path or path.startswith("assets/"):
+                response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+        return response
+
+
 # React frontend used by the native mobile shell. HashRouter keeps all client
 # routes under this single static entry point, while API requests stay on the
 # same origin and continue using the signed backend session cookie.
 frontend_dist = Path(__file__).resolve().parents[2] / "frontend" / "dist"
 if frontend_dist.is_dir():
-    application.mount("/app", StaticFiles(directory=str(frontend_dist), html=True), name="react-app")
+    application.mount("/app", NoCacheStaticFiles(directory=str(frontend_dist), html=True), name="react-app")
 else:
     logger.warning("React frontend build not found at %s; /app is unavailable", frontend_dist)
 
