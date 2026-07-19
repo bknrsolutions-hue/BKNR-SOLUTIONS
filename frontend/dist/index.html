@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <script>
+      // Some Chromium WebView/DevTools builds inject a metrics script without
+      // installing its reporter callback. Keep that tooling-only failure from
+      // flooding the console or interrupting document-start evaluations.
+      if (typeof window.__chromium_devtools_metrics_reporter !== 'function') {
+        window.__chromium_devtools_metrics_reporter = function () {};
+      }
+    </script>
+    <!-- ⚡ Blocking theme init — must run before CSS renders to avoid flash -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('theme');
+          var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch(e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/app/brand-dp-3d.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SVBK ERP - Next-Gen Operational Intelligence</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module" crossorigin src="/app/assets/index-DnWUnPY6.js"></script>
+    <link rel="stylesheet" crossorigin href="/app/assets/index-CYPz3MLF.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

@@ -2,160 +2,65 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Export Supporting Documents</title>
+<title>Export Document Checklist</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <style>
-:root { --bg:#f1f5f9; --card:#fff; --text:#0f172a; --muted:#64748b; --border:#e2e8f0; --accent:#2563eb; }
-[data-theme="dark"] { --bg:#0f172a; --card:#1e293b; --text:#f8fafc; --muted:#94a3b8; --border:#334155; }
-* { box-sizing:border-box; font-family:Inter, sans-serif; }
-body { margin:0; background:var(--bg); color:var(--text); padding-bottom:40px; }
-.header { background:var(--card); border-bottom:1px solid var(--border); padding:12px 20px; display:flex; justify-content:space-between; align-items:center; }
-h2 { margin:0; font-size:15px; font-weight:800; }
-.wrap { padding:16px 20px; display:grid; grid-template-columns: 360px minmax(0, 1fr); gap:16px; }
-.panel { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:16px; }
-.field { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; }
-label { font-size:10px; text-transform:uppercase; font-weight:800; color:var(--muted); }
-input, select, textarea { border:1px solid var(--border); border-radius:7px; padding:9px 10px; background:var(--card); color:var(--text); font-size:12px; }
-.btn { border:0; background:var(--accent); color:#fff; border-radius:7px; padding:9px 12px; font-weight:800; cursor:pointer; width:100%; }
-.table-wrap { overflow:auto; background:var(--card); border:1px solid var(--border); border-radius:10px; }
-table { width:100%; border-collapse:collapse; font-size:11px; white-space:nowrap; }
-th, td { padding:9px 10px; border-bottom:1px solid var(--border); text-align:left; }
-th { color:var(--muted); text-transform:uppercase; font-size:9px; }
-@media(max-width:900px){ .wrap { grid-template-columns:1fr; padding:12px; } }
+:root{--bg:#f1f5f9;--card:#fff;--text:#0f172a;--muted:#64748b;--border:#e2e8f0;--accent:#2563eb;--success:#059669;--danger:#dc2626;--warning:#d97706}
+[data-theme="dark"]{--bg:#0f172a;--card:#1e293b;--text:#f8fafc;--muted:#94a3b8;--border:#334155}
+*{box-sizing:border-box;font-family:Inter,sans-serif}body{margin:0;background:var(--bg);color:var(--text);padding-bottom:40px}.header{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;justify-content:space-between;align-items:center}.header h2{margin:0;font-size:16px}.sub{color:var(--muted);font-size:10px;margin-top:4px}.wrap{padding:16px 20px}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}.panel{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px}.panel h3{margin:0 0 12px;font-size:12px;text-transform:uppercase}.field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}label{font-size:9px;text-transform:uppercase;font-weight:800;color:var(--muted)}input,select,textarea{width:100%;border:1px solid var(--border);border-radius:7px;padding:9px;background:var(--card);color:var(--text);font-size:11px}.btn{border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:7px;padding:8px 11px;font-size:10px;font-weight:800;cursor:pointer}.btn.primary{background:var(--accent);color:#fff;border-color:transparent}.btn.approve{color:var(--success)}.btn.reject{color:var(--danger)}.btn:disabled{opacity:.55;cursor:not-allowed}.check-drop{border:1px solid var(--border);border-radius:7px}.check-drop summary{padding:9px;cursor:pointer;font-size:11px;font-weight:700}.check-panel{max-height:280px;overflow:auto;padding:8px;border-top:1px solid var(--border)}.stage{padding:7px 3px 4px;color:var(--accent);font-size:9px;font-weight:800;text-transform:uppercase}.check{display:flex;align-items:center;gap:7px;padding:6px 3px;color:var(--text);font-size:10px}.check input{width:auto}.custom-row{display:grid;grid-template-columns:1fr auto;gap:7px}.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:15px}.summary{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:12px;color:var(--text);text-align:left;cursor:pointer;transition:.18s}.summary:hover{transform:translateY(-2px);border-color:var(--accent)}.summary.active{border-color:var(--accent);box-shadow:0 0 0 2px #2563eb25}.summary span{display:block;color:var(--muted);font-size:9px;text-transform:uppercase;font-weight:800}.summary strong{display:block;font-size:20px;margin-top:4px}.po-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden}.po-card>summary{display:grid;grid-template-columns:minmax(160px,1.2fr) minmax(180px,1fr) repeat(4,minmax(75px,.5fr));gap:10px;align-items:center;padding:13px;cursor:pointer;list-style:none}.po-card>summary::-webkit-details-marker{display:none}.po-title{font-weight:800;color:var(--accent)}.metric{font-size:10px;color:var(--muted)}.metric strong{display:block;color:var(--text);font-size:13px}.status{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:8px;font-weight:900}.status.complete,.status.approved{color:var(--success);background:#05966918}.status.pending{color:var(--warning);background:#d9770618}.status.rejected{color:var(--danger);background:#dc262618}.status.not_configured{color:var(--muted);background:#64748b18}.detail{border-top:1px solid var(--border);padding:12px}.table-wrap{overflow:auto}table{width:100%;border-collapse:collapse;font-size:10px;white-space:nowrap}th,td{padding:9px;border-bottom:1px solid var(--border);text-align:left}th{color:var(--muted);text-transform:uppercase;font-size:8px}.audit{margin-top:18px}.empty{text-align:center;color:var(--muted);padding:22px}.actions{display:flex;gap:5px}.note{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+@media(max-width:900px){.form-grid,.summary-grid{grid-template-columns:1fr 1fr}.po-card>summary{grid-template-columns:1fr 1fr}.wrap{padding:12px}}@media(max-width:560px){.form-grid,.summary-grid{grid-template-columns:1fr}.po-card>summary{grid-template-columns:1fr}}
 </style>
-<script>
-try {
-  const theme = window.parent.document.documentElement.getAttribute("data-theme");
-  if (theme) document.documentElement.setAttribute("data-theme", theme);
-} catch(e) {}
-</script>
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-table-ui.css?v=1">
+<script>try{const theme=window.parent.document.documentElement.getAttribute("data-theme");if(theme)document.documentElement.setAttribute("data-theme",theme)}catch(e){}</script>
 </head>
 <body>
-<div class="header">
-  <h2><i class="fa-solid fa-folder-open" style="color:var(--accent);"></i> Export Supporting Documents</h2>
-  <strong>{{ company_id }}</strong>
-</div>
-
+<div class="header"><div><h2><i class="fa-solid fa-folder-open" style="color:var(--accent)"></i> Export Document Checklist</h2><div class="sub">PO-wise requirements, details upload, selected-email approval and audit tracking</div></div><div><a class="btn" href="/export_documents/requirement-pages/entry">Document Entry Forms</a> <strong>{{ company_id }}</strong></div></div>
 <div class="wrap">
-  <section class="panel">
-    <form id="docForm" onsubmit="uploadDoc(event)">
-      <div class="field">
-        <label>Shipment</label>
-        <select id="shipment_id" required>
-          <option value="" disabled selected>-- SELECT SHIPMENT --</option>
-          {% for s in shipments %}
-          <option value="{{ s.id }}">{{ s.shipment_no }} - {{ s.buyer_name }}</option>
-          {% endfor %}
-        </select>
-      </div>
-      <div class="field">
-        <label>Document Type</label>
-        <select id="document_kind" required>
-          <option value="BUYER_PO">Buyer PO / Contract</option>
-          <option value="LC_COPY">LC Copy / Amendment</option>
-          <option value="COO">Certificate of Origin</option>
-          <option value="PHYTO_CERTIFICATE">Phytosanitary Certificate</option>
-          <option value="HEALTH_CERTIFICATE_COPY">Health Certificate Copy</option>
-          <option value="BL_COPY">Bill of Lading Copy</option>
-          <option value="INSURANCE_CERTIFICATE">Insurance Certificate</option>
-          <option value="FUMIGATION_CERTIFICATE">Fumigation Certificate</option>
-          <option value="VGM_DECLARATION">VGM Declaration</option>
-          <option value="MSDS">MSDS / Product Specification</option>
-          <option value="CUSTOMS_LEO_COPY">Customs LEO Copy</option>
-          <option value="FIRC_BRC">FIRC / BRC / Bank Realisation</option>
-          <option value="BUYER_APPROVAL">Buyer Approval / Email Copy</option>
-          <option value="OTHER_EXPORT_DOC">Other Export Document</option>
-        </select>
-      </div>
-      <div class="field"><label>Document No / Reference</label><input id="document_no"></div>
-      <div class="field"><label>PDF File</label><input type="file" id="pdf_file" accept="application/pdf" required></div>
-      <div class="field"><label>Remarks</label><textarea id="remarks" rows="3"></textarea></div>
-      <button class="btn"><i class="fa-solid fa-upload"></i> Save PDF in DB</button>
-    </form>
+  <div class="form-grid">
+    <section class="panel">
+      <h3><i class="fa-solid fa-list-check"></i> Set Required Documents</h3>
+      <form id="requirementForm" onsubmit="saveRequirements(event)">
+        <div class="field"><label>1. PO Number</label><select id="required_po" onchange="syncRequirements()" required><option value="">Select PO</option>{% for po in po_options %}<option value="{{ po.po_number }}">{{ po.po_number }} · {{ po.buyer_name }}</option>{% endfor %}</select></div>
+        <div class="field"><label>2. Required Documents</label><details class="check-drop"><summary id="selectedCount">Select documents</summary><div class="check-panel" id="documentChecks">{% for group in document_groups %}<div class="stage">{{ group.stage }}</div>{% for item in group['items'] %}<label class="check"><input type="checkbox" value="{{ item.code }}" data-label="{{ item.label }}" onchange="updateSelectedCount()"><span>{{ item.label }}</span></label>{% endfor %}{% endfor %}<div id="customChecks"></div></div></details></div>
+        <div class="field"><label>Document not in list?</label><div class="custom-row"><input id="customDoc" placeholder="Custom document name"><button class="btn" type="button" onclick="addCustomDocument()">+ Add</button></div></div>
+        <button class="btn primary" type="submit">Save Required List</button>
+      </form>
+    </section>
+    <section class="panel">
+      <h3><i class="fa-solid fa-file-arrow-up"></i> Details & Document Upload</h3>
+      <a class="btn primary" href="/export_documents/requirement-pages/entry">Open Document Entry Forms</a>
+    </section>
+  </div>
+
+  {% set counts = namespace(configured=0, complete=0, pending=0) %}{% for group in po_groups %}{% if group.required_count %}{% set counts.configured = counts.configured + 1 %}{% endif %}{% if group.status == 'COMPLETE' %}{% set counts.complete = counts.complete + 1 %}{% endif %}{% if group.status in ['PENDING','REJECTED'] %}{% set counts.pending = counts.pending + 1 %}{% endif %}{% endfor %}
+  <div class="summary-grid"><button class="summary active" onclick="filterPoCards('ALL',this)"><span>Total POs</span><strong>{{ po_groups|length }}</strong></button><button class="summary" onclick="filterPoCards('CONFIGURED',this)"><span>Requirements Set</span><strong>{{ counts.configured }}</strong></button><button class="summary" onclick="filterPoCards('COMPLETE',this)"><span>Complete POs</span><strong style="color:var(--success)">{{ counts.complete }}</strong></button><button class="summary" onclick="filterPoCards('ATTENTION',this)"><span>Pending POs</span><strong style="color:var(--danger)">{{ counts.pending }}</strong></button></div>
+
+  <section>
+    {% for group in po_groups %}
+    <details class="po-card" data-status="{{ group.status }}" data-configured="{{ 'yes' if group.required_count else 'no' }}">
+      <summary><div><div class="po-title"><i class="fa-solid fa-chevron-right"></i> {{ group.po_number }}</div><span class="note">{{ group.shipment_no }} · {{ group.buyer_name }}</span></div><div><span class="status {{ group.status|lower }}">{{ group.status|replace('_',' ') }}</span></div><div class="metric">Required<strong>{{ group.required_count }}</strong></div><div class="metric">Uploaded<strong>{{ group.uploaded_count }}</strong></div><div class="metric">Approved<strong>{{ group.approved_count }}</strong></div><div class="metric">Pending<strong>{{ group.pending_upload_count + group.pending_approval_count + group.rejected_count }}</strong></div></summary>
+      <div class="detail table-wrap"><table><thead><tr><th>Document</th><th>Requirement</th><th>Upload</th><th>Approval</th><th>File</th><th>Reviewed By</th><th>Action</th></tr></thead><tbody>
+      {% for row in group.rows %}<tr><td><a href="{{ row.page_url }}"><strong>{{ row.document_label }}</strong></a><span class="note">{{ row.document_no or '' }}</span></td><td>{{ 'REQUIRED' if row.required else 'EXTRA' }}</td><td><span class="status {{ row.status|lower }}">{{ row.status }}</span></td><td>{% if row.file_id %}<span class="status {{ row.approval_status|lower }}">{{ row.approval_status }}</span><span class="note">{{ row.approval_progress or '' }}</span>{% for email in row.pending_approvers %}<span class="note" style="color:#dc2626">Pending: {{ email }}</span>{% endfor %}{% else %}-{% endif %}</td><td>{% if row.download_url %}<a href="{{ row.download_url }}" target="_blank">{{ row.file_name }}</a>{% else %}-{% endif %}</td><td>{{ row.approved_by or '-' }}<span class="note">{{ row.approved_at or '' }}</span></td><td><div class="actions">{% if row.download_url %}<a class="btn" href="{{ row.download_url }}" target="_blank">PDF</a>{% else %}<a class="btn" href="{{ row.page_url }}">Enter & Upload</a>{% endif %}{% if row.file_id and (row.can_current_user_approve or (is_admin and not row.approvals)) %}<button class="btn approve" onclick="decideApproval({{ row.file_id }},'APPROVED')">Approve</button><button class="btn reject" onclick="decideApproval({{ row.file_id }},'REJECTED')">Reject</button>{% endif %}</div></td></tr>{% else %}<tr><td colspan="7" class="empty">Required documents are not configured for this PO.</td></tr>{% endfor %}
+      </tbody></table></div>
+    </details>
+    {% endfor %}
   </section>
 
-  <section class="table-wrap">
-    <table>
-      <thead><tr><th>Type</th><th>Document No</th><th>File</th><th>Version</th><th>Current</th><th>Uploaded At</th><th>Remarks</th></tr></thead>
-      <tbody id="historyBody">
-      {% for row in history %}
-        <tr>
-          <td>{{ row.document_kind }}</td>
-          <td>{{ row.document_no or '-' }}</td>
-          <td><a href="/export_documents/files/{{ row.id }}/download" target="_blank">{{ row.file_name }}</a></td>
-          <td>v{{ row.version_no }}</td>
-          <td>{{ 'YES' if row.is_current else 'NO' }}</td>
-          <td>{{ row.uploaded_at }}</td>
-          <td>{{ row.remarks or '-' }}</td>
-        </tr>
-      {% else %}
-        <tr><td colspan="7" style="text-align:center; padding:28px; color:var(--muted);">No supporting documents uploaded yet.</td></tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </section>
+  <section class="panel audit"><h3><i class="fa-solid fa-clock-rotate-left"></i> Supporting Document Audit Logs</h3><div class="table-wrap"><table><thead><tr><th>Time</th><th>Action</th><th>Record</th><th>Previous</th><th>New Value</th><th>User</th></tr></thead><tbody>{% for log in audit_logs %}<tr><td>{{ log.edited_at }}</td><td><strong>{{ log.action }}</strong></td><td>#{{ log.record_id }}</td><td>{{ log.old_value or '-' }}</td><td>{{ log.new_value or '-' }}</td><td>{{ log.edited_by or '-' }}</td></tr>{% else %}<tr><td colspan="6" class="empty">No audit events yet.</td></tr>{% endfor %}</tbody></table></div></section>
 </div>
-
 <script>
-async function uploadDoc(e) {
-  e.preventDefault();
-  const btn = e.target.querySelector("button");
-  if (btn) btn.disabled = true;
-  const file = document.getElementById("pdf_file").files[0];
-  if (!file) {
-    if (btn) btn.disabled = false;
-    return;
-  }
-  const formData = new FormData();
-  formData.append("shipment_id", document.getElementById("shipment_id").value);
-  formData.append("document_kind", document.getElementById("document_kind").value);
-  formData.append("document_no", document.getElementById("document_no").value || "");
-  formData.append("remarks", document.getElementById("remarks").value || "");
-  formData.append("file", file);
-  try {
-    const res = await fetch("/export_documents/supporting_documents/upload", { method: "POST", body: formData });
-    const out = await res.json();
-    if (out.success) {
-      appendHistoryRow(out.row);
-      e.target.reset();
-      Swal.fire({ icon: "success", title: "Saved", text: "Export PDF saved in DB", timer: 1100, showConfirmButton: false });
-    } else {
-      Swal.fire("Error", out.message || "Upload failed", "error");
-    }
-  } finally {
-    if (btn) btn.disabled = false;
-  }
-}
-
-function safeText(value) {
-  return String(value || "-").replace(/[&<>"']/g, ch => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
-  }[ch]));
-}
-
-function appendHistoryRow(row) {
-  if (!row) return;
-  const tbody = document.getElementById("historyBody");
-  tbody.querySelector("td[colspan='7']")?.closest("tr")?.remove();
-  const tr = document.createElement("tr");
-  const fileHtml = row.download_url || row.id
-    ? `<a href="${safeText(row.download_url || `/export_documents/files/${row.id}/download`)}" target="_blank">${safeText(row.file_name)}</a>`
-    : safeText(row.file_name);
-  tr.innerHTML = `
-    <td>${safeText(row.document_kind)}</td>
-    <td>${safeText(row.document_no)}</td>
-    <td>${fileHtml}</td>
-    <td>v${safeText(row.version_no)}</td>
-    <td>${row.is_current ? "YES" : "NO"}</td>
-    <td>${safeText(row.uploaded_at)}</td>
-    <td>${safeText(row.remarks)}</td>
-  `;
-  tbody.prepend(tr);
-}
+const requirementsByPo={{ requirements_by_po|tojson }};
+function filterPoCards(filter,button){document.querySelectorAll('.summary').forEach(x=>x.classList.remove('active'));button.classList.add('active');document.querySelectorAll('.po-card').forEach(card=>{const status=card.dataset.status;const show=filter==='ALL'||(filter==='CONFIGURED'&&card.dataset.configured==='yes')||(filter==='ATTENTION'&&(status==='PENDING'||status==='REJECTED'))||status===filter;card.style.display=show?'block':'none'})}
+function updateSelectedCount(){const n=document.querySelectorAll('#documentChecks input[type=checkbox]:checked').length;document.getElementById('selectedCount').textContent=n?`${n} documents selected`:'Select documents'}
+function syncRequirements(){const codes=new Set((requirementsByPo[document.getElementById('required_po').value]||[]).map(x=>x.code));document.querySelectorAll('#documentChecks input[type=checkbox]').forEach(x=>x.checked=codes.has(x.value));updateSelectedCount()}
+function addCustomDocument(){const input=document.getElementById('customDoc'),label=input.value.trim();if(!label)return;const code=('CUSTOM_'+label.toUpperCase().replace(/[^A-Z0-9]+/g,'_')).slice(0,80);if(!document.querySelector(`#documentChecks input[value="${code}"]`)){const el=document.createElement('label');el.className='check';el.innerHTML=`<input type="checkbox" value="${code}" data-label="${label.replace(/"/g,'&quot;')}" checked onchange="updateSelectedCount()"><span></span>`;el.querySelector('span').textContent=label;document.getElementById('customChecks').appendChild(el)}input.value='';updateSelectedCount()}
+async function saveRequirements(e){e.preventDefault();const po=document.getElementById('required_po').value,documents=[...document.querySelectorAll('#documentChecks input:checked')].map(x=>({code:x.value,label:x.dataset.label}));const confirmation=await Swal.fire({title:'Do you want to save these documents?',icon:'question',showCancelButton:true,confirmButtonText:'Yes'});if(!confirmation.isConfirmed)return;const res=await fetch('/export_documents/supporting_documents/requirements',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({po_number:po,documents})});const out=await res.json();if(out.success){await Swal.fire('Saved',out.message,'success');location.reload()}else Swal.fire('Error',out.message||'Save failed','error')}
+async function uploadDoc(e){e.preventDefault();const btn=e.submitter,file=document.getElementById('pdf_file').files[0];const confirmation=await Swal.fire({title:'Do you want to import and save this PDF?',icon:'question',showCancelButton:true,confirmButtonText:'Yes'});if(!confirmation.isConfirmed)return;btn.disabled=true;const body=new FormData();body.append('shipment_id',document.getElementById('shipment_id').value);body.append('document_kind',document.getElementById('document_kind').value);body.append('document_no',document.getElementById('document_no').value);body.append('remarks',document.getElementById('remarks').value);body.append('file',file);try{const res=await fetch('/export_documents/supporting_documents/upload',{method:'POST',body});const out=await res.json();if(out.success){await Swal.fire('Uploaded','Document is pending admin approval.','success');location.reload()}else Swal.fire('Error',out.message||'Upload failed','error')}finally{btn.disabled=false}}
+async function decideApproval(fileId,decision){const remarks=prompt(decision==='REJECTED'?'Rejection reason (required):':'Approval remarks (optional):')||'';if(decision==='REJECTED'&&!remarks.trim())return;const res=await fetch(`/export_documents/supporting_documents/files/${fileId}/approval`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision,remarks})});const out=await res.json();if(out.success){await Swal.fire('Updated',out.message,'success');location.reload()}else Swal.fire('Error',out.message||'Approval failed','error')}
 </script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

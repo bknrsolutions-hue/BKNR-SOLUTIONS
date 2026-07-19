@@ -1,8 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { HashRouter } from 'react-router-dom'
+import '../../backend/app/static/css/ui-color-customizer.css'
+import '../../backend/app/static/js/ui-color-customizer.js'
 import './index.css'
 import App from './App.jsx'
+import { installActionFeedback } from './utils/actionFeedback.js'
+
+installActionFeedback()
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

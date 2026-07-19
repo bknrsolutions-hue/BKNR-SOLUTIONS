@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 
 <link rel="manifest" href="/static/manifest.json">
-<link rel="icon" href="/static/favicon.ico">
+<link rel="icon" type="image/png" href="/static/pwa-icon-192.png">
 <link rel="apple-touch-icon" href="/static/pwa-icon-192.png">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,7 +19,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="/static/js/ui-color-customizer.js?v=2.3"></script>
+<script src="/static/js/ui-color-customizer.js?v=2.4"></script>
 
 <script>
     window.BKNR_COMPANY_NAME = {{ request.session.get('company_name', 'ERP')|tojson }};
@@ -370,7 +370,7 @@ body {
 .corp-profile-btn:hover, .corp-profile-btn.active { background: rgba(255,255,255,0.05); border-color: var(--border-light); }
 [data-theme="light"] .corp-profile-btn:hover { background: rgba(0,0,0,0.03); }
 
-.corp-avatar { width: 34px; height: 34px; background: var(--corp-dash); color: #FFF; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+.corp-avatar { width: 34px; height: 34px; object-fit:cover; background:#fff; border-radius: 6px; display:block; box-shadow:0 4px 12px rgba(13,45,114,.2); }
 .corp-info { display: flex; flex-direction: column; justify-content: center; }
 .corp-name { font-size: 12px; font-weight: 800; color: var(--text-primary); }
 .corp-role { font-size: 10px; font-weight: 600; color: var(--text-tertiary); }
@@ -396,10 +396,14 @@ body {
 @keyframes dropSlide { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Profile & Masters Mega Menu */
-#profileDropdownConsole { width: 650px; gap: 16px; }
-.mega-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-height: 390px; overflow-y: auto; padding-right: 4px;}
-.dropdown-pillar-block { display: flex; flex-direction: column; gap: 4px; }
-.dropdown-pillar-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); border-bottom: 1px solid var(--border-light); padding-bottom: 6px; margin-bottom: 4px; }
+#profileDropdownConsole { width:min(300px,calc(100vw - 24px)); gap:16px; }
+.mega-menu-grid { display:grid; grid-template-columns:1fr !important; align-items:start; gap:7px; max-height:390px; overflow-y:auto; padding-inline:0; }
+.dropdown-pillar-block { display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border-light); border-radius:9px; background:color-mix(in srgb,var(--surface-panel) 92%,var(--corp-dash) 8%); }
+.dropdown-pillar-title { width:100%; min-height:38px; display:flex; align-items:center; justify-content:space-between; padding:10px 11px; border:0; background:transparent; color:var(--text-tertiary); font-size:10px; font-weight:800; letter-spacing:1px; text-align:left; text-transform:uppercase; cursor:pointer; }
+.dropdown-pillar-title i { color:var(--corp-dash); transition:transform .2s ease; }
+.dropdown-pillar-block.open .dropdown-pillar-title i { transform:rotate(90deg); }
+.dropdown-pillar-items { display:none; padding:2px 7px 7px; border-top:1px solid var(--border-light); }
+.dropdown-pillar-block.open .dropdown-pillar-items { display:block; }
 .dropdown-submenu-item { display: flex; align-items: center; padding: 6px 8px; color: var(--text-secondary); font-size: 11.5px; font-weight: 600; cursor: pointer; text-decoration: none; border-radius: var(--radius-element); transition: 0.2s; border-left: 2px solid transparent; }
 .dropdown-submenu-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); border-left-color: var(--corp-mstr); }
 [data-theme="light"] .dropdown-submenu-item:hover { background: rgba(0,0,0,0.04); }
@@ -409,6 +413,24 @@ body {
 .dropdown-filter-box label { font-size: 9px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 .global-select-input { background: rgba(0,0,0,0.1); color: var(--text-primary); border: 1px solid var(--border-light); font-size: 12px; font-weight: 700; padding: 8px 24px 8px 12px; border-radius: 8px; outline: none; width: 100%; cursor: pointer; transition: 0.2s; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8'><path d='M0 3l6 6 6-6z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; }
 [data-theme="light"] .global-select-input { background: rgba(0,0,0,0.03); }
+
+.profile-details-overlay { position:fixed; inset:0; z-index:100000000; display:none; place-items:center; padding:18px; background:rgba(15,23,42,.34); backdrop-filter:blur(3px); }
+.profile-details-overlay.show { display:grid; }
+.profile-details-popup { width:min(470px,100%); max-height:min(680px,calc(100vh - 36px)); overflow:auto; border:1px solid var(--border-light); border-radius:16px; background:var(--surface-panel); box-shadow:var(--shadow-float); }
+.profile-details-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--border-light); background:var(--surface-panel); }
+.profile-details-logo { width:42px; height:42px; flex:0 0 auto; border-radius:10px; object-fit:cover; }
+.profile-details-head-copy { flex:1; min-width:0; }
+.profile-details-head-copy strong { display:block; color:var(--text-primary); font-size:15px; }
+.profile-details-head-copy span { display:block; margin-top:3px; color:var(--text-tertiary); font-size:10px; font-weight:700; }
+.profile-details-close { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--border-light); border-radius:9px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.profile-details-body { padding:8px 16px 16px; }
+.profile-details-state { padding:34px 12px; color:var(--text-secondary); font-size:12px; font-weight:700; text-align:center; }
+.profile-details-row { display:grid; grid-template-columns:34px minmax(0,1fr); align-items:center; gap:11px; min-height:55px; border-bottom:1px solid var(--border-light); }
+.profile-details-row:last-child { border-bottom:0; }
+.profile-details-row-icon { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--corp-dash) 10%,transparent); color:var(--corp-dash); font-size:12px; }
+.profile-details-row-copy span { display:block; color:var(--text-tertiary); font-size:8px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.profile-details-row-copy strong { display:block; margin-top:3px; color:var(--text-primary); font-size:12px; font-weight:800; overflow-wrap:anywhere; }
+.profile-details-row-copy strong.attention { color:#b45309; }
 
 /* Notifications Dropdown */
 #notifDropdownConsole { width: 320px; padding: 0; right: 150px; }
@@ -488,6 +510,18 @@ body {
 }
 iframe { flex: 1; border: none; width: 100%; height: 100%; background: transparent; }
 
+.target-page-skeleton {
+    position: absolute;
+    inset: 0;
+    z-index: 15;
+    display: none;
+    overflow: hidden;
+    padding: clamp(14px, 2vw, 24px);
+    background: var(--bg-app);
+    pointer-events: none;
+}
+.target-page-skeleton.show { display: block; }
+
 /* =========================================================
    🌟 MOBILE GRID & MODALS
 ========================================================= */
@@ -529,8 +563,8 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     .mobile-top-menu-btn, .header-home-btn { display: flex; } 
     .app-container { padding: 10px 10px 25px 10px; margin-left: 0; width: 100%; } 
     .user-profile span, .corp-info { display: none; }
-    #profileDropdownConsole { width: calc(100vw - 32px); right: 16px; }
-    .mega-menu-grid { grid-template-columns: 1fr 1fr; }
+    #profileDropdownConsole { width:min(300px,calc(100vw - 24px)); right:12px; }
+    .mega-menu-grid { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 768px) {
@@ -550,7 +584,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 
 @media (max-width: 600px) {
     .header-brand-title-box { display: none; }
-    .mega-menu-grid { grid-template-columns: 1fr; }
+    .mega-menu-grid { grid-template-columns: 1fr !important; }
     #notifDropdownConsole { width: calc(100vw - 32px); right: 16px; }
     
     /* Header controls compact mode */
@@ -604,9 +638,9 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/app-splash.css">
-<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.3">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/app-splash.css?v=skel8">
+<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
 </head>
 <body>
 
@@ -614,6 +648,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 <div id="appSplash" class="{{ '' if has_app_session else 'app-splash-empty' }}" aria-label="Opening workspace">
     {% if has_app_session %}
     <div class="app-splash-card">
+        <img class="app-splash-logo" src="{{ request.session.get('company_logo_url') or '/static/brand-dp-3d.png' }}" alt="{{ request.session.get('company_name') }} logo">
         <h1 class="app-splash-company">{{ request.session.get('company_name') }}</h1>
         <div class="app-splash-quote" id="appSplashQuote">Preparing your workspace.</div>
         <div class="app-splash-track"><span></span></div>
@@ -686,7 +721,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
             </div>
             
             <div class="corp-profile-btn" id="userProfileBtn" onclick="toggleDropdown(event, 'profileDropdownConsole')">
-                <div class="corp-avatar" id="navUserInitial">U</div>
+                <img class="corp-avatar" src="/static/brand-dp-3d.png" alt="SVBK ERP">
                 <div class="corp-info">
                     <span class="corp-name">{{ request.session.get('name', 'User') }}</span>
                     <span class="corp-role">{{ request.session.get('role', 'Role') }} | {{ request.session.get('company_name', 'Company') }}</span>
@@ -793,6 +828,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 </div>
                 <div class="mega-menu-grid" id="dropdownMenuScrollBox"></div>
                 <div class="profile-logout-section">
+                    <button style="width:100%; margin-bottom:8px; padding:10px; background:var(--surface-panel, #fff); color:var(--corp-dash, #2563eb); border:1px solid var(--border-light, #dbe3ef); border-radius:8px; font-weight:800; cursor:pointer;" onclick="openProfileDetails(event)"><i class="fa-solid fa-user" style="margin-right:7px;"></i>MY PROFILE</button>
                     <button style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
                 </div>
             </div>
@@ -804,8 +840,25 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     </div>
 
     <div class="iframe-wrapper">
+        <div id="targetPageSkeleton" class="target-page-skeleton" role="status" aria-label="Loading original page structure" aria-hidden="true"></div>
         <iframe id="frame" name="frame"></iframe>
     </div>
+</div>
+
+<div class="profile-details-overlay" id="profileDetailsOverlay" onclick="closeProfileDetails(event)">
+    <section class="profile-details-popup" role="dialog" aria-modal="true" aria-label="My Profile" onclick="event.stopPropagation()">
+        <div class="profile-details-head">
+            <img class="profile-details-logo" src="/static/brand-dp-3d.png" alt="SVBK ERP">
+            <div class="profile-details-head-copy">
+                <strong id="profileDetailsName">My Profile</strong>
+                <span id="profileDetailsMeta">Account details</span>
+            </div>
+            <button class="profile-details-close" type="button" onclick="closeProfileDetails()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="profile-details-body" id="profileDetailsBody">
+            <div class="profile-details-state">Loading profile…</div>
+        </div>
+    </section>
 </div>
 
 <div class="quick-action-panel" id="qaPanel">
@@ -947,10 +1000,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
     if (window.applyBKNRUiColors) window.applyBKNRUiColors();
 
-    // Initialize user avatar dynamically based on session name
-    const userName = "{{ request.session.get('name', 'U') }}";
-    const initial = userName.trim() ? userName.trim().charAt(0).toUpperCase() : 'U';
-    document.getElementById('navUserInitial').innerText = initial;
 });
 
 // DROPDOWNS & PANELS
@@ -960,6 +1009,10 @@ function toggleDropdown(e, id) {
         if(el.id !== id) el.classList.remove('show');
     });
     const target = document.getElementById(id);
+    if (id === 'profileDropdownConsole') {
+        target.querySelectorAll('.dropdown-pillar-block.open').forEach(block => block.classList.remove('open'));
+        target.querySelector('.dropdown-pillar-block[data-group="Admin & Support"]')?.classList.add('open');
+    }
     target.classList.toggle('show');
     
     if (id === 'notifDropdownConsole' && target.classList.contains('show')) {
@@ -1003,7 +1056,10 @@ function closeCmdPalette(e) {
 }
 document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openCommandPalette(); }
-    if (e.key === 'Escape') closeCmdPalette();
+    if (e.key === 'Escape') {
+        closeCmdPalette();
+        closeProfileDetails();
+    }
 });
 function launchCmdApp(url, title) {
     closeCmdPalette();
@@ -1014,6 +1070,217 @@ function launchCmdApp(url, title) {
 }
 
 // ROUTING & IFRAME
+const COMING_SOON_ROUTE_PREFIXES = [
+];
+
+const COMING_SOON_ROUTE_MATCHES = [
+];
+
+if (window.top === window.self) {
+    window.history.replaceState({ bknrAppShell: true }, "", window.location.href);
+}
+
+async function ensureActiveSession() {
+    try {
+        const response = await fetch("/auth/session-info", {
+            cache: "no-store",
+            headers: { "Accept": "application/json" }
+        });
+        if (!response.ok) {
+            window.location.replace("/auth/login");
+        }
+    } catch (error) {
+        window.location.replace("/auth/login");
+    }
+}
+
+window.addEventListener("pageshow", (event) => {
+    if (event.persisted) {
+        ensureActiveSession();
+    }
+});
+
+const screenPopupConfig = {{ screen_popup_config|default({"enabled": false, "message": "", "routes": [], "updated_at": ""})|tojson }};
+
+function normalizeScreenPopupPath(value) {
+    try {
+        return new URL(value, window.location.origin).pathname.replace(/\/+$/, "") || "/";
+    } catch(e) {
+        return String(value || "").split("?")[0].replace(/\/+$/, "") || "/";
+    }
+}
+
+function shouldShowScreenPopup(path) {
+    if (!screenPopupConfig || !screenPopupConfig.enabled || !screenPopupConfig.message) return false;
+    const targetPath = normalizeScreenPopupPath(path);
+    return (screenPopupConfig.routes || []).some(route => normalizeScreenPopupPath(route) === targetPath);
+}
+
+function blockScreenPopupRoute(path, title) {
+    if (!shouldShowScreenPopup(path)) return false;
+    if (!window.Swal) {
+        alert(screenPopupConfig.message);
+        return true;
+    }
+    const targetPath = normalizeScreenPopupPath(path);
+    const version = screenPopupConfig.updated_at || "current";
+    const seenKey = `bknr_screen_popup:${version}:${targetPath}`;
+    sessionStorage.setItem(seenKey, "1");
+    Swal.fire({
+        icon: "warning",
+        title: title || "Screen Temporarily Unavailable",
+        html: `<div style="font-size:13px;line-height:1.7;color:var(--text-secondary);text-align:left;">${escapeHtml(screenPopupConfig.message)}</div>`,
+        confirmButtonText: "OK",
+        confirmButtonColor: "var(--corp-dash)",
+        allowOutsideClick: false
+    });
+    return true;
+}
+
+function escapeHtml(value) {
+    return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;")
+        .replace(/\n/g, "<br>");
+}
+
+function isComingSoonModule(url) {
+    if (!url || url === '#') return false;
+    try {
+        const path = new URL(url, window.location.origin).pathname;
+        return COMING_SOON_ROUTE_MATCHES.includes(path) ||
+            COMING_SOON_ROUTE_PREFIXES.some(prefix => path.startsWith(prefix));
+    } catch(e) {
+        return false;
+    }
+}
+
+function showComingSoonModulePopup(title = '') {
+    const moduleName = title || 'This module';
+    const message = `${moduleName} will be available after few days.`;
+    toggleSidebar(false);
+    document.querySelectorAll('.dropdown-console').forEach(el => el.classList.remove('show'));
+    const qa = document.getElementById('qaPanel');
+    if (qa) qa.classList.remove('open');
+
+    if (window.Swal) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Available after few days',
+            html: `<div style="font-size:13px;line-height:1.6;color:var(--text-secondary);">${message}<br>Finance, Accounts and Export Documents pages are temporarily locked.</div>`,
+            confirmButtonText: 'OK',
+            confirmButtonColor: 'var(--corp-dash)'
+        });
+    } else {
+        alert(message);
+    }
+}
+
+function showWorkspaceLoader() {
+    const workspaceFrame = document.getElementById('frame');
+    try {
+        if (workspaceFrame?.contentWindow?.showLoader) {
+            workspaceFrame.contentWindow.showLoader();
+            return;
+        }
+    } catch (e) {
+        // Fall back to the shell loader for a cross-origin or not-yet-ready frame.
+    }
+    if (window.showLoader) window.showLoader();
+}
+
+let targetSkeletonPoll = null;
+
+function showTargetPageSkeleton(targetUrl) {
+    const targetFrame = document.getElementById('frame');
+    const shellSkeleton = document.getElementById('targetPageSkeleton');
+    const expectedPath = new URL(targetUrl, window.location.origin).pathname;
+    let cachedSkeleton = null;
+    try { cachedSkeleton = sessionStorage.getItem(`bknr:exact-skeleton:${expectedPath}`); } catch (e) {}
+
+    if (shellSkeleton && cachedSkeleton) {
+        shellSkeleton.innerHTML = cachedSkeleton;
+        shellSkeleton.classList.add('show');
+        shellSkeleton.setAttribute('aria-hidden', 'false');
+    } else if (shellSkeleton) {
+        shellSkeleton.classList.remove('show');
+        shellSkeleton.setAttribute('aria-hidden', 'true');
+    }
+    // On the first visit keep the current screen visible. Never replace it
+    // with a generic skeleton that belongs to a different page structure.
+    if (targetFrame) targetFrame.style.visibility = 'visible';
+
+    clearInterval(targetSkeletonPoll);
+    targetSkeletonPoll = setInterval(() => {
+        try {
+            const framePath = targetFrame?.contentWindow?.location?.pathname;
+            const targetSkeleton = targetFrame?.contentDocument?.querySelector('#globalLoader .loader-adaptive-snapshot.is-ready');
+            if (framePath === expectedPath && targetSkeleton) {
+                clearInterval(targetSkeletonPoll);
+                targetSkeletonPoll = null;
+                hideTargetPageSkeleton();
+            }
+        } catch (e) {
+            // The workspace routes are same-origin; load fallback handles any exception.
+        }
+    }, 25);
+}
+
+function cacheExactFrameSkeleton(frameDoc, framePath) {
+    if (!frameDoc || !framePath) return;
+    const selectors = [
+        '[data-skeleton-root]', 'main', '.main-content', '.content-wrapper',
+        '.page-content', '.dashboard-container', '.report-container',
+        '.form-container', 'body > .container-fluid', 'body > .container', 'body'
+    ];
+    let source = null;
+    for (const selector of selectors) {
+        const candidate = frameDoc.querySelector(selector);
+        if (candidate && candidate.getBoundingClientRect().height > 80) { source = candidate; break; }
+    }
+    if (!source) return;
+
+    const clone = source === frameDoc.body ? frameDoc.createElement('div') : source.cloneNode(true);
+    if (source === frameDoc.body) {
+        Array.from(frameDoc.body.children).forEach(child => {
+            if (!child.matches('#globalLoader, #appSplash, script, style, link, noscript, .modal, .toast, .swal2-container')) {
+                clone.appendChild(child.cloneNode(true));
+            }
+        });
+    }
+    clone.removeAttribute('id');
+    clone.classList.add('loader-page-snapshot');
+    clone.querySelectorAll('script, style, link, noscript, #globalLoader, .modal, .toast, .swal2-container').forEach(node => node.remove());
+    clone.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+    clone.querySelectorAll('tbody').forEach(body => {
+        Array.from(body.children).slice(6).forEach(row => row.remove());
+    });
+    clone.querySelectorAll('select').forEach(select => {
+        Array.from(select.options).slice(1).forEach(option => option.remove());
+    });
+    clone.querySelectorAll('img, canvas, svg, iframe, video').forEach(node => {
+        node.removeAttribute('src');
+        node.replaceChildren();
+        node.classList.add('loader-media-placeholder');
+    });
+    try { sessionStorage.setItem(`bknr:exact-skeleton:${framePath}`, clone.outerHTML); } catch (e) {}
+}
+
+function hideTargetPageSkeleton() {
+    clearInterval(targetSkeletonPoll);
+    targetSkeletonPoll = null;
+    const targetFrame = document.getElementById('frame');
+    const shellSkeleton = document.getElementById('targetPageSkeleton');
+    if (targetFrame) targetFrame.style.visibility = 'visible';
+    if (shellSkeleton) {
+        shellSkeleton.classList.remove('show');
+        shellSkeleton.setAttribute('aria-hidden', 'true');
+    }
+}
+
 function broadcastUniversalFilters() { 
     const pFor = document.getElementById("global_production_for").value;
     const pLoc = document.getElementById("global_plant_location").value;
@@ -1047,7 +1314,7 @@ function broadcastUniversalFilters() {
             currentUrl.searchParams.delete("cold_storage_name");
         }
         
-        if (window.showLoader) window.showLoader();
+        showTargetPageSkeleton(currentUrl.toString());
         iframe.src = currentUrl.toString();
     } catch(e) {
         console.warn("Universal filter injection synchronized.");
@@ -1056,6 +1323,12 @@ function broadcastUniversalFilters() {
 
 function loadPage(url, element, customTitle = null) {
     if(url === '#') return;
+
+    if (isComingSoonModule(url)) {
+        const label = customTitle || (element ? element.innerText.trim() : 'This module');
+        showComingSoonModulePopup(label);
+        return;
+    }
     
     // Track page visit for dynamic frequently visited menu list
     trackPageVisit(url);
@@ -1081,7 +1354,13 @@ function loadPage(url, element, customTitle = null) {
         targetUrl.searchParams.set("cold_storage_name", pLoc);
     }
 
-    if (window.showLoader) window.showLoader();
+    if (blockScreenPopupRoute(targetUrl.pathname, customTitle || (element ? element.innerText.trim() : 'System Notice'))) {
+        toggleSidebar(false);
+        document.querySelectorAll('.dropdown-console').forEach(el => el.classList.remove('show'));
+        return;
+    }
+
+    showTargetPageSkeleton(targetUrl.toString());
     document.getElementById('frame').src = targetUrl.toString();
     document.querySelectorAll('.submenu-item, .dropdown-submenu-item').forEach(el => el.classList.remove('active'));
     
@@ -1116,21 +1395,59 @@ function loadPage(url, element, customTitle = null) {
 }
 
 const frame = document.getElementById('frame');
+let lastAllowedFrameUrl = "";
+
+function guardBlockedIframeNavigation() {
+    try {
+        if (!frame || !frame.contentWindow || !frame.contentWindow.location) return false;
+        const currentUrl = frame.contentWindow.location.href;
+        const currentPath = frame.contentWindow.location.pathname;
+        if (!currentUrl || currentUrl === "about:blank") return false;
+
+        if (shouldShowScreenPopup(currentPath)) {
+            blockScreenPopupRoute(currentPath, "Screen Temporarily Unavailable");
+            const fallbackUrl = lastAllowedFrameUrl && !shouldShowScreenPopup(lastAllowedFrameUrl)
+                ? lastAllowedFrameUrl
+                : "about:blank";
+            if (frame.src !== fallbackUrl) {
+                frame.src = fallbackUrl;
+            }
+            return true;
+        }
+
+        lastAllowedFrameUrl = currentUrl;
+    } catch(e) {
+        return false;
+    }
+    return false;
+}
+
 frame.addEventListener('load', () => {
+    hideTargetPageSkeleton();
     if (window.forceHideLoader) {
         window.forceHideLoader();
     } else if (window.hideLoader) {
         window.hideLoader();
     }
     try {
+        if (guardBlockedIframeNavigation()) return;
+
         const frameDoc = frame.contentDocument || frame.contentWindow.document;
         if (!frameDoc) return;
+        cacheExactFrameSkeleton(frameDoc, frame.contentWindow.location.pathname);
 
-        // Hook internal iframe redirection/navigation to show loader immediately
-        if (frame.contentWindow) {
-            frame.contentWindow.addEventListener("beforeunload", () => {
-                if (window.showLoader) window.showLoader();
-            });
+        // Every ERP screen gets the same loader, including legacy templates
+        // that are opened directly inside the workspace iframe.
+        if (!frameDoc.querySelector('link[href*="global-loader.css"]')) {
+            const loaderCss = frameDoc.createElement('link');
+            loaderCss.rel = 'stylesheet';
+            loaderCss.href = '/static/css/global-loader.css?v=skel8';
+            frameDoc.head.appendChild(loaderCss);
+        }
+        if (!frameDoc.querySelector('script[src*="global-loader.js"]')) {
+            const loaderScript = frameDoc.createElement('script');
+            loaderScript.src = '/static/js/global-loader.js?v=skel10';
+            frameDoc.body.appendChild(loaderScript);
         }
 
         const currentTheme = document.documentElement.getAttribute("data-theme") || "dark";
@@ -1244,7 +1561,7 @@ function openSupportShortcut() {
     }
 }
 
-function logout() { if(confirm("Do you want to log out?")) window.top.location.href = "/auth/logout"; }
+function logout() { if(confirm("Do you want to log out?")) window.top.location.replace("/auth/logout"); }
 
 function goHomeAction() {
     toggleSidebar(false);
@@ -1267,6 +1584,12 @@ const permissions = {{ request.session.get('permissions')|tojson|default("[]") }
 const currentUserRole = "{{ request.session.get('role', '') }}"; 
 const currentUserEmail = "{{ request.session.get('email', '') }}"; 
 const isDefaultSuperAdmin = (currentUserEmail === "bknr.solutions@gmail.com");
+const registerPermissionMap = {
+    processing_registers: ['gate_entry', 'raw_material_purchasing', 'de_heading', 'grading', 'peeling', 'soaking', 'production', 'reprocess'],
+    inventory_registers: ['stock_entry', 'pending_orders', 'sales_report', 'cold_storage_holding', 'cold_storage'],
+    accounts_registers: ['ledger_master', 'journal_entry', 'customer_receivable', 'vendor_payment', 'bank_transaction', 'expense_voucher', 'payment_receipt'],
+    hrms_registers: ['employee_registration', 'daily_attendance', 'employee_increment', 'tax_master', 'salary_advance']
+};
 
 function allow(key){ 
     if (['admin_helpdesk', 'manage_support', 'user_activity'].includes(key)) {
@@ -1274,6 +1597,9 @@ function allow(key){
     }
     if (isDefaultSuperAdmin) return true;
     if (!permissions) return false;
+    if (registerPermissionMap[key]) {
+        return permissions.includes("ALL") || registerPermissionMap[key].some(permission => permissions.includes(permission));
+    }
     return permissions.includes("ALL") || permissions.includes(key); 
 }
 
@@ -1284,7 +1610,7 @@ function getCorporateStatus(oldBadge) {
         'Misc': 'CLOSED', 'Acc': 'ACTIVE', 'Bank': 'ACTIVE', 'Fin': 'CLOSED',
         'Logs': 'CLOSED', 'Data': 'CLOSED', 'Inv': 'ACTIVE', 'Hold': 'PENDING',
         'Out': 'CLOSED', 'Val': 'CLOSED', 'Time': 'CLOSED', 'Run': 'CLOSED',
-        'HR': 'ACTIVE', 'Ops-1': 'PENDING', 'Ops-2': 'PENDING'
+        'HR': 'ACTIVE', 'Ops-1': 'PENDING', 'Ops-2': 'PENDING', 'XLSX': 'CLOSED'
     };
     const s = map[oldBadge] || oldBadge;
     if(s === 'ACTIVE') return { text: s, cls: 'badge-active' };
@@ -1298,13 +1624,13 @@ const sidebarMenuData = [
     {
         title: "DASHBOARDS",
         items: [
-            ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', 'LIVE'],
-            ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', 'LIVE'],
-            ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', 'LIVE'],
-            ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Docs', 'LIVE'],
-            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', 'LIVE'],
-            ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', 'LIVE'],
-            ['tally_dashboard', '/finance_accounts/tally_dashboard', 'fa-chart-pie', 'Tally Dashboard', 'LIVE']
+            ['processing_dashboard', '/dashboard/processing_dashboard', 'fa-chart-simple', 'Processing', ''],
+            ['inventory_dashboard', '/dashboard/inventory_dashboard', 'fa-warehouse', 'Inventory', ''],
+            ['hr_command_center', '/dashboard/hr_command_center', 'fa-user-tie', 'HR & Staff', ''],
+            ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Docs', ''],
+            ['costing_dashboard', '/dashboard/costing_dashboard', 'fa-file-invoice-dollar', 'Costing & Fin', ''],
+            ['finance_dashboard', '/dashboard/finance_dashboard', 'fa-wallet', 'Finance Dashboard', ''],
+            ['tally_dashboard', '/finance_accounts/tally_dashboard', 'fa-chart-pie', 'Tally Dashboard', '']
         ]
     },
     {
@@ -1320,7 +1646,7 @@ const sidebarMenuData = [
                     ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling', 'WIP'],
                     ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking', 'WIP'],
                     ['production', '/processing/production', 'fa-industry', 'Production', 'WIP'],
-                    ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'WIP']
+                    ['processing_registers', '/registers/processing', 'fa-file-excel', 'Processing Registers', 'XLSX']
                 ]
             },
             {
@@ -1329,13 +1655,15 @@ const sidebarMenuData = [
                     ['stock_entry', '/inventory/stock_entry', 'fa-boxes-stacked', 'Stock Entry', 'Stock'],
                     ['pending_orders', '/inventory/pending_orders', 'fa-clock-rotate-left', 'Pending Orders', 'Orders'],
                     ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding', 'Cold'],
-                    ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store']
+                    ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store'],
+                    ['inventory_registers', '/registers/inventory', 'fa-file-excel', 'Inventory Registers', 'XLSX']
                 ]
             },
             {
                 name: "Export Documents",
                 items: [
                     ['export_documents_dashboard', '/export_documents/dashboard', 'fa-file-export', 'Export Dashboard', 'ExpOp'],
+                    ['proforma_invoice', '/export_documents/proforma_invoice/entry', 'fa-file-invoice-dollar', 'Proforma Invoices', 'ExpOp'],
                     ['export_shipment', '/export_documents/export_shipment/entry', 'fa-ship', 'Export Shipments', 'ExpOp'],
                     ['commercial_invoice', '/export_documents/commercial_invoice/entry', 'fa-file-invoice', 'Commercial Invoices', 'ExpOp'],
                     ['packing_list', '/export_documents/packing_list/entry', 'fa-file-lines', 'Packing Lists', 'ExpOp'],
@@ -1343,9 +1671,8 @@ const sidebarMenuData = [
                     ['shipping_bill', '/export_documents/shipping_bill/entry', 'fa-clipboard-check', 'Shipping Bills', 'ExpOp'],
                     ['bill_of_lading', '/export_documents/bill_of_lading/entry', 'fa-file-contract', 'Bills of Lading', 'ExpOp'],
                     ['health_certificate', '/export_documents/health_certificate/entry', 'fa-file-medical', 'Health Certificates', 'ExpOp'],
-                    ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp'],
-                    ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'ExpOp'],
-                    ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'ExpOp']
+                    ['export_requirement_forms', '/export_documents/requirement-pages/entry', 'fa-list-check', 'Document Entry Forms', 'ExpOp'],
+                    ['export_supporting_documents', '/export_documents/supporting_documents/entry', 'fa-folder-open', 'Supporting Documents', 'ExpOp']
                 ]
             }
         ]
@@ -1354,25 +1681,32 @@ const sidebarMenuData = [
         title: "FINANCE",
         subgroups: [
             {
-                name: "Commercial Bills",
+                name: "Operational Bills",
                 items: [
                     ['electricity_bills', '/api/electricity/entry', 'fa-bolt', 'Electricity Bills', 'Exp'],
                     ['diesel_bills', '/api/diesel/entry', 'fa-gas-pump', 'Diesel Consumption', 'Exp'],
                     ['packaging_bills', '/api/purchase/entry', 'fa-file-invoice-dollar', 'Purchase & Packaging', 'Exp'],
                     ['logistics_bills', '/api/container/entry', 'fa-truck-fast', 'Logistics & Freight', 'Exp'],
-                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
+	                    ['contractor_bills', '/api/contractor_bills/entry', 'fa-users-gear', 'Contractor Bills', 'Exp'],
+	                    ['salaries', '/api/salaries/entry', 'fa-money-check-dollar', 'Salaries', 'Pay'],
+	                    ['vendor_bills', '/api/vendor_bills/entry', 'fa-file-invoice-dollar', 'Vendor Bills', 'AP'],
+	                    ['supplier_bills', '/api/supplier_bills/entry', 'fa-truck-field', 'Supplier Bills', 'AP'],
+	                    ['payment_logs', '/api/payment_logs/entry', 'fa-receipt', 'Payment Logs', 'Pay'],
+	                    ['qa_testing', '/api/qa/entry', 'fa-microscope', 'QA Testing Charges', 'Exp'],
                     ['other_expenses', '/api/expenses/entry', 'fa-receipt', 'Other Expenses', 'Misc']
                 ]
             },
             {
                 name: "Accounts & Ledgers",
                 items: [
+                    ['accounts_flow_guide', '/finance_accounts/accounts_flow_guide', 'fa-diagram-project', 'Accounts Flow Guide', 'Acc'],
                     ['ledger_master', '/finance_accounts/ledger_master/entry', 'fa-folder-open', 'Ledger Master', 'Acc'],
                     ['journal_entry', '/finance_accounts/journal_entry/entry', 'fa-book', 'Journal Entries', 'Acc'],
                     ['bank_master', '/finance_accounts/bank_master/entry', 'fa-building-columns', 'Bank Master', 'Acc'],
                     ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Acc'],
                     ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Acc'],
-                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Acc']
+                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Acc'],
+                    ['accounts_registers', '/registers/accounts', 'fa-file-excel', 'Accounts Registers', 'XLSX']
                 ]
             },
             {
@@ -1383,14 +1717,10 @@ const sidebarMenuData = [
                 ]
             },
             {
-                name: "Payables & Receivables",
+                name: "Integrated Finance",
                 items: [
-                    ['customer_receivable', '/finance_accounts/customer_receivable/entry', 'fa-hand-holding-dollar', 'Customer Receivables', 'Fin'],
-                    ['vendor_payment', '/finance_accounts/vendor_payment/entry', 'fa-money-bill-transfer', 'Vendor Payments', 'Fin'],
-                    ['expense_voucher', '/finance_accounts/expense_voucher/entry', 'fa-receipt', 'Expense Vouchers', 'Fin'],
                     ['export_incentive_register', '/finance_accounts/export_incentive_register/entry', 'fa-award', 'Export Incentives', 'Fin'],
                     ['lc_tracking', '/finance_accounts/lc_tracking/entry', 'fa-file-shield', 'LC Tracking', 'Fin'],
-                    ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'Fin'],
                     ['production_cost_allocation', '/finance_accounts/production_cost_allocation/entry', 'fa-coins', 'Production Cost Allocation', 'Fin']
                 ]
             }
@@ -1444,7 +1774,8 @@ const sidebarMenuData = [
             ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet', 'HR'],
             ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
             ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR'],
-            ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'HR']
+            ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'HR'],
+            ['hrms_registers', '/registers/hrms', 'fa-file-excel', 'HRMS Registers', 'XLSX']
         ]
     },
     {
@@ -1489,10 +1820,6 @@ const sidebarMenuData = [
                     ['coldstore_locations', '/criteria/coldstore_locations', 'fa-map-location-dot', 'Coldstore Locations', 'Mstr'],
                     ['vehicle_numbers', '/criteria/vehicle_numbers', 'fa-truck', 'Vehicle Numbers', 'Mstr'],
                     ['hsn_codes', '/criteria/hsn_codes', 'fa-barcode', 'HSN Codes', 'Mstr'],
-                    ['bank_master', '/finance_accounts/bank_master/entry', 'fa-university', 'Bank Master', 'Mstr'],
-                    ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Mstr'],
-                    ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Mstr'],
-                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Mstr'],
                     ['general_store_items', '/general_stock/items', 'fa-cubes', 'General Store Items', 'Mstr']
                 ]
             },
@@ -1502,6 +1829,9 @@ const sidebarMenuData = [
                      ['add_user', '/admin/add_user', 'fa-user-gear', 'User Configuration', 'Admin'], 
                      ['shifts', '/attendance/shifts', 'fa-business-time', 'Shifts', 'Admin'],
                      ['data_management','/data-management','fa-database','Data Management', 'Admin']
+                     {% if request.session.get('email') == 'bknr.solutions@gmail.com' %}
+                     ,['system_settings', '/admin/system_settings', 'fa-sliders', 'System & Pipeline', 'Admin']
+                     {% endif %}
                 ]
             }
         ]
@@ -1535,10 +1865,7 @@ const dropdownConsoleMenuData = [
         items: [
             ['cold_storage', '/inventory/cold_storage', 'Cold Storage Master'], ['coldstore_locations', '/criteria/coldstore_locations', 'Coldstore Locations'],
             ['vehicle_numbers', '/criteria/vehicle_numbers', 'Vehicle Numbers'], ['hsn_codes', '/criteria/hsn_codes', 'HSN Codes'],
-            ['bank_master', '/finance_accounts/bank_master/entry', 'Bank Master'],
-            ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'Item Accounting Link'],
-            ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'Fixed Assets'],
-            ['gst_register', '/finance_accounts/gst_register/entry', 'GST Register']
+            ['general_store_items', '/general_stock/items', 'General Store Items']
         ]
     },
     {
@@ -1547,6 +1874,9 @@ const dropdownConsoleMenuData = [
             ['add_user', '/admin/add_user', 'User Configuration', 'fa-user-gear'], 
             ['shifts', '/attendance/shifts', 'Shifts', 'fa-business-time'],
             ['data_management','/data-management','Data Management', 'fa-database'], 
+            {% if request.session.get('email') == 'bknr.solutions@gmail.com' %}
+            ['system_settings', '/admin/system_settings', 'System & Pipeline', 'fa-sliders'], 
+            {% endif %}
             ['raise_ticket', '/support/my_tickets', 'My Complaints', 'fa-headset'],
             ['admin_helpdesk', '/admin/all_tickets', 'Helpdesk', 'fa-ticket'], 
             ['manage_support', '/admin/support_team', 'Support Team', 'fa-users-gear'],
@@ -1626,16 +1956,65 @@ function renderDropdownConsoleMenu() {
         let allowedItems = cat.items.filter(item => allow(item[0]));
         if (allowedItems.length === 0) return;
 
-        html += `<div class="dropdown-pillar-block"><div class="dropdown-pillar-title">${cat.title}</div>`;
+        html += `<div class="dropdown-pillar-block${cat.title === 'Admin & Support' ? ' open' : ''}" data-group="${cat.title}">
+            <button type="button" class="dropdown-pillar-title" onclick="toggleDropdownPillar(this)">
+                <span>${cat.title}</span><i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="dropdown-pillar-items">`;
         allowedItems.forEach(item => {
             const [permissionKey, route, label, icon] = item;
             const iconClass = icon ? `fa-solid ${icon}` : 'fa-solid fa-circle';
             const iconStyle = icon ? 'font-size:12px; margin-right:8px;' : 'font-size:5px; margin-right:8px;';
             html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', null, 'MASTERS > ${label.toUpperCase()}')"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
         });
-        html += `</div>`;
+        html += `</div></div>`;
     });
     document.getElementById("dropdownMenuScrollBox").innerHTML = html;
+}
+
+function toggleDropdownPillar(element) {
+    element.closest('.dropdown-pillar-block')?.classList.toggle('open');
+}
+
+async function openProfileDetails(event) {
+    if (event) event.stopPropagation();
+    document.getElementById('profileDropdownConsole')?.classList.remove('show');
+    const overlay = document.getElementById('profileDetailsOverlay');
+    const body = document.getElementById('profileDetailsBody');
+    overlay?.classList.add('show');
+    if (body) body.innerHTML = '<div class="profile-details-state">Loading profile…</div>';
+    try {
+        const response = await fetch('/auth/profile?format=json', { credentials:'include', headers:{ Accept:'application/json' } });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || 'Unable to load profile');
+        const profile = payload.profile || {};
+        document.getElementById('profileDetailsName').textContent = profile.name || 'My Profile';
+        document.getElementById('profileDetailsMeta').textContent = `${profile.company_name || 'Company'} · ${profile.role || 'Role'}`;
+        const rows = [
+            ['fa-id-card', 'Employee ID', profile.employee_id],
+            ['fa-envelope', 'Login Email', profile.email],
+            ['fa-id-badge', 'Designation', profile.designation],
+            ['fa-calendar', 'Date of Birth', profile.date_of_birth],
+            ['fa-droplet', 'Blood Group', profile.blood_group],
+            ['fa-location-dot', 'Working Location', profile.working_location],
+            ['fa-house', 'Address', profile.address || 'Please update', !profile.address]
+        ];
+        if (body) body.innerHTML = rows.map(([icon, label, value, attention]) => `
+            <div class="profile-details-row">
+                <span class="profile-details-row-icon"><i class="fa-solid ${icon}"></i></span>
+                <div class="profile-details-row-copy">
+                    <span>${escapeHtml(label)}</span>
+                    <strong class="${attention ? 'attention' : ''}">${escapeHtml(value || '—')}</strong>
+                </div>
+            </div>`).join('');
+    } catch (error) {
+        if (body) body.innerHTML = `<div class="profile-details-state">${escapeHtml(error.message || 'Unable to load profile')}</div>`;
+    }
+}
+
+function closeProfileDetails(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('profileDetailsOverlay')?.classList.remove('show');
 }
 
 function togglePillar(element) {
@@ -2135,7 +2514,7 @@ function resetInactivityTimer() {
 }
 
 function autoLogout() {
-    window.top.location.href = "/auth/logout";
+    window.top.location.replace("/auth/logout");
 }
 
 // Attach event listeners to main window
@@ -2219,7 +2598,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 <script src="/static/js/app-splash.js"></script>
 </body>
 </html>

@@ -1,12 +1,14 @@
 import logging
+import calendar
 from datetime import date, datetime
-from sqlalchemy.orm import Session
+from decimal import Decimal, InvalidOperation
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 import json
 
 from app.database.models.enterprise_finance import (
-    AccountGroup, LedgerMaster, VoucherType, VoucherHeader, VoucherDetail, 
-    CostCenter, CurrencyMaster, ExchangeRate, FinanceAuditTrail
+    AccountGroup, LedgerMaster, VoucherType, VoucherHeader, VoucherDetail,
+    CostCenter, CurrencyMaster, ExchangeRate, FinanceAuditTrail, FinancialYearMaster
 )
 
 logger = logging.getLogger(__name__)
@@ -14,11 +16,46 @@ logger = logging.getLogger(__name__)
 class PostingEngineService:
 
     @staticmethod
+    def validate_details(details: list) -> tuple[Decimal, Decimal]:
+        """Validate journal lines and return currency-rounded debit/credit totals."""
+        if not isinstance(details, list) or len(details) < 2:
+            raise ValueError("A voucher requires at least two accounting lines")
+
+        total_debit = Decimal("0.00")
+        total_credit = Decimal("0.00")
+        for index, detail in enumerate(details, start=1):
+            try:
+                debit = Decimal(str(detail.get("debit_amount", 0) or 0))
+                credit = Decimal(str(detail.get("credit_amount", 0) or 0))
+            except (InvalidOperation, TypeError, ValueError):
+                raise ValueError(f"Voucher line {index} has an invalid amount") from None
+
+            if not debit.is_finite() or not credit.is_finite():
+                raise ValueError(f"Voucher line {index} amount must be finite")
+            if debit < 0 or credit < 0:
+                raise ValueError(f"Voucher line {index} amount cannot be negative")
+            if (debit > 0) == (credit > 0):
+                raise ValueError(f"Voucher line {index} requires exactly one positive debit or credit")
+            if not str(detail.get("ledger_name", "")).strip():
+                raise ValueError(f"Voucher line {index} requires a ledger")
+
+            total_debit += debit.quantize(Decimal("0.01"))
+            total_credit += credit.quantize(Decimal("0.01"))
+
+        if total_debit <= 0 or total_debit != total_credit:
+            raise ValueError(
+                f"Transaction not balanced. Debit {total_debit:.2f} must equal credit {total_credit:.2f}"
+            )
+        return total_debit, total_credit
+
+    @staticmethod
     def verify_balance(details: list) -> bool:
-        """Checks if sum(debit) == sum(credit) for a list of voucher details."""
-        total_debit = sum(float(d.get('debit_amount', 0.0)) for d in details)
-        total_credit = sum(float(d.get('credit_amount', 0.0)) for d in details)
-        return abs(total_debit - total_credit) < 0.01
+        """Compatibility helper for callers that only need a boolean result."""
+        try:
+            PostingEngineService.validate_details(details)
+            return True
+        except (ValueError, TypeError):
+            return False
 
     @staticmethod
     def get_or_create_group(db: Session, company_id: str, group_name: str, group_type: str, parent_name: str = None) -> AccountGroup:
@@ -127,8 +164,45 @@ class PostingEngineService:
     @staticmethod
     def create_voucher(db: Session, company_id: str, voucher_type_name: str, voucher_date: date, narration: str, details: list, reference_no: str = None, created_by: str = 'SYSTEM', status: str = 'POSTED') -> VoucherHeader:
         """Creates and posts a fully balanced double entry voucher."""
-        if not PostingEngineService.verify_balance(details):
-            raise ValueError(f"Transaction not balanced. Sum(Dr) must equal Sum(Cr). Details: {details}")
+        total_debit, _ = PostingEngineService.validate_details(details)
+        allowed_statuses = {"DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "POSTED", "CANCELLED"}
+        if status not in allowed_statuses:
+            raise ValueError("Invalid voucher status")
+
+        locked_year = db.query(FinancialYearMaster).filter(
+            FinancialYearMaster.company_id == company_id,
+            FinancialYearMaster.is_locked.is_(True),
+            FinancialYearMaster.start_date <= voucher_date,
+            FinancialYearMaster.end_date >= voucher_date,
+        ).first()
+        if locked_year:
+            raise ValueError(f"Financial year {locked_year.year_name} is locked")
+
+        cost_center_ids = {d.get("cost_center_id") for d in details if d.get("cost_center_id")}
+        if cost_center_ids:
+            valid_count = db.query(CostCenter.id).filter(
+                CostCenter.company_id == company_id,
+                CostCenter.is_active.is_(True),
+                CostCenter.id.in_(cost_center_ids),
+            ).count()
+            if valid_count != len(cost_center_ids):
+                raise ValueError("One or more cost centers are invalid for this company")
+
+        resolved_ledgers = []
+        for detail in details:
+            ledger = PostingEngineService.get_or_create_ledger(
+                db,
+                company_id,
+                detail["ledger_name"],
+                detail["group_name"],
+                detail["group_type"],
+                detail.get("parent_group_name"),
+            )
+            if str(ledger.status or "ACTIVE").upper() != "ACTIVE":
+                raise ValueError(f"Ledger {ledger.ledger_name} is inactive")
+            if ledger.cost_center_required and not detail.get("cost_center_id"):
+                raise ValueError(f"Cost center is required for ledger {ledger.ledger_name}")
+            resolved_ledgers.append(ledger)
 
         v_type = PostingEngineService.get_or_create_voucher_type(
             db, company_id, voucher_type_name, voucher_type_name[:3].upper()
@@ -150,34 +224,119 @@ class PostingEngineService:
         db.add(header)
         db.flush()
 
-        for d in details:
-            ledger = PostingEngineService.get_or_create_ledger(
-                db, company_id, d['ledger_name'], d['group_name'], d['group_type'], d.get('parent_group_name')
-            )
+        for d, ledger in zip(details, resolved_ledgers):
             detail = VoucherDetail(
                 voucher_id=header.id,
                 ledger_id=ledger.id,
                 cost_center_id=d.get('cost_center_id'),
-                debit_amount=float(d.get('debit_amount', 0.0)),
-                credit_amount=float(d.get('credit_amount', 0.0)),
+                debit_amount=Decimal(str(d.get('debit_amount', 0) or 0)).quantize(Decimal("0.01")),
+                credit_amount=Decimal(str(d.get('credit_amount', 0) or 0)).quantize(Decimal("0.01")),
                 remarks=d.get('remarks')
             )
             db.add(detail)
 
         PostingEngineService.write_finance_audit(
             db, company_id, 'voucher_headers', header.id, 'INSERT', None, 
-            {"voucher_no": voucher_no, "amount": sum(float(x.get('debit_amount', 0.0)) for x in details)},
+            {"voucher_no": voucher_no, "amount": float(total_debit)},
             created_by
         )
         db.flush()
         return header
+
+    @staticmethod
+    def reverse_voucher(
+        db: Session,
+        company_id: str,
+        voucher_id: int,
+        reason: str,
+        reversed_by: str = "SYSTEM",
+        reversal_date: date | None = None,
+    ) -> VoucherHeader | None:
+        """Create an immutable contra entry for a posted source voucher.
+
+        The original voucher remains POSTED so the audit trail is preserved.  The
+        contra voucher neutralises it in every accounting report.  Repeating the
+        operation is idempotent and returns the existing reversal.
+        """
+        voucher = (
+            db.query(VoucherHeader)
+            .options(
+                joinedload(VoucherHeader.details)
+                .joinedload(VoucherDetail.ledger)
+                .joinedload(LedgerMaster.group)
+            )
+            .filter(
+                VoucherHeader.id == voucher_id,
+                VoucherHeader.company_id == company_id,
+            )
+            .first()
+        )
+        if not voucher:
+            return None
+        if voucher.status != "POSTED":
+            if voucher.status not in {"CANCELLED", "REJECTED"}:
+                voucher.status = "CANCELLED"
+            return None
+
+        existing_audit = db.query(FinanceAuditTrail).filter(
+            FinanceAuditTrail.company_id == company_id,
+            FinanceAuditTrail.table_name == "voucher_headers",
+            FinanceAuditTrail.record_id == voucher.id,
+            FinanceAuditTrail.action == "REVERSE",
+        ).order_by(FinanceAuditTrail.id.desc()).first()
+        if existing_audit and existing_audit.new_value:
+            try:
+                reversal_id = int(json.loads(existing_audit.new_value).get("reversal_voucher_id"))
+                return db.query(VoucherHeader).filter(
+                    VoucherHeader.id == reversal_id,
+                    VoucherHeader.company_id == company_id,
+                ).first()
+            except (TypeError, ValueError, json.JSONDecodeError):
+                pass
+
+        clean_reason = str(reason or "Source transaction cancelled").strip()
+        lines = []
+        for line in voucher.details:
+            if not line.ledger or not line.ledger.group:
+                raise ValueError("Cannot reverse a voucher with an invalid ledger link")
+            lines.append({
+                "ledger_name": line.ledger.ledger_name,
+                "group_name": line.ledger.group.group_name,
+                "group_type": line.ledger.group.group_type,
+                "cost_center_id": line.cost_center_id,
+                "debit_amount": float(line.credit_amount or 0),
+                "credit_amount": float(line.debit_amount or 0),
+                "remarks": f"Reversal of {voucher.voucher_no}: {clean_reason}",
+            })
+        reversal = PostingEngineService.create_voucher(
+            db,
+            company_id,
+            "Journal",
+            reversal_date or date.today(),
+            f"Reversal of {voucher.voucher_no}: {clean_reason}",
+            lines,
+            reference_no=f"REV-{voucher.voucher_no}"[:50],
+            created_by=reversed_by or "SYSTEM",
+            status="POSTED",
+        )
+        PostingEngineService.write_finance_audit(
+            db,
+            company_id,
+            "voucher_headers",
+            voucher.id,
+            "REVERSE",
+            {"status": voucher.status},
+            {"reversal_voucher_id": reversal.id, "reason": clean_reason},
+            reversed_by or "SYSTEM",
+        )
+        return reversal
 
     # =========================================================================
     # ERP SEAFOOD AUTO-POSTING RULES
     # =========================================================================
 
     @staticmethod
-    def post_shrimp_purchase(db: Session, company_id: str, supplier_name: str, total_amount: float, gst_rate: float, tds_rate: float, batch_number: str, invoice_date: date) -> VoucherHeader:
+    def post_shrimp_purchase(db: Session, company_id: str, supplier_name: str, total_amount: float, gst_rate: float, tds_rate: float, batch_number: str, invoice_date: date, created_by: str = "SYSTEM") -> VoucherHeader:
         """
         Auto-posts raw material purchasing.
         Double entry:
@@ -237,7 +396,14 @@ class PostingEngineService:
         narration = f"Auto-posted Raw Shrimp Purchase for Batch {batch_number} from {supplier_name} on {invoice_date}."
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Purchase", invoice_date, narration, details, reference_no=batch_number
+            db,
+            company_id,
+            "Purchase",
+            invoice_date,
+            narration,
+            details,
+            reference_no=batch_number,
+            created_by=created_by or "SYSTEM",
         )
 
     @staticmethod
@@ -357,17 +523,22 @@ class PostingEngineService:
         """
         Auto-posts salary approval journal.
         Double entry:
-          Debit: Salaries & Wages Expense A/c (Gross Salary + Employer PF + Employer ESI)
+          Debit: Salaries & Wages Expense A/c (Gross Salary + Employer PF/EPS + EDLI + Employer ESI)
           Credit: Salaries Payable A/c (Net Payable)
-          Credit: PF Payable A/c (Employer + Employee PF)
+          Credit: PF Payable A/c (Employee EPF + Employer EPF)
+          Credit: EPS Payable A/c (Employer EPS)
+          Credit: EDLI Payable A/c (Employer EDLI)
           Credit: ESI Payable A/c (Employer + Employee ESI)
           Credit: PT Payable A/c (Professional Tax)
           Credit: TDS Payable A/c (TDS on Salary)
           Credit: Salary Advance A/c (Advance Deduction)
           Credit: LWF Payable A/c (Employee + Employer LWF)
         """
-        salaries_wages_expense = round(entry.gross_salary + entry.pf_employer + entry.esi_employer + entry.lwf_employer, 2)
-        total_pf_payable = round(entry.pf_employee + entry.pf_employer, 2)
+        employer_epf = float(getattr(entry, "epf_employer", 0.0) or 0.0)
+        employer_eps = float(getattr(entry, "eps_employer", 0.0) or 0.0)
+        employer_edli = float(getattr(entry, "edli_employer", 0.0) or 0.0)
+        salaries_wages_expense = round(entry.gross_salary + entry.pf_employer + employer_edli + entry.esi_employer + entry.lwf_employer, 2)
+        total_pf_payable = round(entry.pf_employee + employer_epf, 2)
         total_esi_payable = round(entry.esi_employee + entry.esi_employer, 2)
         total_lwf_payable = round(entry.lwf_employee + entry.lwf_employer, 2)
         
@@ -401,7 +572,29 @@ class PostingEngineService:
                 "parent_group_name": "Current Liabilities",
                 "debit_amount": 0.0,
                 "credit_amount": total_pf_payable,
-                "remarks": f"PF contribution (Emp + Empr)"
+                "remarks": "Employee EPF + Employer EPF contribution"
+            })
+
+        if employer_eps > 0:
+            details.append({
+                "ledger_name": "Employees Pension Scheme (EPS) Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": employer_eps,
+                "remarks": "Employer EPS contribution"
+            })
+
+        if employer_edli > 0:
+            details.append({
+                "ledger_name": "EDLI Contribution Payable A/c",
+                "group_name": "Duties & Taxes",
+                "group_type": "LIABILITY",
+                "parent_group_name": "Current Liabilities",
+                "debit_amount": 0.0,
+                "credit_amount": employer_edli,
+                "remarks": "Employer EDLI contribution"
             })
             
         # Credit ESI Payable
@@ -476,41 +669,56 @@ class PostingEngineService:
             })
 
         narration = f"Auto-posted Salary Approval for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}."
+        try:
+            salary_year, salary_month = (int(part) for part in str(entry.month_year).split("-", 1))
+            voucher_date = date(salary_year, salary_month, calendar.monthrange(salary_year, salary_month)[1])
+        except (TypeError, ValueError):
+            voucher_date = date.today()
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Journal", date.today(), narration, details, reference_no=f"SAL-{entry.employee_id}-{entry.month_year}"
+            db, company_id, "Journal", voucher_date, narration, details, reference_no=f"SAL-{entry.employee_id}-{entry.month_year}"
         )
 
     @staticmethod
-    def post_salary_payment(db: Session, company_id: str, entry) -> VoucherHeader:
+    def post_salary_payment(db: Session, company_id: str, entry, amount: float = None, bank_cash_ledger=None) -> VoucherHeader:
         """
         Auto-posts salary payment journal.
         Double entry:
           Debit: Salaries Payable A/c (Net Payable)
           Credit: Bank Account
         """
+        payment_mode = (entry.payment_mode or "BANK").strip().upper()
+        credit_ledger = bank_cash_ledger.ledger_name if bank_cash_ledger else ("Cash Account" if payment_mode == "CASH" else "Bank Account")
+        credit_group = bank_cash_ledger.group.group_name if bank_cash_ledger and bank_cash_ledger.group else ("Cash-in-hand" if payment_mode == "CASH" else "Bank Accounts")
+        credit_group_type = bank_cash_ledger.group.group_type if bank_cash_ledger and bank_cash_ledger.group else "ASSET"
+        payment_date = entry.payment_date or date.today()
+        reference_no = entry.utr_reference or f"PAY-{entry.employee_id}-{entry.month_year}"
+        payment_amount = round(float(entry.net_payable if amount is None else amount), 2)
+        if payment_amount <= 0:
+            raise ValueError("Salary payment amount must be greater than zero")
+
         details = [
             {
                 "ledger_name": "Salaries Payable A/c",
                 "group_name": "Current Liabilities",
                 "group_type": "LIABILITY",
-                "debit_amount": entry.net_payable,
+                "debit_amount": payment_amount,
                 "credit_amount": 0.0,
                 "remarks": f"Salary Payment for {entry.employee_name} ({entry.month_year})"
             },
             {
-                "ledger_name": "Bank Account",
-                "group_name": "Bank Accounts",
-                "group_type": "ASSET",
+                "ledger_name": credit_ledger,
+                "group_name": credit_group,
+                "group_type": credit_group_type,
                 "parent_group_name": "Current Assets",
                 "debit_amount": 0.0,
-                "credit_amount": entry.net_payable,
-                "remarks": f"Salary Paid - Mode: {entry.payment_mode}"
+                "credit_amount": payment_amount,
+                "remarks": f"Salary Paid - Mode: {payment_mode}; Ref: {entry.utr_reference or '-'}"
             }
         ]
         
-        narration = f"Auto-posted Salary Payment for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}. Payment Mode: {entry.payment_mode}."
+        narration = f"Auto-posted Salary Payment for Employee {entry.employee_name} ({entry.employee_id}) for the month of {entry.month_year}. Payment Mode: {payment_mode}."
         
         return PostingEngineService.create_voucher(
-            db, company_id, "Payment", date.today(), narration, details, reference_no=f"PAY-{entry.employee_id}-{entry.month_year}"
+            db, company_id, "Payment", payment_date, narration, details, reference_no=reference_no
         )

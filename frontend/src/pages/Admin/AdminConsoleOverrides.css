@@ -1,0 +1,239 @@
+.admin-control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.admin-console-shell {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  background: var(--bg-app);
+}
+
+.admin-console-content {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.admin-right-nav {
+  min-height: 0;
+  padding: 14px 10px;
+  overflow-y: auto;
+  border-left: 1px solid var(--border-light);
+  background: var(--sidebar-bg, var(--surface-panel));
+}
+
+.admin-right-nav-title {
+  height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .8px;
+}
+
+.admin-right-nav nav {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-right-nav-item {
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 9px;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 12px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-right-nav-item:hover {
+  color: var(--text-primary);
+  background: color-mix(in srgb, var(--ui-accent, #2563eb) 7%, transparent);
+}
+
+.admin-right-nav-item.active {
+  color: #fff;
+  border-color: transparent;
+  background: var(--ui-accent, var(--corp-dash, #2563eb));
+  box-shadow: 0 5px 14px color-mix(in srgb, var(--ui-accent, #2563eb) 24%, transparent);
+}
+
+.admin-right-nav-item > i:first-child {
+  text-align: center;
+}
+
+.admin-right-nav-arrow {
+  font-size: 8px;
+  opacity: .55;
+}
+
+.admin-kpis {
+  grid-template-columns: repeat(3, minmax(140px, 1fr));
+}
+
+.activity-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(270px, 1fr);
+  gap: 14px;
+}
+
+.activity-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 520px;
+  overflow: auto;
+}
+
+.admin-table tbody tr.selected {
+  background: color-mix(in srgb, var(--ui-accent, #2563eb) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--ui-accent, #2563eb);
+}
+
+.permission-pillars {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.permission-pillar {
+  border: 1px solid var(--border-light);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.permission-pillar-head {
+  width: 100%;
+  height: 36px;
+  padding: 0 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  background: var(--header-bg, var(--bg-app));
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.permission-pillar-head span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.permission-pillar-head .fa-chevron-right {
+  transition: transform .2s ease;
+}
+
+.permission-pillar.open .permission-pillar-head .fa-chevron-right {
+  transform: rotate(90deg);
+}
+
+.permission-pillar-body {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  gap: 7px;
+  padding: 10px;
+  border-top: 1px solid var(--border-light);
+}
+
+.support-drawer-page {
+  padding: 10px;
+  background: transparent;
+}
+
+.support-drawer-page .support-drawer-toolbar {
+  margin-bottom: 10px;
+}
+
+.support-drawer-page .ticket-layout {
+  grid-template-columns: 260px minmax(0, 1fr);
+  min-height: 0;
+  height: calc(100vh - 150px);
+}
+
+.support-drawer-page .admin-card {
+  margin-bottom: 0;
+  padding: 10px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.support-drawer-page .ticket-list {
+  max-height: calc(100vh - 225px);
+}
+
+.support-drawer-page .chat-box {
+  height: calc(100vh - 290px);
+}
+
+@media (max-width: 620px) {
+  .admin-console-shell {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .admin-right-nav {
+    flex: 0 0 auto;
+    padding: 8px;
+    overflow-x: auto;
+    border-left: 0;
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .admin-right-nav-title {
+    display: none;
+  }
+
+  .admin-right-nav nav {
+    flex-direction: row;
+  }
+
+  .admin-right-nav-item {
+    width: auto;
+    min-width: max-content;
+    grid-template-columns: 18px auto;
+  }
+
+  .admin-right-nav-arrow {
+    display: none;
+  }
+
+  .admin-control-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .activity-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .support-drawer-page .ticket-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .permission-pillar-body {
+    grid-template-columns: 1fr;
+  }
+}

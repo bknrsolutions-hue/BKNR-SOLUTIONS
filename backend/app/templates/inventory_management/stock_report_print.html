@@ -93,8 +93,8 @@ th{
 }
 .qty{text-align:right}
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -103,6 +103,7 @@ th{
 <h2>STOCK REPORT</h2>
 <div class="company">
   {{ company_name }}<br>
+  MPEDA Registration Code: {{ mpeda_registration_code or 'NOT REGISTERED' }}<br>
  Printed on : {{ printed_on }}
 </div>
 
@@ -188,6 +189,6 @@ th{
 </tfoot>
 </table>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

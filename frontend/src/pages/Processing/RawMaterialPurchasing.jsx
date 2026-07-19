@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ShoppingBag, Plus, Trash2, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
@@ -163,6 +163,22 @@ export default function RawMaterialPurchasing() {
     });
   };
 
+  const optionList = (items, currentValue = '') => Array.from(new Set(
+    [currentValue, ...items].map(value => String(value || '').trim()).filter(Boolean)
+  ));
+
+  const handleProductionForChange = (value) => {
+    setProductionFor(value);
+    setBatchNumber('');
+    setSupplierName('');
+  };
+
+  const handlePeelingAtChange = (value) => {
+    setPeelingAt(value);
+    setBatchNumber('');
+    setSupplierName('');
+  };
+
   const handleEdit = (row) => {
     setEditId(row.id);
     setProductionFor(row.production_for || '');
@@ -257,25 +273,36 @@ export default function RawMaterialPurchasing() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this purchase record?')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/raw_material_purchasing/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Lot Purchase Deleted');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this purchase record? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/raw_material_purchasing/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Lot Purchase Cancelled Successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -450,108 +477,91 @@ export default function RawMaterialPurchasing() {
               <div className="form-grid">
             <div className="form-group">
               <label>Production For *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Company..."
+              <select
+                className="form-control"
                 value={productionFor} 
-                onChange={e => setProductionFor(e.target.value)} 
-                list="prod-for-options"
+                onChange={e => handleProductionForChange(e.target.value)}
                 required 
-              />
-              <datalist id="prod-for-options">
-                {prodForList.map(p => <option key={p} value={p} />)}
-              </datalist>
+              >
+                <option value="">Select Company</option>
+                {optionList(prodForList, productionFor).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Receiving At (Location) *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Location..."
+              <select
+                className="form-control"
                 value={peelingAt} 
-                onChange={e => setPeelingAt(e.target.value)} 
-                list="peeling-at-options"
+                onChange={e => handlePeelingAtChange(e.target.value)}
                 required 
-              />
-              <datalist id="peeling-at-options">
-                {peelingLocations.map(l => <option key={l} value={l} />)}
-              </datalist>
+              >
+                <option value="">Select Location</option>
+                {optionList(peelingLocations, peelingAt).map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Batch Number *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select Batch..."
+              <select
+                className="form-control"
                 value={batchNumber} 
                 onChange={e => setBatchNumber(e.target.value)} 
-                list="batch-options"
+                disabled={!productionFor || !peelingAt}
                 required 
-              />
-              <datalist id="batch-options">
-                {getFilteredBatches().map(b => <option key={b} value={b} />)}
-              </datalist>
+              >
+                <option value="">{productionFor && peelingAt ? 'Select Batch' : 'Select Company & Location First'}</option>
+                {optionList(getFilteredBatches(), batchNumber).map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Supplier Name</label>
-              <input type="text" className="form-control" value={supplierName} readonly placeholder="Auto from Batch" style={{ background: 'rgba(255,255,255,0.02)' }} />
+              <input type="text" className="form-control" value={supplierName} readOnly placeholder="Auto from Batch" style={{ background: 'rgba(255,255,255,0.02)' }} />
             </div>
 
             <div className="form-group">
               <label>Product *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Product..."
+              <select
+                className="form-control"
                 value={productDescription} 
                 onChange={e => setProductDescription(e.target.value)} 
-                list="product-options"
                 required 
-              />
-              <datalist id="product-options">
-                {hsnList.map(h => <option key={h} value={h} />)}
-              </datalist>
+              >
+                <option value="">Select Product</option>
+                {optionList(hsnList, productDescription).map(h => <option key={h} value={h}>{h}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>HSN Code</label>
-              <input type="text" className="form-control" value={hsnCode} readonly placeholder="Auto from Product" style={{ background: 'rgba(255,255,255,0.02)' }} />
+              <input type="text" className="form-control" value={hsnCode} readOnly placeholder="Auto from Product" style={{ background: 'rgba(255,255,255,0.02)' }} />
             </div>
 
             <div className="form-group">
               <label>Variety *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Variety..."
+              <select
+                className="form-control"
                 value={varietyName} 
                 onChange={e => setVarietyName(e.target.value)} 
-                list="variety-options"
                 required 
-              />
-              <datalist id="variety-options">
-                {varieties.map(v => <option key={v} value={v} />)}
-              </datalist>
+              >
+                <option value="">Select Variety</option>
+                {optionList(varieties, varietyName).map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
               <label>Species *</label>
-              <input 
-                type="text" 
-                className="form-control" 
-                placeholder="Select or Type Species..."
+              <select
+                className="form-control"
                 value={species} 
                 onChange={e => setSpecies(e.target.value)} 
-                list="species-options"
                 required 
-              />
-              <datalist id="species-options">
-                {speciesList.map(s => <option key={s} value={s} />)}
-              </datalist>
+              >
+                <option value="">Select Species</option>
+                {optionList(speciesList, species).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
 
             <div className="form-group">
@@ -584,7 +594,7 @@ export default function RawMaterialPurchasing() {
             </div>
             <div className="form-group">
               <label>Total Received Qty</label>
-              <input type="text" className="form-control" value={receivedQty} readonly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
+              <input type="text" className="form-control" value={receivedQty} readOnly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
             </div>
             <div className="form-group">
               <label>Purchase Rate (₹ per Kg) *</label>
@@ -592,7 +602,7 @@ export default function RawMaterialPurchasing() {
             </div>
             <div className="form-group">
               <label>Computed Amount (₹)</label>
-              <input type="text" className="form-control" value={amount} readonly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800', color: 'var(--corp-fin)' }} />
+              <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800', color: 'var(--corp-fin)' }} />
             </div>
           </div>
 
@@ -603,7 +613,7 @@ export default function RawMaterialPurchasing() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Lot Purchase
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel
@@ -664,9 +674,20 @@ export default function RawMaterialPurchasing() {
               filteredEntries.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{ cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id);
+                    }
+                  }}
+                  style={{ 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center">{row.id}</td>
                   <td className="text-center">{row.date}</td>
@@ -683,30 +704,32 @@ export default function RawMaterialPurchasing() {
                   <td className="text-right">{(row.g1_qty || 0).toFixed(2)}</td>
                   <td className="text-right">{(row.g2_qty || 0).toFixed(2)}</td>
                   <td className="text-right">{(row.dc_qty || 0).toFixed(2)}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{row.received_qty.toFixed(2)}</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : row.received_qty).toFixed(2)}</td>
                   <td className="text-right">₹{row.rate_per_kg.toFixed(2)}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{row.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{(row.is_cancelled ? 0 : row.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-left" style={{ fontSize: '10px' }}>{row.remarks}</td>
                   <td className="text-left" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                     {row.email ? row.email.split('@')[0] : ''}
                   </td>
                   <td className="text-center" onClick={e => e.stopPropagation()}>
-                    <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                      <button 
-                        onClick={() => handleEdit(row)} 
-                        style={{ background: 'none', border: 'none', color: 'var(--corp-dash)', cursor: 'pointer', padding: '4px' }}
-                        title="Edit log"
-                      >
-                        <Edit2 size={13} />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(row.id)} 
-                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                        title="Delete log"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
+                    {!row.is_cancelled && (
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button 
+                          onClick={() => handleEdit(row)} 
+                          style={{ background: 'none', border: 'none', color: 'var(--corp-dash)', cursor: 'pointer', padding: '4px' }}
+                          title="Edit log"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(row.id)} 
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                          title="Cancel log"
+                        >
+                          <Ban size={13} />
+                        </button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))

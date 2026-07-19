@@ -11,8 +11,9 @@
 
 <style>
 :root{
-  --primary:#143465; --accent: #3b82f6; --border:#d6dde7; --bg:#f4f6f9;
-  --card:#ffffff; --text:#1f2937; --muted:#64748b; --success: #166534; --danger: #dc2626;
+  --primary:#143465; --accent:#2563eb; --border:#d6dde7; --bg:#eef6ff;
+  --card:#ffffff; --card-bg:#ffffff; --header-bg:#f8fafc; --text:#1f2937;
+  --muted:#64748b; --success:#166534; --danger:#dc2626;
 }
 
 *{box-sizing:border-box; font-family: 'Inter', sans-serif;}
@@ -90,21 +91,75 @@ body{margin:0; background:var(--bg); color:var(--text); padding-bottom: 40px; ov
 
 /* --- MAIN TABLE --- */
 .table-wrap{
-    background: var(--card-bg) !important;
-} margin: 0 25px 25px; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-@media(max-width:800px){ .table-wrap{
-    background: var(--card-bg) !important;
-} margin: 0 10px 25px; } }
+    margin:0 25px 25px;
+    background:var(--card-bg) !important;
+    border-radius:8px;
+    border:1px solid var(--border);
+    overflow-x:auto;
+    box-shadow:0 2px 8px rgba(15, 52, 101, 0.06);
+}
+@media(max-width:800px){ .table-wrap{ margin:0 10px 25px; } }
 
-.main-table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: center; min-width: 1100px; }
-.main-table thead th { background: #f8fafc; padding: 10px; border-bottom: 2px solid var(--border); color: var(--muted); text-transform: uppercase; font-weight: 700; }
-.main-table tbody td { padding: 10px; border-bottom: 1px solid #edf2f7; color: var(--primary); font-weight: 600; }
+.main-table {
+    width:100%;
+    border-collapse:collapse;
+    font-size:11px;
+    text-align:center;
+    min-width:1180px;
+    table-layout:fixed;
+}
+.main-table thead th {
+    background:var(--header-bg);
+    padding:10px 8px;
+    border-bottom:2px solid var(--border);
+    color:var(--muted);
+    text-transform:uppercase;
+    font-weight:800;
+    font-size:10px;
+    letter-spacing:.3px;
+    vertical-align:middle;
+}
+.main-table tbody td {
+    padding:9px 8px;
+    border-bottom:1px solid #edf2f7;
+    color:var(--primary);
+    font-weight:650;
+    vertical-align:middle;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+.main-table th:nth-child(1), .main-table td:nth-child(1) { width:48px; }
+.main-table th:nth-child(2), .main-table td:nth-child(2) { width:105px; }
+.main-table th:nth-child(3), .main-table td:nth-child(3) { width:135px; }
+.main-table th:nth-child(4), .main-table td:nth-child(4) { width:150px; }
+.main-table th:nth-child(5), .main-table td:nth-child(5) { width:130px; }
+.main-table th:nth-child(6), .main-table td:nth-child(6) { width:165px; }
+.main-table th:nth-child(7), .main-table td:nth-child(7) { width:140px; }
+.main-table th:nth-child(8), .main-table td:nth-child(8) { width:110px; }
+.main-table th:nth-child(9), .main-table td:nth-child(9),
+.main-table th:nth-child(10), .main-table td:nth-child(10) { width:115px; }
+.main-table th:nth-child(11), .main-table td:nth-child(11),
+.main-table th:nth-child(12), .main-table td:nth-child(12) { width:105px; }
+.main-table tbody tr:hover { background:#f8fbff; }
 tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--accent); }
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
 
-.status-badge { background: #ecfdf5; color: #059669; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+.status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:62px; background:#ecfdf5; color:#059669; padding:4px 8px; border-radius:6px; font-weight:800; font-size:10px; }
+.status-badge.cancelled { background: #fee2e2; color: #b91c1c; }
+tr.cancelled-row {
+    background: #fff1f2 !important;
+    opacity: 0.78;
+}
+tr.cancelled-row td {
+    text-decoration: line-through;
+    color: #9f1239 !important;
+}
+tr.cancelled-row .status-badge {
+    text-decoration: none;
+}
 
 /* Empty State */
 .empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
@@ -112,7 +167,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 /* --- MODAL MANAGEMENT --- */
 .modal { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); align-items: center; justify-content: center; }
-.modal-content { background: var(--card-bg); padding: 25px; border-radius: 16px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
+.modal-content { background: var(--card-bg); padding: 24px; border-radius: 8px; width: 95%; max-width: 1000px; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
 .form-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; }
 
 @media(max-width:1000px){ .form-grid { grid-template-columns: repeat(2, 1fr); } }
@@ -122,15 +177,16 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .field label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; }
 
 /* 🟢 PERFECT ALIGNMENT FOR MODAL INPUTS & SELECTS */
-.field input, .field select { 
-    padding: 10px 12px; 
-    border-radius: 8px; 
-    border: 1px solid var(--border); 
-    font-size: 13px; 
-    font-weight: 600; 
-    outline: none; 
-    width: 100%; 
-    color: var(--primary); 
+.field input, .field select {
+    padding: 0 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+    width: 100%;
+    height: 36px;
+    color: var(--primary);
     background: var(--card-bg);
     text-align: left;
 }
@@ -144,7 +200,108 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     background-size: 12px auto;
     cursor: pointer;
 }
-.field input:focus, .field select:focus { border-color: var(--accent); }
+.field input:focus, .field select:focus { border-color: var(--accent); box-shadow:0 0 0 2px rgba(37,99,235,0.12); }
+
+.checkbox-select { position: relative; }
+.checkbox-display {
+    cursor: pointer;
+    min-height: 36px;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%2364748b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px top 50%;
+    background-size: 12px auto;
+    padding-right: 32px !important;
+}
+.checkbox-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    z-index: 2600;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 12px 24px rgba(15, 52, 101, 0.16);
+    padding: 6px;
+}
+.checkbox-menu.show { display: block; }
+.checkbox-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 34px;
+    padding: 7px 9px;
+    border-radius: 6px;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.checkbox-option:hover { background: #eff6ff; color:var(--accent); }
+.checkbox-option input {
+    appearance:none;
+    -webkit-appearance:none;
+    width: 16px !important;
+    height: 16px;
+    padding: 0;
+    flex: 0 0 auto;
+    border:1.5px solid #94a3b8 !important;
+    border-radius:4px;
+    background:#fff;
+    display:grid;
+    place-content:center;
+    cursor:pointer;
+}
+.checkbox-option input::before {
+    content:"";
+    width:8px;
+    height:8px;
+    transform:scale(0);
+    transition:120ms transform ease-in-out;
+    border-radius:2px;
+    background:#fff;
+}
+.checkbox-option input:checked {
+    background:var(--accent);
+    border-color:var(--accent) !important;
+}
+.checkbox-option input:checked::before { transform:scale(1); }
+.checkbox-option input:focus-visible { outline:2px solid rgba(37,99,235,0.28); outline-offset:2px; }
+.checkbox-option.add-option {
+    color:var(--accent);
+    border-top:1px dashed var(--border);
+    margin-top:4px;
+}
+.lookup-select { position: relative; }
+.lookup-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 3px);
+    left: 0;
+    right: 0;
+    z-index: 2700;
+    max-height: 220px;
+    overflow-y: auto;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow: 0 12px 24px rgba(15, 52, 101, 0.16);
+    padding: 6px;
+}
+.lookup-menu.show { display: block; }
+.lookup-option {
+    min-height:34px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--primary);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.lookup-option:hover { background: #eff6ff; color: var(--accent); }
 
 /* --- AUDIT PANEL --- */
 .audit-panel { 
@@ -154,12 +311,117 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<style>
+body.qa-page .table-wrap {
+    background: var(--card-bg) !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: 0 2px 8px rgba(15, 52, 101, 0.06) !important;
+}
+body.qa-page .main-table {
+    table-layout: fixed !important;
+    min-width: 1180px !important;
+}
+body.qa-page .main-table th,
+body.qa-page .main-table td {
+    vertical-align: middle !important;
+}
+body.qa-page .main-table td {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+body.qa-page .checkbox-display,
+body.qa-page #modalLabSearch {
+    height: 36px !important;
+    min-height: 36px !important;
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+body.qa-page .checkbox-menu,
+body.qa-page .lookup-menu {
+    background: var(--bg) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 6px !important;
+    z-index: 7000 !important;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12) !important;
+}
+body.qa-page .checkbox-option,
+body.qa-page .lookup-option {
+    min-height: 34px !important;
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    text-align: left !important;
+    border: 1px solid transparent !important;
+}
+body.qa-page .checkbox-option:hover,
+body.qa-page .lookup-option:hover {
+    background: var(--card-bg) !important;
+    border-color: var(--border) !important;
+    color: var(--text) !important;
+}
+body.qa-page .checkbox-option input[type="checkbox"] {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    width: 16px !important;
+    height: 16px !important;
+    min-height: 16px !important;
+    padding: 0 !important;
+    border: 1.5px solid var(--text-muted, #94a3b8) !important;
+    border-radius: 4px !important;
+    background: var(--bg) !important;
+    display: grid !important;
+    place-content: center !important;
+}
+body.qa-page .checkbox-option input[type="checkbox"]::before {
+    content: "" !important;
+    width: 9px !important;
+    height: 9px !important;
+    background: #111827 !important;
+    border-radius: 0 !important;
+    transform: scale(0) !important;
+    transition: 120ms transform ease-in-out !important;
+    clip-path: polygon(14% 44%, 0 65%, 45% 100%, 100% 16%, 80% 0%, 40% 62%) !important;
+}
+body.qa-page .checkbox-option input[type="checkbox"]:checked {
+    background: var(--card-bg) !important;
+    border-color: var(--accent) !important;
+    box-shadow: inset 0 0 0 2px #dbeafe !important;
+}
+body.qa-page .checkbox-option input[type="checkbox"]:checked::before {
+    transform: scale(1) !important;
+}
+body.qa-page .checkbox-option.add-option {
+    color: var(--accent) !important;
+    border-top: 1px dashed var(--border) !important;
+    background: var(--bg) !important;
+}
+html[data-theme="dark"] body.qa-page .checkbox-display,
+html[data-theme="dark"] body.qa-page #modalLabSearch {
+    background-color: var(--bg) !important;
+    color: var(--text) !important;
+}
+html[data-theme="dark"] body.qa-page .checkbox-menu,
+html[data-theme="dark"] body.qa-page .lookup-menu,
+html[data-theme="dark"] body.qa-page .checkbox-option,
+html[data-theme="dark"] body.qa-page .lookup-option {
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+}
+html[data-theme="dark"] body.qa-page .checkbox-option:hover,
+html[data-theme="dark"] body.qa-page .lookup-option:hover {
+    background: var(--card-bg) !important;
+    color: var(--text) !important;
+}
+</style>
 </head>
 
-<body>
+<body class="qa-page">
 
 <div class="header-dash">
     <div class="header-titles"><h2>QA Lab Charges Ledger</h2></div>
@@ -213,19 +475,22 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             <tr>
                 <th width="40">Sl</th>
                 <th>Testing Date</th>
-                <th>Batch Number</th>
+                <th>Batch / PO Number</th>
                 <th class="text-left">Product Name</th>
+                <th class="text-left">Production At</th>
+                <th class="text-left">Parameters</th>
                 <th class="text-left">External Lab</th>
                 <th>Report Ref</th>
                 <th class="text-right">Base Cost</th>
                 <th class="text-right">Grand Total</th>
-                <th>Result Status</th>
+                <th>Record Status</th>
+                <th>Accounts</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not qa_history %}
             <tr>
-                <td colspan="9" class="empty-state">
+                <td colspan="12" class="empty-state">
                     <i class="fa-solid fa-microscope" style="color:var(--accent);"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render QA Lab metrics registry data.</span>
@@ -233,20 +498,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </tr>
             {% else %}
                 {% for log in qa_history %}
-                <tr class="data-row" 
+                <tr class="data-row {% if log.is_cancelled %}cancelled-row{% endif %}"
                     data-id="{{ log.id }}" 
                     data-total="{{ log.total }}"
+                    data-cancelled="{{ 'true' if log.is_cancelled else 'false' }}"
                     onclick="selectRow(this, '{{ log.id }}')">
                     
                     <td class="slno">0</td>
                     <td>{{ log.date }}</td>
-                    <td style="font-weight:700;">{{ log.batch_no }}</td>
-                    <td class="text-left">{{ log.product }}</td>
-                    <td class="text-left">{{ log.lab_name }}</td>
-                    <td>{{ log.report_ref }}</td>
+                    <td title="{{ log.batch_no }}" style="font-weight:700;">{{ log.batch_no }}</td>
+                    <td class="text-left" title="{{ log.product }}">{{ log.product }}</td>
+                    <td class="text-left" title="{{ log.production_at or '-' }}">{{ log.production_at or '-' }}</td>
+                    <td class="text-left" title="{{ log.parameters or '-' }}">{{ log.parameters or '-' }}</td>
+                    <td class="text-left" title="{{ log.lab_name }}">{{ log.lab_name }}</td>
+                    <td title="{{ log.report_ref }}">{{ log.report_ref }}</td>
                     <td class="text-right">₹{{ "{:,.2f}".format(log.base_cost or 0) }}</td>
                     <td class="text-right cost-val" style="font-weight:800; color:var(--success);">₹{{ "{:,.2f}".format(log.total or 0) }}</td>
-                    <td><span class="status-badge">COMPLIANT</span></td>
+                    <td><span class="status-badge {% if log.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if log.is_cancelled else 'ACTIVE' }}</span></td>
+                    <td><span class="status-badge {% if log.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if log.is_cancelled else ('POSTED' if log.journal_id else 'DRAFT') }}</span></td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -269,23 +538,81 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </div>
 
                 <div class="field">
-                    <label>Product Nomenclature</label>
-                    <select id="modalProductId" required>
-                        <option value="" disabled selected>-- SELECT PRODUCT --</option>
-                        {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+                    <label>Product</label>
+                    <div class="checkbox-select">
+                        <input type="text" id="modalProductDisplay" class="checkbox-display" value="" placeholder="Select products..." readonly onclick="toggleCheckboxMenu('productMenu')">
+                        <div id="productMenu" class="checkbox-menu" data-target="modalProductDisplay" data-custom="modalCustomProductName" data-add-value="__add_new_product__" data-uppercase="true">
+                        {% for p in products %}
+                            <label class="checkbox-option"><input type="checkbox" value="{{ p.variety_name }}" onchange="syncCheckboxSelect('productMenu')"> {{ p.variety_name }}</label>
+                        {% endfor %}
+                            <label class="checkbox-option"><input type="checkbox" value="VANNAMEI HOSO" onchange="syncCheckboxSelect('productMenu')"> VANNAMEI HOSO</label>
+                            <label class="checkbox-option"><input type="checkbox" value="VANNAMEI HLSO" onchange="syncCheckboxSelect('productMenu')"> VANNAMEI HLSO</label>
+                            <label class="checkbox-option"><input type="checkbox" value="VANNAMEI PD" onchange="syncCheckboxSelect('productMenu')"> VANNAMEI PD</label>
+                            <label class="checkbox-option"><input type="checkbox" value="VANNAMEI PDTO" onchange="syncCheckboxSelect('productMenu')"> VANNAMEI PDTO</label>
+                            <label class="checkbox-option"><input type="checkbox" value="BLACK TIGER HOSO" onchange="syncCheckboxSelect('productMenu')"> BLACK TIGER HOSO</label>
+                            <label class="checkbox-option"><input type="checkbox" value="BLACK TIGER PD" onchange="syncCheckboxSelect('productMenu')"> BLACK TIGER PD</label>
+                            <label class="checkbox-option add-option"><input type="checkbox" value="__add_new_product__" onchange="syncCheckboxSelect('productMenu')"> + Add New Product</label>
+                        </div>
+                    </div>
+                    <input type="text" id="modalCustomProductName" placeholder="Enter new product" style="display:none; margin-top:6px; text-transform: uppercase;">
+                </div>
+
+                <div class="field">
+                    <label>Production At</label>
+                    <select id="modalProductionAtId" required>
+                        <option value="" disabled selected>-- SELECT PRODUCTION AT --</option>
+                        {% for p in production_at_list %}
+                        <option value="{{ p.id }}">{{ p.production_at }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
                 <div class="field">
-                    <label>Batch Number</label>
-                    <input type="text" id="modalBatchNo" placeholder="B-2026-X9" required style="text-transform: uppercase;">
+                    <label>Test Parameters</label>
+                    <div class="checkbox-select">
+                        <input type="text" id="modalParametersDisplay" class="checkbox-display" value="" placeholder="Select parameters..." readonly onclick="toggleCheckboxMenu('parameterMenu')">
+                        <div id="parameterMenu" class="checkbox-menu" data-target="modalParametersDisplay" data-custom="modalCustomParameter" data-add-value="__add_new_parameter__">
+                            <label class="checkbox-option"><input type="checkbox" value="Microbiology" onchange="syncCheckboxSelect('parameterMenu')"> Microbiology</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Antibiotic Residue" onchange="syncCheckboxSelect('parameterMenu')"> Antibiotic Residue</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Heavy Metals" onchange="syncCheckboxSelect('parameterMenu')"> Heavy Metals</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Sensory Evaluation" onchange="syncCheckboxSelect('parameterMenu')"> Sensory Evaluation</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Histamine" onchange="syncCheckboxSelect('parameterMenu')"> Histamine</label>
+                            <label class="checkbox-option"><input type="checkbox" value="TVB-N" onchange="syncCheckboxSelect('parameterMenu')"> TVB-N</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Salt / Moisture" onchange="syncCheckboxSelect('parameterMenu')"> Salt / Moisture</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Water Quality" onchange="syncCheckboxSelect('parameterMenu')"> Water Quality</label>
+                            <label class="checkbox-option"><input type="checkbox" value="Packing Material Migration" onchange="syncCheckboxSelect('parameterMenu')"> Packing Material Migration</label>
+                            <label class="checkbox-option add-option"><input type="checkbox" value="__add_new_parameter__" onchange="syncCheckboxSelect('parameterMenu')"> + Add New Parameter</label>
+                        </div>
+                    </div>
+                    <input type="text" id="modalCustomParameter" placeholder="Enter new parameter" style="display:none; margin-top:6px;">
+                </div>
+
+                <div class="field">
+                    <label>Batch / PO Number</label>
+                    <input type="text" id="modalBatchNo" placeholder="B-2026-X9 / PO-001" required style="text-transform: uppercase;">
                 </div>
 
                 <div class="field">
                     <label>External Lab Facility</label>
-                    <select id="modalLabId" required>
-                        <option value="" disabled selected>-- SELECT LAB FACILITY --</option>
-                        {% for lab in labs %}<option value="{{ lab.id }}">{{ lab.name }}</option>{% endfor %}
+                    <div class="lookup-select">
+                        <input type="text" id="modalLabSearch" value="Inhouse" placeholder="Search external lab..." autocomplete="off" required onclick="toggleLookupMenu('labLookupMenu')" oninput="filterLookupMenu('labLookupMenu', this.value)">
+                        <input type="hidden" id="modalLabId" value="0">
+                        <div id="labLookupMenu" class="lookup-menu">
+                            {% for lab in labs %}
+                            <div class="lookup-option" data-value="{{ lab.id }}" onclick="selectLookupValue('modalLabSearch', 'modalLabId', 'labLookupMenu', '{{ lab.id }}', {{ lab.name|tojson }})">{{ lab.name }}</div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Accounting Ledger</label>
+                    <select id="modalAccountingLedgerId" onchange="handleLedgerAddNew(this)">
+                        <option value="">Auto - QA Testing Expense A/c</option>
+                        {% for ledger in posting_ledgers %}
+                        <option value="{{ ledger.id }}">{{ ledger.ledger_name }}{% if ledger.group %} ({{ ledger.group.group_name }}){% endif %}</option>
+                        {% endfor %}
+                        <option value="__add_new_ledger__">+ Add New Ledger</option>
                     </select>
                 </div>
 
@@ -336,6 +663,73 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/qa' : '/qa';
     let globalSelectedId = null;
 
+    function handleLedgerAddNew(selectEl) {
+        if (selectEl.value === "__add_new_ledger__") {
+            selectEl.value = "";
+            window.location.href = "/finance_accounts/ledger_master/entry";
+        }
+    }
+
+    function toggleCheckboxMenu(menuId) {
+        document.querySelectorAll('.checkbox-menu').forEach(menu => {
+            if (menu.id !== menuId) menu.classList.remove('show');
+        });
+        document.querySelectorAll('.lookup-menu').forEach(menu => menu.classList.remove('show'));
+        document.getElementById(menuId).classList.toggle('show');
+    }
+
+    function toggleLookupMenu(menuId) {
+        document.querySelectorAll('.checkbox-menu').forEach(menu => menu.classList.remove('show'));
+        document.querySelectorAll('.lookup-menu').forEach(menu => {
+            if (menu.id !== menuId) menu.classList.remove('show');
+        });
+        document.getElementById(menuId).classList.toggle('show');
+        filterLookupMenu(menuId, "");
+    }
+
+    function filterLookupMenu(menuId, term) {
+        const search = (term || "").toLowerCase().trim();
+        document.querySelectorAll(`#${menuId} .lookup-option`).forEach(option => {
+            option.style.display = option.textContent.toLowerCase().includes(search) ? "" : "none";
+        });
+    }
+
+    function selectLookupValue(displayId, hiddenId, menuId, value, label) {
+        document.getElementById(displayId).value = label;
+        document.getElementById(hiddenId).value = value;
+        document.getElementById(menuId).classList.remove('show');
+    }
+
+    function syncCheckboxSelect(menuId) {
+        const menu = document.getElementById(menuId);
+        const addValue = menu.dataset.addValue;
+        const customInput = document.getElementById(menu.dataset.custom);
+        const display = document.getElementById(menu.dataset.target);
+        const uppercase = menu.dataset.uppercase === "true";
+        const checkedValues = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(input => input.value);
+        const selectedValues = checkedValues.filter(value => value !== addValue);
+
+        if (checkedValues.includes(addValue)) {
+            customInput.style.display = "block";
+            customInput.required = true;
+            customInput.focus();
+        } else {
+            customInput.style.display = "none";
+            customInput.required = false;
+            customInput.value = "";
+        }
+
+        const customValue = customInput.value.trim();
+        if (customValue) selectedValues.push(uppercase ? customValue.toUpperCase() : customValue);
+        display.value = selectedValues.join(", ");
+    }
+
+    function checkboxValues(menuId) {
+        syncCheckboxSelect(menuId);
+        const menu = document.getElementById(menuId);
+        return document.getElementById(menu.dataset.target).value;
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         applyFilters();
         
@@ -350,6 +744,12 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 const m = document.getElementById("dropdownMenu");
                 if(m) m.style.display = 'none';
             }
+            if(!e.target.closest('.checkbox-select')) {
+                document.querySelectorAll('.checkbox-menu').forEach(menu => menu.classList.remove('show'));
+            }
+            if(!e.target.closest('.lookup-select')) {
+                document.querySelectorAll('.lookup-menu').forEach(menu => menu.classList.remove('show'));
+            }
         });
 
         const searchBox = document.getElementById('searchBox');
@@ -359,9 +759,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     });
 
     function changeFY(val) {
-        if(!val) return;
         const url = new URL(window.location.href);
-        url.searchParams.set('fy', val);
+        url.searchParams.set('fy', val || '');
         window.location.href = url.toString();
     }
 
@@ -384,12 +783,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         rows.forEach(r => {
             const t = parseFloat(r.getAttribute("data-total")) || 0;
+            const isCancelled = r.getAttribute("data-cancelled") === "true";
             let match = true;
             if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
 
             if(match) {
                 r.style.display = "";
-                subtotal += t;
+                if (!isCancelled) subtotal += t;
                 visibleRows.push(r);
             } else {
                 r.style.display = "none";
@@ -406,6 +806,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function selectRow(tr, id) {
         globalSelectedId = id;
+        window.selectedRowCancelled = tr.getAttribute("data-cancelled") === "true";
         document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
         tr.classList.add('selected-row');
         document.getElementById('threeDotsMenu').style.display = 'block';
@@ -421,7 +822,18 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function openModal() {
         document.getElementById("qaForm").reset();
+        document.querySelectorAll('.checkbox-menu input[type="checkbox"]').forEach(input => input.checked = false);
+        document.querySelectorAll('.checkbox-menu').forEach(menu => {
+            document.getElementById(menu.dataset.target).value = "";
+            const customInput = document.getElementById(menu.dataset.custom);
+            customInput.style.display = "none";
+            customInput.required = false;
+            customInput.value = "";
+        });
         document.getElementById("modalTestDate").value = new Date().toISOString().substring(0, 10);
+        document.getElementById("modalLabSearch").value = "Inhouse";
+        document.getElementById("modalLabId").value = "0";
+        filterLookupMenu("labLookupMenu", "");
         document.getElementById('modalGrandTotal').innerText = "₹ 0.00";
         document.getElementById('entryModal').style.display = 'flex';
     }
@@ -470,13 +882,16 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         const payload = {
             test_date: document.getElementById("modalTestDate").value,
-            product_id: parseInt(document.getElementById("modalProductId").value),
+            production_at_id: parseInt(document.getElementById("modalProductionAtId").value),
+            product_name: checkboxValues("productMenu"),
             batch_no: document.getElementById("modalBatchNo").value.trim().toUpperCase(),
             lab_id: parseInt(document.getElementById("modalLabId").value),
+            parameters: checkboxValues("parameterMenu"),
             report_ref: document.getElementById("modalReportRef").value.trim().toUpperCase(),
             base_cost: base,
             gst_percent: gst,
-            grand_total: grand
+            grand_total: grand,
+            accounting_ledger_id: document.getElementById("modalAccountingLedgerId").value ? parseInt(document.getElementById("modalAccountingLedgerId").value) : null
         };
 
         try {
@@ -488,26 +903,35 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success || out.status === 'success') {
-                Swal.fire({ icon:'success', title:'Testing Charges Posted!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                Swal.fire({ icon:'success', title:'QA Charges Posted', text: out.message || 'QA testing charges saved successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
             } else { Swal.fire("Error", out.message || "Schema entry verification failure.", "error"); }
         } catch(e) { Swal.fire("Error", "Server pipe drop exception context.", "error"); }
     }
 
     async function cancelSelected() {
         if (!globalSelectedId) return;
+        if (window.selectedRowCancelled) {
+            Swal.fire("Already Cancelled", "This record is already cancelled.", "info");
+            return;
+        }
         const resDecision = await Swal.fire({
-            title: "Drop testing record?", text: "This pipeline node trace will be dropped permanently from transaction storage context structure.", icon: "warning", showCancelButton: true
+            title: "Cancel testing record?", text: "This record will stay visible with a cancelled mark and accounting voucher will be cancelled.", icon: "warning", showCancelButton: true
         });
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire({ icon:'success', title:'Cancelled successfully!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                const out = await res.json();
+                if(res.ok && out.success) {
+                    Swal.fire({ icon:'success', title:'Cancelled', text: out.message || 'QA testing charges cancelled successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
+                } else {
+                    Swal.fire("Error", out.message || "Cancel failed.", "error");
+                }
             } catch(e) { Swal.fire("Error", "Interceptor node failure dropping transaction trace row index reference.", "error"); }
         }
     }
 
     function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

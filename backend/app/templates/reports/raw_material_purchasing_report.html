@@ -135,6 +135,8 @@ tr.selected{background:#dbeafe !important;}
 .edit-input{ width:100%; font-size:10px; border:1px solid var(--accent); padding:2px; text-align:center; outline:none; }
 .row-batch-total { background: #f1f5f9 !important; color: var(--primary) !important; font-weight: 800; text-align: left !important; }
 .qty-bold { text-align: right !important; font-weight: 800; padding-right: 5px; }
+.cancelled-row { background:#fff1f2 !important; opacity:.78; }
+.cancelled-row td { color:var(--danger) !important; text-decoration:line-through; }
 
 /* SEARCHABLE INLINE DROPDOWN CUSTOM STRUCTURES */
 .searchable-dropdown-container { position: relative; width: 100%; }
@@ -159,8 +161,8 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 
 .audit-panel{ position:fixed; right:0; top:0; bottom:0; width:380px; background:var(--card-bg); border-left:3px solid var(--primary); display:none; flex-direction:column; z-index:5500; box-shadow:-5px 0 15px rgba(0,0,0,0.1); }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -210,20 +212,6 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
             <div onclick="saveEdit()">💾 Save Changes</div>
             {% endif %}
             <div onclick="toggleAudit()">📜 Full Audit History</div>
-            {% if can_print or can_export %}
-            <hr>
-            {% if can_print %}
-            <div onclick="askConfirm('print_table')">🖨 Print Table</div>
-            <div onclick="askConfirm('print_summary')">📋 Print Summary</div>
-            {% endif %}
-            {% if can_export %}
-            <hr>
-            <div onclick="askConfirm('excel_table')">📊 Export Excel (Table)</div>
-            <div onclick="askConfirm('excel_summary')">📈 Export Excel (Summary)</div>
-            <div onclick="askConfirm('pdf_table')">📄 Export PDF (Table)</div>
-            <div onclick="askConfirm('pdf_summary')">📑 Export PDF (Summary)</div>
-            {% endif %}
-            {% endif %}
             {% if can_delete %}
             <hr>
             <div onclick="askConfirm('cancel_row')" style="color:red">🗑 Cancel Record</div>
@@ -312,7 +300,8 @@ const rawData = [
         species: "{{ r.species }}", count: "{{ r.count }}",
         g1_qty: {{ r.g1_qty or 0 }}, g2_qty: {{ r.g2_qty or 0 }}, dc_qty: {{ r.dc_qty or 0 }},
         received_qty: {{ r.received_qty or 0 }}, rate_per_kg: {{ r.rate_per_kg or 0 }},
-        amount: {{ r.amount or 0 }}, remarks: "{{ r.remarks or '' }}", email: "{{ r.email or '' }}"
+        amount: {{ r.amount or 0 }}, is_cancelled: {{ 'true' if r.is_cancelled else 'false' }},
+        remarks: "{{ r.remarks or '' }}", email: "{{ r.email or '' }}"
     },
     {% endfor %}
 ];
@@ -329,9 +318,8 @@ const baseUrl = window.location.pathname.replace(/\/$/, "");
 let selectedRow = null, currentAction = null;
 
 function changeFY(val) {
-    if(!val) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('fy', val);
+    url.searchParams.set('fy', val || '');
     window.location.href = url.toString();
 }
 
@@ -371,11 +359,12 @@ function applyFilters() {
     let netG1=0, netG2=0, netDC=0, netRec=0, netAmt=0;
 
     filtered.forEach(d => {
+        const sign = d.is_cancelled ? 0 : 1;
         if(!groups[d.batch_number]) groups[d.batch_number] = { g1:0, g2:0, dc:0, rec:0, amt:0, items:[] };
-        groups[d.batch_number].g1 += d.g1_qty; groups[d.batch_number].g2 += d.g2_qty;
-        groups[d.batch_number].dc += d.dc_qty; groups[d.batch_number].rec += d.received_qty;
-        groups[d.batch_number].amt += d.amount; groups[d.batch_number].items.push(d);
-        netG1 += d.g1_qty; netG2 += d.g2_qty; netDC += d.dc_qty; netRec += d.received_qty; netAmt += d.amount;
+        groups[d.batch_number].g1 += sign * d.g1_qty; groups[d.batch_number].g2 += sign * d.g2_qty;
+        groups[d.batch_number].dc += sign * d.dc_qty; groups[d.batch_number].rec += sign * d.received_qty;
+        groups[d.batch_number].amt += sign * d.amount; groups[d.batch_number].items.push(d);
+        netG1 += sign * d.g1_qty; netG2 += sign * d.g2_qty; netDC += sign * d.dc_qty; netRec += sign * d.received_qty; netAmt += sign * d.amount;
     });
 
     let totalItemsCount = filtered.length;
@@ -391,12 +380,18 @@ function applyFilters() {
         g.items.forEach(r => {
             const tr = document.createElement("tr");
             tr.dataset.id = r.id;
+            if (r.is_cancelled) tr.classList.add("cancelled-row");
             tr.onclick = () => selectRow(tr);
             
             let slNo = totalItemsCount - currentSl;
             currentSl++;
 
-            tr.innerHTML = `<td>${slNo}</td><td>${r.date}</td><td class="editable" data-field="batch_number">${r.batch_number}</td><td class="lookup supplier" data-field="supplier_name">${r.supplier_name}</td><td class="lookup variety" data-field="variety_name">${r.variety_name}</td><td class="editable" data-field="material_boxes">${r.material_boxes}</td><td class="editable" data-field="hsn_code">${r.hsn_code}</td><td class="lookup peeling" data-field="peeling_at">${r.peeling_at}</td><td class="lookup production" data-field="production_for">${r.production_for}</td><td class="lookup species" data-field="species">${r.species}</td><td class="editable" data-field="count">${r.count}</td><td class="g1">${r.g1_qty.toFixed(2)}</td><td class="g2">${r.g2_qty.toFixed(2)}</td><td class="dc">${r.dc_qty.toFixed(2)}</td><td class="rec">${r.received_qty.toFixed(2)}</td><td class="editable rate" data-field="rate_per_kg">${r.rate_per_kg.toFixed(2)}</td><td class="amt">${r.amount.toLocaleString('en-IN',{minimumFractionDigits:2})}</td><td class="editable" data-field="remarks">${r.remarks}</td><td>${r.email}</td>`;
+            const g1Val = r.is_cancelled ? 0 : r.g1_qty;
+            const g2Val = r.is_cancelled ? 0 : r.g2_qty;
+            const dcVal = r.is_cancelled ? 0 : r.dc_qty;
+            const recVal = r.is_cancelled ? 0 : r.received_qty;
+            const amtVal = r.is_cancelled ? 0 : r.amount;
+            tr.innerHTML = `<td>${slNo}</td><td>${r.date}</td><td class="editable" data-field="batch_number">${r.batch_number}</td><td class="lookup supplier" data-field="supplier_name">${r.supplier_name}</td><td class="lookup variety" data-field="variety_name">${r.variety_name}</td><td class="editable" data-field="material_boxes">${r.material_boxes}</td><td class="editable" data-field="hsn_code">${r.hsn_code}</td><td class="lookup peeling" data-field="peeling_at">${r.peeling_at}</td><td class="lookup production" data-field="production_for">${r.production_for}</td><td class="lookup species" data-field="species">${r.species}</td><td class="editable" data-field="count">${r.count}</td><td class="g1">${g1Val.toFixed(2)}</td><td class="g2">${g2Val.toFixed(2)}</td><td class="dc">${dcVal.toFixed(2)}</td><td class="rec">${recVal.toFixed(2)}</td><td class="editable rate" data-field="rate_per_kg">${r.rate_per_kg.toFixed(2)}</td><td class="amt">${amtVal.toLocaleString('en-IN',{minimumFractionDigits:2})}</td><td class="editable" data-field="remarks">${r.remarks}</td><td>${r.email}</td>`;
             tbody.appendChild(tr);
         });
     }
@@ -604,17 +599,6 @@ document.getElementById("btnYes").onclick = () => {
 
     if (currentAction === 'cancel_row') {
         deleteRowAction();
-    } else if (currentAction === 'print_table') {
-        window.open(`${baseUrl}/print_table?${qStr}`, '_blank');
-    } else if (currentAction.startsWith('excel') || currentAction.startsWith('pdf') || currentAction === 'print_summary') {
-        const actionMap = {
-            'print_summary': `${baseUrl}/print_summary?${qStr}`,
-            'excel_table': `${baseUrl}/export_excel?type=table&${qStr}`,
-            'excel_summary': `${baseUrl}/export_excel?type=summary&${qStr}`,
-            'pdf_table': `${baseUrl}/export_pdf?type=table&${qStr}`,
-            'pdf_summary': `${baseUrl}/export_pdf?type=summary&${qStr}`
-        };
-        window.open(actionMap[currentAction], '_blank');
     }
 };
 
@@ -640,6 +624,6 @@ function toggleAudit() {
 searchBox.oninput = applyFilters;
 applyFilters();
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

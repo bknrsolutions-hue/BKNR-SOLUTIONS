@@ -37,6 +37,9 @@
     /* Header */
     .header { height: var(--header-height); padding: 0 16px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; }
     .header h2 { font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .header-actions { display:flex; align-items:center; gap:7px; }
+    .btn-view { background:var(--bg-color); color:var(--secondary-text); border:1px solid var(--border-color); padding:8px 10px; border-radius:8px; cursor:pointer; font-size:12px; font-weight:700; }
+    .btn-view.active { background:var(--accent); border-color:var(--accent); color:#fff; }
     .btn-new { background: var(--accent); color: #fff; border: none; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; transition: 0.2s; }
     .btn-new:hover { opacity: 0.9; }
 
@@ -152,6 +155,30 @@
 
     .hidden { display: none !important; }
 
+    .knowledge-panel { flex:1; min-height:0; display:none; flex-direction:column; gap:9px; padding:10px; overflow:hidden; background:var(--bg-color); }
+    .knowledge-panel.active { display:flex; }
+    .knowledge-search { position:relative; min-height:42px; display:grid; grid-template-columns:18px minmax(0,1fr) auto; align-items:center; gap:8px; padding:0 11px; border:1px solid var(--border-color); border-radius:10px; background:var(--panel-bg); color:var(--secondary-text); }
+    .knowledge-search input { height:40px; border:0; outline:0; background:transparent; color:var(--primary-text); font-size:12px; }
+    .knowledge-search strong { color:var(--accent); font-size:10px; white-space:nowrap; }
+    .knowledge-categories { display:flex; gap:6px; overflow-x:auto; padding-bottom:2px; }
+    .knowledge-categories button { min-height:30px; padding:4px 10px; border:1px solid var(--border-color); border-radius:999px; background:var(--panel-bg); color:var(--secondary-text); font-size:9px; font-weight:800; white-space:nowrap; cursor:pointer; }
+    .knowledge-categories button.active { border-color:var(--accent); color:var(--accent); background:rgba(37,99,235,.08); }
+    .knowledge-results { flex:1; min-height:0; display:grid; gap:6px; align-content:start; overflow-y:auto; }
+    .knowledge-item { overflow:hidden; border:1px solid var(--border-color); border-radius:9px; background:var(--panel-bg); }
+    .knowledge-question { width:100%; min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:9px; padding:8px 10px; border:0; background:transparent; color:var(--primary-text); text-align:left; cursor:pointer; }
+    .knowledge-question small { display:block; margin-bottom:3px; color:var(--accent); font-size:7.5px; font-weight:900; text-transform:uppercase; }
+    .knowledge-question strong { font-size:10px; line-height:1.35; }
+    .knowledge-answer { display:none; padding:9px 10px 10px; border-top:1px solid var(--border-color); background:rgba(37,99,235,.04); color:var(--secondary-text); font-size:10px; font-weight:600; line-height:1.55; }
+    .knowledge-item.open .knowledge-answer { display:block; }
+    .knowledge-route { display:block; width:max-content; margin-top:7px; padding:3px 6px; border-radius:5px; background:var(--bg-color); color:var(--accent); font-size:8px; }
+    .knowledge-suggestions { position:absolute; z-index:30; top:calc(100% + 5px); right:0; left:0; max-height:310px; overflow-y:auto; padding:5px; border:1px solid var(--border-color); border-radius:9px; background:var(--panel-bg); box-shadow:0 14px 30px rgba(15,23,42,.2); }
+    .knowledge-suggestions button { width:100%; min-height:42px; display:grid; grid-template-columns:18px minmax(0,1fr); align-items:center; gap:7px; padding:6px 8px; border:0; border-radius:7px; background:transparent; color:var(--primary-text); text-align:left; cursor:pointer; }
+    .knowledge-suggestions button:hover { background:rgba(37,99,235,.08); }
+    .knowledge-suggestions button i { color:var(--accent); }
+    .knowledge-suggestions button strong,.knowledge-suggestions button small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .knowledge-suggestions button strong { font-size:9.5px; }
+    .knowledge-suggestions button small { margin-top:2px; color:var(--secondary-text); font-size:7.5px; }
+
     /* 📱 MOBILE RESPONSIVE 📱 */
     @media (max-width: 768px) {
         .main-container { flex-direction: column; }
@@ -174,16 +201,26 @@
         .modal { padding: 20px; }
     }
 </style>
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 </head>
 <body data-theme="dark">
 
 <div class="header">
-    <h2><i class="fa-solid fa-headset"></i> Support</h2>
-    <button class="btn-new" onclick="openModal()"><i class="fa-solid fa-plus"></i> <span>New Complaint</span></button>
+    <h2><i class="fa-solid fa-headset"></i> SVBK Support</h2>
+    <div class="header-actions">
+        <button class="btn-view active" id="knowledgeViewButton" onclick="showSupportView('knowledge')"><i class="fa-solid fa-book-open"></i> Help</button>
+        <button class="btn-view" id="ticketViewButton" onclick="showSupportView('tickets')"><i class="fa-solid fa-ticket"></i> Tickets</button>
+        <button class="btn-new" onclick="showSupportView('tickets');openModal()"><i class="fa-solid fa-plus"></i> <span>New Complaint</span></button>
+    </div>
 </div>
 
-<div class="main-container" id="mainContainer">
+<section class="knowledge-panel active" id="knowledgePanel">
+    <div class="knowledge-search"><i class="fa-solid fa-magnifying-glass"></i><input id="knowledgeSearch" placeholder="Type a question…" onfocus="renderKnowledgeSuggestions()" onblur="setTimeout(hideKnowledgeSuggestions,150)" oninput="renderKnowledge();renderKnowledgeSuggestions()"><div class="knowledge-suggestions hidden" id="knowledgeSuggestions"></div></div>
+    <div class="knowledge-results" id="knowledgeResults"></div>
+</section>
+
+<div class="main-container hidden" id="mainContainer">
     <div class="ticket-list-panel" id="listPanel">
         <div class="search-box">
             <input type="text" id="searchTickets" placeholder="Search complaints..." onkeyup="filterTickets()">
@@ -253,6 +290,120 @@
 
 <script>
 const myTickets = {{ (tickets_json if tickets_json is defined else []) | tojson | safe }};
+let supportKnowledge = { entries: [], categories: [], total: 0 };
+
+function showSupportView(view) {
+    const knowledge = view === 'knowledge';
+    document.getElementById('knowledgePanel').classList.toggle('active', knowledge);
+    document.getElementById('mainContainer').classList.toggle('hidden', knowledge);
+    document.getElementById('knowledgeViewButton').classList.toggle('active', knowledge);
+    document.getElementById('ticketViewButton').classList.toggle('active', !knowledge);
+}
+
+function normalizeQuestionSearch(value) {
+    return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function questionMatchScore(question, query) {
+    if (!query) return 0;
+    const normalized = normalizeQuestionSearch(question);
+    const queryWords = query.split(' ').filter(Boolean);
+    if (!queryWords.every(word => normalized.includes(word))) return -1;
+    const questionWords = normalized.split(' ');
+    return (normalized.startsWith(query) ? 1000 : 0)
+        + (normalized.includes(query) ? 500 : 0)
+        + queryWords.reduce((score, word) => score + (questionWords.some(questionWord => questionWord.startsWith(word)) ? 50 : 10), 0)
+        - normalized.length / 1000;
+}
+
+function renderKnowledge() {
+    const query = normalizeQuestionSearch(document.getElementById('knowledgeSearch').value);
+    const target = document.getElementById('knowledgeResults');
+    target.innerHTML = '';
+    if (!query) return;
+    const rows = (supportKnowledge.entries || []).filter(item =>
+        questionMatchScore(item.question, query) >= 0
+    );
+    if (!rows.length) {
+        target.innerHTML = '<div class="empty-state"><h3>No matching answer found</h3><p>Raise a complaint with the page name and exact issue.</p></div>';
+        return;
+    }
+    rows.forEach(item => {
+        const article = document.createElement('article');
+        article.className = 'knowledge-item';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'knowledge-question';
+        const copy = document.createElement('span');
+        const question = document.createElement('strong');
+        question.textContent = item.question;
+        copy.append(question);
+        const chevron = document.createElement('i');
+        chevron.className = 'fa-solid fa-chevron-down';
+        button.append(copy, chevron);
+        const answer = document.createElement('div');
+        answer.className = 'knowledge-answer';
+        answer.textContent = item.answer;
+        if (item.route) {
+            const route = document.createElement('code');
+            route.className = 'knowledge-route';
+            route.textContent = item.route;
+            answer.appendChild(route);
+        }
+        button.onclick = () => {
+            article.classList.toggle('open');
+            chevron.className = `fa-solid fa-chevron-${article.classList.contains('open') ? 'up' : 'down'}`;
+        };
+        article.append(button, answer);
+        target.appendChild(article);
+    });
+}
+
+function renderKnowledgeSuggestions() {
+    const query = normalizeQuestionSearch(document.getElementById('knowledgeSearch').value);
+    const target = document.getElementById('knowledgeSuggestions');
+    if (!query) { target.classList.add('hidden'); return; }
+    const rows = (supportKnowledge.entries || [])
+        .filter(item => questionMatchScore(item.question, query) >= 0)
+        .sort((left, right) => questionMatchScore(right.question, query) - questionMatchScore(left.question, query))
+        .slice(0, 8);
+    target.innerHTML = '';
+    rows.forEach(item => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        const icon = document.createElement('i');
+        icon.className = 'fa-regular fa-circle-question';
+        const copy = document.createElement('span');
+        const question = document.createElement('strong');
+        question.textContent = item.question;
+        copy.append(question);
+        button.append(icon, copy);
+        button.onmousedown = event => event.preventDefault();
+        button.onclick = () => selectKnowledgeSuggestion(item);
+        target.appendChild(button);
+    });
+    if (!rows.length) target.innerHTML = '<div style="padding:12px;text-align:center;font-size:9px;">No related questions found.</div>';
+    target.classList.remove('hidden');
+}
+
+function hideKnowledgeSuggestions() {
+    document.getElementById('knowledgeSuggestions').classList.add('hidden');
+}
+
+function selectKnowledgeSuggestion(item) {
+    document.getElementById('knowledgeSearch').value = item.question;
+    hideKnowledgeSuggestions();
+    renderKnowledge();
+    requestAnimationFrame(() => {
+        const first = document.querySelector('.knowledge-item');
+        if (first) first.querySelector('.knowledge-question')?.click();
+    });
+}
+
+fetch('/support/knowledge-base', { credentials:'include', headers:{ Accept:'application/json' } })
+    .then(response => response.json())
+    .then(payload => { supportKnowledge = payload; renderKnowledge(); })
+    .catch(() => {});
 
 function renderTicketList(tickets) {
     const listEl = document.getElementById("ticketList");
@@ -490,5 +641,6 @@ window.onload = () => {
     }
 };
 </script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

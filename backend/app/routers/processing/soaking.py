@@ -133,6 +133,46 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
         allowed_locations=user_allowed_locations,
     )
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "prod_for_list": masters["prod_for_list"],
+            "peeling_locations": prod_locs,
+            "varieties": masters["varieties"],
+            "chemicals": masters["chemicals"],
+            "species": masters["species"],
+            "rows_batch": rows_batch,
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "sintex_number": r.sintex_number,
+                    "batch_number": r.batch_number,
+                    "variety_name": r.variety_name,
+                    "in_count": r.in_count,
+                    "in_qty": r.in_qty,
+                    "rejection_qty": r.rejection_qty,
+                    "rejection_for": r.rejection_for,
+                    "chemical_name": r.chemical_name,
+                    "chemical_percent": r.chemical_percent,
+                    "chemical_qty": r.chemical_qty,
+                    "salt_percent": r.salt_percent,
+                    "salt_qty": r.salt_qty,
+                    "species": r.species,
+                    "production_at": r.production_at,
+                    "production_for": r.production_for,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "selected_production_for": global_production_for or "",
+            "selected_location": global_location or ""
+        })
+
     return templates.TemplateResponse(
         request=request, name="processing/soaking.html",
         context={
@@ -307,7 +347,7 @@ def update_soaking(
     if is_edit_locked(request, row.date):
         return JSONResponse({"error": edit_lock_message()}, status_code=403)
 
-    # ⚡ Issue 1 Fix: species & variety పక్కాగా యాడ్ చేసి Row Mismatch బగ్‌ను పూర్తిగా క్లియర్ చేశాం అన్నా!
+    # ⚡ Issue 1 Fix: species & variety    Row Mismatch ‌    !
     is_same_row = (
         row.batch_number == batch_number.strip() and 
         row.in_count == in_count.strip() and 

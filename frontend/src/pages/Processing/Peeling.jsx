@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { Layers, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function Peeling() {
   const [date, setDate] = useState('');
@@ -131,8 +131,10 @@ export default function Peeling() {
     return Array.from(new Set(matches.map(m => m.count))).sort();
   };
 
-  // Autoload Species & Available Floor stock from selected options
+  // Autoload the exact species row, then refresh its live quantity from the
+  // backend formula instead of relying only on the page-load snapshot.
   useEffect(() => {
+    let active = true;
     if (productionFor && locationVal && batchNumber && inCount) {
       const compVal = productionFor.toUpperCase().trim();
       const locVal = locationVal.toUpperCase().trim();
@@ -145,7 +147,21 @@ export default function Peeling() {
       );
       if (match) {
         setSpecies(match.species || '');
-        setFloorAvail(parseFloat(match.available_qty) || 0);
+        const params = new URLSearchParams({
+          production_for: productionFor,
+          location: locationVal,
+          batch: batchNumber,
+          count: inCount,
+          species_name: match.species || '',
+          variety_name: match.variety || 'HLSO',
+        });
+        fetch(`/processing/peeling/get_available_qty?${params.toString()}`)
+          .then(res => res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)))
+          .then(data => { if (active) setFloorAvail(parseFloat(data.available_qty) || 0); })
+          .catch(err => {
+            console.error('Unable to refresh peeling balance:', err);
+            if (active) setFloorAvail(0);
+          });
       } else {
         setSpecies('');
         setFloorAvail(0);
@@ -154,6 +170,7 @@ export default function Peeling() {
       setSpecies('');
       setFloorAvail(0);
     }
+    return () => { active = false; };
   }, [productionFor, locationVal, batchNumber, inCount, hlsoFloorBalance]);
 
   // Load Peeling Rate
@@ -248,25 +265,36 @@ export default function Peeling() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this peeling entry? This will reverse floor balance changes.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/peeling/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Peeling entry deleted');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting peeling record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this peeling entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/peeling/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Peeling entry cancelled successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling peeling record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -328,6 +356,7 @@ export default function Peeling() {
     let dailySumMap = {};
 
     logs.forEach(r => {
+      if (r.is_cancelled) return;
       const cont = r.contractor_name || 'Unknown';
       const qty = parseFloat(r.peeled_qty) || 0;
       const amt = parseFloat(r.amount) || 0;
@@ -672,32 +701,45 @@ export default function Peeling() {
               filteredLogs.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{ cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id);
+                    }
+                  }}
+                  style={{ 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
                   <td className="text-left">{row.production_for}</td>
                   <td className="text-left">{row.species}</td>
                   <td className="text-left" style={{ color: 'var(--corp-dash)' }}>{row.variety_name}</td>
                   <td className="text-center">{row.hlso_count}</td>
-                  <td className="text-right">{row.hlso_qty.toFixed(2)}</td>
-                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{row.peeled_qty.toFixed(2)}</td>
+                  <td className="text-right">{(row.is_cancelled ? 0 : row.hlso_qty).toFixed(2)}</td>
+                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{(row.is_cancelled ? 0 : row.peeled_qty).toFixed(2)}</td>
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>
-                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{row.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(row.is_cancelled ? 0 : row.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-center">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(row.id);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                      title="Delete entry"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    {!row.is_cancelled && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(row.id);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                        title="Cancel entry"
+                      >
+                        <Ban size={13} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -787,7 +829,7 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Species</label>
-                  <input type="text" className="form-control" value={species} readonly placeholder="Auto Loaded" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={species} readOnly placeholder="Auto Loaded" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
@@ -847,23 +889,23 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Rate / Kg</label>
-                  <input type="number" className="form-control" value={rate} readonly placeholder="0.00" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="number" className="form-control" value={rate} readOnly placeholder="0.00" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Yield %</label>
-                  <input type="text" className="form-control" value={yieldPercent + '%'} readonly placeholder="0.00%" style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={yieldPercent + '%'} readOnly placeholder="0.00%" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Total Amount (₹)</label>
-                  <input type="text" className="form-control" value={amount} readonly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800' }} />
+                  <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800' }} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '15px' }}>
                 <button type="button" className="btn btn-clear" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>Save Entry</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
               </div>
             </form>
           </div>

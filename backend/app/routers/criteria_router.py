@@ -29,6 +29,7 @@ from app.routers.criteria.setup import router as setup_router
 # ✅ NEW – HSN CODES ROUTER
 from app.routers.criteria.hsn_codes import router as hsn_codes_router
 from app.routers.criteria.vendors import router as vendors_router
+from app.routers.criteria_api import router as criteria_api_router
 
 
 router = APIRouter(prefix="/criteria", tags=["Criteria"])
@@ -62,3 +63,4 @@ router.include_router(hoso_hlso_router)
 router.include_router(hsn_codes_router)
 router.include_router(vendors_router)
 router.include_router(setup_router)
+router.include_router(criteria_api_router)

@@ -5,7 +5,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import func, case, distinct, and_
-from datetime import datetime, timedelta, date
+from datetime import datetime, timedelta, date, time
 from app.utils.timezone import ist_now
 from typing import Optional
 from app.services.floor_balance_sync import refresh_floor_balance
@@ -27,6 +27,11 @@ from app.services.cache import invalidate_company_cache
 
 router = APIRouter(prefix="/inventory", tags=["STOCK ENTRY"])
 templates = Jinja2Templates(directory="app/templates")
+
+
+def signed_stock_movement(column):
+    movement = case((stock_entry.cargo_movement_type == "IN", column), else_=-column)
+    return case((stock_entry.is_cancelled == True, -movement), else_=movement)
 
 
 # -----------------------------------------------------
@@ -155,9 +160,43 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         "global_location": global_location or ""
     }
 
+    # JSON API response for React
+    if request.query_params.get("format") == "json":
+        def ser(v):
+            if isinstance(v, (date, datetime, time)):
+                return v.isoformat()
+            return v
+        rows_out = []
+        for r in table_data:
+            d = {}
+            for col in r.__table__.columns:
+                d[col.name] = ser(getattr(r, col.name))
+            rows_out.append(d)
+        ps_out = [{"packing_style": p.packing_style, "mc_weight": float(p.mc_weight or 0), "slab_weight": float(p.slab_weight or 0)} for p in context["packing_styles"]]
+        return JSONResponse({
+            "table_data": rows_out,
+            "batch_data_list": batch_data_list,
+            "species": context["species"],
+            "brands": context["brands"],
+            "production_for_list": production_for_unique,
+            "glazes": context["glazes"],
+            "varieties": context["varieties"],
+            "grades": context["grades"],
+            "freezers": context["freezers"],
+            "production_types": context["production_types"],
+            "purposes": context["purposes"],
+            "production_places": production_places_list,
+            "locations": coldstore_list,
+            "packing_styles": ps_out,
+            "po_numbers": context["po_numbers"],
+            "global_production_for": global_production_for or "",
+            "global_location": global_location or "",
+        })
+
     return templates.TemplateResponse(
         request=request, name="inventory_management/stock_entry.html", context=context
     )
+
 
 
 # -----------------------------------------------------
@@ -270,11 +309,10 @@ def stock_out_report(
 
     query = db.query(
         stock_entry.location, stock_entry.batch_number,
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)).label("available_mc"),
-        func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)).label("available_loose"),
+        func.sum(signed_stock_movement(stock_entry.no_of_mc)).label("available_mc"),
+        func.sum(signed_stock_movement(stock_entry.loose)).label("available_loose"),
     ).filter(
-        stock_entry.company_id == company_code,
-        stock_entry.is_cancelled == False
+        stock_entry.company_id == company_code
     )
 
     if user_allowed_locations:
@@ -291,8 +329,8 @@ def stock_out_report(
     if grade: query = query.filter(stock_entry.grade == grade)
 
     rows = query.group_by(stock_entry.location, stock_entry.batch_number).having(
-        (func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.no_of_mc), else_=-stock_entry.no_of_mc)) > 0) |
-        (func.sum(case((stock_entry.cargo_movement_type == "IN", stock_entry.loose), else_=-stock_entry.loose)) > 0)
+        (func.sum(signed_stock_movement(stock_entry.no_of_mc)) > 0) |
+        (func.sum(signed_stock_movement(stock_entry.loose)) > 0)
     ).all()
 
     return JSONResponse([

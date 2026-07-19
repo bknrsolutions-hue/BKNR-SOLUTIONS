@@ -1,8 +1,8 @@
 """
 Default Masters Seed Service
 =============================
-New company register అయినప్పుడు ఈ function call అవుతుంది.
-Existing data ఉంటే skip చేస్తుంది (idempotent).
+New company register   function call .
+Existing data  skip  (idempotent).
 """
 from sqlalchemy.orm import Session
 from app.database.models.criteria import (
@@ -16,7 +16,7 @@ from app.database.models.criteria import (
 )
 
 # -------------------------------------------------------
-# DB లో ఉన్న exact unique values (clean deduplicated)
+# DB   exact unique values (clean deduplicated)
 # -------------------------------------------------------
 
 DEFAULT_SPECIES = [

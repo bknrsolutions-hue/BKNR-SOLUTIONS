@@ -1,5 +1,6 @@
 import os
 from sqlalchemy import create_engine
+from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
 
@@ -17,16 +18,35 @@ DATABASE_URL = os.getenv(
     "postgresql+psycopg2://postgres:143211Nr@localhost:5432/bknr_erp"
 )
 
+database_host = (make_url(DATABASE_URL).host or "").lower()
+is_render_database = "render.com" in database_host or os.getenv("RENDER") == "true"
+
+connect_args = {}
+if is_render_database:
+    # Render's external PostgreSQL endpoint requires TLS. TCP keepalives help
+    # stale cross-region connections fail fast so pool_pre_ping can replace them.
+    connect_args = {
+        "sslmode": os.getenv("PGSSLMODE", "require"),
+        "connect_timeout": int(os.getenv("DB_CONNECT_TIMEOUT", "10")),
+        "keepalives": 1,
+        "keepalives_idle": 30,
+        "keepalives_interval": 10,
+        "keepalives_count": 5,
+        "application_name": os.getenv("RENDER_SERVICE_NAME", "bknr_erp"),
+    }
+
 # -----------------------------------------------------
 # 🟡 Create SQLAlchemy Engine
 # -----------------------------------------------------
-# echo=True enables SQL logging in console (optional)
 engine = create_engine(
     DATABASE_URL,
-    pool_size=10,          # concurrent connections
-    max_overflow=5,        # extra overflow connections
-    pool_timeout=30,       # seconds to wait before timeout
-    pool_pre_ping=True     # auto reconnect if DB disconnects
+    pool_size=int(os.getenv("DB_POOL_SIZE", "5")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "5")),
+    pool_timeout=int(os.getenv("DB_POOL_TIMEOUT", "15")),
+    pool_recycle=int(os.getenv("DB_POOL_RECYCLE", "300")),
+    pool_pre_ping=True,
+    pool_use_lifo=True,
+    connect_args=connect_args,
 )
 
 # -----------------------------------------------------

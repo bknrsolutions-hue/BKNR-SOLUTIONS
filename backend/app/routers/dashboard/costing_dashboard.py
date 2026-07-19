@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
@@ -19,6 +19,7 @@ from app.database.models.processing import RawMaterialPurchasing, DeHeading, Pee
 from app.database.models.bills import ElectricityLog, DieselLog, PurchaseInvoice, ContainerLog, QATestingLog, OtherExpense
 from app.database.models.attendance import EmployeeRegistration
 from app.database.models.criteria import packing_styles, production_at
+from app.utils.cancel_math import active_sum, signed_sum
 
 router = APIRouter(tags=["CORPORATE COSTING DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
@@ -171,6 +172,8 @@ def costing_dashboard(
     cache_key = f"bknr:costing_dashboard:{comp_code}:{selected_fy}:{location or 'ALL'}:{from_date}:{to_date}"
     cached_context = cache_get(cache_key)
     if cached_context is not None:
+        if request.query_params.get("format") == "json":
+            return JSONResponse(cached_context)
         cached_context["request"] = request
         return templates.TemplateResponse(
             request=request,
@@ -182,8 +185,8 @@ def costing_dashboard(
         # ---------------------------------------------------------
         # 🦐 RAW MATERIAL PURCHASING
         # ---------------------------------------------------------
-        rmp_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.amount), 0.0)).filter(RawMaterialPurchasing.company_id == comp_code)
-        qty_q = db.query(func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0.0)).filter(RawMaterialPurchasing.company_id == comp_code)
+        rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.amount)).filter(RawMaterialPurchasing.company_id == comp_code)
+        qty_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty)).filter(RawMaterialPurchasing.company_id == comp_code)
 
         rmp_q = _apply_date_range(rmp_q, RawMaterialPurchasing.date, parsed_from, parsed_to)
         qty_q = _apply_date_range(qty_q, RawMaterialPurchasing.date, parsed_from, parsed_to)
@@ -231,12 +234,12 @@ def costing_dashboard(
         # ---------------------------------------------------------
         # 🏭 FACTORY PROCESSING SEGMENTS
         # ---------------------------------------------------------
-        deh_q = db.query(func.coalesce(func.sum(DeHeading.amount), 0.0)).filter(DeHeading.company_id == comp_code)
+        deh_q = db.query(signed_sum(DeHeading, DeHeading.amount)).filter(DeHeading.company_id == comp_code)
         deh_q = _apply_date_range(deh_q, DeHeading.date, parsed_from, parsed_to)
         deh_q = _apply_text_location(deh_q, DeHeading.peeling_at, location)
         deheading_cost = float(_safe_scalar(db, "deheading_cost", deh_q) or 0.0)
 
-        pee_q = db.query(func.coalesce(func.sum(Peeling.amount), 0.0)).filter(Peeling.company_id == comp_code)
+        pee_q = db.query(signed_sum(Peeling, Peeling.amount)).filter(Peeling.company_id == comp_code)
         pee_q = _apply_date_range(pee_q, Peeling.date, parsed_from, parsed_to)
         pee_q = _apply_text_location(pee_q, Peeling.peeling_at, location)
         peeling_cost = float(_safe_scalar(db, "peeling_cost", pee_q) or 0.0)
@@ -246,7 +249,7 @@ def costing_dashboard(
 
         soaking_cost = 0.0
 
-        prod_qty_q = db.query(func.coalesce(func.sum(Production.production_qty), 0.0)).filter(Production.company_id == comp_code)
+        prod_qty_q = db.query(signed_sum(Production, Production.production_qty)).filter(Production.company_id == comp_code)
         prod_qty_q = _apply_date_range(prod_qty_q, Production.date, parsed_from, parsed_to)
         prod_qty_q = _apply_text_location(prod_qty_q, Production.production_at, location)
         prod_qty = float(_safe_scalar(db, "production_qty", prod_qty_q) or 0.0)
@@ -254,14 +257,14 @@ def costing_dashboard(
         # ---------------------------------------------------------
         # ⚡ UTILITIES OPERATIONAL PIPELINES (With Table Joins)
         # ---------------------------------------------------------
-        elec_q = db.query(func.coalesce(func.sum(ElectricityLog.total_cost), 0.0)).join(
+        elec_q = db.query(signed_sum(ElectricityLog, ElectricityLog.total_cost)).join(
             production_at, ElectricityLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         elec_q = _apply_date_range(elec_q, ElectricityLog.reading_date, parsed_from, parsed_to)
         elec_q = _apply_text_location(elec_q, production_at.production_at, location)
         electricity_cost = float(_safe_scalar(db, "electricity_cost", elec_q) or 0.0)
 
-        dies_q = db.query(func.coalesce(func.sum(DieselLog.net_val), 0.0)).join(
+        dies_q = db.query(signed_sum(DieselLog, DieselLog.net_val)).join(
             production_at, DieselLog.unit_id == production_at.id
         ).filter(and_(production_at.company_id == comp_code, DieselLog.type == "OUT"))
         dies_q = _apply_date_range(dies_q, DieselLog.log_date, parsed_from, parsed_to)
@@ -274,26 +277,26 @@ def costing_dashboard(
         # ---------------------------------------------------------
         # 📦 OVERHEADS & EXPENDITURES
         # ---------------------------------------------------------
-        pack_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(PurchaseInvoice.company_id == comp_code)
+        pack_q = db.query(signed_sum(PurchaseInvoice, PurchaseInvoice.grand_total)).filter(PurchaseInvoice.company_id == comp_code)
         if location:
             pack_q = pack_q.join(production_at, PurchaseInvoice.production_at_id == production_at.id)
             pack_q = _apply_text_location(pack_q, production_at.production_at, location)
         pack_q = _apply_date_range(pack_q, PurchaseInvoice.invoice_date, parsed_from, parsed_to)
         packaging_cost = float(_safe_scalar(db, "packaging_cost", pack_q) or 0.0)
 
-        log_q = db.query(func.coalesce(func.sum(ContainerLog.lended_total), 0.0)).filter(ContainerLog.company_id == comp_code)
+        log_q = db.query(signed_sum(ContainerLog, ContainerLog.lended_total)).filter(ContainerLog.company_id == comp_code)
         log_q = _apply_date_range(log_q, ContainerLog.date, parsed_from, parsed_to)
         log_q = _apply_text_location(log_q, ContainerLog.production_at, location)
         logistics_cost = float(_safe_scalar(db, "container_logistics_cost", log_q) or 0.0)
 
-        qa_q = db.query(func.coalesce(func.sum(QATestingLog.test_cost), 0.0)).join(
+        qa_q = db.query(signed_sum(QATestingLog, QATestingLog.test_cost)).join(
             production_at, QATestingLog.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         qa_q = _apply_date_range(qa_q, QATestingLog.test_date, parsed_from, parsed_to)
         qa_q = _apply_text_location(qa_q, production_at.production_at, location)
         qa_cost = float(_safe_scalar(db, "qa_testing_cost", qa_q) or 0.0)
 
-        oth_q = db.query(func.coalesce(func.sum(OtherExpense.amount), 0.0)).join(
+        oth_q = db.query(signed_sum(OtherExpense, OtherExpense.amount)).join(
             production_at, OtherExpense.unit_id == production_at.id
         ).filter(production_at.company_id == comp_code)
         oth_q = _apply_date_range(oth_q, OtherExpense.date, parsed_from, parsed_to)
@@ -323,10 +326,10 @@ def costing_dashboard(
             "risk_frame": 0.0,
         }
 
-        payable_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(
+        payable_q = db.query(signed_sum(PurchaseInvoice, PurchaseInvoice.grand_total)).filter(
             PurchaseInvoice.company_id == comp_code
         )
-        payable_unpaid_q = db.query(func.coalesce(func.sum(PurchaseInvoice.grand_total), 0.0)).filter(
+        payable_unpaid_q = db.query(signed_sum(PurchaseInvoice, PurchaseInvoice.grand_total)).filter(
             PurchaseInvoice.company_id == comp_code,
             PurchaseInvoice.status == "POSTED",
         )
@@ -581,6 +584,9 @@ def costing_dashboard(
         }
     cache_context = dict(context)
     cache_set(cache_key, cache_context, ttl=60)
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse(context)
 
     return templates.TemplateResponse(
         request=request,

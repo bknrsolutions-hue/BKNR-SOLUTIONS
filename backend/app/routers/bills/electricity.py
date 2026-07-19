@@ -17,7 +17,7 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
 from app.database.models.bills import ElectricityLog
-from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
+from app.database.models.processing import AuditLog  #
 from app.database.models.criteria import production_at
 
 router = APIRouter(
@@ -54,11 +54,14 @@ def electricity_entry_page(
 
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 🔹 Fetching production units for the dropdown
     units = (
         db.query(production_at)
-        .filter(production_at.company_id == company_code, ElectricityLog.is_cancelled != True)
+        .filter(production_at.company_id == company_code)
         .order_by(production_at.production_at)
         .all()
     )
@@ -78,12 +81,12 @@ def electricity_entry_page(
                 ElectricityLog.closing_kwh,
                 ElectricityLog.unit_rate,
                 ElectricityLog.total_cost,
+                ElectricityLog.is_cancelled,
                 production_at.production_at.label("location_name")
             )
             .join(production_at, ElectricityLog.unit_id == production_at.id)
             .filter(
-                production_at.company_id == company_code, ElectricityLog.is_cancelled != True,
-                ElectricityLog.is_cancelled != True,
+                production_at.company_id == company_code,
                 ElectricityLog.reading_date >= start_date,
                 ElectricityLog.reading_date <= end_date
             )
@@ -109,16 +112,22 @@ def electricity_entry_page(
 # ============================================================
 @router.get("/lookup/{unit_id}")
 def lookup_last_reading(unit_id: int, request: Request, db: Session = Depends(get_db)):
-    if not request.session.get("email"):
+    company_code = request.session.get("company_code")
+    if not request.session.get("email") or not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     # 1. Master Info for Default Rate
-    unit_info = db.query(production_at).filter(production_at.id == unit_id).first()
+    unit_info = db.query(production_at).filter(
+        production_at.id == unit_id,
+        production_at.company_id == company_code,
+    ).first()
+    if not unit_info:
+        return JSONResponse({"error": "Production unit not found"}, status_code=404)
 
     # 2. Last Log for Closing Reading & Current Rate
     last_log = (
         db.query(ElectricityLog)
-        .filter(ElectricityLog.unit_id == unit_id)
+        .filter(ElectricityLog.unit_id == unit_id, ElectricityLog.is_cancelled != True)
         .order_by(desc(ElectricityLog.reading_date), desc(ElectricityLog.id))
         .first()
     )
@@ -149,13 +158,22 @@ async def save_electricity_entry(
     company_code = request.session.get("company_code")
     if not email or not company_code:
         return JSONResponse({"success": False, "message": "Session expired"}, status_code=401)
+    unit = db.query(production_at).filter(
+        production_at.id == payload.unit_id,
+        production_at.company_id == company_code,
+    ).first()
+    if not unit:
+        return JSONResponse({"success": False, "message": "Select a valid production unit"}, status_code=400)
+    if payload.unit_rate < 0:
+        return JSONResponse({"success": False, "message": "Unit rate cannot be negative"}, status_code=400)
 
     # Avoid duplicate entries for same unit and date
     exists = db.query(ElectricityLog).filter(
         ElectricityLog.unit_id == payload.unit_id,
-        ElectricityLog.reading_date == payload.reading_date
+        ElectricityLog.reading_date == payload.reading_date,
+        ElectricityLog.is_cancelled != True,
     ).first()
-    
+
     if exists:
         return JSONResponse(
             {"success": False, "status": "error", "message": "Entry already exists for this unit & date"},
@@ -164,9 +182,9 @@ async def save_electricity_entry(
 
     # Calculation
     units_consumed = payload.closing_kwh - payload.opening_kwh
-    if units_consumed < 0:
+    if units_consumed <= 0:
         return JSONResponse(
-            {"success": False, "status": "error", "message": "Closing reading cannot be less than opening"},
+            {"success": False, "status": "error", "message": "Closing reading must be greater than opening"},
             status_code=400
         )
 
@@ -195,8 +213,8 @@ async def save_electricity_entry(
         db.commit()
         return JSONResponse({
             "success": True,
-            "status": "success", 
-            "message": "Data saved successfully",
+            "status": "success",
+            "message": "Electricity tracking data saved successfully",
             "units_consumed": units_consumed,
             "total_cost": total_cost
         })
@@ -224,10 +242,11 @@ async def get_all_electricity_audit(request: Request, db: Session = Depends(get_
     )
 
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Unit: {l.production_at}" if l.production_at else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Unit: {l.production_at}" if l.production_at else f"Row ID #{l.AuditLog.record_id}",
         "action": l.AuditLog.field_name,
         "details": l.AuditLog.new_value if l.AuditLog.old_value == "NONE" else f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -292,7 +311,7 @@ def export_electricity_excel(request: Request, db: Session = Depends(get_db)):
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
     data_font = Font(name="Arial", size=10)
     total_font = Font(name="Arial", size=11, bold=True)
-    
+
     thin_border = Border(
         left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
         top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
@@ -320,7 +339,7 @@ def export_electricity_excel(request: Request, db: Session = Depends(get_db)):
             log.ElectricityLog.total_cost
         ]
         ws.append(row_data)
-        
+
         curr_row = ws.max_row
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=curr_row, column=col_idx)

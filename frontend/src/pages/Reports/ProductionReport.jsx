@@ -102,6 +102,7 @@ export default function ProductionReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -113,7 +114,7 @@ export default function ProductionReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -122,14 +123,15 @@ export default function ProductionReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -143,7 +145,7 @@ export default function ProductionReport({ activeRoute }) {
     { label: 'Download PDF Report', onClick: () => { window.location.href = getExportUrl('pdf'); } },
     { label: 'Export Excel Filtered', onClick: () => { window.location.href = getExportUrl('xlsx'); } },
     { divider: true },
-    { label: 'Delete Selected Row', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Selected Row', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   const renderSummaryRows = () => {
@@ -177,6 +179,7 @@ export default function ProductionReport({ activeRoute }) {
       result.push(
         <tr
           key={r.id}
+          data-record-id={r.id}
           onClick={() => {
             if (!isEditing) setSelectedRow(r);
           }}
@@ -393,6 +396,7 @@ export default function ProductionReport({ activeRoute }) {
       result.push(
         <tr
           key={r.id}
+          data-record-id={r.id}
           onClick={() => {
             if (!isEditing) setSelectedRow(r);
           }}
@@ -740,10 +744,10 @@ export default function ProductionReport({ activeRoute }) {
       )}
 
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

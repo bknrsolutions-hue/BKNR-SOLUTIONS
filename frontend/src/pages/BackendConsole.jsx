@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { installActionFeedback } from '../utils/actionFeedback';
 
 // ─── PLACEHOLDER when route is unknown ───────────────────────────────────────
 function NoRoutePlaceholder({ page }) {
@@ -27,11 +28,29 @@ function NoRoutePlaceholder({ page }) {
 //   theme       – "dark" | "light"
 export default function BackendConsole({ activePage, activeRoute, theme }) {
   const iframeRef = useRef(null);
+  const actionFeedbackCleanupRef = useRef(null);
+  const [filterVersion, setFilterVersion] = useState(0);
 
-  // The URL to load: prefer the explicit route passed from sidebar, else fallback to key-based heuristic
-  const iframeUrl = activeRoute || null;
+  // Match menu.html loadPage(): propagate the universal filters to every
+  // legacy route that is rendered through the fallback iframe.
+  const iframeUrl = useMemo(() => {
+    void filterVersion;
+    if (!activeRoute) return null;
+    const productionFor = localStorage.getItem('production_for_filter') || '';
+    const location = localStorage.getItem('plant_location_filter') || '';
+    const url = new URL(activeRoute, window.location.origin);
+    if (productionFor) url.searchParams.set('production_for', productionFor);
+    if (location) {
+      url.searchParams.set('location', location);
+      url.searchParams.set('peeling_at', location);
+      url.searchParams.set('production_at', location);
+      url.searchParams.set('receiving_center', location);
+      url.searchParams.set('cold_storage_name', location);
+    }
+    return `${url.pathname}${url.search}${url.hash}`;
+  }, [activeRoute, filterVersion]);
 
-  const syncTheme = () => {
+  const syncTheme = useCallback(() => {
     try {
       const iframe = iframeRef.current;
       if (!iframe) return;
@@ -39,10 +58,37 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
       if (!doc) return;
       if (doc.documentElement) doc.documentElement.setAttribute('data-theme', theme || 'dark');
       if (doc.body)            doc.body.setAttribute('data-theme', theme || 'dark');
-    } catch (_) {}
-  };
+      
+      if (window.BKNRColorCustomizer) {
+        window.BKNRColorCustomizer.applyToFrame(iframe);
+      }
+    } catch {
+      // A frame may be navigating while its document is being replaced.
+    }
+  }, [theme]);
 
-  useEffect(() => { syncTheme(); }, [theme, activePage]);
+  useEffect(() => { syncTheme(); }, [syncTheme, activePage]);
+
+  useEffect(() => {
+    const handleFilterChange = () => setFilterVersion(version => version + 1);
+    window.addEventListener('filter_change', handleFilterChange);
+    return () => window.removeEventListener('filter_change', handleFilterChange);
+  }, []);
+
+  useEffect(() => () => actionFeedbackCleanupRef.current?.(), []);
+
+  const handleFrameLoad = () => {
+    syncTheme();
+    actionFeedbackCleanupRef.current?.();
+    try {
+      const frameWindow = iframeRef.current?.contentWindow;
+      actionFeedbackCleanupRef.current = frameWindow
+        ? installActionFeedback(frameWindow, window)
+        : null;
+    } catch {
+      actionFeedbackCleanupRef.current = null;
+    }
+  };
 
   if (!iframeUrl) {
     return <NoRoutePlaceholder page={activePage} />;
@@ -57,7 +103,7 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
         key={activePage}
         ref={iframeRef}
         src={iframeUrl}
-        onLoad={syncTheme}
+        onLoad={handleFrameLoad}
         style={{
           flex: 1, border: 'none',
           width: '100%', height: '100%',

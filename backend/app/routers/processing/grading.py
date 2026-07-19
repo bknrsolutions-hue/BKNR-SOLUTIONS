@@ -28,6 +28,7 @@ from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_gr
 
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_sum
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -221,6 +222,54 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
     deheading_pending = pending_pool_q.order_by(HlsoForGrading.date.asc(), HlsoForGrading.time.asc()).all()
 
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "species_list": species_list,
+            "variety_list": variety_list,
+            "peeling_locations": peeling_locations,
+            "prod_for_list": prod_for_list,
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "batch_number": r.batch_number,
+                    "hoso_count": r.hoso_count,
+                    "variety_name": r.variety_name,
+                    "graded_count": r.graded_count,
+                    "quantity": r.quantity,
+                    "species": r.species,
+                    "peeling_at": r.peeling_at,
+                    "production_for": r.production_for,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "hlso_summary": list(hlso_summary.values()),
+            "hoso_summary": list(hoso_summary.values()),
+            "deheading_pending": [
+                {
+                    "id": p.id,
+                    "date": p.date.isoformat() if p.date else None,
+                    "time": p.time.strftime("%H:%M") if p.time else None,
+                    "batch_number": p.batch_number,
+                    "production_for": p.production_for,
+                    "peeling_at": p.peeling_at,
+                    "species": p.species,
+                    "hoso_count": p.hoso_count,
+                    "total_hlso_qty": p.total_hlso_qty,
+                    "graded_qty": p.graded_qty,
+                    "available_qty": p.available_qty,
+                    "status": p.status
+                } for p in deheading_pending
+            ],
+            "drill_down": drill_down_data
+        })
+
     return templates.TemplateResponse(
         request=request, name="processing/grading.html",
         context={
@@ -333,6 +382,28 @@ def save_grading(
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
 
+    if quantity <= 0:
+        return JSONResponse({"error": "Quantity must be greater than zero"}, status_code=400)
+
+    # Lock the same FIFO pool consumed by consume_hlso_for_grading(). This is
+    # a guard around the existing formula, preventing concurrent or excessive
+    # consumption without changing any yield/balance calculations.
+    pool_rows = db.query(HlsoForGrading).filter(
+        HlsoForGrading.batch_number == batch_number,
+        HlsoForGrading.production_for == production_for,
+        HlsoForGrading.peeling_at == peeling_at,
+        HlsoForGrading.species == species_val,
+        HlsoForGrading.hoso_count == hoso_count,
+        HlsoForGrading.company_id == company_code,
+        HlsoForGrading.status == "Pending",
+    ).with_for_update().all()
+    pool_available = round(sum(float(row.available_qty or 0) for row in pool_rows), 2)
+    if quantity > pool_available + 0.01:
+        return JSONResponse(
+            {"error": f"Insufficient grading pool balance. Available: {pool_available:.2f} KG"},
+            status_code=400,
+        )
+
     current_ist = ist_now()
 
     grading = Grading(
@@ -423,7 +494,7 @@ def sync_old_data(request: Request, db: Session = Depends(get_db)):
     dh_totals = db.query(
         DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
         DeHeading.peeling_at, DeHeading.production_for,
-        func.sum(DeHeading.hlso_qty).label("total_hlso")
+        signed_sum(DeHeading, DeHeading.hlso_qty).label("total_hlso")
     ).filter(DeHeading.company_id == company_code).group_by(
         DeHeading.batch_number, DeHeading.species, DeHeading.hoso_count, 
         DeHeading.peeling_at, DeHeading.production_for
@@ -432,7 +503,7 @@ def sync_old_data(request: Request, db: Session = Depends(get_db)):
     grad_totals = db.query(
         Grading.batch_number, Grading.species, Grading.hoso_count, 
         Grading.peeling_at, Grading.production_for,
-        func.sum(Grading.quantity).label("total_graded")
+        signed_sum(Grading, Grading.quantity).label("total_graded")
     ).filter(Grading.company_id == company_code).group_by(
         Grading.batch_number, Grading.species, Grading.hoso_count, 
         Grading.peeling_at, Grading.production_for

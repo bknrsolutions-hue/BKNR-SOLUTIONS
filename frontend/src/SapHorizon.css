@@ -1,0 +1,309 @@
+/* SAP Fiori Morning Horizon-inspired application baseline. */
+:root,
+[data-theme="light"] {
+  --sap-font-family: "72", "72full", Arial, Helvetica, sans-serif;
+  --sap-accent: var(--ui-accent, #0070f2);
+  --bg-app: #f5f6f7;
+  --surface-panel: #ffffff;
+  --glass-bg: rgba(255, 255, 255, 0.96);
+  --text-primary: #1d2d3e;
+  --text-secondary: #475e75;
+  --text-tertiary: #5b738b;
+  --border-light: #d5dadd;
+  --table-line: #e5e8ea;
+  --border-highlight: #a8b3bd;
+  --input-bg: #ffffff;
+  --input-border: #8996a3;
+  --row-hover: #eaf3fc;
+  --shadow-soft: 0 1px 2px rgb(34 53 72 / 10%);
+  --shadow-float: 0 4px 14px rgb(34 53 72 / 14%);
+  --erp-accent: var(--sap-accent);
+  --corp-dash: var(--sap-accent);
+  --corp-ops: var(--sap-accent);
+  --corp-fin: var(--sap-accent);
+  --corp-rep: var(--sap-accent);
+  --corp-hr: var(--sap-accent);
+  --radius-panel: 8px;
+  --radius-element: 6px;
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --sap-accent: var(--ui-accent, #4db1ff);
+  --bg-app: #12171c;
+  --surface-panel: #1d232a;
+  --glass-bg: rgba(29, 35, 42, 0.96);
+  --text-primary: #f5f6f7;
+  --text-secondary: #c2c8ce;
+  --text-tertiary: #9da4aa;
+  --border-light: #3a424a;
+  --table-line: #323a42;
+  --border-highlight: #69747e;
+  --input-bg: #242b33;
+  --input-border: #687682;
+  --row-hover: #253b50;
+  --shadow-soft: 0 1px 2px rgb(0 0 0 / 32%);
+  --shadow-float: 0 4px 16px rgb(0 0 0 / 38%);
+  color-scheme: dark;
+}
+
+html,
+body,
+#root,
+button,
+input,
+select,
+textarea,
+table {
+  font-family: var(--sap-font-family) !important;
+}
+
+body {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+@media screen {
+  .app-container,
+  .main-content,
+  .enterprise-dashboard,
+  .attendance-page,
+  .report-viewer-page {
+    background: var(--bg-app) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .main-content :is(.card, .attendance-card, .enterprise-panel, .admin-card, .tally-panel, .chart-box, .table-responsive, .enterprise-table-wrap) {
+    border-color: var(--border-light) !important;
+    border-radius: 8px !important;
+    background: var(--surface-panel) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  .main-content :is(h1, .attendance-page-header h1, .enterprise-head h1) {
+    color: var(--text-primary) !important;
+    font-size: 20px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(h2, .attendance-card h2, .enterprise-panel-head h2) {
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(h3, .section-header, .section-head, .panel-title, .table-title) {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(.attendance-page-header p, .enterprise-head p, .subtitle, .helper-text, small) {
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+  }
+
+  .main-content :is(label, .attendance-form-group label, .enterprise-field label, .field label, .filter-label) {
+    color: var(--text-secondary) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  /* Form controls: 13px for full forms, but filter bar controls stay compact via inline styles */
+  .main-content :is(input, select, textarea, button, .btn, .attendance-btn):not(.erp-filter-control):not([class*="filter"]) {
+    font-size: 13px !important;
+    line-height: 1.35 !important;
+  }
+
+  .main-content :is(input, select, textarea) {
+    border-color: var(--input-border) !important;
+    border-radius: 6px !important;
+    background: var(--input-bg) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .main-content tbody tr:hover {
+    background: var(--row-hover) !important;
+  }
+
+  .main-content :is(.kpi-title, .kpi-card h4, .erp-kpi-label, .tally-kpi-label, .enterprise-kpi-top) {
+    color: var(--text-secondary) !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .main-content :is(.kpi-value, .kpi-card .value, .erp-kpi-value, .tally-kpi-value, .enterprise-kpi strong) {
+    color: var(--text-primary) !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar,
+  .app-header,
+  .premium-header {
+    border-color: var(--border-light) !important;
+    background: var(--surface-panel) !important;
+    color: var(--text-primary) !important;
+    box-shadow: var(--shadow-soft) !important;
+  }
+
+  .sidebar :is(.pillar-heading, .submenu-heading-text, .nav-link),
+  .module-rail :is(.rail-title, .rail-link) {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar .brand-subtitle,
+  .module-rail .rail-label {
+    font-size: 11px !important;
+    letter-spacing: 0 !important;
+  }
+
+  .sidebar :is(.nav-link, .submenu-heading-text):hover,
+  .module-rail .rail-link:hover,
+  .module-rail .rail-link.active {
+    background: #eaf3fc !important;
+    color: var(--sap-accent) !important;
+  }
+
+  [data-theme="dark"] .sidebar :is(.nav-link, .submenu-heading-text):hover,
+  [data-theme="dark"] .module-rail .rail-link:hover,
+  [data-theme="dark"] .module-rail .rail-link.active {
+    background: #253b50 !important;
+  }
+
+  .main-content :is(.btn-primary, .attendance-btn.primary, button.primary) {
+    border-color: var(--sap-accent) !important;
+    background: var(--sap-accent) !important;
+    color: #ffffff !important;
+  }
+}
+
+/* Corporate application chrome
+   Keep the existing header/sidebar geometry; only align their visual palette
+   with the Admin Console's blue active state. Tenant-saved colors still win
+   through the --ui-* customizer variables. */
+@media screen {
+  .app-header {
+    background: var(--ui-header-bg, #0b1f3a) !important;
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 32%, #294866) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+    box-shadow: 0 2px 8px rgb(2 20 39 / 18%) !important;
+  }
+
+  .sidebar {
+    background: var(--ui-sidebar-bg, #102a43) !important;
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 28%, #34516c) !important;
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+    box-shadow: 0 8px 24px rgb(2 20 39 / 24%) !important;
+  }
+
+  .sidebar .sidebar-brand,
+  .sidebar .sidebar-footer,
+  .sidebar .menu-wrapper,
+  .sidebar .reports-container {
+    border-color: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 14%, transparent) !important;
+  }
+
+  .sidebar :is(.brand-title, .sidebar-footer .footer-powered),
+  .app-header :is(.header-premium-title, .corp-name) {
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+  }
+
+  .app-header :is(.header-premium-title, .corp-name) {
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .sidebar :is(.brand-subtitle, .footer-quote, .pillar-title, .submenu-heading-text, .submenu-item),
+  .sidebar :is(.pillar-chevron, .pillar-folder, .sub-chevron, .sub-folder, .submenu-item i) {
+    color: var(--ui-sidebar-muted, #b8c8d8) !important;
+  }
+
+  .sidebar :is(.pillar-title, .submenu-heading-text, .submenu-item):hover {
+    background: color-mix(in srgb, var(--ui-accent, #2563eb) 15%, transparent) !important;
+    color: var(--ui-sidebar-text, #f8fafc) !important;
+  }
+
+  .sidebar .submenu-item.active {
+    background: var(--ui-accent, #2563eb) !important;
+    border-left-color: color-mix(in srgb, var(--ui-accent, #2563eb) 55%, #ffffff) !important;
+    color: #ffffff !important;
+  }
+
+  .sidebar .submenu-item.active :is(div, span, i) {
+    color: #ffffff !important;
+  }
+
+  .sidebar :is(.pillar-title:hover, .submenu-heading-text:hover) i,
+  .sidebar :is(.pillar-block.open > .pillar-title, .submenu-heading-block.open > .submenu-heading-text) i {
+    color: color-mix(in srgb, var(--ui-accent, #2563eb) 58%, #ffffff) !important;
+  }
+
+  .sidebar .close-sidebar-btn,
+  .app-header :is(
+    .hamburger-trigger-btn,
+    .header-home-btn,
+    .mobile-top-menu-btn,
+    .icon-action-btn,
+    .corp-profile-btn
+  ) {
+    border-color: color-mix(in srgb, var(--ui-header-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-header-text, #f8fafc) 7%, transparent) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .sidebar .close-sidebar-btn {
+    border-color: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 7%, transparent) !important;
+    color: var(--ui-sidebar-muted, #b8c8d8) !important;
+  }
+
+  .app-header :is(
+    .hamburger-trigger-btn,
+    .header-home-btn,
+    .mobile-top-menu-btn,
+    .icon-action-btn,
+    .corp-profile-btn
+  ):hover,
+  .app-header .corp-profile-btn.active {
+    border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 70%, #ffffff) !important;
+    background: color-mix(in srgb, var(--ui-accent, #2563eb) 28%, transparent) !important;
+    color: #ffffff !important;
+  }
+
+  .app-header .header-brand-title-box {
+    border-left-color: var(--ui-accent, #2563eb) !important;
+  }
+
+  .app-header :is(.header-premium-subtitle, .corp-role, .icon-action-label),
+  .app-header .corp-profile-btn > .fa-chevron-down,
+  .app-header .global-search-container > i {
+    color: var(--ui-header-muted, #b8c8d8) !important;
+  }
+
+  .app-header .icon-action-btn[class*="action-"] {
+    --action-color: color-mix(in srgb, var(--ui-accent, #2563eb) 48%, #ffffff);
+  }
+
+  .app-header .global-search-container input {
+    border-color: color-mix(in srgb, var(--ui-header-text, #f8fafc) 18%, transparent) !important;
+    background: color-mix(in srgb, var(--ui-header-text, #f8fafc) 8%, transparent) !important;
+    color: var(--ui-header-text, #f8fafc) !important;
+  }
+
+  .app-header .global-search-container input::placeholder {
+    color: var(--ui-header-muted, #b8c8d8) !important;
+  }
+}
+
+@media (max-width: 767px) {
+  body { font-size: 13px; }
+  .main-content :is(h1, .attendance-page-header h1, .enterprise-head h1) { font-size: 18px !important; }
+  .main-content :is(h2, .attendance-card h2, .enterprise-panel-head h2) { font-size: 15px !important; }
+}

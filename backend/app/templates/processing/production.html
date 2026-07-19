@@ -20,8 +20,8 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -289,10 +289,10 @@
 <div class="full-width-grid">
     <div class="panel collapsible-panel is-collapsed">
         <div class="panel-header" style="color: var(--warning);" onclick="togglePanel(this)">
-            <div class="panel-title"><i class="fa-solid fa-chart-bar"></i> Dynamic Yield Production Requirements</div>
+            <div class="panel-title"><i class="fa-solid fa-chart-bar"></i> Production Requirements</div>
             <div class="panel-actions">
                 <div class="grand-total-badge" id="prod_count_badge">{{ pending_orders|length }} Items Listed</div>
-                <button type="button" class="panel-toggle" aria-label="Toggle Dynamic Yield Production Requirements" aria-expanded="false"><i class="fa-solid fa-chevron-down"></i></button>
+                <button type="button" class="panel-toggle" aria-label="Toggle Production Requirements" aria-expanded="false"><i class="fa-solid fa-chevron-down"></i></button>
             </div>
         </div>
         <div class="table-wrap collapsible-content" style="max-height: 500px;">
@@ -306,6 +306,7 @@
                     {% set grouped_req = pending_orders | groupby('po_number') %}
                     {% for po_no, records in grouped_req %}
                         {% set first_row = records[0] %}
+                        {% set totals = namespace(pieces=0.0, ordered_mc=0.0, stock_mc=0.0, pending_mc=0.0, net_count=0.0, hl_count=0.0, hoso_count=0.0, ordered_qty=0.0, available_stock=0.0, utilized=0.0, pending_production=0.0, req_hlso=0.0, req_hoso=0.0) %}
                         <tr class="group-row" data-company="{{ first_row.company_name }}">
                             <td colspan="16" style="background:transparent; color:var(--accent); text-align:left !important; padding-left:10px;">
                                 <i class="fa-solid fa-file-invoice"></i> PO: <b>{{ po_no }}</b> | {{ first_row.buyer }}
@@ -314,6 +315,19 @@
                             <td colspan="10" style="background:transparent;"></td>
                         </tr>
                         {% for row in records %}
+                        {% set totals.pieces = totals.pieces + row.no_of_pieces|default(0)|float %}
+                        {% set totals.ordered_mc = totals.ordered_mc + row.no_of_mc|default(0)|float %}
+                        {% set totals.stock_mc = totals.stock_mc + row.stock_mc|default(0)|float %}
+                        {% set totals.pending_mc = totals.pending_mc + row.no_of_mc|default(0)|float - row.stock_mc|default(0)|float %}
+                        {% set totals.net_count = totals.net_count + row.net_count_calc|default(0)|float %}
+                        {% set totals.hl_count = totals.hl_count + row.hl_count_calc|default(0)|float %}
+                        {% set totals.hoso_count = totals.hoso_count + row.hoso_count_calc|default(0)|float %}
+                        {% set totals.ordered_qty = totals.ordered_qty + row.ordered_qty|default(0)|float %}
+                        {% set totals.available_stock = totals.available_stock + row.available_stock|default(0)|float %}
+                        {% set totals.utilized = totals.utilized + row.existed_stock_util|default(0)|float %}
+                        {% set totals.pending_production = totals.pending_production + row.pending_production|default(0)|float %}
+                        {% set totals.req_hlso = totals.req_hlso + row.req_hlso_qty|default(0)|float %}
+                        {% set totals.req_hoso = totals.req_hoso + row.req_hoso_qty|default(0)|float %}
                         <tr data-company="{{ row.company_name }}" data-variety="{{ row.variety }}" data-glaze="{{ row.count_glaze }}" data-freezer="{{ row.freezer }}" data-grade="{{ row.grade }}">
                             <td>{{ row.sl_no }}</td>
                             <td class="po-cell" style="text-align:left;">{{ row.company_name }}</td>
@@ -344,6 +358,23 @@
                             <td style="color:var(--warning); font-weight:700; text-align:right;">{{ row.req_hoso_qty }}</td>
                         </tr>
                         {% endfor %}
+                        <tr style="background:var(--row-hover); border-top:2px solid var(--border); font-weight:900;">
+                            <td colspan="13" style="text-align:right; color:var(--accent); text-transform:uppercase;">PO {{ po_no }} Subtotal</td>
+                            <td style="text-align:right;">{{ totals.pieces|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.ordered_mc|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.stock_mc|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.pending_mc|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.net_count|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.hl_count|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.hoso_count|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.ordered_qty|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.available_stock|round(2) }}</td>
+                            <td style="text-align:right;">{{ totals.utilized|round(2) }}</td>
+                            <td></td>
+                            <td style="text-align:right;">{{ totals.pending_production|round(2) }}</td>
+                            <td style="text-align:right; color:var(--warning);">{{ totals.req_hlso|round(2) }}</td>
+                            <td style="text-align:right; color:var(--warning);">{{ totals.req_hoso|round(2) }}</td>
+                        </tr>
                     {% endfor %}
                 </tbody>
             </table>
@@ -504,7 +535,7 @@
             </div>
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
                 <button type="button" onclick="closeModal()" class="btn" style="flex:1; padding:12px; border-radius:6px; font-size:12px;"><i class="fa-solid fa-xmark"></i> Cancel</button>
-                <button type="submit" id="submitBtn" class="btn btn-primary" style="flex:2; padding:12px; border-radius:6px; font-size:12px;"><i class="fa-solid fa-floppy-disk"></i> Save Entry</button>
+                <button type="submit" id="submitBtn" class="btn btn-primary" style="flex:2; padding:12px; border-radius:6px; font-size:12px;"><i class="fa-solid fa-floppy-disk"></i> Save</button>
             </div>
         </form>
     </div>
@@ -1069,6 +1100,6 @@ function proceedProductionSave() {
     }
 }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

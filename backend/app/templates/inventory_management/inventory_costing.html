@@ -328,8 +328,8 @@
 
     @media print { .header, .table-container, .control-bar, .nav-tabs { display: none !important; } body{background:var(--card-bg); padding:0;} }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 <body>
 
@@ -348,14 +348,13 @@
 
     <form method="get" id="filterForm" class="filters-group">
         <div class="fbox" id="fyFilterWrapper">
-            <label style="color: var(--brand-accent);"><i class="fa-solid fa-calendar-check"></i> Year Filter</label>
+            <label style="color: var(--brand-accent);"><i class="fa-solid fa-calendar-check"></i> Financial Year</label>
             <select id="f_fy" class="fy-select-premium" onchange="changeFY(this.value)">
                 <option value="">-- ALL YEARS --</option>
                 {% set start_yr = 2024 %}
                 {% set end_yr = 2027 %}
                 {% for y in range(start_yr, end_yr) %}
-                {% set next_yr_short = (y + 1) | string %}
-                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ next_yr_short[2:] }}</option>
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y + 1 }}</option>
                 {% endfor %}
             </select>
         </div>
@@ -436,7 +435,13 @@
                             <th>MC</th>
                             <th>Loose</th>
                             <th style="text-align: right; padding-right: 4px;">Qty (Kg)</th>
-                            <th style="text-align: right; padding-right: 4px;">Rate/Kg</th>
+                            <th style="text-align: right; padding-right: 4px;">Base RM Rate</th>
+                            <th style="text-align: right; padding-right: 4px;">Prod Cost</th>
+                            <th style="text-align: right; padding-right: 4px;">Ice Rate</th>
+                            <th style="text-align: right; padding-right: 4px;">Deheading</th>
+                            <th style="text-align: right; padding-right: 4px;">Grading</th>
+                            <th style="text-align: right; padding-right: 4px;">Peeling</th>
+                            <th style="text-align: right; padding-right: 4px;">Total Cost/KG</th>
                             <th style="text-align: right; padding-right: 4px;">Inv Value</th>
                         </tr>
                     </thead>
@@ -464,9 +469,15 @@
                             <td>{{ r.production_at }}</td>
                             <td>{{ r.no_of_mc }}</td>
                             <td>{{ r.loose }}</td>
-                            <td class="qty-bold">{% if r.quantity %}{{ "{:,.2f}".format(r.quantity|float) }}{% else %}0.00{% endif %}</td>
-                            <td style="text-align: right; padding-right: 4px;">₹{{ r.product_kg_value }}</td>
-                            <td class="val-bold">₹{{ "{:,.0f}".format(r.inventory_value) }}</td>
+                             <td class="qty-bold">{% if r.quantity %}{{ "{:,.2f}".format(r.quantity|float) }}{% else %}0.00{% endif %}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.base_rm_rate|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.production_cost_per_kg|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.ice_rate_per_kg|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.deheading_rate_per_kg|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.grading_rate_per_kg|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px;">₹{{ "{:,.2f}".format(r.peeling_rate_per_kg|float) }}</td>
+                             <td style="text-align: right; padding-right: 4px; font-weight: 800; color: var(--orange);">₹{{ "{:,.2f}".format(r.product_kg_value|float) }}</td>
+                             <td class="val-bold">₹{{ "{:,.0f}".format(r.inventory_value) }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -515,15 +526,11 @@
 
     function changeFY(val) {
         const url = new URL(window.location.href);
-        if (val) {
-            url.searchParams.set('fy', val);
-        } else {
-            url.searchParams.delete('fy');
-        }
+        url.searchParams.set('fy', val || '');
         window.location.href = url.toString();
     }
 
-    // 🌟 🟢 GHOST EV_TRIGGER BLOCK: సైలెంట్ గా వాల్యూస్ ని మాత్రమే మార్చి, ఈవెంట్ లూప్స్ ని కంప్లీట్ గా కిల్ చేస్తుంది!
+    // Update values silently and prevent event loops.
     function syncParentScreenFilters() {
         try {
             const activeProdFor = "{{ selected_production_for or '' }}";
@@ -533,18 +540,18 @@
                 const parentProdForDropdown = window.parent.document.getElementById("global_production_for") || window.parent.document.getElementById("production_for");
                 const parentLocDropdown = window.parent.document.getElementById("global_location") || window.parent.document.getElementById("location") || window.parent.document.getElementById("peeling_at") || window.parent.document.getElementById("production_at");
 
-                // 🔴 CRITICAL FIX: వాల్యూస్ మారితేనే అప్‌డేట్ చేస్తుంది, మళ్లీ మళ్లీ ఈవెంట్స్ ని ట్రిగ్గర్ చేయనివ్వదు!
+                // Update only when values change to prevent repeated events.
                 if (parentProdForDropdown && activeProdFor && parentProdForDropdown.value !== activeProdFor) {
                     let oldHandler = parentProdForDropdown.onchange;
-                    parentProdForDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentProdForDropdown.onchange = null; // Temporarily clear the event.
                     parentProdForDropdown.value = activeProdFor;
-                    parentProdForDropdown.onchange = oldHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                    parentProdForDropdown.onchange = oldHandler; // Restore the event handler.
                 }
                 if (parentLocDropdown && activeLocation && parentLocDropdown.value !== activeLocation) {
                     let oldLocHandler = parentLocDropdown.onchange;
-                    parentLocDropdown.onchange = null; // 👈 ఈవెంట్ ని క్లియర్ చేసాం
+                    parentLocDropdown.onchange = null; // Temporarily clear the event.
                     parentLocDropdown.value = activeLocation;
-                    parentLocDropdown.onchange = oldLocHandler; // 👈 మళ్లీ అసైన్ చేసాం
+                    parentLocDropdown.onchange = oldLocHandler; // Restore the event handler.
                 }
             }
         } catch (e) {
@@ -802,6 +809,6 @@
         applyFilters();
     });
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

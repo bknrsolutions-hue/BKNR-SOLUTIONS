@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Filter, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
+import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
 
 export default function Grading() {
   const [date, setDate] = useState('');
@@ -240,7 +240,8 @@ export default function Grading() {
         clearForm();
         await fetchBackendData();
       } else {
-        alert('Error saving Grading record');
+        const errorData = await res.json().catch(() => ({}));
+        alert(errorData.error || errorData.message || 'Error saving Grading record');
       }
     } catch (err) {
       alert('Connection error saving Grading record');
@@ -251,24 +252,36 @@ export default function Grading() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this grading entry?')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/grading/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting grading record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this grading entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/grading/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Grading Entry Cancelled Successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling grading record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -660,7 +673,7 @@ export default function Grading() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Grading Lot
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-secondary" onClick={clearForm}>
               Cancel
@@ -697,28 +710,42 @@ export default function Grading() {
               todayEntries.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id === selectedId ? null : row.id)}
-                  style={{ background: selectedId === row.id ? 'var(--row-selected)' : 'transparent', cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id === selectedId ? null : row.id);
+                    }
+                  }}
+                  style={{ 
+                    background: selectedId === row.id ? 'var(--row-selected)' : 'transparent', 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
                   <td className="text-left">{row.production_for}</td>
                   <td className="text-center">{row.hoso_count}</td>
                   <td className="text-center" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{row.graded_count}</td>
                   <td className="text-left">{row.species} | {row.variety_name}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>{(Number(row.quantity) || 0).toFixed(2)} KG</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>{(row.is_cancelled ? 0 : (Number(row.quantity) || 0)).toFixed(2)} KG</td>
                   <td className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{row.time}</td>
                   <td className="text-center">
-                    <button 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(row.id);
-                      }} 
-                      style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                      title="Delete log"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    {!row.is_cancelled && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(row.id);
+                        }} 
+                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                        title="Cancel log"
+                      >
+                        <Ban size={13} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))

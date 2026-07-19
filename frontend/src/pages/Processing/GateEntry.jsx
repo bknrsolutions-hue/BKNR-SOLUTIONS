@@ -1,12 +1,17 @@
+// GateEntry.jsx - [Force rebuild cache buster: 104]
 import React, { useState, useEffect } from 'react';
-import { Truck, Plus, Trash2, Calendar, Clock, Mail, RefreshCw } from 'lucide-react';
+import { Truck, Plus, Ban, Calendar, Clock, Mail, RefreshCw, PackageSearch } from 'lucide-react';
+import GoodsGateMovements, { SearchableDropdown } from './GoodsGateMovements';
+import './GateEntry.css';
 
-export default function GateEntry() {
+function RawMaterialGateEntry() {
+  const [cacheBustVal] = useState('bknr-cb-104');
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [message, setMessage] = useState(null);
 
   // Form fields
   const [batchNumber, setBatchNumber] = useState('');
@@ -31,6 +36,8 @@ export default function GateEntry() {
   const [lastChallanMap, setLastChallanMap] = useState({});
   const [lastGPComboMap, setLastGPComboMap] = useState({});
   const [lastGPValue, setLastGPValue] = useState('');
+  const [drivers, setDrivers] = useState([]);
+  const [driverName, setDriverName] = useState('');
 
   // Table rows
   const [entries, setEntries] = useState([]);
@@ -48,7 +55,10 @@ export default function GateEntry() {
         queryParams.append('location', activeLoc);
       }
 
-      const res = await fetch(`/processing/gate_entry?${queryParams.toString()}`);
+      const res = await fetch(`/processing/gate_entry?${queryParams.toString()}`, {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
       if (res.ok) {
         const data = await res.json();
         setSuppliers(data.suppliers || []);
@@ -60,17 +70,32 @@ export default function GateEntry() {
         setLastChallanMap(data.last_challan_map || {});
         setLastGPComboMap(data.last_gp_combo_map || {});
         setLastGPValue(data.last_gp_value || '');
+        setDrivers(data.drivers || []);
         setEntries(data.today_data || []);
+        setProductionFor(current => {
+          const options = data.prod_for_list || [];
+          if (activeComp && options.includes(activeComp)) return activeComp;
+          if (current && options.includes(current)) return current;
+          return options.length === 1 ? options[0] : '';
+        });
+        setReceivingCenter(current => {
+          const options = data.peeling_ats || [];
+          if (activeLoc && options.includes(activeLoc)) return activeLoc;
+          if (current && options.includes(current)) return current;
+          return options.length === 1 ? options[0] : '';
+        });
         
         // Show form if no logs exist
         if ((data.today_data || []).length === 0) {
           setShowForm(true);
         }
       } else {
-        console.error('Failed to fetch gate entry data');
+        const data = await res.json().catch(() => ({}));
+        setMessage({ type: 'error', text: data.error || data.message || 'Gate Entry data could not be loaded.' });
       }
     } catch (err) {
       console.error('Error fetching gate entry data:', err);
+      setMessage({ type: 'error', text: 'Gate Entry data could not be loaded. Check the backend connection.' });
     } finally {
       setLoading(false);
     }
@@ -78,7 +103,11 @@ export default function GateEntry() {
 
   useEffect(() => {
     const now = new Date();
-    setDate(now.toISOString().split('T')[0]);
+    setDate([
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-'));
     setTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
     setEmail(localStorage.getItem('user_email') || 'bknr.solutions@gmail.com');
     fetchBackendData();
@@ -128,8 +157,7 @@ export default function GateEntry() {
     }
   }, [productionFor, receivingCenter, lastBatchMap, lastChallanMap, lastGPComboMap, lastGPValue]);
 
-  const handleCompanyChange = (e) => {
-    const compVal = e.target.value;
+  const handleCompanyChange = (compVal) => {
     setProductionFor(compVal);
     setReceivingCenter('');
     setBatchNumber('');
@@ -137,10 +165,9 @@ export default function GateEntry() {
     setGatePassNumber('');
   };
 
-  const handleFactoryChange = (e) => {
-    const factoryVal = e.target.value;
+  const handleFactoryChange = (factoryVal) => {
     if (!productionFor) {
-      alert('Please select Production For first!');
+      setMessage({ type: 'error', text: 'Select Production For before selecting Factory Name.' });
       setReceivingCenter('');
       return;
     }
@@ -149,8 +176,9 @@ export default function GateEntry() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setMessage(null);
     if (!productionFor || !receivingCenter || !supplierName || !purchasingLocation || !vehicleNumber) {
-      alert('Please fill in all required fields.');
+      setMessage({ type: 'error', text: 'Complete all required Gate Entry fields.' });
       return;
     }
 
@@ -163,6 +191,7 @@ export default function GateEntry() {
     formData.append('supplier_name', supplierName);
     formData.append('purchasing_location', purchasingLocation);
     formData.append('vehicle_number', vehicleNumber);
+    formData.append('driver_name', driverName.trim());
     formData.append('production_for', productionFor);
     formData.append('no_of_material_boxes', parseFloat(noOfMaterialBoxes) || 0);
     formData.append('no_of_empty_boxes', parseFloat(noOfEmptyBoxes) || 0);
@@ -171,15 +200,17 @@ export default function GateEntry() {
     try {
       const res = await fetch('/processing/gate_entry', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
         },
         body: formData,
       });
 
       const data = await res.json();
       if (res.ok) {
-        alert(data.message || 'Saved Successfully!');
+        setMessage({ type: 'success', text: data.message || 'Gate Entry saved successfully.' });
         // Clear input values
         setNoOfMaterialBoxes('0');
         setNoOfEmptyBoxes('0');
@@ -187,15 +218,16 @@ export default function GateEntry() {
         setSupplierName('');
         setPurchasingLocation('');
         setVehicleNumber('');
-        setProductionFor('');
-        setReceivingCenter('');
+        setDriverName('');
+        setProductionFor(localStorage.getItem('production_for_filter') || '');
+        setReceivingCenter(localStorage.getItem('plant_location_filter') || '');
         setSelectedId(null);
         await fetchBackendData();
       } else {
-        alert(data.error || 'Execution Error saving Gate Entry');
+        setMessage({ type: 'error', text: data.error || 'Gate Entry could not be saved.' });
       }
     } catch (err) {
-      alert('Connection error saving Gate Entry');
+      setMessage({ type: 'error', text: 'Connection error while saving Gate Entry. Your form data was retained.' });
       console.error(err);
     } finally {
       setLoading(false);
@@ -203,35 +235,47 @@ export default function GateEntry() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this gate entry?')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/gate_entry/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Gate Entry Deleted Successfully');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          const data = await res.json();
-          alert(data.message || 'Deletion failed');
-        }
-      } catch (err) {
-        alert('Connection error deleting Gate Entry');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this gate entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/gate_entry/delete/${id}`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        setMessage({ type: 'success', text: 'Gate Entry cancelled successfully.' });
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        setMessage({ type: 'error', text: data.error || 'Cancellation failed.' });
       }
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Connection error while cancelling Gate Entry.' });
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
   const clearForm = () => {
-    setProductionFor('');
-    setReceivingCenter('');
+    setProductionFor(localStorage.getItem('production_for_filter') || '');
+    setReceivingCenter(localStorage.getItem('plant_location_filter') || '');
     setSupplierName('');
     setPurchasingLocation('');
     setVehicleNumber('');
+    setDriverName('');
     setNoOfMaterialBoxes('0');
     setNoOfEmptyBoxes('0');
     setNoOfIceBoxes('0');
@@ -243,20 +287,37 @@ export default function GateEntry() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: '16px', padding: '16px 16px 80px 16px' }}>
+    <div className="raw-gate-page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexShrink: 0 }}>
         <h2 style={{ color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <Truck /> Gate Entry Worksheet
         </h2>
-        <button 
-          onClick={fetchBackendData} 
-          className="btn btn-clear" 
-          style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className={showForm ? 'btn btn-secondary' : 'btn btn-primary'}
+            onClick={() => setShowForm(!showForm)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
+          >
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : '+ Record New Arrival'}
+          </button>
+          <button 
+            onClick={fetchBackendData} 
+            className="btn btn-clear" 
+            style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
+
+      {message && (
+        <div className={`goods-message ${message.type}`}>
+          {message.text}
+          <button type="button" onClick={() => setMessage(null)}>×</button>
+        </div>
+      )}
 
       {/* Auto Fields */}
       <div style={autoFieldsRowStyle}>
@@ -275,27 +336,27 @@ export default function GateEntry() {
           <div className="form-grid">
             <div className="form-group">
               <label>Production For *</label>
-              <select 
-                className="form-control" 
+              <select
+                className="form-control"
                 value={productionFor} 
-                onChange={handleCompanyChange} 
+                onChange={e => handleCompanyChange(e.target.value)}
                 required
               >
                 <option value="">Select Company</option>
-                {prodForList.map(c => <option key={c} value={c}>{c}</option>)}
+                {Array.from(new Set([productionFor, ...prodForList].filter(Boolean))).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             </div>
 
             <div className="form-group">
               <label>Factory Name *</label>
-              <select 
-                className="form-control" 
+              <select
+                className="form-control"
                 value={receivingCenter} 
-                onChange={handleFactoryChange} 
+                onChange={e => handleFactoryChange(e.target.value)}
                 required
               >
-                <option value="">Select Factory</option>
-                {peelingAts.map(f => <option key={f} value={f}>{f}</option>)}
+                <option value="">Select Peeling At</option>
+                {Array.from(new Set([receivingCenter, ...peelingAts].filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
 
@@ -314,40 +375,52 @@ export default function GateEntry() {
 
             <div className="form-group">
               <label>Supplier Name *</label>
-              <select 
-                className="form-control" 
+              <select
+                className="form-control"
                 value={supplierName} 
-                onChange={e => setSupplierName(e.target.value)} 
+                onChange={e => setSupplierName(e.target.value)}
                 required
               >
                 <option value="">Select Supplier</option>
-                {suppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                {Array.from(new Set([supplierName, ...suppliers].filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 
             <div className="form-group">
               <label>Purchasing Location *</label>
-              <select 
-                className="form-control" 
+              <select
+                className="form-control"
                 value={purchasingLocation} 
-                onChange={e => setPurchasingLocation(e.target.value)} 
+                onChange={e => setPurchasingLocation(e.target.value)}
                 required
               >
                 <option value="">Select Location</option>
-                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+                {Array.from(new Set([purchasingLocation, ...locations].filter(Boolean))).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
 
             <div className="form-group">
               <label>Vehicle Number *</label>
-              <select 
-                className="form-control" 
+              <select
+                className="form-control"
                 value={vehicleNumber} 
-                onChange={e => setVehicleNumber(e.target.value)} 
+                onChange={e => setVehicleNumber(e.target.value)}
                 required
               >
                 <option value="">Select Vehicle</option>
-                {vehicles.map(v => <option key={v} value={v}>{v}</option>)}
+                {Array.from(new Set([vehicleNumber, ...vehicles].filter(Boolean))).map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Driver Name</label>
+              <select
+                className="form-control"
+                value={driverName}
+                onChange={e => setDriverName(e.target.value)}
+              >
+                <option value="">Select Driver</option>
+                {Array.from(new Set([driverName, ...drivers].filter(Boolean))).map(d => <option key={d} value={d}>{d}</option>)}
               </select>
             </div>
 
@@ -382,7 +455,7 @@ export default function GateEntry() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save Gate Entry
+              <Plus size={16} /> Save
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel
@@ -417,9 +490,10 @@ export default function GateEntry() {
               <th className="text-left" style={{ width: '150px' }}>Supplier</th>
               <th className="text-left" style={{ width: '130px' }}>Location</th>
               <th className="text-left" style={{ width: '110px' }}>Vehicle</th>
-              <th className="text-right" style={{ width: '80px' }}>Mat</th>
-              <th className="text-right" style={{ width: '80px' }}>Emp</th>
-              <th className="text-right" style={{ width: '80px' }}>Ice</th>
+              <th className="text-left" style={{ width: '150px' }}>Driver Name</th>
+              <th className="text-right" style={{ width: '95px' }}>Mat Packages</th>
+              <th className="text-right" style={{ width: '95px' }}>Empty Packages</th>
+              <th className="text-right" style={{ width: '95px' }}>Ice Packages</th>
               <th className="text-left" style={{ width: '100px' }}>Channel</th>
               <th className="text-center" style={{ width: '80px' }}>Action</th>
             </tr>
@@ -427,7 +501,7 @@ export default function GateEntry() {
           <tbody>
             {entries.length === 0 ? (
               <tr>
-                <td colSpan="15" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                <td colSpan="16" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
                   No active check-ins recorded today.
                 </td>
               </tr>
@@ -435,37 +509,51 @@ export default function GateEntry() {
               entries.map(row => (
                 <tr 
                   key={row.id} 
-                  className={selectedId === row.id ? 'selected' : ''}
-                  onClick={() => setSelectedId(row.id)}
-                  style={{ cursor: 'pointer' }}
+                  className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                  onClick={() => {
+                    if (row.is_cancelled) {
+                      setSelectedId(null);
+                    } else {
+                      setSelectedId(row.id);
+                    }
+                  }}
+                  style={{ 
+                    cursor: 'pointer',
+                    opacity: row.is_cancelled ? 0.55 : 1,
+                    textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                    color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                  }}
                 >
                   <td className="text-center">{row.id}</td>
                   <td className="text-center" style={{ color: 'var(--text-secondary)' }}>{row.time ? row.time.substring(0, 5) : ''}</td>
-                  <td className="text-left" style={{ fontWeight: '600' }}>{row.production_for}</td>
+                  <td className="text-left">{row.production_for}</td>
                   <td className="text-left">{row.receiving_center}</td>
                   <td className="text-center">{row.gate_pass_number}</td>
-                  <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
+                  <td className="text-center">{row.batch_number}</td>
                   <td className="text-center">{row.challan_number}</td>
                   <td className="text-left">{row.supplier_name}</td>
                   <td className="text-left">{row.purchasing_location}</td>
                   <td className="text-left">{row.vehicle_number}</td>
-                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{row.no_of_material_boxes}</td>
+                  <td className="text-left">{row.driver_name || ''}</td>
+                  <td className="text-right">{row.no_of_material_boxes}</td>
                   <td className="text-right">{row.no_of_empty_boxes}</td>
                   <td className="text-right">{row.no_of_ice_boxes}</td>
                   <td className="text-left" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                     {row.email ? row.email.split('@')[0] : ''}
                   </td>
                   <td className="text-center">
-                    <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleDelete(row.id);
-                       }} 
-                       style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                       title="Delete entry"
-                     >
-                      <Trash2 size={14} />
-                    </button>
+                    {!row.is_cancelled && (
+                      <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           handleDelete(row.id);
+                         }} 
+                         style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                         title="Cancel entry"
+                       >
+                        <Ban size={14} />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
@@ -496,3 +584,49 @@ const autoFieldStyle = {
   fontSize: '12px',
   color: 'var(--text-secondary)'
 };
+
+export default function GateEntry() {
+  const [activeTab, setActiveTab] = useState('raw');
+  return (
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+      <div style={{
+        display: 'flex',
+        gap: '7px',
+        margin: '12px 16px 8px',
+        padding: '5px',
+        border: '1px solid var(--border-light)',
+        borderRadius: '9px',
+        background: 'var(--bg-app)',
+        flexShrink: 0
+      }}>
+        <button type="button" onClick={() => setActiveTab('raw')} style={tabStyle(activeTab === 'raw')}>
+          <Truck size={15} /> Raw Material Gate Entry
+        </button>
+        <button type="button" onClick={() => setActiveTab('goods')} style={tabStyle(activeTab === 'goods')}>
+          <PackageSearch size={15} /> Goods IN / OUT
+        </button>
+      </div>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+        {activeTab === 'raw' ? <RawMaterialGateEntry /> : <GoodsGateMovements />}
+      </div>
+    </div>
+  );
+}
+
+const tabStyle = active => ({
+  minWidth: '190px',
+  height: '36px',
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: '7px',
+  padding: '0 14px',
+  border: active ? '1px solid var(--corp-dash, #2563eb)' : '1px solid var(--border-light)',
+  borderRadius: '7px',
+  background: active ? 'var(--corp-dash, #2563eb)' : 'var(--surface-panel)',
+  color: active ? '#fff' : 'var(--text-secondary)',
+  fontSize: '11px',
+  fontWeight: 800,
+  cursor: 'pointer',
+  whiteSpace: 'nowrap',
+});

@@ -1,6 +1,6 @@
 import logging
 import re
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from fastapi import APIRouter, Depends, HTTPException, Form, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.database.models.attendance import DailyAttendance, EmployeeRegistration
-from app.database.models.floor_balance import FloorBalance
 from app.database.models.processing import (
     DeHeading,
     GateEntry,
@@ -19,8 +18,12 @@ from app.database.models.processing import (
     RawMaterialPurchasing,
     Soaking,
 )
-from app.services.floor_balance import get_floor_balance
+from app.services.bill_accounting import ensure_bill_accounting_schema
+from app.services.floor_balance import get_floor_balance_snapshot_rows
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_sum
+from app.utils.hr_workforce import active_employee_on
+from app.utils.timezone import ist_now
 
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
 templates = Jinja2Templates(directory="app/templates")
@@ -46,17 +49,34 @@ def processing_dashboard(
             return JSONResponse({"status": "error", "message": "Session expired"}, status_code=401)
         return RedirectResponse("/auth/login", status_code=303)
 
+    ensure_bill_accounting_schema(db)
+
     cookie_prod, cookie_loc = get_global_filters(request)
+
+    def clean_filter_value(value):
+        if value is None:
+            return None
+        value = str(value).strip()
+        if not value or value.upper() == "ALL" or value.startswith("annotation="):
+            return None
+        return value
     
     # 🟢 🔴 FORCE OVERRIDE: URL Parameters > Cookies
-    global_production_for = production_for if production_for is not None else cookie_prod
-    global_location = location if location is not None else cookie_loc
+    global_production_for = clean_filter_value(production_for if production_for is not None else cookie_prod)
+    global_location = clean_filter_value(location if location is not None else cookie_loc)
 
-    today = date.today()
+    # Render servers commonly run in UTC. Dashboard business dates are IST.
+    today = ist_now().date()
+
+    from_date = from_date if isinstance(from_date, date) else None
+    to_date = to_date if isinstance(to_date, date) else None
+    hour_date = hour_date if isinstance(hour_date, date) else None
 
     if not to_date: to_date = today
-    if not from_date: from_date = to_date - timedelta(days=6)
-    if not hour_date: hour_date = today
+    # With no explicit range, KPI cards represent one selected business date.
+    if not from_date: from_date = to_date
+    # One dashboard date controls both KPI totals and hourly charts.
+    if not hour_date: hour_date = to_date
 
     session_locations = request.session.get("allowed_locations", [])
     if isinstance(session_locations, str):
@@ -125,39 +145,43 @@ def processing_dashboard(
         return query
 
     # =====================================================
-    # 2. PROCESSING CARDS (TODAY ONLY FOR KPIs)
+    # 2. PROCESSING CARDS (SELECTED DATE / RANGE)
     # =====================================================
-    def get_today_filtered_sum(model, column, date_col):
-        q = db.query(func.coalesce(func.sum(column), 0))
-        q = apply_dashboard_filters(q, model, date_col, use_today_only=True)
+    def get_period_filtered_sum(model, column, date_col):
+        # Dashboard KPIs represent active operational output. A cancelled row is
+        # removed from the total; it is not a new negative production movement.
+        q = db.query(active_sum(model, column))
+        q = apply_dashboard_filters(q, model, date_col)
         return q.scalar() or 0
 
-    # Gate Entry Count (Today Only)
-    gate_q = db.query(func.count(GateEntry.id))
-    gate_today = apply_dashboard_filters(gate_q, GateEntry, GateEntry.date, use_today_only=True).scalar() or 0
+    # Gate Entry Count (selected date/range)
+    gate_q = db.query(func.count(GateEntry.id)).filter(GateEntry.is_cancelled.is_not(True))
+    gate_today = apply_dashboard_filters(gate_q, GateEntry, GateEntry.date).scalar() or 0
 
-    # Metrics Cumulative Quantities (Today Only)
-    rmp_today = get_today_filtered_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty, RawMaterialPurchasing.date)
-    dh_today = get_today_filtered_sum(DeHeading, DeHeading.hoso_qty, DeHeading.date)
-    grading_today = get_today_filtered_sum(Grading, Grading.quantity, Grading.date)
-    peeling_today = get_today_filtered_sum(Peeling, Peeling.peeled_qty, Peeling.date)
+    # Metrics Cumulative Quantities (selected date/range)
+    rmp_q = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty))
+    rmp_q = apply_dashboard_filters(rmp_q, RawMaterialPurchasing, RawMaterialPurchasing.date)
+    rmp_today = rmp_q.scalar() or 0
+    dh_today = get_period_filtered_sum(DeHeading, DeHeading.hoso_qty, DeHeading.date)
+    grading_today = get_period_filtered_sum(Grading, Grading.quantity, Grading.date)
+    peeling_today = get_period_filtered_sum(Peeling, Peeling.peeled_qty, Peeling.date)
 
-    # Soaking Net Qty (In - Rejection - Today Only)
-    soak_base_q = db.query(func.coalesce(func.sum(Soaking.in_qty - Soaking.rejection_qty), 0))
-    soaking_today = apply_dashboard_filters(soak_base_q, Soaking, Soaking.date, use_today_only=True).scalar() or 0
+    # Soaking Net Qty (In - Rejection, selected date/range)
+    soak_base_q = db.query(active_sum(Soaking, Soaking.in_qty - Soaking.rejection_qty))
+    soaking_today = apply_dashboard_filters(soak_base_q, Soaking, Soaking.date).scalar() or 0
 
-    production_today = get_today_filtered_sum(Production, Production.production_qty, Production.date)
+    production_today = get_period_filtered_sum(Production, Production.production_qty, Production.date)
 
     # =====================================================
-    # 3. RM PURCHASING SUMMARY (🔥 FIXED: TODAY ONLY FOR SUMMARY TABLE)
+    # 3. RM PURCHASING SUMMARY (SELECTED DATE / RANGE)
     # =====================================================
     rm_summary_q = db.query(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.variety_name,
         RawMaterialPurchasing.count,
-        func.coalesce(func.sum(RawMaterialPurchasing.received_qty), 0).label("total_qty"),
+        active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("total_qty"),
     )
-    rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date, use_today_only=True)
+    rm_summary_q = apply_dashboard_filters(rm_summary_q, RawMaterialPurchasing, RawMaterialPurchasing.date)
     rm_summary_query = rm_summary_q.group_by(
         RawMaterialPurchasing.species,
         RawMaterialPurchasing.variety_name,
@@ -173,7 +197,7 @@ def processing_dashboard(
     # 4. HOURLY DATA FOR 3 CHARTS (Hour Date Wise)
     # =====================================================
     def get_hourly_stats(model, column, date_col):
-        data_q = db.query(extract("hour", model.time).label("hour"), func.sum(column).label("qty"))
+        data_q = db.query(extract("hour", model.time).label("hour"), active_sum(model, column).label("qty"))
         data_q = apply_dashboard_filters(data_q, model, date_col, use_today_only=False, is_hourly=True, target_date=hour_date)
         data = data_q.group_by("hour").all()
 
@@ -188,42 +212,71 @@ def processing_dashboard(
     # =====================================================
     # 5. ATTENDANCE LOGIC
     # =====================================================
-    att_rows_q = db.query(
-        DailyAttendance, EmployeeRegistration.department, EmployeeRegistration.designation
-    ).join(
-        EmployeeRegistration,
-        and_(
-            DailyAttendance.employee_id == EmployeeRegistration.employee_id,
-            DailyAttendance.company_id == EmployeeRegistration.company_id,
-        ),
+    # The staff summary is a comparison of the active employee master against
+    # attendance recorded for the selected date. A CLOSED attendance row means
+    # the employee completed the shift; it must still count as present.
+    employee_q = db.query(
+        EmployeeRegistration.employee_id,
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+    ).filter(
+        EmployeeRegistration.company_id == company_id,
+        active_employee_on(EmployeeRegistration, to_date),
     )
 
-    att_rows_q = att_rows_q.filter(
-        DailyAttendance.company_id == company_id,
-        or_(DailyAttendance.duty_date == to_date, DailyAttendance.status != "CLOSED"),
-    )
-
-    # 🟢 🔴 FIX: Apply Strict Location Isolation for Attendance
+    # Apply strict location isolation to both the employee population and the
+    # selected-date attendance rows so totals cannot leak across plants.
     g_loc_clean = global_location.strip().upper() if global_location else None
-    
+
     if g_loc_clean and g_loc_clean != "ALL":
-        att_rows_q = att_rows_q.filter(func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean)
+        employee_q = employee_q.filter(
+            func.upper(func.trim(EmployeeRegistration.production_at)) == g_loc_clean
+        )
     elif user_allowed_locations:
-        att_rows_q = att_rows_q.filter(func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations))
+        employee_q = employee_q.filter(
+            func.upper(func.trim(EmployeeRegistration.production_at)).in_(user_allowed_locations)
+        )
 
-    att_rows = att_rows_q.all()
+    employee_rows = employee_q.order_by(
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+        EmployeeRegistration.employee_id,
+    ).all()
+    employee_ids = [row.employee_id for row in employee_rows]
 
-    att_stats = {"total": len(att_rows), "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
+    att_rows_q = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.duty_date == to_date,
+        DailyAttendance.employee_id.in_(employee_ids),
+    )
+
+    if g_loc_clean and g_loc_clean != "ALL":
+        att_rows_q = att_rows_q.filter(
+            func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean
+        )
+    elif user_allowed_locations:
+        att_rows_q = att_rows_q.filter(
+            func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations)
+        )
+
+    # Keep one selected-date record per employee if legacy data contains
+    # duplicates. The latest punch record represents the current/final state.
+    attendance_by_employee = {}
+    for attendance in att_rows_q.order_by(DailyAttendance.first_in, DailyAttendance.id).all():
+        attendance_by_employee[attendance.employee_id] = attendance
+
+    att_stats = {"total": len(employee_ids), "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
     dept_map, desg_map = {}, {}
 
-    for da, dept, desg in att_rows:
-        if da.status == "OPEN":
+    for da in attendance_by_employee.values():
+        attendance_status = str(da.status or "").strip().upper()
+        if attendance_status == "OPEN":
             att_stats["inside"] += 1
-        elif da.status == "AWAY":
+        elif attendance_status == "AWAY":
             att_stats["away"] += 1
 
         wh = float(da.working_hours or 0)
-        if da.status == "CLOSED":
+        if attendance_status == "CLOSED":
             if wh >= 14:
                 att_stats["double"] += 1
             elif wh >= 6:
@@ -231,23 +284,28 @@ def processing_dashboard(
             elif wh >= 4:
                 att_stats["half"] += 1
 
-        d_name = dept or "GENERAL"
-        ds_name = desg or "STAFF"
-
+    present_employee_ids = set(attendance_by_employee)
+    for employee_id, department, designation in employee_rows:
+        d_name = str(department or "GENERAL").strip() or "GENERAL"
+        ds_name = str(designation or "STAFF").strip() or "STAFF"
+        attendance_key = "present" if employee_id in present_employee_ids else "absent"
         for m, key in [(dept_map, d_name), (desg_map, ds_name)]:
             if key not in m:
-                m[key] = {"active": 0, "closed": 0}
-            if da.status == "CLOSED":
-                m[key]["closed"] += 1
-            else:
-                m[key]["active"] += 1
+                m[key] = {"present": 0, "absent": 0}
+            m[key][attendance_key] += 1
 
     # =====================================================
-    # 6. FLOOR BALANCE TOTAL (LIVE SNAPSHOT)
+    # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
     # =====================================================
-    fb_q = db.query(func.coalesce(func.sum(FloorBalance.available_qty), 0)).filter(FloorBalance.available_qty > 0)
-    fb_q = apply_dashboard_filters(fb_q, FloorBalance, is_floor_balance=True)
-    floor_total = round(fb_q.scalar() or 0.0, 2)
+    floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
+        db,
+        company_id,
+        to_date,
+        production_for=global_production_for,
+        location=global_location,
+        allowed_locations=user_allowed_locations,
+    )
+    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_snapshot_rows), 2)
 
     # 7. RESPONSE PAYLOAD
     if request.query_params.get("format") == "json":
@@ -261,6 +319,8 @@ def processing_dashboard(
             "soaking_today": round(soaking_today, 2),
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
+            "floor_snapshot_date": str(floor_snapshot_date) if floor_snapshot_date else "",
+            "floor_snapshot_time": "09:00 IST",
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,
@@ -290,6 +350,8 @@ def processing_dashboard(
             "soaking_today": round(soaking_today, 2),
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
+            "floor_snapshot_date": floor_snapshot_date,
+            "floor_snapshot_time": "09:00 IST",
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,

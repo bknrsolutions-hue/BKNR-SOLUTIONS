@@ -31,10 +31,13 @@ TABLES = [
     "payment_receipts",
     "gst_register",
     "fixed_asset_masters",
+    "daily_attendance",
+    "employee_statutory_master",
     "export_incentive_register",
     "lc_tracking",
     "salary_processing",
-    "production_cost_allocations"
+    "production_cost_allocations",
+    "commercial_invoices"
 ]
 
 COLUMNS = [
@@ -49,11 +52,101 @@ TABLE_COLUMNS = {
     "gate_entry": [
         ("driver_name", "VARCHAR(255)"),
     ],
+    "customer_receivables": [
+        ("journal_id", "INTEGER"),
+    ],
+    "bank_transactions": [
+        ("journal_id", "INTEGER"),
+    ],
+    "expense_vouchers": [
+        ("journal_id", "INTEGER"),
+    ],
+    "diesel_logs": [
+        ("journal_id", "INTEGER"),
+    ],
+    "purchase_invoices": [
+        ("journal_id", "INTEGER"),
+    ],
+    "container_logs": [
+        ("journal_id", "INTEGER"),
+    ],
+    "qa_testing_logs": [
+        ("journal_id", "INTEGER"),
+        ("product_name", "VARCHAR(150)"),
+        ("parameters", "TEXT"),
+    ],
+    "other_expenses": [
+        ("journal_id", "INTEGER"),
+    ],
+    "commercial_invoices": [
+        ("journal_id", "INTEGER"),
+        ("customer_ledger_id", "INTEGER"),
+        ("sales_ledger_id", "INTEGER"),
+    ],
+    "sales_dispatch": [
+        ("journal_id", "INTEGER"),
+    ],
+    "de_heading": [
+        ("journal_id", "INTEGER"),
+    ],
+    "peeling": [
+        ("journal_id", "INTEGER"),
+    ],
+    "daily_attendance": [
+        ("journal_id", "INTEGER"),
+        ("approved_duty_credit", "DOUBLE PRECISION DEFAULT 0"),
+        ("salary_adjustment_reason", "TEXT"),
+    ],
+    "employee_statutory_master": [
+        ("eps_applicable", "BOOLEAN DEFAULT TRUE"),
+    ],
+    "salary_processing": [
+        ("salary_journal_id", "INTEGER"),
+        ("payment_journal_id", "INTEGER"),
+        ("payment_date", "DATE"),
+        ("utr_reference", "VARCHAR(50)"),
+        ("paid_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("epf_employer", "DOUBLE PRECISION DEFAULT 0"),
+        ("eps_employer", "DOUBLE PRECISION DEFAULT 0"),
+        ("edli_employer", "DOUBLE PRECISION DEFAULT 0"),
+    ],
+    "journal_entries": [
+        ("journal_id", "INTEGER"),
+    ],
+    "payment_receipts": [
+        ("journal_id", "INTEGER"),
+    ],
+    "general_stock": [
+        ("invoice_number", "VARCHAR(100)"),
+        ("unit_id", "INTEGER"),
+        ("production_at", "VARCHAR(255)"),
+        ("po_number", "VARCHAR(100)"),
+        ("vendor_id", "INTEGER"),
+        ("vendor_name", "VARCHAR(255)"),
+        ("hsn_code", "VARCHAR(50)"),
+        ("gst_percent", "DOUBLE PRECISION DEFAULT 0"),
+        ("tax_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("total_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("accounting_ledger_id", "INTEGER"),
+        ("rate", "DOUBLE PRECISION DEFAULT 0"),
+        ("amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("journal_id", "INTEGER"),
+    ],
 }
 
 def run_migration():
     print("Starting database schema migration...")
     
+    # Auto-create all metadata tables (e.g. system_settings, feature_flags, etc) if they do not exist
+    try:
+        import app.database.models.feature_flags
+        import app.database.models.system_settings
+        from app.database import Base
+        Base.metadata.create_all(bind=engine)
+        print("  ✔ Table creation check: completed successfully.")
+    except Exception as e:
+        print(f"  ❌ Error checking/creating tables: {e}")
+
     with engine.begin() as conn:
         for table in TABLES:
             print(f"Checking table: {table}")
@@ -90,7 +183,12 @@ def run_migration():
             ("is_active", "BOOLEAN DEFAULT TRUE"),
             ("data_management_access", "BOOLEAN DEFAULT FALSE"),
             ("ui_colors", "TEXT"),
-            ("current_session_id", "VARCHAR")
+            ("current_session_id", "VARCHAR"),
+            ("date_of_birth", "DATE"),
+            ("blood_group", "VARCHAR(10)"),
+            ("working_location", "VARCHAR(255)"),
+            ("unit", "VARCHAR(255)"),
+            ("address", "TEXT")
         ]
         
         for col_name, col_type in user_migrations:
@@ -103,7 +201,99 @@ def run_migration():
                     print(f"  ❌ Error adding column '{col_name}' to users table: {e}")
             else:
                 print(f"  ✔ Column '{col_name}' already exists in table 'users'.")
+
+        # Company tenant code and statutory MPEDA code are intentionally
+        # separate: company_code is the ERP tenant key, MPEDA is for reports.
+        print("Checking table: companies")
+        res = conn.execute(text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'companies';
+        """))
+        existing_company_columns = {row[0] for row in res.fetchall()}
+        if "mpeda_registration_code" not in existing_company_columns:
+            conn.execute(text(
+                "ALTER TABLE companies "
+                "ADD COLUMN mpeda_registration_code VARCHAR(80)"
+            ))
+            print("  ✔ Column 'mpeda_registration_code' added successfully to companies table.")
+        else:
+            print("  ✔ Column 'mpeda_registration_code' already exists in table 'companies'.")
+        if "logo_path" not in existing_company_columns:
+            conn.execute(text(
+                "ALTER TABLE companies ADD COLUMN logo_path VARCHAR(500)"
+            ))
+            print("  ✔ Column 'logo_path' added successfully to companies table.")
+        else:
+            print("  ✔ Column 'logo_path' already exists in table 'companies'.")
+        conn.execute(text(
+            "CREATE UNIQUE INDEX IF NOT EXISTS "
+            "ix_companies_mpeda_registration_code "
+            "ON companies (mpeda_registration_code) "
+            "WHERE mpeda_registration_code IS NOT NULL"
+        ))
+
+        permission_aliases = {
+            "bank_transactions": "bank_transaction",
+            "customer_receivables": "customer_receivable",
+            "expense_vouchers": "expense_voucher",
+            "journal_entries": "journal_entry",
+            "payment_receipts": "payment_receipt",
+            "vendor_payments": "vendor_payment",
+            "export_shipments": "export_shipment",
+            "container_logs": "logistics_bills",
+        }
+        for old_key, new_key in permission_aliases.items():
+            conn.execute(
+                text(
+                    "UPDATE users SET permissions = regexp_replace("
+                    "permissions, '(^|,)' || :old_key || '(,|$)', "
+                    "'\\1' || :new_key || '\\2', 'g') "
+                    "WHERE permissions ~ ('(^|,)' || :old_key || '(,|$)')"
+                ),
+                {"old_key": old_key, "new_key": new_key},
+            )
+        conn.execute(text(
+            "UPDATE user_login_activities AS activity "
+            "SET company_id = company.company_code "
+            "FROM companies AS company "
+            "WHERE activity.company_id = CAST(company.id AS VARCHAR)"
+        ))
+        print("  ✔ Account permission keys and activity tenant references normalized.")
                     
+    # -----------------------------------------------------
+    # Create required indexes on critical lookup columns
+    # -----------------------------------------------------
+    print("Checking and creating required indexes...")
+    indexes_to_create = [
+        # stock_entry indexes
+        ("idx_stock_entry_batch_number", "stock_entry", "batch_number"),
+        ("idx_stock_entry_location", "stock_entry", "location"),
+        ("idx_stock_entry_production_for", "stock_entry", "production_for"),
+        ("idx_stock_entry_production_at", "stock_entry", "production_at"),
+        # processing tables indexes
+        ("idx_gate_entry_batch_number", "gate_entry", "batch_number"),
+        ("idx_raw_material_purchasing_batch_number", "raw_material_purchasing", "batch_number"),
+        ("idx_de_heading_batch_number", "de_heading", "batch_number"),
+        ("idx_grading_batch_number", "grading", "batch_number"),
+        ("idx_peeling_batch_number", "peeling", "batch_number"),
+        ("idx_soaking_batch_number", "soaking", "batch_number"),
+        ("idx_production_batch_number", "production", "batch_number")
+    ]
+    for idx_name, tbl_name, col_name in indexes_to_create:
+        try:
+            # Index verification must never hold the whole ERP startup hostage.
+            # A busy production table can otherwise keep /auth/session-info and
+            # the React menu unavailable until PostgreSQL releases its lock.
+            with engine.begin() as conn:
+                if engine.dialect.name == "postgresql":
+                    conn.execute(text("SET LOCAL lock_timeout = '3s'"))
+                print(f"Creating index {idx_name} on {tbl_name}({col_name}) if not exists...")
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {tbl_name}({col_name});"))
+                print(f"  ✔ Index {idx_name} checked/created.")
+        except Exception as e:
+            print(f"  ⚠ Index {idx_name} skipped during startup: {e}")
+
     print("Migration completed successfully!")
 
 if __name__ == "__main__":

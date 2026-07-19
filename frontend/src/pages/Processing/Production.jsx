@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Settings, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, 
+  Settings, Plus, Ban, Calendar, Clock, Mail, RefreshCw, 
   ChevronDown, ChevronRight, Check, X, FileText, AlertTriangle, 
   Info, BarChart2, Eye, EyeOff 
 } from 'lucide-react';
@@ -371,24 +371,36 @@ export default function Production() {
   };
 
   const handleDeleteLog = async (id) => {
-    if (window.confirm('Delete Log? Confirm deletion permanently.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/production/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          setSelectedLogId(null);
-          fetchBackendData();
-        } else {
-          alert('Failed to delete log entry.');
-        }
-      } catch (err) {
-        console.error(err);
-        alert('Connection error deleting record.');
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this production entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/production/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Production Entry Cancelled Successfully');
+        setSelectedLogId(null);
+        fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      console.error(err);
+      alert('Connection error cancelling record.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -560,9 +572,9 @@ export default function Production() {
   const reqGroups = getGroupedRequirements();
 
   // Aggregate stats
-  const activeSoakingQty = soakingData.filter(s => s.status !== 'Completed').reduce((sum, item) => sum + (parseFloat(item.in_qty) || 0), 0);
-  const rejectionQtySum = rejectionData.reduce((sum, item) => sum + (parseFloat(item.rejection_qty) || 0), 0);
-  const productionTodayQty = todayEntries.reduce((sum, item) => sum + (parseFloat(item.production_qty) || 0), 0);
+  const activeSoakingQty = soakingData.filter(s => s.status !== 'Completed' && !s.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.in_qty) || 0), 0);
+  const rejectionQtySum = rejectionData.filter(r => !r.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.rejection_qty) || 0), 0);
+  const productionTodayQty = todayEntries.filter(t => !t.is_cancelled).reduce((sum, item) => sum + (parseFloat(item.production_qty) || 0), 0);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: '16px', padding: '16px 16px 80px 16px' }}>
@@ -594,15 +606,15 @@ export default function Production() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', flexShrink: 0 }}>
         <div className="card" style={{ padding: '14px', borderLeft: '4px solid var(--corp-dash)' }}>
           <div style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Active Soaking Pool</div>
-          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{activeSoakingQty.toFixed(2)} Kg</div>
+          <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{activeSoakingQty.toFixed(2)} Kg</div>
         </div>
         <div className="card" style={{ padding: '14px', borderLeft: '4px solid var(--text-secondary)' }}>
           <div style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Rejection Balance</div>
-          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{rejectionQtySum.toFixed(2)} Kg</div>
+          <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{rejectionQtySum.toFixed(2)} Kg</div>
         </div>
         <div className="card" style={{ padding: '14px', borderLeft: '4px solid var(--corp-fin)' }}>
           <div style={{ fontSize: '9px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Today's Production Output</div>
-          <div style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{productionTodayQty.toFixed(2)} Kg</div>
+          <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', marginTop: '4px' }}>{productionTodayQty.toFixed(2)} Kg</div>
         </div>
       </div>
 
@@ -860,7 +872,7 @@ export default function Production() {
       {/* Yield Requirements */}
       <div className="card" style={{ padding: '0', overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-rep)' }}>Dynamic Yield Production Requirements</span>
+          <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-rep)' }}>Production Requirements</span>
           <span className="badge badge-success">{pendingOrders.length} Order Rows</span>
         </div>
         <div className="table-responsive">
@@ -909,6 +921,21 @@ export default function Production() {
                   const first = items[0];
                   const collapsed = collapsedReqPOs[poNo];
                   const totalPendingMC = items.reduce((acc, row) => acc + (parseFloat(row.no_of_mc) - (parseFloat(row.stock_mc) || 0)), 0);
+                  const sumRequirement = field => items.reduce((sum, row) => sum + (parseFloat(row[field]) || 0), 0);
+                  const poTotals = {
+                    pieces: sumRequirement('no_of_pieces'),
+                    orderedMc: sumRequirement('no_of_mc'),
+                    stockMc: sumRequirement('stock_mc'),
+                    netCount: sumRequirement('net_count_calc'),
+                    hlCount: sumRequirement('hl_count_calc'),
+                    hosoCount: sumRequirement('hoso_count_calc'),
+                    orderedQty: sumRequirement('ordered_qty'),
+                    availableStock: sumRequirement('available_stock'),
+                    utilized: sumRequirement('existed_stock_util'),
+                    pendingProduction: sumRequirement('pending_production'),
+                    reqHlso: sumRequirement('req_hlso_qty'),
+                    reqHoso: sumRequirement('req_hoso_qty'),
+                  };
 
                   return (
                     <React.Fragment key={poNo}>
@@ -927,7 +954,8 @@ export default function Production() {
                         </td>
                         <td colSpan="10"></td>
                       </tr>
-                      {!collapsed && items.map(row => {
+                      {!collapsed && <>
+                        {items.map(row => {
                         const pendingMC = (parseFloat(row.no_of_mc) || 0) - (parseFloat(row.stock_mc) || 0);
                         return (
                           <tr key={row.id}>
@@ -974,7 +1002,25 @@ export default function Production() {
                             <td className="text-right" style={{ color: '#f59e0b', fontWeight: '800' }}>{row.req_hoso_qty}</td>
                           </tr>
                         );
-                      })}
+                        })}
+                        <tr style={{ background: 'var(--row-hover)', borderTop: '2px solid var(--border-light)', fontWeight: '900' }}>
+                          <td colSpan="13" className="text-right" style={{ color: 'var(--corp-dash)', textTransform: 'uppercase' }}>PO {poNo} Subtotal</td>
+                          <td className="text-right">{poTotals.pieces.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.orderedMc.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.stockMc.toFixed(2)}</td>
+                          <td className="text-right">{totalPendingMC.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.netCount.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.hlCount.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.hosoCount.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.orderedQty.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.availableStock.toFixed(2)}</td>
+                          <td className="text-right">{poTotals.utilized.toFixed(2)}</td>
+                          <td></td>
+                          <td className="text-right">{poTotals.pendingProduction.toFixed(2)}</td>
+                          <td className="text-right" style={{ color: '#f59e0b' }}>{poTotals.reqHlso.toFixed(2)}</td>
+                          <td className="text-right" style={{ color: '#f59e0b' }}>{poTotals.reqHoso.toFixed(2)}</td>
+                        </tr>
+                      </>}
                     </React.Fragment>
                   );
                 })
@@ -1021,8 +1067,21 @@ export default function Production() {
                 todayEntries.filter(row => matchesFilters(row, 'logs')).map(row => (
                   <tr 
                     key={row.id}
-                    onClick={() => setSelectedLogId(row.id === selectedLogId ? null : row.id)}
-                    style={{ background: selectedLogId === row.id ? 'var(--row-selected)' : 'transparent', cursor: 'pointer' }}
+                    className={row.is_cancelled ? 'cancelled-row' : ''}
+                    onClick={() => {
+                      if (row.is_cancelled) {
+                        setSelectedLogId(null);
+                      } else {
+                        setSelectedLogId(row.id === selectedLogId ? null : row.id);
+                      }
+                    }}
+                    style={{ 
+                      background: selectedLogId === row.id ? 'var(--row-selected)' : 'transparent', 
+                      cursor: 'pointer',
+                      opacity: row.is_cancelled ? 0.55 : 1,
+                      textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                      color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                    }}
                   >
                     <td className="text-center">{row.id}</td>
                     <td className="text-left">{row.production_for}</td>
@@ -1036,19 +1095,22 @@ export default function Production() {
                     <td className="text-left">{row.freezer}</td>
                     <td className="text-center">{row.grade}</td>
                     <td className="text-left">{row.packing_style}</td>
-                    <td className="text-right">{row.no_of_mc}</td>
-                    <td className="text-right">{row.loose}</td>
-                    <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{parseFloat(row.production_qty).toFixed(2)}</td>
+                    <td className="text-right">{row.is_cancelled ? 0 : row.no_of_mc}</td>
+                    <td className="text-right">{row.is_cancelled ? 0 : row.loose}</td>
+                    <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : parseFloat(row.production_qty)).toFixed(2)}</td>
                     <td className="text-center">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteLog(row.id);
-                        }} 
-                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {!row.is_cancelled && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteLog(row.id);
+                          }} 
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                          title="Cancel entry"
+                        >
+                          <Ban size={13} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))
@@ -1270,7 +1332,7 @@ export default function Production() {
                   className="btn btn-primary"
                   style={{ flex: 2 }}
                 >
-                  Save Production Entry
+                  Save
                 </button>
               </div>
             </form>

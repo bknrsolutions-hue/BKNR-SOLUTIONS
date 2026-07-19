@@ -174,8 +174,8 @@ th{
   page-break-after:always;
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -204,6 +204,7 @@ th{
     <p><b>Company:</b> {{ company_name }}</p>
     <p><b>Address:</b> {{ company_address }}</p>
     <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>MPEDA Registration Code:</b> {{ mpeda_registration_code or 'NOT REGISTERED' }}</p>
     <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
   </div>
 </div>
@@ -374,6 +375,6 @@ th{
 window.onload = () => window.print();
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

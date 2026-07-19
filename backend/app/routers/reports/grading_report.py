@@ -17,7 +17,9 @@ from io import BytesIO
 import json
 import datetime as dt
 from datetime import datetime
+from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill
@@ -54,7 +56,7 @@ def allow_grading(request: Request):
 @router.get("", response_class=HTMLResponse)
 def grading_report(
     request: Request,
-    fy: str = Query(None), # Financial Year Filter (Default None, no auto-selection)
+    fy: str = Query(None), # Financial Year Filter
     db: Session = Depends(get_db),
     _ = Depends(allow_grading)
 ):
@@ -62,11 +64,13 @@ def grading_report(
     company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/auth/login", status_code=303)
+    is_json = request.query_params.get("format") == "json"
+    if fy is None:
+        fy = "" if is_json else str(get_fin_year(ist_now().date()))
 
     # 1. Base Queries setup for unique filter generation (Universal Filter Core Applied)
     grading_base_query = db.query(Grading).filter(
-        Grading.company_id == company_id,
-        Grading.is_cancelled != True
+        Grading.company_id == company_id
     )
     
     if production_for:
@@ -79,34 +83,33 @@ def grading_report(
     detailed_rows = [] 
     selected_year = None
 
-    # CRITICAL CHANGE: Only process and fetch data if 'fy' parameter is explicitly provided
+    deheading_base_query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id
+    )
+
+    if production_for:
+        deheading_base_query = deheading_base_query.filter(DeHeading.production_for == production_for)
+
+    if location:
+        deheading_base_query = deheading_base_query.filter(DeHeading.peeling_at == location)
+
+    # 2. Date Boundaries based on Selected Financial Year (April 1st to March 31st)
     if fy:
-        deheading_base_query = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id,
-            DeHeading.is_cancelled != True
-        )
-
-        if production_for:
-            deheading_base_query = deheading_base_query.filter(DeHeading.production_for == production_for)
-
-        if location:
-            deheading_base_query = deheading_base_query.filter(DeHeading.peeling_at == location)
-
-        # 2. Date Boundaries based on Selected Financial Year (April 1st to March 31st)
         selected_year = int(fy)
         start_date = dt.date(selected_year, 4, 1)
         end_date = dt.date(selected_year + 1, 3, 31)
-
-        # Apply date filters to target execution data
         grading_rows = grading_base_query.filter(Grading.date >= start_date, Grading.date <= end_date).all()
         deheading_rows = deheading_base_query.filter(DeHeading.date >= start_date, DeHeading.date <= end_date).all()
+    else:
+        grading_rows = grading_base_query.all()
+        deheading_rows = deheading_base_query.all()
 
-        # 🟢 Extracting detailed rows for JS to use in Card View Edits
-        for raw_row in grading_rows:
-            d = {k: getattr(raw_row, k) for k in raw_row.__dict__ if not k.startswith('_')}
-            if 'date' in d and d['date']: d['date'] = str(d['date'])
-            if 'time' in d and d['time']: d['time'] = str(d['time'])
-            detailed_rows.append(d)
+    # 🟢 Extracting detailed rows for JS to use in Card View Edits
+    for raw_row in grading_rows:
+        d = {k: getattr(raw_row, k) for k in raw_row.__dict__ if not k.startswith('_')}
+        if 'date' in d and d['date']: d['date'] = str(d['date'])
+        if 'time' in d and d['time']: d['time'] = str(d['time'])
+        detailed_rows.append(d)
 
         # 3. Yield Map Preparation
         yield_map = {
@@ -119,7 +122,7 @@ def grading_report(
         # 4. De-Heading Data Mapping (Actual HOSO Source) filtered by FY
         deheading_hoso_map = defaultdict(float)
         for r in deheading_rows:
-            deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += float(r.hoso_qty or 0)
+            deheading_hoso_map[(r.batch_number, r.species, str(r.hoso_count))] += signed_number(r, r.hoso_qty)
 
         # 5. Grading Raw Data Grouping
         grouped = defaultdict(list)
@@ -131,8 +134,8 @@ def grading_report(
 
         # 6. Summary Calculation Logic
         for (batch, species, hoso_count, variety), items in grouped.items():
-            graded_qty_sum = sum(float(i.quantity or 0) for i in items)
-            base = sum(float(i.graded_count or 0) * float(i.quantity or 0) for i in items)
+            graded_qty_sum = sum(signed_number(i, i.quantity) for i in items)
+            base = sum(float(i.graded_count or 0) * signed_number(i, i.quantity) for i in items)
             
             yield_factor = yield_map.get((species, hoso_count), 0)
 
@@ -202,24 +205,42 @@ def grading_report(
     unique_fy_years = sorted(list({str(get_fin_year(r.date)) for r in all_grading_records if r.date}), reverse=True)
 
     from app.utils.report_permissions import check_report_permission
+    context = {
+        "rows": rows,
+        "detailed_rows": detailed_rows,
+        "selected_fy": fy,
+        "fy_years": unique_fy_years,
+        "batches": get_unique_options("batch_number"),
+        "species_list": get_unique_options("species"),
+        "varieties": get_unique_options("variety_name"),
+        "counts": get_unique_options("hoso_count"),
+        "datetime": datetime,
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+    }
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/grading_report.html",
-        context={
-            "rows": rows,
-            "detailed_rows": detailed_rows, 
-            "selected_fy": fy,
-            "fy_years": unique_fy_years,
-            "batches": get_unique_options("batch_number"),
-            "species_list": get_unique_options("species"),
-            "varieties": get_unique_options("variety_name"),
-            "counts": get_unique_options("hoso_count"),
-            "datetime": datetime,
-            "can_edit": check_report_permission(request, "report_edit"),
-            "can_delete": check_report_permission(request, "report_delete"),
-            "can_print": check_report_permission(request, "report_print"),
-            "can_export": check_report_permission(request, "report_export"),
-        }
+        context=context
     )
 
 # ============================================================
@@ -240,16 +261,14 @@ def grading_details(
 
     if source == "all":
         data = db.query(Grading).filter(
-            Grading.company_id == company_id,
-            Grading.is_cancelled != True
+            Grading.company_id == company_id
         ).order_by(desc(Grading.date), desc(Grading.time)).all()
     elif source == "hoso":
         data = db.query(DeHeading).filter(
             DeHeading.company_id == company_id, 
             DeHeading.batch_number == batch,
             DeHeading.species == species, 
-            DeHeading.hoso_count == hoso_count,
-            DeHeading.is_cancelled != True
+            DeHeading.hoso_count == hoso_count
         ).all()
     else:
         data = db.query(Grading).filter(
@@ -257,8 +276,7 @@ def grading_details(
             Grading.batch_number == batch,
             Grading.species == species, 
             Grading.hoso_count == hoso_count, 
-            Grading.variety_name == variety,
-            Grading.is_cancelled != True
+            Grading.variety_name == variety
         ).all()
 
     result = []
@@ -348,10 +366,11 @@ def get_grading_audits(request: Request, db: Session = Depends(get_db)):
         .order_by(desc(AuditLog.edited_at)).limit(100).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -360,7 +379,15 @@ def get_grading_audits(request: Request, db: Session = Depends(get_db)):
 # EXPORT EXCEL (WITH UNIVERSAL FILTERS LAYER)
 # ============================================================
 @router.get("/export_excel")
-def export_excel(request: Request, db: Session = Depends(get_db)):
+def export_excel(
+    request: Request,
+    fy: str | None = Query(None),
+    batch: str | None = Query(None),
+    species: str | None = Query(None),
+    variety: str | None = Query(None),
+    hoso_count: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
@@ -369,8 +396,7 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     production_for, location = get_global_filters(request)
 
     query = db.query(Grading).filter(
-        Grading.company_id == company_id,
-        Grading.is_cancelled != True
+        Grading.company_id == company_id
     )
 
     if production_for:
@@ -379,7 +405,22 @@ def export_excel(request: Request, db: Session = Depends(get_db)):
     if location:
         query = query.filter(Grading.peeling_at == location)
 
-    rows = query.all()
+    if fy:
+        start_year = int(fy)
+        query = query.filter(
+            Grading.date >= dt.date(start_year, 4, 1),
+            Grading.date <= dt.date(start_year + 1, 3, 31),
+        )
+    if batch:
+        query = query.filter(Grading.batch_number == batch)
+    if species:
+        query = query.filter(Grading.species == species)
+    if variety:
+        query = query.filter(Grading.variety_name == variety)
+    if hoso_count:
+        query = query.filter(Grading.hoso_count == hoso_count)
+
+    rows = query.order_by(Grading.date.desc(), Grading.id.desc()).all()
 
     wb = Workbook()
     ws = wb.active

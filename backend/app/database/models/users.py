@@ -1,5 +1,5 @@
-from sqlalchemy.orm import relationship
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, DateTime, Text
+from sqlalchemy.orm import relationship, deferred
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Date, DateTime, Text
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from app.database import Base
@@ -21,6 +21,11 @@ class Company(Base):
 
     # Example: BKNR9837
     company_code = Column(String, unique=True, nullable=False)
+    # External seafood-export registration shown on reports and documents.
+    # Tenant isolation continues to use company_code.
+    mpeda_registration_code = deferred(
+        Column(String(80), unique=True, nullable=True, index=True)
+    )
 
     # 🔥 NEW FIELDS (SAFE ADD - NO BREAK)
     company_type = Column(String, default="main")  # main / merchant
@@ -28,6 +33,7 @@ class Company(Base):
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=ist_now_naive)
+    logo_path = deferred(Column(String(500), nullable=True))
 
     # relationships
     users = relationship("User", back_populates="company")
@@ -58,6 +64,11 @@ class User(Base):
     permissions = Column(String, nullable=True)
     working_for = Column(String(255), index=True)
     working_at = Column(String(255), index=True)
+    date_of_birth = deferred(Column(Date, nullable=True))
+    blood_group = deferred(Column(String(10), nullable=True))
+    working_location = deferred(Column(String(255), nullable=True))
+    unit = deferred(Column(String(255), nullable=True))
+    address = deferred(Column(Text, nullable=True))
 
     is_verified = Column(Boolean, default=False)
     is_active = Column(Boolean, default=True, server_default="true")
@@ -95,7 +106,8 @@ class UserLoginActivity(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    # Existing activity data and reporting use the tenant company code.
+    company_id = Column(String, nullable=False)
     
     login_at = Column(DateTime, default=ist_now_naive)
     logout_at = Column(DateTime, nullable=True)

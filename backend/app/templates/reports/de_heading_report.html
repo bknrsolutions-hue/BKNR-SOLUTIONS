@@ -149,6 +149,8 @@ tbody td{
 
 tbody tr:hover{background:#2563eb1a; cursor:pointer;}
 tr.selected{background:#2563eb33 !important;}
+.cancelled-row { background:#fff1f2 !important; opacity:.78; }
+.cancelled-row td { color:var(--danger) !important; text-decoration:line-through; }
 
 .empty-state { padding: 40px 10px; text-align: center; color: var(--text-muted); background: var(--panel-bg); }
 .empty-state i { font-size: 30px; margin-bottom: 10px; color: var(--accent-glow); opacity: 0.7; }
@@ -224,8 +226,8 @@ tfoot td{ background:var(--table-header-bg); font-weight:800; font-size:9px; bor
 }
 .print-header-block { display: none; }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+    <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 <body>
 
@@ -369,7 +371,7 @@ tfoot td{ background:var(--table-header-bg); font-weight:800; font-size:9px; bor
                 </tr>
                 {% else %}
                     {% for r in rows %}
-                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" onclick="selectRow(this)">
+                    <tr data-id="{{ r.id }}" data-date="{{ r.date }}" data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" onclick="selectRow(this)">
                         <td class="slno">{{ (rows|length) - loop.index0 }}</td>
                         <td>{{ r.date.strftime('%d-%m-%y') }}</td>
                         <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
@@ -437,9 +439,8 @@ const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
 const baseUrl = window.location.pathname.replace(/\/$/, "");
 
 function changeFY(val) {
-    if(!val) return;
     const url = new URL(window.location.href);
-    url.searchParams.set('fy', val);
+    url.searchParams.set('fy', val || '');
     window.location.href = url.toString();
 }
 
@@ -483,13 +484,14 @@ function applyFilters() {
 
         if(ok) {
             r.style.display = ""; vCount++;
-            hoT += parseFloat(r.querySelector(".hoso").innerText) || 0;
-            hlT += parseFloat(r.querySelector(".hlso").innerText) || 0;
-            aT += parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0;
+            const sign = r.dataset.cancelled === "true" ? -1 : 1;
+            hoT += sign * (parseFloat(r.querySelector(".hoso").innerText) || 0);
+            hlT += sign * (parseFloat(r.querySelector(".hlso").innerText) || 0);
+            aT += sign * (parseFloat(r.querySelector(".amt-cell").getAttribute('data-val')) || 0);
             
             const dp = parseFloat(r.querySelector(".diff-pct-cell").innerText) || 0;
             const dkVal = parseFloat(r.querySelector(".diff-kg-cell").innerText) || 0;
-            dP += dp; dK += dkVal;
+            dP += sign * dp; dK += sign * dkVal;
 
             r.querySelector(".diff-pct-cell").style.color = dp >= 0 ? "var(--success)" : "var(--danger)";
             r.querySelector(".diff-kg-cell").style.color = dkVal >= 0 ? "var(--success)" : "var(--danger)";
@@ -737,6 +739,6 @@ window.onload = function() {
     applyFilters();
 };
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

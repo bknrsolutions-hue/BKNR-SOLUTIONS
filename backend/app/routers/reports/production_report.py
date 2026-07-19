@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import desc, extract, func
 from datetime import datetime, date
+import datetime as dt
 from app.utils.timezone import ist_now
 
 from io import BytesIO
@@ -15,6 +16,7 @@ from openpyxl import Workbook
 from openpyxl.styles import Font
 from app.services.pdf_renderer import render_pdf_from_html
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number, signed_sum
 
 from app.database import get_db
 from app.database.models.processing import Production, AuditLog, Soaking
@@ -39,6 +41,11 @@ def get_company_info(db: Session, comp_code: str):
     return (c.company_name or "", c.address or "") if c else ("", "")
 
 
+def get_company_mpeda_code(db: Session, comp_code: str):
+    c = db.query(Company).filter(Company.company_code == comp_code).first()
+    return c.mpeda_registration_code if c and c.mpeda_registration_code else ""
+
+
 def row_to_dict(row):
     return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
 
@@ -61,25 +68,29 @@ def production_report_page(
 
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+    is_json = request.query_params.get("format") == "json"
+    if fy is None:
+        today = ist_now().date()
+        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
 
     comp_code = str(comp_code)
-    cache_key = (
-        f"bknr:processing_reports:{comp_code}:production_report:"
-        f"{fy or 'NONE'}:{from_date or 'NONE'}:{to_date or 'NONE'}:"
-        f"{selected_production_for or 'ALL'}:{selected_location or 'ALL'}"
-    )
-    cached_context = cache_get(cache_key)
-    if cached_context is not None:
-        return templates.TemplateResponse(
-            request=request,
-            name="reports/production_report.html",
-            context=cached_context,
+    if not is_json:
+        cache_key = (
+            f"bknr:processing_reports:{comp_code}:production_report:"
+            f"{fy or 'NONE'}:{from_date or 'NONE'}:{to_date or 'NONE'}:"
+            f"{selected_production_for or 'ALL'}:{selected_location or 'ALL'}"
         )
+        cached_context = cache_get(cache_key)
+        if cached_context is not None:
+            return templates.TemplateResponse(
+                request=request,
+                name="reports/production_report.html",
+                context=cached_context,
+            )
     
     # Base Query
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     # 🟢 FIX 1: Syntax Bracket Alignment Resolved for Base Query Filter Pipeline
@@ -89,7 +100,9 @@ def production_report_page(
     if selected_location:
         q = q.filter(Production.production_at == selected_location)
 
-    if fy:
+    if fy == "" and not is_json:
+        q = q.filter(Production.id == -1)
+    elif fy:
         start_year = int(fy)
         end_year = start_year + 1
         q = q.filter(
@@ -128,11 +141,10 @@ def production_report_page(
             ).first()
             target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
 
-            soaking_in = db.query(func.sum(Soaking.in_qty)).filter(
+            soaking_in = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
                 Soaking.company_id == comp_code,
                 Soaking.batch_number == r.batch_number,
-                Soaking.variety_name == r.variety_name,
-                Soaking.is_cancelled != True
+                Soaking.variety_name == r.variety_name
             ).scalar() or 0.0
 
             summary_subtotals[key] = {
@@ -142,9 +154,9 @@ def production_report_page(
                 "actual_yield": 0.0, "diff_yield_perc": 0.0, "diff_qty": 0.0
             }
         
-        summary_subtotals[key]["mc"] += float(r.no_of_mc or 0)
-        summary_subtotals[key]["loose"] += float(r.loose or 0)
-        summary_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+        summary_subtotals[key]["mc"] += signed_number(r, r.no_of_mc)
+        summary_subtotals[key]["loose"] += signed_number(r, r.loose)
+        summary_subtotals[key]["prod_qty"] += signed_number(r, r.production_qty)
 
     for key, s in summary_subtotals.items():
         if s["soaking_in"] > 0:
@@ -164,9 +176,9 @@ def production_report_page(
         if key not in detail_subtotals:
             detail_subtotals[key] = {"mc": 0, "loose": 0, "prod_qty": 0.0}
         
-        detail_subtotals[key]["mc"] += float(r.no_of_mc or 0)
-        detail_subtotals[key]["loose"] += float(r.loose or 0)
-        detail_subtotals[key]["prod_qty"] += float(r.production_qty or 0)
+        detail_subtotals[key]["mc"] += signed_number(r, r.no_of_mc)
+        detail_subtotals[key]["loose"] += signed_number(r, r.loose)
+        detail_subtotals[key]["prod_qty"] += signed_number(r, r.production_qty)
 
 
     def get_list(model, attr):
@@ -201,6 +213,66 @@ def production_report_page(
             "can_print": check_report_permission(request, "report_print"),
             "can_export": check_report_permission(request, "report_export"),
         }
+    if is_json:
+        # Generate financial years from database for dropdown
+        all_dates = db.query(Production.date).filter(Production.company_id == comp_code, Production.date != None).all()
+        fy_set = set()
+        for d_tuple in all_dates:
+            d = d_tuple[0]
+            fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+        financial_years = sorted(list(fy_set), reverse=True)
+
+        context_json = {**context}
+        context_json["financial_years"] = financial_years
+        
+        # Serialize list of rows to dictionary
+        context_json["summary_rows"] = []
+        for r in summary_rows:
+            d = row_to_dict(r)
+            if isinstance(d.get("date"), (date, datetime)):
+                d["date"] = d["date"].isoformat()
+            if isinstance(d.get("time"), (dt.time, datetime)):
+                d["time"] = d["time"].strftime("%H:%M")
+            context_json["summary_rows"].append(d)
+
+        context_json["detail_rows"] = []
+        for r in detail_rows:
+            d = row_to_dict(r)
+            if isinstance(d.get("date"), (date, datetime)):
+                d["date"] = d["date"].isoformat()
+            if isinstance(d.get("time"), (dt.time, datetime)):
+                d["time"] = d["time"].strftime("%H:%M")
+            context_json["detail_rows"].append(d)
+
+        # Convert dictionary keys of summary_subtotals to strings
+        subtotals_json = {}
+        for key, val in summary_subtotals.items():
+            str_key = "__".join(str(k or "") for k in key)
+            subtotals_json[str_key] = val
+        context_json["summary_subtotals"] = subtotals_json
+
+        # Convert detail_subtotals keys
+        detail_subtotals_json = {}
+        for key, val in detail_subtotals.items():
+            str_key = str(key.isoformat() if isinstance(key, (date, datetime)) else key)
+            detail_subtotals_json[str_key] = val
+        context_json["detail_subtotals"] = detail_subtotals_json
+
+        from fastapi.responses import JSONResponse
+        context_json.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context_json))
+
     cache_context = dict(context)
     cache_context["summary_rows"] = [row_to_dict(r) for r in summary_rows]
     cache_context["detail_rows"] = [row_to_dict(r) for r in detail_rows]
@@ -328,10 +400,11 @@ async def get_all_production_audit(request: Request, db: Session = Depends(get_d
         .order_by(AuditLog.edited_at.desc()).limit(100).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -349,8 +422,7 @@ def export_production_xlsx(request: Request, db: Session = Depends(get_db), ids:
     selected_production_for, selected_location = get_global_filters(request)
     
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     if selected_production_for:
@@ -405,8 +477,7 @@ def export_production_pdf(
     selected_production_for, selected_location = get_global_filters(request)
     
     q = db.query(Production).filter(
-        Production.company_id == comp_code,
-        Production.is_cancelled != True
+        Production.company_id == comp_code
     )
     
     if selected_production_for:
@@ -427,6 +498,7 @@ def export_production_pdf(
         "rows": rows,
         "company_name": company_name,
         "company_address": company_address,
+        "mpeda_registration_code": get_company_mpeda_code(db, comp_code),
         "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
     

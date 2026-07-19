@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Vendor Bill Print</title>
+<style>
+@page{size:A4 portrait;margin:15mm}
+body{font-family:Arial,sans-serif;font-size:13px;color:#222;margin:0}
+.title{text-align:center;font-size:20px;font-weight:bold;margin-bottom:18px;color:#003366;text-transform:uppercase}
+.header{display:flex;justify-content:space-between;gap:10px;margin-bottom:12px}
+.card{width:49%;padding:10px;border:1px solid #d0d7e2;border-radius:6px}
+h3{margin:0 0 6px;font-size:14px;border-bottom:1px solid #ccc;color:#003366}
+.info-box{margin-top:18px;padding:8px;background:#eef4ff;border-left:4px solid #003366;border-radius:4px}
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.info-cell{font-size:12px;margin:0;background:#fff;border:1px solid #c7d4ea;border-radius:4px;padding:6px;color:#003366}
+table{width:100%;border-collapse:collapse;margin-top:8px}
+th,td{border:1px solid #999;padding:6px;font-size:12px;text-align:center}
+th{background:#003366;color:#fff;font-size:11px}
+.payment-row td{background:#f7fbff;color:#003366}
+.grand-total{margin-top:25px;padding:12px;background:#003366;color:white;font-size:14px;font-weight:bold;border-radius:6px}
+.terms{margin-top:20px;font-size:12px}
+.signatures{display:flex;justify-content:space-between;margin-top:30px}
+.sign-box{width:30%;text-align:center}.line{border-bottom:1px solid #000;margin-bottom:5px}
+</style>
+</head>
+<body>
+<div class="title">VENDOR BILL PAYMENT SUMMARY</div>
+
+<div class="header">
+  <div class="card">
+    <h3>Vendor Details</h3>
+    <p><b>Name:</b> {{ bill.vendor_name }}</p>
+    <p><b>Type:</b> {{ bill.vendor_type }}</p>
+    <p><b>GST No:</b> {{ bill.gst_no or "-" }}</p>
+    <p><b>Status:</b> {{ bill.status or "-" }}</p>
+  </div>
+  <div class="card">
+    <h3>Company Details</h3>
+    <p><b>Company:</b> {{ company_name }}</p>
+    <p><b>Address:</b> {{ company_address }}</p>
+    <p><b>Email:</b> {{ company_email }}</p>
+    <p><b>MPEDA Registration Code:</b> {{ mpeda_registration_code or 'NOT REGISTERED' }}</p>
+    <p><b>Printed On:</b> {{ printed_on.strftime("%d-%m-%Y %H:%M") }}</p>
+  </div>
+</div>
+
+<div class="info-box">
+  <div class="info-grid">
+    <div class="info-cell"><b>Bill Number:</b> {{ bill.bill_no }}</div>
+    <div class="info-cell"><b>Vendor Invoice Number:</b> {{ bill.vendor_invoice_no or "-" }}</div>
+    <div class="info-cell"><b>Bill Date:</b> {{ bill.bill_date }}</div>
+    <div class="info-cell"><b>Due Date:</b> {{ bill.due_date }}</div>
+    <div class="info-cell"><b>Payment Mode:</b> {{ bill.payment_mode or "-" }}</div>
+    <div class="info-cell"><b>Transaction Number:</b> {{ bill.transaction_no or "-" }}</div>
+  </div>
+</div>
+
+<table>
+<thead>
+<tr>
+  <th>Bill No</th>
+  <th>Invoice No</th>
+  <th>Bill Date</th>
+  <th>Description</th>
+  <th>Bill Amount</th>
+  <th>GST Amount</th>
+  <th>TDS Amount</th>
+  <th>Total Payable</th>
+</tr>
+</thead>
+<tbody>
+{% for item in bills %}
+<tr>
+  <td>{{ item.bill_no }}</td>
+  <td>{{ item.vendor_invoice_no or "-" }}</td>
+  <td>{{ item.bill_date }}</td>
+  <td>{{ item.vendor_type or "Vendor Bill" }}</td>
+  <td>Rs. {{ "%.2f"|format((item.total_amount or 0) - (item.gst_amount or 0) + (item.tds_amount or 0)) }}</td>
+  <td>Rs. {{ "%.2f"|format(item.gst_amount or 0) }}</td>
+  <td>Rs. {{ "%.2f"|format(item.tds_amount or 0) }}</td>
+  <td>Rs. {{ "%.2f"|format(item.total_amount or 0) }}</td>
+</tr>
+{% if item.remarks %}
+<tr class="payment-row">
+  <td colspan="8" style="text-align:left"><b>Remarks:</b> {{ item.remarks }}</td>
+</tr>
+{% endif %}
+{% endfor %}
+<tr class="payment-row">
+  <td colspan="4" style="text-align:right"><b>Vendor Wise Subtotal</b></td>
+  <td>Rs. {{ "%.2f"|format(summary.bill_amount - summary.gst_amount + summary.tds_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.gst_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.tds_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.bill_amount) }}</td>
+</tr>
+</tbody>
+</table>
+
+<div class="grand-total">PAYMENT HISTORY</div>
+<table>
+<thead>
+<tr>
+  <th>Date</th>
+  <th>Purpose</th>
+  <th>Against</th>
+  <th>Mode</th>
+  <th>Account</th>
+  <th>UTR / Reference</th>
+  <th>Amount</th>
+</tr>
+</thead>
+<tbody>
+{% if payments %}
+{% for payment in payments %}
+<tr class="payment-row">
+  <td>{{ payment.date or "-" }}</td>
+  <td>{{ payment.purpose or "-" }}</td>
+  <td>{{ payment.against or "-" }}</td>
+  <td>{{ payment.mode or "-" }}</td>
+  <td>{{ payment.account or "-" }}</td>
+  <td>{{ payment.utr or "-" }}</td>
+  <td>Rs. {{ "%.2f"|format(payment.amount or 0) }}</td>
+</tr>
+{% endfor %}
+{% else %}
+<tr><td colspan="7">No payments posted.</td></tr>
+{% endif %}
+</tbody>
+</table>
+
+<div class="grand-total">FINAL SUMMARY</div>
+<table>
+<thead>
+<tr>
+  <th>Bill Amount</th>
+  <th>GST</th>
+  <th>TDS</th>
+  <th>Total Payable</th>
+  <th>Paid</th>
+  <th>Outstanding</th>
+  <th>Advance</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+  <td>Rs. {{ "%.2f"|format(summary.bill_amount - summary.gst_amount + summary.tds_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.gst_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.tds_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.bill_amount) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.paid) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.outstanding) }}</td>
+  <td>Rs. {{ "%.2f"|format(summary.advance) }}</td>
+</tr>
+</tbody>
+</table>
+
+<div class="terms">
+<b>Terms & Conditions:</b>
+<ol>
+  <li>Payments shown are posted in accounts against this vendor bill.</li>
+  <li>Outstanding is calculated from total payable less posted payments.</li>
+</ol>
+</div>
+
+<div class="signatures">
+  <div class="sign-box"><div class="line"></div>Vendor</div>
+  <div class="sign-box"><div class="line"></div>Prepared By</div>
+  <div class="sign-box"><div class="line"></div>Authorised</div>
+</div>
+
+<script>
+window.onload = () => window.print();
+</script>
+</body>
+</html>

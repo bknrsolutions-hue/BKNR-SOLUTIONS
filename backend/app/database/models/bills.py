@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, Date, ForeignKey, Text, Boolean
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Text, Boolean
 from app.database import Base
 from sqlalchemy.sql import func
 from datetime import datetime
@@ -51,6 +51,8 @@ class DieselLog(Base):
     net_val = Column(Float, default=0.0)    # Total Amount (Including Tax)
 
     email = Column(String(150), index=True)
+    status = Column(String(20), default='DRAFT', index=True)
+    journal_id = Column(Integer, nullable=True)
     is_cancelled = Column(Boolean, default=False)
 
 
@@ -144,11 +146,13 @@ class QATestingLog(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     unit_id = Column(Integer, index=True)
+    product_name = Column(String(150), nullable=True)
     batch_no = Column(String(50))
     lab_name = Column(String(100))
     test_cost = Column(Float)
     report_ref = Column(String(50))
     po_number = Column(String(100), index=True) 
+    parameters = Column(Text, nullable=True)
 
     # 📅 Added native tracking date column referenced in router as test_date
     test_date = Column(Date, default=func.now() if 'func' in globals() else datetime.utcnow, index=True)
@@ -190,3 +194,23 @@ class OtherExpense(Base):
     cash_or_bank_ledger_id = Column(Integer, nullable=True)
     gst_register_id = Column(Integer, nullable=True)
     is_cancelled = Column(Boolean, default=False)
+
+
+class ContractorBillPayment(Base):
+    __tablename__ = "contractor_bill_payments"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), index=True, nullable=False)
+    contractor_name = Column(String(150), index=True, nullable=False)
+    month_year = Column(String(7), index=True, nullable=False)
+    bill_total = Column(Float, default=0.0)
+    paid_amount = Column(Float, default=0.0)
+    payment_mode = Column(String(20), default="BANK")
+    payment_date = Column(Date, nullable=True)
+    utr_reference = Column(String(50), nullable=True)
+    payment_status = Column(String(20), default="UNPAID")
+    journal_id = Column(Integer, nullable=True)
+    bank_cash_ledger_id = Column(Integer, nullable=True)
+    is_cancelled = Column(Boolean, default=False)
+    created_by = Column(String(150), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

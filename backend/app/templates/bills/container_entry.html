@@ -106,6 +106,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
+.status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:62px; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#075985; font-size:9px; font-weight:800; letter-spacing:.4px; }
+.status-badge.cancelled { background:#fee2e2; color:#991b1b; }
+.cancelled-row { background:#fff7ed !important; opacity:.78; }
+.cancelled-row td { text-decoration: line-through; color:#9ca3af !important; }
+.cancelled-row .status-badge { text-decoration:none; }
 
 /* Empty Table State */
 .empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
@@ -148,8 +153,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 </head>
 
 <body>
@@ -223,12 +228,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th class="text-right">Detention</th>
                 <th>GST %</th>
                 <th class="text-right">Grand Total</th>
+                <th>Accounts</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not container_history %}
             <tr>
-                <td colspan="12" class="empty-state">
+                <td colspan="13" class="empty-state">
                     <i class="fa-solid fa-anchor"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to load active logistics data ledger.</span>
@@ -236,12 +242,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </tr>
             {% else %}
                 {% for log, v_name in container_history %}
-                <tr class="data-row" 
+                <tr class="data-row {% if log.is_cancelled %}cancelled-row{% endif %}"
                     data-id="{{ log.id }}" 
                     data-po="{{ log.po_number }}"
                     data-location="{{ log.production_at }}" 
                     data-vendor-id="{{ log.shipping_line_id }}"
                     data-total="{{ log.lended_total }}"
+                    data-cancelled="{{ 'true' if log.is_cancelled else 'false' }}"
                     onclick="selectRow(this, '{{ log.id }}')">
                     
                     <td class="slno">0</td>
@@ -255,6 +262,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td class="text-right">{{ "{:,.2f}".format(log.detention or 0) }}</td>
                     <td>{{ log.gst_percent or 18 }}%</td>
                     <td class="text-right" style="font-weight:800; color:var(--success);">₹{{ "{:,.2f}".format(log.lended_total or 0) }}</td>
+                    <td><span class="status-badge {% if log.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if log.is_cancelled else ('POSTED' if log.journal_id else 'DRAFT') }}</span></td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -308,6 +316,17 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                         <label>Shipping Line Vendor</label>
                         <select id="modalVendorId" required>
                             {% for v in shipping_vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="field">
+                        <label>Accounting Ledger</label>
+                        <select id="modalAccountingLedgerId" onchange="handleLedgerAddNew(this)">
+                            <option value="">Auto - Freight & Logistics Expense A/c</option>
+                            {% for ledger in posting_ledgers %}
+                            <option value="{{ ledger.id }}">{{ ledger.ledger_name }}{% if ledger.group %} ({{ ledger.group.group_name }}){% endif %}</option>
+                            {% endfor %}
+                            <option value="__add_new_ledger__">+ Add New Ledger</option>
                         </select>
                     </div>
 
@@ -374,6 +393,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     let globalSelectedId = null;
 
+    function handleLedgerAddNew(selectEl) {
+        if (selectEl.value === "__add_new_ledger__") {
+            selectEl.value = "";
+            window.location.href = "/finance_accounts/ledger_master/entry";
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         applyFilters();
         
@@ -399,7 +425,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     // 🟢 ADDED: Unified Filter Change Function
     function changeFilter(param, val) {
         const url = new URL(window.location.href);
-        if(val) url.searchParams.set(param, val);
+        if(param === 'fy') url.searchParams.set(param, val || '');
+        else if(val) url.searchParams.set(param, val);
         else url.searchParams.delete(param);
         window.location.href = url.toString();
     }
@@ -423,12 +450,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         rows.forEach(r => {
             const t = parseFloat(r.getAttribute("data-total")) || 0;
+            const isCancelled = r.getAttribute("data-cancelled") === "true";
             let match = true;
             if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
 
             if(match) {
                 r.style.display = "";
-                subtotal += t;
+                subtotal += isCancelled ? -t : t;
                 visibleRows.push(r);
             } else {
                 r.style.display = "none";
@@ -446,6 +474,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function selectRow(tr, id) {
         globalSelectedId = id;
+        window.selectedRowCancelled = tr.getAttribute("data-cancelled") === "true";
         document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
         tr.classList.add('selected-row');
         document.getElementById('threeDotsMenu').style.display = 'block';
@@ -523,7 +552,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             local_cost: parseFloat(document.getElementById("modalLocalCost").value) || 0,
             handling: parseFloat(document.getElementById("modalHandling").value) || 0,
             detention: parseFloat(document.getElementById("modalDetention").value) || 0,
-            gst_percent: parseFloat(document.getElementById("modalGstPercent").value) || 0
+            gst_percent: parseFloat(document.getElementById("modalGstPercent").value) || 0,
+            accounting_ledger_id: document.getElementById("modalAccountingLedgerId").value ? parseInt(document.getElementById("modalAccountingLedgerId").value) : null
         };
 
         const editId = document.getElementById("modalEntryId").value;
@@ -537,10 +567,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
-            if (res.ok) {
-                Swal.fire({ icon: 'success', title: 'Data Committed!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
+            const out = await res.json();
+            if (res.ok && (out.success || out.status === 'success')) {
+                Swal.fire({ icon: 'success', title: editId ? 'Updated' : 'Posted', text: out.message || 'Container logistics saved successfully.', timer: 1200, showConfirmButton: false }).then(() => { location.reload(); });
             } else {
-                Swal.fire("Refused", "Data model schema rules rejection validation failed.", "error");
+                Swal.fire("Refused", out.message || "Data model schema rules rejection validation failed.", "error");
             }
         } catch(e) {
             Swal.fire("Error", "Server payload post connection dropped exception.", "error");
@@ -580,6 +611,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     async function cancelSelected() {
         if (!globalSelectedId) return;
+        if (window.selectedRowCancelled) {
+            Swal.fire("Already Cancelled", "This logistics entry is already marked as cancelled.", "info");
+            return;
+        }
 
         const decision = await Swal.fire({
             title: "Are you sure?",
@@ -593,8 +628,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         if (decision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if (res.ok) {
-                    Swal.fire({ icon: 'success', title: 'Removed!', timer: 800, showConfirmButton: false }).then(() => { location.reload(); });
+                const out = await res.json();
+                if (res.ok && (out.success || out.status === 'success')) {
+                    Swal.fire({ icon: 'success', title: 'Cancelled', text: out.message || 'Container logistics record cancelled successfully.', timer: 1200, showConfirmButton: false }).then(() => { location.reload(); });
+                } else {
+                    Swal.fire("Error", out.message || "Cancel failed.", "error");
                 }
             } catch (err) {
                 Swal.fire("Error", "Execution intercept fault dropping storage node trace row.", "error");
@@ -607,6 +645,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     function executePrint() { if(globalSelectedId) window.open(`${API_BASE}/print/${globalSelectedId}`, '_blank'); }
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

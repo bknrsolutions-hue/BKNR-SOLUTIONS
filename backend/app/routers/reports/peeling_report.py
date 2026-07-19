@@ -9,16 +9,22 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 import datetime as dt
-from datetime import datetime
+from datetime import date, datetime
 from io import BytesIO
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from app.database import get_db
 from app.database.models.processing import Peeling, AuditLog
-from app.database.models.criteria import varieties as Varieties
+from app.database.models.criteria import contractors, varieties as Varieties
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_contractor_source_charge,
+)
 
 router = APIRouter(
     prefix="/peeling_report",
@@ -33,6 +39,40 @@ def get_fin_year(date_val):
     return date_val.year if date_val.month >= 4 else date_val.year - 1
 
 
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def repost_peeling_accounts(db: Session, row: Peeling, company_id: str, email: str):
+    if row.journal_id:
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        row.journal_id = None
+    if row.is_cancelled or float(row.amount or 0) <= 0:
+        return
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_id,
+        voucher_date=row.date,
+        reference_no=f"PEL-{row.id}",
+        contractor_name=row.contractor_name,
+        charge_type="Peeling",
+        taxable_amount=row.amount,
+        gst_percent=contractor_gst_percent(db, company_id, row.contractor_name),
+        created_by=email,
+        quantity=row.peeled_qty,
+        rate=row.rate,
+    )
+    row.journal_id = voucher.id
+
+
+def row_to_dict(row):
+    return {col.name: getattr(row, col.name) for col in row.__table__.columns}
+
+
 # ------------------------------------------------------------
 # 1. MAIN REPORT PAGE (GET) - FY FILTERED & AUTO REFRESH
 # ------------------------------------------------------------
@@ -42,55 +82,61 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     role = request.session.get("role")
     
-    # Financial Year from Query Params (e.g., ?fy=2026)
+    is_json = request.query_params.get("format") == "json"
     selected_fy = request.query_params.get("fy")
 
     if not comp_code:
         return RedirectResponse("/", status_code=302)
 
     # 1. Current System FY & Variety Criteria
-    current_system_fy = get_fin_year(dt.date.today())
+    current_system_fy = get_fin_year(ist_now().date())
+    if selected_fy is None:
+        selected_fy = "" if is_json else str(current_system_fy)
     var_list = db.query(Varieties).filter(Varieties.company_id == comp_code).all()
     yield_map = {v.variety_name: float(v.peeling_yield or 0) for v in var_list}
 
-    # 2. Fetch Rows based on Selected FY (Universal Filters Applied Here)
-    rows = []
+    # Fetch unique financial years from database
+    all_dates = db.query(Peeling.date).filter(Peeling.company_id == comp_code, Peeling.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+    financial_years = sorted(list(fy_set), reverse=True)
+
+    # 2. Fetch Rows based on Selected FY
+    query = db.query(Peeling).filter(
+        Peeling.company_id == comp_code
+    )
+
     if selected_fy:
         try:
             fy_start_int = int(selected_fy)
             start_date = dt.date(fy_start_int, 4, 1)
             end_date = dt.date(fy_start_int + 1, 3, 31)
-            
-            # 🟢 UPDATED: Filter rows specifically using global parameters and FY range
-            query = db.query(Peeling).filter(
-                Peeling.company_id == comp_code,
+            query = query.filter(
                 Peeling.date >= start_date,
-                Peeling.date <= end_date,
-                Peeling.is_cancelled != True
+                Peeling.date <= end_date
             )
-
-            if production_for:
-                query = query.filter(Peeling.production_for == production_for)
-
-            if location:
-                query = query.filter(Peeling.peeling_at == location)
-
-            rows = query.order_by(Peeling.date.desc(), Peeling.time.desc()).all()
         except ValueError:
-            rows = []
+            pass
+
+    if production_for:
+        query = query.filter(Peeling.production_for == production_for)
+
+    if location:
+        query = query.filter(Peeling.peeling_at == location)
+
+    rows = query.order_by(Peeling.date.desc(), Peeling.time.desc()).all()
 
     # 3. Auto-Refresh Logic (Only if viewing CURRENT FY)
     needs_commit = False
-    if selected_fy and int(selected_fy) == current_system_fy:
+    if selected_fy and selected_fy.isdigit() and int(selected_fy) == current_system_fy:
         for r in rows:
             fresh_target = yield_map.get(r.variety_name, 0.0)
-            
-            # Sync target_yield_percent if different
             if float(r.target_yield_percent or 0) != fresh_target:
                 r.target_yield_percent = fresh_target
                 needs_commit = True
             
-            # Always recalculate display fields for consistency
             h_qty = float(r.hlso_qty or 0)
             p_qty = float(r.peeled_qty or 0)
             target_y = float(r.target_yield_percent or 0)
@@ -111,25 +157,53 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     def get_unique(field):
         return sorted({getattr(r, field) for r in rows if getattr(r, field)})
 
+    serialized_rows = []
+    for r in rows:
+        d = row_to_dict(r)
+        if isinstance(d.get("date"), (date, datetime)):
+            d["date"] = d["date"].isoformat()
+        if isinstance(d.get("time"), (dt.time, datetime)):
+            d["time"] = d["time"].strftime("%H:%M")
+        serialized_rows.append(d)
+
     from app.utils.report_permissions import check_report_permission
+    context = {
+        "rows": serialized_rows if is_json else rows,
+        "selected_fy": selected_fy,
+        "financial_years": financial_years,
+        "batches": get_unique("batch_number"),
+        "contractors": get_unique("contractor_name"),
+        "varieties_dropdown": sorted(list(yield_map.keys())),
+        "locations": get_unique("peeling_at"),
+        "production_for_list": get_unique("production_for"),
+        "is_admin": role == "admin",
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+        "datetime": datetime
+    }
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/peeling_report.html",
-        context={
-            "rows": rows,
-            "selected_fy": selected_fy,
-            "batches": get_unique("batch_number"),
-            "contractors": get_unique("contractor_name"),
-            "varieties_dropdown": sorted(list(yield_map.keys())),
-            "locations": get_unique("peeling_at"),
-            "production_for_list": get_unique("production_for"),
-            "is_admin": role == "admin",
-            "can_edit": check_report_permission(request, "report_edit"),
-            "can_delete": check_report_permission(request, "report_delete"),
-            "can_print": check_report_permission(request, "report_print"),
-            "can_export": check_report_permission(request, "report_export"),
-            "datetime": datetime
-        }
+        context=context
     )
 
 
@@ -144,6 +218,7 @@ async def update_peeling(
 ):
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_edit")
@@ -201,6 +276,7 @@ async def update_peeling(
     else:
         row.diff_qty = 0.0
 
+    repost_peeling_accounts(db, row, comp_code, user_email)
     db.commit()
     refresh_floor_balance(db, comp_code)
     return {"status": "success", "target_yield": row.target_yield_percent}
@@ -223,8 +299,7 @@ async def peeling_export_pdf(
     enforce_report_permission(request, "report_export")
 
     q = db.query(Peeling).filter(
-        Peeling.company_id == comp_code,
-        Peeling.is_cancelled != True
+        Peeling.company_id == comp_code
     )
     
     # 1. 🟢 Apply global filter constraints to the PDF generation scope
@@ -261,8 +336,7 @@ def peeling_export_excel(
 ):
     comp_code = request.session.get("company_code")
     q = db.query(Peeling).filter(
-        Peeling.company_id == comp_code,
-        Peeling.is_cancelled != True
+        Peeling.company_id == comp_code
     )
     
     # 2. 🟢 Apply global filter constraints to the Excel workbook data scope
@@ -404,12 +478,13 @@ def peeling_monthly_bill(
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
+    email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_print")
     query_bill = db.query(Peeling).filter(
         Peeling.company_id == comp_code,
-        Peeling.contractor_name == contractor,
-        Peeling.is_cancelled != True
+        Peeling.contractor_name == contractor
     )
     
     if ids: 
@@ -420,8 +495,8 @@ def peeling_monthly_bill(
     rows = query_bill.order_by(Peeling.date.asc()).all()
 
     # --- Calculations ---
-    t_hlso = sum(r.hlso_qty or 0 for r in rows)
-    t_peeled = sum(r.peeled_qty or 0 for r in rows)
+    t_hlso = sum(signed_number(r, r.hlso_qty) for r in rows)
+    t_peeled = sum(signed_number(r, r.peeled_qty) for r in rows)
     
     avg_yield = (t_peeled / t_hlso * 100) if t_hlso > 0 else 0
 
@@ -433,7 +508,7 @@ def peeling_monthly_bill(
         "total_hlso": round(t_hlso, 2),
         "total_peeled": round(t_peeled, 2),
         "avg_yield": round(avg_yield, 2),
-        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
+        "grand_total": round(sum(signed_number(r, r.amount) for r in rows), 2),
         "bill_date": ist_now()
     }
     return templates.TemplateResponse(name="reports/peeling_monthly_bill.html", request=request, context=data)
@@ -452,10 +527,11 @@ async def get_all_peeling_audit(request: Request, db: Session = Depends(get_db))
         .order_by(AuditLog.edited_at.desc()).limit(100).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -478,6 +554,9 @@ async def delete_peeling(
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
         row.is_cancelled = True
+        row.status = "Cancelled"
+        user_email = request.session.get("email")
+        cancel_linked_bill_voucher(db, comp_code, row.journal_id, user_email)
         db.commit()
         refresh_floor_balance(db, comp_code)
         return {"status": "success"}

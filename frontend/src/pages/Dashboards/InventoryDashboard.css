@@ -1,0 +1,17 @@
+.inventory-stock-table-scroll {
+  width: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
+}
+
+.inventory-stock-table-scroll .bknr-table thead th {
+  position: sticky !important;
+  z-index: 6;
+  top: 0;
+  background: #eef0f2 !important;
+  box-shadow: inset 0 -1px 0 var(--table-line), 0 1px 2px rgb(34 53 72 / 8%);
+}
+
+[data-theme="dark"] .inventory-stock-table-scroll .bknr-table thead th {
+  background: #252c34 !important;
+}

@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>System & Pipeline Configuration | ERP</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<style>
+/* ================= PREMIUM THEME VARIABLES ================= */
+:root {
+    --bg-color: #f0f2f5;
+    --panel-bg: #ffffff;
+    --border-color: #e2e8f0;
+    --primary-text: #1e293b;
+    --secondary-text: #64748b;
+    --accent: #2563eb;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --purple: #8b5cf6;
+    --cyan: #06b6d4;
+    --table-header-bg: #f8fafc;
+}
+
+[data-theme="dark"] {
+    --bg-color: #0f172a;
+    --panel-bg: #1e293b;
+    --border-color: #334155;
+    --primary-text: #f8fafc;
+    --secondary-text: #94a3b8;
+    --accent: #3b82f6;
+    --success: #34d399;
+    --warning: #fbbf24;
+    --danger: #f87171;
+    --purple: #a78bfa;
+    --cyan: #22d3ee;
+    --table-header-bg: #0f172a;
+}
+
+* { box-sizing: border-box; font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; padding: 0; }
+body { background: var(--bg-color); color: var(--primary-text); padding-bottom: 40px; transition: background 0.3s, color 0.3s; }
+
+/* ================= HEADER ================= */
+.header {
+    position: sticky; top: 0; z-index: 100;
+    background: var(--panel-bg); padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+}
+.header-titles h2 { margin: 0; font-size: 16px; color: var(--primary-text); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* ================= GRID CONTAINER ================= */
+.main-container { width: 95%; max-width: 1400px; margin: 20px auto; display: flex; flex-direction: column; gap: 20px; }
+
+.section-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media(max-width: 900px) {
+    .section-grid { grid-template-columns: 1fr; }
+}
+
+.panel-card {
+    background: var(--panel-bg); border-radius: 12px;
+    border: 1px solid var(--border-color); padding: 20px;
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+}
+
+.section-header {
+    font-size: 14px; font-weight: 800; color: var(--primary-text);
+    padding-bottom: 12px; border-bottom: 1px solid var(--border-color);
+    display: flex; justify-content: space-between; align-items: center;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 15px;
+}
+
+/* ================= FORMS & INPUTS ================= */
+.form-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 12px; font-weight: 700; color: var(--secondary-text); }
+.form-control {
+    background: var(--bg-color); border: 1px solid var(--border-color);
+    color: var(--primary-text); padding: 10px 12px; border-radius: 8px;
+    font-size: 13px; font-weight: 600; outline: none; transition: border 0.2s;
+}
+.form-control:focus { border-color: var(--accent); }
+select.form-control { cursor: pointer; }
+.checkbox-dropdown { position: relative; }
+.checkbox-dropdown-btn {
+    width: 100%; min-height: 42px; background: var(--bg-color);
+    border: 1px solid var(--border-color); border-radius: 8px;
+    color: var(--primary-text); padding: 10px 12px; cursor: pointer;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 700; text-align: left;
+}
+.checkbox-dropdown-menu {
+    display: none; position: absolute; left: 0; right: 0; top: calc(100% + 6px);
+    max-height: 320px; overflow-y: auto; background: var(--panel-bg);
+    border: 1px solid var(--border-color); border-radius: 10px;
+    box-shadow: 0 16px 30px rgba(15,23,42,0.18); z-index: 50; padding: 8px;
+}
+.checkbox-dropdown.open .checkbox-dropdown-menu { display: block; }
+.check-tools { display: flex; gap: 8px; padding: 6px; border-bottom: 1px solid var(--border-color); margin-bottom: 6px; }
+.check-tools button {
+    border: 1px solid var(--border-color); background: var(--bg-color);
+    color: var(--primary-text); padding: 6px 8px; border-radius: 6px;
+    font-size: 10px; font-weight: 800; cursor: pointer; text-transform: uppercase;
+}
+.check-group-title {
+    padding: 10px 8px 5px; color: var(--accent); font-size: 10px;
+    font-weight: 900; text-transform: uppercase; letter-spacing: 0.6px;
+}
+.check-option {
+    display: flex; align-items: center; gap: 8px; padding: 8px;
+    border-radius: 7px; cursor: pointer; color: var(--primary-text);
+    font-size: 12px; font-weight: 700;
+}
+.check-option:hover { background: var(--bg-color); }
+.check-option input { width: 15px; height: 15px; accent-color: var(--accent); }
+.muted-help { color: var(--secondary-text); font-size: 11px; line-height: 1.5; }
+
+.btn {
+    background: var(--accent); color: white; border: none;
+    padding: 10px 16px; border-radius: 8px; font-size: 12px;
+    font-weight: 800; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; gap: 6px;
+    transition: opacity 0.2s, transform 0.1s; text-transform: uppercase;
+}
+.btn:hover { opacity: 0.9; }
+.btn:active { transform: scale(0.98); }
+.btn-success { background: var(--success); }
+.btn-danger { background: var(--danger); }
+.btn-warning { background: var(--warning); color: #1e293b; }
+.btn-purple { background: var(--purple); }
+
+/* ================= STATUS BADGES ================= */
+.status-badge {
+    padding: 4px 8px; border-radius: 6px; font-size: 10px;
+    font-weight: 800; display: inline-block; text-transform: uppercase;
+}
+.badge-off { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+.badge-soft { background: rgba(245, 158, 11, 0.1); color: var(--warning); }
+.badge-hard { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+/* ================= TABLES ================= */
+.table-wrapper { overflow-x: auto; margin-top: 10px; }
+table { width: 100%; border-collapse: collapse; }
+th {
+    background: var(--table-header-bg); color: var(--secondary-text);
+    padding: 10px; font-size: 11px; text-transform: uppercase;
+    font-weight: 800; border-bottom: 2px solid var(--border-color);
+    text-align: left;
+}
+td {
+    padding: 12px 10px; border-bottom: 1px solid var(--border-color);
+    font-size: 13px; color: var(--primary-text); font-weight: 600;
+    vertical-align: middle;
+}
+tr:hover td { background: var(--bg-color); }
+
+/* ================= SWITCH TOGGLE ================= */
+.switch {
+    position: relative; display: inline-block; width: 44px; height: 22px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: var(--border-color); transition: .3s; border-radius: 22px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px;
+    background-color: white; transition: .3s; border-radius: 50%;
+}
+input:checked + .slider { background-color: var(--success); }
+input:checked + .slider:before { transform: translateX(22px); }
+</style>
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+</head>
+
+<body data-theme="dark">
+
+<div class="header">
+  <div class="header-titles">
+      <h2><i class="fa-solid fa-sliders" style="margin-right: 6px; color: var(--accent);"></i> System Control & Pipeline Settings</h2>
+  </div>
+</div>
+
+<div class="main-container">
+    
+    <div class="section-grid">
+        
+        <!-- ================= MAINTENANCE MODE PANEL ================= -->
+        <div class="panel-card">
+            <div class="section-header">
+                <span><i class="fa-solid fa-screwdriver-wrench" style="color: var(--warning); margin-right: 6px;"></i> Maintenance Controls</span>
+                <span class="status-badge badge-{{ maintenance_level }}">
+                    Status: {{ maintenance_level }}
+                </span>
+            </div>
+            
+            <form id="maintenanceForm" onsubmit="updateMaintenanceMode(event)">
+                <div class="form-group">
+                    <label>Maintenance Severity Level</label>
+                    <select id="mLevel" class="form-control">
+                        <option value="off" {% if maintenance_level == 'off' %}selected{% endif %}>OFF - Normal System Operation</option>
+                        <option value="soft" {% if maintenance_level == 'soft' %}selected{% endif %}>SOFT - Block Users, Allow Admins (Minor Fixes)</option>
+                        <option value="hard" {% if maintenance_level == 'hard' %}selected{% endif %}>HARD - Block Users & Admins (DB Migrations)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>Broadcast Notice Message</label>
+                    <textarea id="mMessage" class="form-control" rows="3" placeholder="Scheduled upgrade in progress. Please try again shortly.">{{ maintenance_message }}</textarea>
+                </div>
+                
+                <button type="submit" class="btn btn-warning"><i class="fa-solid fa-floppy-disk"></i> Apply Status</button>
+            </form>
+        </div>
+        
+        <!-- ================= PIPELINE LOCK PANEL ================= -->
+        <div class="panel-card">
+            <div class="section-header">
+                <span><i class="fa-solid fa-lock" style="color: var(--accent); margin-right: 6px;"></i> Deployment Pipeline Lock</span>
+                <span class="status-badge {% if lock_status.locked %}badge-hard{% else %}badge-off{% endif %}">
+                    {% if lock_status.locked %}LOCKED{% else %}AVAILABLE{% endif %}
+                </span>
+            </div>
+            
+            <div style="margin-bottom: 20px; font-size: 13px; line-height: 1.6; color: var(--secondary-text);">
+                {% if lock_status.locked %}
+                    <div style="background: rgba(239,68,68,0.05); border: 1px solid rgba(239,68,68,0.2); padding: 12px; border-radius: 8px; color: var(--primary-text);">
+                        <i class="fa-solid fa-triangle-exclamation" style="color: var(--danger); margin-right: 4px;"></i>
+                        <strong>Deployment Lock is Active!</strong><br>
+                        Locked by: <code style="color: var(--purple);">{{ lock_status.locked_by }}</code><br>
+                        Locked at: <code style="color: var(--cyan);">{{ lock_status.locked_at }}</code>
+                    </div>
+                {% else %}
+                    <p><i class="fa-solid fa-circle-check" style="color: var(--success); margin-right: 4px;"></i> Pipeline lock is currently free. Deployment scripts can run safely.</p>
+                {% endif %}
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                {% if lock_status.locked %}
+                    <button onclick="forceUnlockDeploy()" class="btn btn-danger"><i class="fa-solid fa-lock-open"></i> Force Unlock Pipeline</button>
+                {% else %}
+                    <button onclick="forceLockDeploy()" class="btn btn-purple"><i class="fa-solid fa-lock"></i> Manual Test Lock</button>
+                {% endif %}
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- ================= SCREEN POPUP BROADCAST ================= -->
+    <div class="panel-card">
+        <div class="section-header">
+            <span><i class="fa-solid fa-window-restore" style="color: var(--accent); margin-right: 6px;"></i> Screen Popup Broadcast</span>
+            <span class="status-badge {% if screen_popup_settings.enabled %}badge-soft{% else %}badge-off{% endif %}">
+                {% if screen_popup_settings.enabled %}ACTIVE{% else %}OFF{% endif %}
+            </span>
+        </div>
+
+        <form id="screenPopupForm" onsubmit="saveScreenPopup(event)">
+            <div class="section-grid" style="grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.3fr);">
+                <div>
+                    <div class="form-group">
+                        <label>Select Forms / Screens</label>
+                        <div class="checkbox-dropdown" id="screenPopupDropdown">
+                            <button type="button" class="checkbox-dropdown-btn" onclick="toggleScreenPopupDropdown()">
+                                <span id="screenPopupSelectedText">Select screens</span>
+                                <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div class="checkbox-dropdown-menu">
+                                <div class="check-tools">
+                                    <button type="button" onclick="setAllScreenPopupChecks(true)">Select All</button>
+                                    <button type="button" onclick="setAllScreenPopupChecks(false)">Clear</button>
+                                </div>
+                                {% set last_group = namespace(value='') %}
+                                {% for form in screen_popup_forms %}
+                                    {% if last_group.value != form.group %}
+                                        <div class="check-group-title">{{ form.group }}</div>
+                                        {% set last_group.value = form.group %}
+                                    {% endif %}
+                                    <label class="check-option">
+                                        <input type="checkbox" class="screen-popup-route" value="{{ form.route }}" {% if form.route in screen_popup_settings.routes %}checked{% endif %} onchange="updateScreenPopupSelectedText()">
+                                        <span>{{ form.label }}</span>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="muted-help">Selected screens maintenance/hold lo block avuthayi. User click chesthe popup message matrame kanipisthundi.</div>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="form-group">
+                        <label>Popup Message</label>
+                        <textarea id="screenPopupMessage" class="form-control" rows="4" placeholder="Example: This screen is under review today. Please save entries carefully.">{{ screen_popup_settings.message }}</textarea>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button type="submit" class="btn btn-success"><i class="fa-solid fa-paper-plane"></i> Save Popup</button>
+                        <button type="button" class="btn btn-danger" onclick="clearScreenPopup()"><i class="fa-solid fa-ban"></i> Clear Popup</button>
+                    </div>
+                    {% if screen_popup_settings.updated_at %}
+                    <div class="muted-help" style="margin-top: 10px;">
+                        Last updated by {{ screen_popup_settings.updated_by or '--' }} at {{ screen_popup_settings.updated_at }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ================= FEATURE FLAGS MANAGEMENT ================= -->
+    <div class="panel-card">
+        <div class="section-header">
+            <span><i class="fa-solid fa-flag" style="color: var(--purple); margin-right: 6px;"></i> Feature Flags Matrix</span>
+            <button onclick="showAddFlagModal()" class="btn btn-success"><i class="fa-solid fa-plus"></i> Add New Flag</button>
+        </div>
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Flag Key</th>
+                        <th>Description</th>
+                        <th>Introduced In</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if feature_flags %}
+                        {% for flag in feature_flags %}
+                        <tr>
+                            <td><strong style="color: var(--accent);">{{ flag.flag_key }}</strong></td>
+                            <td style="color: var(--secondary-text);">{{ flag.description or '--' }}</td>
+                            <td><span class="company-badge">{{ flag.introduced_in or '--' }}</span></td>
+                            <td>
+                                <label class="switch">
+                                    <input type="checkbox" {% if flag.is_enabled %}checked{% endif %} onchange="toggleFlag('{{ flag.flag_key }}', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
+                            <td>
+                                <button onclick="deleteFlag('{{ flag.flag_key }}')" class="btn btn-danger" style="padding: 4px 8px; font-size: 10px;"><i class="fa-solid fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" style="text-align: center; color: var(--secondary-text); padding: 20px;">No global feature flags defined.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ================= PIPELINE AUDIT LOG ================= -->
+    <div class="panel-card">
+        <div class="section-header">
+            <span><i class="fa-solid fa-list-check" style="color: var(--cyan); margin-right: 6px;"></i> Deployment Audit Logs</span>
+        </div>
+        
+        <div class="table-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Timestamp</th>
+                        <th>Action</th>
+                        <th>Version</th>
+                        <th>Actor</th>
+                        <th>Git Commit</th>
+                        <th>Result</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if audit_logs %}
+                        {% for log in audit_logs %}
+                        <tr>
+                            <td style="font-size: 11px; color: var(--secondary-text);">
+                                {{ log.timestamp }}
+                            </td>
+                            <td>
+                                <span class="status-badge {% if log.action in ('release','lock_release') %}badge-off{% elif log.action=='lock_acquire' %}badge-soft{% else %}badge-hard{% endif %}">
+                                    {{ log.action }}
+                                </span>
+                            </td>
+                            <td><span class="company-badge">{{ log.version or '--' }}</span></td>
+                            <td style="color: var(--purple);">{{ log.actor }}</td>
+                            <td><code style="color: var(--cyan);">{{ log.git_commit or '--' }}</code></td>
+                            <td>
+                                <span class="status-badge {% if log.result=='success' %}badge-off{% else %}badge-hard{% endif %}">
+                                    {{ log.result }}
+                                </span>
+                            </td>
+                            <td style="white-space: normal; font-size: 12px; text-align: left;">{{ log.detail or '' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; color: var(--secondary-text); padding: 20px;">No deployment actions logged yet.</td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+window.onload = function() {
+    try {
+        const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
+        if(parentTheme) document.body.setAttribute("data-theme", parentTheme);
+    } catch(e) {}
+    updateScreenPopupSelectedText();
+}
+
+function getSelectedScreenPopupRoutes() {
+    return Array.from(document.querySelectorAll(".screen-popup-route:checked")).map(input => input.value);
+}
+
+function updateScreenPopupSelectedText() {
+    const selected = getSelectedScreenPopupRoutes();
+    const label = document.getElementById("screenPopupSelectedText");
+    if (!label) return;
+    if (!selected.length) {
+        label.textContent = "Select screens";
+    } else if (selected.length === 1) {
+        const checked = document.querySelector(".screen-popup-route:checked");
+        label.textContent = checked ? checked.closest("label").innerText.trim() : "1 screen selected";
+    } else {
+        label.textContent = `${selected.length} screens selected`;
+    }
+}
+
+function toggleScreenPopupDropdown() {
+    document.getElementById("screenPopupDropdown").classList.toggle("open");
+}
+
+function setAllScreenPopupChecks(checked) {
+    document.querySelectorAll(".screen-popup-route").forEach(input => {
+        input.checked = checked;
+    });
+    updateScreenPopupSelectedText();
+}
+
+document.addEventListener("click", (event) => {
+    const dropdown = document.getElementById("screenPopupDropdown");
+    if (dropdown && !dropdown.contains(event.target)) {
+        dropdown.classList.remove("open");
+    }
+});
+
+async function saveScreenPopup(e) {
+    e.preventDefault();
+    const routes = getSelectedScreenPopupRoutes();
+    const message = document.getElementById("screenPopupMessage").value.trim();
+    if (!routes.length || !message) {
+        Swal.fire("Required", "Please select at least one screen and enter a popup message.", "warning");
+        return;
+    }
+
+    const confirm = await Swal.fire({
+        title: "Save Screen Popup?",
+        text: `This popup will show on ${routes.length} selected screen(s).`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonColor: "var(--accent)",
+        confirmButtonText: "Save"
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const res = await fetch("/admin/screen-popup-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: true, routes, message })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            Swal.fire("Saved", "Screen popup broadcast is active.", "success").then(() => location.reload());
+        } else {
+            Swal.fire("Error", data.detail || "Failed to save popup settings", "error");
+        }
+    } catch(e) {
+        Swal.fire("Error", "Connection failed", "error");
+    }
+}
+
+async function clearScreenPopup() {
+    const confirm = await Swal.fire({
+        title: "Clear Screen Popup?",
+        text: "Users will stop seeing this popup on all screens.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "var(--danger)",
+        confirmButtonText: "Clear"
+    });
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const res = await fetch("/admin/screen-popup-settings", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ enabled: false, routes: [], message: "" })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+            Swal.fire("Cleared", "Screen popup broadcast is now off.", "success").then(() => location.reload());
+        } else {
+            Swal.fire("Error", data.detail || "Failed to clear popup settings", "error");
+        }
+    } catch(e) {
+        Swal.fire("Error", "Connection failed", "error");
+    }
+}
+
+async function updateMaintenanceMode(e) {
+    e.preventDefault();
+    const level = document.getElementById("mLevel").value;
+    const message = document.getElementById("mMessage").value;
+    
+    let url = "/admin/maintenance/disable";
+    let body = {};
+    if (level === "soft") {
+        url = "/admin/maintenance/soft/enable";
+        body = { message };
+    } else if (level === "hard") {
+        url = "/admin/maintenance/hard/enable";
+        body = { message };
+    }
+
+    const confirm = await Swal.fire({
+        title: 'Apply Maintenance Status?',
+        text: `Are you sure you want to change mode to ${level.toUpperCase()}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--warning)',
+        cancelButtonColor: 'var(--secondary-text)',
+        confirmButtonText: 'Yes, Apply'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    Swal.fire({ title: 'Applying settings...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (res.ok && data.status === "ok") {
+            Swal.fire('Applied!', `Maintenance status set to ${level}`, 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', data.detail || 'Failed to update maintenance settings', 'error');
+        }
+    } catch(err) {
+        Swal.fire('Error', 'Connection failed', 'error');
+    }
+}
+
+async function forceLockDeploy() {
+    Swal.fire({ title: 'Acquiring lock...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    try {
+        const res = await fetch("/admin/deploy/lock", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: "manual-lock-test" })
+        });
+        const data = await res.json();
+        if (res.ok && data.status === "locked") {
+            Swal.fire('Locked!', 'Manual deployment lock acquired.', 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Locked Failed', data.detail || 'Could not acquire lock', 'error');
+        }
+    } catch(e) {
+        Swal.fire('Error', 'Connection failed', 'error');
+    }
+}
+
+async function forceUnlockDeploy() {
+    const confirm = await Swal.fire({
+        title: 'Force Unlock Pipeline?',
+        text: 'This will clear the current deployment lock. Only do this if a deployment crashed and is stuck.',
+        icon: 'caution',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--secondary-text)',
+        confirmButtonText: 'Force Unlock'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    Swal.fire({ title: 'Releasing lock...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    try {
+        const res = await fetch("/admin/deploy/unlock", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ version: "manual-unlock", result: "rollback", detail: "Forced manually via Admin UI" })
+        });
+        if (res.ok) {
+            Swal.fire('Unlocked!', 'Deployment lock released.', 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', 'Failed to release lock', 'error');
+        }
+    } catch(e) {
+        Swal.fire('Error', 'Connection failed', 'error');
+    }
+}
+
+async function toggleFlag(flagKey, isEnabled) {
+    try {
+        const res = await fetch("/admin/feature-flags", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ flag_key: flagKey, is_enabled: isEnabled })
+        });
+        if (!res.ok) {
+            Swal.fire('Error', 'Failed to toggle flag', 'error').then(() => location.reload());
+        }
+    } catch(e) {
+        Swal.fire('Error', 'Connection failed', 'error').then(() => location.reload());
+    }
+}
+
+async function deleteFlag(flagKey) {
+    const confirm = await Swal.fire({
+        title: 'Delete Flag?',
+        text: `Are you sure you want to remove feature flag ${flagKey}?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--danger)',
+        cancelButtonColor: 'var(--secondary-text)',
+        confirmButtonText: 'Delete'
+    });
+
+    if (!confirm.isConfirmed) return;
+
+    try {
+        const res = await fetch(`/admin/feature-flags/${flagKey}`, { method: 'DELETE' });
+        if (res.ok) {
+            Swal.fire('Deleted!', 'Feature flag removed.', 'success').then(() => location.reload());
+        } else {
+            Swal.fire('Error', 'Failed to delete flag', 'error');
+        }
+    } catch(e) {
+        Swal.fire('Error', 'Connection failed', 'error');
+    }
+}
+
+async function showAddFlagModal() {
+    const { value: formValues } = await Swal.fire({
+        title: 'Add New Feature Flag',
+        html:
+            '<input id="swal-key" class="swal2-input" placeholder="Flag Key (e.g. new_dashboard)" style="width:80%;">' +
+            '<input id="swal-desc" class="swal2-input" placeholder="Description" style="width:80%;">' +
+            '<input id="swal-version" class="swal2-input" placeholder="Version (e.g. v1.0.3)" style="width:80%;">',
+        focusConfirm: false,
+        background: 'var(--panel-bg)',
+        color: 'var(--primary-text)',
+        showCancelButton: true,
+        confirmButtonColor: 'var(--accent)',
+        confirmButtonText: 'Save Flag',
+        preConfirm: () => {
+            return {
+                flag_key: document.getElementById('swal-key').value.trim(),
+                description: document.getElementById('swal-desc').value.trim(),
+                introduced_in: document.getElementById('swal-version').value.trim()
+            }
+        }
+    });
+
+    if (!formValues || !formValues.flag_key) return;
+
+    try {
+        const res = await fetch("/admin/feature-flags", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formValues)
+        });
+        if (res.ok) {
+            Swal.fire('Saved!', 'New feature flag created.', 'success').then(() => location.reload());
+        } else {
+            const data = await res.json();
+            Swal.fire('Error', data.detail || 'Failed to save flag', 'error');
+        }
+    } catch(e) {
+        Swal.fire('Error', 'Connection failed', 'error');
+    }
+}
+</script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
+</body>
+</html>

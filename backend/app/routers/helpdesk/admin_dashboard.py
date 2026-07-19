@@ -16,7 +16,7 @@ logger = logging.getLogger("admin_dashboard")
 
 router = APIRouter(prefix="/admin", tags=["SUPER ADMIN DASHBOARD & ACTIVITIES"])
 
-# 🔴 సెక్యూరిటీ గేట్‌వే: సూపర్ అడ్మిన్ యాక్సెస్ వెరిఫికేషన్
+# 🔴  ‌:
 ALLOWED_ADMINS = ["bknr.solutions@gmail.com"]
 
 def is_admin(request: Request):
@@ -33,7 +33,7 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/dashboard", status_code=302)
 
     try:
-        # కుడివైపు లైవ్ హెల్ప్‌డెస్క్ ఫీడ్ కోసం లాస్ట్ 100 మెసేజ్‌లు
+        #   ‌    100 ‌
         latest_messages = db.query(TicketMessage).order_by(TicketMessage.sent_at.desc()).limit(100).all()
 
         today = ist_now().date()
@@ -42,8 +42,8 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
 
         # KPI 1: Total Registrations
         total_registrations = db.query(Company).count()
-        
-        # 🛠️ FIX: ఈరోజు మరియు నిన్నటి మిడ్‌నైట్ సెషన్స్ ని బేస్ చేసుకుని యునిక్ కంపెనీ కౌంట్ కరెక్ట్ గా వస్తుంది
+
+        # 🛠️ FIX:    ‌
         today_active = db.query(UserLoginActivity.company_id).filter(
             or_(
                 cast(UserLoginActivity.login_at, Date) == today,
@@ -52,7 +52,7 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
             )
         ).distinct().count()
 
-        # 🛠️ FIX: ఈరోజు ఆక్టివిటీ లో ఉన్న యునిక్ యూజర్ల (ఇమెయిల్స్) కౌంట్ పర్ఫెక్ట్ గా వస్తుంది
+        # 🛠️ FIX:       ()
         active_users = db.query(UserLoginActivity.user_id).filter(
             or_(
                 cast(UserLoginActivity.login_at, Date) == today,
@@ -86,7 +86,7 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
             name="admin/activities.html",
             context={"request": request, "activities": latest_messages, "stats": stats}
         )
-        
+
     except Exception as e:
         logger.error(f"Dashboard HTML Render Failed: {str(e)}")
         return HTMLResponse(content=f"<h2>Internal Server Error: {str(e)}</h2>", status_code=500)
@@ -108,8 +108,8 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
     try:
         # 🟢 FIXED: ACTIVE TODAY & USERS TO SHOW EVERY LOG/OUT TRANSACTION MATCHING THE COUNT
         if kpi_type == "active" or kpi_type == "active_users":
-            
-            # 🛠️ FIX: కౌంట్ కి మ్యాచ్ అయ్యేలా ఈరోజు మరియు నిన్నటి సెషన్స్ అన్నింటినీ టేబుల్ లో చూపిస్తుంది
+
+            # 🛠️ FIX:
             activities = db.query(UserLoginActivity).filter(
                 or_(
                     cast(UserLoginActivity.login_at, Date) == today,
@@ -144,6 +144,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
@@ -159,11 +160,12 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
             new_companies = db.query(Company).filter(
                 cast(Company.created_at, Date) >= first_day_this_month
             ).order_by(Company.created_at.desc()).all()
-            
+
             for c in new_companies:
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
@@ -179,7 +181,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
             open_tkts = db.query(SupportTicket).filter(
                 SupportTicket.status == "OPEN"
             ).order_by(SupportTicket.created_at.desc()).all()
-            
+
             for t in open_tkts:
                 comp = db.query(Company).filter(Company.company_code == t.company_id).first()
                 if not comp:
@@ -208,6 +210,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                 admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
                 response_payload.append({
                     "company_id": c.company_code,
+                    "mpeda_registration_code": c.mpeda_registration_code or "--",
                     "company_name": c.company_name,
                     "login_date": c.created_at.strftime("%Y-%m-%d") if c.created_at else "--",
                     "login_time": c.created_at.strftime("%I:%M %p") if c.created_at else "--",
@@ -229,11 +232,11 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
 async def approve_company(company_code: str, request: Request, db: Session = Depends(get_db)):
     if not is_admin(request):
         return JSONResponse(status_code=403, content={"success": False, "error": "Access Denied"})
-    
+
     comp = db.query(Company).filter(Company.company_code == company_code).first()
     if not comp:
         return JSONResponse(status_code=404, content={"success": False, "error": "Company not found"})
-        
+
     comp.is_active = True
     db.commit()
     admin_user = db.query(User).filter(User.company_id == comp.id, User.role == "admin").first()
@@ -244,9 +247,9 @@ async def approve_company(company_code: str, request: Request, db: Session = Dep
         try:
             send_email(
                 recipient,
-                "BKNR ERP - Account Approved",
+                "SVBK - Account Approved",
                 professional_email_html(
-                    title="Your BKNR ERP account is approved",
+                    title="Your SVBK account is approved",
                     intro=f"{comp.company_name} has been approved and your ERP access is now active.",
                     content_html=f"""
                       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;margin-top:14px;">
@@ -258,9 +261,9 @@ async def approve_company(company_code: str, request: Request, db: Session = Dep
                         </tr>
                       </table>
                       <p style="margin:14px 0 0;color:#475569;font-size:14px;line-height:1.6;"><strong>Approved At:</strong> {approved_at}</p>
-                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in to BKNR ERP using your registered email and password.</p>
+                      <p style="margin:16px 0 0;color:#475569;font-size:14px;line-height:1.6;">You can now log in to SVBK using your registered email and password.</p>
                     """,
-                    note="If you have trouble logging in, please contact BKNR ERP support."
+                    note="If you have trouble logging in, please contact SVBK support."
                 )
             )
         except Exception as e:
@@ -273,11 +276,11 @@ async def approve_company(company_code: str, request: Request, db: Session = Dep
 async def reject_company(company_code: str, request: Request, db: Session = Depends(get_db)):
     if not is_admin(request):
         return JSONResponse(status_code=403, content={"success": False, "error": "Access Denied"})
-    
+
     comp = db.query(Company).filter(Company.company_code == company_code).first()
     if not comp:
         return JSONResponse(status_code=404, content={"success": False, "error": "Company not found"})
-        
+
     db.delete(comp) # delete the company record if rejected (or we can set is_active = False, but deletion is clean registration rejection)
     db.commit()
     return {"success": True, "message": f"Company {comp.company_name} rejected successfully!"}

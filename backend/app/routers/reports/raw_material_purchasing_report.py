@@ -17,6 +17,9 @@ from openpyxl.styles import Font
 from app.services.pdf_renderer import render_pdf_from_html
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_number
+from app.services.bill_accounting import cancel_linked_bill_voucher
+from app.services.posting_engine import PostingEngineService
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry, AuditLog
@@ -37,11 +40,12 @@ templates = Jinja2Templates(directory="app/templates")
 def get_company_info(db: Session, comp_code: str):
     company = db.query(Company).filter(Company.company_code == comp_code).first()
     if not company:
-        return {"name": "BKNR ERP", "address": "", "email": ""}
+        return {"name": "BKNR ERP", "address": "", "email": "", "mpeda_registration_code": ""}
     return {
         "name": company.company_name,
         "address": company.address,
-        "email": company.email
+        "email": company.email,
+        "mpeda_registration_code": company.mpeda_registration_code or "",
     }
 
 def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
@@ -59,6 +63,25 @@ def get_supplier_info(db: Session, comp_code: str, supplier_name: str):
 def row_to_dict(row):
     return {k: v for k, v in row.__dict__.items() if not k.startswith("_")}
 
+
+def post_rmp_purchase_voucher(db: Session, row: RawMaterialPurchasing, created_by: str):
+    amount = round(float(row.amount or 0.0), 2)
+    if amount <= 0 or row.is_cancelled:
+        return None
+    voucher = PostingEngineService.post_shrimp_purchase(
+        db=db,
+        company_id=row.company_id,
+        supplier_name=row.supplier_name or "Raw Material Supplier",
+        total_amount=amount,
+        gst_rate=0.0,
+        tds_rate=0.0,
+        batch_number=row.batch_number or f"RMP-{row.id}",
+        invoice_date=row.date,
+        created_by=created_by or "SYSTEM",
+    )
+    row.journal_id = voucher.id
+    return voucher
+
 # -----------------------------------------------------------
 # MAIN REPORT PAGE (WITH JOIN-BASED FY LOCK LOGIC)
 # -----------------------------------------------------------
@@ -73,6 +96,10 @@ def report_page(
     role = request.session.get("role")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
+    is_json = request.query_params.get("format") == "json"
+    if fy is None:
+        today = ist_now().date()
+        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
 
     def build_report_context():
         # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
@@ -85,32 +112,23 @@ def report_page(
             fy_set.add(fy_str)
         financial_years = sorted(list(fy_set), reverse=True)
 
-        if not fy:
-            return {
-                "rows": [], "batches": [], "suppliers": [], "varieties": [],
-                "species": [], "production_for_list": [], "peeling_locations": [],
-                "hsn_list": [], "company_name": "", "company_address": "",
-                "financial_years": financial_years,
-                "selected_fy": None
-            }
-
-        selected_fy = int(fy)
-        start_date = dt.date(selected_fy, 4, 1)
-        end_date = dt.date(selected_fy + 1, 3, 31)
-
-        # 🟢 UPDATED: Core query selection layered dynamically via global options
         query = (
             db.query(RawMaterialPurchasing)
             .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
             .filter(
                 RawMaterialPurchasing.company_id == comp_code,
-                RawMaterialPurchasing.is_cancelled != True,
-                GateEntry.company_id == comp_code,
-                GateEntry.is_cancelled != True,
+                GateEntry.company_id == comp_code
+            )
+        )
+
+        if fy:
+            selected_fy = int(fy)
+            start_date = dt.date(selected_fy, 4, 1)
+            end_date = dt.date(selected_fy + 1, 3, 31)
+            query = query.filter(
                 GateEntry.date >= start_date,
                 GateEntry.date <= end_date
             )
-        )
 
         if production_for:
             query = query.filter(RawMaterialPurchasing.production_for == production_for)
@@ -119,6 +137,15 @@ def report_page(
             query = query.filter(RawMaterialPurchasing.peeling_at == location)
 
         rows = [row_to_dict(row) for row in query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()]
+
+        # Serialize dates and times
+        for r in rows:
+            if isinstance(r.get("date"), (date, datetime)):
+                r["date"] = r["date"].isoformat()
+            if isinstance(r.get("time"), (dt.time, datetime)):
+                r["time"] = r["time"].strftime("%H:%M")
+            if isinstance(r.get("cancelled_at"), (date, datetime)):
+                r["cancelled_at"] = r["cancelled_at"].isoformat()
 
         def get_dist(attr):
             return sorted({r.get(attr) for r in rows if r.get(attr)})
@@ -136,7 +163,7 @@ def report_page(
             "company_name": comp["name"],
             "company_address": comp["address"],
             "financial_years": financial_years,
-            "selected_fy": str(selected_fy)
+            "selected_fy": fy
         }
 
     cache_key = f"bknr:processing_reports:{comp_code}:rmp_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
@@ -152,6 +179,22 @@ def report_page(
         "can_print": check_report_permission(request, "report_print"),
         "can_export": check_report_permission(request, "report_export"),
     })
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
 
     return templates.TemplateResponse(
         request=request,
@@ -172,10 +215,11 @@ def fetch_all_audit_logs(request: Request, db: Session = Depends(get_db)):
         .order_by(AuditLog.edited_at.desc()).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -191,21 +235,40 @@ def update_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     if not row: raise HTTPException(status_code=404, detail="Record not found")
 
     update_fields = ["batch_number", "supplier_name", "variety_name", "species", "count", "g1_qty", "g2_qty", "dc_qty", "rate_per_kg", "material_boxes", "hsn_code", "peeling_at", "production_for", "remarks"]
+    old_batch_number = row.batch_number
+    old_journal_id = row.journal_id
 
-    for field in update_fields:
-        if field in payload:
-            old_val = str(getattr(row, field) or "")
-            new_val = str(payload[field])
-            if old_val != new_val:
-                db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name=field, old_value=old_val, new_value=new_val, edited_by=edited_by, edited_at=ist_now()))
-                setattr(row, field, payload[field])
+    try:
+        for field in update_fields:
+            if field in payload:
+                old_val = str(getattr(row, field) or "")
+                new_val = str(payload[field])
+                if old_val != new_val:
+                    db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name=field, old_value=old_val, new_value=new_val, edited_by=edited_by, edited_at=ist_now()))
+                    setattr(row, field, payload[field])
 
-    g1, g2, dc, rate = float(row.g1_qty or 0), float(row.g2_qty or 0), float(row.dc_qty or 0), float(row.rate_per_kg or 0)
-    row.received_qty = round(g1 + g2 + dc, 2)
-    row.amount = round(row.received_qty * rate, 2)
-    db.commit()
-    refresh_floor_balance(db, comp_code)
-    return {"status": "updated", "received_qty": row.received_qty, "amount": row.amount}
+        g1, g2, dc, rate = float(row.g1_qty or 0), float(row.g2_qty or 0), float(row.dc_qty or 0), float(row.rate_per_kg or 0)
+        row.received_qty = round(g1 + g2 + dc, 2)
+        row.amount = round((g1 + (g2 / 2)) * rate, 2)
+
+        if old_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, old_journal_id, edited_by)
+            row.journal_id = None
+        voucher = post_rmp_purchase_voucher(db, row, edited_by)
+
+        db.commit()
+        refresh_floor_balance(db, comp_code, batch_number=row.batch_number)
+        if old_batch_number != row.batch_number:
+            refresh_floor_balance(db, comp_code, batch_number=old_batch_number)
+        return {
+            "status": "updated",
+            "received_qty": row.received_qty,
+            "amount": row.amount,
+            "voucher_no": voucher.voucher_no if voucher else None,
+        }
+    except Exception as exc:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Update/account posting failed: {str(exc)}")
 
 @router.post("/delete")
 def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = Depends(get_db)):
@@ -215,8 +278,16 @@ def delete_rmp_entry(request: Request, payload: dict = Body(...), db: Session = 
     row = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == payload.get("id"), RawMaterialPurchasing.company_id == comp_code).first()
     if row:
         db.add(AuditLog(table_name="rmp", record_id=row.id, company_id=comp_code, field_name="is_cancelled", old_value="False", new_value="True", edited_by=request.session.get("email"), edited_at=ist_now()))
-        row.is_cancelled = True; db.commit()
-        refresh_floor_balance(db, comp_code)
+        row.is_cancelled = True
+        row.status = "Cancelled"
+        row.cancel_reason = payload.get("reason") or "Cancelled from report"
+        row.cancelled_by = request.session.get("email")
+        row.cancelled_at = ist_now()
+        if row.journal_id:
+            cancel_linked_bill_voucher(db, comp_code, row.journal_id, request.session.get("email"))
+            row.journal_id = None
+        db.commit()
+        refresh_floor_balance(db, comp_code, batch_number=row.batch_number)
         return {"status": "deleted"}
     return {"status": "error"}
 
@@ -247,9 +318,7 @@ def export_rmp_excel(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
     ).filter(
         RawMaterialPurchasing.company_id == comp_code,
-        RawMaterialPurchasing.is_cancelled != True,
         GateEntry.company_id == comp_code,
-        GateEntry.is_cancelled != True
     )
     
     if global_production_for:
@@ -314,9 +383,7 @@ def print_table_view(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
     ).filter(
         RawMaterialPurchasing.company_id == comp_code,
-        RawMaterialPurchasing.is_cancelled != True,
         GateEntry.company_id == comp_code,
-        GateEntry.is_cancelled != True
     )
     
     if global_production_for:
@@ -364,6 +431,7 @@ def print_table_view(
             "rows": rows, 
             "company_name": comp["name"], 
             "company_address": comp["address"], 
+            "mpeda_registration_code": comp["mpeda_registration_code"],
             "printed_on": ist_now()
         }
     )
@@ -379,8 +447,7 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
     global_production_for, global_location = get_global_filters(request)
     
     q = db.query(RawMaterialPurchasing).filter(
-        RawMaterialPurchasing.company_id == comp_code,
-        RawMaterialPurchasing.is_cancelled != True
+        RawMaterialPurchasing.company_id == comp_code
     )
     
     if global_production_for:
@@ -399,9 +466,9 @@ def print_summary_view(request: Request, ids: str = Query(None), db: Session = D
     for (s_name, b_no), b_rows in grouped.items():
         g = db.query(GateEntry).filter(GateEntry.company_id == comp_code, GateEntry.batch_number == b_no).first()
         supplier = get_supplier_info(db, comp_code, s_name)
-        final_batches.append({"batch_number": b_no, "vehicle_number": g.vehicle_number if g else "N/A", "challan_number": g.challan_number if g else "N/A", "location": g.purchasing_location if g else "N/A", "date": g.date if g else b_rows[0].date, "rows": b_rows, "supplier": supplier, "total_quantity": round(sum(x.received_qty or 0 for x in b_rows), 2), "total_amount": round(sum(x.amount or 0 for x in b_rows), 2)})
+        final_batches.append({"batch_number": b_no, "vehicle_number": g.vehicle_number if g else "N/A", "challan_number": g.challan_number if g else "N/A", "location": g.purchasing_location if g else "N/A", "date": g.date if g else b_rows[0].date, "rows": b_rows, "supplier": supplier, "total_quantity": round(sum(active_number(x, x.received_qty) for x in b_rows), 2), "total_amount": round(sum(active_number(x, x.amount) for x in b_rows), 2)})
     comp = get_company_info(db, comp_code)
-    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "printed_on": ist_now()})
+    return templates.TemplateResponse(request=request, name="reports/raw_material_purchasing_print_summary.html", context={"batches": final_batches, "company_name": comp["name"], "company_address": comp["address"], "company_email": comp["email"], "mpeda_registration_code": comp["mpeda_registration_code"], "printed_on": ist_now()})
 
 @router.get("/export_pdf")
 async def export_rmp_pdf(

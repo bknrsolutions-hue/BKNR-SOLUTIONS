@@ -12,7 +12,7 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/bknr-charts.js"></script>
-<script src="/static/js/ui-color-customizer.js"></script>
+<script src="/static/js/ui-color-customizer.js?v=2.4"></script>
 
     <script>
         function syncThemeFromParent() {
@@ -261,6 +261,18 @@
         }
         .close-btn:hover { color: #fff; background: var(--corp-danger); border-color: var(--corp-danger); }
         #entryFrame { width: 100%; flex-grow: 1; border: none; background: transparent; }
+        .entry-frame-shell { position:relative; display:flex; flex:1; min-height:0; }
+        .entry-form-skeleton { position:absolute; inset:0; z-index:3; display:none; padding:18px; overflow:hidden; background:var(--bg-app); }
+        .entry-form-skeleton.show { display:block; }
+        .entry-skeleton-head { width:34%; height:16px; margin-bottom:18px; border-radius:6px; background:var(--border-light); }
+        .entry-skeleton-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; padding:16px; border:1px solid var(--border-light); border-radius:10px; background:var(--surface-panel); }
+        .entry-skeleton-field { display:grid; gap:7px; }
+        .entry-skeleton-label { width:44%; height:8px; border-radius:99px; background:var(--border-light); }
+        .entry-skeleton-input { height:38px; border:1px solid var(--border-light); border-radius:6px; background:var(--bg-app); }
+        .entry-skeleton-head,.entry-skeleton-label,.entry-skeleton-input { position:relative; overflow:hidden; }
+        .entry-skeleton-head::after,.entry-skeleton-label::after,.entry-skeleton-input::after { content:""; position:absolute; inset:0; transform:translateX(-100%); background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent); animation:entrySkeletonShimmer 1.05s infinite; }
+        @keyframes entrySkeletonShimmer { to { transform:translateX(100%); } }
+        @media(max-width:700px){.entry-skeleton-grid{grid-template-columns:1fr 1fr}.entry-form-skeleton{padding:12px}}
 
         @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
         
@@ -338,12 +350,13 @@
             .module-shell { padding: 8px; }
         }
     </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 <link rel="stylesheet" href="/static/css/module-rail.css">
 <link rel="stylesheet" href="/static/css/dashboard-ui.css">
-<link rel="stylesheet" href="/static/css/ui-color-customizer.css">
+<link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 <body class="processing-dashboard">
 
@@ -380,64 +393,65 @@
     <div class="cards">
         <div class="kpi-card" style="--kpi-color: var(--corp-warning);" onclick="openEntryModal('/processing/gate_entry', 'Gate Entry Workspace')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Gate Entries</span>
+                <span class="kpi-title">Gate Entries</span>
                 <div class="kpi-icon"><i class="fa-solid fa-door-open"></i></div>
             </div>
             <div class="kpi-value">{{ gate_today }}</div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/raw_material_purchasing', 'RM Purchasing Platform')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Raw Material</span>
+                <span class="kpi-title">Raw Material</span>
                 <div class="kpi-icon"><i class="fa-solid fa-truck-ramp-box"></i></div>
             </div>
             <div class="kpi-value">{{ rmp_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/de_heading', 'De-Heading Production Console')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's De-heading</span>
+                <span class="kpi-title">De-heading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-scissors"></i></div>
             </div>
             <div class="kpi-value">{{ dh_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-info);" onclick="openEntryModal('/processing/grading', 'Grading Allocation Module')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Grading</span>
+                <span class="kpi-title">Grading</span>
                 <div class="kpi-icon"><i class="fa-solid fa-filter"></i></div>
             </div>
             <div class="kpi-value">{{ grading_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/peeling', 'Peeling Process Terminal')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Peeling</span>
+                <span class="kpi-title">Peeling</span>
                 <div class="kpi-icon"><i class="fa-solid fa-hand-dots"></i></div>
             </div>
             <div class="kpi-value">{{ peeling_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-primary);" onclick="openEntryModal('/processing/soaking', 'Soaking Monitoring Room')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Soaking</span>
+                <span class="kpi-title">Soaking</span>
                 <div class="kpi-icon"><i class="fa-solid fa-droplet"></i></div>
             </div>
             <div class="kpi-value">{{ soaking_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--corp-success);" onclick="openEntryModal('/processing/production', 'Final Production Suite')">
             <div class="kpi-header">
-                <span class="kpi-title">Today's Production</span>
+                <span class="kpi-title">Production</span>
                 <div class="kpi-icon"><i class="fa-solid fa-industry"></i></div>
             </div>
             <div class="kpi-value">{{ production_today }}<small>kg</small></div>
         </div>
         <div class="kpi-card" style="--kpi-color: var(--text-secondary);">
             <div class="kpi-header">
-                <span class="kpi-title">Current Floor Stock</span>
+                <span class="kpi-title">Floor Balance</span>
                 <div class="kpi-icon"><i class="fa-solid fa-snowflake"></i></div>
             </div>
             <div class="kpi-value"><span id="liveFloorKpiVal">{{ floor_total }}</span><small>kg</small></div>
+            <div style="font-size:9px; color:var(--text-tertiary); margin-top:4px; font-weight:700;">{{ floor_snapshot_date or to_date }} · {{ floor_snapshot_time }}</div>
         </div>
     </div>
 
     <div class="section-head">
-        <span>Staff Attendance Today</span>
+        <span>Staff Attendance — Selected Date</span>
         <div class="section-head-line"></div>
     </div>
     <div class="attendance-viewport">
@@ -477,8 +491,8 @@
                     {% for dept, vals in dept_summary.items() %}
                     <tr>
                         <td>{{ dept }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.present }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.absent }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -491,8 +505,8 @@
                     {% for desg, vals in desg_summary.items() %}
                     <tr>
                         <td>{{ desg }}</td>
-                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.active }}</strong></td>
-                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.closed }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-success);">Present: <strong>{{ vals.present }}</strong></td>
+                        <td style="text-align:right; color:var(--corp-danger);">Absent: <strong>{{ vals.absent }}</strong></td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -553,7 +567,7 @@
     </div>
 
     <div class="section-head">
-        <span>Current Floor Balance Report</span>
+        <span>Floor Balance Snapshot — {{ floor_snapshot_date or to_date }} · {{ floor_snapshot_time }}</span>
         <div class="section-head-line"></div>
     </div>
     <div class="corp-panel floor-box">
@@ -569,7 +583,15 @@
             <h3 id="modalTitle">Process Terminal</h3>
             <button class="close-btn" onclick="closeEntryModal()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <iframe id="entryFrame" src="" frameborder="0"></iframe>
+        <div class="entry-frame-shell">
+            <div id="entryFormSkeleton" class="entry-form-skeleton" aria-hidden="true">
+                <div class="entry-skeleton-head"></div>
+                <div class="entry-skeleton-grid">
+                    {% for _ in range(14) %}<div class="entry-skeleton-field"><span class="entry-skeleton-label"></span><span class="entry-skeleton-input"></span></div>{% endfor %}
+                </div>
+            </div>
+            <iframe id="entryFrame" src="" frameborder="0"></iframe>
+        </div>
     </div>
 </div>
 
@@ -640,6 +662,7 @@
             return; 
         }
 
+        urlParams.set('snapshot_date', urlParams.get('to_date') || '{{ to_date }}');
         document.getElementById("floorReportFrame").src = "/reports/floor_balance_report?" + urlParams.toString();
 
         if(parentCompNode && !parentCompNode.dataset.listenerAttached) {
@@ -663,10 +686,15 @@
         
         const urlParams = new URLSearchParams(window.location.search);
         urlParams.set('view', 'dashboard'); 
+        urlParams.set('embedded', 'true');
         
         const iframeUrl = url + "?" + urlParams.toString();
         
-        document.getElementById('entryFrame').src = iframeUrl;
+        const entryFrame = document.getElementById('entryFrame');
+        const entrySkeleton = document.getElementById('entryFormSkeleton');
+        if (entrySkeleton) { entrySkeleton.classList.add('show'); entrySkeleton.setAttribute('aria-hidden', 'false'); }
+        entryFrame.style.visibility = 'hidden';
+        entryFrame.src = iframeUrl;
         document.getElementById('entryModal').style.display = 'flex';
         document.body.style.overflow = 'hidden'; 
     }
@@ -677,6 +705,12 @@
         document.body.style.overflow = 'auto'; 
         location.reload(); 
     }
+
+    document.getElementById('entryFrame').addEventListener('load', function() {
+        const entrySkeleton = document.getElementById('entryFormSkeleton');
+        this.style.visibility = 'visible';
+        if (entrySkeleton) { entrySkeleton.classList.remove('show'); entrySkeleton.setAttribute('aria-hidden', 'true'); }
+    });
 
     window.onclick = function(event) { if (event.target == document.getElementById('entryModal')) { closeEntryModal(); } }
 
@@ -748,6 +782,6 @@
         });
     }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

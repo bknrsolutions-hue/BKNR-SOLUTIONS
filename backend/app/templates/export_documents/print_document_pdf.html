@@ -3,41 +3,241 @@
 <head>
 <meta charset="UTF-8">
 <style>
-@page { size: A4; margin: 13mm; }
-body { font-family: Helvetica, Arial, sans-serif; color: #172033; font-size: 9pt; }
-table { width: 100%; border-collapse: collapse; }
-.header td { vertical-align: top; border-bottom: 2px solid #123b5d; padding: 0 0 8px; }
-.company { font-size: 17pt; font-weight: bold; color: #123b5d; }
-.doc-title { font-size: 14pt; font-weight: bold; text-align: right; text-transform: uppercase; }
-.meta { text-align: right; color: #4b5563; }
-.section { margin-top: 10px; padding: 5px 7px; background: #dbeaf2; border: 1px solid #9ab8c8; font-weight: bold; text-transform: uppercase; }
-.details td { border: 1px solid #c8d2da; padding: 5px 7px; vertical-align: top; }
-.details .label { width: 31%; background: #f1f5f7; color: #44515c; font-size: 8pt; font-weight: bold; text-transform: uppercase; }
-.declaration { border: 1px solid #c8d2da; padding: 7px; line-height: 1.45; }
-.signatures { margin-top: 24px; }
-.signatures td { width: 33.33%; border-top: 1px solid #172033; padding: 6px; font-size: 8pt; font-weight: bold; text-transform: uppercase; }
-.control { margin-top: 12px; border-top: 1px solid #c8d2da; padding-top: 6px; color: #65727d; font-size: 7pt; text-align: center; }
+@page { size:A4 portrait; margin:5mm 6mm 7mm; }
+body { margin:0; color:#172033; font-family:Helvetica,Arial,sans-serif; font-size:{{ fit_font_size or 6.3 }}pt; line-height:1.08; }
+table { width:100%; border-collapse:collapse; }
+.brand { height:4px; background:#123b5d; }
+.header td { padding:3px 0; vertical-align:top; border-bottom:2px solid #123b5d; }
+.company-name { color:#123b5d; font-size:12pt; font-weight:bold; text-transform:uppercase; }
+.tag { color:#176b87; font-size:4.5pt; font-weight:bold; letter-spacing:.7px; text-transform:uppercase; }
+.company-line { color:#405466; font-size:5pt; }
+.doc-head { text-align:right; }
+.doc-title { color:#123b5d; font-size:9pt; font-weight:bold; text-transform:uppercase; }
+.doc-no { display:inline-block; margin-top:2px; padding:2px 5px; border:1px solid #176b87; color:#123b5d; background:#eaf5f8; font-size:6.5pt; font-weight:bold; }
+.status { margin-top:1px; color:#176b87; font-size:4.5pt; font-weight:bold; text-transform:uppercase; }
+.summary { margin-top:2px; }
+.summary td { width:25%; padding:2px 3px; border:1px solid #b9c9d4; vertical-align:top; }
+.summary small { display:block; color:#607181; font-size:4pt; font-weight:bold; text-transform:uppercase; }
+.summary b { font-size:5pt; }
+.invoice-parties { margin-top:2px; table-layout:fixed; }
+.invoice-parties td { padding:4px 5px; border:1px solid #b9c9d4; vertical-align:top; background:#fff; }
+.party-title { display:block; margin-bottom:2px; color:#176b87; font-size:4pt; font-weight:bold; text-transform:uppercase; }
+.invoice-parties strong { display:block; color:#123b5d; font-size:5.8pt; text-transform:uppercase; }
+.invoice-parties p { margin:1px 0; color:#405466; font-size:4.8pt; }
+.invoice-facts { table-layout:fixed; }
+.invoice-facts td { padding:3px 4px; border:1px solid #b9c9d4; vertical-align:top; background:#fff; }
+.fact-label { display:block; color:#607181; font-size:4pt; font-weight:bold; text-transform:uppercase; }
+.fact-value { display:block; margin-top:1px; color:#172033; font-size:5.2pt; font-weight:bold; }
+.invoice-description { padding:3px 4px; border:1px solid #b9c9d4; color:#172033; background:#fbfdfe; font-size:5.2pt; }
+.invoice-note { margin-top:2px; padding:2px 4px; border:1px solid #b9c9d4; border-left:3px solid #176b87; color:#405466; background:#f4f8fa; font-size:4.8pt; }
+.section-title { margin-top:2px; padding:1px 4px; border-left:3px solid #176b87; color:#123b5d; background:#eaf5f8; font-size:4.5pt; font-weight:bold; text-transform:uppercase; }
+.details td { padding:1px 3px; border:1px solid #b9c9d4; vertical-align:top; }
+.label { display:block; color:#607181; font-size:.65em; font-weight:bold; text-transform:uppercase; }
+.value { display:block; font-size:.9em; font-weight:bold; }
+.items th,.items td { padding:1px; border:1px solid #b9c9d4; font-size:.72em; }
+.items th { color:#123b5d; background:#f4f8fa; font-size:.62em; text-transform:uppercase; }
+.num { text-align:right; }
+.total td { color:#123b5d; background:#eaf5f8; font-weight:bold; }
+.item-sub { display:block; color:#607181; font-size:.78em; font-weight:normal; }
+.value-wrap td:first-child { width:58%; border:0; }
+.value-table { width:42%; margin-top:2px; }
+.value-table td { padding:1px 3px; border:1px solid #b9c9d4; }
+.value-table td:first-child { color:#607181; background:#f4f8fa; font-size:.64em; font-weight:bold; text-transform:uppercase; }
+.value-table td:last-child { text-align:right; font-weight:bold; }
+.terms-box { padding:2px 4px; border:1px solid #b9c9d4; color:#334b5d; background:#fbfdfe; font-size:.62em; }
+.terms-box p { margin:0; }
+.signatures { margin-top:7px; }
+.signatures td { width:33.33%; height:54pt; padding:0 5px 3px; border:0; font-size:.72em; font-weight:bold; text-transform:uppercase; vertical-align:bottom; }
+.signature-line { margin-bottom:4px; border-top:1px solid #172033; }
+.signatures small { color:#607181; font-size:.65em; font-weight:normal; text-transform:none; }
+.footer-title { margin-top:2px; }
+.control { margin-top:2px; padding-top:1px; border-top:1px solid #b9c9d4; color:#607181; font-size:.58em; text-align:center; }
 </style>
 </head>
 <body>
+<div class="brand"></div>
 <table class="header">
   <tr>
-    <td><div class="company">SOLUTIONS</div><div>Exporter / Manufacturer</div><div>Company: {{ company_id }} | India</div></td>
-    <td><div class="doc-title">{{ title }}</div><div class="meta"><b>{{ document_no }}</b><br>Date: {{ document_date or generated_at.date() }}<br>Generated: {{ generated_at.strftime('%d-%b-%Y %H:%M UTC') }}</div></td>
+    <td>
+      <div class="company-name">{{ company.name }}</div>
+      {% if company.address %}<div class="company-line">{{ company.address }}</div>{% endif %}
+      {% if company.email %}<div class="company-line">{{ company.email }}</div>{% endif %}
+      {% if doc_type in ["commercial_invoice", "proforma_invoice"] %}
+      <div class="company-line"><b>{{ company.code }}</b></div>
+      {% else %}
+      <div class="company-line">MPEDA Registration Code: {{ company.code }} · India</div>
+      {% endif %}
+    </td>
+    <td class="doc-head">
+      <div class="doc-title">{{ title }}</div>
+      <div class="doc-no">{{ document_no }}</div>
+      <div>Date: {{ document_date.strftime('%d-%b-%Y') if document_date and document_date.strftime is defined else (document_date or '—') }}</div>
+      <div class="status">{{ record.approval_status if record.approval_status is defined else (record.status if record.status is defined else 'CONTROLLED COPY') }}</div>
+    </td>
   </tr>
 </table>
 
-<div class="section">Document Particulars</div>
-<table class="details">
-{% for label, value in fields %}
-  {% if value is not none and value != "" %}<tr><td class="label">{{ label }}</td><td>{{ value }}</td></tr>{% endif %}
-{% endfor %}
+<table class="summary">
+  <tr>
+    <td><small>Document Number</small><b>{{ document_no }}</b></td>
+    <td><small>Document Type</small><b>{{ title }}</b></td>
+    <td><small>Document Reference</small><b>{{ document_reference }}</b></td>
+    <td><small>Generated On</small><b>{{ generated_at.strftime('%d-%b-%Y %I:%M %p') }}</b></td>
+  </tr>
 </table>
 
-<div class="section">Declaration and Control</div>
-<div class="declaration">We certify that the particulars shown above are true and correct according to the records maintained in ERP. The document must be checked against the buyer contract, customs filing, carrier document, statutory certificate, and latest approved revision before external use.</div>
+{% if doc_type in ["commercial_invoice", "proforma_invoice"] %}
+  <table class="invoice-parties">
+    <tr>
+      <td>
+        <span class="party-title">Exporter / Seller</span>
+        <strong>{{ company.name }}</strong>
+        {% if company.address %}<p>{{ company.address }}</p>{% endif %}
+        {% if company.email %}<p>{{ company.email }}</p>{% endif %}
+        <p>{{ company.code }}</p>
+      </td>
+      <td>
+        <span class="party-title">Buyer / Bill To</span>
+        <strong>{{ record.buyer_name or '—' }}</strong>
+        <p>{{ record.buyer_address or '—' }}</p>
+        <p>{{ record.country or '—' }}</p>
+      </td>
+      {% if doc_type == "commercial_invoice" %}
+      <td>
+        <span class="party-title">Consignee / Notify Party</span>
+        <strong>{{ record.consignee_name or record.buyer_name or '—' }}</strong>
+        <p>{{ record.notify_party or 'Same as buyer' }}</p>
+      </td>
+      {% endif %}
+    </tr>
+  </table>
 
-<table class="signatures"><tr><td>Prepared By<br><small>Export Documentation</small></td><td>Checked By<br><small>Compliance / Logistics</small></td><td>Authorised Signatory<br><small>Company Seal</small></td></tr></table>
-<div class="control">CONTROLLED ERP COPY | Document ID: {{ doc_type|upper }}-{{ record.id }} | Verify latest revision before use</div>
+  <div class="section-title">Invoice & Order References</div>
+  <table class="invoice-facts">
+    <tr>
+      <td><span class="fact-label">{{ 'Invoice Number' if doc_type == 'commercial_invoice' else 'PI Number' }}</span><span class="fact-value">{{ document_no }}</span></td>
+      <td><span class="fact-label">{{ 'Invoice Date' if doc_type == 'commercial_invoice' else 'PI Date' }}</span><span class="fact-value">{{ document_date.strftime('%d-%b-%Y') if document_date and document_date.strftime is defined else (document_date or '—') }}</span></td>
+      <td><span class="fact-label">Buyer PO Number</span><span class="fact-value">{{ record.po_number or '—' }}</span></td>
+      <td><span class="fact-label">{{ 'Shipment Number' if doc_type == 'commercial_invoice' else 'Valid Until' }}</span><span class="fact-value">{{ record.shipment_no if doc_type == 'commercial_invoice' else (record.validity_date or '—') }}</span></td>
+    </tr>
+  </table>
+
+  <div class="section-title">Commercial & Shipping Terms</div>
+  <table class="invoice-facts">
+    <tr>
+      <td><span class="fact-label">Currency</span><span class="fact-value">{{ record.currency or '—' }}</span></td>
+      <td><span class="fact-label">Payment Terms</span><span class="fact-value">{{ record.payment_terms or '—' }}</span></td>
+      <td><span class="fact-label">Trade Terms</span><span class="fact-value">{{ record.shipment_terms if doc_type == 'commercial_invoice' else record.incoterm }}</span></td>
+      <td><span class="fact-label">{{ 'Shipment Type' if doc_type == 'commercial_invoice' else 'Quantity / Unit' }}</span><span class="fact-value">{{ record.shipment_type if doc_type == 'commercial_invoice' else ((record.quantity|string) + ' ' + (record.unit or '')) }}</span></td>
+    </tr>
+    <tr>
+      <td><span class="fact-label">Port of Loading</span><span class="fact-value">{{ record.port_of_loading or '—' }}</span></td>
+      <td><span class="fact-label">Port of Discharge</span><span class="fact-value">{{ record.port_of_discharge or '—' }}</span></td>
+      <td><span class="fact-label">{{ 'Final Destination' if doc_type == 'commercial_invoice' else 'Country' }}</span><span class="fact-value">{{ record.final_destination if doc_type == 'commercial_invoice' else record.country }}</span></td>
+      <td><span class="fact-label">{{ 'Container Number' if doc_type == 'commercial_invoice' else 'Unit Price' }}</span><span class="fact-value">{{ (record.container_no or '—') if doc_type == 'commercial_invoice' else ((record.currency or '') + ' ' + (record.unit_price|string)) }}</span></td>
+    </tr>
+    {% if doc_type == "commercial_invoice" %}
+    <tr>
+      <td><span class="fact-label">Master Cartons</span><span class="fact-value">{{ record.total_mc or 0 }}</span></td>
+      <td><span class="fact-label">Total Net Weight</span><span class="fact-value">{{ record.total_net_weight or 0 }}</span></td>
+      <td><span class="fact-label">Total Gross Weight</span><span class="fact-value">{{ record.total_gross_weight or 0 }}</span></td>
+      <td><span class="fact-label">Payment Status</span><span class="fact-value">{{ record.payment_status or 'PENDING' }}</span></td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {% if doc_type == "proforma_invoice" %}
+  <div class="section-title">Product Description</div>
+  <div class="invoice-description">{{ record.product_description or '—' }}</div>
+  {% endif %}
+  {% if record.remarks is defined and record.remarks %}
+    <div class="invoice-note"><b>Remarks:</b> {{ record.remarks }}</div>
+  {% endif %}
+{% elif sections %}
+  {% for section in sections %}
+  <div class="section-title">{{ section.title }}</div>
+  <table class="details">
+    {% for row in section.rows %}
+    <tr>
+      {% for item in row %}
+      <td colspan="{{ item.span }}">{% if not item.empty %}<span class="label">{{ item.label }}</span><span class="value">{{ item.value }}</span>{% endif %}</td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </table>
+  {% endfor %}
+{% else %}
+  <div class="section-title">Document Particulars</div>
+  <table class="details">
+    {% for pair in fields|batch(3, none) %}
+    <tr>{% for item in pair %}<td>{% if item %}<span class="label">{{ item[0] }}</span><span class="value">{{ item[1] or '—' }}</span>{% endif %}</td>{% endfor %}</tr>
+    {% endfor %}
+  </table>
+{% endif %}
+
+{% if doc_type == "commercial_invoice" and line_items %}
+<div class="section-title">Product, Packing & Weight Details</div>
+<table class="items">
+  <tr><th>#</th><th>Product</th><th>Grade</th><th>Packing</th><th>Batch</th><th class="num">MC</th><th class="num">Net Wt.</th><th class="num">Gross Wt.</th></tr>
+  {% for item in line_items %}
+  <tr><td>{{ loop.index }}</td><td>{{ item.product or '—' }}</td><td>{{ item.grade or '—' }}</td><td>{{ item.packing_style or '—' }}</td><td>{{ item.batch_no or '—' }}</td><td class="num">{{ item.master_cartons }}</td><td class="num">{{ '%.2f'|format(item.net_weight) }}</td><td class="num">{{ '%.2f'|format(item.gross_weight) }}</td></tr>
+  {% endfor %}
+  <tr class="total"><td colspan="5">TOTAL</td><td class="num">{{ line_items|sum(attribute='master_cartons') }}</td><td class="num">{{ '%.2f'|format(line_items|sum(attribute='net_weight')) }}</td><td class="num">{{ '%.2f'|format(line_items|sum(attribute='gross_weight')) }}</td></tr>
+</table>
+{% endif %}
+
+{% if doc_type == "packing_list" and packing_line_items %}
+<div class="section-title">Consolidated Product, Packing & Traceability Schedule</div>
+<table class="items">
+  <tr><th># / Packing Ref.</th><th>Product / HS</th><th>Grade / Process</th><th>Batch / Lot</th><th>Mfg. / Expiry</th><th>Packing Configuration</th><th>Inventory Reference</th><th class="num">MC / Pallet</th><th class="num">Net Wt.</th><th class="num">Gross Wt.</th></tr>
+  {% for item in packing_line_items %}
+  <tr>
+    <td>{{ loop.index }} · <b>{{ item.packing_no }}</b><span class="item-sub">Item: {{ item.invoice_item_no or '—' }}</span></td>
+    <td><b>{{ item.product_name or '—' }}</b><span class="item-sub">HS: {{ item.hs_code or '—' }}</span></td>
+    <td>{{ item.grade or '—' }}<span class="item-sub">{{ item.glaze or '—' }} · {{ item.freezing_type or '—' }}</span></td>
+    <td>{{ item.batch_no or '—' }}<span class="item-sub">Lot: {{ item.lot_no or '—' }}</span></td>
+    <td>{{ item.manufacturing_date }}<span class="item-sub">Exp: {{ item.expiry_date }}</span></td>
+    <td>{{ item.packing_style or '—' }}<span class="item-sub">Inner: {{ item.inner_pack or '—' }} · Outer: {{ item.outer_pack or '—' }}</span></td>
+    <td>{{ item.inventory_batch_id or '—' }}<span class="item-sub">Stock: {{ item.stock_entry_no or '—' }}</span></td>
+    <td class="num">{{ item.master_cartons }}<span class="item-sub">Pallet: {{ item.pallet_count }}</span></td>
+    <td class="num">{{ '{:,.2f}'.format(item.net_weight) }}</td>
+    <td class="num">{{ '{:,.2f}'.format(item.gross_weight) }}</td>
+  </tr>
+  {% endfor %}
+  <tr class="total"><td colspan="7">CONSOLIDATED TOTAL · {{ packing_line_items|length }} LINE(S)</td><td class="num">{{ packing_line_items|sum(attribute='master_cartons') }} MC / {{ packing_line_items|sum(attribute='pallet_count') }} Pallet</td><td class="num">{{ '{:,.2f}'.format(packing_line_items|sum(attribute='net_weight')) }}</td><td class="num">{{ '{:,.2f}'.format(packing_line_items|sum(attribute='gross_weight')) }}</td></tr>
+</table>
+{% endif %}
+
+{% if doc_type in ["commercial_invoice", "proforma_invoice"] %}
+<table class="value-wrap"><tr><td></td><td>
+  <table class="value-table">
+    {% if record.quantity is defined %}<tr><td>Quantity × Unit Price</td><td>{{ record.quantity }} {{ record.unit }} × {{ record.currency }} {{ record.unit_price }}</td></tr>{% endif %}
+    {% if record.exchange_rate is defined %}<tr><td>Exchange Rate</td><td>{{ record.exchange_rate }}</td></tr>{% endif %}
+    <tr><td>Total Document Value</td><td>{{ record.currency }} {{ '{:,.2f}'.format(record.total_amount|float) }}</td></tr>
+    {% if record.invoice_value_inr is defined %}<tr><td>Equivalent INR</td><td>INR {{ '{:,.2f}'.format(record.invoice_value_inr|float) }}</td></tr>{% endif %}
+  </table>
+</td></tr></table>
+{% endif %}
+
+<div class="signoff-content">
+  <div class="section-title footer-title">Terms & Conditions</div>
+  <div class="terms-box">
+    <p>All particulars are reproduced from the approved company record and are subject to the applicable buyer purchase order, sales contract and statutory requirements.</p>
+    {% if doc_type == "commercial_invoice" %}<p>Commercial value, currency, buyer, consignee, shipment, packing and weight details must be read with the approved purchase order and shipment documents.</p>{% endif %}
+    {% if doc_type == "packing_list" %}<p>Batch, lot, grade, glaze, packing configuration, carton count and weights form part of the shipment traceability record.</p>{% endif %}
+    {% if doc_type == "container_stuffing" %}<p>Container, seal, vehicle, supervisor, time and temperature details constitute the controlled stuffing record.</p>{% endif %}
+    {% if doc_type == "bill_of_lading" %}<p>The final carrier-issued original B/L prevails over this system copy where the carrier issues an amendment.</p>{% endif %}
+    {% if doc_type == "health_certificate" %}<p>Certificate particulars remain subject to validation by the issuing authority and destination-country requirements.</p>{% endif %}
+    <p>This system-generated controlled copy becomes invalid if altered without authorisation.</p>
+  </div>
+  <table class="signatures">
+    <tr>
+      <td><div class="signature-line"></div>Prepared By<br><small>Export Documentation</small></td>
+      <td><div class="signature-line"></div>Verified By<br><small>Commercial / Logistics / Compliance</small></td>
+      <td><div class="signature-line"></div>Authorised Signatory<br><small>For {{ company.name }} · Company Seal</small></td>
+    </tr>
+  </table>
+  <div class="control"><b>CONTROLLED DOCUMENT COPY</b> · {{ document_reference }} · Revision {{ record.updated_at.strftime('%d-%b-%Y') if record.updated_at is defined and record.updated_at else 'ORIGINAL' }} · Verify latest approved version before external use.</div>
+</div>
 </body>
 </html>

@@ -47,7 +47,7 @@ def storage_cost_report(
         billing_start_date = date(today.year, today.month, 1)
         billing_end_date = today
 
-    # 🔍 FETCH ALL DATA (FIFO కోసం Billing End Date వరకు ఉన్నవన్నీ కావాలి)
+    # 🔍 FETCH ALL DATA (FIFO  Billing End Date   )
     q = db.query(Inventory).filter(Inventory.company_id == company_code)
     
     # 🟢 FIX 2: Manual screen selection OR Global header selection fallback mechanism
@@ -287,6 +287,35 @@ def storage_cost_report(
 
     c_info = db.query(Company).filter(Company.company_code == company_code).first()
     company_name = c_info.company_name if c_info else "BKNR ERP"
+
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_report_data = []
+        for item in report_data:
+            ser_item = dict(item)
+            if "details" in ser_item:
+                r = ser_item["details"]
+                ser_item["details"] = {col.name: getattr(r, col.name) for col in r.__table__.columns}
+            serialized_report_data.append(ser_item)
+            
+        json_context = {
+            "report_data": serialized_report_data,
+            "available_stock_items": available_stock_items,
+            "dispatches_this_month": dispatches_this_month,
+            "production_for_list": p_for_list,
+            "production_at_list": p_at_list,
+            "freezers": fzrs,
+            "selected_month": selected_month,
+            "selected_production_for": effective_production_for,
+            "selected_location": effective_location,
+            "billing_start_date": billing_start_date.isoformat() if billing_start_date else None,
+            "total_qty_sum": round(total_qty_sum, 2),
+            "total_holding_sum": round(total_holding_sum, 2),
+            "total_payable_sum": round(total_payable_sum, 2),
+            "company_name": company_name
+        }
+        return JSONResponse(jsonable_encoder(json_context))
 
     return templates.TemplateResponse(
         request=request, 

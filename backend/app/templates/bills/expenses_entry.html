@@ -100,6 +100,20 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .text-left { text-align: left !important; }
 
 .expense-badge { background: #eef2ff; color: #4338ca; padding: 3px 8px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+.status-badge { background:#ecfdf5; color:#059669; padding:3px 8px; border-radius:4px; font-weight:700; font-size:10px; }
+.status-badge.cancelled { background:#fee2e2; color:#b91c1c; }
+tr.cancelled-row {
+    background:#fff1f2 !important;
+    opacity:0.78;
+}
+tr.cancelled-row td {
+    text-decoration:line-through;
+    color:#9f1239 !important;
+}
+tr.cancelled-row .status-badge,
+tr.cancelled-row .expense-badge {
+    text-decoration:none;
+}
 
 /* Empty State */
 .empty-state { padding: 80px 20px; text-align: center; color: var(--muted); background: #fcfdfe; }
@@ -142,8 +156,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -201,12 +215,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th>Expense Category</th>
                 <th class="text-right">Total Amount (₹)</th>
                 <th class="text-left">Remarks & Meta Records Log</th>
+                <th>Accounts</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not expense_history %}
             <tr>
-                <td colspan="5" class="empty-state">
+                <td colspan="6" class="empty-state">
                     <i class="fa-solid fa-wallet" style="color:var(--accent);"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render active expenses data ledger.</span>
@@ -214,9 +229,10 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </tr>
             {% else %}
                 {% for row in expense_history %}
-                <tr class="data-row" 
+                <tr class="data-row {% if row.OtherExpense.is_cancelled %}cancelled-row{% endif %}"
                     data-id="{{ row.OtherExpense.id }}" 
                     data-total="{{ row.OtherExpense.amount }}"
+                    data-cancelled="{{ 'true' if row.OtherExpense.is_cancelled else 'false' }}"
                     onclick="selectRow(this, '{{ row.OtherExpense.id }}')">
                     
                     <td class="slno">0</td>
@@ -224,6 +240,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td><span class="expense-badge">{{ row.OtherExpense.category }}</span></td>
                     <td class="text-right cost-val" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(row.OtherExpense.amount or 0) }}</td>
                     <td class="text-left" style="color:var(--muted); max-width:400px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.OtherExpense.remarks }}</td>
+                    <td><span class="status-badge {% if row.OtherExpense.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if row.OtherExpense.is_cancelled else ('POSTED' if row.OtherExpense.journal_id else 'DRAFT') }}</span></td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -255,19 +272,24 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 </div>
 
                 <div class="field">
-                    <label>Category</label>
-                    <select id="modalCategory" required>
-                        <option value="Maintenance">Maintenance</option>
-                        <option value="Stationary">Stationary</option>
-                        <option value="Staff Welfare">Staff Welfare</option>
-                        <option value="Traveling">Traveling</option>
-                        <option value="Others">Others</option>
+                    <label>Paid To</label>
+                    <select id="modalPaidTo" required>
+                        <option value="" disabled selected>-- SELECT VENDOR --</option>
+                        {% for v in vendors %}
+                        <option value="{{ v.name }}">{{ v.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 
                 <div class="field">
-                    <label>Paid To</label>
-                    <input type="text" id="modalPaidTo" placeholder="Vendor / Recipient Name" required>
+                    <label>Accounting Ledger</label>
+                    <select id="modalAccountingLedgerId" onchange="handleLedgerAddNew(this)">
+                        <option value="">Auto - Based on Category</option>
+                        {% for ledger in posting_ledgers %}
+                        <option value="{{ ledger.id }}">{{ ledger.ledger_name }}{% if ledger.group %} ({{ ledger.group.group_name }}){% endif %}</option>
+                        {% endfor %}
+                        <option value="__add_new_ledger__">+ Add New Ledger</option>
+                    </select>
                 </div>
 
                 <div class="field">
@@ -321,6 +343,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/expenses' : '/expenses';
     let globalSelectedId = null;
 
+    function handleLedgerAddNew(selectEl) {
+        if (selectEl.value === "__add_new_ledger__") {
+            selectEl.value = "";
+            window.location.href = "/finance_accounts/ledger_master/entry";
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
         applyFilters();
         
@@ -344,9 +373,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     });
 
     function changeFY(val) {
-        if(!val) return;
         const url = new URL(window.location.href);
-        url.searchParams.set('fy', val);
+        url.searchParams.set('fy', val || '');
         window.location.href = url.toString();
     }
 
@@ -369,12 +397,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         rows.forEach(r => {
             const t = parseFloat(r.getAttribute("data-total")) || 0;
+            const isCancelled = r.getAttribute("data-cancelled") === "true";
             let match = true;
             if (sVal && !r.textContent.toLowerCase().includes(sVal)) match = false;
 
             if(match) {
                 r.style.display = "";
-                subtotal += t;
+                subtotal += isCancelled ? -t : t;
                 visibleRows.push(r);
             } else {
                 r.style.display = "none";
@@ -391,6 +420,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
     function selectRow(tr, id) {
         globalSelectedId = id;
+        window.selectedRowCancelled = tr.getAttribute("data-cancelled") === "true";
         document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
         tr.classList.add('selected-row');
         document.getElementById('threeDotsMenu').style.display = 'block';
@@ -457,13 +487,14 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const payload = {
             production_at_id: parseInt(document.getElementById("modalUnitId").value),
             expense_date: document.getElementById("modalExpenseDate").value,
-            category: document.getElementById("modalCategory").value,
-            paid_to: document.getElementById("modalPaidTo").value.trim(),
+            category: "",
+            paid_to: document.getElementById("modalPaidTo").value,
             voucher_no: document.getElementById("modalVoucherNo").value.trim(),
             amount: amt,
             gst_per: gst,
             remarks: document.getElementById("modalRemarks").value.trim(),
-            grand_total: grand
+            grand_total: grand,
+            accounting_ledger_id: document.getElementById("modalAccountingLedgerId").value ? parseInt(document.getElementById("modalAccountingLedgerId").value) : null
         };
 
         try {
@@ -475,26 +506,35 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success || out.status === 'success') {
-                Swal.fire({ icon:'success', title:'Expense Ledger Committed!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                Swal.fire({ icon:'success', title:'Expense Posted', text: out.message || 'Expense ledger committed successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
             } else { Swal.fire("Error", out.message || "Save rejection validation fault.", "error"); }
         } catch(e) { Swal.fire("Error", "Server payload channel link dropped exception.", "error"); }
     }
 
     async function cancelSelected() {
         if (!globalSelectedId) return;
+        if (window.selectedRowCancelled) {
+            Swal.fire("Already Cancelled", "This expense record is already cancelled.", "info");
+            return;
+        }
         const resDecision = await Swal.fire({
-            title: "Destroy record node?", text: "This transaction trace row will be cancelled.", icon: "warning", showCancelButton: true
+            title: "Cancel expense record?", text: "This transaction row will be marked as cancelled and accounting voucher will be cancelled.", icon: "warning", showCancelButton: true
         });
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire({ icon:'success', title:'Cancelled!', timer:800, showConfirmButton:false }).then(() => location.reload());
-            } catch(e) { Swal.fire("Error", "Interceptor execution dropping storage row node reference.", "error"); }
+                const out = await res.json();
+                if(res.ok && out.success) {
+                    Swal.fire({ icon:'success', title:'Cancelled', text: out.message || 'Expense record cancelled successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
+                } else {
+                    Swal.fire("Error", out.message || "Cancel failed.", "error");
+                }
+            } catch(e) { Swal.fire("Error", "Unable to cancel expense record.", "error"); }
         }
     }
 
     function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

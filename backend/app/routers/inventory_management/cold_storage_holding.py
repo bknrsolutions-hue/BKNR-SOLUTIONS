@@ -64,14 +64,13 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         .all() if p.po_number
     ]
 
-    # Context update with today_date for HTML filtering
     context = {
         "request": request,
         "success_msg": success_msg,
         "current_holdings": current_holdings,
         "storage_masters": storage_masters,
         "production_for_list": prod_for_list,
-        "today_date": date.today().isoformat(), # <--- HTML filtering కోసం ఇది యాడ్ చేశాను
+        "today_date": date.today().isoformat(),
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species_model).filter(species_model.company_id == company_code).all()],
         "glazes": [g.glaze_name for g in db.query(glazes).filter(glazes.company_id == company_code).all()],
@@ -82,11 +81,47 @@ def holding_page(request: Request, db: Session = Depends(get_db)):
         "pending_orders": po_numbers_list,
     }
 
+    # JSON API for React
+    if request.query_params.get("format") == "json":
+        import datetime as dt_mod
+        def ser(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)): return v.isoformat()
+            if isinstance(v, dt_mod.time): return v.strftime("%H:%M")
+            return v
+        def row_to_dict(r):
+            d = {}
+            for col in r.__table__.columns:
+                d[col.name] = ser(getattr(r, col.name))
+            return d
+        ps_list = [{"packing_style": p.packing_style, "mc_weight": float(p.mc_weight or 0), "slab_weight": float(p.slab_weight or 0)} for p in context["packing_styles"]]
+        sm_list = [{
+            "id": s.id,
+            "cold_storage_name": s.storage_name,
+            "address": s.address or "",
+            "rate_per_mc": float(s.rate_per_mc_per_month or 0),
+        } for s in storage_masters]
+        pf_list = [{"id": p.id, "production_for": p.production_for} for p in prod_for_list]
+        return JSONResponse({
+            "current_holdings": [row_to_dict(r) for r in current_holdings],
+            "storage_masters": sm_list,
+            "production_for_list": pf_list,
+            "today_date": date.today().isoformat(),
+            "brands": context["brands"],
+            "species": context["species"],
+            "glazes": context["glazes"],
+            "varieties": context["varieties"],
+            "grades": context["grades"],
+            "freezers": context["freezers"],
+            "packing_styles": ps_list,
+            "pending_orders": po_numbers_list,
+        })
+
     return templates.TemplateResponse(
         request=request, 
         name="inventory_management/cold_storage_holding.html", 
         context=context
     )
+
 
 # ==================================================
 # API TO GET BATCHES FILTERED BY PURPOSE "STORING"

@@ -18,6 +18,7 @@ export default function GeneralStockReport({ activeRoute }) {
   const [toDate, setToDate] = useState('');
   const [month, setMonth] = useState('');
   const [search, setSrch] = useState('');
+  const [activeTab, setActiveTab] = useState('summary');
 
   const { data, loading, error, reload } = useReport({
     url: activeRoute,
@@ -55,6 +56,17 @@ export default function GeneralStockReport({ activeRoute }) {
 
   // Footer sums
   const totalQty = records.reduce((s, r) => s + Number(r.quantity || 0), 0);
+  const totalIn = records.filter(r => r.movement_type === 'IN').reduce((s, r) => s + Number(r.quantity || 0), 0);
+  const totalOut = records.filter(r => r.movement_type === 'OUT').reduce((s, r) => s + Number(r.quantity || 0), 0);
+  const summaryMap = new Map();
+  records.forEach(r => {
+    const key = `${r.item_name || ''}\u001f${r.unit_name || ''}`;
+    const current = summaryMap.get(key);
+    if (!current || `${r.date || ''} ${r.time || ''}` >= `${current.date || ''} ${current.time || ''}`) {
+      summaryMap.set(key, r);
+    }
+  });
+  const summaryRows = [...summaryMap.values()];
 
   const resetFilters = () => {
     setFy('');
@@ -167,37 +179,49 @@ export default function GeneralStockReport({ activeRoute }) {
       {!loading && !error && (
         <>
           <KPIGrid>
-            <KPICard label="Total Entries" value={records.length} accent="var(--corp-dash)" />
-            <KPICard label="Items"
-              value={new Set(records.map(r => r.item_name)).size}
-              accent="var(--corp-ops)" />
-            <KPICard label="Total Quantity" value={fmt.number(totalQty)} accent="var(--corp-fin)" />
+            <KPICard label="Total Receipts (IN)" value={fmt.number(totalIn)} accent="var(--corp-fin)" />
+            <KPICard label="Total Issues (OUT)" value={fmt.number(totalOut)} accent="var(--corp-ops)" />
+            <KPICard label="Net Stock Balance" value={fmt.number(totalIn - totalOut)} accent="var(--corp-dash)" />
+            <KPICard label="Low Stock Items" value={summaryRows.filter(r => Number(r.available_stock || 0) <= Number(r.minimum_level || 0)).length} accent="#ea580c" />
           </KPIGrid>
 
-          <div className="card" style={{ marginTop: 0 }}>
+          <div style={{ display: 'flex', gap: 8, margin: '8px 0' }}>
+            <button type="button" className={`btn ${activeTab === 'summary' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('summary')}>📊 Grouped Summary</button>
+            <button type="button" className={`btn ${activeTab === 'ledger' ? 'btn-primary' : ''}`} onClick={() => setActiveTab('ledger')}>📋 Detailed Ledger</button>
+          </div>
+
+          {activeTab === 'summary' && <div className="card" style={{ marginTop: 0 }}>
+            <div className="table-responsive"><table className="bknr-table" style={{ width: '100%' }}>
+              <thead><tr><th>#</th><th>Item Name</th><th>Unit</th><th className="text-right">Current Stock Balance</th><th className="text-right">Minimum Level</th><th>Status</th></tr></thead>
+              <tbody>{summaryRows.length === 0 ? <EmptyRow cols={6} /> : summaryRows.map((r, i) => <tr key={`${r.item_name}-${r.unit_name}`}><td>{i + 1}</td><td>{r.item_name}</td><td>{r.unit_name}</td><td className="text-right">{fmt.number(r.available_stock)}</td><td className="text-right">{fmt.number(r.minimum_level)}</td><td>{Number(r.available_stock || 0) <= Number(r.minimum_level || 0) ? 'LOW STOCK' : 'IN STOCK'}</td></tr>)}</tbody>
+            </table></div>
+          </div>}
+
+          {activeTab === 'ledger' && <div className="card" style={{ marginTop: 0 }}>
             <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
               <table className="bknr-table" style={{ width: '100%' }}>
                 <thead>
                   <tr>
-                    <th style={{ width: 100 }}>Date</th>
-                    <th style={{ width: 70 }}>Time</th>
+                    <th style={{ width: 50 }}>#</th>
+                    <th style={{ width: 80 }}>ID</th>
                     <th style={{ width: 120 }}>GRN Number</th>
                     <th>Item Name</th>
                     <th style={{ width: 100 }} className="text-center">Unit</th>
                     <th style={{ width: 100 }} className="text-center">Movement</th>
-                    <th style={{ width: 130 }} className="text-right">Opening Stock</th>
                     <th style={{ width: 110 }} className="text-right">Qty</th>
+                    <th style={{ width: 130 }} className="text-right">Opening Stock</th>
                     <th style={{ width: 130 }} className="text-right">Available Stock</th>
                     <th style={{ width: 110 }} className="text-right">Min Level</th>
-                    <th style={{ width: 120 }}>User</th>
+                    <th style={{ width: 100 }}>Date</th>
+                    <th style={{ width: 70 }}>Time</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {records.length === 0 ? <EmptyRow cols={11} /> :
+                  {records.length === 0 ? <EmptyRow cols={12} /> :
                     records.map((r, i) => (
                       <tr key={i}>
-                        <td className="text-center">{r.date}</td>
-                        <td className="text-center">{r.time}</td>
+                        <td className="text-center">{i + 1}</td>
+                        <td className="text-center">{r.id}</td>
                         <td style={{ fontWeight: 700, color: 'var(--accent)' }}>{r.grn_number}</td>
                         <td>{r.item_name}</td>
                         <td className="text-center">{r.unit_name}</td>
@@ -210,32 +234,30 @@ export default function GeneralStockReport({ activeRoute }) {
                             border: r.movement_type === 'IN' ? '1px solid rgba(16,185,129,0.3)' : '1px solid rgba(239,68,68,0.3)',
                           }}>{r.movement_type}</span>
                         </td>
-                        <td className="text-right">{fmt.number(r.opening_stock)}</td>
                         <td className="text-right" style={{ fontWeight: 700 }}>{fmt.number(r.quantity)}</td>
+                        <td className="text-right">{fmt.number(r.opening_stock)}</td>
                         <td className="text-right" style={{
                           color: Number(r.available_stock) <= Number(r.minimum_level) ? '#ef4444' : undefined,
                           fontWeight: 700
                         }}>{fmt.number(r.available_stock)}</td>
                         <td className="text-right">{fmt.number(r.minimum_level)}</td>
-                        <td style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                          {r.email ? r.email.split('@')[0] : ''}
-                        </td>
+                        <td className="text-center">{r.date}</td>
+                        <td className="text-center">{r.time}</td>
                       </tr>
                     ))}
                 </tbody>
                 <tfoot>
                   <tr style={{ fontWeight: 800 }}>
-                    <td colSpan={7} style={{ textAlign: 'right', paddingRight: '12px' }}>PAGE TOTAL QUANTITY:</td>
+                    <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px' }}>GRAND TOTALS (LEDR):</td>
                     <td className="text-right" style={{ color: 'var(--accent)', fontWeight: 800 }}>{fmt.number(totalQty)}</td>
-                    <td colSpan={3}></td>
+                    <td colSpan={5}></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
-          </div>
+          </div>}
         </>
       )}
     </div>
   );
 }
-

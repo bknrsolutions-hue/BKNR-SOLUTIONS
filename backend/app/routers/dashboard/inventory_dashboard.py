@@ -35,6 +35,7 @@ router = APIRouter(
 @router.get("/", response_class=HTMLResponse)
 async def get_inventory_dashboard(
     request: Request,
+    format: str = Query("html"),
     sel_species: str = Query("ALL"),
     sel_variety: str = Query("ALL"),
     sel_grade: str = Query("ALL"),
@@ -81,17 +82,28 @@ async def get_inventory_dashboard(
 
     g_loc_clean = global_location.strip().upper() if global_location else None
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    sel_glaze_clean = str(sel_glaze or "ALL").strip().upper()
     cache_key = (
         "bknr:inventory_dashboard:"
-        f"{comp_code}:{sel_species}:{sel_variety}:{sel_grade}:{sel_glaze}:"
+        f"{comp_code}:{sel_species}:{sel_variety}:{sel_grade}:{sel_glaze_clean}:"
         f"{sel_prod_at}:{sel_prod_for}:{sel_fy}:{g_loc_clean}:{g_prod_clean}:"
         f"{','.join(user_allowed_locations)}"
     )
     cached_context = cache_get(cache_key)
     if cached_context is not None:
-        cached_context["request"] = request
+        # The same route serves both the legacy HTML dashboard and the React
+        # JSON dashboard. A cache hit must preserve the requested response
+        # format; returning the HTML template here makes the React dashboard
+        # fail on its second visit while parsing the response as JSON.
+        response_context = dict(cached_context)
+        response_context.pop("request", None)
+        if format == "json":
+            response_context["status"] = "success"
+            return JSONResponse(response_context)
+
+        response_context["request"] = request
         return request.app.state.templates.TemplateResponse(
-            request=request, name="inventory_management/inventory_dashboard.html", context=cached_context
+            request=request, name="inventory_management/inventory_dashboard.html", context=response_context
         )
 
     # FRESH PRODUCTION LOGIC
@@ -130,7 +142,7 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": fresh_q = fresh_q.filter(stock_entry.species == sel_species)
     if sel_variety != "ALL": fresh_q = fresh_q.filter(stock_entry.variety == sel_variety)
     if sel_grade != "ALL": fresh_q = fresh_q.filter(stock_entry.grade == sel_grade)
-    if sel_glaze != "ALL": fresh_q = fresh_q.filter(stock_entry.glaze == sel_glaze)
+    if sel_glaze_clean != "ALL": fresh_q = fresh_q.filter(func.upper(func.trim(stock_entry.glaze)) == sel_glaze_clean)
     if sel_prod_for != "ALL": fresh_q = fresh_q.filter(stock_entry.production_for == sel_prod_for)
     if sel_prod_at != "ALL": fresh_q = fresh_q.filter(stock_entry.production_at == sel_prod_at)
 
@@ -176,7 +188,7 @@ async def get_inventory_dashboard(
         if sel_species != "ALL" and getattr(item, "species", None) != sel_species: return True
         if sel_variety != "ALL" and getattr(item, "variety", None) != sel_variety: return True
         if sel_grade != "ALL" and getattr(item, "grade", None) != sel_grade: return True
-        if sel_glaze != "ALL" and getattr(item, "glaze", None) != sel_glaze: return True
+        if sel_glaze_clean != "ALL" and str(getattr(item, "glaze", "") or "").strip().upper() != sel_glaze_clean: return True
         if sel_prod_for != "ALL" and getattr(item, "production_for", None) != sel_prod_for: return True
         if sel_prod_at != "ALL" and loc_val != sel_prod_at: return True
         return False
@@ -288,7 +300,7 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": reglaze_q = reglaze_q.filter(stock_entry.species == sel_species)
     if sel_variety != "ALL": reglaze_q = reglaze_q.filter(stock_entry.variety == sel_variety)
     if sel_grade != "ALL": reglaze_q = reglaze_q.filter(stock_entry.grade == sel_grade)
-    if sel_glaze != "ALL": reglaze_q = reglaze_q.filter(stock_entry.glaze == sel_glaze)
+    if sel_glaze_clean != "ALL": reglaze_q = reglaze_q.filter(func.upper(func.trim(stock_entry.glaze)) == sel_glaze_clean)
     if sel_prod_for != "ALL": reglaze_q = reglaze_q.filter(stock_entry.production_for == sel_prod_for)
     if sel_prod_at != "ALL": reglaze_q = reglaze_q.filter(stock_entry.production_at == sel_prod_at)
 
@@ -328,11 +340,11 @@ async def get_inventory_dashboard(
     if sel_variety != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.variety == sel_variety)
     if sel_grade != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.grade == sel_grade)
     if sel_prod_for != "ALL": sales_db_query = sales_db_query.filter(sales_dispatch.buyer_name == sel_prod_for)
-    if sel_glaze != "ALL":
+    if sel_glaze_clean != "ALL":
         sales_db_query = sales_db_query.filter(
             or_(
-                sales_dispatch.weight_glaze.ilike(f"%{sel_glaze}%"),
-                sales_dispatch.count_glaze.ilike(f"%{sel_glaze}%")
+                sales_dispatch.weight_glaze.ilike(f"%{sel_glaze_clean}%"),
+                sales_dispatch.count_glaze.ilike(f"%{sel_glaze_clean}%")
             )
         )
         
@@ -353,7 +365,7 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.species == sel_species)
     if sel_variety != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.variety == sel_variety)
     if sel_grade != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.grade == sel_grade)
-    if sel_glaze != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.glaze == sel_glaze)
+    if sel_glaze_clean != "ALL": reprocess_db_query = reprocess_db_query.filter(func.upper(func.trim(Reprocess.glaze)) == sel_glaze_clean)
     if sel_prod_for != "ALL": reprocess_db_query = reprocess_db_query.filter(Reprocess.production_for == sel_prod_for)
 
     reprocess_metrics_result = reprocess_db_query.first()
@@ -439,7 +451,7 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": flow_q = flow_q.filter(stock_entry.species == sel_species)
     if sel_variety != "ALL": flow_q = flow_q.filter(stock_entry.variety == sel_variety)
     if sel_grade != "ALL": flow_q = flow_q.filter(stock_entry.grade == sel_grade)
-    if sel_glaze != "ALL": flow_q = flow_q.filter(stock_entry.glaze == sel_glaze)
+    if sel_glaze_clean != "ALL": flow_q = flow_q.filter(func.upper(func.trim(stock_entry.glaze)) == sel_glaze_clean)
     if sel_prod_for != "ALL": flow_q = flow_q.filter(stock_entry.production_for == sel_prod_for)
     if sel_prod_at != "ALL": flow_q = flow_q.filter(stock_entry.production_at == sel_prod_at)
 
@@ -493,7 +505,7 @@ async def get_inventory_dashboard(
     if sel_species != "ALL": reproc_chart_q = reproc_chart_q.filter(Reprocess.species == sel_species)
     if sel_variety != "ALL": reproc_chart_q = reproc_chart_q.filter(Reprocess.variety == sel_variety)
     if sel_grade != "ALL": reproc_chart_q = reproc_chart_q.filter(Reprocess.grade == sel_grade)
-    if sel_glaze != "ALL": reproc_chart_q = reproc_chart_q.filter(Reprocess.glaze == sel_glaze)
+    if sel_glaze_clean != "ALL": reproc_chart_q = reproc_chart_q.filter(func.upper(func.trim(Reprocess.glaze)) == sel_glaze_clean)
     if sel_prod_for != "ALL": reproc_chart_q = reproc_chart_q.filter(Reprocess.production_for == sel_prod_for)
 
     for r_date, r_qty in reproc_chart_q.all():
@@ -571,6 +583,13 @@ async def get_inventory_dashboard(
     cache_context = dict(context)
     cache_context.pop("request", None)
     cache_set(cache_key, cache_context, ttl=45)
+
+    # Keep fresh and cached JSON responses identical. This also includes all
+    # dropdown lists (notably glazes_list) required by both inventory charts.
+    if format == "json":
+        json_context = dict(cache_context)
+        json_context["status"] = "success"
+        return JSONResponse(json_context)
 
     return request.app.state.templates.TemplateResponse(
         request=request, name="inventory_management/inventory_dashboard.html", context=context

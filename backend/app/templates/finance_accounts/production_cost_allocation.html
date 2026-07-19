@@ -68,25 +68,40 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 .status-open { background: #eff6ff; color: #1d4ed8; }
 .status-allocated { background: #ecfdf5; color: #047857; }
 .status-transferred { background: #f3f4f6; color: #374151; }
+.automation-result { margin: 12px 20px; padding: 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; display:none; }
+.automation-kpis { display:grid; grid-template-columns:repeat(4,minmax(150px,1fr)); gap:8px; margin-bottom:12px; }
+.automation-kpi { border:1px solid var(--border); border-radius:7px; padding:10px; }
+.automation-kpi span { display:block; color:var(--muted); font-size:9px; font-weight:800; text-transform:uppercase; }
+.automation-kpi strong { display:block; margin-top:4px; font-size:15px; }
+.automation-warning { background:#fff7ed; color:#9a3412; border:1px solid #fed7aa; border-radius:6px; padding:7px 9px; margin:5px 0; font-size:10px; font-weight:600; }
+@media (max-width:800px) { .automation-kpis { grid-template-columns:repeat(2,minmax(130px,1fr)); } }
 </style>
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 <body>
 
 <div class="header-dash">
-    <div class="header-titles"><h2>Production Cost Allocation</h2></div>
+    <div class="header-titles"><h2>Monthly Production Cost Automation</h2></div>
 </div>
 
 <div class="filter-bar">
+    <div class="filter-item"><label>Calculation Date</label><input type="date" id="automationDate" readonly></div>
     <div class="filter-item">
-        <label>Search Batch</label>
-        <input type="text" id="searchBox" placeholder="Batch No..." onkeyup="applyFilters()">
+        <label>Production Location</label>
+        <select id="automationLocation">
+            <option value="">All Locations</option>
+            {% for location in locations %}<option value="{{ location.production_at }}">{{ location.production_at }}</option>{% endfor %}
+        </select>
     </div>
-    <button class="btn-clear" onclick="resetFilters()">Clear</button>
+    <button class="btn-add" onclick="calculateAutomation()"><i class="fa-solid fa-calculator"></i> Calculate Automatically</button>
 </div>
 
+<div class="automation-result" id="automationResult"></div>
+
 <div class="section-header">
-    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">0 ENTRIES FOUND</div>
+    <div id="rowCount" style="font-size:11px; font-weight:800; color:var(--primary);">POSTED ALLOCATION HISTORY</div>
     <div style="display:flex; align-items:center;">
         <div id="threeDotsMenu">
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
@@ -94,7 +109,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="menu-item delete-item" onclick="cancelSelected()"><i class="fa-solid fa-trash-can"></i> Cancel Allocation</div>
             </div>
         </div>
-        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ALLOCATION</button>
+        <span style="font-size:10px; color:var(--muted); font-weight:700;">Costs are calculated from posted source transactions; manual cost entry is disabled.</span>
     </div>
 </div>
 
@@ -220,6 +235,57 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 <script>
     let globalSelectedId = null;
+    document.getElementById("automationDate").value = new Date().toISOString().slice(0, 10);
+
+    function escapeHtml(value) {
+        return String(value ?? "").replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+    }
+
+    function money(value) { return Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+    async function calculateAutomation() {
+        const location = document.getElementById("automationLocation").value;
+        try {
+            const query = new URLSearchParams();
+            if (location) query.set("production_at", location);
+            const response = await fetch(`/finance_accounts/production_cost_allocation/automation-comparison?${query}`);
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.message || "Unable to calculate production cost");
+            const comparison = result.comparison;
+            document.getElementById("automationDate").value = comparison.as_of_date;
+            const p = comparison.today;
+            const lastMonthAverage = comparison.last_month.weighted_average_cost_per_kg || 0;
+            const commonTotal = Object.values(p.common_costs || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+            const chemicalTotal = Object.values(p.chemical_costs || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+            const warnings = (p.warnings || []).map(item => `<div class="automation-warning">${escapeHtml(item)}</div>`).join('');
+            const rows = (p.allocations || []).map((row, index) => `<tr>
+                <td>${index + 1}</td><td>${escapeHtml(row.batch_number || '-')}</td><td>${escapeHtml(row.po_number)}</td>
+                <td>${escapeHtml(row.variety || '-')}</td><td>${escapeHtml(row.grade || '-')}</td>
+                <td style="text-align:right">${money(row.weight_kg)}</td><td style="text-align:right">${money(row.common_cost_per_kg)}</td>
+                <td style="text-align:right">${money(row.temporary_carton_cost_per_kg)}</td><td style="text-align:right">${money(row.chemical_cost_per_kg)}</td>
+                <td style="text-align:right;font-weight:800">${money(row.production_cost_per_kg)}</td><td style="text-align:right">${money(lastMonthAverage)}</td>
+            </tr>`).join('');
+            const target = document.getElementById("automationResult");
+            target.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+                <strong>${escapeHtml(comparison.as_of_date)} · ${escapeHtml(p.production_at)} · DAILY RUN</strong>
+                <span style="font-size:10px;color:var(--muted)">Yesterday is not carried into today's cost</span></div>
+                <div class="automation-kpis">
+                    <div class="automation-kpi"><span>Today's Output</span><strong>${money(p.total_output_weight_kg)} KG</strong></div>
+                    <div class="automation-kpi"><span>Today's Transaction Cost</span><strong>₹${money(commonTotal + chemicalTotal)}</strong></div>
+                    <div class="automation-kpi"><span>Today Cost/KG</span><strong>₹${money(p.weighted_average_cost_per_kg)}</strong></div>
+                    <div class="automation-kpi"><span>Last Month Average/KG</span><strong>₹${money(lastMonthAverage)}</strong></div>
+                    <div class="automation-kpi"><span>This Month Average/KG</span><strong>₹${money(comparison.this_month.weighted_average_cost_per_kg)}</strong></div>
+                    <div class="automation-kpi"><span>Year Average/KG</span><strong>₹${money(comparison.year.weighted_average_cost_per_kg)}</strong></div>
+                </div>${warnings}
+                <div class="table-wrap" style="margin:12px 0 0"><table class="main-table"><thead><tr>
+                    <th>Sl</th><th>Batch</th><th>PO</th><th>Variety</th><th>Grade</th><th>Weight KG</th>
+                    <th>Today Common/KG</th><th>Carton/KG (Fixed)</th><th>Chemical/KG</th><th>Today Production Cost/KG</th><th>Last Month Avg/KG</th>
+                </tr></thead><tbody>${rows || '<tr><td colspan="11">No eligible finished production found today.</td></tr>'}</tbody></table></div>`;
+            target.style.display = 'block';
+        } catch (error) {
+            Swal.fire("Calculation Failed", error.message || "Unable to calculate production cost.", "error");
+        }
+    }
     document.getElementById("dotsBtn").onclick = (e) => {
         e.stopPropagation();
         const m = document.getElementById("dropdownMenu");
@@ -273,21 +339,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         }
     }
 
-    function applyFilters() {
-        const query = document.getElementById("searchBox").value.toLowerCase().trim();
-        const rows = document.querySelectorAll("#tableBody .data-row");
-        let count = 0;
-        rows.forEach(r => {
-            const match = r.textContent.toLowerCase().includes(query);
-            r.style.display = match ? "" : "none";
-            if (match) count++;
-        });
-        document.getElementById("rowCount").innerText = `${count} ENTRIES FOUND`;
-    }
-
-    function resetFilters() {
-        document.getElementById("searchBox").value = "";
-        applyFilters();
+    function updateHistoryCount() {
+        const count = document.querySelectorAll("#tableBody .data-row").length;
+        document.getElementById("rowCount").innerText = `${count} POSTED ALLOCATIONS`;
     }
 
     async function saveAllocation(e) {
@@ -340,7 +394,9 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         }
     }
     
-    applyFilters();
+    updateHistoryCount();
+    calculateAutomation();
 </script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

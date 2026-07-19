@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreditCard, Plus, Trash2 } from 'lucide-react';
+import { Ban, CreditCard, Plus } from 'lucide-react';
 
 export default function FinanceConsole({ activePage }) {
   const getInitialTab = () => {
@@ -153,7 +153,7 @@ export default function FinanceConsole({ activePage }) {
                         <span className={`badge ${row.status === 'PAID' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
                       </td>
                       <td className="text-center">
-                        <button onClick={() => setVendorPayments(vendorPayments.filter(p => p.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setVendorPayments(vendorPayments.filter(p => p.id !== row.id))} style={removeBtnStyle} title="Cancel payment" aria-label="Cancel vendor payment"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -205,7 +205,7 @@ export default function FinanceConsole({ activePage }) {
                         <span className={`badge ${row.status === 'PAID' ? 'badge-success' : 'badge-warning'}`}>{row.status}</span>
                       </td>
                       <td className="text-center">
-                        <button onClick={() => setReceivables(receivables.filter(r => r.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setReceivables(receivables.filter(r => r.id !== row.id))} style={removeBtnStyle} title="Cancel receivable" aria-label="Cancel receivable"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}
@@ -260,7 +260,7 @@ export default function FinanceConsole({ activePage }) {
                         {row.balance < 0 ? `-₹${Math.abs(row.balance).toLocaleString()}` : `₹${row.balance.toLocaleString()}`}
                       </td>
                       <td className="text-center">
-                        <button onClick={() => setLedgers(ledgers.filter(l => l.id !== row.id))} style={removeBtnStyle}><Trash2 size={14} /></button>
+                        <button onClick={() => setLedgers(ledgers.filter(l => l.id !== row.id))} style={removeBtnStyle} title="Cancel ledger" aria-label="Cancel ledger"><Ban size={14} /></button>
                       </td>
                     </tr>
                   ))}

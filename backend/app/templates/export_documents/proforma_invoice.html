@@ -1,0 +1,27 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Proforma Invoice Register</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+  .pi-page{padding:22px}.pi-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px}
+  .pi-head h2{margin:0}.pi-note{color:#64748b;font-size:13px}.pi-btn{border:0;border-radius:7px;padding:9px 14px;background:#176b87;color:#fff;cursor:pointer}
+  .pi-table-wrap{background:var(--card-bg,#fff);border:1px solid var(--border-color,#dbe3ea);border-radius:10px;overflow:auto}
+  .pi-table{width:100%;border-collapse:collapse;font-size:13px}.pi-table th,.pi-table td{padding:10px;border-bottom:1px solid var(--border-color,#e5e7eb);text-align:left;white-space:nowrap}
+  .pi-table th{background:rgba(23,107,135,.09);font-size:11px;text-transform:uppercase}.pi-actions a{margin-right:8px;color:#176b87;text-decoration:none}
+</style>
+<link rel="stylesheet" href="/static/css/bknr-table-ui.css?v=1">
+</head><body>
+<div class="pi-page">
+  <div class="pi-head"><div><h2>Proforma Invoice Register</h2></div>
+    <button class="pi-btn" onclick="openReactPI()"><i class="fa-solid fa-plus"></i> New Proforma Invoice</button>
+  </div>
+  <div class="pi-table-wrap"><table class="pi-table"><thead><tr><th>PI No</th><th>Date</th><th>Buyer</th><th>PO</th><th>Currency</th><th>Total</th><th>Valid Until</th><th>Status</th><th>PI Record Approval</th><th>Actions</th></tr></thead>
+    <tbody>{% for row in history %}<tr><td><strong>{{ row.pi_no }}</strong></td><td>{{ row.pi_date }}</td><td>{{ row.buyer_name }}</td><td>{{ row.po_number or '-' }}</td><td>{{ row.currency }}</td><td>{{ '%.2f'|format(row.total_amount) }}</td><td>{{ row.validity_date or '-' }}</td><td>{{ row.status }}</td><td>{{ row.approval_status }}</td><td class="pi-actions"><a target="_blank" href="/export_documents/proforma_invoice/print/{{ row.id }}">Print</a><a target="_blank" href="/export_documents/proforma_invoice/pdf/{{ row.id }}">PDF</a></td></tr>
+    {% else %}<tr><td colspan="10" style="text-align:center;padding:28px">No proforma invoices registered yet.</td></tr>{% endfor %}</tbody>
+  </table></div>
+</div>
+<script>
+function openReactPI(){
+  if(window.parent && window.parent !== window && window.parent.postMessage){window.parent.postMessage({type:'navigate',route:'/export_documents/proforma_invoice/entry'},'*');return;}
+  window.location.href='/page/proforma_invoice';
+}
+</script>
+</body></html>

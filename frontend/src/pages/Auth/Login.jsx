@@ -18,9 +18,6 @@ export default function Login({ handleLogin, navigateToRegister }) {
     <div className="auth-wrapper">
       <div className="auth-card">
         <div style={{ textAlign: 'center' }}>
-          <div style={logoWrapperStyle}>
-            <Layers size={28} />
-          </div>
           <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '16px', color: 'var(--text-primary)' }}>
             BKNR ERP Corporate Login
           </h2>
@@ -54,13 +51,15 @@ export default function Login({ handleLogin, navigateToRegister }) {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ height: '42px', marginTop: '8px' }}>
-            Access Portal
+          {error && <div style={{ color: '#ef4444', fontSize: '12px', fontWeight: '600' }}>{error}</div>}
+
+          <button className="auth-btn" type="submit" disabled={loading}>
+            {loading ? 'Authenticating...' : 'SEND OTP'}
           </button>
         </form>
 
-        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-secondary)' }}>
-          Don't have a registered entity?{' '}
+        <div style={{ textAlign: 'center', marginTop: '16px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+          Don't have an account?{' '}
           <span 
             onClick={navigateToRegister} 
             style={{ color: 'var(--corp-dash)', fontWeight: '700', cursor: 'pointer', textDecoration: 'underline' }}
@@ -72,15 +71,3 @@ export default function Login({ handleLogin, navigateToRegister }) {
     </div>
   );
 }
-
-const logoWrapperStyle = {
-  width: '50px',
-  height: '50px',
-  borderRadius: '12px',
-  background: 'var(--corp-dash)',
-  color: '#ffffff',
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  margin: '0 auto'
-};

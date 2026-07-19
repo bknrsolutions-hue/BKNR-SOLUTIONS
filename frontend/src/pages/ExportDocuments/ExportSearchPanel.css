@@ -1,0 +1,121 @@
+.main-content .export-search-panel {
+  display: grid !important;
+  grid-template-columns: minmax(260px, 440px) auto !important;
+  justify-content: space-between !important;
+  align-items: end !important;
+  gap: 14px !important;
+  min-height: 68px !important;
+  padding: 10px 12px !important;
+  margin-bottom: 12px !important;
+  overflow: visible !important;
+  border: 1px solid var(--att-border) !important;
+  border-radius: 12px !important;
+  background: var(--att-card) !important;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, .05);
+}
+
+.main-content .export-search-panel .export-search-field {
+  width: 100% !important;
+  min-width: 0 !important;
+  max-width: 440px !important;
+  flex: none !important;
+}
+
+.export-search-control {
+  position: relative;
+}
+
+.export-search-control > svg {
+  position: absolute;
+  left: 11px;
+  top: 50%;
+  z-index: 1;
+  color: var(--att-muted);
+  transform: translateY(-50%);
+}
+
+.main-content .export-search-control .attendance-input {
+  width: 100% !important;
+  height: 36px !important;
+  padding: 0 38px 0 34px !important;
+  border-radius: 8px !important;
+}
+
+.export-search-control button {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 7px;
+  color: var(--att-muted);
+  background: transparent;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.export-search-control button:hover {
+  color: var(--att-heading);
+  background: var(--att-table-header-bg);
+}
+
+.export-search-control input::-webkit-search-cancel-button {
+  display: none;
+}
+
+.export-search-result {
+  min-width: 116px;
+  padding: 5px 10px;
+  border-left: 1px solid var(--att-border);
+  text-align: right;
+}
+
+.export-search-result span {
+  display: block;
+  color: var(--att-muted);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.export-search-result strong {
+  display: block;
+  margin-top: 2px;
+  color: var(--att-accent);
+  font-size: 19px;
+  line-height: 1;
+}
+
+.export-records-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 32px;
+  margin-bottom: 10px;
+}
+
+.export-records-toolbar:empty {
+  display: none;
+}
+
+@media (max-width: 620px) {
+  .main-content .export-search-panel {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    gap: 8px !important;
+    padding: 9px !important;
+  }
+
+  .export-search-result {
+    min-width: 76px;
+    padding-right: 2px;
+  }
+
+  .export-search-result span {
+    font-size: 7px;
+  }
+}

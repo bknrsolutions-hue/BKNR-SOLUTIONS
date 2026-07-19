@@ -177,8 +177,8 @@
         display: none !important;
     }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -187,6 +187,7 @@
 <div class="header-layout">
     <div class="main-header">
         <h2>{{ company_name }}</h2>
+        <div style="font-size:8px;font-weight:800;color:#475569;">MPEDA: {{ mpeda_registration_code or 'NOT REGISTERED' }}</div>
         <div class="report-title">RAW MATERIAL PURCHASING – TABLE VIEW</div>
     </div>
     <div class="side-header">
@@ -317,6 +318,6 @@
     };
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

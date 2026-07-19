@@ -129,6 +129,7 @@ export default function RMPReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -140,7 +141,7 @@ export default function RMPReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -149,14 +150,15 @@ export default function RMPReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -175,7 +177,7 @@ export default function RMPReport({ activeRoute }) {
     { label: 'Export PDF (Table)', onClick: () => executeAction('pdf_table') },
     { label: 'Export PDF (Summary)', onClick: () => executeAction('pdf_summary') },
     { divider: true },
-    { label: 'Delete Record', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Record', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   return (
@@ -249,7 +251,7 @@ export default function RMPReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Total Entries" value={filteredRows.length} accent="var(--corp-dash)" />
@@ -295,6 +297,7 @@ export default function RMPReport({ activeRoute }) {
                       return (
                         <tr
                           key={row.id}
+                          data-record-id={row.id}
                           onClick={() => {
                             if (!isEditing) {
                               setSelectedRow(row);
@@ -479,17 +482,13 @@ export default function RMPReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load RM Purchase data.
-        </div>
-      )}
+
 
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

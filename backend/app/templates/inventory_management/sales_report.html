@@ -112,6 +112,7 @@
         .kpi-icon { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
         .kpi-card .value { font-size: 17px; font-weight: 800; line-height: 1.2; letter-spacing: -0.5px; color: var(--kpi-val); }
         .kpi-card .amt-sub { font-size: 11px; font-weight: 700; margin-top: 4px; padding: 2px 6px; border-radius: 4px; display: inline-block; }
+        .kpi-detail-banner { display:none; margin: 0 16px 10px; padding: 9px 12px; border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 7px; background: var(--card-bg); color: var(--text); font-size: 10px; font-weight: 700; }
 
         .kpi-blue .kpi-icon { color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
         .kpi-green .kpi-icon { color: #10b981; background: rgba(16, 185, 129, 0.1); }
@@ -406,7 +407,8 @@
         }
     </style>
     <link rel="stylesheet" href="/static/css/module-rail.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 <body>
 
@@ -561,39 +563,41 @@
 </div>
 
 <div class="kpi-grid">
-    <div class="kpi-card kpi-blue">
+    <div class="kpi-card kpi-blue" onclick="openKpiDetails('Gross Revenue')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Gross Revenue</h4><div class="kpi-icon"><i class="fas fa-wallet"></i></div></div>
         <div><div class="value" id="k_rev">₹ 0</div><div class="amt-sub badge-neutral" id="k_usd_total">$ 0</div></div>
     </div>
-    <div class="kpi-card kpi-green">
+    <div class="kpi-card kpi-green" onclick="openKpiDetails('Net Profit')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Net Profit</h4><div class="kpi-icon"><i class="fas fa-arrow-trend-up"></i></div></div>
         <div><div class="value" id="k_pl">₹ 0</div><div class="amt-sub badge-success" id="k_margin">0% Margin</div></div>
     </div>
-    <div class="kpi-card kpi-red">
+    <div class="kpi-card kpi-red" onclick="openKpiDetails('Pending Due', 'Unpaid')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Pending Due</h4><div class="kpi-icon"><i class="fas fa-clock"></i></div></div>
         <div><div class="value" id="k_debt">₹ 0</div><div class="amt-sub badge-danger" id="k_cei">0% Collected</div></div>
     </div>
-    <div class="kpi-card kpi-orange">
+    <div class="kpi-card kpi-orange" onclick="openKpiDetails('Profit per KG')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Profit / KG</h4><div class="kpi-icon"><i class="fas fa-calculator"></i></div></div>
         <div><div class="value" id="k_yield">₹ 0.00</div><div class="amt-sub badge-info">Realization</div></div>
     </div>
-    <div class="kpi-card kpi-purple">
+    <div class="kpi-card kpi-purple" onclick="openKpiDetails('Landed Freight')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Landed Freight</h4><div class="kpi-icon"><i class="fas fa-ship"></i></div></div>
         <div><div class="value" id="k_cost">₹ 0</div><div class="amt-sub badge-neutral" id="k_cost_ratio">0% Ratio</div></div>
     </div>
-    <div class="kpi-card kpi-cyan">
+    <div class="kpi-card kpi-cyan" onclick="openKpiDetails('Packing Cost')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Packing Cost</h4><div class="kpi-icon"><i class="fas fa-box"></i></div></div>
         <div><div class="value" id="k_pk_total">₹ 0</div><div class="amt-sub badge-neutral" id="k_pk_ratio">0% Rev</div></div>
     </div>
-    <div class="kpi-card kpi-teal">
+    <div class="kpi-card kpi-teal" onclick="openKpiDetails('Volume Sold')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Volume (KG)</h4><div class="kpi-icon"><i class="fas fa-cubes"></i></div></div>
         <div><div class="value" id="k_qty">0</div><div class="amt-sub badge-info" id="k_mc">0 MC</div></div>
     </div>
-    <div class="kpi-card kpi-pink">
+    <div class="kpi-card kpi-pink" onclick="openKpiDetails('Invoices')" role="button" tabindex="0">
         <div class="kpi-header"><h4>Invoices</h4><div class="kpi-icon"><i class="fas fa-file-invoice"></i></div></div>
         <div><div class="value" id="k_inv_count">0</div><div class="amt-sub badge-neutral">Transacted</div></div>
     </div>
 </div>
+
+<div id="kpiDetailBanner" class="kpi-detail-banner"></div>
 
 <div class="chart-grid">
     <div class="chart-box"><h3>Revenue Trend</h3><div class="chart-container-inner"><canvas id="c_day_trend"></canvas></div></div>
@@ -829,6 +833,20 @@ async function updateRow(id, type, val) {
             setTimeout(() => { msg.style.display = 'none'; location.reload(); }, 800);
         }
     } catch(e) { alert("Error updating data!"); }
+}
+
+function openKpiDetails(label, status = null) {
+    if (status) {
+        document.getElementById('sel_status').value = status;
+        document.getElementById('label_status').innerText = status;
+        runAnalytics();
+    }
+    const visibleCount = Array.from(document.querySelectorAll('#tbody .data-row'))
+        .filter(row => row.style.display !== 'none').length;
+    const banner = document.getElementById('kpiDetailBanner');
+    banner.innerText = `${label} details — ${visibleCount} matching sales rows are shown in the ledger below.`;
+    banner.style.display = 'block';
+    document.querySelector('.rm-summary-box').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 function runAnalytics() {
@@ -1308,8 +1326,20 @@ function renderCharts(d) {
     });
 }
 
-window.onload = function() { setDefaultFY(); populateFilters(); runAnalytics(); };
+window.onload = function() {
+    setDefaultFY();
+    populateFilters();
+    runAnalytics();
+    document.querySelectorAll('.kpi-card[role="button"]').forEach(card => {
+        card.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                card.click();
+            }
+        });
+    });
+};
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

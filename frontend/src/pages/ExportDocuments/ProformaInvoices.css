@@ -1,0 +1,134 @@
+.pi-form-modal {
+  width: min(1080px, calc(100vw - 28px));
+  max-width: 1080px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pi-form-modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.pi-form-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+}
+
+.pi-form-section {
+  border: 1px solid var(--att-border);
+  border-radius: 10px;
+  background: var(--att-card);
+  overflow: hidden;
+}
+
+.pi-form-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--att-border);
+  color: var(--att-accent);
+  background: var(--att-table-header-bg);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.pi-form-grid,
+.pi-form-grid-organized {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 8px 10px;
+  padding: 12px;
+}
+
+.pi-span-4,
+.pi-full-row {
+  grid-column: 1 / -1 !important;
+}
+
+.pi-readonly-value {
+  display: flex;
+  align-items: center;
+  color: var(--att-accent);
+  font-weight: 900;
+}
+
+.pi-total-value {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 34px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--att-accent) 35%, var(--att-border));
+  border-radius: 7px;
+  color: var(--att-accent);
+  background: color-mix(in srgb, var(--att-accent) 7%, var(--att-card));
+}
+
+.pi-total-value small {
+  font-weight: 900;
+}
+
+.pi-total-value strong {
+  font-size: 15px;
+}
+
+.pi-footer-total {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.pi-footer-total span {
+  color: var(--att-muted);
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pi-footer-total strong {
+  color: var(--att-accent);
+  font-size: 14px;
+}
+
+@media (max-width: 850px) {
+  .pi-form-grid {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+
+  .pi-span-4 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 520px) {
+  .pi-form-modal {
+    width: calc(100vw - 12px);
+  }
+
+  .pi-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pi-span-4 {
+    grid-column: span 1;
+  }
+
+  .pi-footer-total {
+    width: 100%;
+  }
+}

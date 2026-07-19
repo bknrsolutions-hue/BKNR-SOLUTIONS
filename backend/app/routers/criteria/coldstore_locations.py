@@ -9,7 +9,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-# 🟢 🔴 production_at మోడల్‌ని కూడా ఇక్కడ ఇంపోర్ట్ చేశాను చిన్నా!
+# 🟢 🔴 production_at ‌     !
 from app.database.models.criteria import coldstore_locations, production_at
 
 router = APIRouter(prefix="", tags=["COLDSTORE LOCATIONS"])
@@ -36,7 +36,7 @@ def coldstore_locations_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 🟢 🔴 డమ్మీ డేటా లేకుండా లైవ్ ప్రొడక్షన్ లొకేషన్స్ లిస్ట్‌ని ఇక్కడి నుండి లాగాను!
+    # 🟢 🔴       ‌   !
     plants = (
         db.query(production_at)
         .filter(production_at.company_id == company_code)
@@ -48,7 +48,7 @@ def coldstore_locations_page(request: Request, db: Session = Depends(get_db)):
         name="criteria/coldstore_locations.html",
         context={
             "today_data": rows,
-            "production_at_list": plants,  # 👈 ఇక్కడ లైవ్ ప్లాంట్స్ పాస్ అవుతాయి!
+            "production_at_list": plants,  # 👈     !
             "email": email,
             "company_id": company_code,
             "message": "",

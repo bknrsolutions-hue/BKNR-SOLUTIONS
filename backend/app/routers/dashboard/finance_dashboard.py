@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Request, Depends, Query
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_, or_
@@ -202,9 +202,10 @@ def finance_dashboard(
         total_income = float(profit_loss["total_income"] or 0.0)
         total_expense_books = float(profit_loss["total_expense"] or 0.0)
         net_profit = profit_loss["net_profit"]
-        if total_expenses == 0 and total_expense_books:
-            expense_categories = [row["name"] for row in profit_loss["details"]["expense_ledgers"][:8]]
-            expense_amounts = [float(row["amount"] or 0.0) for row in profit_loss["details"]["expense_ledgers"][:8]]
+        expense_ledger_rows = profit_loss["details"]["expense_ledgers"]
+        if expense_ledger_rows:
+            expense_categories = [row["name"] for row in expense_ledger_rows[:8]]
+            expense_amounts = [float(row["amount"] or 0.0) for row in expense_ledger_rows[:8]]
             total_expenses = total_expense_books
 
         balance_sheet = _safe_accounting_call(
@@ -223,6 +224,23 @@ def finance_dashboard(
             comp_code,
             period_end,
         )
+        books_receivables = sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "ASSET"
+            and row.get("group_name") == "Sundry Debtors"
+        )
+        books_payables = abs(sum(
+            float(row["balance"] or 0.0) for row in trial_balance
+            if row["type"] == "LEDGER"
+            and row["group_type"] == "LIABILITY"
+            and row.get("group_name") == "Sundry Creditors"
+        ))
+        if books_receivables:
+            receivables_outstanding = books_receivables
+        if books_payables:
+            payables_outstanding = books_payables
+
         bank_balance = sum(
             float(row["balance"] or 0.0) for row in trial_balance
             if row["type"] == "LEDGER"
@@ -351,10 +369,7 @@ def finance_dashboard(
         )
         raise
 
-    return templates.TemplateResponse(
-        request=request,
-        name="dashboard/finance_dashboard.html",
-        context={
+    context = {
             "comp_code": comp_code,
             "email": email,
             "available_companies": available_companies,
@@ -393,4 +408,12 @@ def finance_dashboard(
             "from_date": from_date,
             "to_date": to_date
         }
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse(context)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="dashboard/finance_dashboard.html",
+        context=context
     )

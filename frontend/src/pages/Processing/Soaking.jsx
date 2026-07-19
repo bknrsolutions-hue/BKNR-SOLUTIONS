@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Droplet, Plus, Trash2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { Droplet, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 
 export default function Soaking() {
   const [date, setDate] = useState('');
@@ -124,12 +124,16 @@ export default function Soaking() {
   // Load counts matching selected batch
   useEffect(() => {
     const fetchCounts = async () => {
-      if (!batchNumber) {
+      if (!productionFor || !productionAt || !batchNumber) {
         setCountsList([]);
         return;
       }
       try {
-        const res = await fetch(`/processing/soaking/get_count/${encodeURIComponent(batchNumber)}`);
+        const params = new URLSearchParams({
+          production_for: productionFor,
+          location: productionAt,
+        });
+        const res = await fetch(`/processing/soaking/get_count/${encodeURIComponent(batchNumber)}?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setCountsList(Array.from(new Set(data.counts)).sort());
@@ -139,7 +143,7 @@ export default function Soaking() {
       }
     };
     fetchCounts();
-  }, [batchNumber]);
+  }, [productionFor, productionAt, batchNumber]);
 
   // Load available qty
   useEffect(() => {
@@ -150,6 +154,7 @@ export default function Soaking() {
       }
       try {
         const params = new URLSearchParams({
+          production_for: productionFor,
           location: productionAt,
           batch: batchNumber,
           count: inCount,
@@ -166,7 +171,7 @@ export default function Soaking() {
       }
     };
     fetchAvailable();
-  }, [productionAt, batchNumber, inCount, varietyName, speciesName]);
+  }, [productionFor, productionAt, batchNumber, inCount, varietyName, speciesName]);
 
   // Sintex numbers and reject validations trigger
   useEffect(() => {
@@ -254,25 +259,36 @@ export default function Soaking() {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this soaking entry? This will reverse floor balance changes.')) {
-      setLoading(true);
-      try {
-        const res = await fetch(`/processing/soaking/delete/${id}`, {
-          method: 'POST',
-        });
-        if (res.ok) {
-          alert('Soaking entry deleted');
-          setSelectedId(null);
-          await fetchBackendData();
-        } else {
-          alert('Deletion rejected');
-        }
-      } catch (err) {
-        alert('Connection error deleting soaking record');
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const reason = window.prompt('Are you sure you want to cancel this soaking entry? Please enter a cancellation reason:');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Cancellation reason is required!');
+      return;
+    }
+    setLoading(true);
+    try {
+      const formData = new URLSearchParams();
+      formData.append('cancel_reason', reason.trim());
+      const res = await fetch(`/processing/soaking/delete/${id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: formData,
+      });
+      if (res.ok) {
+        alert('Soaking entry cancelled successfully');
+        setSelectedId(null);
+        await fetchBackendData();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Cancellation failed');
       }
+    } catch (err) {
+      alert('Connection error cancelling soaking record');
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -340,6 +356,7 @@ export default function Soaking() {
     });
 
     filteredToday.forEach(r => {
+      if (r.is_cancelled) return;
       const key = `${r.batch_number} | ${r.variety_name} | ${r.species} | ${r.in_count}`;
       const qty = parseFloat(r.in_qty) || 0;
       const rej = parseFloat(r.rejection_qty) || 0;
@@ -612,9 +629,20 @@ export default function Soaking() {
                 return (
                   <tr 
                     key={row.id} 
-                    className={selectedId === row.id ? 'selected' : ''}
-                    onClick={() => setSelectedId(row.id)}
-                    style={{ cursor: 'pointer' }}
+                    className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
+                    onClick={() => {
+                      if (row.is_cancelled) {
+                        setSelectedId(null);
+                      } else {
+                        setSelectedId(row.id);
+                      }
+                    }}
+                    style={{ 
+                      cursor: 'pointer',
+                      opacity: row.is_cancelled ? 0.55 : 1,
+                      textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                      color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
+                    }}
                   >
                     <td className="text-center" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{row.sintex_number || '-'}</td>
                     <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
@@ -623,26 +651,28 @@ export default function Soaking() {
                     <td className="text-left">{row.variety_name}</td>
                     <td className="text-left">{row.production_at}</td>
                     <td className="text-left">{row.species}</td>
-                    <td className="text-right" style={{ fontWeight: '800' }}>{row.in_qty.toFixed(2)} KG</td>
+                    <td className="text-right" style={{ fontWeight: '800' }}>{(row.is_cancelled ? 0 : row.in_qty).toFixed(2)} KG</td>
                     <td className="text-left">{row.chemical_name}</td>
                     <td className="text-right">{row.chemical_percent.toFixed(2)}%</td>
-                    <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{chemWeight.toFixed(2)}</td>
+                    <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{(row.is_cancelled ? 0 : chemWeight).toFixed(2)}</td>
                     <td className="text-right">{row.salt_percent.toFixed(2)}%</td>
-                    <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{saltWeight.toFixed(2)}</td>
-                    <td className="text-right" style={{ color: '#64748b', fontWeight: '850' }}>{row.rejection_qty.toFixed(2)}</td>
+                    <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{(row.is_cancelled ? 0 : saltWeight).toFixed(2)}</td>
+                    <td className="text-right" style={{ color: '#64748b', fontWeight: '850' }}>{(row.is_cancelled ? 0 : row.rejection_qty).toFixed(2)}</td>
                     <td className="text-left" style={{ fontSize: '9px' }}>{row.rejection_for || '-'}</td>
                     <td className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{row.time}</td>
                     <td className="text-center">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(row.id);
-                        }} 
-                        style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
-                        title="Delete log"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      {!row.is_cancelled && (
+                        <button 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(row.id);
+                          }} 
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                          title="Cancel entry"
+                        >
+                          <Ban size={13} />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );
@@ -667,7 +697,7 @@ export default function Soaking() {
               <div className="form-grid">
                 <div className="form-group">
                   <label>Sintex</label>
-                  <input type="text" className="form-control" value={sintexNumber} readonly placeholder="Auto Generated" style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
+                  <input type="text" className="form-control" value={sintexNumber} readOnly placeholder="Auto Generated" style={{ background: 'rgba(255,255,255,0.02)', fontWeight: '800' }} />
                 </div>
 
                 <div className="form-group">
@@ -844,18 +874,18 @@ export default function Soaking() {
 
                 <div className="form-group">
                   <label>Chemical Calc (KG)</label>
-                  <input type="text" className="form-control" value={chemCalc} readonly style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={chemCalc} readOnly style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Salt Calc (KG)</label>
-                  <input type="text" className="form-control" value={saltCalc} readonly style={{ background: 'rgba(255,255,255,0.02)' }} />
+                  <input type="text" className="form-control" value={saltCalc} readOnly style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '20px', borderTop: '1px solid var(--border-light)', paddingTop: '15px' }}>
                 <button type="button" className="btn btn-clear" onClick={closeModal}>Cancel</button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>Save Entry</button>
+                <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
               </div>
             </form>
           </div>

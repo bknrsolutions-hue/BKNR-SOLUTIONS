@@ -1,729 +1,176 @@
-/**
- * StorageCostReport.jsx – FIFO Cold Storage Cost Report
- * Renders tabs, grouping, subtotals, and metrics with 1:1 legacy template parity.
- */
-import React, { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
-  ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput,
-  EmptyRow, useReport, fmt,
+  ReportHeader, Loader, ErrorBox, EmptyRow, useReport, fmt,
 } from './ReportShell';
+import './StorageCostReport.css';
+
+const productHeaders = [
+  'Batch No', 'Type of Prod', 'Location', 'Brand', 'Freezer', 'Packing Style',
+  'Glaze', 'Variety', 'Grade', 'Species', 'MC', 'Loose', 'Quantity (KG)',
+  'Purpose/PO', 'Prod At', 'Prod For',
+];
+
+const sum = (rows, key) => rows.reduce((total, row) => total + Number(row?.[key] || 0), 0);
+
+const displayDate = value => {
+  if (!value) return '—';
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB');
+};
 
 export default function StorageCostReport({ activeRoute }) {
-  const [activeTab, setActiveTab] = useState('ledger');
-  const [coldStorage, setColdStorage] = useState('');
+  const [activeTab, setActiveTab] = useState('summary');
   const [prodFor, setProdFor] = useState('');
-  const [prodAt, setProdAt] = useState('');
+  const [freezer, setFreezer] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
-  const [search, setSearch] = useState('');
+  const monthlyInvoiceRef = useRef(null);
 
-  const params = {};
-  if (coldStorage) params.cold_storage_name = coldStorage;
-  if (prodFor) params.production_for = prodFor;
-  if (prodAt) params.production_at = prodAt;
-  if (selectedMonth) params.selected_month = selectedMonth;
-
+  const params = {
+    ...(prodFor ? { production_for: prodFor } : {}),
+    ...(freezer ? { freezer } : {}),
+    ...(selectedMonth ? { selected_month: selectedMonth } : {}),
+  };
   const { data, loading, error, reload } = useReport({
     url: activeRoute || '/reports/storage_cost_report',
     params,
-    deps: [coldStorage, prodFor, prodAt, selectedMonth],
+    deps: [prodFor, freezer, selectedMonth],
   });
 
-  // Data layers from API
-  const transactionGroups = data?.transaction_groups || [];
-  const productionForGroups = data?.production_for_groups || [];
-  const facilitySummary = data?.facility_summary || [];
+  const reportRows = useMemo(() => data?.report_data || [], [data?.report_data]);
+  const originalRows = useMemo(() => reportRows.flatMap(row =>
+    (row.this_month_ledger || []).map(movement => ({
+      ...movement,
+      batch_number: row.batch_number,
+      production_at: movement.production_at ?? row.production_at,
+      production_for: movement.production_for ?? row.production_for,
+    }))
+  ), [reportRows]);
+  const availableRows = data?.available_stock_items || [];
+  const dispatchRows = data?.dispatches_this_month || [];
 
-  // Options lists
-  const csNames = data?.cold_storage_names || [];
-  const pForList = data?.production_for_list || [];
-  const pAtList = data?.production_locations || [];
+  const totalInQty = Number(data?.total_qty_sum ?? 0);
+  const totalHolding = Number(data?.total_holding_sum ?? sum(reportRows, 'holding_cost'));
+  const totalProduction = Number(data?.total_payable_sum ?? sum(reportRows, 'payable_amount'));
+  const selectedClient = data?.selected_production_for || prodFor;
+  const selectedLocation = data?.selected_location || 'ALL LOCATIONS';
+  const billingDate = data?.billing_start_date ? new Date(`${data.billing_start_date}T00:00:00`) : new Date();
+  const billingLabel = billingDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const billDate = billingDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+  const billMonthCode = selectedMonth || data?.selected_month || billingDate.toISOString().slice(0, 7);
+  const billNo = selectedClient
+    ? `SP-${String(selectedClient).replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase()}-${billMonthCode.replace('-', '')}`
+    : '—';
 
-  // Render helper for tab buttons
-  const TabBtn = ({ id, label }) => (
-    <button
-      className={`v-btn ${activeTab === id ? 'active' : ''}`}
-      onClick={() => setActiveTab(id)}
-      style={{
-        padding: '6px 12px',
-        fontSize: '10px',
-        fontWeight: '700',
-        border: 'none',
-        background: activeTab === id ? 'var(--card-bg)' : 'transparent',
-        color: activeTab === id ? 'var(--corp-rep)' : 'var(--text-secondary)',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        textTransform: 'uppercase',
-        transition: 'all 0.2s',
-      }}
-    >
-      {label}
-    </button>
-  );
+  const tabs = [
+    ['summary', '1. CONSOLIDATED SUMMARY'],
+    ['original', '2. DETAILED ORIGINAL ENTRIES'],
+    ['bill', '🧾 3. MONTHLY BILL'],
+  ];
 
-  return (
-    <div className="report-viewer-card">
-      {/* Header and View tabs */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
-        <ReportHeader
-          title="Cold Storage Cost Matrix (FIFO)"
-          loading={loading}
-          onReload={reload}
-          onPrint={() => window.print()}
-        />
-        <div style={{ display: 'flex', background: 'var(--border-light)', padding: '3px', borderRadius: '6px', gap: '4px' }}>
-          <TabBtn id="ledger" label="1. Ledger Matrix" />
-          <TabBtn id="prod" label="2. Prod Cost" />
-          <TabBtn id="storage" label="3. Storage Rent" />
-          <TabBtn id="combined" label="4. Combined" />
-          <TabBtn id="facility" label="5. Facility Summary" />
-        </div>
+  const ProductCells = ({ row, details = row.details || row }) => <>
+    <td className="storage-batch">{row.batch_number || '—'}</td>
+    <td>{details.type_of_production || '—'}</td>
+    <td>{details.location || '—'}</td>
+    <td>{row.brand ?? details.brand ?? '—'}</td>
+    <td>{row.freezer ?? details.freezer ?? '—'}</td>
+    <td>{row.packing_style ?? details.packing_style ?? '—'}</td>
+    <td>{row.glaze ?? details.glaze ?? '—'}</td>
+    <td>{row.variety ?? details.variety ?? '—'}</td>
+    <td>{row.grade ?? details.grade ?? '—'}</td>
+    <td>{row.species ?? details.species ?? '—'}</td>
+    <td className="text-right">{fmt.number(details.no_of_mc)}</td>
+    <td className="text-right">{fmt.number(details.loose)}</td>
+    <td className="text-right">{fmt.number(details.quantity)}</td>
+    <td>{details.po_number || details.purpose || '—'}</td>
+    <td>{row.production_at ?? details.production_at ?? '—'}</td>
+    <td>{row.production_for ?? details.production_for ?? '—'}</td>
+  </>;
+
+  const printMonthlyBill = () => {
+    if (!selectedClient || !monthlyInvoiceRef.current) return;
+    document.body.classList.add('storage-monthly-print-mode');
+    const cleanup = () => document.body.classList.remove('storage-monthly-print-mode');
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 1500);
+  };
+
+  return <div className="report-viewer-card storage-cost-report">
+    <ReportHeader
+      title="Advanced Stock & Storage Report"
+      loading={loading}
+      onReload={reload}
+      onPrint={() => window.print()}
+    />
+
+    <div className="storage-control-panel">
+      <div className="storage-filter-fields">
+        <label><span>Production For</span><select value={prodFor} onChange={event => setProdFor(event.target.value)}><option value="">-- All Clients --</option>{(data?.production_for_list || []).map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+        <label><span>Billing Month</span><input type="month" value={selectedMonth} onChange={event => setSelectedMonth(event.target.value)} /></label>
+        <label><span>Freezer</span><select value={freezer} onChange={event => setFreezer(event.target.value)}><option value="">-- All --</option>{(data?.freezers || []).map(value => <option key={value} value={value}>{value}</option>)}</select></label>
+        <button type="button" className="storage-generate-btn" onClick={reload}>Generate</button>
       </div>
-
-      {/* Filters group */}
-      <FilterBar>
-        <FilterBox label="Cold Storage Facility">
-          <FilterSelect value={coldStorage} onChange={setColdStorage}>
-            <option value="">All Facilities</option>
-            {csNames.map(cs => <option key={cs} value={cs}>{cs}</option>)}
-          </FilterSelect>
-        </FilterBox>
-
-        <FilterBox label="Production For (Client)">
-          <FilterSelect value={prodFor} onChange={setProdFor}>
-            <option value="">All Clients</option>
-            {pForList.map(p => <option key={p} value={p}>{p}</option>)}
-          </FilterSelect>
-        </FilterBox>
-
-        <FilterBox label="Location (Production At)">
-          <FilterSelect value={prodAt} onChange={setProdAt}>
-            <option value="">All Locations</option>
-            {pAtList.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-          </FilterSelect>
-        </FilterBox>
-
-        <FilterBox label="Billing Month">
-          <FilterInput type="month" value={selectedMonth} onChange={setSelectedMonth} />
-        </FilterBox>
-
-        <FilterBox label="Search">
-          <SearchInput value={search} onChange={setSearch} />
-        </FilterBox>
-      </FilterBar>
-
-      {loading && <Loader />}
-      {error && <ErrorBox msg={error} onRetry={reload} />}
-
-      {!loading && !error && data && (
-        <>
-          {/* KPI matrix cards */}
-          <KPIGrid>
-            <KPICard label="Closing Stock" value={`${data.total_closing_mc || 0} MC`} accent="#0ea5e9" />
-            <KPICard label="Prod Cost" value={fmt.currency(data.total_prod_cost)} accent="#8b5cf6" />
-            <KPICard label="Storage Rent" value={fmt.currency(data.total_storage_rent)} accent="#d97706" />
-            <KPICard label="Handling / L&U" value={fmt.currency(data.total_charges)} accent="#3b82f6" />
-            <KPICard label="Total Payable" value={fmt.currency(data.total_payable_all)} accent="#10b981" />
-            <KPICard label="Amount Paid" value={fmt.currency(data.total_paid_all)} accent="#22c55e" />
-            <KPICard label="Pending Dues" value={fmt.currency(data.total_pending_all)} accent="#ef4444" />
-          </KPIGrid>
-
-          {/* Table Container */}
-          <div className="card" style={{ marginTop: 0, padding: 0, overflow: 'hidden' }}>
-            <div className="table-responsive">
-
-              {/* TAB 1: LEDGER MATRIX */}
-              {activeTab === 'ledger' && (
-                <table className="bknr-table" style={{ minWidth: 1400 }}>
-                  <thead>
-                    <tr>
-                      <th style={{ width: '3%' }}>#</th>
-                      <th>Client</th>
-                      <th>Location</th>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Cold Storage</th>
-                      <th>Batch No</th>
-                      <th>Freezer</th>
-                      <th>Variety / Grade</th>
-                      <th>Packing</th>
-                      <th>MC (In/Out)</th>
-                      <th>Loose</th>
-                      <th>Qty (KG)</th>
-                      <th>Balance MC</th>
-                      <th>Status</th>
-                      <th>Prod Cost</th>
-                      <th>Rent Type</th>
-                      <th>Rate</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transactionGroups.length === 0 ? (
-                      <EmptyRow cols={18} />
-                    ) : (() => {
-                      let globalIdx = 0;
-                      return transactionGroups.map((tg, tgi) => (
-                        <React.Fragment key={tgi}>
-                          <tr className="tr-group-header" style={{ background: 'var(--primary)', color: '#fff', fontWeight: 800 }}>
-                            <td colSpan={18} style={{ textAlign: 'left', padding: '8px 12px', textTransform: 'uppercase' }}>
-                              CLIENT: {tg.production_for}
-                            </td>
-                          </tr>
-                          {(tg.location_groups || []).map((lg, lgi) => (
-                            <React.Fragment key={lgi}>
-                              <tr className="tr-loc-header" style={{ background: 'var(--border-light)', color: 'var(--text-primary)', fontWeight: 700 }}>
-                                <td colSpan={18} style={{ textAlign: 'left', padding: '6px 20px', textTransform: 'uppercase' }}>
-                                  LOCATION: {lg.production_at}
-                                </td>
-                              </tr>
-                              {(lg.transactions || [])
-                                .filter(t => !search || Object.values(t).some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
-                                .map((t, ti) => {
-                                  globalIdx++;
-                                  return (
-                                    <tr key={ti}>
-                                      <td className="text-center" style={{ color: 'var(--text-tertiary)' }}>{globalIdx}</td>
-                                      <td style={{ fontWeight: 700 }}>{t.production_for}</td>
-                                      <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{t.production_at}</td>
-                                      <td>{t.date ? new Date(t.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}</td>
-                                      <td className="text-center">
-                                        <span className={`badge ${t.type === 'IN' ? 'bg-in' : 'bg-out'}`} style={{
-                                          padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px',
-                                          background: t.type === 'IN' ? 'rgba(22, 163, 74, 0.1)' : 'rgba(220, 38, 38, 0.1)',
-                                          color: t.type === 'IN' ? '#16a34a' : '#dc2626'
-                                        }}>
-                                          {t.type}
-                                        </span>
-                                      </td>
-                                      <td style={{ textAlign: 'left', fontWeight: 800 }}>{t.cold_storage_name}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-dash)' }}>{t.batch_number}</td>
-                                      <td>{t.freezer}</td>
-                                      <td>{t.variety} / {t.grade}</td>
-                                      <td>{t.packing_style}</td>
-                                      <td className={t.type === 'IN' ? 'val-pos' : 'val-neg'} style={{ fontWeight: 700, color: t.type === 'IN' ? '#16a34a' : '#dc2626' }}>
-                                        {t.type === 'IN' ? `+${t.mc}` : `-${t.mc}`}
-                                      </td>
-                                      <td>{t.loose || '—'}</td>
-                                      <td style={{ fontWeight: 700 }}>{fmt.number(t.qty_kg)}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-rep)', background: 'var(--bg-light)' }}>{t.running_balance}</td>
-                                      <td>
-                                        <span className="badge" style={{
-                                          padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px',
-                                          background: t.status === 'HOLDING' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(22, 163, 74, 0.1)',
-                                          color: t.status === 'HOLDING' ? '#d97706' : '#16a34a'
-                                        }}>
-                                          {t.status}
-                                        </span>
-                                      </td>
-                                      <td style={{ color: '#7c3aed', fontWeight: 800 }}>
-                                        {t.type === 'IN' && Number(t.prod_cost_row) > 0 ? fmt.currency(t.prod_cost_row) : '—'}
-                                      </td>
-                                      <td style={{ color: 'var(--text-secondary)', fontSize: '9px' }}>{t.rent_type || 'DAILY'}</td>
-                                      <td>{fmt.currency(t.rate)}</td>
-                                    </tr>
-                                  );
-                                })}
-                            </React.Fragment>
-                          ))}
-                        </React.Fragment>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              )}
-
-              {/* TAB 2: PROD COST */}
-              {activeTab === 'prod' && (
-                <table className="bknr-table" style={{ minWidth: 1400 }}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Client</th>
-                      <th>Location</th>
-                      <th>Cold Storage</th>
-                      <th>Batch No</th>
-                      <th>Freezer</th>
-                      <th>Variety / Grade</th>
-                      <th>Packing</th>
-                      <th>First IN</th>
-                      <th>Last OUT</th>
-                      <th>Open MC</th>
-                      <th>IN MC</th>
-                      <th>IN KG</th>
-                      <th>OUT MC</th>
-                      <th>Close MC</th>
-                      <th>Rate/KG</th>
-                      <th>Prod Cost ₹</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productionForGroups.length === 0 ? (
-                      <EmptyRow cols={17} />
-                    ) : (() => {
-                      let globalIdx = 0;
-                      return productionForGroups.map((g, gi) => (
-                        <React.Fragment key={gi}>
-                          <tr className="tr-group-header" style={{ background: 'var(--primary)', color: '#fff', fontWeight: 800 }}>
-                            <td colSpan={17} style={{ textAlign: 'left', padding: '8px 12px', textTransform: 'uppercase' }}>
-                              CLIENT: {g.production_for}
-                            </td>
-                          </tr>
-                          {(g.location_groups || []).map((lg, lgi) => (
-                            <React.Fragment key={lgi}>
-                              <tr className="tr-loc-header" style={{ background: 'var(--border-light)', color: 'var(--text-primary)', fontWeight: 700 }}>
-                                <td colSpan={17} style={{ textAlign: 'left', padding: '6px 20px', textTransform: 'uppercase' }}>
-                                  LOCATION: {lg.production_at}
-                                </td>
-                              </tr>
-                              {(lg.batches || [])
-                                .filter(b => !search || Object.values(b).some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
-                                .map((b, bi) => {
-                                  globalIdx++;
-                                  return (
-                                    <tr key={bi}>
-                                      <td className="txt-muted">{globalIdx}</td>
-                                      <td style={{ fontWeight: 700 }}>{b.production_for}</td>
-                                      <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{b.production_at}</td>
-                                      <td style={{ textAlign: 'left', fontWeight: 800 }}>{b.cold_storage_name}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-dash)' }}>{b.batch_number}</td>
-                                      <td>{b.freezer}</td>
-                                      <td>{b.variety} / {b.grade}</td>
-                                      <td>{b.packing_style}</td>
-                                      <td style={{ color: '#16a34a', fontWeight: 700 }}>
-                                        {b.first_in_date ? new Date(b.first_in_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
-                                      </td>
-                                      <td style={{ color: '#dc2626', fontWeight: 700 }}>
-                                        {b.last_out_date ? new Date(b.last_out_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
-                                      </td>
-                                      <td style={{ fontWeight: 700 }}>{b.opening_mc}</td>
-                                      <td style={{ color: '#16a34a' }}>+{b.monthly_in_mc}</td>
-                                      <td style={{ fontWeight: 800 }}>{fmt.number(b.monthly_in_kg)}</td>
-                                      <td style={{ color: '#dc2626' }}>-{b.monthly_out_mc}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-rep)', background: 'var(--bg-light)' }}>{b.closing_mc}</td>
-                                      <td>{fmt.currency(b.prod_rate_per_kg)}</td>
-                                      <td style={{ color: '#7c3aed', fontWeight: 800 }}>{fmt.currency(b.prod_cost_total)}</td>
-                                    </tr>
-                                  );
-                                })}
-                              {/* Location Subtotal */}
-                              <tr style={{ background: 'rgba(59, 130, 246, 0.05)', fontWeight: 800, color: '#0284c7' }}>
-                                <td colSpan={10} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                                  LOC SUBTOTAL ({lg.production_at}):
-                                </td>
-                                <td>{lg.opening_mc}</td>
-                                <td>+{lg.monthly_in_mc}</td>
-                                <td>{fmt.number(lg.monthly_in_kg)}</td>
-                                <td>-{lg.monthly_out_mc}</td>
-                                <td>{lg.closing_mc}</td>
-                                <td></td>
-                                <td>{fmt.currency(lg.prod_cost_total)}</td>
-                              </tr>
-                            </React.Fragment>
-                          ))}
-                          {/* Client Total */}
-                          <tr style={{ background: '#fef3c7', fontWeight: 800, color: '#b45309' }}>
-                            <td colSpan={10} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                              CLIENT TOTAL ({g.production_for}):
-                            </td>
-                            <td>{g.opening_mc}</td>
-                            <td>+{g.monthly_in_mc}</td>
-                            <td>{fmt.number(g.monthly_in_kg)}</td>
-                            <td>-{g.monthly_out_mc}</td>
-                            <td>{g.closing_mc}</td>
-                            <td></td>
-                            <td>{fmt.currency(g.prod_cost_total)}</td>
-                          </tr>
-                        </React.Fragment>
-                      ));
-                    })()}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ fontWeight: 800 }}>
-                      <td colSpan={10} style={{ textAlign: 'right' }}>GRAND TOTAL:</td>
-                      <td>{data.total_opening_mc}</td>
-                      <td>+{data.total_in_mc}</td>
-                      <td></td>
-                      <td>-{data.total_out_mc}</td>
-                      <td>{data.total_closing_mc}</td>
-                      <td></td>
-                      <td>{fmt.currency(data.total_prod_cost)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-
-              {/* TAB 3: STORAGE RENT */}
-              {activeTab === 'storage' && (
-                <table className="bknr-table" style={{ minWidth: 1400 }}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Client</th>
-                      <th>Location</th>
-                      <th>Cold Storage</th>
-                      <th>Batch No</th>
-                      <th>Variety / Grade</th>
-                      <th>Rent Type</th>
-                      <th>Rate</th>
-                      <th>Open MC</th>
-                      <th>IN MC</th>
-                      <th>OUT MC</th>
-                      <th>Close MC</th>
-                      <th>Storage Rent ₹</th>
-                      <th>LU IN ₹</th>
-                      <th>LU OUT ₹</th>
-                      <th>Payable ₹</th>
-                      <th>Paid ₹</th>
-                      <th>Pending ₹</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productionForGroups.length === 0 ? (
-                      <EmptyRow cols={18} />
-                    ) : (() => {
-                      let globalIdx = 0;
-                      return productionForGroups.map((g, gi) => (
-                        <React.Fragment key={gi}>
-                          <tr className="tr-group-header" style={{ background: 'var(--primary)', color: '#fff', fontWeight: 800 }}>
-                            <td colSpan={18} style={{ textAlign: 'left', padding: '8px 12px', textTransform: 'uppercase' }}>
-                              CLIENT: {g.production_for}
-                            </td>
-                          </tr>
-                          {(g.location_groups || []).map((lg, lgi) => (
-                            <React.Fragment key={lgi}>
-                              <tr className="tr-loc-header" style={{ background: 'var(--border-light)', color: 'var(--text-primary)', fontWeight: 700 }}>
-                                <td colSpan={18} style={{ textAlign: 'left', padding: '6px 20px', textTransform: 'uppercase' }}>
-                                  LOCATION: {lg.production_at}
-                                </td>
-                              </tr>
-                              {(lg.batches || [])
-                                .filter(b => !search || Object.values(b).some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
-                                .map((b, bi) => {
-                                  globalIdx++;
-                                  return (
-                                    <tr key={bi} style={b.pending_amount > 0 ? { background: 'rgba(245, 158, 11, 0.03)' } : {}}>
-                                      <td className="txt-muted">{globalIdx}</td>
-                                      <td style={{ fontWeight: 700 }}>{b.production_for}</td>
-                                      <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{b.production_at}</td>
-                                      <td style={{ textAlign: 'left', fontWeight: 800 }}>{b.cold_storage_name}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-dash)' }}>{b.batch_number}</td>
-                                      <td>{b.variety} / {b.grade}</td>
-                                      <td className="txt-muted">{b.rent_type}</td>
-                                      <td>{fmt.currency(b.rate_per_mc)}</td>
-                                      <td style={{ fontWeight: 700 }}>{b.opening_mc}</td>
-                                      <td style={{ color: '#16a34a' }}>+{b.monthly_in_mc}</td>
-                                      <td style={{ color: '#dc2626' }}>-{b.monthly_out_mc}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-rep)', background: 'var(--bg-light)' }}>{b.closing_mc}</td>
-                                      <td style={{ color: '#d97706', fontWeight: 800 }}>{fmt.currency(b.storage_rent)}</td>
-                                      <td style={{ color: '#3b82f6', fontWeight: 700 }}>{fmt.currency(b.handling_charges)}</td>
-                                      <td style={{ color: '#3b82f6', fontWeight: 700 }}>{fmt.currency(b.lu_charges_out)}</td>
-                                      <td style={{ color: '#10b981', fontWeight: 800, background: 'var(--bg-light)' }}>{fmt.currency(b.total_payable)}</td>
-                                      <td style={{ color: '#16a34a', fontWeight: 700 }}>{fmt.currency(b.paid_amount)}</td>
-                                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{fmt.currency(b.pending_amount)}</td>
-                                    </tr>
-                                  );
-                                })}
-                              {/* Location Subtotal */}
-                              <tr style={{ background: 'rgba(59, 130, 246, 0.05)', fontWeight: 800, color: '#0284c7' }}>
-                                <td colSpan={8} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                                  LOC SUBTOTAL ({lg.production_at}):
-                                </td>
-                                <td>{lg.opening_mc}</td>
-                                <td>+{lg.monthly_in_mc}</td>
-                                <td>-{lg.monthly_out_mc}</td>
-                                <td>{lg.closing_mc}</td>
-                                <td>{fmt.currency(lg.storage_rent)}</td>
-                                <td>{fmt.currency(lg.handling_charges)}</td>
-                                <td>{fmt.currency(lg.lu_charges_out)}</td>
-                                <td>{fmt.currency(lg.total_payable)}</td>
-                                <td>{fmt.currency(lg.paid_amount)}</td>
-                                <td>{fmt.currency(lg.pending_amount)}</td>
-                              </tr>
-                            </React.Fragment>
-                          ))}
-                          {/* Client Total */}
-                          <tr style={{ background: '#fef3c7', fontWeight: 800, color: '#b45309' }}>
-                            <td colSpan={8} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                              CLIENT TOTAL ({g.production_for}):
-                            </td>
-                            <td>{g.opening_mc}</td>
-                            <td>+{g.monthly_in_mc}</td>
-                            <td>-{g.monthly_out_mc}</td>
-                            <td>{g.closing_mc}</td>
-                            <td>{fmt.currency(g.storage_rent)}</td>
-                            <td>{fmt.currency(g.handling_charges)}</td>
-                            <td>{fmt.currency(g.lu_charges_out)}</td>
-                            <td>{fmt.currency(g.total_payable)}</td>
-                            <td>{fmt.currency(g.paid_amount)}</td>
-                            <td>{fmt.currency(g.pending_amount)}</td>
-                          </tr>
-                        </React.Fragment>
-                      ));
-                    })()}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ fontWeight: 800 }}>
-                      <td colSpan={8} style={{ textAlign: 'right' }}>GRAND TOTAL:</td>
-                      <td>{data.total_opening_mc}</td>
-                      <td>+{data.total_in_mc}</td>
-                      <td>-{data.total_out_mc}</td>
-                      <td>{data.total_closing_mc}</td>
-                      <td>{fmt.currency(data.total_storage_rent)}</td>
-                      <td colSpan={2}>{fmt.currency(data.total_charges)}</td>
-                      <td>{fmt.currency(data.total_payable_all)}</td>
-                      <td>{fmt.currency(data.total_paid_all)}</td>
-                      <td>{fmt.currency(data.total_pending_all)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-
-              {/* TAB 4: COMBINED */}
-              {activeTab === 'combined' && (
-                <table className="bknr-table" style={{ minWidth: 1400 }}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Client</th>
-                      <th>Location</th>
-                      <th>Cold Storage</th>
-                      <th>Batch No</th>
-                      <th>Variety / Grade</th>
-                      <th>Open MC</th>
-                      <th>IN MC</th>
-                      <th>OUT MC</th>
-                      <th>Close MC</th>
-                      <th>Prod Cost ₹</th>
-                      <th>Rent ₹</th>
-                      <th>L&U ₹</th>
-                      <th>Combined Payable ₹</th>
-                      <th>Paid ₹</th>
-                      <th>Pending ₹</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {productionForGroups.length === 0 ? (
-                      <EmptyRow cols={16} />
-                    ) : (() => {
-                      let globalIdx = 0;
-                      return productionForGroups.map((g, gi) => (
-                        <React.Fragment key={gi}>
-                          <tr className="tr-group-header" style={{ background: 'var(--primary)', color: '#fff', fontWeight: 800 }}>
-                            <td colSpan={16} style={{ textAlign: 'left', padding: '8px 12px', textTransform: 'uppercase' }}>
-                              CLIENT: {g.production_for}
-                            </td>
-                          </tr>
-                          {(g.location_groups || []).map((lg, lgi) => (
-                            <React.Fragment key={lgi}>
-                              <tr className="tr-loc-header" style={{ background: 'var(--border-light)', color: 'var(--text-primary)', fontWeight: 700 }}>
-                                <td colSpan={16} style={{ textAlign: 'left', padding: '6px 20px', textTransform: 'uppercase' }}>
-                                  LOCATION: {lg.production_at}
-                                </td>
-                              </tr>
-                              {(lg.batches || [])
-                                .filter(b => !search || Object.values(b).some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
-                                .map((b, bi) => {
-                                  globalIdx++;
-                                  return (
-                                    <tr key={bi} style={b.pending_amount > 0 ? { background: 'rgba(245, 158, 11, 0.03)' } : {}}>
-                                      <td className="txt-muted">{globalIdx}</td>
-                                      <td style={{ fontWeight: 700 }}>{b.production_for}</td>
-                                      <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{b.production_at}</td>
-                                      <td style={{ textAlign: 'left', fontWeight: 800 }}>{b.cold_storage_name}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-dash)' }}>{b.batch_number}</td>
-                                      <td>{b.variety} / {b.grade}</td>
-                                      <td style={{ fontWeight: 700 }}>{b.opening_mc}</td>
-                                      <td style={{ color: '#16a34a' }}>+{b.monthly_in_mc}</td>
-                                      <td style={{ color: '#dc2626' }}>-{b.monthly_out_mc}</td>
-                                      <td style={{ fontWeight: 800, color: 'var(--corp-rep)', background: 'var(--bg-light)' }}>{b.closing_mc}</td>
-                                      <td style={{ color: '#7c3aed', fontWeight: 800 }}>{fmt.currency(b.prod_cost_total)}</td>
-                                      <td style={{ color: '#d97706', fontWeight: 800 }}>{fmt.currency(b.storage_rent)}</td>
-                                      <td style={{ color: '#3b82f6', fontWeight: 800 }}>{fmt.currency(b.other_charges)}</td>
-                                      <td style={{ color: '#10b981', fontWeight: 800, background: 'var(--bg-light)' }}>
-                                        {fmt.currency(b.prod_cost_total + b.total_payable)}
-                                      </td>
-                                      <td style={{ color: '#16a34a', fontWeight: 700 }}>{fmt.currency(b.paid_amount)}</td>
-                                      <td style={{ color: '#dc2626', fontWeight: 700 }}>{fmt.currency(b.pending_amount)}</td>
-                                    </tr>
-                                  );
-                                })}
-                              {/* Location Subtotal */}
-                              <tr style={{ background: 'rgba(59, 130, 246, 0.05)', fontWeight: 800, color: '#0284c7' }}>
-                                <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                                  LOC SUBTOTAL ({lg.production_at}):
-                                </td>
-                                <td>{lg.opening_mc}</td>
-                                <td>+{lg.monthly_in_mc}</td>
-                                <td>-{lg.monthly_out_mc}</td>
-                                <td>{lg.closing_mc}</td>
-                                <td>{fmt.currency(lg.prod_cost_total)}</td>
-                                <td>{fmt.currency(lg.storage_rent)}</td>
-                                <td>{fmt.currency(lg.other_charges)}</td>
-                                <td>{fmt.currency(lg.prod_cost_total + lg.total_payable)}</td>
-                                <td>{fmt.currency(lg.paid_amount)}</td>
-                                <td>{fmt.currency(lg.pending_amount)}</td>
-                              </tr>
-                            </React.Fragment>
-                          ))}
-                          {/* Client Total */}
-                          <tr style={{ background: '#fef3c7', fontWeight: 800, color: '#b45309' }}>
-                            <td colSpan={6} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                              CLIENT TOTAL ({g.production_for}):
-                            </td>
-                            <td>{g.opening_mc}</td>
-                            <td>+{g.monthly_in_mc}</td>
-                            <td>-{g.monthly_out_mc}</td>
-                            <td>{g.closing_mc}</td>
-                            <td>{fmt.currency(g.prod_cost_total)}</td>
-                            <td>{fmt.currency(g.storage_rent)}</td>
-                            <td>{fmt.currency(g.other_charges)}</td>
-                            <td>{fmt.currency(g.prod_cost_total + g.total_payable)}</td>
-                            <td>{fmt.currency(g.paid_amount)}</td>
-                            <td>{fmt.currency(g.pending_amount)}</td>
-                          </tr>
-                        </React.Fragment>
-                      ));
-                    })()}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ fontWeight: 800 }}>
-                      <td colSpan={6} style={{ textAlign: 'right' }}>GRAND TOTAL:</td>
-                      <td>{data.total_opening_mc}</td>
-                      <td>+{data.total_in_mc}</td>
-                      <td>-{data.total_out_mc}</td>
-                      <td>{data.total_closing_mc}</td>
-                      <td>{fmt.currency(data.total_prod_cost)}</td>
-                      <td>{fmt.currency(data.total_storage_rent)}</td>
-                      <td>{fmt.currency(data.total_charges)}</td>
-                      <td>{fmt.currency(data.total_prod_cost + data.total_payable_all)}</td>
-                      <td>{fmt.currency(data.total_paid_all)}</td>
-                      <td>{fmt.currency(data.total_pending_all)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-
-              {/* TAB 5: FACILITY SUMMARY */}
-              {activeTab === 'facility' && (
-                <table className="bknr-table" style={{ minWidth: 1400 }}>
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th style={{ textAlign: 'left' }}>Cold Storage Facility</th>
-                      <th>Client</th>
-                      <th>Location</th>
-                      <th>Open MC</th>
-                      <th>IN MC</th>
-                      <th>OUT MC</th>
-                      <th>Close MC</th>
-                      <th>Prod Cost ₹ (Info)</th>
-                      <th>Storage Rent ₹</th>
-                      <th>Handling / L&U ₹</th>
-                      <th>Total Payable ₹</th>
-                      <th>Paid ₹</th>
-                      <th>Pending ₹</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {facilitySummary.length === 0 ? (
-                      <EmptyRow cols={15} />
-                    ) : (
-                      facilitySummary.map((f, fi) => (
-                        <React.Fragment key={fi}>
-                          <tr className="tr-group-header" style={{ background: 'var(--primary)', color: '#fff', fontWeight: 800 }}>
-                            <td colSpan={15} style={{ textAlign: 'left', padding: '8px 12px', textTransform: 'uppercase' }}>
-                              FACILITY: {f.cold_storage_name}
-                            </td>
-                          </tr>
-                          {(f.client_groups || []).map((cg, cgi) => (
-                            <React.Fragment key={cgi}>
-                              <tr className="tr-loc-header" style={{ background: 'var(--border-light)', color: 'var(--text-primary)', fontWeight: 700 }}>
-                                <td colSpan={15} style={{ textAlign: 'left', padding: '6px 20px', textTransform: 'uppercase' }}>
-                                  CLIENT: {cg.production_for}
-                                </td>
-                              </tr>
-                              {(cg.location_groups || [])
-                                .filter(l => !search || Object.values(l).some(v => String(v ?? '').toLowerCase().includes(search.toLowerCase())))
-                                .map((locGroup, li) => (
-                                  <tr key={li} style={locGroup.pending_amount > 0 ? { background: 'rgba(245, 158, 11, 0.03)' } : {}}>
-                                    <td className="txt-muted">-</td>
-                                    <td style={{ textAlign: 'left', fontWeight: 800, color: 'var(--text-primary)' }}>{f.cold_storage_name}</td>
-                                    <td style={{ fontWeight: 700 }}>{cg.production_for}</td>
-                                    <td style={{ fontWeight: 700, color: 'var(--corp-dash)' }}>{locGroup.production_at}</td>
-                                    <td style={{ fontWeight: 700 }}>{locGroup.opening_mc}</td>
-                                    <td style={{ color: '#16a34a' }}>+{locGroup.monthly_in_mc}</td>
-                                    <td style={{ color: '#dc2626' }}>-{locGroup.monthly_out_mc}</td>
-                                    <td style={{ fontWeight: 800, color: 'var(--corp-rep)', background: 'var(--bg-light)' }}>{locGroup.closing_mc}</td>
-                                    <td style={{ color: '#7c3aed', fontWeight: 800 }}>{fmt.currency(locGroup.prod_cost)}</td>
-                                    <td style={{ color: '#d97706', fontWeight: 800 }}>{fmt.currency(locGroup.storage_rent)}</td>
-                                    <td style={{ color: '#3b82f6', fontWeight: 800 }}>{fmt.currency(locGroup.other_charges)}</td>
-                                    <td style={{ color: '#10b981', fontWeight: 800, background: 'var(--bg-light)' }}>{fmt.currency(locGroup.total_payable)}</td>
-                                    <td style={{ color: '#16a34a', fontWeight: 700 }}>{fmt.currency(locGroup.paid_amount)}</td>
-                                    <td style={{ color: '#dc2626', fontWeight: 700 }}>{fmt.currency(locGroup.pending_amount)}</td>
-                                    <td>
-                                      {locGroup.pending_amount <= 0 ? (
-                                        <span className="badge bg-in" style={{ padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px', background: 'rgba(22, 163, 74, 0.1)', color: '#16a34a' }}>
-                                          CLEAR
-                                        </span>
-                                      ) : locGroup.pending_amount >= locGroup.total_payable ? (
-                                        <span className="badge bg-out" style={{ padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px', background: 'rgba(220, 38, 38, 0.1)', color: '#dc2626' }}>
-                                          UNPAID
-                                        </span>
-                                      ) : (
-                                        <span className="badge bg-warn" style={{ padding: '2px 6px', fontSize: '9px', fontWeight: 800, borderRadius: '4px', background: 'rgba(217, 119, 6, 0.1)', color: '#d97706' }}>
-                                          PARTIAL
-                                        </span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
-                            </React.Fragment>
-                          ))}
-                          {/* Facility Total */}
-                          <tr style={{ background: '#fef3c7', fontWeight: 800, color: '#b45309' }}>
-                            <td colSpan={4} style={{ textAlign: 'right', paddingRight: '12px' }}>
-                              FACILITY TOTAL ({f.cold_storage_name}):
-                            </td>
-                            <td>{f.opening_mc}</td>
-                            <td>+{f.monthly_in_mc}</td>
-                            <td>-{f.monthly_out_mc}</td>
-                            <td>{f.closing_mc}</td>
-                            <td>{fmt.currency(f.prod_cost)}</td>
-                            <td>{fmt.currency(f.storage_rent)}</td>
-                            <td>{fmt.currency(f.other_charges)}</td>
-                            <td>{fmt.currency(f.total_payable)}</td>
-                            <td>{fmt.currency(f.paid_amount)}</td>
-                            <td>{fmt.currency(f.pending_amount)}</td>
-                            <td></td>
-                          </tr>
-                        </React.Fragment>
-                      ))
-                    )}
-                  </tbody>
-                  <tfoot>
-                    <tr style={{ fontWeight: 800 }}>
-                      <td colSpan={4} style={{ textAlign: 'right' }}>GRAND TOTAL:</td>
-                      <td>{data.total_opening_mc}</td>
-                      <td>+{data.total_in_mc}</td>
-                      <td>-{data.total_out_mc}</td>
-                      <td>{data.total_closing_mc}</td>
-                      <td>{fmt.currency(data.total_prod_cost)}</td>
-                      <td>{fmt.currency(data.total_storage_rent)}</td>
-                      <td>{fmt.currency(data.total_charges)}</td>
-                      <td>{fmt.currency(data.total_payable_all)}</td>
-                      <td>{fmt.currency(data.total_paid_all)}</td>
-                      <td>{fmt.currency(data.total_pending_all)}</td>
-                      <td></td>
-                    </tr>
-                  </tfoot>
-                </table>
-              )}
-
-            </div>
-          </div>
-        </>
-      )}
+      <div className="storage-inline-kpis">
+        <div className="storage-inline-kpi blue"><span>IN Qty (KG)</span><strong>{fmt.number(totalInQty)}</strong></div>
+        <div className="storage-inline-kpi amber"><span>Holding Cost</span><strong>{fmt.currency(totalHolding)}</strong></div>
+        <div className="storage-inline-kpi indigo"><span>Production Cost</span><strong>{fmt.currency(totalProduction)}</strong></div>
+        <div className="storage-inline-kpi green"><span>Grand Total</span><strong>{fmt.currency(totalHolding + totalProduction)}</strong></div>
+      </div>
     </div>
-  );
+
+    <div className="storage-tabs" role="tablist" aria-label="Storage report views">
+      {tabs.map(([key, label]) => <button key={key} type="button" role="tab" aria-selected={activeTab === key} className={`storage-tab-btn${activeTab === key ? ' active' : ''}`} onClick={() => setActiveTab(key)}>{label}</button>)}
+    </div>
+
+    {loading && <Loader />}
+    {error && <ErrorBox msg={error} onRetry={reload} />}
+    {!loading && !error && <>
+      <section className={`storage-tab-panel${activeTab === 'summary' ? ' active' : ''}`} aria-label="Consolidated summary">
+        <div className="storage-table-wrap"><table className="bknr-table storage-wide-table storage-summary-table">
+          <thead><tr>{productHeaders.map(header => <th key={header}>{header}</th>)}<th>Opening MC</th><th>Month IN</th><th>Month OUT</th><th>Closing MC</th><th>Rate/MC/Day</th><th>Total Days</th><th>Free Days</th><th>Payable Days</th><th>Holding Cost ₹</th><th>Prod Cost/KG</th><th>Production Cost ₹</th><th>Total Cost ₹</th></tr></thead>
+          <tbody>{reportRows.length === 0 ? <EmptyRow cols={28} /> : reportRows.map((row, index) => <tr key={`${row.batch_number}-${index}`}>
+            <ProductCells row={row} />
+            <td className="storage-opening">{fmt.number(row.opening_mc)}</td>
+            <td className="storage-row-in">{fmt.number(row.monthly_in_mc)}</td>
+            <td className="storage-row-out">{fmt.number(row.monthly_out_mc)}</td>
+            <td className="storage-closing">{fmt.number(row.closing_mc)}</td>
+            <td>{fmt.currency(row.holding_cost_per_mc_day)}</td><td>{row.total_days || 0} days</td><td>{row.free_days_tm || 0} days</td><td>{row.payable_days || 0} days</td>
+            <td className="storage-holding">{fmt.currency(row.holding_cost)}</td><td>{fmt.currency(row.production_cost_per_kg)}</td><td className="storage-production">{fmt.currency(row.payable_amount)}</td><td className="storage-grand">{fmt.currency(Number(row.holding_cost || 0) + Number(row.payable_amount || 0))}</td>
+          </tr>)}</tbody>
+          <tfoot><tr><td colSpan="16" className="text-right">Sub Total:</td><td>{fmt.number(sum(reportRows, 'opening_mc'))}</td><td>{fmt.number(sum(reportRows, 'monthly_in_mc'))}</td><td>{fmt.number(sum(reportRows, 'monthly_out_mc'))}</td><td>{fmt.number(sum(reportRows, 'closing_mc'))}</td><td colSpan="4"></td><td className="storage-holding">{fmt.currency(sum(reportRows, 'holding_cost'))}</td><td></td><td className="storage-production">{fmt.currency(sum(reportRows, 'payable_amount'))}</td><td className="storage-grand">{fmt.currency(sum(reportRows, 'holding_cost') + sum(reportRows, 'payable_amount'))}</td></tr></tfoot>
+        </table></div>
+      </section>
+
+      <section className={`storage-tab-panel${activeTab === 'original' ? ' active' : ''}`} aria-label="Detailed original entries">
+        <div className="storage-table-wrap"><table className="bknr-table storage-original-table">
+          <thead><tr><th>Date</th><th>Movement</th>{productHeaders.map(header => <th key={header}>{header}</th>)}</tr></thead>
+          <tbody>{originalRows.length === 0 ? <EmptyRow cols={18} /> : originalRows.map((row, index) => <tr key={`${row.batch_number}-${row.date}-${index}`}><td>{displayDate(row.date)}</td><td className={row.cargo_movement_type === 'IN' ? 'storage-row-in' : 'storage-row-out'}>{row.cargo_movement_type || '—'}</td><ProductCells row={row} details={row} /></tr>)}</tbody>
+        </table></div>
+      </section>
+
+      <section className={`storage-tab-panel storage-bill-panel${activeTab === 'bill' ? ' active' : ''}`} aria-label="Monthly bill">
+        {!selectedClient ? <div className="storage-bill-warning">⚠ Please select a client in the “Production For” filter to view and print the Monthly Bill.</div> : <>
+          <div className="storage-bill-actions"><button type="button" onClick={printMonthlyBill}>🖨 Print Monthly Bill</button></div>
+          <article className="storage-monthly-invoice" ref={monthlyInvoiceRef}>
+            <header className="storage-invoice-title"><h2>Stock Processing &amp; Storage Monthly Bill</h2><strong>{data?.company_name || 'ERP'}</strong></header>
+            <div className="storage-invoice-meta"><div><b>Client Name :</b> {selectedClient}<br/><b>Location :</b> {selectedLocation}<br/><b>Billing Period :</b> {billingLabel}</div><div><b>Bill No :</b> {billNo}<br/><b>Bill Date :</b> {billDate}<br/><b>System Generated Statement</b></div></div>
+
+            <h3>📦 Active Available Stock</h3>
+            <div className="storage-invoice-table-wrap"><table className="storage-invoice-table"><thead><tr><th>Batch No</th><th>In Date</th><th>Details (Variety / Grade)</th><th>Available MC</th><th>Available Qty (KG)</th><th>Storage Rate</th><th>Total Days</th><th>Free Days</th><th>Payable Days</th><th>Holding Cost (₹)</th><th>Prod Rate/KG</th><th>Production Cost (₹)</th><th>Total (₹)</th></tr></thead><tbody>
+              {availableRows.length === 0 ? <EmptyRow cols={13} /> : availableRows.map((row, index) => <tr key={`${row.batch_number}-${index}`}><td className="storage-batch">{row.batch_number}</td><td>{displayDate(row.in_date)}</td><td>{[row.variety, row.grade, row.freezer].filter(Boolean).join(' / ')}</td><td>{row.available_mc}</td><td>{fmt.number(row.qty_kg)}</td><td>{fmt.currency(row.holding_cost_per_mc_day)}/d</td><td>{row.total_days}</td><td>{row.free_days_tm}</td><td>{row.payable_days}</td><td>{fmt.currency(row.holding_cost)}</td><td>{fmt.currency(row.production_cost_per_kg)}</td><td>{fmt.currency(row.payable_amount)}</td><td>{fmt.currency(Number(row.holding_cost || 0) + Number(row.payable_amount || 0))}</td></tr>)}
+            </tbody><tfoot><tr><td colSpan="3" className="text-right">Sub Total:</td><td>{fmt.number(sum(availableRows, 'available_mc'))}</td><td>{fmt.number(sum(availableRows, 'qty_kg'))}</td><td colSpan="4"></td><td>{fmt.currency(sum(availableRows, 'holding_cost'))}</td><td></td><td>{fmt.currency(sum(availableRows, 'payable_amount'))}</td><td>{fmt.currency(sum(availableRows, 'holding_cost') + sum(availableRows, 'payable_amount'))}</td></tr></tfoot></table></div>
+
+            <h3>🚚 Dispatched Stock (This Month)</h3>
+            <div className="storage-invoice-table-wrap"><table className="storage-invoice-table"><thead><tr><th>Batch No</th><th>In Date</th><th>Out Date</th><th>Details (Variety / Grade)</th><th>Dispatched MC</th><th>Dispatched Qty (KG)</th><th>Total Days</th><th>Free Days</th><th>Payable Days</th><th>Storage Rate</th><th>Holding Cost (₹)</th></tr></thead><tbody>
+              {dispatchRows.length === 0 ? <EmptyRow cols={11} /> : dispatchRows.map((row, index) => <tr key={`${row.batch_number}-${index}`}><td className="storage-batch">{row.batch_number}</td><td>{displayDate(row.in_date)}</td><td>{displayDate(row.out_date)}</td><td>{[row.variety, row.grade, row.freezer].filter(Boolean).join(' / ')}</td><td>{row.mc_dispatched}</td><td>{fmt.number(row.qty_kg)}</td><td>{row.total_days}</td><td>{row.free_days_tm}</td><td>{row.payable_days}</td><td>{fmt.currency(row.holding_cost_per_mc_day)}/d</td><td>{fmt.currency(row.holding_cost)}</td></tr>)}
+            </tbody><tfoot><tr><td colSpan="4" className="text-right">Sub Total:</td><td>{fmt.number(sum(dispatchRows, 'mc_dispatched'))}</td><td>{fmt.number(sum(dispatchRows, 'qty_kg'))}</td><td colSpan="4"></td><td>{fmt.currency(sum(dispatchRows, 'holding_cost'))}</td></tr></tfoot></table></div>
+
+            <div className="storage-invoice-totals"><table><tbody><tr><td>Total Storage Holding Cost:</td><td>{fmt.currency(totalHolding)}</td></tr><tr><td>Total Production Processing Cost:</td><td>{fmt.currency(totalProduction)}</td></tr><tr><th>GRAND TOTAL PAYABLE:</th><th>{fmt.currency(totalHolding + totalProduction)}</th></tr></tbody></table></div>
+            <div className="storage-invoice-terms"><h4>Terms &amp; Conditions</h4><ol><li>Holding rent calculated dynamically using FIFO balances after active free storage days.</li><li>Production processing fees based on weight received at plant.</li><li>This is a system generated document. Any disputes must be raised within 7 working days.</li></ol></div>
+            <footer className="storage-invoice-signatures"><div>Client Authorized Signatory</div><div>{data?.company_name || 'Company'} Authorized Representative</div></footer>
+          </article>
+        </>}
+      </section>
+    </>}
+  </div>;
 }

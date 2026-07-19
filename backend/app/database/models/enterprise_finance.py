@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Numeric, CheckConstraint
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -199,6 +199,10 @@ class VoucherHeader(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'voucher_no', name='uix_company_voucher_no'),
+        CheckConstraint(
+            "status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED','POSTED','CANCELLED')",
+            name='ck_voucher_header_status',
+        ),
     )
 
 
@@ -209,13 +213,23 @@ class VoucherDetail(Base):
     voucher_id = Column(Integer, ForeignKey('voucher_headers.id', ondelete='CASCADE'), nullable=False)
     ledger_id = Column(Integer, ForeignKey('ledger_masters.id'), nullable=False)
     cost_center_id = Column(Integer, ForeignKey('cost_centers.id'), nullable=True)
-    debit_amount = Column(Float, default=0.0)
-    credit_amount = Column(Float, default=0.0)
+    debit_amount = Column(Numeric(18, 2), default=0.0, nullable=False)
+    credit_amount = Column(Numeric(18, 2), default=0.0, nullable=False)
     remarks = Column(String(255), nullable=True)
 
     header = relationship("VoucherHeader", back_populates="details")
     ledger = relationship("LedgerMaster")
     cost_center = relationship("CostCenter")
+
+    __table_args__ = (
+        CheckConstraint('debit_amount >= 0', name='ck_voucher_detail_debit_nonnegative'),
+        CheckConstraint('credit_amount >= 0', name='ck_voucher_detail_credit_nonnegative'),
+        CheckConstraint(
+            '(debit_amount > 0 AND credit_amount = 0) OR '
+            '(credit_amount > 0 AND debit_amount = 0)',
+            name='ck_voucher_detail_one_sided',
+        ),
+    )
 
 
 class BankReconciliation(Base):
@@ -235,6 +249,53 @@ class BankReconciliation(Base):
 
     bank_ledger = relationship("LedgerMaster")
     voucher_detail = relationship("VoucherDetail")
+
+
+class BillAllocation(Base):
+    """Invoice/bill-wise settlement link for receipts and payments."""
+    __tablename__ = "bill_allocations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), index=True, nullable=False)
+    payment_receipt_id = Column(Integer, ForeignKey("payment_receipts.id"), nullable=False, index=True)
+    source_type = Column(String(20), nullable=False)  # RECEIVABLE / PAYABLE
+    source_id = Column(Integer, nullable=False, index=True)
+    document_no = Column(String(100), nullable=False, index=True)
+    allocated_amount = Column(Numeric(18, 2), nullable=False)
+    created_by = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_reversed = Column(Boolean, default=False, nullable=False)
+    reversed_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "payment_receipt_id", "source_type", "source_id", name="uix_bill_allocation_source"),
+        CheckConstraint("allocated_amount > 0", name="ck_bill_allocation_positive"),
+    )
+
+
+class ForexRevaluation(Base):
+    """Period-end unrealised foreign-exchange revaluation history."""
+    __tablename__ = "forex_revaluations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), index=True, nullable=False)
+    receivable_id = Column(Integer, ForeignKey("customer_receivables.id"), nullable=False, index=True)
+    as_of_date = Column(Date, nullable=False, index=True)
+    currency_code = Column(String(5), nullable=False)
+    foreign_balance = Column(Numeric(18, 4), nullable=False)
+    booking_rate = Column(Numeric(18, 6), nullable=False)
+    closing_rate = Column(Numeric(18, 6), nullable=False)
+    gain_loss_amount = Column(Numeric(18, 2), nullable=False)
+    journal_id = Column(Integer, ForeignKey("voucher_headers.id"), nullable=False)
+    created_by = Column(String(100), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    is_reversed = Column(Boolean, default=False, nullable=False)
+
+    journal = relationship("VoucherHeader", foreign_keys=[journal_id])
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "receivable_id", "as_of_date", name="uix_forex_revaluation_period"),
+    )
 
 
 class FinanceAuditTrail(Base):
@@ -518,6 +579,9 @@ class SalaryProcessing(Base):
 
     # Employer Contributions (Expense side)
     pf_employer = Column(Float, default=0.0)                     # Employer PF 12%
+    epf_employer = Column(Float, default=0.0)                    # Employer EPF portion
+    eps_employer = Column(Float, default=0.0)                    # Employer EPS portion
+    edli_employer = Column(Float, default=0.0)                   # Employer EDLI 0.5%
     esi_employer = Column(Float, default=0.0)                    # Employer ESI 3.25%
     lwf_employer = Column(Float, default=0.0)
 
@@ -528,6 +592,7 @@ class SalaryProcessing(Base):
     payment_mode = Column(String(20), default='BANK')            # BANK / CASH
     payment_date = Column(Date, nullable=True)
     utr_reference = Column(String(50), nullable=True)
+    paid_amount = Column(Float, default=0.0)
     payment_status = Column(String(20), default='UNPAID')        # UNPAID / PAID
 
     # Workflow

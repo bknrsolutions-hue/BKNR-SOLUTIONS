@@ -12,27 +12,14 @@
         }
         syncThemeFromParent();
     </script>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <title>GENERAL STOCK REPORT | ERP</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-<script>
-    function syncTheme() {
-        try {
-            if (window.parent && window.parent.document) {
-                const pTheme = window.parent.document.documentElement.getAttribute("data-theme") || "dark";
-                document.documentElement.setAttribute("data-theme", pTheme);
-            }
-        } catch(e) {}
-    }
-    syncTheme();
-    window.addEventListener('load', syncTheme);
-</script>
-
-<style>:root {
+<style>
+:root {
     /* Standard theme variables mapped to global standard styles */
     --primary: var(--text);
     --accent: var(--accent);
@@ -64,262 +51,477 @@
     --card: var(--card-bg);
 }
 
-/* 🌟 THEME VARIABLES 🌟 */
-
-
-
-
-*{ box-sizing: border-box; font-family: 'Inter', sans-serif; }
-body { margin: 0; background: var(--bg); color: var(--text-main); padding-bottom: 40px; overflow-x: hidden; transition: background 0.3s, color 0.3s; }
-
-/* HEADER */
-.header { position: sticky; top: 0; z-index: 100; background: var(--card-bg); padding: 12px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-.header-titles h2 { margin: 0; font-size: 16px; color: var(--primary); font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
-
-/* FILTERS GRID */
-.filters { width: 95%; max-width: 1400px; margin: 15px auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-.fbox { display: flex; flex-direction: column; gap: 4px; }
-.fbox label { font-size: 9px; font-weight: 700; color: var(--text-sub); text-transform: uppercase; }
-
-select, input[type=date], input[type=month], #searchBox { padding: 9px 12px; font-size: 12px; font-weight: 500; border: 1px solid var(--border); border-radius: 6px; background: var(--input-bg); color: var(--text-main); outline: none; transition: all 0.2s ease; width: 100%; }
-select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-light); }
-#searchBox { grid-column: 1 / -1; border-left: 3px solid var(--primary); }
-
-/* Control Actions Bar */
-.table-header-bar { width: 95%; max-width: 1400px; margin: 20px auto 5px; display: flex; justify-content: space-between; align-items: center; position: relative; }
-.table-title { font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin: 0; display: flex; align-items: center; gap: 8px;}
-#rowCount { font-size: 11px; font-weight: 700; color: var(--primary); background: var(--primary-light); padding: 4px 10px; border-radius: 12px; }
-
-.menu-container { position: relative; }
-.dots-trigger { background: var(--primary); color: white; border: none; width: 34px; height: 34px; border-radius: 6px; cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-#dropdownMenu { display: none; position: absolute; right: 0; top: 38px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 180px; z-index: 1000; overflow: hidden; padding: 2px;}
-.menu-item { padding: 10px 14px; font-size: 12px; font-weight: 600; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--text-main); display: flex; align-items: center; gap: 8px; transition: 0.1s; text-align: left; }
-.menu-item:hover { background: var(--primary); color: #fff; }
-
-/* Table Setup */
-.table-wrap { background: var(--card-bg) !important; width: 95%; max-width: 1400px; margin: 0 auto 40px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; table-layout: auto; min-width: 1100px; }
-th { background: var(--table-th-bg); color: var(--text-sub); padding: 12px 8px; font-size: 10px; text-transform: uppercase; border-bottom: 2px solid var(--border); text-align: center; white-space: nowrap; position: sticky; top: 0; z-index: 10;}
-td { padding: 10px 8px; border-bottom: 1px solid var(--table-td-border); font-size: 11px; color: var(--text-main); text-align: center; white-space: nowrap; }
-tr:hover { background: var(--table-th-bg); }
-
-tfoot td { background: var(--table-th-bg); font-weight: 800; font-size: 11px; border-top: 2px solid var(--border); padding: 10px 8px; color: var(--primary); }
-
-.mobile-card-list { display: none; width: 95%; margin: 10px auto; }
-.data-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-.card-row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
-.card-label { color: var(--text-sub); font-weight: 600; font-size: 9px; text-transform: uppercase; }
-.card-val { font-weight: 700; color: var(--text-main); }
-
-@media(max-width: 1024px){ 
-    .table-wrap { display: none; } 
-    .mobile-card-list { display: block; } 
-    .filters { grid-template-columns: repeat(2, 1fr); } 
+* { box-sizing: border-box; font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
+body {
+    background: var(--bg); height: 100vh;
+    display: flex; flex-direction: column; overflow: hidden; color: var(--text); -webkit-font-smoothing: antialiased;
+    transition: background 0.3s ease, color 0.3s ease;
 }
+
+/* Elegant Scrollbars */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
+
+/* ================= HEADER & FILTERS ================= */
+.header { background: var(--header); padding: 8px 12px; border-bottom: 2px solid var(--border); transition: background 0.3s ease, border-color 0.3s ease; }
+.header h2 { margin: 0; font-size: 13px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* 🟢 FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL */
+.filters {
+    margin-top: 6px; display: flex; flex-wrap: nowrap !important; overflow-x: auto !important;
+    gap: 12px; background: var(--header-bg); padding: 6px; border-radius: 4px; border: 1px solid var(--border);
+    -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+.filters::-webkit-scrollbar { height: 4px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.fbox { display: flex; flex-direction: column; gap: 1px; flex-shrink: 0 !important; min-width: 120px; }
+.fbox label { font-size: 8px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
+
+select, input[type=date], input[type=month], #searchBox { padding: 3px 5px; font-size: 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--card-bg); outline: none; height: 32px !important; color: var(--primary); font-weight: 600; width: 100%; transition: all 0.2s ease; }
+select:focus, input[type=date]:focus, input[type=month]:focus, #searchBox:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+#searchBox { min-width: 200px !important; width: 200px !important; border-left: 3px solid var(--accent); }
+#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+
+@media (max-width: 768px) {
+    .header { padding: 6px 10px; }
+    .header h2 { font-size: 11px; }
+    .filters { gap: 12px; padding: 4px; overflow-y: hidden; }
+    .fbox { min-width: 110px; }
+    select, input[type=date], input[type=month], #searchBox { font-size: 9.5px; padding: 2px 4px; }
+    .fbox label { font-size: 7.5px; }
+    #searchBox { min-width: 150px !important; width: 150px !important; }
+}
+
+/* ================= ACTIONS ================= */
+.actions { background: var(--card-bg); padding: 4px 12px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); transition: background 0.3s ease, border-color 0.3s ease; }
+#rowCount { font-size: 10px; font-weight: 700; color: var(--accent); }
+
+.menu-box { position: relative; }
+.dots { width: 24px; height: 24px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; border-radius: 4px; cursor: pointer; background: var(--card-bg); font-size: 12px; color: var(--primary); }
+
+.menu-list {
+    position: absolute; right: 0; top: 28px; width: 210px; background: var(--card-bg); border: 1px solid var(--border);
+    border-radius: 4px; display: none; z-index: 5000; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+.menu-list div { padding: 6px 10px; font-size: 10px; border-bottom: 1px solid var(--border); cursor: pointer; color: var(--primary); }
+.menu-list div:hover { background: var(--header-bg); color: var(--accent); }
+.menu-list b { display: block; padding: 4px 10px; font-size: 8px; background: var(--header-bg); color: var(--text-muted); text-transform: uppercase; }
+.menu-list hr { border: 0; border-top: 1px solid var(--border); margin: 0; }
+
+/* ================= TABLE AREA ================= */
+.section { flex: 1; margin: 4px; background: var(--card-bg); border: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: background 0.3s ease, border-color 0.3s ease; }
+.table-wrap { flex: 1; overflow: auto; width: 100%; background: var(--card-bg) !important; -webkit-overflow-scrolling: touch; } 
+
+table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1400px; } 
+
+thead th {
+    background: var(--header-bg); padding: 8px 4px; font-size: 9.5px; font-weight: 800;
+    text-transform: uppercase; border-bottom: 2px solid var(--border);
+    border-right: 1px solid var(--border); position: sticky; top: 0; z-index: 10;
+    color: var(--text); letter-spacing: 0.3px; white-space: nowrap;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+tbody td {
+    padding: 6px 4px; font-size: 9.5px; border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border); text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-weight: 600; color: var(--text);
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+tbody tr:hover { background: var(--table-hover); cursor: pointer; }
+tr.selected { background: var(--selected-row) !important; }
+
+.empty-state { padding: 80px 20px; text-align: center; color: var(--text-muted); }
+.qty-col { font-weight: 800; color: var(--accent); }
+
+/* Badges */
+.badge { padding: 3px 8px; border-radius: 4px; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.badge-success { background: rgba(34, 197, 94, 0.15); color: var(--success); }
+.badge-danger { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+.badge-warning { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
+
+/* ================= FOOTER ================= */
+tfoot td { 
+    background: var(--header-bg); font-weight: 800; font-size: 9.5px; color: var(--primary);
+    border-top: 2px solid var(--border); position: sticky; bottom: 0; z-index: 10; padding: 8px 4px; white-space: nowrap;
+    transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.tabs-container {
+    display: flex;
+    border-bottom: 2px solid var(--border);
+    background: var(--header-bg);
+    padding: 6px 12px;
+    gap: 8px;
+}
+.tab-button {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.tab-button.active {
+    background: var(--accent) !important;
+    color: #fff !important;
+    border-color: var(--accent) !important;
+}
+.tab-button:hover:not(.active) {
+    background: var(--row-hover);
+    color: var(--primary);
+}
+
+/* ================= KPI GRID ================= */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 6px;
+    margin-bottom: 6px;
+}
+.kpi-card {
+    cursor: pointer;
+    background: var(--card-bg);
+    padding: 6px 8px !important;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 8px;
+    transition: all 0.3s ease;
+    border-top: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+}
+.kpi-card h5 {
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    color: var(--primary) !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+}
+.kpi-card span {
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+    display: inline-block !important;
+    white-space: nowrap !important;
+}
+
+/* ================= PRINT ENGINE ================= */
 @media print {
-    body { background: #fff; color: #000; display: block !important; overflow: visible; }
-    .header, .filters, .table-header-bar, .mobile-card-list { display: none !important; }
-    .table-wrap { display: block !important; box-shadow: none; border: none; width: 100%; margin: 0; overflow: visible; }
-    table { border: 1px solid #000; min-width: 100%; }
-    th, td { border: 1px solid #000 !important; color: #000 !important; white-space: normal; }
+    @page { size: A4 landscape; margin: 5mm; }
+    body { background: var(--card-bg); height: auto; overflow: visible; color: #000; }
+    .header, .actions, .menu-box, button { display: none !important; }
+    .section { border: none; margin: 0; padding: 0; overflow: visible; }
+    .table-wrap { background: var(--card-bg) !important; overflow: visible; width: 100%; }
+    table { min-width: 100% !important; width: 100% !important; table-layout: fixed !important; border: 1px solid #000 !important; }
+    thead th { background: #0f172a !important; color: #fff !important; font-size: 8px !important; border: 1px solid #000 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+    tbody td { border: 1px solid #000 !important; font-size: 7.5px !important; padding: 4px 2px !important; white-space: normal !important; word-wrap: break-word !important; }
+    tfoot td { background: #f1f5f9 !important; border-top: 2px solid #000 !important; border-bottom: 1px solid #000 !important; font-size: 8px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+}
+
+@media (max-width: 768px) {
+    body { overflow: hidden; height: 100vh; }
+    .actions { padding: 4px 10px; }
+    #rowCount { font-size: 9px; }
+    .dots { width: 22px; height: 22px; font-size: 10px; }
+    .section { margin: 2px; }
+    
+    .kpi-grid {
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)) !important;
+        gap: 5px !important;
+        margin-bottom: 5px !important;
+    }
+    .kpi-card { padding: 5px 6px !important; }
+    .kpi-card h5 { font-size: 8px !important; }
+    .kpi-card span { font-size: 13px !important; }
+    
+    thead th { padding: 5px 2px !important; font-size: 8.5px !important; }
+    tbody td { padding: 4px 2px !important; font-size: 8.5px !important; }
+    tfoot td { padding: 5px 2px !important; font-size: 8.5px !important; }
+    
+    table { display: table !important; min-width: 1200px !important; }
+    #summaryTable { min-width: 0 !important; width: 100% !important; table-layout: auto !important; }
+    thead { display: table-header-group !important; }
+    tbody { display: table-row-group !important; }
+    tr { display: table-row !important; background: transparent !important; border: none !important; }
+    td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; border-bottom: 1px solid var(--border) !important; }
+    
+    tfoot { display: table-footer-group !important; }
+    tfoot tr { display: table-row !important; }
+    tfoot td { display: table-cell !important; text-align: center !important; font-size: 9.5px !important; }
 }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-    <link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
 
 <body>
 
 <div class="header">
-  <div class="header-titles">
-      <h2>General Stock Report</h2>
-  </div>
-</div>
-
-<div class="filters">
-    <div class="fbox">
-        <label>Financial Year *</label>
-        <select id="f_fy" onchange="changeFY(this.value)">
-            <option value="">-- ALL FY --</option>
-            {% for y in range(2024, 2027) %}
-            <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
-            {% endfor %}
-        </select>
+    <div class="header-top" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+        <h2>GENERAL STORE STOCK REPORT</h2>
+        <div style="font-size: 10px; font-weight: 700; color: var(--text-muted);">ERP · 2026</div>
     </div>
-    <div class="fbox"><label>Month View</label><input type="month" id="f_month" onchange="applyFilters()"></div>
-    <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
-    <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
-    <div class="fbox"><label>GRN Number</label>
-        <select id="f_grn" onchange="applyFilters()">
-            <option value="">All GRNs</option>
-            {% for g in dropdown_grn %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
-        </select>
-    </div>
-    <div class="fbox"><label>Master Item</label>
-        <select id="f_item" onchange="applyFilters()">
-            <option value="">All Items</option>
-            {% for i in dropdown_items %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
-        </select>
-    </div>
-    <div class="fbox"><label>Unit</label>
-        <select id="f_unit" onchange="applyFilters()">
-            <option value="">All Units</option>
-            {% for u in dropdown_unit %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
-        </select>
-    </div>
-    <div class="fbox"><label>Movement</label>
-        <select id="f_movement" onchange="applyFilters()">
-            <option value="">All Movements</option>
-            <option value="IN">IN</option>
-            <option value="OUT">OUT</option>
-        </select>
-    </div>
-    <input id="searchBox" placeholder="Quick Search GRN, Item Name, ID..." onkeyup="applyFilters()">
-</div>
-
-<div class="table-header-bar">
-    <h3 class="table-title">Stock Ledger Records <span id="rowCount">{{ records|length }} rows</span></h3>
-    <div class="menu-container" id="threeDotsMenu">
-        <button class="dots-trigger" onclick="toggleMenu(event)"><i class="fa-solid fa-ellipsis-v"></i></button>
-        <div id="dropdownMenu">
-            <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print Report</div>
-            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
-            <div onclick="resetFilters()" class="menu-item"><i class="fa-solid fa-rotate-right"></i> Reset Filters</div>
+    <div class="filters">
+        <div class="fbox">
+            <label style="color:var(--accent)">Financial Year *</label>
+            <select id="f_fy" onchange="changeFY(this.value)">
+                <option value="">-- SELECT FY --</option>
+                {% for y in range(2024, 2028) %}
+                <option value="{{ y }}" {% if selected_fy == y|string %}selected{% endif %}>FY {{ y }}-{{ y+1 }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="fbox"><label>Month View</label><input type="month" id="f_month" onchange="applyFilters()"></div>
+        <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
+        <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
+        <div class="fbox">
+            <label>GRN Number</label>
+            <select id="f_grn" onchange="applyFilters()">
+                <option value="">All GRNs</option>
+                {% for g in dropdown_grn %}<option value="{{ g }}">{{ g }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Master Item</label>
+            <select id="f_item" onchange="applyFilters()">
+                <option value="">All Items</option>
+                {% for i in dropdown_items %}<option value="{{ i }}">{{ i }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Unit</label>
+            <select id="f_unit" onchange="applyFilters()">
+                <option value="">All Units</option>
+                {% for u in dropdown_unit %}<option value="{{ u }}">{{ u }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Movement</label>
+            <select id="f_movement" onchange="applyFilters()">
+                <option value="">All Movements</option>
+                <option value="IN">IN</option>
+                <option value="OUT">OUT</option>
+            </select>
+        </div>
+        <div class="fbox">
+            <label>Search Filters</label>
+            <input id="searchBox" placeholder="Quick Search GRN, Item Name, ID..." onkeyup="applyFilters()">
         </div>
     </div>
 </div>
 
-{% if records %}
-<div class="mobile-card-list">
-    {% for row in records %}
-    <div class="data-card filterable-row" data-date="{{ row.date }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}" data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}">
-        <div class="card-row"><span class="card-label">ID / GRN</span><span class="card-val">#{{ row.id }} | {{ row.grn_number }}</span></div>
-        <div class="card-row"><span class="card-label">Item</span><span class="card-val" style="color:var(--primary);">{{ row.item_name }}</span></div>
-        <div class="card-row"><span class="card-label">Movement / Qty</span><span class="card-val" style="font-weight:800; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">{{ row.movement_type }} ({{ row.quantity }})</span></div>
-        <div class="card-row"><span class="card-label">Available Stock</span><span class="card-val">{{ row.available_stock }} {{ row.unit_name }}</span></div>
-        <div class="card-row"><span class="card-label">Date & Time</span><span class="card-val" style="color: var(--text-sub);">{{ row.date }} | {{ row.time }}</span></div>
+<div class="actions">
+    <div id="rowCount">0 rows found</div>
+    <div class="menu-box">
+        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+        <div class="menu-list" id="mainMenu">
+            <b>📋 Export Options</b>
+            <div onclick="window.print()">🖨 Print View</div>
+            <div onclick="exportExcel()">📊 Export Excel (.csv)</div>
+            <div onclick="resetFilters()">🔄 Reset Filters</div>
+        </div>
     </div>
-    {% endfor %}
 </div>
 
-<div class="table-wrap">
-  <table id="dataTable">
-    <thead>
-      <tr>
-        <th>ID</th><th>GRN Number</th><th>Item Name</th><th>Unit</th><th>Movement</th><th>Qty</th><th>Opening</th><th>Available</th><th>Minimum</th><th>Date</th><th>Time</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in records %}
-      <tr class="filterable-row" data-date="{{ row.date }}" data-grn="{{ row.grn_number }}" data-item="{{ row.item_name }}" data-unit="{{ row.unit_name }}" data-move="{{ row.movement_type }}">
-        <td style="color: var(--text-sub);">{{ row.id }}</td>
-        <td style="font-weight:700;">{{ row.grn_number }}</td>
-        <td class="text-left" style="font-weight:600; color:var(--primary);">{{ row.item_name }}</td>
-        <td>{{ row.unit_name }}</td>
-        <td style="font-weight: 700; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">{{ row.movement_type }}</td>
-        <td class="qty-calc" style="font-weight:700;">{{ row.quantity }}</td>
-        <td>{{ row.opening_stock }}</td>
-        <td>{{ row.available_stock }}</td>
-        <td>{{ row.minimum_level }}</td>
-        <td style="color: var(--text-sub);">{{ row.date }}</td>
-        <td style="color: var(--text-sub);">{{ row.time }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-    <tfoot>
-        <tr>
-            <td colspan="5" style="text-align:right;">PAGE TOTAL QTY:</td>
-            <td id="tot_qty" style="text-align:center">0.00</td>
-            <td colspan="5"></td>
-        </tr>
-    </tfoot>
-  </table>
+<div class="section">
+    <!-- General Stock KPI Cards Grid -->
+    <div class="kpi-grid no-print">
+        <div class="kpi-card" style="border-left: 5px solid var(--success); cursor: default;">
+            <div><h5>Total Receipts (IN)</h5><span id="kpi_in" style="font-weight:800; color:var(--success)">0.00</span></div>
+        </div>
+        <div class="kpi-card" style="border-left: 5px solid var(--danger); cursor: default;">
+            <div><h5>Total Issues (OUT)</h5><span id="kpi_out" style="font-weight:800; color:var(--danger)">0.00</span></div>
+        </div>
+        <div class="kpi-card" style="border-left: 5px solid var(--accent); cursor: default;">
+            <div><h5>Net Stock Balance</h5><span id="kpi_balance" style="font-weight:800; color:var(--accent)">0.00</span></div>
+        </div>
+        <div class="kpi-card clickable-card" id="card_low_stock" onclick="filterLowStock(this)" style="border-left: 5px solid #ea580c;">
+            <div><h5>Low Stock Items</h5><span id="kpi_low_count" style="font-weight:800; color:#ea580c">0 Items</span></div>
+        </div>
+    </div>
+
+    <!-- Styled Tabs Bar -->
+    <div class="tabs-container no-print">
+        <button id="tabSummary" class="tab-button active" onclick="switchTab('summary')">📊 Grouped Summary</button>
+        <button id="tabLedger" class="tab-button" onclick="switchTab('ledger')">📋 Detailed Ledger</button>
+    </div>
+
+    <!-- 1. Detailed Ledger Wrapper -->
+    <div class="table-wrap" id="ledgerWrap" style="display: none;">
+        <table id="dataTable">
+            <thead>
+                <tr>
+                    <th style="width:50px">#</th>
+                    <th style="width:80px">ID</th>
+                    <th style="width:140px">GRN Number</th>
+                    <th style="width:250px">Item Name</th>
+                    <th style="width:80px">Unit</th>
+                    <th style="width:100px">Movement</th>
+                    <th style="width:100px" class="qty-col">Quantity</th>
+                    <th style="width:120px">Opening Stock</th>
+                    <th style="width:120px">Available Stock</th>
+                    <th style="width:120px">Minimum Level</th>
+                    <th style="width:110px">Date</th>
+                    <th style="width:90px">Time</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                {% if not records %}
+                <tr>
+                    <td colspan="12" class="empty-state">
+                        <i class="fa-solid fa-folder-open" style="font-size:30px; opacity:0.3;"></i><br><br>
+                        <b>No Data Available</b><br>
+                        <span style="font-size:10px;">Select filters or Financial Year to view records.</span>
+                    </td>
+                </tr>
+                {% else %}
+                    {% for row in records %}
+                    <tr class="filterable-row" 
+                        data-id="{{ row.id }}"
+                        data-date="{{ row.date }}" 
+                        data-grn="{{ row.grn_number }}" 
+                        data-item="{{ row.item_name }}" 
+                        data-unit="{{ row.unit_name }}" 
+                        data-move="{{ row.movement_type }}"
+                        data-qty="{{ row.quantity }}"
+                        data-opening="{{ row.opening_stock }}"
+                        data-avail="{{ row.available_stock }}"
+                        data-min="{{ row.minimum_level }}"
+                        onclick="selectRow(this)">
+                        <td class="slno"></td>
+                        <td style="color: var(--text-muted);">{{ row.id }}</td>
+                        <td style="font-weight:700;">{{ row.grn_number }}</td>
+                        <td style="text-align:left; font-weight:600; color:var(--primary);">{{ row.item_name }}</td>
+                        <td>{{ row.unit_name }}</td>
+                        <td style="font-weight:800; color: {{ 'var(--success)' if row.movement_type == 'IN' else 'var(--danger)' }}">{{ row.movement_type }}</td>
+                        <td class="qty-col">{{ "{:,.2f}".format(row.quantity or 0) }}</td>
+                        <td>{{ "{:,.2f}".format(row.opening_stock or 0) }}</td>
+                        <td style="font-weight:700;">{{ "{:,.2f}".format(row.available_stock or 0) }}</td>
+                        <td>{{ "{:,.2f}".format(row.minimum_level or 0) }}</td>
+                        <td style="color: var(--text-muted);">{{ row.date }}</td>
+                        <td style="color: var(--text-muted);">{{ row.time }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="6" style="text-align:right">GRAND TOTALS (LEDR):</td>
+                    <td id="tot_qty" class="qty-col">0.00</td>
+                    <td colspan="5"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+
+    <!-- 2. Grouped Summary Wrapper -->
+    <div class="table-wrap" id="summaryWrap">
+        <table id="summaryTable">
+            <thead>
+                <tr>
+                    <th style="width:50px">#</th>
+                    <th style="width:300px">Item Name</th>
+                    <th style="width:100px">Unit</th>
+                    <th style="width:150px" class="qty-col">Current Stock Balance</th>
+                    <th style="width:150px">Minimum Level</th>
+                    <th style="width:150px">Status</th>
+                </tr>
+            </thead>
+            <tbody id="summaryTbody">
+                <!-- Javascript populated -->
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3" style="text-align:right; font-weight:800;">GRAND TOTALS (SUMM):</td>
+                    <td id="sum_tot_qty" class="qty-col">0.00</td>
+                    <td colspan="2"></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 </div>
-{% else %}
-<p style="text-align: center; color: var(--text-sub); margin-top: 40px; font-weight: 600; font-size: 13px; text-transform: uppercase;">
-    <i class="fa-solid fa-boxes-stacked" style="font-size: 40px; opacity: 0.3; display: block; margin-bottom: 10px;"></i>
-    No Records Found for the Selected Criteria
-</p>
-{% endif %}
 
 <script>
+let selectedRow = null;
+const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
+let activeTab = 'summary';
+let filterLowStockActive = false;
+
 // --- Financial Year URL Logic ---
 function changeFY(val) {
     const url = new URL(window.location.href);
-    if (val) url.searchParams.set('fy', val);
-    else url.searchParams.delete('fy');
+    url.searchParams.set('fy', val || '');
     window.location.href = url.toString();
 }
 
-// --- 3-Dot Menu ---
+// --- Tab Switcher ---
+function switchTab(tab) {
+    activeTab = tab;
+    const tabLedger = document.getElementById("tabLedger");
+    const tabSummary = document.getElementById("tabSummary");
+    const ledgerWrap = document.getElementById("ledgerWrap");
+    const summaryWrap = document.getElementById("summaryWrap");
+    
+    if (tab === 'ledger') {
+        tabLedger.classList.add("active");
+        tabSummary.classList.remove("active");
+        ledgerWrap.style.display = "block";
+        summaryWrap.style.display = "none";
+    } else {
+        tabSummary.classList.add("active");
+        tabLedger.classList.remove("active");
+        ledgerWrap.style.display = "none";
+        summaryWrap.style.display = "block";
+    }
+}
+
+// --- Select Row ---
+function selectRow(tr) {
+    allRows.forEach(r => r.classList.remove("selected"));
+    tr.classList.add("selected");
+    selectedRow = tr;
+}
+
+// --- Dropdown Toggle ---
 function toggleMenu(e) {
     e.stopPropagation();
-    const d = document.getElementById("dropdownMenu");
-    d.style.display = d.style.display === "block" ? "none" : "block";
+    const list = document.getElementById("mainMenu");
+    list.style.display = list.style.display === "block" ? "none" : "block";
 }
 window.onclick = function() {
-    const d = document.getElementById("dropdownMenu");
-    if(d) d.style.display = "none";
+    const list = document.getElementById("mainMenu");
+    if(list) list.style.display = "none";
 }
 
-// --- Bulletproof JS Filter Logic ---
-function applyFilters() {
-    const q = document.getElementById("searchBox").value.toLowerCase().trim();
-    const fm = document.getElementById("f_month").value;
-    const f1 = document.getElementById("f_from").value;
-    const f2 = document.getElementById("f_to").value;
-    const f_grn = document.getElementById("f_grn").value.toLowerCase().trim();
-    const f_item = document.getElementById("f_item").value.toLowerCase().trim();
-    const f_unit = document.getElementById("f_unit").value.toLowerCase().trim();
-    const f_mov = document.getElementById("f_movement").value.toLowerCase().trim();
-
-    const allRows = document.querySelectorAll(".filterable-row");
-    if (allRows.length === 0) return;
-
-    let visibleCount = 0;
-    let totalQty = 0;
-
-    allRows.forEach(row => {
-        // Data attributes to the rescue (No more class dependency errors!)
-        const d = row.getAttribute("data-date") || "";
-        const grn = (row.getAttribute("data-grn") || "").toLowerCase();
-        const item = (row.getAttribute("data-item") || "").toLowerCase();
-        const unit = (row.getAttribute("data-unit") || "").toLowerCase();
-        const mov = (row.getAttribute("data-move") || "").toLowerCase();
-        const text = row.innerText.toLowerCase();
-
-        let show = true;
-
-        if (fm && !d.startsWith(fm)) show = false;
-        if (f1 && d < f1) show = false;
-        if (f2 && d > f2) show = false;
-        if (f_grn && grn !== f_grn) show = false;
-        if (f_item && item !== f_item) show = false;
-        if (f_unit && unit !== f_unit) show = false;
-        if (f_mov && mov !== f_mov) show = false;
-        if (q && !text.includes(q)) show = false;
-
-        if (show) {
-            row.style.display = "";
-            
-            // Only count Desktop Rows for the row count and total sum (to avoid doubling with Mobile Cards)
-            if (row.tagName === 'TR') {
-                visibleCount++;
-                let qtyCell = row.querySelector(".qty-calc");
-                if (qtyCell) {
-                    totalQty += parseFloat(qtyCell.innerText) || 0;
-                }
-            }
-        } else {
-            row.style.display = "none";
-        }
-    });
-
-    document.getElementById("rowCount").innerText = visibleCount + " rows";
-    const tq = document.getElementById("tot_qty");
-    if (tq) tq.innerText = totalQty.toFixed(2);
+// --- Filter Low Stock ---
+function filterLowStock(cardElement) {
+    filterLowStockActive = !filterLowStockActive;
+    if (filterLowStockActive) {
+        cardElement.style.transform = "translateY(-4px)";
+        cardElement.style.boxShadow = "0 8px 16px rgba(0,0,0,0.12)";
+        cardElement.style.background = "var(--row-hover)";
+    } else {
+        cardElement.style.transform = "";
+        cardElement.style.boxShadow = "";
+        cardElement.style.background = "var(--card-bg)";
+    }
+    applyFilters();
 }
 
+// --- Reset Filters ---
 function resetFilters() {
     document.getElementById("f_month").value = "";
     document.getElementById("f_from").value = "";
@@ -329,11 +531,181 @@ function resetFilters() {
     document.getElementById("f_unit").value = "";
     document.getElementById("f_movement").value = "";
     document.getElementById("searchBox").value = "";
-    applyFilters();
+    if (filterLowStockActive) {
+        filterLowStock(document.getElementById("card_low_stock"));
+    } else {
+        applyFilters();
+    }
 }
 
+// --- Bulletproof JS Filter & Summary Building Logic ---
+function applyFilters() {
+    if(allRows.length === 0) return;
+
+    const q = document.getElementById("searchBox").value.toLowerCase().trim();
+    const fm = document.getElementById("f_month").value;
+    const f1 = document.getElementById("f_from").value;
+    const f2 = document.getElementById("f_to").value;
+    const f_grn = document.getElementById("f_grn").value.toLowerCase().trim();
+    const f_item = document.getElementById("f_item").value.toLowerCase().trim();
+    const f_unit = document.getElementById("f_unit").value.toLowerCase().trim();
+    const f_mov = document.getElementById("f_movement").value.toLowerCase().trim();
+
+    let totalIn = 0;
+    let totalOut = 0;
+    let totalQty = 0;
+    let visibleCount = 0;
+
+    // Grouping summaries: Item Name -> { unit_name, current_stock_balance, minimum_level }
+    let itemSummaries = {};
+
+    allRows.forEach((row, index) => {
+        const dateVal = row.getAttribute("data-date") || "";
+        const grn = (row.getAttribute("data-grn") || "").toLowerCase();
+        const item = (row.getAttribute("data-item") || "").toLowerCase();
+        const unit = (row.getAttribute("data-unit") || "").toLowerCase();
+        const mov = (row.getAttribute("data-move") || "").toLowerCase();
+        const qtyVal = parseFloat(row.getAttribute("data-qty")) || 0;
+        const minLevel = parseFloat(row.getAttribute("data-min")) || 0;
+        const text = row.innerText.toLowerCase();
+
+        let show = true;
+
+        if (fm && !dateVal.startsWith(fm)) show = false;
+        if (f1 && dateVal < f1) show = false;
+        if (f2 && dateVal > f2) show = false;
+        if (f_grn && grn !== f_grn) show = false;
+        if (f_item && item !== f_item) show = false;
+        if (f_unit && unit !== f_unit) show = false;
+        if (f_mov && mov !== f_mov) show = false;
+        if (q && !text.includes(q)) show = false;
+
+        // Find current balance for low stock checking
+        // For each item, the last record in the database order (first parsed row since it's order_by desc) represents its current stock balance
+        const itemNameRaw = row.getAttribute("data-item") || "";
+        const unitNameRaw = row.getAttribute("data-unit") || "";
+        const currentAvail = parseFloat(row.getAttribute("data-avail")) || 0;
+
+        if (!itemSummaries[itemNameRaw]) {
+            itemSummaries[itemNameRaw] = {
+                unit_name: unitNameRaw,
+                current_stock: currentAvail,
+                minimum_level: minLevel
+            };
+        }
+
+        // Low stock filter logic: show only rows belonging to items with current_stock <= minimum_level
+        if (filterLowStockActive) {
+            const sumNode = itemSummaries[itemNameRaw];
+            if (sumNode.current_stock > sumNode.minimum_level) {
+                show = false;
+            }
+        }
+
+        if (show) {
+            row.style.display = "";
+            visibleCount++;
+            
+            // Recalculate row SL No
+            row.querySelector(".slno").innerText = visibleCount;
+
+            // Totals accumulation
+            if (mov === 'in') {
+                totalIn += qtyVal;
+                totalQty += qtyVal;
+            } else if (mov === 'out') {
+                totalOut += qtyVal;
+                totalQty -= qtyVal;
+            }
+        } else {
+            row.style.display = "none";
+        }
+    });
+
+    // Update row count & grand totals for ledger
+    document.getElementById("rowCount").innerText = visibleCount + " rows found";
+    document.getElementById("tot_qty").innerText = totalQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Update KPI panels
+    document.getElementById("kpi_in").innerText = totalIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById("kpi_out").innerText = totalOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const netBal = totalIn - totalOut;
+    document.getElementById("kpi_balance").innerText = netBal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+    // Build Grouped Summary table body
+    const sumTbody = document.getElementById("summaryTbody");
+    sumTbody.innerHTML = "";
+    let sumSl = 0;
+    let sumTotQty = 0;
+    let lowStockCount = 0;
+
+    // Filter items based on active master filters
+    Object.keys(itemSummaries).sort().forEach(itemName => {
+        const node = itemSummaries[itemName];
+        
+        // Filter summary tab list matching dropdown item filters
+        if (f_item && itemName.toLowerCase() !== f_item) return;
+        if (f_unit && node.unit_name.toLowerCase() !== f_unit) return;
+        if (q && !itemName.toLowerCase().includes(q)) return;
+
+        const isLow = node.current_stock <= node.minimum_level;
+        if (isLow) {
+            lowStockCount++;
+        }
+
+        // Apply low stock filter logic to summary rows
+        if (filterLowStockActive && !isLow) {
+            return;
+        }
+
+        sumSl++;
+        sumTotQty += node.current_stock;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td>${sumSl}</td>
+            <td style="text-align:left; font-weight:600; color:var(--primary);">${escapeHtml(itemName)}</td>
+            <td>${escapeHtml(node.unit_name)}</td>
+            <td class="qty-col">${node.current_stock.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>${node.minimum_level.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+            <td>
+                <span class="badge ${isLow ? 'badge-danger' : 'badge-success'}">
+                    ${isLow ? 'LOW STOCK' : 'NORMAL'}
+                </span>
+            </td>
+        `;
+        sumTbody.appendChild(tr);
+    });
+
+    if (sumSl === 0) {
+        sumTbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="empty-state">
+                    <i class="fa-solid fa-folder-open" style="font-size:24px; opacity:0.3;"></i><br><br>
+                    <b>No Summary Records Found</b>
+                </td>
+            </tr>
+        `;
+    }
+
+    // Update summary footer
+    document.getElementById("sum_tot_qty").innerText = sumTotQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    document.getElementById("kpi_low_count").innerText = `${lowStockCount} Item${lowStockCount !== 1 ? 's' : ''}`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#039;"
+    }[ch]));
+}
+
+// --- Client-side Excel Export ---
 function exportExcel() {
-    let table = document.getElementById("dataTable");
+    let table = document.getElementById(activeTab === 'ledger' ? "dataTable" : "summaryTable");
     if (!table) return;
     let rows = table.querySelectorAll("tr");
     let csv = [];
@@ -343,14 +715,14 @@ function exportExcel() {
         let row = [], cols = rows[i].querySelectorAll("td, th");
         for (let j = 0; j < cols.length; j++) {
             let data = cols[j].innerText.replace(/(\r\n|\n|\r)/gm, "").trim();
-            row.push('"' + data + '"');
+            row.push('"' + data.replace(/"/g, '""') + '"');
         }
         csv.push(row.join(","));
     }
 
-    let csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+    let csvFile = new Blob([csv.join("\n")], {type: "text/csv;charset=utf-8;"});
     let downloadLink = document.createElement("a");
-    downloadLink.download = "BKNR_General_Stock_Report.csv";
+    downloadLink.download = `General_Stock_Report_${activeTab}.csv`;
     downloadLink.href = window.URL.createObjectURL(csvFile);
     downloadLink.style.display = "none";
     document.body.appendChild(downloadLink);
@@ -360,6 +732,6 @@ function exportExcel() {
 
 window.onload = () => { applyFilters(); };
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

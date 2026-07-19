@@ -132,6 +132,7 @@ export default function PeelingReport({ activeRoute }) {
         body: JSON.stringify(editData),
       });
       if (res.ok) {
+        alert('Changes saved successfully.');
         setIsEditing(false);
         setSelectedRow(null);
         reload();
@@ -143,7 +144,7 @@ export default function PeelingReport({ activeRoute }) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleCancel = async () => {
     if (!selectedRow) return;
     try {
       const res = await fetch(`${activeRoute}/delete`, {
@@ -152,14 +153,15 @@ export default function PeelingReport({ activeRoute }) {
         body: JSON.stringify({ id: selectedRow.id }),
       });
       if (res.ok) {
+        alert('Record cancelled successfully.');
         setSelectedRow(null);
         setConfirmModalOpen(false);
         reload();
       } else {
-        alert('Delete Failed!');
+        alert('Cancel Failed!');
       }
     } catch (err) {
-      alert('Error deleting row');
+      alert('Error cancelling row');
     }
   };
 
@@ -177,7 +179,7 @@ export default function PeelingReport({ activeRoute }) {
     { label: 'Print Bill', onClick: () => executeAction('print_bill'), disabled: !contractor || !month },
     { label: 'Download Bill PDF', onClick: () => executeAction('pdf_bill'), disabled: !contractor || !month },
     { divider: true },
-    { label: 'Delete Record', onClick: () => { setConfirmAction('delete'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
+    { label: 'Cancel Record', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
   return (
@@ -248,7 +250,7 @@ export default function PeelingReport({ activeRoute }) {
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && fy && (
+      {!loading && !error && (
         <>
           <KPIGrid>
             <KPICard label="Records" value={filteredRows.length} accent="var(--corp-dash)" />
@@ -266,9 +268,9 @@ export default function PeelingReport({ activeRoute }) {
                   <th style={{ width: 95 }}>Batch</th>
                   <th style={{ width: 140 }}>Contractor</th>
                   <th style={{ width: 110 }}>Variety</th>
-                  <th style={{ width: 65 }}>HL Count</th>
-                  <th style={{ width: 85 }}>HLSO Qty</th>
-                  <th style={{ width: 85 }}>Peeled Qty</th>
+                  <th style={{ width: 65 }}>Count</th>
+                  <th style={{ width: 85 }}>HLSO Kg</th>
+                  <th style={{ width: 85 }}>Peeled Kg</th>
                   <th style={{ width: 75 }}>Tgt %</th>
                   <th style={{ width: 75 }}>Act %</th>
                   <th style={{ width: 75 }}>Diff %</th>
@@ -302,6 +304,7 @@ export default function PeelingReport({ activeRoute }) {
                     return (
                       <tr
                         key={row.id}
+                        data-record-id={row.id}
                         onClick={() => {
                           if (!isEditing) {
                             setSelectedRow(row);
@@ -463,17 +466,11 @@ export default function PeelingReport({ activeRoute }) {
         </>
       )}
 
-      {!loading && !fy && (
-        <div style={{ textAlign: 'center', padding: '60px', color: 'var(--text-tertiary)' }}>
-          Select a <strong>Financial Year</strong> to load Peeling data.
-        </div>
-      )}
-
       <ConfirmModal
-        isOpen={confirmModalOpen && confirmAction === 'delete'}
-        title="Delete Record"
-        message="Delete this record permanently?"
-        onConfirm={handleDelete}
+        isOpen={confirmModalOpen && confirmAction === 'cancel'}
+        title="Cancel Record"
+        message="Cancel this record? Its audit history will be preserved."
+        onConfirm={handleCancel}
         onClose={() => setConfirmModalOpen(false)}
       />
 

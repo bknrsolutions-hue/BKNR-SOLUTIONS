@@ -3,9 +3,9 @@
   const STORAGE_KEY = "bknr_ui_colors";
   const defaults = {
     accent: "#2563eb",
-    sidebar: "#ffffff",
-    header: "#ffffff",
-    dashboard: "#eef6ff"
+    sidebar: "#102a43",
+    header: "#0b1f3a",
+    dashboard: "#f5f6f7"
   };
 
   const darkDefaults = {
@@ -183,6 +183,11 @@
     const sidebar = getSidebarDerivedColors(colors);
     const headerText = getReadableTextColor(colors.header);
     const dashboardText = getReadableTextColor(colors.dashboard);
+    const dashboardMuted = getMutedTextColor(colors.dashboard);
+    const panelBg = mixHex(colors.dashboard, dashboardText, getThemeMode(root) === "dark" ? 0.91 : 0.95);
+    const elevatedBg = mixHex(colors.dashboard, dashboardText, getThemeMode(root) === "dark" ? 0.84 : 0.90);
+    const inputBg = mixHex(colors.dashboard, dashboardText, getThemeMode(root) === "dark" ? 0.88 : 0.97);
+    const borderColor = mixHex(colors.dashboard, dashboardText, getThemeMode(root) === "dark" ? 0.76 : 0.84);
 
     root.style.setProperty("--ui-accent", colors.accent);
     root.style.setProperty("--ui-sidebar-bg", colors.sidebar);
@@ -197,15 +202,43 @@
     root.style.setProperty("--ui-header-text", headerText);
     root.style.setProperty("--ui-header-muted", getMutedTextColor(colors.header));
     root.style.setProperty("--ui-dashboard-text", dashboardText);
-    root.style.setProperty("--ui-dashboard-muted", getMutedTextColor(colors.dashboard));
+    root.style.setProperty("--ui-dashboard-muted", dashboardMuted);
 
     root.style.setProperty("--corp-dash", colors.accent);
     root.style.setProperty("--corp-primary", colors.accent);
+    root.style.setProperty("--erp-accent", colors.accent);
+    root.style.setProperty("--corp-ops", colors.accent);
+    root.style.setProperty("--corp-fin", colors.accent);
+    root.style.setProperty("--corp-rep", colors.accent);
+    root.style.setProperty("--corp-hr", colors.accent);
     root.style.setProperty("--accent-blue", colors.accent);
     root.style.setProperty("--primary-accent", colors.accent);
+    root.style.setProperty("--accent", colors.accent);
 
     root.style.setProperty("--bg-app", colors.dashboard);
     root.style.setProperty("--slate-bg", colors.dashboard);
+    root.style.setProperty("--surface-panel", panelBg);
+    root.style.setProperty("--glass-bg", colors.header);
+    root.style.setProperty("--card-bg", panelBg);
+    root.style.setProperty("--panel-bg", panelBg);
+    root.style.setProperty("--card", panelBg);
+    root.style.setProperty("--bg-color", colors.dashboard);
+    root.style.setProperty("--header-bg", elevatedBg);
+    root.style.setProperty("--th-bg", elevatedBg);
+    root.style.setProperty("--input-bg", inputBg);
+    root.style.setProperty("--input-border", borderColor);
+    root.style.setProperty("--border-light", borderColor);
+    root.style.setProperty("--border-color", borderColor);
+    root.style.setProperty("--border", borderColor);
+    root.style.setProperty("--table-line", borderColor);
+    root.style.setProperty("--row-hover", elevatedBg);
+    root.style.setProperty("--text-primary", dashboardText);
+    root.style.setProperty("--primary-text", dashboardText);
+    root.style.setProperty("--text-main", dashboardText);
+    root.style.setProperty("--text-secondary", dashboardMuted);
+    root.style.setProperty("--secondary-text", dashboardMuted);
+    root.style.setProperty("--text-muted", dashboardMuted);
+    root.style.setProperty("--text-tertiary", mixHex(dashboardMuted, colors.dashboard, 0.72));
   }
 
   function applyColors(colors) {
@@ -233,10 +266,38 @@
       "--ui-dashboard-muted",
       "--corp-dash",
       "--corp-primary",
+      "--erp-accent",
+      "--corp-ops",
+      "--corp-fin",
+      "--corp-rep",
+      "--corp-hr",
       "--accent-blue",
       "--primary-accent",
+      "--accent",
       "--bg-app",
-      "--slate-bg"
+      "--slate-bg",
+      "--surface-panel",
+      "--glass-bg",
+      "--card-bg",
+      "--panel-bg",
+      "--card",
+      "--bg-color",
+      "--header-bg",
+      "--th-bg",
+      "--input-bg",
+      "--input-border",
+      "--border-light",
+      "--border-color",
+      "--border",
+      "--table-line",
+      "--row-hover",
+      "--text-primary",
+      "--primary-text",
+      "--text-main",
+      "--text-secondary",
+      "--secondary-text",
+      "--text-muted",
+      "--text-tertiary"
     ].forEach((key) => root.style.removeProperty(key));
   }
 
@@ -259,7 +320,7 @@
           if (frameDoc.head && !frameDoc.querySelector('link[href*="ui-color-customizer.css"]')) {
             const link = frameDoc.createElement('link');
             link.rel = 'stylesheet';
-            link.href = '/static/css/ui-color-customizer.css?v=2.3';
+            link.href = '/static/css/ui-color-customizer.css?v=2.4';
             frameDoc.head.appendChild(link);
           }
         } else {
@@ -282,10 +343,38 @@
             "--ui-dashboard-muted",
             "--corp-dash",
             "--corp-primary",
+            "--erp-accent",
+            "--corp-ops",
+            "--corp-fin",
+            "--corp-rep",
+            "--corp-hr",
             "--accent-blue",
             "--primary-accent",
+            "--accent",
             "--bg-app",
-            "--slate-bg"
+            "--slate-bg",
+            "--surface-panel",
+            "--glass-bg",
+            "--card-bg",
+            "--panel-bg",
+            "--card",
+            "--bg-color",
+            "--header-bg",
+            "--th-bg",
+            "--input-bg",
+            "--input-border",
+            "--border-light",
+            "--border-color",
+            "--border",
+            "--table-line",
+            "--row-hover",
+            "--text-primary",
+            "--primary-text",
+            "--text-main",
+            "--text-secondary",
+            "--secondary-text",
+            "--text-muted",
+            "--text-tertiary"
           ].forEach((key) => root.style.removeProperty(key));
         }
       }

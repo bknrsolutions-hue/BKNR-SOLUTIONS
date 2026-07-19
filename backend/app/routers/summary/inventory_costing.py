@@ -14,6 +14,7 @@ import re
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_sum
 
 from app.database import get_db
 from app.database.models.reprocess import Reprocess
@@ -64,13 +65,13 @@ def get_glaze_factor(glaze_str: str) -> float:
 def calculate_hoso_equivalent_weight(db: Session, comp_code: str, row, v_records: dict) -> float:
     glaze_factor = get_glaze_factor(row.glaze)
     net_qty = (float(row.quantity or 0) * glaze_factor)
-    
+
     if "HOSO" in str(row.variety or "").upper(): return net_qty
-    
+
     v_m = v_records.get(str(row.variety or "").lower().strip())
     peeling_yield = (float(v_m.peeling_yield or 100) / 100 if v_m else 1.0)
     soaking_yield = (float(v_m.soaking_yield or 100) / 100 if v_m else 1.0)
-    
+
     hlso_yield = 1.0
     try:
         nums = re.findall(r"\d+", str(row.grade or ""))
@@ -78,7 +79,7 @@ def calculate_hoso_equivalent_weight(db: Session, comp_code: str, row, v_records
             raw_grade_num = int(nums[-1])
             adjusted_count = round(raw_grade_num / glaze_factor)
             match_count = adjusted_count - 1
-            
+
             hlso_obj = db.query(HOSO_HLSO_Yields).filter(
                 HOSO_HLSO_Yields.company_id == comp_code,
                 HOSO_HLSO_Yields.hlso_count == match_count,
@@ -86,16 +87,30 @@ def calculate_hoso_equivalent_weight(db: Session, comp_code: str, row, v_records
             ).first()
             if hlso_obj: hlso_yield = (float(hlso_obj.hlso_yield_pct or 100) / 100)
     except Exception: pass
-    
+
     denominator = (peeling_yield * soaking_yield * hlso_yield)
     return (net_qty / denominator if denominator > 0 else net_qty)
 
-def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
+def get_cost_breakdown(db: Session, comp_code: str, row) -> dict:
+    res = {
+        "production_cost_per_kg": 0.0,
+        "ice_rate_per_kg": 0.0,
+        "deheading_rate_per_kg": 0.0,
+        "grading_rate_per_kg": 0.0,
+        "peeling_rate_per_kg": 0.0,
+        "total_addon": 0.0,
+        "base_rm_rate": 0.0
+    }
+
+    if is_special_grade(row.grade):
+        res["base_rm_rate"] = 280.0
+        return res
+
     prod_for = str(row.production_for or "").strip()
     freezer = str(getattr(row, "freezer", "") or "").strip()
     glaze = str(row.glaze or "").strip()
     prod_type = str(getattr(row, "type_of_production", "") or "").upper()
-    
+
     finish_variety = str(row.variety or "").upper()
     is_finish_hoso = "HOSO" in finish_variety
     is_finish_hlso = "HLSO" in finish_variety
@@ -109,7 +124,11 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
         ProductionForTable.status == "Active"
     ).order_by(ProductionForTable.apply_from.desc()).first()
 
-    if not master: return 5.0
+    if not master:
+        res["total_addon"] = 5.0
+        res["production_cost_per_kg"] = 5.0
+        res["base_rm_rate"] = max(0.0, float(row.product_kg_value or 0.0) - 5.0)
+        return res
 
     is_source_rmp = db.query(RawMaterialPurchasing).filter(
         RawMaterialPurchasing.company_id == comp_code,
@@ -134,27 +153,46 @@ def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
     is_source_hlso = "HLSO" in source_variety
 
     if any(x in prod_type for x in ["RAW", "MELTING", "PRODUCTION"]):
-        cost = float(master.production_cost_per_kg or 0) + float(master.ice_rate_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.production_cost_per_kg or 0.0)
+        res["ice_rate_per_kg"] = float(master.ice_rate_per_kg or 0.0)
+
         if is_source_hoso:
             if is_finish_hlso:
-                cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0))
+                res["deheading_rate_per_kg"] = float(master.deheading_rate_per_kg or 0.0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
             elif is_finish_va:
-                cost += (float(master.deheading_rate_per_kg or 0) + float(master.grading_rate_per_kg or 0) + float(master.peeling_rate_per_kg or 0))
+                res["deheading_rate_per_kg"] = float(master.deheading_rate_per_kg or 0.0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
+                res["peeling_rate_per_kg"] = float(master.peeling_rate_per_kg or 0.0)
         elif is_source_hlso:
             if is_finish_hlso and is_source_rmp:
-                cost += float(master.grading_rate_per_kg or 0)
+                res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
             elif is_finish_va:
-                if is_source_rmp: cost += float(master.grading_rate_per_kg or 0)
-                cost += float(master.peeling_rate_per_kg or 0)
-        return round(cost, 2)
+                if is_source_rmp:
+                    res["grading_rate_per_kg"] = float(master.grading_rate_per_kg or 0.0)
+                res["peeling_rate_per_kg"] = float(master.peeling_rate_per_kg or 0.0)
 
     elif any(x in prod_type for x in ["REGLAZE", "REFREEZING"]):
-        return float(master.production_cost_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.production_cost_per_kg or 0.0)
 
     elif any(x in prod_type for x in ["REPACKING", "REWEIGHMENT"]):
-        return float(master.repacking_cost_per_kg or 0)
+        res["production_cost_per_kg"] = float(master.repacking_cost_per_kg or 0.0)
+    else:
+        res["production_cost_per_kg"] = 5.0
 
-    return 5.0
+    res["total_addon"] = round(
+        res["production_cost_per_kg"] +
+        res["ice_rate_per_kg"] +
+        res["deheading_rate_per_kg"] +
+        res["grading_rate_per_kg"] +
+        res["peeling_rate_per_kg"],
+        2
+    )
+    res["base_rm_rate"] = round(max(0.0, float(row.product_kg_value or 0.0) - res["total_addon"]), 2)
+    return res
+
+def get_dynamic_process_addon(db: Session, comp_code: str, row) -> float:
+    return get_cost_breakdown(db, comp_code, row)["total_addon"]
 
 # ============================================================================
 # MAIN ROUTER WITH UPDATED FILTER FLOW & GLOBAL ENGINE INJECTION
@@ -167,15 +205,15 @@ def inventory_costing_page(
     from_date: str = "",
     to_date: str = "",
     fy: str = Query(None),
-    production_for_filter: str = Query("", alias="production_for") 
+    production_for_filter: str = Query("", alias="production_for")
 ):
     # 🟢 1. FETCH ACTIVE UNIVERSAL GLOBAL FILTERS CONTEXT
     production_for, location = get_global_filters(request)
-    
+
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/auth/login", status_code=302)
 
-    # 🟢 DUAL MODE FALLBACK LAYER: గ్లోబల్ హెడర్ సెలెక్షన్ ఉంటే అది లోకల్ స్క్రీన్ ఫిల్టర్ ని ఓవర్‌రైడ్ చేస్తుంది
+    # 🟢 DUAL MODE FALLBACK LAYER:          ‌
     if production_for:
         production_for_filter = production_for
 
@@ -192,12 +230,15 @@ def inventory_costing_page(
     financial_years = sorted(list(fy_set), reverse=True)
 
     selected_fy = fy
+    if selected_fy is None:
+        today = ist_now().date()
+        selected_fy = str(today.year if today.month >= 4 else today.year - 1)
 
     # 3. Base Queries Formulation
     q_stock = db.query(stock_entry).outerjoin(GateEntry, stock_entry.batch_number == GateEntry.batch_number).filter(
         stock_entry.company_id == comp_code
     )
-    
+
     q_cs = db.query(cold_storage_holding).outerjoin(GateEntry, cold_storage_holding.batch_number == GateEntry.batch_number).filter(
         cold_storage_holding.company_id == comp_code
     )
@@ -213,11 +254,14 @@ def inventory_costing_page(
         q_cs = q_cs.filter(func.trim(cold_storage_holding.production_at) == func.trim(location))
 
     # FY & Date Range Logic
-    if selected_fy:
+    if selected_fy == "":
+        q_stock = q_stock.filter(stock_entry.id == -1)
+        q_cs = q_cs.filter(cold_storage_holding.id == -1)
+    elif selected_fy:
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
-        
+
         q_stock = q_stock.filter(
             case(
                 (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
@@ -246,19 +290,19 @@ def inventory_costing_page(
     # Context Mapping Reference Assets
     reprocess_rows = db.query(Reprocess).filter(Reprocess.company_id == comp_code).all()
     v_records = {v.variety_name.lower().strip(): v for v in db.query(VarietyTable).filter(VarietyTable.company_id == comp_code).all()}
-    
+
     batch_numbers = list(set([r.batch_number for r in (plant_rows + cs_rows) if r.batch_number]))
     batch_residual_map = {}
     batch_total_hoso_weight_pool = {}
 
     # 4. Calculation Processing Pool Matrices
     for batch in batch_numbers:
-        rmp_stats = db.query(func.sum(RawMaterialPurchasing.received_qty).label("tq"), func.sum(RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
+        rmp_stats = db.query(active_sum(RawMaterialPurchasing, RawMaterialPurchasing.received_qty).label("tq"), active_sum(RawMaterialPurchasing, RawMaterialPurchasing.amount).label("ta")).filter(RawMaterialPurchasing.company_id == comp_code, RawMaterialPurchasing.batch_number == batch).first()
         raw_val = float(rmp_stats.ta or 0); raw_rate = (raw_val / rmp_stats.tq if rmp_stats and rmp_stats.tq and rmp_stats.tq > 0 else 0)
-        
+
         rep_stats = db.query(func.sum(Reprocess.out_qty).label("tq"), func.sum(Reprocess.inventory_value).label("ta")).filter(Reprocess.company_id == comp_code, Reprocess.new_batch_id == batch).first()
         non_raw_val = float(rep_stats.ta or 0); non_raw_rate = (non_raw_val / rep_stats.tq if rep_stats and rep_stats.tq and rep_stats.tq > 0 else 0)
-        
+
         total_batch_value = raw_val if raw_val > 0 else non_raw_val
         batch_avg_rate = raw_rate if raw_val > 0 else non_raw_rate
 
@@ -290,7 +334,7 @@ def inventory_costing_page(
         if is_special_grade(r.grade):
             r.rm_eq_weight = 0
             continue
-        
+
         if m_type == "IN":
             actual_hoso = calculate_hoso_equivalent_weight(db, comp_code, r, v_records)
             variety_str = str(r.variety or "").upper().replace(" ","")
@@ -302,7 +346,7 @@ def inventory_costing_page(
 
     for r in (plant_rows + cs_rows):
         m_type = str(getattr(r, "cargo_movement_type", "IN")).upper()
-        
+
         if is_special_grade(r.grade):
             r.product_kg_value = 280.0
         elif m_type == "IN":
@@ -311,14 +355,14 @@ def inventory_costing_page(
                 total_pool = batch_total_hoso_weight_pool.get(r.batch_number, 0)
                 pool_rate = (res_amt / total_pool if total_pool > 0 else 0)
                 base_rate = ((pool_rate * r.rm_eq_weight) / float(r.quantity or 1)) if float(r.quantity or 0) > 0 else 0
-                
+
                 addon = get_dynamic_process_addon(db, comp_code, r)
                 r.product_kg_value = round(base_rate + addon, 2)
             else:
                 match = next((x for x in reprocess_rows if x.new_batch_id == r.batch_number and x.variety == r.variety and x.grade == r.grade), None)
                 r.product_kg_value = match.product_kg_value if match else 0.0
         else:
-            match = next((x for x in (plant_rows + cs_rows) if str(getattr(x, "cargo_movement_type", "IN")).upper() == "IN" and 
+            match = next((x for x in (plant_rows + cs_rows) if str(getattr(x, "cargo_movement_type", "IN")).upper() == "IN" and
                 x.batch_number == r.batch_number and x.variety == r.variety and x.grade == r.grade and x.glaze == r.glaze), None)
             r.product_kg_value = match.product_kg_value if match else 0.0
 
@@ -331,12 +375,20 @@ def inventory_costing_page(
 
     # 5. Fetch Structured Output Records Set
     all_rows = plant_rows + cs_rows
+    for r in all_rows:
+        breakdown = get_cost_breakdown(db, comp_code, r)
+        r.production_cost_per_kg = breakdown["production_cost_per_kg"]
+        r.ice_rate_per_kg = breakdown["ice_rate_per_kg"]
+        r.deheading_rate_per_kg = breakdown["deheading_rate_per_kg"]
+        r.grading_rate_per_kg = breakdown["grading_rate_per_kg"]
+        r.peeling_rate_per_kg = breakdown["peeling_rate_per_kg"]
+        r.base_rm_rate = breakdown["base_rm_rate"]
 
     total_qty_in = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
     total_qty_out = sum(float(r.quantity or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT")
     total_val_in = sum(float(r.inventory_value or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "IN")
     total_val_out_abs = abs(sum(float(r.inventory_value or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT"))
-    available_qty = total_qty_in + total_qty_out
+    available_qty = total_qty_in - total_qty_out
     balance_value = total_val_in + (sum(float(r.inventory_value or 0) for r in all_rows if str(getattr(r, "cargo_movement_type", "IN")).upper() == "OUT"))
     avg_rate = (balance_value / available_qty) if available_qty > 0 else 0
 
@@ -358,12 +410,104 @@ def inventory_costing_page(
     if not prod_types_list:
         prod_types_list = ["RAW", "MELTING", "PRODUCTION", "REGLAZE", "REFREEZING", "REPACKING", "REWEIGHMENT"]
 
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_rows = []
+        grade_card_map = {}
+        for r in all_rows:
+            d = {col.name: getattr(r, col.name) for col in r.__table__.columns}
+            d["production_cost_per_kg"] = getattr(r, "production_cost_per_kg", 0.0)
+            d["ice_rate_per_kg"] = getattr(r, "ice_rate_per_kg", 0.0)
+            d["deheading_rate_per_kg"] = getattr(r, "deheading_rate_per_kg", 0.0)
+            d["grading_rate_per_kg"] = getattr(r, "grading_rate_per_kg", 0.0)
+            d["peeling_rate_per_kg"] = getattr(r, "peeling_rate_per_kg", 0.0)
+            d["base_rm_rate"] = getattr(r, "base_rm_rate", 0.0)
+            d["product_kg_value"] = getattr(r, "product_kg_value", 0.0)
+            d["inventory_value"] = getattr(r, "inventory_value", 0.0)
+            serialized_rows.append(d)
+
+            grade_key = (
+                str(getattr(r, "species", "") or "").strip(),
+                str(getattr(r, "variety", "") or "").strip(),
+                str(getattr(r, "grade", "") or "").strip(),
+                str(getattr(r, "glaze", "") or "").strip(),
+            )
+            if grade_key not in grade_card_map:
+                grade_card_map[grade_key] = {
+                    "species": grade_key[0],
+                    "variety": grade_key[1],
+                    "grade": grade_key[2],
+                    "glaze": grade_key[3],
+                    "in_qty": 0.0,
+                    "in_val": 0.0,
+                    "out_qty": 0.0,
+                    "out_val": 0.0,
+                }
+
+            movement_type = str(getattr(r, "cargo_movement_type", "IN") or "IN").upper()
+            quantity = float(getattr(r, "quantity", 0) or 0)
+            inventory_value = float(getattr(r, "inventory_value", 0) or 0)
+            if movement_type == "OUT":
+                grade_card_map[grade_key]["out_qty"] += quantity
+                grade_card_map[grade_key]["out_val"] += abs(inventory_value)
+            else:
+                grade_card_map[grade_key]["in_qty"] += quantity
+                grade_card_map[grade_key]["in_val"] += inventory_value
+
+        grade_cards = []
+        for card in grade_card_map.values():
+            balance_qty = card["in_qty"] - card["out_qty"]
+            balance_value_card = card["in_val"] - card["out_val"]
+            card["balance_qty"] = balance_qty
+            card["balance_value"] = balance_value_card
+            card["in_avg"] = (card["in_val"] / card["in_qty"]) if card["in_qty"] > 0 else 0.0
+            card["out_avg"] = (card["out_val"] / card["out_qty"]) if card["out_qty"] > 0 else 0.0
+            card["balance_avg"] = (balance_value_card / balance_qty) if balance_qty > 0 else 0.0
+            grade_cards.append(card)
+
+        grade_cards.sort(key=lambda card: (
+            card["species"],
+            card["variety"],
+            card["grade"],
+            card["glaze"],
+        ))
+
+        json_context = {
+            "rows": serialized_rows,
+            "grade_cards": grade_cards,
+            "from_date": from_date,
+            "to_date": to_date,
+            "financial_years": financial_years,
+            "selected_fy": selected_fy,
+            "selected_production_for": production_for_filter,
+            "selected_location": location,
+            "company_name": request.session.get("company_name", "BKNR"),
+            "is_admin": request.session.get("role") == "admin",
+            "brands_list": get_list(brands, "brand_name"),
+            "species_list": get_list(species_model, "species_name"),
+            "varieties_list": [v.variety_name for v in v_records.values()],
+            "grades_list": get_list(grades, "grade_name"),
+            "glazes_list": get_list(glazes, "glaze_name"),
+            "freezers_list": get_list(freezers, "freezer_name"),
+            "packing_styles_list": get_list(packing_styles, "packing_style"),
+            "production_for_list": sorted({x.production_for for x in db.query(ProductionForTable).filter(ProductionForTable.company_id == comp_code).all() if x.production_for}),
+            "production_at_list": get_list(production_at, "production_at"),
+            "type_of_production_list": prod_types_list,
+            "summary": {
+                "total_items": len(all_rows), "qty_in": total_qty_in, "qty_out": total_qty_out,
+                "net_qty": available_qty, "val_in": total_val_in, "val_out": total_val_out_abs,
+                "net_val": balance_value, "avg_rate": round(avg_rate, 2)
+            }
+        }
+        return JSONResponse(jsonable_encoder(json_context))
+
     return templates.TemplateResponse(
-        request=request, 
-        name="inventory_management/inventory_costing.html", 
+        request=request,
+        name="inventory_management/inventory_costing.html",
         context={
-            "rows": all_rows, 
-            "from_date": from_date, 
+            "rows": all_rows,
+            "from_date": from_date,
             "to_date": to_date,
             "financial_years": financial_years,
             "selected_fy": selected_fy,

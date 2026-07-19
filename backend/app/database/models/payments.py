@@ -98,6 +98,28 @@ class VendorPayment(Base):
     is_cancelled = Column(Boolean, default=False)
 
 
+class SupplierBatchExpense(Base):
+    __tablename__ = "supplier_batch_expenses"
+    __table_args__ = (
+        UniqueConstraint("company_id", "supplier_name", "batch_number", name="uq_supplier_batch_expense"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String, index=True, nullable=False)
+    supplier_name = Column(String, index=True, nullable=False)
+    batch_number = Column(String, index=True, nullable=False)
+    transportation = Column(Float, default=0.0)
+    commission = Column(Float, default=0.0)
+    ice = Column(Float, default=0.0)
+    others = Column(Float, default=0.0)
+    reason = Column(Text, nullable=True)
+    created_by = Column(String, nullable=True)
+    updated_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, onupdate=datetime.utcnow)
+    is_cancelled = Column(Boolean, default=False)
+
+
 class BankTransaction(Base):
     __tablename__ = 'bank_transactions'
     __table_args__ = (UniqueConstraint("company_id", "reference_no", name="uq_bank_transactions_company_reference_no"),)

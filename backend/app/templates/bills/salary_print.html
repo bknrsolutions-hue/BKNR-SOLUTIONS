@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Salary Statement</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#eef2f7;color:#1f2937;font-family:Arial,Helvetica,sans-serif}
+.page{width:210mm;min-height:297mm;margin:18px auto;background:#fff;padding:18mm;box-shadow:0 10px 30px rgba(15,23,42,.15)}
+.top{display:flex;justify-content:space-between;gap:20px;border-bottom:3px solid #143465;padding-bottom:12px}
+h1{margin:0;color:#143465;font-size:22px;text-transform:uppercase}
+.sub{margin-top:5px;color:#64748b;font-size:12px;font-weight:700;text-transform:uppercase}
+.meta{text-align:right;font-size:12px;line-height:1.7;color:#334155}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:16px 0}
+.box{border:1px solid #d6dde7;border-radius:8px;padding:12px}
+.box-title{font-size:10px;color:#64748b;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.name{font-size:14px;color:#143465;font-weight:800;margin-bottom:4px}
+.muted{font-size:12px;color:#475569;line-height:1.6}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px}
+th{background:#f8fafc;color:#475569;text-transform:uppercase;font-size:10px;border:1px solid #d6dde7;padding:8px;text-align:left}
+td{border:1px solid #d6dde7;padding:8px}
+td.right{text-align:right;font-weight:800;color:#143465}
+.summary{margin-left:auto;margin-top:14px;width:320px}
+.summary .grand td{background:#143465;color:#fff;font-size:14px;font-weight:800}
+.actions{width:210mm;margin:0 auto 24px;text-align:right}
+button{background:#3b82f6;color:#fff;border:0;border-radius:7px;padding:10px 16px;font-size:12px;font-weight:800;cursor:pointer}
+.sign{display:flex;justify-content:space-between;margin-top:42px;font-size:12px;font-weight:800;color:#334155}
+@media print{body{background:#fff}.page{margin:0;box-shadow:none;width:auto;min-height:auto}.actions{display:none}}
+</style>
+</head>
+<body>
+<div class="actions"><button onclick="window.print()">Print Salary</button></div>
+<main class="page">
+  <section class="top">
+    <div>
+      <h1>Salary Statement</h1>
+      <div class="sub">Month: {{ salary.month_year }} | Voucher: {{ voucher_no or 'Not Posted' }}</div>
+    </div>
+    <div class="meta">
+      <strong>{{ company.name }}</strong><br>
+      {{ company.address or '' }}<br>
+      {{ company.email or '' }}<br>
+      MPEDA: {{ company.mpeda_registration_code or 'NOT REGISTERED' }}
+    </div>
+  </section>
+
+  <section class="grid">
+    <div class="box">
+      <div class="box-title">Employee</div>
+      <div class="name">{{ salary.employee_name }}</div>
+      <div class="muted">
+        ID: {{ salary.employee_id }}<br>
+        Department: {{ salary.department or '-' }}<br>
+        Designation: {{ salary.designation or '-' }}
+      </div>
+    </div>
+    <div class="box">
+      <div class="box-title">Attendance</div>
+      <div class="muted">
+        Location: {{ salary.production_at or '-' }}<br>
+        Present Days: {{ "%.2f"|format(salary.present_days or 0) }}<br>
+        OT Hours: {{ "%.2f"|format(salary.ot_hours or 0) }}
+      </div>
+    </div>
+  </section>
+
+  <table>
+    <thead><tr><th>Earnings</th><th class="right">Amount</th><th>Deductions</th><th class="right">Amount</th></tr></thead>
+    <tbody>
+      <tr><td>Basic Salary</td><td class="right">₹ {{ "%.2f"|format(salary.basic_salary or 0) }}</td><td>PF Employee</td><td class="right">₹ {{ "%.2f"|format(salary.pf_employee or 0) }}</td></tr>
+      <tr><td>HRA</td><td class="right">₹ {{ "%.2f"|format(salary.hra or 0) }}</td><td>ESI Employee</td><td class="right">₹ {{ "%.2f"|format(salary.esi_employee or 0) }}</td></tr>
+      <tr><td>Conveyance</td><td class="right">₹ {{ "%.2f"|format(salary.conveyance_allowance or 0) }}</td><td>Professional Tax</td><td class="right">₹ {{ "%.2f"|format(salary.professional_tax or 0) }}</td></tr>
+      <tr><td>Special Allowance</td><td class="right">₹ {{ "%.2f"|format(salary.special_allowance or 0) }}</td><td>TDS</td><td class="right">₹ {{ "%.2f"|format(salary.tds_salary or 0) }}</td></tr>
+      <tr><td>OT Amount</td><td class="right">₹ {{ "%.2f"|format(salary.ot_amount or 0) }}</td><td>Advance Deduction</td><td class="right">₹ {{ "%.2f"|format(salary.advance_deduction or 0) }}</td></tr>
+      <tr><td>Other Earnings</td><td class="right">₹ {{ "%.2f"|format(salary.other_earnings or 0) }}</td><td>Other Deductions</td><td class="right">₹ {{ "%.2f"|format(salary.other_deductions or 0) }}</td></tr>
+    </tbody>
+  </table>
+
+  <table class="summary">
+    <tr><td>Gross Salary</td><td class="right">₹ {{ "%.2f"|format(salary.gross_salary or 0) }}</td></tr>
+    <tr><td>Total Deductions</td><td class="right">₹ {{ "%.2f"|format(salary.total_deductions or 0) }}</td></tr>
+    <tr class="grand"><td>Net Payable</td><td class="right">₹ {{ "%.2f"|format(salary.net_payable or 0) }}</td></tr>
+  </table>
+
+  <div class="sign">
+    <span>Prepared By</span>
+    <span>Checked By</span>
+    <span>Authorised Signatory</span>
+  </div>
+</main>
+</body>
+</html>

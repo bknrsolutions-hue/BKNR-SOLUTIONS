@@ -1,12 +1,12 @@
 # app/routers/attendance/employee_increment.py
 
-from fastapi import APIRouter, Request, Form, Depends
+from fastapi import APIRouter, Request, Form, Depends, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
 
-from app.database import get_db  
+from app.database import get_db
 from app.database.models.attendance import (
     EmployeeRegistration,
     EmployeeIncrement
@@ -23,8 +23,8 @@ templates = Jinja2Templates(directory="app/templates")
 # ==================================================
 def calculate_and_apply_salary_breakup(emp: EmployeeRegistration, gross_salary: float):
     """
-    కొత్త Gross Salary ఆధారంగా అన్ని శాలరీ కంపోనెంట్స్ ని 
-    ఆటోమేటిక్‌గా క్యాలిక్యులేట్ చేసి మోడల్‌కి అసైన్ చేసే యుటిలిటీ ఫంక్షన్.
+     Gross Salary
+    ‌   ‌    .
     """
     emp.current_salary = float(gross_salary)
     emp.basic_salary = round(gross_salary * 0.50, 2)              # 50% Basic Salary
@@ -37,17 +37,19 @@ def calculate_and_apply_salary_breakup(emp: EmployeeRegistration, gross_salary: 
 # 1️⃣ 📄 INCREMENT PAGE
 # ==================================================
 @router.get("/employee-increment", response_class=HTMLResponse)
-def increment_page(request: Request, db: Session = Depends(get_db)):
+def increment_page(request: Request, format: str = Query(default="html"), db: Session = Depends(get_db)):
     email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
+        if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+            return JSONResponse({"error": "Session expired"}, status_code=401)
         return RedirectResponse("/", status_code=303)
 
     error_param = request.query_params.get("error")
     success_param = request.query_params.get("success")
     system_message = None
-    
+
     if error_param == "employee_not_found":
         system_message = "❌ Active Employee Number Not Found in Database!"
     elif error_param == "record_not_found":
@@ -60,6 +62,27 @@ def increment_page(request: Request, db: Session = Depends(get_db)):
     increment_records = db.query(EmployeeIncrement).filter(
         EmployeeIncrement.company_id == company_code
     ).order_by(EmployeeIncrement.id.desc()).all()
+
+    if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
+        return JSONResponse({
+            "status": "success",
+            "message": system_message,
+            "records": [
+                {
+                    "id": r.id,
+                    "employee_id": r.employee_id,
+                    "old_salary": r.old_salary,
+                    "increment_type": r.increment_type,
+                    "increment_value": r.increment_value,
+                    "new_salary": r.new_salary,
+                    "effective_from": r.effective_from.isoformat() if r.effective_from else "",
+                    "reason": r.reason,
+                    "approved_by": r.approved_by,
+                    "status": r.status
+                }
+                for r in increment_records
+            ]
+        })
 
     return templates.TemplateResponse(
         request=request,
@@ -80,15 +103,16 @@ def increment_page(request: Request, db: Session = Depends(get_db)):
 def save_increment(
     request: Request,
     employee_id: str = Form(...),
-    increment_type: str = Form(...),   
+    increment_type: str = Form(...),
     increment_value: float = Form(...),
     effective_from: date = Form(...),
-    reason: str = Form(None),          
-    approved_by: str = Form(None),     
+    reason: str = Form(None),
+    approved_by: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
     session_user = request.session.get("email")
+    wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
 
     if not company_id or not session_user:
         return JSONResponse({"error": "Session expired"}, status_code=401)
@@ -100,13 +124,15 @@ def save_increment(
     ).first()
 
     if not emp:
+        if wants_json:
+            return JSONResponse({"status": "error", "message": "Active Employee Number Not Found in Database!"}, status_code=404)
         return RedirectResponse("/attendance/employee-increment?error=employee_not_found", status_code=303)
 
     old_salary = float(emp.current_salary or 0)
 
     if increment_type == "FIXED":
         new_salary = old_salary + increment_value
-    else:  
+    else:
         new_salary = old_salary + (old_salary * increment_value / 100)
 
     final_approver = approved_by if approved_by and approved_by.strip() else session_user
@@ -118,18 +144,20 @@ def save_increment(
         increment_value=increment_value,
         new_salary=new_salary,
         effective_from=effective_from,
-        reason=reason,                 
-        approved_by=final_approver,     
+        reason=reason,
+        approved_by=final_approver,
         status="ACTIVE",
         company_id=company_id
     )
     db.add(new_inc_record)
 
-    # 🔥 ఎఫెక్టివ్ డేట్ ఈరోజు లేదా అంతకంటే ముందైతే బ్రేక్-అప్స్ అప్లై చేయడం
+    # 🔥       -
     if effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, new_salary)
 
     db.commit()
+    if wants_json:
+        return JSONResponse({"status": "success", "message": "Salary Increment Logged & Applied Successfully!"})
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
 
 
@@ -177,16 +205,19 @@ def save_update_increment(
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
+    wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
     if not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # 🛠️ FIX: 'Company_id' టైపోని 'EmployeeIncrement.company_id' గా మార్చడం జరిగింది
+    # 🛠️ FIX: 'Company_id'  'EmployeeIncrement.company_id'
     record = db.query(EmployeeIncrement).filter(
         EmployeeIncrement.id == record_id,
         EmployeeIncrement.company_id == company_id
     ).first()
 
     if not record:
+        if wants_json:
+            return JSONResponse({"status": "error", "message": "Transaction Record Not Found!"}, status_code=404)
         return RedirectResponse("/attendance/employee-increment?error=record_not_found", status_code=303)
 
     emp = db.query(EmployeeRegistration).filter(
@@ -194,7 +225,7 @@ def save_update_increment(
         EmployeeRegistration.company_id == company_id
     ).first()
 
-    # ఎడిట్ చేసేటప్పుడు పాత రికార్డును రోల్‌బ్యాక్ చేయడానికి బేస్ గ్రాస్ తెచ్చాం
+    #     ‌
     if emp and record.effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, record.old_salary)
 
@@ -209,11 +240,13 @@ def save_update_increment(
     else:
         record.new_salary = record.old_salary + (record.old_salary * increment_value / 100)
 
-    # కొత్త మార్పులను శాలరీ బ్రేక్-అప్ కాలమ్స్ కి సింక్ చేయడం
+    #    -
     if effective_from <= date.today() and emp:
         calculate_and_apply_salary_breakup(emp, record.new_salary)
 
     db.commit()
+    if wants_json:
+        return JSONResponse({"status": "success", "message": "Salary Increment Logged & Applied Successfully!"})
     return RedirectResponse("/attendance/employee-increment?success=1", status_code=303)
 
 
@@ -293,7 +326,7 @@ def delete_increment(request: Request, record_id: int, db: Session = Depends(get
         EmployeeRegistration.company_id == company_id
     ).first()
 
-    # ట్రాన్సాక్షన్ డిలీట్ చేస్తే పాత శాలరీ అలవెన్స్ బ్రేక్-అప్స్ రీ-అప్లై అవుతాయి
+    #       - -
     if emp and record.effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, record.old_salary)
 

@@ -31,22 +31,122 @@ from app.database.models.enterprise_finance import (
     ExportIncentiveRegister,
     LCTracking,
     SalaryProcessing,
-    ProductionCostAllocation
+    ProductionCostAllocation,
+    BillAllocation,
+    ForexRevaluation,
 )
 from app.database.models.gst_models import GSTRegister, GSTRFilingStatus, ITCUtilization
 from app.database.models.assets import FixedAssetMaster, DepreciationSchedule
 from app.database.models.invoices import ExportDocumentFile
 from app.services.posting_engine import PostingEngineService
+from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
+from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.salary_advance_recovery import preview_monthly_advance_recovery, sync_monthly_advance_recovery
 from app.database.models.processing import AuditLog  # Audit trails
 from app.database.models.attendance import (
     EmployeeRegistration, DailyAttendance, EmployeeSalaryAdvance, EmployeeStatutoryMaster
+)
+from app.database.models.criteria import production_at as ProductionLocation
+from app.services.production_cost_automation import (
+    build_monthly_production_cost_preview,
+    build_production_cost_comparison,
 )
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
+
+def cancel_salary_payment_vouchers(db: Session, comp_code: str, entry: SalaryProcessing, email: str) -> None:
+    """Reverse every active partial/full salary payment, not only the latest link."""
+    ensure_bill_accounting_schema(db)
+    payment_rows = db.execute(text("""
+        SELECT id, journal_id
+        FROM salary_payment_logs
+        WHERE company_id = :company_id
+          AND salary_id = :salary_id
+          AND COALESCE(is_cancelled, FALSE) = FALSE
+        FOR UPDATE
+    """), {"company_id": comp_code, "salary_id": entry.id}).mappings().all()
+    journal_ids = {int(row["journal_id"]) for row in payment_rows if row["journal_id"]}
+    if entry.payment_journal_id:
+        journal_ids.add(int(entry.payment_journal_id))
+    for journal_id in journal_ids:
+        cancel_linked_bill_voucher(db, comp_code, journal_id, email)
+    if payment_rows:
+        db.execute(text("""
+            UPDATE salary_payment_logs
+            SET is_cancelled = TRUE
+            WHERE company_id = :company_id
+              AND salary_id = :salary_id
+              AND COALESCE(is_cancelled, FALSE) = FALSE
+        """), {"company_id": comp_code, "salary_id": entry.id})
+    entry.payment_journal_id = None
+
+
+def is_contract_employee(employee: EmployeeRegistration) -> bool:
+    return str(getattr(employee, "employee_type", "") or "").strip().upper() in {"CONTRACT", "CONTRACTOR"}
+
+
+def repost_salary_processing_accounts(db: Session, comp_code: str, entry: SalaryProcessing, employee: EmployeeRegistration, email: str):
+    if is_contract_employee(employee):
+        if entry.salary_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+            entry.salary_journal_id = None
+        cancel_salary_payment_vouchers(db, comp_code, entry, email)
+        return
+
+    cancel_salary_payment_vouchers(db, comp_code, entry, email)
+    if entry.salary_journal_id:
+        cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+        entry.salary_journal_id = None
+
+    status = str(entry.status or "DRAFT").strip().upper()
+    payroll_expense = round(
+        float(entry.gross_salary or 0.0)
+        + float(entry.pf_employer or 0.0)
+        + float(entry.edli_employer or 0.0)
+        + float(entry.esi_employer or 0.0)
+        + float(entry.lwf_employer or 0.0),
+        2,
+    )
+    net_payable = round(float(entry.net_payable or 0.0), 2)
+    if entry.is_cancelled or payroll_expense <= 0 or status == "DRAFT":
+        if status == "DRAFT":
+            entry.paid_amount = 0.0
+            entry.payment_status = "UNPAID"
+        return
+
+    voucher = PostingEngineService.post_salary_approval(db, comp_code, entry)
+    entry.salary_journal_id = voucher.id
+
+    if status == "PAID":
+        if not entry.payment_date:
+            entry.payment_date = date.today()
+        entry.payment_status = "PAID"
+        entry.paid_amount = net_payable
+        if net_payable > 0:
+            payment_voucher = PostingEngineService.post_salary_payment(db, comp_code, entry)
+            entry.payment_journal_id = payment_voucher.id
+    else:
+        entry.paid_amount = 0.0
+        entry.payment_status = "UNPAID"
+        entry.payment_date = None
+        entry.utr_reference = None
+
 EXPORT_PDF_DIR = Path("uploads/export_documents_private")
+
+
+@router.get("/accounts_flow_guide", response_class=HTMLResponse)
+def accounts_flow_guide(request: Request):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return RedirectResponse("/", status_code=302)
+    return templates.TemplateResponse(
+        request=request,
+        name="finance_accounts/accounts_flow_guide.html",
+        context={"company_id": comp_code},
+    )
 
 
 def ensure_expense_voucher_schema(db: Session) -> None:
@@ -298,10 +398,15 @@ class SalaryProcessingSchema(BaseModel):
     other_deductions: float = 0.0
     total_deductions: float = 0.0
     pf_employer: float = 0.0
+    epf_employer: float = 0.0
+    eps_employer: float = 0.0
+    edli_employer: float = 0.0
     esi_employer: float = 0.0
     lwf_employer: float = 0.0
     net_payable: float = 0.0
     payment_mode: str = "BANK"
+    payment_date: date = None
+    utr_reference: str = None
     payment_status: str = "UNPAID"
     status: str = "DRAFT"
 
@@ -328,6 +433,24 @@ class ProductionCostAllocationSchema(BaseModel):
     wip_ledger_id: int = None
     cost_center_id: int = None
     status: str = "OPEN"
+
+
+class ForexRevaluationRunSchema(BaseModel):
+    as_of_date: date
+    closing_rates: dict[str, float]
+
+
+PRODUCTION_COST_LEDGER_MAP = (
+    ("raw_material_cost", "Raw Shrimp Purchase A/c", "Purchase Accounts"),
+    ("labour_cost", "Processing Labour Cost A/c", "Direct Expenses"),
+    ("power_cost", "Production Power Cost A/c", "Direct Expenses"),
+    ("ice_cost", "Production Ice Cost A/c", "Direct Expenses"),
+    ("water_cost", "Production Water Cost A/c", "Direct Expenses"),
+    ("packing_material_cost", "Packing Material Purchase A/c", "Purchase Accounts"),
+    ("chemical_cost", "Soaking Chemical Cost A/c", "Direct Expenses"),
+    ("cold_storage_cost", "Cold Storage Rent & Handling A/c", "Indirect Expenses"),
+    ("other_cost", "Other Production Cost A/c", "Direct Expenses"),
+)
 
 class GSTRegisterSchema(BaseModel):
     transaction_type: str
@@ -390,6 +513,65 @@ class DepreciationRunSchema(BaseModel):
     run_date: date = None
 
 
+NATIVE_FINANCE_MODELS = {
+    "bank_master": BankMaster,
+    "item_accounting_link": ItemAccountingLink,
+    "export_incentive_register": ExportIncentiveRegister,
+    "lc_tracking": LCTracking,
+    "gst_register": GSTRegister,
+    "fixed_assets": FixedAssetMaster,
+}
+
+
+def serialize_native_row(row):
+    result = {}
+    for column in row.__table__.columns:
+        value = getattr(row, column.name)
+        if isinstance(value, (date, datetime)):
+            value = value.isoformat()
+        result[column.name] = value
+    return result
+
+
+@router.get("/native-data/{module_key}")
+def native_finance_data(module_key: str, request: Request, db: Session = Depends(get_db)):
+    """JSON bootstrap used by native React finance register pages."""
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
+    model = NATIVE_FINANCE_MODELS.get(module_key)
+    if not model:
+        return JSONResponse({"success": False, "message": "Unknown finance module"}, status_code=404)
+
+    query = db.query(model).filter(model.company_id == comp_code)
+    if hasattr(model, "is_cancelled"):
+        query = query.filter(model.is_cancelled != True)
+    rows = query.order_by(desc(model.id)).all()
+    ledgers = db.query(LedgerMaster).filter(
+        LedgerMaster.company_id == comp_code,
+        LedgerMaster.status == "ACTIVE",
+    ).order_by(LedgerMaster.ledger_name).all()
+    result = {
+        "success": True,
+        "rows": [serialize_native_row(row) for row in rows],
+        "ledgers": [{"id": row.id, "name": row.ledger_name, "code": row.ledger_code} for row in ledgers],
+    }
+    if module_key == "gst_register":
+        filings = db.query(GSTRFilingStatus).filter(GSTRFilingStatus.company_id == comp_code).order_by(desc(GSTRFilingStatus.period_month)).all()
+        itc_rows = db.query(ITCUtilization).filter(ITCUtilization.company_id == comp_code).order_by(desc(ITCUtilization.period_month)).all()
+        result["filings"] = [serialize_native_row(row) for row in filings]
+        result["itc_rows"] = [serialize_native_row(row) for row in itc_rows]
+    if module_key == "fixed_assets":
+        depreciation = db.query(DepreciationSchedule).filter(DepreciationSchedule.company_id == comp_code).order_by(desc(DepreciationSchedule.period_month)).all()
+        asset_names = {row.id: row.asset_name for row in rows}
+        result["depreciation"] = [
+            {**serialize_native_row(row), "asset_name": asset_names.get(row.asset_id, "")}
+            for row in depreciation
+        ]
+    return result
+
+
 # Helper function to audit actions
 def write_audit(db: Session, table: str, rec_id: int, company_id: str, action: str, old: str, new: str, email: str):
     audit = AuditLog(
@@ -430,23 +612,87 @@ def amount_line(db: Session, company_id: str, debit: float, credit: float, remar
 def cancel_linked_voucher(db: Session, company_id: str, journal_id: int | None, email: str) -> None:
     if not journal_id:
         return
-    voucher = db.query(VoucherHeader).filter(
-        VoucherHeader.id == journal_id,
-        VoucherHeader.company_id == company_id,
-    ).first()
-    if voucher and voucher.status != "CANCELLED":
-        old_status = voucher.status
-        voucher.status = "CANCELLED"
-        PostingEngineService.write_finance_audit(
-            db,
-            company_id,
-            "voucher_headers",
-            voucher.id,
-            "CANCEL",
-            {"status": old_status},
-            {"status": "CANCELLED"},
-            email or "SYSTEM",
-        )
+    PostingEngineService.reverse_voucher(
+        db, company_id, journal_id,
+        "Linked source transaction cancelled",
+        email or "SYSTEM",
+    )
+
+
+def allocate_payment_to_source(db: Session, company_id: str, entry: PaymentReceipt, email: str) -> BillAllocation | None:
+    """Apply one receipt/payment to its selected invoice or vendor bill."""
+    amount = round(float(entry.amount_inr or 0), 2)
+    if entry.transaction_type == "VENDOR_PAYMENT" and entry.vendor_bill_no:
+        source = db.query(VendorPayment).filter(
+            VendorPayment.company_id == company_id,
+            VendorPayment.bill_no == entry.vendor_bill_no,
+            VendorPayment.is_cancelled != True,
+        ).with_for_update().first()
+        source_type = "PAYABLE"
+        document_no = entry.vendor_bill_no
+    elif entry.transaction_type != "VENDOR_PAYMENT" and entry.invoice_no:
+        source = db.query(CustomerReceivable).filter(
+            CustomerReceivable.company_id == company_id,
+            CustomerReceivable.invoice_no == entry.invoice_no,
+            CustomerReceivable.is_cancelled != True,
+        ).with_for_update().first()
+        source_type = "RECEIVABLE"
+        document_no = entry.invoice_no
+        amount = round(amount + float(entry.bank_charges or 0) + float(entry.adjustment_amount or 0), 2)
+    else:
+        return None
+    if not source:
+        raise ValueError(f"Selected {source_type.lower()} document was not found")
+    current_balance = round(float(source.balance if source_type == "PAYABLE" else source.balance_amount or 0), 2)
+    if amount > current_balance + 0.01:
+        raise ValueError(f"Allocation exceeds outstanding balance of ₹{current_balance:.2f}")
+    new_balance = round(max(current_balance - amount, 0), 2)
+    if source_type == "PAYABLE":
+        source.paid_amount = round(float(source.paid_amount or 0) + amount, 2)
+        source.balance = new_balance
+        source.status = "Paid" if new_balance <= 0.01 else "Partially Paid"
+    else:
+        source.received_amount = round(float(source.received_amount or 0) + amount, 2)
+        source.balance_amount = new_balance
+        source.received_date = entry.entry_date
+        source.payment_status = "PAID" if new_balance <= 0.01 else "PARTIAL"
+        source.status = "CLOSED" if new_balance <= 0.01 else "OPEN"
+    allocation = BillAllocation(
+        company_id=company_id,
+        payment_receipt_id=entry.id,
+        source_type=source_type,
+        source_id=source.id,
+        document_no=document_no,
+        allocated_amount=amount,
+        created_by=email or "SYSTEM",
+    )
+    db.add(allocation)
+    return allocation
+
+
+def reverse_payment_allocation(db: Session, company_id: str, payment_receipt_id: int) -> None:
+    allocations = db.query(BillAllocation).filter(
+        BillAllocation.company_id == company_id,
+        BillAllocation.payment_receipt_id == payment_receipt_id,
+        BillAllocation.is_reversed == False,
+    ).with_for_update().all()
+    for allocation in allocations:
+        amount = float(allocation.allocated_amount or 0)
+        if allocation.source_type == "PAYABLE":
+            source = db.query(VendorPayment).filter(VendorPayment.id == allocation.source_id, VendorPayment.company_id == company_id).with_for_update().first()
+            if source:
+                source.paid_amount = round(max(float(source.paid_amount or 0) - amount, 0), 2)
+                source.balance = round(float(source.balance or 0) + amount, 2)
+                source.status = "Unpaid" if float(source.paid_amount or 0) <= 0.01 else "Partially Paid"
+        else:
+            source = db.query(CustomerReceivable).filter(CustomerReceivable.id == allocation.source_id, CustomerReceivable.company_id == company_id).with_for_update().first()
+            if source:
+                source.received_amount = round(max(float(source.received_amount or 0) - amount, 0), 2)
+                source.balance_amount = round(float(source.balance_amount or 0) + amount, 2)
+                source.payment_status = "PENDING" if float(source.received_amount or 0) <= 0.01 else "PARTIAL"
+                source.status = "OPEN"
+        allocation.is_reversed = True
+        allocation.reversed_at = datetime.utcnow()
 
 
 SALARY_EARNING_FIELDS = (
@@ -576,12 +822,18 @@ def ledger_master_save(request: Request, payload: LedgerMasterSchema, db: Sessio
 def ledger_master_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     entry = db.query(LedgerMaster).filter(LedgerMaster.id == log_id, LedgerMaster.company_id == comp_code).first()
     if entry:
-        write_audit(db, "ledger_master", entry.id, comp_code, "DELETE", f"Ledger: {entry.ledger_name}", "DELETED", email)
-        db.delete(entry)
+        if entry.status == "INACTIVE":
+            return JSONResponse({"success": False, "message": "Ledger is already inactive"}, status_code=400)
+        write_audit(db, "ledger_master", entry.id, comp_code, "STATUS", entry.status, "INACTIVE", email)
+        entry.status = "INACTIVE"
+        entry.modified_by = email or "SYSTEM"
+        entry.modified_at = datetime.utcnow()
         db.commit()
-        return {"success": True, "message": "Ledger deleted successfully"}
+        return {"success": True, "message": "Ledger deactivated successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -683,6 +935,87 @@ def get_customer_receivables_history(request: Request, db: Session = Depends(get
         } for row in history
     ]
     return {"success": True, "data": history_data}
+
+
+@router.post("/customer_receivables/forex-revaluation")
+def run_customer_forex_revaluation(request: Request, payload: ForexRevaluationRunSchema, db: Session = Depends(get_db)):
+    """Reverse the prior run and post period-end unrealised FX per open invoice."""
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email") or "SYSTEM"
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    rates = {str(code).strip().upper(): float(rate) for code, rate in payload.closing_rates.items() if float(rate) > 0}
+    if not rates:
+        return JSONResponse({"success": False, "message": "At least one valid closing exchange rate is required"}, status_code=400)
+    duplicate = db.query(ForexRevaluation.id).filter(
+        ForexRevaluation.company_id == comp_code,
+        ForexRevaluation.as_of_date == payload.as_of_date,
+    ).first()
+    if duplicate:
+        return JSONResponse({"success": False, "message": "Forex revaluation already exists for this date"}, status_code=400)
+    receivables = db.query(CustomerReceivable).filter(
+        CustomerReceivable.company_id == comp_code,
+        CustomerReceivable.is_cancelled != True,
+        CustomerReceivable.balance_amount > 0.01,
+        CustomerReceivable.currency != "INR",
+    ).all()
+    posted = skipped = 0
+    net_gain_loss = 0.0
+    try:
+        for source in receivables:
+            currency = str(source.currency or "USD").strip().upper()
+            closing_rate = rates.get(currency)
+            booking_rate = float(source.exchange_rate or 0)
+            if not closing_rate or booking_rate <= 0 or float(source.invoice_value_inr or 0) <= 0:
+                skipped += 1
+                continue
+            previous = db.query(ForexRevaluation).filter(
+                ForexRevaluation.company_id == comp_code,
+                ForexRevaluation.receivable_id == source.id,
+                ForexRevaluation.is_reversed == False,
+            ).order_by(ForexRevaluation.as_of_date.desc()).first()
+            if previous:
+                PostingEngineService.reverse_voucher(
+                    db, comp_code, previous.journal_id,
+                    f"Forex revaluation rolled forward to {payload.as_of_date.isoformat()}", email,
+                    reversal_date=payload.as_of_date,
+                )
+                previous.is_reversed = True
+            foreign_balance = round(float(source.invoice_value_foreign or 0) * float(source.balance_amount or 0) / float(source.invoice_value_inr), 4)
+            gain_loss = round(foreign_balance * (closing_rate - booking_rate), 2)
+            if abs(gain_loss) < 0.01:
+                skipped += 1
+                continue
+            customer = f"{source.buyer_name} - Customer A/c" if not str(source.buyer_name).lower().endswith("a/c") else source.buyer_name
+            if gain_loss > 0:
+                details = [
+                    amount_line(db, comp_code, gain_loss, 0.0, source.invoice_no, ledger_name=customer, group_name="Sundry Debtors", group_type="ASSET", parent_group_name="Current Assets"),
+                    amount_line(db, comp_code, 0.0, gain_loss, source.invoice_no, ledger_name="Unrealised Forex Gain A/c", group_name="Indirect Incomes", group_type="INCOME"),
+                ]
+            else:
+                value = abs(gain_loss)
+                details = [
+                    amount_line(db, comp_code, value, 0.0, source.invoice_no, ledger_name="Unrealised Forex Loss A/c", group_name="Indirect Expenses", group_type="EXPENSE"),
+                    amount_line(db, comp_code, 0.0, value, source.invoice_no, ledger_name=customer, group_name="Sundry Debtors", group_type="ASSET", parent_group_name="Current Assets"),
+                ]
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", payload.as_of_date,
+                f"Unrealised forex revaluation for invoice {source.invoice_no}", details,
+                reference_no=f"FX-{source.invoice_no}"[:50], created_by=email,
+            )
+            db.add(ForexRevaluation(
+                company_id=comp_code, receivable_id=source.id, as_of_date=payload.as_of_date,
+                currency_code=currency, foreign_balance=foreign_balance,
+                booking_rate=booking_rate, closing_rate=closing_rate,
+                gain_loss_amount=gain_loss, journal_id=voucher.id, created_by=email,
+            ))
+            posted += 1
+            net_gain_loss += gain_loss
+        db.commit()
+        return {"success": True, "message": f"Posted {posted} forex revaluations; skipped {skipped}.", "posted": posted, "skipped": skipped, "net_gain_loss": round(net_gain_loss, 2)}
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
 
 # ============================================================
@@ -1095,6 +1428,15 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         return JSONResponse({"success": False, "message": "Receipt/payment amounts must be valid positive values"}, status_code=400)
     exists = db.query(PaymentReceipt).filter(PaymentReceipt.company_id == comp_code, PaymentReceipt.receipt_no == payload.receipt_no).first()
     if exists: return JSONResponse({"success": False, "message": "Voucher Receipt Number already registered"}, status_code=400)
+    clean_reference = (payload.reference_no or "").strip()
+    if clean_reference:
+        duplicate_reference = db.query(PaymentReceipt.id).filter(
+            PaymentReceipt.company_id == comp_code,
+            PaymentReceipt.is_cancelled != True,
+            func.upper(func.trim(func.coalesce(PaymentReceipt.reference_no, ""))) == clean_reference.upper(),
+        ).first()
+        if duplicate_reference:
+            return JSONResponse({"success": False, "message": "This UTR / reference is already registered in accounts payments."}, status_code=400)
     
     entry = PaymentReceipt(
         company_id=comp_code,
@@ -1110,7 +1452,7 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         amount_inr=payload.amount_inr,
         bank_charges=payload.bank_charges,
         adjustment_amount=payload.adjustment_amount,
-        reference_no=payload.reference_no,
+        reference_no=clean_reference or None,
         payment_mode=payload.payment_mode,
         narration=payload.narration,
         created_by=email
@@ -1136,12 +1478,17 @@ def payment_receipt_save(request: Request, payload: PaymentReceiptSchema, db: Se
         details.append(amount_line(db, comp_code, payload.adjustment_amount, 0.0, payload.receipt_no, ledger_name="Settlement Adjustments A/c", group_name="Indirect Expenses", group_type="EXPENSE"))
     voucher = PostingEngineService.create_voucher(
         db, comp_code, voucher_type, payload.entry_date, payload.narration or payload.receipt_no, details,
-        reference_no=payload.reference_no or payload.receipt_no, created_by=email or "SYSTEM",
+        reference_no=clean_reference or payload.receipt_no, created_by=email or "SYSTEM",
     )
     entry.journal_id = voucher.id
+    allocation = allocate_payment_to_source(db, comp_code, entry, email)
     write_audit(db, "payment_receipts", entry.id, comp_code, "CREATE", "NONE", f"Receipt: {payload.receipt_no}", email)
     db.commit()
-    return {"success": True, "message": "Payment receipt registered successfully"}
+    return {
+        "success": True,
+        "message": "Payment receipt and bill allocation registered successfully",
+        "allocation_id": allocation.id if allocation else None,
+    }
 
 @router.post("/payment_receipt/delete/{log_id}")
 def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
@@ -1150,6 +1497,7 @@ def payment_receipt_delete(log_id: int, request: Request, db: Session = Depends(
     entry = db.query(PaymentReceipt).filter(PaymentReceipt.id == log_id, PaymentReceipt.company_id == comp_code).first()
     if entry:
         cancel_linked_voucher(db, comp_code, entry.journal_id, email)
+        reverse_payment_allocation(db, comp_code, entry.id)
         write_audit(db, "payment_receipts", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -1314,6 +1662,7 @@ def lc_tracking_save(request: Request, payload: LCTrackingSchema, db: Session = 
     exists = db.query(LCTracking).filter(LCTracking.company_id == comp_code, LCTracking.lc_number == payload.lc_number).first()
     if exists:
         # Update existing
+        exists.is_cancelled = False
         for k, v in payload.dict().items():
             setattr(exists, k, v)
         write_audit(db, "lc_tracking", exists.id, comp_code, "UPDATE", f"LC: {payload.lc_number}", "UPDATED", email)
@@ -1385,6 +1734,7 @@ async def lc_tracking_upload_pdf(
 def salary_processing_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code: return RedirectResponse("/", status_code=302)
+    ensure_bill_accounting_schema(db)
     history = db.query(SalaryProcessing).filter(
         SalaryProcessing.company_id == comp_code
     ).order_by(desc(SalaryProcessing.month_year), SalaryProcessing.employee_name).all()
@@ -1444,6 +1794,7 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     comp_code = request.session.get("company_code")
     if not comp_code:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     emp = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.employee_id == employee_id,
@@ -1483,29 +1834,28 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
 
             for row in att_rows:
                 s = (row.duty_status or "").upper()
-                if s in ("APPROVED", "PRESENT", "CLOSED"):
-                    att_present += 1.0
-                elif s in ("ABSENT",):
+                duty_type = str(row.duty_type or "").strip().upper()
+                if duty_type == "ABSENT" or s == "ABSENT":
                     att_absent += 1.0
-                # Count approved OT; fall back to calculated_ot_hours
-                ot_h = row.approved_ot_hours or row.calculated_ot_hours or 0.0
-                att_ot_hrs += ot_h
+                    continue
+                if s in ("APPROVED", "PRESENT", "CLOSED"):
+                    approved_credit = float(row.approved_duty_credit or 0.0)
+                    if approved_credit in {0.5, 1.0, 1.5, 2.0, 2.5, 3.0}:
+                        att_present += approved_credit
+                    elif duty_type == "HALF":
+                        att_present += 0.5
+                    elif duty_type in {"SINGLE", "PRESENT"}:
+                        att_present += 1.0
+                    elif duty_type == "DOUBLE":
+                        # Multiple-duty credit must come from HR approval.
+                        att_present += 1.0
+                if str(row.ot_status or "").strip().upper() == "APPROVED":
+                    att_ot_hrs += float(row.approved_ot_hours or 0.0)
 
             # Salary advance: active advance monthly_deduction for this employee
-            adv = db.query(EmployeeSalaryAdvance).filter(
-                EmployeeSalaryAdvance.employee_id == employee_id,
-                EmployeeSalaryAdvance.company_id == comp_code,
-                EmployeeSalaryAdvance.status == "APPROVED",
-                EmployeeSalaryAdvance.remaining_balance > 0,
-                EmployeeSalaryAdvance.deduct_from <= month_year,
-            ).filter(
-                (EmployeeSalaryAdvance.deduct_to == None) |
-                (EmployeeSalaryAdvance.deduct_to >= month_year)
-            ).all()
-            advance_ded = round(sum(
-                min(float(a.monthly_deduction or 0.0), float(a.remaining_balance or 0.0))
-                for a in adv
-            ), 2)
+            advance_ded, _ = preview_monthly_advance_recovery(
+                db, comp_code, employee_id, month_year
+            )
 
         except Exception:
             pass  # If any parsing fails, leave at 0
@@ -1560,11 +1910,20 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
                 "total_deductions": totals["total_deductions"],
                 "net_payable": totals["net_payable"],
                 "pf_employer": exact.pf_employer,
+                "epf_employer": exact.epf_employer,
+                "eps_employer": exact.eps_employer,
+                "edli_employer": exact.edli_employer,
                 "esi_employer": exact.esi_employer,
                 "lwf_employer": exact.lwf_employer,
                 "payment_mode": exact.payment_mode,
+                "payment_date": exact.payment_date.isoformat() if exact.payment_date else "",
+                "utr_reference": exact.utr_reference or "",
+                "payment_status": exact.payment_status or "UNPAID",
                 "status": exact.status,
             }
+
+    effective_date = period_end or date.today()
+    statutory = effective_statutory_record(db, comp_code, employee_id, effective_date)
 
     # ── Priority 2: Latest salary record (any month) → salary structure + live att ─
     latest = db.query(SalaryProcessing).filter(
@@ -1580,8 +1939,18 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         other_earn = latest.other_earnings or 0.0
         ot_amount = 0.0
         gross    = basic + hra + conveyance + special + ot_amount + other_earn
-        pf_emp   = latest.pf_employee or round(basic * 0.12, 2)
-        esi_emp  = latest.esi_employee or (round(gross * 0.0075, 2) if gross <= 21000 else 0.0)
+        earned_monthly = gross * att_present / 26.0
+        statutory_values = calculate_pf_esi(
+            statutory,
+            monthly_pf_wages=basic,
+            earned_pf_wages=basic * att_present / 26.0,
+            monthly_esi_wages=gross,
+            earned_esi_wages=earned_monthly + ot_amount,
+            employee_dob=emp.dob,
+            effective_date=effective_date.replace(day=1),
+        )
+        pf_emp = statutory_values["pf_employee"]
+        esi_emp = statutory_values["esi_employee"]
         pt       = latest.professional_tax or 0.0
         tds      = latest.tds_salary or 0.0
         lwf      = latest.lwf_employee or 0.0
@@ -1625,10 +1994,16 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
             "other_deductions": latest.other_deductions or 0.0,
             "total_deductions": totals["total_deductions"],
             "net_payable": totals["net_payable"],
-            "pf_employer": latest.pf_employer or 0.0,
-            "esi_employer": latest.esi_employer or 0.0,
+            "pf_employer": statutory_values["pf_employer"],
+            "epf_employer": statutory_values["epf_employer"],
+            "eps_employer": statutory_values["eps_employer"],
+            "edli_employer": statutory_values["edli_employer"],
+            "esi_employer": statutory_values["esi_employer"],
             "lwf_employer": latest.lwf_employer or 0.0,
             "payment_mode": latest.payment_mode or "BANK",
+            "payment_date": "",
+            "utr_reference": "",
+            "payment_status": "UNPAID",
             "status": "DRAFT",
         }
 
@@ -1638,26 +2013,25 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
     conveyance = emp.conveyance_allowance or 0.0
     other_earn = emp.other_expenses or 0.0
     gross = basic + hra + conveyance + other_earn
-    effective_date = period_end or date.today()
-    statutory = db.query(EmployeeStatutoryMaster).filter(
-        EmployeeStatutoryMaster.employee_id == employee_id,
-        EmployeeStatutoryMaster.company_id == comp_code,
-        EmployeeStatutoryMaster.status == "ACTIVE",
-        EmployeeStatutoryMaster.applicable_from <= effective_date,
-    ).filter(
-        (EmployeeStatutoryMaster.applicable_to == None) |
-        (EmployeeStatutoryMaster.applicable_to >= effective_date)
-    ).order_by(desc(EmployeeStatutoryMaster.applicable_from)).first()
-
-    pf_emp = esi_emp = pt = lwf = pf_employer = esi_employer = lwf_employer = 0.0
+    pf_emp = esi_emp = pt = lwf = pf_employer = epf_employer = eps_employer = edli_employer = esi_employer = lwf_employer = 0.0
     if statutory:
-        if statutory.pf_applicable:
-            pf_wage = min(float(statutory.pf_wage_limit or basic), float(basic))
-            pf_emp = round(pf_wage * float(statutory.pf_employee_percent or 0.0) / 100, 2)
-            pf_employer = round(pf_wage * float(statutory.pf_employer_percent or 0.0) / 100, 2)
-        if statutory.esi_applicable and gross <= float(statutory.esi_wage_limit or 0.0):
-            esi_emp = round(gross * float(statutory.esi_employee_percent or 0.0) / 100, 2)
-            esi_employer = round(gross * float(statutory.esi_employer_percent or 0.0) / 100, 2)
+        earned_monthly = gross * att_present / 26.0
+        statutory_values = calculate_pf_esi(
+            statutory,
+            monthly_pf_wages=basic,
+            earned_pf_wages=basic * att_present / 26.0,
+            monthly_esi_wages=gross,
+            earned_esi_wages=earned_monthly,
+            employee_dob=emp.dob,
+            effective_date=effective_date.replace(day=1),
+        )
+        pf_emp = statutory_values["pf_employee"]
+        pf_employer = statutory_values["pf_employer"]
+        epf_employer = statutory_values["epf_employer"]
+        eps_employer = statutory_values["eps_employer"]
+        edli_employer = statutory_values["edli_employer"]
+        esi_emp = statutory_values["esi_employee"]
+        esi_employer = statutory_values["esi_employer"]
         pt = float(statutory.pt_amount or 0.0) if statutory.pt_applicable else 0.0
         lwf = float(statutory.lwf_employee_amount or 0.0) if statutory.lwf_applicable else 0.0
         lwf_employer = float(statutory.lwf_employer_amount or 0.0) if statutory.lwf_applicable else 0.0
@@ -1702,9 +2076,15 @@ def salary_processing_employee_data(employee_id: str, month_year: str = None, re
         "total_deductions": totals["total_deductions"],
         "net_payable": totals["net_payable"],
         "pf_employer": pf_employer,
+        "epf_employer": epf_employer,
+        "eps_employer": eps_employer,
+        "edli_employer": edli_employer,
         "esi_employer": esi_employer,
         "lwf_employer": lwf_employer,
         "payment_mode": "BANK",
+        "payment_date": "",
+        "utr_reference": "",
+        "payment_status": "UNPAID",
         "status": "DRAFT",
     }
 
@@ -1713,6 +2093,7 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", payload.month_year):
         return JSONResponse({"success": False, "message": "Invalid salary month"}, status_code=400)
     employee = db.query(EmployeeRegistration).filter(
@@ -1722,26 +2103,54 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     ).first()
     if not employee:
         return JSONResponse({"success": False, "message": "Active employee not found"}, status_code=404)
+    normalized_status = (payload.status or "DRAFT").strip().upper()
+    if normalized_status not in {"DRAFT", "APPROVED", "PAID"}:
+        return JSONResponse({"success": False, "message": "Invalid salary status"}, status_code=400)
+    if normalized_status == "PAID" and not payload.payment_date:
+        return JSONResponse({"success": False, "message": "Payment date is required when salary status is PAID"}, status_code=400)
 
-    active_advances = db.query(EmployeeSalaryAdvance).filter(
-        EmployeeSalaryAdvance.company_id == comp_code,
-        EmployeeSalaryAdvance.employee_id == payload.employee_id,
-        EmployeeSalaryAdvance.status == "APPROVED",
-        EmployeeSalaryAdvance.remaining_balance > 0,
-        EmployeeSalaryAdvance.deduct_from <= payload.month_year,
-    ).filter(
-        (EmployeeSalaryAdvance.deduct_to == None) |
-        (EmployeeSalaryAdvance.deduct_to >= payload.month_year)
-    ).all()
-    advance_deduction = round(sum(
-        min(float(row.monthly_deduction or 0.0), float(row.remaining_balance or 0.0))
-        for row in active_advances
-    ), 2)
+    advance_deduction, _ = preview_monthly_advance_recovery(
+        db, comp_code, payload.employee_id, payload.month_year
+    )
     values = payload.dict()
+    values["status"] = normalized_status
+    values["payment_status"] = "PAID" if normalized_status == "PAID" else "UNPAID"
     submitted_gross = float(payload.gross_salary or 0.0)
     submitted_net = float(payload.net_payable or 0.0)
     values["employee_name"] = employee.employee_name
     values["advance_deduction"] = advance_deduction
+    year, month_no = map(int, payload.month_year.split("-"))
+    effective_date = date(year, month_no, calendar.monthrange(year, month_no)[1])
+    statutory = effective_statutory_record(db, comp_code, payload.employee_id, effective_date)
+    monthly_statutory_wages = sum(
+        float(values.get(field, 0.0) or 0.0)
+        for field in SALARY_MONTHLY_EARNING_FIELDS
+    )
+    present_days = float(values.get("present_days", 0.0) or 0.0)
+    earned_monthly_wages = monthly_statutory_wages * present_days / 26.0
+    earned_pf_wages = float(values.get("basic_salary", 0.0) or 0.0) * present_days / 26.0
+    earned_esi_wages = max(
+        0.0,
+        earned_monthly_wages
+        + float(values.get("ot_amount", 0.0) or 0.0)
+        + float(values.get("salary_adjustment", 0.0) or 0.0),
+    )
+    statutory_values = calculate_pf_esi(
+        statutory,
+        monthly_pf_wages=float(values.get("basic_salary", 0.0) or 0.0),
+        earned_pf_wages=earned_pf_wages,
+        monthly_esi_wages=monthly_statutory_wages,
+        earned_esi_wages=earned_esi_wages,
+        employee_dob=employee.dob,
+        effective_date=effective_date.replace(day=1),
+    )
+    values["pf_employee"] = statutory_values["pf_employee"]
+    values["pf_employer"] = statutory_values["pf_employer"]
+    values["epf_employer"] = statutory_values["epf_employer"]
+    values["eps_employer"] = statutory_values["eps_employer"]
+    values["edli_employer"] = statutory_values["edli_employer"]
+    values["esi_employee"] = statutory_values["esi_employee"]
+    values["esi_employer"] = statutory_values["esi_employer"]
     try:
         values.update(calculate_salary_totals(values))
     except ValueError as exc:
@@ -1792,6 +2201,23 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
         save_mode = "CREATED"
         write_audit(db, "salary_processing", entry.id, comp_code, "CREATE", "NONE", f"Emp: {payload.employee_name} Month: {payload.month_year}", email)
 
+    should_recover_advance = normalized_status in {"APPROVED", "PAID"}
+    recovered_amount = sync_monthly_advance_recovery(
+        db,
+        comp_code,
+        payload.employee_id,
+        payload.month_year,
+        record.id,
+        should_recover_advance,
+    )
+    if should_recover_advance and abs(recovered_amount - float(values["advance_deduction"] or 0.0)) > 0.001:
+        values["advance_deduction"] = recovered_amount
+        values.update(calculate_salary_totals(values))
+        for key in ("advance_deduction", "total_deductions", "net_payable", "gross_salary"):
+            setattr(record, key, values[key])
+
+    repost_salary_processing_accounts(db, comp_code, record, employee, email)
+
     if has_variance:
         write_audit(
             db,
@@ -1833,7 +2259,21 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     entry = db.query(SalaryProcessing).filter(SalaryProcessing.id == log_id, SalaryProcessing.company_id == comp_code).first()
     if entry:
         write_audit(db, "salary_processing", entry.id, comp_code, "is_cancelled", "False", "True", email)
+        sync_monthly_advance_recovery(
+            db,
+            comp_code,
+            entry.employee_id,
+            entry.month_year,
+            entry.id,
+            False,
+        )
         entry.is_cancelled = True
+        entry.paid_amount = 0.0
+        entry.payment_status = "UNPAID"
+        if entry.salary_journal_id:
+            cancel_linked_bill_voucher(db, comp_code, entry.salary_journal_id, email)
+            entry.salary_journal_id = None
+        cancel_salary_payment_vouchers(db, comp_code, entry, email)
         db.commit()
         return {"success": True, "message": "Salary record cancelled successfully"}
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
@@ -1850,7 +2290,45 @@ def production_cost_allocation_entry(request: Request, db: Session = Depends(get
     ledgers = db.query(LedgerMaster).filter(LedgerMaster.company_id == comp_code).all()
     from app.database.models.enterprise_finance import CostCenter
     cost_centers = db.query(CostCenter).filter(CostCenter.company_id == comp_code).all()
-    return templates.TemplateResponse(request=request, name="finance_accounts/production_cost_allocation.html", context={"history": history, "ledgers": ledgers, "cost_centers": cost_centers, "company_id": comp_code})
+    locations = db.query(ProductionLocation).filter(ProductionLocation.company_id == comp_code).order_by(ProductionLocation.production_at).all()
+    return templates.TemplateResponse(request=request, name="finance_accounts/production_cost_allocation.html", context={"history": history, "ledgers": ledgers, "cost_centers": cost_centers, "locations": locations, "company_id": comp_code})
+
+
+@router.get("/production_cost_allocation/automation-preview")
+def production_cost_automation_preview(
+    request: Request,
+    month: str = Query(..., pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    production_at: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    try:
+        preview = build_monthly_production_cost_preview(db, comp_code, month, production_at or None)
+        return {"success": True, "preview": preview}
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
+
+
+@router.get("/production_cost_allocation/automation-comparison")
+def production_cost_automation_comparison(
+    request: Request,
+    production_at: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    comp_code = request.session.get("company_code")
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+    comparison = build_production_cost_comparison(db, comp_code, production_at or None)
+    locations = [
+        row.production_at
+        for row in db.query(ProductionLocation).filter(
+            ProductionLocation.company_id == comp_code
+        ).order_by(ProductionLocation.production_at).all()
+        if row.production_at
+    ]
+    return {"success": True, "comparison": comparison, "locations": locations}
 
 @router.post("/production_cost_allocation/save")
 def production_cost_allocation_save(request: Request, payload: ProductionCostAllocationSchema, db: Session = Depends(get_db)):
@@ -1858,21 +2336,106 @@ def production_cost_allocation_save(request: Request, payload: ProductionCostAll
     email = request.session.get("email")
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     
-    exists = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.company_id == comp_code, ProductionCostAllocation.batch_number == payload.batch_number).first()
-    if exists:
-        # Update existing
-        for k, v in payload.dict().items():
-            setattr(exists, k, v)
-        write_audit(db, "production_cost_allocations", exists.id, comp_code, "UPDATE", f"Batch: {payload.batch_number}", "UPDATED", email)
-    else:
-        # Create new
-        entry = ProductionCostAllocation(company_id=comp_code, created_by=email, **payload.dict())
-        db.add(entry)
-        db.flush()
-        write_audit(db, "production_cost_allocations", entry.id, comp_code, "CREATE", "NONE", f"Batch: {payload.batch_number}", email)
-        
-    db.commit()
-    return {"success": True, "message": "Production cost allocation saved successfully"}
+    status = str(payload.status or "OPEN").strip().upper()
+    if status not in {"OPEN", "COST_ALLOCATED", "FG_TRANSFERRED"}:
+        return JSONResponse({"success": False, "message": "Invalid production accounting status"}, status_code=400)
+    component_values = {
+        field: round(float(getattr(payload, field, 0) or 0), 2)
+        for field, _, _ in PRODUCTION_COST_LEDGER_MAP
+    }
+    if any(value < 0 for value in component_values.values()):
+        return JSONResponse({"success": False, "message": "Production cost components cannot be negative"}, status_code=400)
+    calculated_total = round(sum(component_values.values()), 2)
+    if status != "OPEN" and calculated_total <= 0:
+        return JSONResponse({"success": False, "message": "Allocate at least one production cost before posting"}, status_code=400)
+    if status == "FG_TRANSFERRED" and float(payload.output_qty_kg or 0) <= 0:
+        return JSONResponse({"success": False, "message": "Finished-goods quantity is required before transfer"}, status_code=400)
+
+    exists = db.query(ProductionCostAllocation).filter(
+        ProductionCostAllocation.company_id == comp_code,
+        ProductionCostAllocation.batch_number == payload.batch_number,
+    ).with_for_update().first()
+    try:
+        if exists:
+            if exists.wip_journal_id:
+                PostingEngineService.reverse_voucher(db, comp_code, exists.wip_journal_id, "Production cost allocation revised", email or "SYSTEM")
+            if exists.fg_journal_id:
+                PostingEngineService.reverse_voucher(db, comp_code, exists.fg_journal_id, "Finished goods valuation revised", email or "SYSTEM")
+            entry = exists
+            for key, value in payload.model_dump().items():
+                setattr(entry, key, value)
+            entry.wip_journal_id = None
+            entry.fg_journal_id = None
+            entry.modified_at = datetime.utcnow()
+            action = "UPDATE"
+        else:
+            entry = ProductionCostAllocation(company_id=comp_code, created_by=email, **payload.model_dump())
+            db.add(entry)
+            db.flush()
+            action = "CREATE"
+
+        entry.status = status
+        entry.total_cost = calculated_total
+        entry.cost_per_kg = round(calculated_total / float(entry.output_qty_kg or 1), 2) if float(entry.output_qty_kg or 0) > 0 else 0.0
+        entry.yield_percent = round(float(entry.output_qty_kg or 0) * 100 / float(entry.input_qty_kg or 1), 2) if float(entry.input_qty_kg or 0) > 0 else 0.0
+        entry.process_loss_kg = round(max(float(entry.input_qty_kg or 0) - float(entry.output_qty_kg or 0), 0), 2)
+
+        if status in {"COST_ALLOCATED", "FG_TRANSFERRED"}:
+            wip_line = amount_line(
+                db, comp_code, calculated_total, 0.0, f"WIP batch {entry.batch_number}",
+                ledger_id=entry.wip_ledger_id,
+                ledger_name="Work In Progress A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            wip_line["cost_center_id"] = entry.cost_center_id
+            details = [wip_line]
+            for field, ledger_name, group_name in PRODUCTION_COST_LEDGER_MAP:
+                value = component_values[field]
+                if value:
+                    line = amount_line(
+                        db, comp_code, 0.0, value, f"Cost absorbed into batch {entry.batch_number}",
+                        ledger_name=ledger_name, group_name=group_name, group_type="EXPENSE",
+                    )
+                    line["cost_center_id"] = entry.cost_center_id
+                    details.append(line)
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", entry.production_date,
+                f"Production costs absorbed into WIP for batch {entry.batch_number}", details,
+                reference_no=entry.batch_number, created_by=email or "SYSTEM",
+            )
+            entry.wip_journal_id = voucher.id
+
+        if status == "FG_TRANSFERRED":
+            fg_debit = amount_line(
+                db, comp_code, calculated_total, 0.0, f"Finished goods batch {entry.batch_number}",
+                ledger_name="Finished Goods Inventory A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            wip_credit = amount_line(
+                db, comp_code, 0.0, calculated_total, f"WIP completed for batch {entry.batch_number}",
+                ledger_id=entry.wip_ledger_id,
+                ledger_name="Work In Progress A/c", group_name="Stock-in-hand", group_type="ASSET",
+            )
+            fg_debit["cost_center_id"] = entry.cost_center_id
+            wip_credit["cost_center_id"] = entry.cost_center_id
+            voucher = PostingEngineService.create_voucher(
+                db, comp_code, "Journal", entry.production_date,
+                f"WIP transferred to finished goods for batch {entry.batch_number}",
+                [fg_debit, wip_credit], reference_no=entry.batch_number, created_by=email or "SYSTEM",
+            )
+            entry.fg_journal_id = voucher.id
+
+        write_audit(db, "production_cost_allocations", entry.id, comp_code, action, "NONE", f"Batch: {entry.batch_number}; Status: {status}; Cost: {calculated_total}", email)
+        db.commit()
+        return {
+            "success": True,
+            "message": "Production cost and accounting vouchers saved successfully",
+            "wip_journal_id": entry.wip_journal_id,
+            "fg_journal_id": entry.fg_journal_id,
+            "total_cost": calculated_total,
+            "cost_per_kg": entry.cost_per_kg,
+        }
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=400)
 
 @router.post("/production_cost_allocation/delete/{log_id}")
 def production_cost_allocation_delete(log_id: int, request: Request, db: Session = Depends(get_db)):
@@ -1880,6 +2443,10 @@ def production_cost_allocation_delete(log_id: int, request: Request, db: Session
     email = request.session.get("email")
     entry = db.query(ProductionCostAllocation).filter(ProductionCostAllocation.id == log_id, ProductionCostAllocation.company_id == comp_code).first()
     if entry:
+        if entry.wip_journal_id:
+            PostingEngineService.reverse_voucher(db, comp_code, entry.wip_journal_id, "Production cost allocation cancelled", email or "SYSTEM")
+        if entry.fg_journal_id:
+            PostingEngineService.reverse_voucher(db, comp_code, entry.fg_journal_id, "Finished goods transfer cancelled", email or "SYSTEM")
         write_audit(db, "production_cost_allocations", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -1956,7 +2523,14 @@ def gst_register_save(request: Request, payload: GSTRegisterSchema, db: Session 
         party = payload.party_name or "GST Party"
         details = []
 
-        if tx_type in ("PURCHASE", "RCM"):
+        if tx_type == "RCM":
+            details.append(amount_line(db, comp_code, taxable, 0.0, f"RCM purchase taxable value - {payload.invoice_no}", ledger_name="GST Purchase A/c", group_name="Purchase Accounts", group_type="EXPENSE"))
+            if total_tax > 0:
+                details.append(amount_line(db, comp_code, total_tax, 0.0, f"RCM input GST - {payload.invoice_no}", ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+                details.append(amount_line(db, comp_code, 0.0, total_tax, f"RCM GST payable - {payload.invoice_no}", ledger_name="RCM Output GST Payable A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+            details.append(amount_line(db, comp_code, 0.0, taxable, f"RCM supplier payable - {payload.invoice_no}", ledger_name=f"{party} - Supplier A/c", group_name="Sundry Creditors", group_type="LIABILITY", parent_group_name="Current Liabilities"))
+            voucher_type = "Purchase"
+        elif tx_type == "PURCHASE":
             details.append(amount_line(db, comp_code, taxable, 0.0, f"Purchase taxable value - {payload.invoice_no}", ledger_name="GST Purchase A/c", group_name="Purchase Accounts", group_type="EXPENSE"))
             if total_tax > 0:
                 details.append(amount_line(db, comp_code, total_tax, 0.0, f"Input GST - {payload.invoice_no}", ledger_name="Input GST A/c", group_name="Duties & Taxes", group_type="LIABILITY", parent_group_name="Current Liabilities"))
@@ -2001,9 +2575,13 @@ def gst_register_delete(log_id: int, request: Request, db: Session = Depends(get
     entry = db.query(GSTRegister).filter(GSTRegister.id == log_id, GSTRegister.company_id == comp_code).first()
     if entry:
         if entry.journal_id:
-            voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.journal_id, VoucherHeader.company_id == comp_code).first()
-            if voucher:
-                db.delete(voucher)
+            PostingEngineService.reverse_voucher(
+                db,
+                comp_code,
+                entry.journal_id,
+                f"GST register entry {entry.invoice_no} cancelled",
+                email or "SYSTEM",
+            )
         write_audit(db, "gst_register", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -2086,6 +2664,18 @@ def fixed_assets_save(request: Request, payload: FixedAssetSchema, db: Session =
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     exists = db.query(FixedAssetMaster).filter(FixedAssetMaster.company_id == comp_code, FixedAssetMaster.asset_code == payload.asset_code).first()
     if exists: return JSONResponse({"success": False, "message": "Asset code already registered"}, status_code=400)
+    if payload.purchase_cost <= 0:
+        return JSONResponse({"success": False, "message": "Purchase cost must be greater than zero"}, status_code=400)
+    if payload.salvage_value < 0 or payload.salvage_value > payload.purchase_cost:
+        return JSONResponse({"success": False, "message": "Salvage value must be between zero and purchase cost"}, status_code=400)
+    ledger_rules = (
+        (payload.asset_ledger_id, {"ASSET"}, "Select a valid fixed asset ledger"),
+        (payload.acc_dep_ledger_id, {"ASSET"}, "Accumulated depreciation must use a contra-asset ledger"),
+        (payload.dep_expense_ledger_id, {"EXPENSE"}, "Select a valid depreciation expense ledger"),
+    )
+    for ledger_id, group_types, message in ledger_rules:
+        if ledger_id and not account_lookup(db, comp_code, ledger_id, group_types=group_types):
+            return JSONResponse({"success": False, "message": message}, status_code=400)
     entry = FixedAssetMaster(
         company_id=comp_code,
         created_by=email or "SYSTEM",
@@ -2129,9 +2719,13 @@ def fixed_assets_delete(log_id: int, request: Request, db: Session = Depends(get
         if dep_exists:
             return JSONResponse({"success": False, "message": "Asset has depreciation runs. Reverse depreciation before deleting asset."}, status_code=400)
         if entry.purchase_journal_id:
-            voucher = db.query(VoucherHeader).filter(VoucherHeader.id == entry.purchase_journal_id, VoucherHeader.company_id == comp_code).first()
-            if voucher:
-                db.delete(voucher)
+            PostingEngineService.reverse_voucher(
+                db,
+                comp_code,
+                entry.purchase_journal_id,
+                f"Fixed asset {entry.asset_code} cancelled",
+                email or "SYSTEM",
+            )
         write_audit(db, "fixed_asset_masters", entry.id, comp_code, "is_cancelled", "False", "True", email)
         entry.is_cancelled = True
         db.commit()
@@ -2144,9 +2738,22 @@ def fixed_assets_run_depreciation(request: Request, payload: DepreciationRunSche
     email = request.session.get("email") or "SYSTEM"
     if not comp_code: return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
     run_date = payload.run_date or date.today()
+    fixed_assets_group = PostingEngineService.get_or_create_group(db, comp_code, "Fixed Assets", "ASSET")
+    default_acc_dep = db.query(LedgerMaster).filter(
+        LedgerMaster.company_id == comp_code,
+        LedgerMaster.ledger_name == "Accumulated Depreciation A/c",
+    ).first()
+    if default_acc_dep and default_acc_dep.group_id != fixed_assets_group.id:
+        default_acc_dep.group_id = fixed_assets_group.id
     assets = db.query(FixedAssetMaster).filter(FixedAssetMaster.company_id == comp_code, FixedAssetMaster.status == "ACTIVE").all()
     created_count = 0
     for asset in assets:
+        if asset.acc_dep_ledger_id and not account_lookup(db, comp_code, asset.acc_dep_ledger_id, group_types={"ASSET"}):
+            db.rollback()
+            return JSONResponse({"success": False, "message": f"Accumulated depreciation ledger for {asset.asset_code} must be a contra-asset ledger"}, status_code=400)
+        if asset.dep_expense_ledger_id and not account_lookup(db, comp_code, asset.dep_expense_ledger_id, group_types={"EXPENSE"}):
+            db.rollback()
+            return JSONResponse({"success": False, "message": f"Depreciation ledger for {asset.asset_code} must be an expense ledger"}, status_code=400)
         exists = db.query(DepreciationSchedule).filter(
             DepreciationSchedule.company_id == comp_code,
             DepreciationSchedule.asset_id == asset.id,
@@ -2180,7 +2787,7 @@ def fixed_assets_run_depreciation(request: Request, payload: DepreciationRunSche
         try:
             details = [
                 amount_line(db, comp_code, dep_amount, 0.0, f"Depreciation expense - {asset.asset_code} {payload.period_month}", ledger_id=asset.dep_expense_ledger_id, ledger_name="Depreciation Expense A/c", group_name="Indirect Expenses", group_type="EXPENSE"),
-                amount_line(db, comp_code, 0.0, dep_amount, f"Accumulated depreciation - {asset.asset_code} {payload.period_month}", ledger_id=asset.acc_dep_ledger_id, ledger_name="Accumulated Depreciation A/c", group_name="Provisions", group_type="LIABILITY", parent_group_name="Current Liabilities"),
+                amount_line(db, comp_code, 0.0, dep_amount, f"Accumulated depreciation - {asset.asset_code} {payload.period_month}", ledger_id=asset.acc_dep_ledger_id, ledger_name="Accumulated Depreciation A/c", group_name="Fixed Assets", group_type="ASSET"),
             ]
             voucher = PostingEngineService.create_voucher(
                 db=db,

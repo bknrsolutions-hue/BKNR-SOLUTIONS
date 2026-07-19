@@ -6,8 +6,9 @@ from app.utils.timezone import ist_now
 from app.database import get_db
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 
-# Prefix ఇక్కడ ఇచ్చాం కాబట్టి కింద routes లో మళ్ళీ ఇవ్వాల్సిన అవసరం లేదు
-router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
+# Prefix and tags configuration
+router = APIRouter(tags=["GENERAL STOCK"])
+report_router = APIRouter(tags=["GENERAL STOCK"])
 
 # ============================================================
 # 1. ITEMS MASTER LOGIC
@@ -15,7 +16,7 @@ router = APIRouter(prefix="/general_stock", tags=["GENERAL STOCK"])
 
 @router.get("/items", response_class=HTMLResponse)
 async def items_master_page(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
@@ -37,7 +38,7 @@ async def add_item_master(
     db: Session = Depends(get_db)
 ):
     user_email = request.session.get("email")
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return JSONResponse(status_code=401, content={"message": "Unauthorized"})
 
@@ -67,7 +68,7 @@ async def add_item_master(
 
 @router.post("/items/delete/{item_name}/{unit_name}")
 async def delete_item_master(request: Request, item_name: str, unit_name: str, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     item = db.query(GeneralStoreItems).filter(
         GeneralStoreItems.company_id == company_id,
         GeneralStoreItems.item_name == item_name,
@@ -87,7 +88,7 @@ async def delete_item_master(request: Request, item_name: str, unit_name: str, d
 
 @router.get("/entry", response_class=HTMLResponse)
 async def stock_entry_page(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
 
@@ -134,7 +135,7 @@ async def save_stock_entry(
     db: Session = Depends(get_db)
 ):
     user_email = request.session.get("email")
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     
     if not company_id:
         return RedirectResponse("/", status_code=302)
@@ -172,7 +173,7 @@ async def save_stock_entry(
 
 @router.post("/entry/delete/{entry_id}")
 async def delete_stock_entry(request: Request, entry_id: int, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     entry = db.query(GeneralStock).filter(GeneralStock.id == entry_id, GeneralStock.company_id == company_id).first()
     
     if entry:
@@ -183,7 +184,7 @@ async def delete_stock_entry(request: Request, entry_id: int, db: Session = Depe
 
 @router.get("/api/item_details")
 async def get_item_details(item_name: str, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     
     master = db.query(GeneralStoreItems).filter(
         GeneralStoreItems.company_id == company_id,
@@ -208,7 +209,7 @@ async def get_item_details(item_name: str, request: Request, db: Session = Depen
 
 @router.get("/api/get_item_grns")
 async def get_item_grns(request: Request, item_name: str, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     req_item_name = item_name.strip().upper()
     
     grns = db.query(GeneralStock.grn_number).filter(
@@ -225,15 +226,18 @@ async def get_item_grns(request: Request, item_name: str, db: Session = Depends(
 # 3. GENERAL STOCK REPORT LOGIC
 # ============================================================
 
-@router.get("/report", response_class=HTMLResponse)
+@report_router.get("/report", response_class=HTMLResponse)
 async def general_stock_report(
     request: Request,
     fy: str = "",
     db: Session = Depends(get_db)
 ):
-    company_id = request.session.get("company_id")
+    company_id = request.session.get("company_code")
     if not company_id:
         return RedirectResponse("/", status_code=302)
+    if "fy" not in request.query_params:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
 
     query = db.query(GeneralStock).filter(GeneralStock.is_cancelled != True)
 
@@ -242,7 +246,9 @@ async def general_stock_report(
         query = query.filter(GeneralStock.company_id == company_id)
 
     # Financial Year Filter
-    if fy:
+    if fy == "":
+        query = query.filter(GeneralStock.id == -1)
+    elif fy:
         try:
             fy_year = int(fy)
             fy_start = date(fy_year, 4, 1)
@@ -271,6 +277,18 @@ async def general_stock_report(
     dropdown_grn = sorted(list({r.grn_number for r in records if r.grn_number}))
     dropdown_items = sorted(list({r.item_name for r in records if r.item_name}))
     dropdown_unit = sorted(list({r.unit_name for r in records if r.unit_name}))
+
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        serialized_records = [{col.name: getattr(r, col.name) for col in r.__table__.columns} for r in records]
+        return JSONResponse(jsonable_encoder({
+            "records": serialized_records,
+            "dropdown_grn": dropdown_grn,
+            "dropdown_items": dropdown_items,
+            "dropdown_unit": dropdown_unit,
+            "selected_fy": fy
+        }))
 
     return request.app.state.templates.TemplateResponse(
         request=request,

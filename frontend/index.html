@@ -1,6 +1,26 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <script>
+      // Some Chromium WebView/DevTools builds inject a metrics script without
+      // installing its reporter callback. Keep that tooling-only failure from
+      // flooding the console or interrupting document-start evaluations.
+      if (typeof window.__chromium_devtools_metrics_reporter !== 'function') {
+        window.__chromium_devtools_metrics_reporter = function () {};
+      }
+    </script>
+    <!-- ⚡ Blocking theme init — must run before CSS renders to avoid flash -->
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('theme');
+          var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
+          document.documentElement.setAttribute('data-theme', theme);
+        } catch(e) {
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      })();
+    </script>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

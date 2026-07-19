@@ -24,6 +24,8 @@ from app.database.models.inventory_management import stock_entry, pending_orders
 from app.utils.global_filters import get_global_filters
 from app.services.floor_balance import get_floor_balance
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
+from app.utils.cancel_math import signed_sum
+from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
 
 router = APIRouter(tags=["PEELING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -36,6 +38,14 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
     if "General Stock" not in pf_list:
         pf_list.append("General Stock")
     return {"varieties": v_list, "contractors": c_list, "species": s_list, "prod_for_list": pf_list}
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
 
 
 # =====================================================
@@ -255,10 +265,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     # Tab 2: Contractor-wise Aggregation Summary Query
     contractor_q = db.query(
-        Peeling.contractor_name, 
-        func.sum(Peeling.hlso_qty).label("total_hlso"), 
-        func.sum(Peeling.peeled_qty).label("total_peeled"), 
-        func.sum(Peeling.amount).label("total_amount")
+        Peeling.contractor_name,
+        signed_sum(Peeling, Peeling.hlso_qty).label("total_hlso"),
+        signed_sum(Peeling, Peeling.peeled_qty).label("total_peeled"),
+        signed_sum(Peeling, Peeling.amount).label("total_amount")
     ).filter(Peeling.company_id == company_id, Peeling.date == ist_now().date())
     
     if g_prod_clean and g_prod_clean != "ALL":
@@ -318,6 +328,45 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
     success_msg = request.session.pop("success_msg", None)
+
+    if request.query_params.get("format") == "json":
+        return JSONResponse({
+            "varieties": masters["varieties"],
+            "contractors": masters["contractors"],
+            "peeling_locations": pa_list,
+            "prod_for_list": masters["prod_for_list"],
+            "today_data": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat() if r.date else None,
+                    "time": r.time.strftime("%H:%M") if r.time else None,
+                    "production_for": r.production_for,
+                    "peeling_at": r.peeling_at,
+                    "batch_number": r.batch_number,
+                    "hlso_count": r.hlso_count,
+                    "species": r.species,
+                    "variety_name": r.variety_name,
+                    "hlso_qty": r.hlso_qty,
+                    "peeled_qty": r.peeled_qty,
+                    "yield_percent": r.yield_percent,
+                    "contractor_name": r.contractor_name,
+                    "rate": r.rate,
+                    "amount": r.amount,
+                    "is_cancelled": r.is_cancelled,
+                    "status": r.status,
+                    "cancel_reason": r.cancel_reason,
+                    "cancelled_by": r.cancelled_by,
+                    "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
+                    "email": r.email
+                } for r in today_data
+            ],
+            "hlso_floor_balance": hlso_floor_balance,
+            "hlso_summary": list(hlso_summary.values()),
+            "variety_summary": variety_summary,
+            "drill_down_json": drill_down_data,
+            "selected_production_for": global_production_for or "",
+            "selected_location": global_location or ""
+        })
 
     return templates.TemplateResponse(
         request=request, name="processing/peeling.html",
@@ -481,6 +530,7 @@ def save_peeling(
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    ensure_bill_accounting_schema(db)
 
     clean_batch = str(batch_number).strip()
     clean_count = str(in_count).strip()
@@ -532,6 +582,22 @@ def save_peeling(
         db, company_code, clean_batch, clean_count, species, variety, 
         location, production_for, qty_delta=peeled_qty, email=email
     )
+
+    db.flush()
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_code,
+        voucher_date=current_ist.date(),
+        reference_no=f"PEL-{new_entry.id}",
+        contractor_name=contractor_name,
+        charge_type="Peeling",
+        taxable_amount=amount,
+        gst_percent=contractor_gst_percent(db, company_code, contractor_name),
+        created_by=email,
+        quantity=peeled_qty,
+        rate=rate,
+    )
+    new_entry.journal_id = voucher.id
 
     db.commit()
     return JSONResponse({"message": "Saved successfully"}) 
@@ -602,6 +668,7 @@ def delete_peeling(
     row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
     row.cancelled_by = email
     row.cancelled_at = ist_now()
+    cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
 
     db.commit()
     return JSONResponse({"status": "ok"})

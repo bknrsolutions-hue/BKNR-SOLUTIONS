@@ -8,18 +8,25 @@ from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from sqlalchemy import func, extract
-from datetime import datetime
+from datetime import date, datetime
 import datetime as dt
 from io import BytesIO
 from app.services.floor_balance_sync import refresh_floor_balance
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import signed_number
 
 from openpyxl import Workbook
 from app.services.pdf_renderer import render_pdf_from_html
 
 from app.database import get_db
 from app.database.models.processing import DeHeading, AuditLog
-from app.database.models.criteria import HOSO_HLSO_Yields
+from app.database.models.criteria import HOSO_HLSO_Yields, contractors
+from app.database.models.users import Company
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    post_contractor_source_charge,
+)
 
 router = APIRouter(
     prefix="/de_heading",
@@ -32,6 +39,40 @@ templates = Jinja2Templates(directory="app/templates")
 def get_fin_year(date_val):
     if not date_val: return None
     return date_val.year if date_val.month >= 4 else date_val.year - 1
+
+
+def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
+    row = db.query(contractors).filter(
+        contractors.company_id == company_id,
+        contractors.contractor_name == contractor_name,
+    ).first()
+    return float(row.gst_percent or 0) if row else 0.0
+
+
+def repost_deheading_accounts(db: Session, row: DeHeading, company_id: str, email: str):
+    if row.journal_id:
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        row.journal_id = None
+    if row.is_cancelled or float(row.amount or 0) <= 0:
+        return
+    voucher = post_contractor_source_charge(
+        db=db,
+        company_id=company_id,
+        voucher_date=row.date,
+        reference_no=f"DEH-{row.id}",
+        contractor_name=row.contractor,
+        charge_type="Deheading",
+        taxable_amount=row.amount,
+        gst_percent=contractor_gst_percent(db, company_id, row.contractor),
+        created_by=email,
+        quantity=row.hlso_qty,
+        rate=row.rate_per_kg,
+    )
+    row.journal_id = voucher.id
+
+def row_to_dict(row):
+    return {col.name: getattr(row, col.name) for col in row.__table__.columns}
+
 
 # ============================================================
 # 1. MAIN REPORT (GET) - AUTO REFRESH ON OPEN WITH FY FILTER
@@ -50,8 +91,11 @@ async def de_heading_report(
         return RedirectResponse("/", status_code=302)
 
     # 1. Fetch Current FY and Criteria Map (Species, Count)
-    current_date = dt.date.today()
+    current_date = ist_now().date()
     current_fy_val = get_fin_year(current_date)
+    is_json = request.query_params.get("format") == "json"
+    if fy is None:
+        fy = "" if is_json else str(current_fy_val)
     
     target_yields = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_id).all()
     
@@ -61,30 +105,36 @@ async def de_heading_report(
         for ty in target_yields
     }
 
+    # Fetch unique financial years from database
+    all_dates = db.query(DeHeading.date).filter(DeHeading.company_id == company_id, DeHeading.date != None).all()
+    fy_set = set()
+    for d_tuple in all_dates:
+        d = d_tuple[0]
+        fy_set.add(f"{d.year}" if d.month >= 4 else f"{d.year - 1}")
+    financial_years = sorted(list(fy_set), reverse=True)
+
     # 2. Fetch Rows based on selected FY
-    rows = []
+    query = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id
+    )
+
     if fy:
         selected_year = int(fy)
-        # Financial Year Logic: April (Selected Year) to March (Next Year)
         start_date = dt.date(selected_year, 4, 1)
         end_date = dt.date(selected_year + 1, 3, 31)
-        
-        # 🟢 UPDATED: Core query selection layered dynamically via global options
-        query = db.query(DeHeading).filter(
-            DeHeading.company_id == company_id,
+        query = query.filter(
             DeHeading.date >= start_date,
-            DeHeading.date <= end_date,
-            DeHeading.is_cancelled != True
+            DeHeading.date <= end_date
         )
 
-        # Global Filters Integration
-        if production_for:
-            query = query.filter(DeHeading.production_for == production_for)
+    # Global Filters Integration
+    if production_for:
+        query = query.filter(DeHeading.production_for == production_for)
 
-        if location:
-            query = query.filter(DeHeading.peeling_at == location)
+    if location:
+        query = query.filter(DeHeading.peeling_at == location)
 
-        rows = query.order_by(DeHeading.date.desc(), DeHeading.time.desc()).all()
+    rows = query.order_by(DeHeading.date.desc(), DeHeading.time.desc()).all()
 
     # 3. Auto-Refresh Logic (Current FY only)
     needs_commit = False
@@ -121,24 +171,52 @@ async def de_heading_report(
     def get_unique(field_attr):
         return sorted(list({getattr(r, field_attr) for r in rows if getattr(r, field_attr)}))
 
+    serialized_rows = []
+    for r in rows:
+        d = row_to_dict(r)
+        if isinstance(d.get("date"), (date, datetime)):
+            d["date"] = d["date"].isoformat()
+        if isinstance(d.get("time"), (dt.time, datetime)):
+            d["time"] = d["time"].strftime("%H:%M")
+        serialized_rows.append(d)
+
+    context = {
+        "rows": serialized_rows if is_json else rows,
+        "batches": get_unique("batch_number"),
+        "contractors": get_unique("contractor"),
+        "species_list": get_unique("species"),
+        "peeling_locations": get_unique("peeling_at"),
+        "production_for_list": get_unique("production_for"),
+        "is_admin": role == "admin",
+        "can_edit": check_report_permission(request, "report_edit"),
+        "can_delete": check_report_permission(request, "report_delete"),
+        "can_print": check_report_permission(request, "report_print"),
+        "can_export": check_report_permission(request, "report_export"),
+        "selected_fy": fy,
+        "financial_years": financial_years,
+        "datetime": datetime
+    }
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        context.pop("datetime", None)
+        import datetime as dt_mod
+        def serialize_val(v):
+            if isinstance(v, (dt_mod.datetime, dt_mod.date)):
+                return v.isoformat()
+            if isinstance(v, dt_mod.time):
+                return v.strftime("%H:%M")
+            if isinstance(v, list):
+                return [serialize_val(item) for item in v]
+            if isinstance(v, dict):
+                return {key: serialize_val(val) for key, val in v.items()}
+            return v
+        return JSONResponse(serialize_val(context))
+
     return templates.TemplateResponse(
         request=request,
         name="reports/de_heading_report.html",
-        context={
-            "rows": rows,
-            "batches": get_unique("batch_number"),
-            "contractors": get_unique("contractor"),
-            "species_list": get_unique("species"),
-            "peeling_locations": get_unique("peeling_at"),
-            "production_for_list": get_unique("production_for"),
-            "is_admin": role == "admin",
-            "can_edit": check_report_permission(request, "report_edit"),
-            "can_delete": check_report_permission(request, "report_delete"),
-            "can_print": check_report_permission(request, "report_print"),
-            "can_export": check_report_permission(request, "report_export"),
-            "selected_fy": fy,
-            "datetime": datetime
-        }
+        context=context
     )
 
 # ============================================================
@@ -154,6 +232,7 @@ async def update_deheading_row(
     enforce_report_permission(request, "report_edit")
     company_id = request.session.get("company_code")
     user_email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
 
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if not row: raise HTTPException(status_code=404, detail="Record not found")
@@ -195,6 +274,7 @@ async def update_deheading_row(
         row.diff_qty = round((hlso / (target_y / 100)) - hoso, 2)
         row.diff_percent = round(row.yield_percent - target_y, 2)
 
+    repost_deheading_accounts(db, row, company_id, user_email)
     db.commit()
     refresh_floor_balance(db, company_id)
     return {"status": "success", "target_yield_percent": row.target_yield_percent, "diff_qty": row.diff_qty, "diff_percent": row.diff_percent}
@@ -212,10 +292,11 @@ async def get_all_deheading_audit(request: Request, db: Session = Depends(get_db
         .order_by(AuditLog.edited_at.desc()).limit(100).all()
     )
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Batch: {l.batch_number}" if l.batch_number else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Batch: {l.batch_number}" if l.batch_number else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name != "DELETE" else "Deleted Record",
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}"
     } for l in logs]
@@ -228,19 +309,18 @@ def de_heading_monthly_bill(request: Request, month: str = Query(...), contracto
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
         DeHeading.company_id == company_id,
-        DeHeading.contractor == contractor,
-        DeHeading.is_cancelled != True
+        DeHeading.contractor == contractor
     )
     if ids: query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
     else: query = query.filter(func.to_char(DeHeading.date, 'YYYY-MM') == month)
     rows = query.order_by(DeHeading.date.asc()).all()
     
-    t_hoso = sum(r.hoso_qty or 0 for r in rows)
-    t_hlso = sum(r.hlso_qty or 0 for r in rows)
+    t_hoso = sum(signed_number(r, r.hoso_qty) for r in rows)
+    t_hlso = sum(signed_number(r, r.hlso_qty) for r in rows)
     data = {
         "request": request, "rows": rows, "contractor_name": contractor, "month_year": month,
         "total_hoso": round(t_hoso, 2), "total_hlso": round(t_hlso, 2),
-        "grand_total": round(sum(r.amount or 0 for r in rows), 2),
+        "grand_total": round(sum(signed_number(r, r.amount) for r in rows), 2),
         "avg_yield": round((t_hlso / t_hoso * 100) if t_hoso > 0 else 0, 2), "bill_date": ist_now()
     }
     if download:
@@ -254,8 +334,7 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
-        DeHeading.company_id == company_id,
-        DeHeading.is_cancelled != True
+        DeHeading.company_id == company_id
     )
     
     # 1. 🟢 Force evaluate incoming global interface context
@@ -270,7 +349,14 @@ def de_heading_export_pdf(request: Request, ids: str = Query(None), db: Session 
     if ids: 
         query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
         
-    pdf = render_pdf_from_html(templates.get_template("reports/de_heading_print.html").render({"request": request, "rows": query.all(), "printed_on": ist_now()}))
+    company = db.query(Company).filter(Company.company_code == company_id).first()
+    pdf = render_pdf_from_html(templates.get_template("reports/de_heading_print.html").render({
+        "request": request,
+        "rows": query.all(),
+        "company_name": company.company_name if company else request.session.get("company_name", ""),
+        "mpeda_registration_code": company.mpeda_registration_code if company else "",
+        "printed_on": ist_now(),
+    }))
     return StreamingResponse(BytesIO(pdf), media_type="application/pdf", headers={"Content-Disposition": "attachment; filename=DE_HEADING.pdf"})
 
 @router.get("/export_excel")
@@ -279,8 +365,7 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     query = db.query(DeHeading).filter(
-        DeHeading.company_id == company_id,
-        DeHeading.is_cancelled != True
+        DeHeading.company_id == company_id
     )
     
     # 2. 🟢 Force evaluate incoming global interface context
@@ -307,10 +392,15 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
+    email = request.session.get("email")
+    ensure_bill_accounting_schema(db)
     row = db.query(DeHeading).filter(DeHeading.id == payload.get("id"), DeHeading.company_id == company_id).first()
     if row:
-        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)))
-        row.is_cancelled = True; db.commit()
+        db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)))
+        row.is_cancelled = True
+        row.status = "Cancelled"
+        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        db.commit()
         refresh_floor_balance(db, company_id)
         return {"status": "success"}
     return {"status": "error"}

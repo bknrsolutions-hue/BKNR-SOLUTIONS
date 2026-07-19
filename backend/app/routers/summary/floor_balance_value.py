@@ -6,6 +6,7 @@ from sqlalchemy import func
 import re
 from datetime import datetime
 from app.utils.global_filters import get_global_filters
+from app.utils.cancel_math import active_number
 
 from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, DeHeading, Grading, Peeling
@@ -85,12 +86,12 @@ def calculate_balance_value(db: Session, company_id: str, batch: str, variety: s
             RawMaterialPurchasing.batch_number == batch
         ).all()
         
-        total_batch_amount = sum(float(item.amount or 0) for item in rmp_items)
+        total_batch_amount = sum(active_number(item, item.amount) for item in rmp_items)
         total_batch_hoso_qty = 0.0
         
         for item in rmp_items:
             total_batch_hoso_qty += get_hoso_equivalent_qty(
-                db, company_id, float(item.received_qty or 0), 
+                db, company_id, active_number(item, item.received_qty),
                 item.variety_name, item.count, item.species
             )
             
@@ -277,6 +278,14 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
     db.commit()
 
     rows_batch.sort(key=lambda x: (str(x["location"]), str(x["production_for"]), str(x["batch"])))
+
+    if request.query_params.get("format") == "json":
+        from fastapi.responses import JSONResponse
+        from fastapi.encoders import jsonable_encoder
+        return JSONResponse(jsonable_encoder({
+            "rows_batch": rows_batch,
+            "company_id": company_id
+        }))
 
     return templates.TemplateResponse(
         request=request,

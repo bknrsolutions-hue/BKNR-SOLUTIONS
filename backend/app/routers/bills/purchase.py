@@ -22,6 +22,13 @@ from app.database.models.criteria import (
     vendors,
     hsn_codes
 )
+from app.services.bill_accounting import (
+    cancel_linked_bill_voucher,
+    ensure_bill_accounting_schema,
+    list_posting_ledgers,
+    post_vendor_bill,
+    resolve_posting_ledger,
+)
 
 router = APIRouter(
     prefix="/purchase",
@@ -30,6 +37,30 @@ router = APIRouter(
 
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
+
+
+def purchase_stock_account(product_name: str):
+    clean = (product_name or "").strip().lower()
+    if "sticker" in clean or "label" in clean:
+        return {
+            "ledger_name": "Stickers Expense A/c",
+            "group_name": "Direct Expenses",
+            "group_type": "EXPENSE",
+            "parent_group_name": None,
+        }
+    if any(word in clean for word in ["chemical", "chem", "salt", "stpp", "soda", "powder", "dry", "wet"]):
+        return {
+            "ledger_name": "Chemicals Stock A/c",
+            "group_name": "Current Assets",
+            "group_type": "ASSET",
+            "parent_group_name": None,
+        }
+    return {
+        "ledger_name": "Packing Material Stock A/c",
+        "group_name": "Current Assets",
+        "group_type": "ASSET",
+        "parent_group_name": None,
+    }
 
 
 # ============================================================
@@ -46,6 +77,7 @@ class PurchaseInvoiceSchema(BaseModel):
     base_price: float
     gst_percent: float
     po_number: str = None
+    accounting_ledger_id: int | None = None
 
 
 # --- Helper: Get Financial Year Year (April to March) ---
@@ -69,6 +101,11 @@ def purchase_entry_page(
     if not email or not company_id:
         return RedirectResponse("/", status_code=302)
 
+    ensure_bill_accounting_schema(db)
+    if fy is None:
+        today = ist_now().date()
+        fy = str(today.year if today.month >= 4 else today.year - 1)
+
     # 🔹 Production Units / Locations
     locations = db.query(production_at).filter(
         production_at.company_id == company_id
@@ -84,6 +121,13 @@ def purchase_entry_page(
         hsn_codes.company_id == company_id
     ).order_by(hsn_codes.hsn_code).all()
 
+    posting_ledgers = list_posting_ledgers(
+        db,
+        company_id,
+        group_types={"EXPENSE", "ASSET"},
+        group_names={"Purchase Accounts", "Direct Expenses", "Indirect Expenses", "Current Assets"},
+    )
+
     # 🔹 ⚡ Financial Year Query Logic
     invoice_history = []
     if fy:
@@ -94,8 +138,7 @@ def purchase_entry_page(
         invoice_history = (
             db.query(PurchaseInvoice)
             .filter(
-                PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True,
-                PurchaseInvoice.is_cancelled != True,
+                PurchaseInvoice.company_id == company_id,
                 PurchaseInvoice.invoice_date >= start_date,
                 PurchaseInvoice.invoice_date <= end_date
             )
@@ -137,6 +180,7 @@ def purchase_entry_page(
             "hsn_list": hsn_list,
             "invoice_history": invoice_history,
             "po_list": po_list,
+            "posting_ledgers": posting_ledgers,
             "email": email,
             "company_id": company_id,
             "selected_fy": fy
@@ -160,6 +204,7 @@ async def save_purchase_invoice(
         return JSONResponse({"success": False, "message": "Session Expired"}, status_code=401)
 
     try:
+        ensure_bill_accounting_schema(db)
         duplicate = db.query(PurchaseInvoice).filter(
             PurchaseInvoice.invoice_no == payload.invoice_no.strip(),
             PurchaseInvoice.company_id == company_id, PurchaseInvoice.is_cancelled != True
@@ -184,6 +229,8 @@ async def save_purchase_invoice(
 
         # 🛠️ FIX: Explicit IST deployment timestamp tracking
         current_ist = ist_now()
+        vendor = db.query(vendors).filter(vendors.id == payload.vendor_id, vendors.company_id == company_id).first()
+        vendor_name = vendor.name if vendor else f"Vendor {payload.vendor_id}"
 
         new_invoice = PurchaseInvoice(
             unit_id=payload.unit_id,
@@ -202,7 +249,8 @@ async def save_purchase_invoice(
             company_id=company_id,
             email=email,
             date=current_ist.strftime("%Y-%m-%d"), # 🟢 Fixed Midnight Date Drift
-            time=current_ist.strftime("%H:%M:%S")  # 🟢 Fixed dt.ist_now() AttributeError Crash
+            time=current_ist.strftime("%H:%M:%S"),  # 🟢 Fixed dt.ist_now() AttributeError Crash
+            status="DRAFT"
         )
 
         db.add(new_invoice)
@@ -214,15 +262,44 @@ async def save_purchase_invoice(
             field_name="CREATE", old_value="NONE", new_value=new_invoice.invoice_no,
             edited_by=email, edited_at=current_ist # 🟢 Synced onto common IST timeline
         ))
+
+        default_posting = purchase_stock_account(new_invoice.product_name)
+        posting_ledger = resolve_posting_ledger(
+            db,
+            company_id,
+            payload.accounting_ledger_id,
+            default_posting["ledger_name"],
+            default_posting["group_name"],
+            default_posting["group_type"],
+            default_posting["parent_group_name"],
+        )
+        voucher = post_vendor_bill(
+            db,
+            company_id,
+            payload.invoice_date,
+            new_invoice.invoice_no,
+            vendor_name,
+            posting_ledger["ledger_name"],
+            taxable_value,
+            tax_amount,
+            grand_total,
+            f"Purchase invoice {new_invoice.invoice_no}",
+            email,
+            expense_group_name=posting_ledger["group_name"],
+            expense_group_type=posting_ledger["group_type"],
+            expense_parent_group_name=posting_ledger["parent_group_name"],
+            voucher_type="Purchase",
+        )
+        new_invoice.journal_id = voucher.id
+        new_invoice.status = "POSTED"
         
         db.commit()
-        return JSONResponse({"success": True, "message": f"Invoice {payload.invoice_no} saved successfully!"})
+        return JSONResponse({"success": True, "message": f"Invoice {payload.invoice_no} saved and posted: {voucher.voucher_no}"})
 
     except Exception as e:
         db.rollback()
         logger.error(f"PURCHASE SAVE ERROR: {str(e)}")
         return JSONResponse({"success": False, "message": f"Internal Server Error: {str(e)}"}, status_code=500)
-
 
 # ============================================================
 # 3. UPDATE ACTION (PUT) - WITH DYNAMIC FIELD LOG TRACKING
@@ -248,6 +325,8 @@ async def update_purchase_invoice(
 
         if not invoice:
             return JSONResponse({"success": False, "message": "Invoice record not found"}, status_code=404)
+        if invoice.journal_id and invoice.status == "POSTED":
+            return JSONResponse({"success": False, "message": "Posted invoice cannot be edited. Cancel and re-enter to keep accounts correct."}, status_code=400)
 
         current_ist = ist_now()
 
@@ -311,10 +390,11 @@ async def get_all_purchase_audit(request: Request, db: Session = Depends(get_db)
     )
     
     return [{
+        "record_id": l.AuditLog.record_id,
         "timestamp": l.AuditLog.edited_at.strftime("%d-%m-%Y %H:%M:%S"),
         "user": l.AuditLog.edited_by.split('@')[0] if l.AuditLog.edited_by else "System",
         "email": l.AuditLog.edited_by if l.AuditLog.edited_by else "System",
-        "batch": f"Invoice: {l.invoice_no}" if l.invoice_no else f"ID Ref: {l.AuditLog.record_id}",
+        "batch": f"Row ID #{l.AuditLog.record_id} • Invoice: {l.invoice_no}" if l.invoice_no else f"Row ID #{l.AuditLog.record_id}",
         "action": f"Changed {l.AuditLog.field_name.replace('_', ' ').title()}" if l.AuditLog.field_name not in ["CREATE", "DELETE"] else l.AuditLog.field_name,
         "details": f"{l.AuditLog.old_value} ➔ {l.AuditLog.new_value}" if l.AuditLog.old_value != "NONE" else f"Created Invoice Entry: {l.AuditLog.new_value}"
     } for l in logs]
@@ -342,7 +422,9 @@ def delete_invoice(inv_id: int, request: Request, db: Session = Depends(get_db))
                 field_name="is_cancelled", old_value="False", new_value="True",
                 edited_by=email, edited_at=ist_now() # 🟢 Synced onto IST timeline
             ))
+            cancel_linked_bill_voucher(db, company_id, invoice.journal_id, email)
             invoice.is_cancelled = True
+            invoice.status = "CANCELLED"
             db.commit()
             return {"success": True, "message": "Record cancelled successfully"}
         except Exception as e:

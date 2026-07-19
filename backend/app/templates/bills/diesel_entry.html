@@ -108,6 +108,11 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
 .text-right { text-align: right !important; }
 .text-left { text-align: left !important; }
+.status-badge { display:inline-flex; align-items:center; justify-content:center; min-width:62px; padding:3px 8px; border-radius:999px; background:#e0f2fe; color:#075985; font-size:9px; font-weight:800; letter-spacing:.4px; }
+.status-badge.cancelled { background:#fee2e2; color:#991b1b; }
+.cancelled-row { background:#fff7ed !important; opacity:.78; }
+.cancelled-row td { text-decoration: line-through; color:#9ca3af !important; }
+.cancelled-row .status-badge, .cancelled-row .badge { text-decoration:none; }
 
 /* Stream Type Badges */
 .badge { padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 800; color: #fff; display: inline-block; }
@@ -155,8 +160,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 }
 @media(max-width:400px){ .audit-panel { width: 100%; } }
 </style>
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
 </head>
 
@@ -221,12 +226,13 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <th class="text-right">Closing Ltr</th>
                 <th class="text-right">Avg Rate</th>
                 <th class="text-right">Net Value</th>
+                <th>Accounts</th>
             </tr>
         </thead>
         <tbody id="tableBody">
             {% if not diesel_history %}
             <tr>
-                <td colspan="13" class="empty-state">
+                <td colspan="14" class="empty-state">
                     <i class="fa-solid fa-gas-pump" style="color:#eab308;"></i><br>
                     <b>Financial Year Not Selected</b><br>
                     <span style="font-size: 11px; color: var(--muted);">Please select a Financial Year from the filter dropdown to render fuel records ledger.</span>
@@ -234,9 +240,15 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             </tr>
             {% else %}
                 {% for log in diesel_history %}
-                <tr class="data-row" 
-                    data-id="{{ log.DieselLog.id }}" 
+                <tr class="data-row {% if log.DieselLog.is_cancelled %}cancelled-row{% endif %}"
+                    data-id="{{ log.DieselLog.id }}"
+                    data-type="{{ log.DieselLog.type }}"
+                    data-opening="{{ log.DieselLog.opening_stock }}"
+                    data-purchase="{{ log.DieselLog.purchase_qty }}"
+                    data-consumption="{{ log.DieselLog.consumption }}"
                     data-closing="{{ log.DieselLog.closing_stock }}"
+                    data-total="{{ log.DieselLog.net_val }}"
+                    data-cancelled="{{ 'true' if log.DieselLog.is_cancelled else 'false' }}"
                     onclick="selectRow(this, '{{ log.DieselLog.id }}')">
                     
                     <td class="slno">0</td>
@@ -262,6 +274,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                     <td class="text-right" style="font-weight:700;">{{ "{:,.2f}".format(log.DieselLog.closing_stock) }}</td>
                     <td class="text-right">₹{{ "{:,.2f}".format(log.DieselLog.avg_price) }}</td>
                     <td class="text-right" style="font-weight:800; color:var(--primary);">₹{{ "{:,.2f}".format(log.DieselLog.net_val) }}</td>
+                    <td><span class="status-badge {% if log.DieselLog.is_cancelled %}cancelled{% endif %}">{{ 'CANCELLED' if log.DieselLog.is_cancelled else ('POSTED' if log.DieselLog.journal_id else 'DRAFT') }}</span></td>
                 </tr>
                 {% endfor %}
             {% endif %}
@@ -292,7 +305,15 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
                 <div class="field"><label>GRN Document No</label><input type="text" id="in_grn_no" required placeholder="GRN-001" style="text-transform:uppercase;"></div>
                 <div class="field"><label>Supplier Invoice No</label><input type="text" id="in_bill_no" required placeholder="INV-123"></div>
                 <div class="field"><label>Invoice Date</label><input type="date" id="in_bill_date" required></div>
-                <div class="field"><label>Vendor Name</label><input type="text" id="in_vendor" required placeholder="HPC / IOCL Dealer"></div>
+                <div class="field">
+                    <label>Vendor</label>
+                    <select id="in_vendor" required>
+                        <option value="" disabled selected>-- SELECT VENDOR --</option>
+                        {% for v in vendors %}
+                        <option value="{{ v.name }}">{{ v.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <div class="field"><label>Received Qty (Ltr)</label><input type="number" step="any" id="in_qty" required oninput="calcInTotal()"></div>
                 <div class="field"><label>Base Rate / Ltr</label><input type="number" step="any" id="in_rate" required oninput="calcInTotal()"></div>
                 <div class="field"><label>Tax/VAT Tier (%)</label><input type="number" step="any" id="in_tax" value="0" oninput="calcInTotal()"></div>
@@ -350,8 +371,20 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 <script>
     const API_BASE = window.location.pathname.includes('/api/') ? '/api/diesel' : '/diesel';
     let globalSelectedId = null;
+    const DIESEL_FLASH_KEY = "diesel_entry_success_message";
 
     document.addEventListener("DOMContentLoaded", function() {
+        const flashMessage = sessionStorage.getItem(DIESEL_FLASH_KEY);
+        if (flashMessage) {
+            sessionStorage.removeItem(DIESEL_FLASH_KEY);
+            Swal.fire({
+                icon: "success",
+                title: "Saved Successfully",
+                text: flashMessage,
+                timer: 2200,
+                showConfirmButton: false
+            });
+        }
         applyFilters();
         
         document.getElementById("dotsBtn").onclick = (e) => { 
@@ -373,10 +406,20 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         }
     });
 
+    function showSaveSuccess(title, message) {
+        sessionStorage.setItem(DIESEL_FLASH_KEY, message || title);
+        return Swal.fire({
+            icon: "success",
+            title,
+            text: message || "Entry saved successfully.",
+            timer: 1800,
+            showConfirmButton: false
+        }).then(() => location.reload());
+    }
+
     function changeFY(val) {
-        if(!val) return;
         const url = new URL(window.location.href);
-        url.searchParams.set('fy', val);
+        url.searchParams.set('fy', val || '');
         window.location.href = url.toString();
     }
 
@@ -396,8 +439,8 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
         const rows = document.querySelectorAll("#tableBody .data-row");
         let visibleRows = [];
         
-        // ⚡ AVAILABLE QTY calculation from latest visible row
-        let latestClosingStock = 0;
+        let recalculatedQty = null;
+        let valueImpact = 0;
 
         rows.forEach(r => {
             if (sVal && !r.textContent.toLowerCase().includes(sVal)) {
@@ -410,17 +453,32 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
 
         visibleRows.forEach((row, index) => {
             row.querySelector(".slno").innerText = visibleRows.length - index;
-            if (index === 0) {
-                latestClosingStock = parseFloat(row.getAttribute("data-closing")) || 0;
-            }
+        });
+
+        [...visibleRows].reverse().forEach((row, index) => {
+            const isCancelled = row.getAttribute("data-cancelled") === "true";
+            const type = row.getAttribute("data-type");
+            const opening = parseFloat(row.getAttribute("data-opening")) || 0;
+            const purchaseQty = parseFloat(row.getAttribute("data-purchase")) || 0;
+            const consumptionQty = parseFloat(row.getAttribute("data-consumption")) || 0;
+            const netValue = parseFloat(row.getAttribute("data-total")) || 0;
+            const qtyMovement = type === "IN" ? purchaseQty : -consumptionQty;
+            const valueMovement = type === "IN" ? netValue : -netValue;
+
+            if (index === 0) recalculatedQty = opening;
+            recalculatedQty += isCancelled ? -qtyMovement : qtyMovement;
+            valueImpact += isCancelled ? -valueMovement : valueMovement;
         });
 
         document.getElementById("rowCount").innerText = `${visibleRows.length} ENTRIES FOUND`;
-        document.getElementById("gt_display").innerText = "AVAILABLE QTY: " + latestClosingStock.toLocaleString('en-IN', {minimumFractionDigits:2}) + " Ltr";
+        document.getElementById("gt_display").innerText =
+            "AVAILABLE QTY: " + (recalculatedQty || 0).toLocaleString('en-IN', {minimumFractionDigits:2}) +
+            " Ltr | VALUE: ₹ " + valueImpact.toLocaleString('en-IN', {minimumFractionDigits:2});
     }
 
     function selectRow(tr, id) {
         globalSelectedId = id;
+        window.selectedRowCancelled = tr.getAttribute("data-cancelled") === "true";
         document.querySelectorAll('#tableBody tr').forEach(r => r.classList.remove('selected-row'));
         tr.classList.add('selected-row');
         document.getElementById('threeDotsMenu').style.display = 'block';
@@ -532,7 +590,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             bill_date: document.getElementById("in_bill_date").value,
             grn_no: document.getElementById("in_grn_no").value.trim(),
             bill_no: document.getElementById("in_bill_no").value.trim(),
-            vendor: document.getElementById("in_vendor").value.trim(),
+            vendor: document.getElementById("in_vendor").value,
             received_qty: parseFloat(document.getElementById("in_qty").value) || 0,
             rate: parseFloat(document.getElementById("in_rate").value) || 0,
             tax_per: parseFloat(document.getElementById("in_tax").value) || 0,
@@ -547,7 +605,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire({ icon:'success', title:'GRN Committed!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                showSaveSuccess('Diesel Purchase Posted', out.message || 'Diesel purchase saved successfully.');
             } else { Swal.fire("Error", out.message || "Save failed", "error"); }
         } catch(e) { Swal.fire("Error", "Link dropped", "error"); }
     }
@@ -575,26 +633,35 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             });
             const out = await res.json();
             if(out.success) {
-                Swal.fire({ icon:'success', title:'Consumption Saved!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                showSaveSuccess('Diesel Consumption Posted', out.message || 'Diesel consumption saved successfully.');
             } else { Swal.fire("Error", out.message || "Save failed", "error"); }
         } catch(e) { Swal.fire("Error", "Link dropped", "error"); }
     }
 
     async function cancelSelected() {
         if (!globalSelectedId) return;
+        if (window.selectedRowCancelled) {
+            Swal.fire("Already Cancelled", "This diesel entry is already marked as cancelled.", "info");
+            return;
+        }
         const resDecision = await Swal.fire({
             title: "Destroy entry?", text: "This will permanently remove the record node.", icon: "warning", showCancelButton: true
         });
         if(resDecision.isConfirmed) {
             try {
                 const res = await fetch(`${API_BASE}/delete/${globalSelectedId}`, { method: 'POST' });
-                if(res.ok) Swal.fire({ icon:'success', title:'Cancelled!', timer:800, showConfirmButton:false }).then(() => location.reload());
+                const out = await res.json();
+                if(res.ok && out.success) {
+                    Swal.fire({ icon:'success', title:'Cancelled', text: out.message || 'Diesel record cancelled successfully.', timer:1200, showConfirmButton:false }).then(() => location.reload());
+                } else {
+                    Swal.fire("Error", out.message || "Cancel failed.", "error");
+                }
             } catch(e) { Swal.fire("Error", "Execution drop fault", "error"); }
         }
     }
 
     function executeExcelExport() { window.location.href = `${API_BASE}/export/excel`; }
 </script>
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

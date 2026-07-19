@@ -81,12 +81,14 @@ def calculate_batch_holding_cost(db: Session, batch_no: str, comp_code: str, tar
 # ------------------------------------------------------------
 # 1. MAIN REPORT PAGE (GET) - WITH UNIVERSAL FILTERS LAYER
 # ------------------------------------------------------------
+@router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 async def cold_storage_report_page(
     request: Request,
     db: Session = Depends(get_db),
     from_date: str = "",
-    to_date: str = ""
+    to_date: str = "",
+    format: str = ""
 ):
     # 🟢 FETCH ACTIVE UNIVERSAL FILTERS FROM CONTEXT LAYER
     production_for, location = get_global_filters(request)
@@ -156,24 +158,109 @@ async def cold_storage_report_page(
         return [getattr(x, attr) for x in db.query(model).filter(model.company_id == comp_code).all()]
 
     c_info = db.query(Company).filter(Company.company_code == comp_code).first()
+    company_name = c_info.company_name if c_info else (request.session.get("company_name") or "")
     
+    is_json = format == "json" or request.query_params.get("format") == "json"
+
+    if is_json:
+        from fastapi.responses import JSONResponse
+        import datetime as dt_mod
+        def row_to_dict_cs(r):
+            result = {}
+            for col in r.__table__.columns:
+                val = getattr(r, col.name)
+                if isinstance(val, (dt_mod.datetime, dt_mod.date)):
+                    val = val.isoformat()
+                elif isinstance(val, dt_mod.time):
+                    val = val.strftime("%H:%M")
+                result[col.name] = val
+            # computed fields
+            result["product_kg_value"] = getattr(r, "product_kg_value", 0.0)
+            result["inventory_value"] = getattr(r, "inventory_value", 0.0)
+            result["holding_cost"] = getattr(r, "holding_cost", 0.0)
+            result["other_charges"] = getattr(r, "other_charges", 0.0)
+            result["total_payable"] = getattr(r, "total_payable", 0.0)
+            return result
+        # Build combo_rows (batch-level aggregated summary for the React summary tab)
+        from collections import defaultdict
+        combo_map = defaultdict(lambda: {
+            "batch_number": "", "cold_storage_name": "", "species": "",
+            "variety": "", "grade": "", "glaze": "", "freezer": "", "production_for": "",
+            "in_mc": 0.0, "out_mc": 0.0, "balance_mc": 0.0,
+            "in_qty": 0.0, "out_qty": 0.0, "balance_qty": 0.0,
+            "inv_value_balance": 0.0, "holding_cost": 0.0,
+            "other_charges": 0.0, "total_payable": 0.0,
+            "status": "HOLDING", "payment_status": "",
+        })
+        for r in rows:
+            key = (
+                getattr(r, "batch_number", ""),
+                getattr(r, "cold_storage_name", ""),
+                getattr(r, "species", ""),
+                getattr(r, "variety", ""),
+                getattr(r, "grade", ""),
+                getattr(r, "glaze", ""),
+                getattr(r, "freezer", ""),
+            )
+            entry = combo_map[key]
+            entry["batch_number"] = getattr(r, "batch_number", "")
+            entry["cold_storage_name"] = getattr(r, "cold_storage_name", "")
+            entry["species"] = getattr(r, "species", "")
+            entry["variety"] = getattr(r, "variety", "")
+            entry["grade"] = getattr(r, "grade", "")
+            entry["glaze"] = getattr(r, "glaze", "")
+            entry["freezer"] = getattr(r, "freezer", "")
+            entry["production_for"] = getattr(r, "production_for", "")
+            mc = float(getattr(r, "no_of_mc", 0) or 0)
+            qty = float(getattr(r, "quantity", 0) or 0)
+            mv_type = str(getattr(r, "cargo_movement_type", "IN") or "IN").upper()
+            if mv_type == "IN":
+                entry["in_mc"] = round(entry["in_mc"] + mc, 2)
+                entry["in_qty"] = round(entry["in_qty"] + qty, 2)
+                entry["inv_value_balance"] = round(entry["inv_value_balance"] + getattr(r, "inventory_value", 0.0), 2)
+            else:
+                entry["out_mc"] = round(entry["out_mc"] + mc, 2)
+                entry["out_qty"] = round(entry["out_qty"] + qty, 2)
+            entry["holding_cost"] = round(entry["holding_cost"] + getattr(r, "holding_cost", 0.0), 2)
+            entry["other_charges"] = round(entry["other_charges"] + getattr(r, "other_charges", 0.0), 2)
+            entry["total_payable"] = round(entry["total_payable"] + getattr(r, "total_payable", 0.0), 2)
+            entry["status"] = getattr(r, "status", "HOLDING") or "HOLDING"
+            entry["payment_status"] = getattr(r, "payment_status", "") or ""
+
+        for entry in combo_map.values():
+            entry["balance_mc"] = round(entry["in_mc"] - entry["out_mc"], 2)
+            entry["balance_qty"] = round(entry["in_qty"] - entry["out_qty"], 2)
+
+        combo_rows = list(combo_map.values())
+
+        return JSONResponse({
+            "rows": [row_to_dict_cs(r) for r in rows],
+            "combo_rows": combo_rows,
+            "company_name": company_name,
+            "from_date": from_date,
+            "to_date": to_date,
+            "selected_production_for": production_for,
+            "selected_location": location,
+        })
+
+
     context = {
         "request": request, 
         "rows": rows, 
         "from_date": from_date, 
         "to_date": to_date,
-        "selected_production_for": production_for, # 🟢 Passed for dropdown memory lock
-        "selected_location": location,             # 🟢 Passed for dropdown memory lock
+        "selected_production_for": production_for,
+        "selected_location": location,
         "species_list": get_list(species_model, "species_name"),
         "brands_list": get_list(brands, "brand_name"),
         "varieties_list": get_list(varieties, "variety_name"),
         "grades_list": get_list(grades, "grade_name"),
         "packing_styles_list": get_list(packing_styles, "packing_style"),
-        "company_name": c_info.company_name if c_info else "BKNR ERP",
+        "company_name": company_name,
         "role": role
     }
     
-    return request.app.state.templates.TemplateResponse(
+    return templates.TemplateResponse(
         request=request, 
         name="inventory_management/cold_storage_report.html", 
         context=context

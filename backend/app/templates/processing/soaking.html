@@ -22,8 +22,8 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="/static/js/bknr-charts.js"></script>
 
-<link rel="stylesheet" href="/static/css/global-loader.css">
-<link rel="stylesheet" href="/static/css/bknr-standard.css">
+<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
@@ -363,7 +363,7 @@ tr.selected-row { background: var(--processing-bg) !important; }
             </div>
             <div style="margin-top:20px; display:flex; gap:10px; justify-content:flex-end;">
                 <button type="button" class="btn-add" style="background:var(--text-muted); flex: 1;" onclick="closeModal()">Cancel</button>
-                <button type="submit" class="btn-add" style="flex: 1;" id="submitBtn">Save Entry</button>
+                <button type="submit" class="btn-add" style="flex: 1;" id="submitBtn">Save</button>
             </div>
         </form>
     </div>
@@ -469,9 +469,10 @@ function renderMainTable(filteredData) {
         let items = groups[company];
         let sQty = 0, sC = 0, sS = 0, sR = 0;
         items.forEach(item => {
+            const sign = item.status === 'Cancelled' ? -1 : 1;
             let cq = (item.qty * item.chem_p / 100);
             let sq = (item.qty * item.salt_p / 100);
-            sQty += item.qty; sC += cq; sS += sq; sR += item.rej;
+            sQty += sign * item.qty; sC += sign * cq; sS += sign * sq; sR += sign * item.rej;
 
             tableHtml += `
                 <tr class="${selectedRowId == item.id ? 'selected-row' : ''} ${item.status === 'Cancelled' ? 'cancelled-row' : ''}" onclick="selectRow(this, '${item.id}')">
@@ -528,11 +529,11 @@ function buildFloorHierarchy(filteredFloorItems, filteredRejections) {
 function buildTodaySummary(filteredToday) {
     let tree = {};
     filteredToday.forEach(d => {
-        if (d.status === 'Cancelled') return;
-        if(d.qty > 0) addToTree(tree, d.comp, d.loc, d.batch, d.var, d.spec, d.cnt, d.qty);
+        const sign = d.status === 'Cancelled' ? -1 : 1;
+        if(d.qty > 0) addToTree(tree, d.comp, d.loc, d.batch, d.var, d.spec, d.cnt, sign * d.qty);
         if(d.rej > 0) {
             let displayVar = d.rej_for ? `${d.var} → ${d.rej_for}` : `${d.var} (Rej)`;
-            addToTree(tree, d.comp, d.loc, d.batch, displayVar, d.spec, d.cnt, -d.rej);
+            addToTree(tree, d.comp, d.loc, d.batch, displayVar, d.spec, d.cnt, sign * -d.rej);
         }
     });
     renderHierarchy(tree, 'todaySummaryBody', 'sum');
@@ -947,13 +948,13 @@ async function proceedSoakingSave() {
         }
     } catch (error) {
         document.getElementById('inlineConfirmPanel').style.display = 'none';
-        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Yes, Save It!'; }
-        if (btn) { btn.disabled = false; btn.innerHTML = 'Save Entry'; }
+        if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Save'; }
+        if (btn) { btn.disabled = false; btn.innerHTML = 'Save'; }
         Swal.fire('Error', error.message || 'Connection failed.', 'error');
     }
 }
 </script>
 
-<script src="/static/js/global-loader.js"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

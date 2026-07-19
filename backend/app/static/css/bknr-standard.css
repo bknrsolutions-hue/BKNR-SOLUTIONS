@@ -6,6 +6,8 @@
 /* ==========================================================
    1. THEME VARIABLES (DARK DEFAULT, LIGHT OVERRIDE)
 ========================================================== */
+@import url('/static/css/premium-kpi.css?v=3');
+
 :root {
     /* DEFAULT: DARK MODE */
     --primary: #3b82f6;
@@ -194,6 +196,71 @@ option {
     color: var(--text) !important;
 }
 
+/* Universal loading state: legacy pages still inject FontAwesome/SweetAlert
+   spinners, so render those as compact skeleton shimmer blocks. */
+.bknr-inline-skeleton,
+html body i.fa-solid.fa-spinner.fa-spin,
+html body i.fa-solid.fa-circle-notch.fa-spin,
+html body i.fa-spinner.fa-spin,
+html body i.fa-circle-notch.fa-spin,
+html body .swal2-loader,
+.fa-spinner.fa-spin,
+.fa-circle-notch.fa-spin,
+.swal2-loader {
+    position: relative !important;
+    display: inline-block !important;
+    width: 38px !important;
+    height: 8px !important;
+    min-width: 38px !important;
+    min-height: 8px !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--loader-skeleton-base, var(--border)) !important;
+    color: transparent !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    animation: none !important;
+    vertical-align: middle !important;
+}
+
+html body .swal2-loader,
+.swal2-loader {
+    width: 74px !important;
+    height: 10px !important;
+    min-width: 74px !important;
+    min-height: 10px !important;
+}
+
+.bknr-inline-skeleton::before,
+html body i.fa-spinner.fa-spin::before,
+html body i.fa-circle-notch.fa-spin::before,
+.fa-spinner.fa-spin::before,
+.fa-circle-notch.fa-spin::before {
+    content: "" !important;
+}
+
+.bknr-inline-skeleton::after,
+html body i.fa-spinner.fa-spin::after,
+html body i.fa-circle-notch.fa-spin::after,
+html body .swal2-loader::after,
+.fa-spinner.fa-spin::after,
+.fa-circle-notch.fa-spin::after,
+.swal2-loader::after {
+    content: "" !important;
+    position: absolute !important;
+    inset: 0 !important;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, var(--loader-skeleton-shine, var(--header-bg)), transparent);
+    animation: bknrSkeletonShimmer 1.15s ease-in-out infinite;
+}
+
+@keyframes bknrSkeletonShimmer {
+    to {
+        transform: translateX(100%);
+    }
+}
+
 /* Links & Buttons Enforcer */
 a { color: var(--accent) !important; }
 
@@ -237,28 +304,72 @@ button, .btn {
     letter-spacing: .5px;
 }
 
-/* Filters & Inputs Setup */
+/* ===== FILTERS & INPUTS SETUP — GLOBAL COMPACT STANDARD ===== */
+.filters {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    gap: 8px !important;
+    padding: 6px 10px !important;
+    background: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border) !important;
+    border-radius: 0 !important;
+    align-items: flex-end !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+.filters::-webkit-scrollbar { height: 3px; }
+.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+.fbox {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 2px !important;
+    flex-shrink: 0 !important;
+    min-width: 110px !important;
+    max-width: 200px !important;
+}
+
 .fbox label {
     font-size: 8px !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
-    color: var(--text-muted);
+    letter-spacing: 0.4px !important;
+    color: var(--text-muted) !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
-.fbox select, .fbox input, #searchBox {
-    height: 28px !important;
-    min-height: 28px !important;
+.fbox select, .fbox input[type="date"], .fbox input[type="text"],
+.fbox input[type="number"], .fbox input[type="month"], #searchBox {
+    height: 26px !important;
+    min-height: 26px !important;
+    max-height: 26px !important;
     font-size: 10px !important;
-    border-radius: 4px;
-    padding: 0 6px;
+    font-weight: 550 !important;
+    border-radius: 4px !important;
+    padding: 0 6px !important;
+    border: 1px solid var(--border) !important;
+    background: var(--bg) !important;
+    color: var(--text) !important;
+    outline: none !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.fbox select:focus, .fbox input:focus, #searchBox:focus {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 2px rgba(59,130,246,0.12) !important;
 }
 
 .fbox textarea {
-    min-height: 60px !important;
+    min-height: 54px !important;
     font-size: 10px !important;
-    border-radius: 4px;
-    padding: 6px !important;
-    resize: vertical;
+    border-radius: 4px !important;
+    padding: 4px 6px !important;
+    resize: vertical !important;
+    border: 1px solid var(--border) !important;
 }
 
 /* Table Wrapper [🟢 SYNTAX FIXED BY GEMINI] */
@@ -270,11 +381,11 @@ button, .btn {
 .section { border-radius: 8px; overflow: hidden; border: 1px solid var(--border); }
 table { width: 100%; border-collapse: collapse; table-layout: auto; }
 
-/* Table Structure */
+/* ===== TABLE STRUCTURE — GLOBAL STANDARD (header 11px, data 12px) ===== */
 thead th {
-    height: 36px !important;
-    min-height: 36px !important;
-    font-size: 9px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 11px !important;
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: .3px;
@@ -288,11 +399,11 @@ thead th {
 }
 
 tbody td {
-    height: 32px !important;
-    min-height: 32px !important;
-    font-size: 10px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    font-size: 12px !important;
     font-weight: 500;
-    padding: 4px 6px;
+    padding: 3px 6px;
     text-align: center;
     vertical-align: middle;
     white-space: nowrap;
@@ -301,9 +412,9 @@ tbody td {
 }
 
 tfoot td {
-    height: 36px !important;
-    min-height: 36px !important;
-    font-size: 9px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    font-size: 11px !important;
     font-weight: 800;
     padding: 4px 6px;
     text-align: center;
@@ -854,28 +965,28 @@ html[data-theme="dark"] hr {
 table, .main-table, .rm-table, #dataTable, .summary-table {
     width: 100% !important;
     border-collapse: collapse !important;
-    font-size: 11px !important;
-    table-layout: auto !important;
+    font-size: 12px !important;
+    table-layout: auto;
 }
 
 table th, .main-table th, .rm-table th, #dataTable th, .summary-table th {
     background: var(--header-bg) !important;
-    padding: 10px 8px !important;
+    padding: 6px 8px !important;
     border-bottom: 2px solid var(--border) !important;
     color: var(--text-muted) !important;
     font-weight: 800 !important;
     text-transform: uppercase !important;
-    font-size: 9px !important;
-    letter-spacing: 0.5px !important;
+    font-size: 11px !important;
+    letter-spacing: 0.3px !important;
     text-align: center !important;
 }
 
 table td, .main-table td, .rm-table td, #dataTable td, .summary-table td {
-    padding: 10px 8px !important;
+    padding: 5px 8px !important;
     border-bottom: 1px solid var(--border) !important;
     color: var(--text) !important;
-    font-weight: 600 !important;
-    font-size: 11px !important;
+    font-weight: 500 !important;
+    font-size: 12px !important;
     text-align: center !important;
 }
 
@@ -926,9 +1037,9 @@ table tbody tr.selected, table tbody tr.selected-row, #dataTable tbody tr.select
     margin-bottom: 2px !important;
 }
 
-.field input, .field select, .field textarea,
-input, select, textarea {
-    padding: 8px 12px !important;
+/* Form fields inside .field containers get taller comfortable inputs */
+.field input, .field select, .field textarea {
+    padding: 6px 10px !important;
     border-radius: 6px !important;
     border: 1px solid var(--border) !important;
     font-size: 11px !important;
@@ -1226,4 +1337,355 @@ html[data-theme="light"] .total-row td {
     font-weight: 800 !important;
     border-top: 1.5px solid #3b82f6 !important;
     border-bottom: 2.5px double #3b82f6 !important;
+}
+
+/* ==========================================================
+   12. DROPDOWN / FILTER TEXT ALIGNMENT
+   Keeps select text vertically centered across compact filters.
+   ========================================================== */
+@media screen {
+    select,
+    .fbox select,
+    .filters select,
+    .filter-bar select,
+    .filter-item select,
+    .field select,
+    select.form-control,
+    .searchable-select {
+        min-height: 34px !important;
+        height: 34px !important;
+        line-height: 32px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 10px !important;
+        padding-right: 28px !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+
+    .fbox select,
+    .filters select,
+    .filter-bar select,
+    .filter-item select {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+    }
+
+    select option {
+        font-size: 12px;
+        line-height: 1.45;
+    }
+
+    .choices__inner,
+    .dropdown-display-box {
+        min-height: 34px !important;
+        height: 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        line-height: 1.2 !important;
+    }
+
+    .choices__list--single {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        line-height: 32px !important;
+    }
+
+    tbody td select,
+    table td select,
+    .main-table td select,
+    .data-table td select,
+    .rm-table td select,
+    #dataTable td select {
+        max-width: 100% !important;
+        min-height: 28px !important;
+        height: 28px !important;
+        line-height: 26px !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        padding-left: 6px !important;
+        padding-right: 24px !important;
+        margin: 0 auto !important;
+        vertical-align: middle !important;
+        font-size: 10px !important;
+        box-sizing: border-box !important;
+    }
+}
+/* Application headers show only the page title and actions. */
+.header-titles > p,
+.header-title > p,
+.report-header > div:first-child > p,
+.dashboard-header > div:first-child > p,
+.page-header > div:first-child > p {
+    display: none !important;
+}
+
+/* SAP Fiori Morning Horizon-inspired global screen baseline. */
+@media screen {
+  :root:not([data-theme="dark"]),
+  :root[data-theme="light"] {
+    --primary: var(--ui-accent, #0070f2);
+    --accent: var(--ui-accent, #0070f2);
+    --focus-ring: rgb(0 112 242 / 25%);
+    --bg: #f5f6f7;
+    --card-bg: #ffffff;
+    --header-bg: #eef0f2;
+    --row-even: #fafafa;
+    --row-hover: #eaf3fc;
+    --border: #d5dadd;
+    --table-line: #e5e8ea;
+    --text: #1d2d3e;
+    --text-muted: #475e75;
+    --surface-panel: #ffffff !important;
+    --bg-app: #f5f6f7 !important;
+    --text-primary: #1d2d3e !important;
+    --text-secondary: #475e75 !important;
+    --border-light: #d5dadd !important;
+  }
+
+  html,
+  body,
+  button,
+  input,
+  select,
+  textarea,
+  table {
+    font-family: "72", "72full", Arial, Helvetica, sans-serif !important;
+  }
+
+  body { font-size: 14px !important; line-height: 1.4 !important; }
+  .header-title h1, .header-title h2, .header h1, .header > div > h2, .header-dash h2 { font-size: 20px !important; font-weight: 700 !important; }
+  .section-header, .section-head, .panel-header h3, .chart-title, .panel-title, .panel-head, .table-title { font-size: 14px !important; font-weight: 700 !important; letter-spacing: 0 !important; }
+  label, .field label, .label, .strip-label, .card-meta .label, .kpi-title, .kpi-card h4, .ref-kpi-meta { font-size: 12px !important; font-weight: 600 !important; letter-spacing: 0 !important; }
+  .subtitle, .helper-text, .meta, small { font-size: 12px !important; color: var(--text-muted) !important; }
+  input, select, textarea, button, .btn, .form-control { font-size: 13px !important; }
+  .kpi-value, .kpi-card .value, .card-meta .value, .ref-kpi-value, .strip-value { font-family: "72", "72full", Arial, Helvetica, sans-serif !important; font-size: 16px !important; font-weight: 700 !important; }
+  .card, .kpi-card, .ref-kpi-card, .att-scroll-card, .section, .panel, .chart-box, .table-wrap, .corp-panel { border-radius: 8px !important; box-shadow: 0 1px 2px rgb(34 53 72 / 10%) !important; }
+}
+
+/* Final screen-table contract.
+   It is deliberately last so older page generations cannot override the
+   register grid. Print, invoice, signature and drill-down tables opt out. */
+@media screen {
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: auto !important;
+    border-color: var(--table-line, var(--border, #d5dadd)) !important;
+    border-radius: 6px !important;
+    background: var(--card-bg, #fff) !important;
+    box-shadow: none !important;
+    scrollbar-gutter: stable;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ),
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) {
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    border: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: auto;
+    color: var(--text, #1d2d3e) !important;
+    background: var(--card-bg, #fff) !important;
+    font-size: var(--erp-table-text-size, 10px) !important;
+    text-align: center;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ) > thead > tr > th,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) > thead > tr > th {
+    height: var(--erp-table-header-height, 30px) !important;
+    min-height: var(--erp-table-header-height, 30px) !important;
+    padding: 0 var(--erp-table-cell-padding-x, 10px) !important;
+    border-right: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-bottom: 2px solid color-mix(in srgb, var(--accent, #2563eb) 32%, var(--table-line, #d5dadd)) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 9%, var(--card-bg, #fff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-size: var(--erp-table-heading-size, 9px) !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: .3px !important;
+    text-align: center !important;
+    text-transform: uppercase !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ) > tbody > tr > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) > tbody > tr > td {
+    height: var(--erp-table-row-height, 30px) !important;
+    min-height: var(--erp-table-row-height, 30px) !important;
+    padding: 4px var(--erp-table-cell-padding-x, 10px) !important;
+    border-right: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-bottom: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-size: var(--erp-table-text-size, 10px) !important;
+    font-weight: 400 !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > :is(thead, tbody, tfoot) > tr > :is(th, td):last-child {
+    border-right: 0 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table :is(
+    .text-left,
+    .cell-text,
+    .cell-description,
+    .cell-address,
+    .description,
+    .wrap-text
+  ) {
+    text-align: left !important;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table :is(.text-right, .cell-number, .num) {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr[class*="subtotal"] > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr:is(
+    .subtotal,
+    .batch-subtotal,
+    .row-batch-total,
+    .main-subtotal-row,
+    .sum-total-row
+  ) > td {
+    border-top: 1px solid var(--accent, #2563eb) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 7%, var(--card-bg, #fff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr:is(
+    .company-row,
+    .location-row,
+    .row-location,
+    .group-row,
+    .sub-group-row,
+    .row-date-group,
+    .factory-row
+  ) > td {
+    background: color-mix(in srgb, var(--accent, #2563eb) 5%, var(--card-bg, #fff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tfoot > tr > :is(th, td),
+  html body:not(.erp-print):not(.erp-pending-orders) table > :is(tbody, tfoot) > tr[class*="grand-total"] > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table > :is(tbody, tfoot) > tr:is(
+    .grand-total,
+    .total-row,
+    .total,
+    .is-grand
+  ) > td {
+    border-top: 2px solid var(--accent, #2563eb) !important;
+    border-bottom: 2px solid var(--accent, #2563eb) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 13%, var(--card-bg, #fff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
 }

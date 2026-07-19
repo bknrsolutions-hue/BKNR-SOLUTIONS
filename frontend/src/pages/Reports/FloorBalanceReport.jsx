@@ -4,18 +4,18 @@
 import React, { useState } from 'react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect,
-  KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
+  Loader, ErrorBox, SearchInput, EmptyRow,
   useReport, fmt
 } from './ReportShell';
 
-export default function FloorBalanceReport({ activeRoute }) {
+export default function FloorBalanceReport({ activeRoute, params = {}, hideSnapshotStatus = false }) {
   const [search, setSearch] = useState('');
   const [locationFilter, setLocationFilter] = useState('');
   const [sourceFilter, setSourceFilter] = useState('');
   const [prodFilter, setProdFilter] = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('');
 
-  const { data, loading, error, reload } = useReport({ url: activeRoute });
+  const { data, loading, error, reload } = useReport({ url: activeRoute, params });
 
   const rawRows = data?.rows_batch || [];
 
@@ -44,7 +44,7 @@ export default function FloorBalanceReport({ activeRoute }) {
   // Grouping logic for rendering
   const renderGroupedRows = () => {
     if (filteredRows.length === 0) {
-      return <EmptyRow cols={8} />;
+      return <EmptyRow cols={9} />;
     }
 
     const groups = {}; // location -> batch -> rows
@@ -63,7 +63,7 @@ export default function FloorBalanceReport({ activeRoute }) {
     sortedLocs.forEach(loc => {
       trs.push(
         <tr key={`loc-${loc}`} className="row-location" style={{ background: 'rgba(71,85,105,0.08)', fontWeight: 800 }}>
-          <td colSpan={8} style={{ textAlign: 'left', fontWeight: 800, paddingLeft: '12px', textTransform: 'uppercase' }}>
+          <td colSpan={9} style={{ textAlign: 'left', fontWeight: 800, paddingLeft: '12px', textTransform: 'uppercase' }}>
             📍 {loc}
           </td>
         </tr>
@@ -79,6 +79,8 @@ export default function FloorBalanceReport({ activeRoute }) {
           trs.push(
             <tr key={`row-${loc}-${batch}-${idx}`} className="data-row">
               <td className="text-center">{sl++}</td>
+              <td className="text-left">{loc}</td>
+              <td className="text-left">{row.production_for}</td>
               <td className="text-left" style={{ color: 'var(--accent)', fontWeight: 700 }}>{batch}</td>
               <td className="text-center">
                 <span className="badge" style={{
@@ -90,10 +92,9 @@ export default function FloorBalanceReport({ activeRoute }) {
                   border: '1px solid var(--border)'
                 }}>{row.source}</span>
               </td>
+              <td className="text-center" style={{ color: 'var(--text-secondary)' }}>{row.species}</td>
               <td className="text-left">{row.variety}</td>
               <td className="text-center">{row.count}</td>
-              <td className="text-center" style={{ color: 'var(--text-secondary)' }}>{row.species}</td>
-              <td className="text-left">{row.production_for}</td>
               <td className="text-right" style={{ fontWeight: 700 }}>{fmt.number(row.available_qty)}</td>
             </tr>
           );
@@ -101,7 +102,7 @@ export default function FloorBalanceReport({ activeRoute }) {
 
         trs.push(
           <tr key={`sub-${loc}-${batch}`} className="row-batch-total" style={{ background: 'rgba(148,163,184,0.04)', fontWeight: 700 }}>
-            <td colSpan={7} className="subtotal-label" style={{ textAlign: 'right', paddingRight: '12px', color: 'var(--text-secondary)' }}>
+            <td colSpan={8} className="subtotal-label" style={{ textAlign: 'right', paddingRight: '12px', color: 'var(--text-secondary)' }}>
               Batch [{batch}] Total:
             </td>
             <td className="qty-bold text-right" style={{ fontWeight: 800, color: 'var(--text-main)' }}>
@@ -119,7 +120,9 @@ export default function FloorBalanceReport({ activeRoute }) {
     <div className="report-viewer-card">
       <ReportHeader
         title="Floor Balance Stock Register"
-        subtitle={`${filteredRows.length} items loaded`}
+        subtitle={hideSnapshotStatus
+          ? undefined
+          : `${filteredRows.length} items loaded${data?.actual_snapshot_date ? ` — 9 AM snapshot: ${data.actual_snapshot_date}` : ''}`}
         loading={loading}
         onReload={reload}
       />
@@ -170,22 +173,18 @@ export default function FloorBalanceReport({ activeRoute }) {
 
       {!loading && !error && (
         <>
-          <KPIGrid>
-            <KPICard label="Total SKUs" value={filteredRows.length} accent="var(--corp-dash)" />
-            <KPICard label="Total Balance (Kg)" value={fmt.number(grandTotalQty)} accent="var(--corp-ops)" />
-          </KPIGrid>
-          
           <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
             <table className="bknr-table" style={{ width: '100%' }}>
               <thead>
                 <tr>
                   <th style={{ width: 45 }}>#</th>
+                  <th style={{ width: 130 }}>Location</th>
+                  <th style={{ width: 150 }}>Production For</th>
                   <th style={{ width: 120 }}>Batch</th>
                   <th style={{ width: 100 }}>Src</th>
+                  <th style={{ width: 100 }}>Spec</th>
                   <th>Variety Description</th>
                   <th style={{ width: 100 }}>Count</th>
-                  <th style={{ width: 100 }}>Spec</th>
-                  <th style={{ width: 150 }}>Prod For</th>
                   <th style={{ width: 120 }} className="text-right">Avail (KG)</th>
                 </tr>
               </thead>
@@ -194,7 +193,7 @@ export default function FloorBalanceReport({ activeRoute }) {
               </tbody>
               <tfoot>
                 <tr style={{ fontWeight: 800 }}>
-                  <td colSpan={7} style={{ textAlign: 'right', paddingRight: '12px' }}>GRAND NET BALANCE:</td>
+                  <td colSpan={8} style={{ textAlign: 'right', paddingRight: '12px' }}>GRAND NET BALANCE:</td>
                   <td className="text-right" style={{ color: 'var(--accent)', fontWeight: 800 }}>
                     {fmt.number(grandTotalQty)} KG
                   </td>
@@ -207,4 +206,3 @@ export default function FloorBalanceReport({ activeRoute }) {
     </div>
   );
 }
-

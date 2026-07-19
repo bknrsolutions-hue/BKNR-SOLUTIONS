@@ -4,7 +4,7 @@ from app.database.models.processing import (
     RawMaterialPurchasing, Grading, DeHeading, Peeling, Soaking
 )
 from app.database.models.reprocess import Reprocess 
-from app.database.models.floor_balance import FloorBalance
+from app.database.models.floor_balance import FloorBalance, FloorBalanceSnapshot
 
 
 def get_live_floor_balance_rows(
@@ -71,6 +71,75 @@ def get_live_floor_balance_rows(
         }
         for row in rows
     ]
+
+
+def get_floor_balance_snapshot_rows(
+    db: Session,
+    company_id: str,
+    snapshot_date,
+    production_for: str | None = None,
+    location: str | None = None,
+    allowed_locations: list[str] | None = None,
+) -> tuple[list[dict], object | None]:
+    """Return the selected date's 9 AM snapshot, falling back to the latest
+    earlier snapshot when that day's scheduler run is unavailable.
+    """
+    base = db.query(FloorBalanceSnapshot).filter(
+        FloorBalanceSnapshot.company_id == company_id
+    )
+
+    if production_for:
+        base = base.filter(
+            func.upper(func.trim(FloorBalanceSnapshot.production_for))
+            == str(production_for).strip().upper()
+        )
+    if location:
+        base = base.filter(
+            func.upper(func.trim(FloorBalanceSnapshot.location))
+            == str(location).strip().upper()
+        )
+    elif allowed_locations:
+        clean_locations = [
+            str(value).strip().upper()
+            for value in allowed_locations
+            if str(value).strip()
+        ]
+        if clean_locations:
+            base = base.filter(
+                func.upper(func.trim(FloorBalanceSnapshot.location)).in_(clean_locations)
+            )
+
+    actual_date = base.with_entities(func.max(FloorBalanceSnapshot.snapshot_date)).filter(
+        FloorBalanceSnapshot.snapshot_date <= snapshot_date
+    ).scalar()
+    if actual_date is None:
+        return [], None
+
+    rows = base.filter(
+        FloorBalanceSnapshot.snapshot_date == actual_date,
+        FloorBalanceSnapshot.opening_qty > 0.01,
+    ).order_by(
+        FloorBalanceSnapshot.location,
+        FloorBalanceSnapshot.production_for,
+        FloorBalanceSnapshot.batch_number,
+        FloorBalanceSnapshot.species,
+        FloorBalanceSnapshot.variety,
+        FloorBalanceSnapshot.count,
+    ).all()
+
+    return ([
+        {
+            "location": row.location or "Floor",
+            "production_for": row.production_for or "General Stock",
+            "batch": row.batch_number or "N/A",
+            "source": row.source_type or "RMP",
+            "species": row.species or "N/A",
+            "variety": row.variety or "N/A",
+            "count": row.count or "N/A",
+            "available_qty": round(float(row.opening_qty or 0), 2),
+        }
+        for row in rows
+    ], actual_date)
 
 # ============================================================================
 # 1. EXISTING ORIGINAL FUNCTION (TOUCH CHEYYADAM LEDU - NO CHANGES)

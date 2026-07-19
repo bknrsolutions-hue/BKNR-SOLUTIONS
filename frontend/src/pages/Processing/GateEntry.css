@@ -1,0 +1,46 @@
+.raw-gate-page {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 14px 16px 80px;
+  color: var(--text-primary);
+  background: var(--page-bg);
+}
+
+.raw-gate-page > .card {
+  margin: 0 !important;
+  padding: 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--surface-panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.raw-gate-page .form-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
+  max-width: 100%;
+}
+
+.raw-gate-page .form-group {
+  min-width: 0;
+}
+
+.raw-gate-page .form-control,
+.raw-gate-page .goods-search-dropdown > input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 700px) {
+  .raw-gate-page {
+    padding-inline: 9px;
+  }
+}
