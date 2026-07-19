@@ -1103,6 +1103,7 @@ router.dependencies.append(Depends(ensure_export_document_schema))
 
 
 def build_export_dashboard_context(db: Session, comp_code: str) -> dict:
+    ensure_bill_accounting_schema(db)
     active_shipments = db.query(ExportShipment).filter(
         ExportShipment.company_id == comp_code,
         ExportShipment.is_cancelled != True,
@@ -2741,6 +2742,7 @@ def proforma_invoice_entry(request: Request, db: Session = Depends(get_db)):
     comp_code = request.session.get("company_code")
     if not comp_code:
         return RedirectResponse("/", status_code=302)
+    ensure_bill_accounting_schema(db)
     history = db.query(ProformaInvoice).filter(
         ProformaInvoice.company_id == comp_code,
         ProformaInvoice.is_cancelled != True,
