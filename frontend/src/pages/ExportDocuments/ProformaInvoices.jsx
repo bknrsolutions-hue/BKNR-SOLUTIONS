@@ -201,81 +201,25 @@ export default function ProformaInvoices() {
           <button className="attendance-btn attendance-btn-secondary" onClick={() => secureDownload('/export_documents/proforma_invoice/register.xlsx', 'Proforma Invoice Register')}>
             <Download size={16} /> EXPORT
           </button>
-          <button className="attendance-btn attendance-btn-primary" onClick={openNew}>
-            <Plus size={16} /> NEW PROFORMA INVOICE
+          <button className="attendance-btn attendance-btn-primary" onClick={() => modalOpen ? setModalOpen(false) : openNew()}>
+            <Plus size={16} /> {modalOpen ? 'HIDE FORM' : 'NEW PROFORMA INVOICE'}
           </button>
         </div>
       </div>
 
-      {showAudit && <div className="attendance-table-container" style={{ marginBottom: 14 }}>
-        <div className="attendance-table-wrapper"><table className="attendance-table">
-          <thead><tr><th>Time</th><th>PI Record</th><th>Action</th><th>Previous</th><th>New Value</th><th>User</th></tr></thead>
-          <tbody>{auditLogs.map(log => <tr key={log.id} data-audit-record-id={log.record_id} onClick={() => { setShowAudit(false); window.setTimeout(() => window.openAuditRecord?.(log.record_id), 80); }} style={{ cursor: 'pointer' }}><td>{log.edited_at}</td><td>Row ID #{log.record_id}</td><td><strong>{log.action}</strong></td><td>{log.old_value || '—'}</td><td>{log.new_value || '—'}</td><td>{log.edited_by || '—'}</td></tr>)}
-          {!auditLogs.length && <tr><td colSpan="6" className="attendance-empty">No audit activity yet.</td></tr>}</tbody>
-        </table></div>
-      </div>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(110px, 1fr))', gap: 10, marginBottom: 14 }}>
-        {['ALL', ...statuses].map(status => (
-          <button key={status} type="button" onClick={() => setStatusFilter(status)} className="attendance-btn attendance-btn-secondary"
-            style={{ justifyContent: 'space-between', borderColor: statusFilter === status ? 'var(--att-accent)' : undefined }}>
-            <span>{status === 'ALL' ? 'TOTAL' : status}</span><strong>{counts[status]}</strong>
-          </button>
-        ))}
-      </div>
-
-      <ExportSearchPanel
-        id="pi-search"
-        label="Search PI / Buyer / PO"
-        value={query}
-        onChange={setQuery}
-        count={filteredRows.length}
-        placeholder="PI number, buyer or PO…"
-      />
-
-      <div className="attendance-table-container">
-        <div className="attendance-table-wrapper">
-          <table className="attendance-table">
-            <thead><tr>
-              <th>PI No</th><th>PI Date</th><th>Buyer / Country</th><th>Buyer PO</th><th>Product</th>
-              <th style={{ textAlign: 'right' }}>Quantity</th><th style={{ textAlign: 'right' }}>Unit Price</th>
-              <th style={{ textAlign: 'right' }}>Total</th><th>Valid Until</th><th>Status</th><th>PI Record Approval</th><th style={{ textAlign: 'center' }}>Actions</th>
-            </tr></thead>
-            <tbody>
-              {filteredRows.map(row => (
-                <tr key={row.id} data-record-id={row.id}>
-                  <td style={{ fontWeight: 800, color: 'var(--att-accent)' }}>{row.pi_no}</td>
-                  <td>{row.pi_date}</td><td><strong>{row.buyer_name}</strong><br /><small>{row.country}</small></td>
-                  <td>{row.po_number || '—'}</td><td style={{ maxWidth: 220 }}>{row.product_description}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(row.quantity).toLocaleString()} {row.unit}</td>
-                  <td style={{ textAlign: 'right' }}>{Number(row.unit_price).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td style={{ textAlign: 'right', fontWeight: 800 }}>{row.currency} {Number(row.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td>{row.validity_date || '—'}</td><td><span className="attendance-status-badge">{row.status}</span></td>
-                  <td title={row.approval_remarks || ''}><span className="attendance-status-badge">{row.approval_status}</span></td>
-                  <td><div style={{ display: 'flex', justifyContent: 'center', gap: 4 }}>
-                    <button title="Edit" className="attendance-action-dots-btn" onClick={() => openEdit(row)}><Pencil size={14} /></button>
-                    <button title="Print" className="attendance-action-dots-btn" onClick={() => confirmAndOpen(`/export_documents/proforma_invoice/print/${row.id}`, `${row.pi_no} print view`)}><Printer size={14} /></button>
-                    <button title="Export PDF" className="attendance-action-dots-btn" onClick={() => confirmAndOpen(`/export_documents/proforma_invoice/pdf/${row.id}`, `${row.pi_no} PDF`)}><FileText size={14} /></button>
-                    {canApprove && row.approval_status !== 'APPROVED' && <button title="Approve" className="attendance-action-dots-btn" onClick={() => decideApproval(row, 'APPROVED')}>✓</button>}
-                    {canApprove && row.approval_status !== 'REJECTED' && <button title="Reject" className="attendance-action-dots-btn" onClick={() => decideApproval(row, 'REJECTED')}>✕</button>}
-                    <button title="Cancel" className="attendance-action-dots-btn" onClick={() => cancelRow(row)}><Ban size={14} /></button>
-                  </div></td>
-                </tr>
-              ))}
-              {!filteredRows.length && <tr><td colSpan="12" className="attendance-empty">No proforma invoices found.</td></tr>}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {modalOpen && <div className="attendance-modal-overlay">
-        <div className="attendance-modal-content pi-form-modal">
-          <div className="attendance-modal-header"><div><h2>{editingId ? 'Edit' : 'Create'} Proforma Invoice</h2>
-            <p>Complete buyer, trade, shipment and commercial value details.</p></div>
-            <button className="attendance-modal-close-btn" onClick={() => setModalOpen(false)}><X size={20} /></button>
+      {modalOpen && (
+        <section className="requirement-inline-form pi-inline-form" style={{ marginBottom: 16 }}>
+          <div className="requirement-inline-form-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h2>{editingId ? 'Edit' : 'Create'} Proforma Invoice</h2>
+              <p>Complete buyer, trade, shipment and commercial value details.</p>
+            </div>
+            <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => setModalOpen(false)}>
+              <X size={16} /> HIDE FORM
+            </button>
           </div>
           <form onSubmit={save}>
-            <div className="attendance-modal-body pi-form-body">
+            <div className="pi-form-body" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '10px 0' }}>
               <section className="pi-form-section">
                 <div className="pi-form-section-title"><FileText size={15} /><span>1. Document & Buyer Details</span></div>
                 <div className="pi-form-grid-organized">
@@ -330,14 +274,14 @@ export default function ProformaInvoices() {
                 </div>
               </section>
             </div>
-            <div className="attendance-modal-footer">
+            <div className="attendance-modal-footer" style={{ marginTop: 12, padding: '12px 0 0', borderTop: '1px solid var(--att-border)' }}>
               <div className="pi-footer-total"><span>Offer Value</span><strong>{form.currency} {total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div>
               <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => setModalOpen(false)}>CANCEL</button>
               <button type="submit" className="attendance-btn attendance-btn-primary" disabled={saving}>{saving ? 'SAVING...' : editingId ? 'UPDATE PI' : 'CREATE PI'}</button>
             </div>
           </form>
-        </div>
-      </div>}
+        </section>
+      )}
     </div>
   );
 }
