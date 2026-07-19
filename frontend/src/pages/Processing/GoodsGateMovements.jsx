@@ -400,14 +400,13 @@ export default function GoodsGateMovements() {
             </select>
           </Field>
           <Field label="Driver Name">
-            <select
-              className="form-control"
+            <SearchableDropdown
               value={form.driver_name}
-              onChange={e => updateForm('driver_name', e.target.value)}
-            >
-              <option value="">Select Driver</option>
-              {withCurrent(masters.drivers, form.driver_name).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
+              onChange={val => updateForm('driver_name', val)}
+              options={masters.drivers || []}
+              placeholder="Search or type driver name"
+              allowCustom={true}
+            />
           </Field>
           <Field label="Department">
             <select
