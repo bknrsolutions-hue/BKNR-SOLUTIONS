@@ -2,9 +2,7 @@ name: Daily Production Backup
 
 on:
   schedule:
-    # 00:00 IST = 18:30 UTC previous day
     - cron: "30 18 * * *"
-
   workflow_dispatch:
 
 permissions:
@@ -12,27 +10,24 @@ permissions:
 
 jobs:
   backup:
-    name: Create Daily Backup Tag
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout main branch
+      - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
           fetch-depth: 0
 
-      - name: Create dated backup tag
+      - name: Create daily backup tag
         env:
           TZ: Asia/Kolkata
         run: |
           BACKUP_DATE=$(date +'%Y-%m-%d')
           TAG="backup-${BACKUP_DATE}"
 
-          echo "Creating backup: $TAG"
-
           if git rev-parse "$TAG" >/dev/null 2>&1; then
-            echo "Backup tag $TAG already exists."
+            echo "$TAG already exists"
             exit 0
           fi
 
@@ -41,5 +36,3 @@ jobs:
 
           git tag -a "$TAG" -m "Automatic daily production backup - $BACKUP_DATE"
           git push origin "$TAG"
-
-          echo "Successfully created $TAG"
