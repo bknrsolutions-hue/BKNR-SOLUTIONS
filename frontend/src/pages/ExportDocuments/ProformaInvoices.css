@@ -1,13 +1,27 @@
 .pi-form-modal {
   width: min(1080px, calc(100vw - 28px));
   max-width: 1080px;
-  max-height: 94vh;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.pi-form-modal > form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .pi-form-body {
-  display: grid;
-  gap: 11px;
-  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto !important;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
 }
 
 .pi-form-section {
