@@ -46,10 +46,13 @@ Set a test user before running Locust:
 export BKNR_LOAD_COMPANY_ID="YOUR_COMPANY_ID"
 export BKNR_LOAD_EMAIL="user@example.com"
 export BKNR_LOAD_PASSWORD="password"
+export BKNR_LOAD_OTP="current synthetic test OTP"
 locust -f locustfile.py --host http://127.0.0.1:8000
 ```
 
-Without these env vars, the test only hits public/login/health endpoints.
+Without these env vars, the test only hits public/login/health endpoints. Use a
+synthetic staging account. The OTP is required because the real login contract
+is preserved; the load test does not bypass authentication.
 
 ## Headless quick test
 
@@ -68,6 +71,19 @@ locust -f locustfile.py \
 ```bash
 locust -f locustfile.py --host https://yourerp.onrender.com
 ```
+
+Standard profiles (each writes CSV files with request count, RPS, average,
+p95/p99 and failure rate):
+
+```bash
+locust -f locustfile.py --host "$SVBK_PERF_BASE_URL" --headless -u 10  -r 2  -t 2m --csv reports/svbk_10
+locust -f locustfile.py --host "$SVBK_PERF_BASE_URL" --headless -u 50  -r 5  -t 5m --csv reports/svbk_50
+locust -f locustfile.py --host "$SVBK_PERF_BASE_URL" --headless -u 100 -r 10 -t 8m --csv reports/svbk_100
+locust -f locustfile.py --host "$SVBK_PERF_BASE_URL" --headless -u 500 -r 25 -t 15m --csv reports/svbk_500
+```
+
+The 500-user profile is never part of normal CI. Run it only against an
+explicitly approved staging/performance environment.
 
 ## Heavy download endpoints
 

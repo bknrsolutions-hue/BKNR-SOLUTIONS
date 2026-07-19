@@ -7,6 +7,7 @@ from locust import HttpUser, between, events, task
 COMPANY_ID = os.getenv("BKNR_LOAD_COMPANY_ID", "").strip()
 EMAIL = os.getenv("BKNR_LOAD_EMAIL", "").strip()
 PASSWORD = os.getenv("BKNR_LOAD_PASSWORD", "").strip()
+OTP = os.getenv("BKNR_LOAD_OTP", "").strip()
 ENABLE_DOWNLOADS = os.getenv("BKNR_LOAD_DOWNLOADS", "0").strip().lower() in {"1", "true", "yes"}
 
 
@@ -85,7 +86,20 @@ class BKNRERPUser(HttpUser):
             name="POST /auth/login",
             catch_response=True,
         ) as response:
-            if response.status_code == 200:
+            payload = response.json() if response.status_code == 200 else {}
+            if response.status_code == 200 and payload.get("status") == "otp_required":
+                if not OTP:
+                    response.failure("OTP required; set BKNR_LOAD_OTP for a synthetic staging user")
+                    return
+                verification = self.client.post(
+                    "/auth/verify-login-otp",
+                    json={"company_id": COMPANY_ID, "email": EMAIL, "otp": OTP},
+                    name="POST /auth/verify-login-otp",
+                )
+                self.logged_in = verification.status_code == 200
+                if not self.logged_in:
+                    response.failure(f"OTP verification failed: {verification.status_code}")
+            elif response.status_code == 200 and payload.get("status") == "success":
                 self.logged_in = True
             else:
                 response.failure(f"login failed: {response.status_code} {response.text[:160]}")
