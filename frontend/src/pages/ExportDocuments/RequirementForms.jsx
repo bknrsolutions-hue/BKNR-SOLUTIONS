@@ -88,12 +88,21 @@ export default function RequirementForms() {
       })}
       {!filteredDocuments.length && <div className="attendance-empty requirement-card-empty">No matching document forms.</div>}
     </div>
-    {activeDocument ? <section id="requirement-active-form" className="requirement-active-form">
-      <div className="requirement-active-form-bar">
-        <div><small>OPEN DOCUMENT FORM</small><strong>{activeDocument.label}</strong></div>
-        <button type="button" onClick={() => setSelectedKind('')}><X size={15} /> Close</button>
+    {activeDocument ? (
+      <div className="attendance-modal-overlay" onClick={() => setSelectedKind('')}>
+        <div className="attendance-modal-content" style={{ maxWidth: '1100px', maxHeight: '92vh' }} onClick={e => e.stopPropagation()}>
+          <div className="attendance-modal-header">
+            <div>
+              <small style={{ fontSize: '9px', fontWeight: 800, color: 'var(--att-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>OPEN DOCUMENT FORM</small>
+              <h2 style={{ margin: 0, fontSize: '15px' }}>{activeDocument.label}</h2>
+            </div>
+            <button type="button" className="attendance-modal-close-btn" onClick={() => setSelectedKind('')}><X size={20} /></button>
+          </div>
+          <div className="attendance-modal-body" style={{ padding: '16px', overflowY: 'auto' }}>
+            <RequirementDocumentPage key={activeDocument.code} documentKind={activeDocument.code} embedded />
+          </div>
+        </div>
       </div>
-      <RequirementDocumentPage key={activeDocument.code} documentKind={activeDocument.code} embedded />
-    </section> : null}
+    ) : null}
   </div>;
 }

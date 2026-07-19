@@ -59,6 +59,7 @@ export default function GoodsGateMovements() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState(null);
   const [filters, setFilters] = useState({ movement_type: '', category: '', search: '' });
 
@@ -273,169 +274,191 @@ export default function GoodsGateMovements() {
             Security movement log only — no inventory or accounting posting.
           </p>
         </div>
-        <button 
-          type="button" 
-          className="btn btn-clear" 
-          style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-          onClick={load} 
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={() => setShowForm(true)} 
+          >
+            <Plus size={14} /> Add Goods Movement
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-clear" 
+            style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={load} 
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {message && <div className={`goods-message ${message.type}`}>{message.text}<button type="button" onClick={() => setMessage(null)}>×</button></div>}
 
-      <form className="card" onSubmit={submit} style={{ marginBottom: '30px', flexShrink: 0 }}>
-        <div className="goods-movement-toggle">
-          <button type="button" className={form.movement_type === 'IN' ? 'active in' : ''} onClick={() => updateForm('movement_type', 'IN')} disabled={Boolean(linked)}>
-            <ArrowDownToLine size={16} /> Goods IN
-          </button>
-          <button type="button" className={form.movement_type === 'OUT' ? 'active out' : ''} onClick={() => updateForm('movement_type', 'OUT')} disabled={Boolean(linked)}>
-            <ArrowUpFromLine size={16} /> Goods OUT
-          </button>
-        </div>
-
-        <div className="form-grid">
-          <Field label="Production For *">
-            <select
-              className="form-control"
-              value={form.production_for}
-              onChange={e => updateForm('production_for', e.target.value)}
-              required
-            >
-              <option value="">Select Company</option>
-              {withCurrent(masters.productionFor, form.production_for).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
-          <Field label="Plant Location *">
-            <select
-              className="form-control"
-              value={form.plant_location}
-              onChange={e => updateForm('plant_location', e.target.value)}
-              required
-            >
-              <option value="">Select Peeling At</option>
-              {withCurrent(masters.plants, form.plant_location).map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="Party / Vendor Name *">
-            <select
-              className="form-control"
-              value={form.party_name}
-              onChange={e => updateForm('party_name', e.target.value)}
-              required
-            >
-              <option value="">Select Party</option>
-              {withCurrent(masters.parties, form.party_name).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
-          <Field label={form.movement_type === 'IN' ? 'Source / From Location' : 'Destination / To Location'}>
-            <select
-              className="form-control"
-              value={form.source_destination}
-              onChange={e => updateForm('source_destination', e.target.value)}
-            >
-              <option value="">Select Location</option>
-              {withCurrent(masters.sourceLocations, form.source_destination).map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </Field>
-          <Field label="Purpose *">
-            <select
-              className="form-control"
-              value={form.purpose}
-              onChange={e => updateForm('purpose', e.target.value)}
-              required
-            >
-              <option value="">Select Purpose</option>
-              {withCurrent(masters.purposes, form.purpose).map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </Field>
-          <Field label={form.movement_type === 'IN' ? 'Received By' : 'Authorized By'}>
-            <select
-              className="form-control"
-              value={form.authorized_received_by}
-              onChange={e => updateForm('authorized_received_by', e.target.value)}
-            >
-              <option value="">Select Employee</option>
-              {withCurrent(masters.employees, form.authorized_received_by).map(e => <option key={e} value={e}>{e}</option>)}
-            </select>
-          </Field>
-          <Field label="PO Number"><input className="form-control" value={form.po_number} onChange={e => updateForm('po_number', e.target.value)} /></Field>
-          <Field label="Challan Number"><input className="form-control" value={form.challan_number} onChange={e => updateForm('challan_number', e.target.value)} /></Field>
-          <Field label="Invoice Number"><input className="form-control" value={form.invoice_number} onChange={e => updateForm('invoice_number', e.target.value)} /></Field>
-          <Field label="Vehicle Number">
-            <select
-              className="form-control"
-              value={form.vehicle_number}
-              onChange={e => updateForm('vehicle_number', e.target.value)}
-            >
-              <option value="">Select Vehicle</option>
-              {withCurrent(masters.vehicles, form.vehicle_number).map(v => <option key={v} value={v}>{v}</option>)}
-            </select>
-          </Field>
-          <Field label="Driver Name">
-            <select
-              className="form-control"
-              value={form.driver_name}
-              onChange={e => updateForm('driver_name', e.target.value)}
-            >
-              <option value="">Select Driver</option>
-              {withCurrent(masters.drivers, form.driver_name).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-          <Field label="Department">
-            <select
-              className="form-control"
-              value={form.department}
-              onChange={e => updateForm('department', e.target.value)}
-            >
-              <option value="">Select Department</option>
-              {withCurrent(masters.departments, form.department).map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </Field>
-          <Field label="Linked Return Movement">
-            <select className="form-control" value={form.linked_movement_id} onChange={e => chooseLinkedMovement(e.target.value)}>
-              <option value="">Not linked</option>
-              {returnables.map(row => <option key={row.id} value={row.id}>{row.movement_number} · {row.movement_type} · {row.party_name} · {row.return_status}</option>)}
-            </select>
-          </Field>
-          <label className="goods-check-field"><input type="checkbox" checked={form.is_returnable} onChange={e => updateForm('is_returnable', e.target.checked)} disabled={Boolean(linked)} /><span>Returnable movement</span></label>
-          {form.is_returnable && form.movement_type === 'OUT' && <Field label="Expected Return Date *"><input className="form-control" type="date" value={form.expected_return_date} onChange={e => updateForm('expected_return_date', e.target.value)} required /></Field>}
-          <Field label="Header Remarks"><input className="form-control" value={form.remarks} onChange={e => updateForm('remarks', e.target.value)} /></Field>
-        </div>
-
-        <div className="goods-items-head" style={{ marginTop: '13px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <strong style={{ color: 'var(--text-secondary)', fontSize: '8.5px', fontWeight: '850', letterSpacing: '.45px', textTransform: 'uppercase' }}>ITEM DETAILS</strong>
-            <br />
-            <small style={{ color: '#b45309', fontSize: '9px', fontWeight: '650' }}>Raw shrimp/RMP is not allowed in this tab.</small>
-          </div>
-          <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 'auto', height: '30px' }} onClick={() => setItems(current => [...current, emptyItem()])}><Plus size={14} /> Add Item</button>
-        </div>
-        <div className="goods-items">
-          {items.map((item, index) => (
-            <div className="goods-item-row" key={index}>
-              <span className="goods-item-index">{index + 1}</span>
-              <select className="form-control" value={item.item_category} onChange={e => updateItem(index, 'item_category', e.target.value)} required>
-                <option value="">Category *</option>
-                {categories.map(value => <option key={value} value={value}>{value}</option>)}
-              </select>
-              <input className="form-control" value={item.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="Item name *" required />
-              <input className="form-control" value={item.description} onChange={e => updateItem(index, 'description', e.target.value)} placeholder="Description" />
-              <input className="form-control" type="number" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} placeholder="Qty *" required />
-              <select className="form-control" value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} required>{units.map(value => <option key={value}>{value}</option>)}</select>
-              <input className="form-control" type="number" min="0" step="0.001" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="Packages" />
-              <input className="form-control" value={item.material_condition} onChange={e => updateItem(index, 'material_condition', e.target.value)} placeholder="Condition" />
-              <button type="button" className="goods-remove" onClick={() => setItems(current => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index))} disabled={items.length === 1}><Trash2 size={14} /></button>
+      {showForm && (
+        <div style={modalOverlayStyle} onClick={() => setShowForm(false)}>
+          <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '13px', fontWeight: '800', color: 'var(--corp-dash)' }}>
+                NON-RMP GOODS GATE MOVEMENT
+              </h3>
+              <button type="button" onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}>&times;</button>
             </div>
-          ))}
+            <form onSubmit={async e => { await submit(e); setShowForm(false); }}>
+              <div className="goods-movement-toggle">
+                <button type="button" className={form.movement_type === 'IN' ? 'active in' : ''} onClick={() => updateForm('movement_type', 'IN')} disabled={Boolean(linked)}>
+                  <ArrowDownToLine size={16} /> Goods IN
+                </button>
+                <button type="button" className={form.movement_type === 'OUT' ? 'active out' : ''} onClick={() => updateForm('movement_type', 'OUT')} disabled={Boolean(linked)}>
+                  <ArrowUpFromLine size={16} /> Goods OUT
+                </button>
+              </div>
+
+              <div className="form-grid">
+                <Field label="Production For *">
+                  <select
+                    className="form-control"
+                    value={form.production_for}
+                    onChange={e => updateForm('production_for', e.target.value)}
+                    required
+                  >
+                    <option value="">Select Company</option>
+                    {withCurrent(masters.productionFor, form.production_for).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </Field>
+                <Field label="Plant Location *">
+                  <select
+                    className="form-control"
+                    value={form.plant_location}
+                    onChange={e => updateForm('plant_location', e.target.value)}
+                    required
+                  >
+                    <option value="">Select Peeling At</option>
+                    {withCurrent(masters.plants, form.plant_location).map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+                <Field label="Party / Vendor Name *">
+                  <select
+                    className="form-control"
+                    value={form.party_name}
+                    onChange={e => updateForm('party_name', e.target.value)}
+                    required
+                  >
+                    <option value="">Select Party</option>
+                    {withCurrent(masters.parties, form.party_name).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </Field>
+                <Field label={form.movement_type === 'IN' ? 'Source / From Location' : 'Destination / To Location'}>
+                  <select
+                    className="form-control"
+                    value={form.source_destination}
+                    onChange={e => updateForm('source_destination', e.target.value)}
+                  >
+                    <option value="">Select Location</option>
+                    {withCurrent(masters.sourceLocations, form.source_destination).map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </Field>
+                <Field label="Purpose *">
+                  <select
+                    className="form-control"
+                    value={form.purpose}
+                    onChange={e => updateForm('purpose', e.target.value)}
+                    required
+                  >
+                    <option value="">Select Purpose</option>
+                    {withCurrent(masters.purposes, form.purpose).map(p => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                </Field>
+                <Field label={form.movement_type === 'IN' ? 'Received By' : 'Authorized By'}>
+                  <select
+                    className="form-control"
+                    value={form.authorized_received_by}
+                    onChange={e => updateForm('authorized_received_by', e.target.value)}
+                  >
+                    <option value="">Select Employee</option>
+                    {withCurrent(masters.employees, form.authorized_received_by).map(e => <option key={e} value={e}>{e}</option>)}
+                  </select>
+                </Field>
+                <Field label="PO Number"><input className="form-control" value={form.po_number} onChange={e => updateForm('po_number', e.target.value)} /></Field>
+                <Field label="Challan Number"><input className="form-control" value={form.challan_number} onChange={e => updateForm('challan_number', e.target.value)} /></Field>
+                <Field label="Invoice Number"><input className="form-control" value={form.invoice_number} onChange={e => updateForm('invoice_number', e.target.value)} /></Field>
+                <Field label="Vehicle Number">
+                  <select
+                    className="form-control"
+                    value={form.vehicle_number}
+                    onChange={e => updateForm('vehicle_number', e.target.value)}
+                  >
+                    <option value="">Select Vehicle</option>
+                    {withCurrent(masters.vehicles, form.vehicle_number).map(v => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </Field>
+                <Field label="Driver Name">
+                  <select
+                    className="form-control"
+                    value={form.driver_name}
+                    onChange={e => updateForm('driver_name', e.target.value)}
+                  >
+                    <option value="">Select Driver</option>
+                    {withCurrent(masters.drivers, form.driver_name).map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </Field>
+                <Field label="Department">
+                  <select
+                    className="form-control"
+                    value={form.department}
+                    onChange={e => updateForm('department', e.target.value)}
+                  >
+                    <option value="">Select Department</option>
+                    {withCurrent(masters.departments, form.department).map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </Field>
+                <Field label="Linked Return Movement">
+                  <select className="form-control" value={form.linked_movement_id} onChange={e => chooseLinkedMovement(e.target.value)}>
+                    <option value="">Not linked</option>
+                    {returnables.map(row => <option key={row.id} value={row.id}>{row.movement_number} · {row.movement_type} · {row.party_name} · {row.return_status}</option>)}
+                  </select>
+                </Field>
+                <label className="goods-check-field"><input type="checkbox" checked={form.is_returnable} onChange={e => updateForm('is_returnable', e.target.checked)} disabled={Boolean(linked)} /><span>Returnable movement</span></label>
+                {form.is_returnable && form.movement_type === 'OUT' && <Field label="Expected Return Date *"><input className="form-control" type="date" value={form.expected_return_date} onChange={e => updateForm('expected_return_date', e.target.value)} required /></Field>}
+                <Field label="Header Remarks"><input className="form-control" value={form.remarks} onChange={e => updateForm('remarks', e.target.value)} /></Field>
+              </div>
+
+              <div className="goods-items-head" style={{ marginTop: '13px', paddingTop: '10px', borderTop: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ color: 'var(--text-secondary)', fontSize: '8.5px', fontWeight: '850', letterSpacing: '.45px', textTransform: 'uppercase' }}>ITEM DETAILS</strong>
+                  <br />
+                  <small style={{ color: '#b45309', fontSize: '9px', fontWeight: '650' }}>Raw shrimp/RMP is not allowed in this tab.</small>
+                </div>
+                <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 'auto', height: '30px' }} onClick={() => setItems(current => [...current, emptyItem()])}><Plus size={14} /> Add Item</button>
+              </div>
+              <div className="goods-items">
+                {items.map((item, index) => (
+                  <div className="goods-item-row" key={index}>
+                    <span className="goods-item-index">{index + 1}</span>
+                    <select className="form-control" value={item.item_category} onChange={e => updateItem(index, 'item_category', e.target.value)} required>
+                      <option value="">Category *</option>
+                      {categories.map(value => <option key={value} value={value}>{value}</option>)}
+                    </select>
+                    <input className="form-control" value={item.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="Item name *" required />
+                    <input className="form-control" value={item.description} onChange={e => updateItem(index, 'description', e.target.value)} placeholder="Description" />
+                    <input className="form-control" type="number" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} placeholder="Qty *" required />
+                    <select className="form-control" value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} required>{units.map(value => <option key={value}>{value}</option>)}</select>
+                    <input className="form-control" type="number" min="0" step="0.001" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="Packages" />
+                    <input className="form-control" value={item.material_condition} onChange={e => updateItem(index, 'material_condition', e.target.value)} placeholder="Condition" />
+                    <button type="button" className="goods-remove" onClick={() => setItems(current => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index))} disabled={items.length === 1}><Trash2 size={14} /></button>
+                  </div>
+                ))}
+              </div>
+              <div className="goods-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
         </div>
-        <div className="goods-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-          <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" className="btn btn-clear" onClick={resetForm}>Reset</button>
-        </div>
-      </form>
+      )}
 
       {/* Entries Log Table Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: '30px', flexShrink: 0 }}>
