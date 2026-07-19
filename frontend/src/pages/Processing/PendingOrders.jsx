@@ -216,7 +216,7 @@ export default function PendingOrders() {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
+    <div className="pending-orders-exempt" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <h2 style={{ color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
           <Clock size={22} /> Sales Pending Orders Worksheet
@@ -276,11 +276,8 @@ export default function PendingOrders() {
                 <Sel label="Brand" value={it.brand} onChange={v => handleRowChange(idx, 'brand', v)} options={brands} required />
                 <Sel label="Pack Style" value={it.packing_style} onChange={v => handleRowChange(idx, 'packing_style', v)} options={packing.map(p => p.packing_style)} required />
                 <Sel label="Freezer" value={it.freezer} onChange={v => handleRowChange(idx, 'freezer', v)} options={freezers} required />
-                <Sel label="Glaze" value={it.count_glaze} onChange={v => handleRowChange(idx, 'count_glaze', v)} options={glazes} required />
-                <div className="form-group" style={{ minWidth: 100 }}>
-                  <label>Weight/Glaze</label>
-                  <input type="text" className="form-control" value={it.weight_glaze} onChange={e => handleRowChange(idx, 'weight_glaze', e.target.value)} required />
-                </div>
+                <Sel label="Count Glaze" value={it.count_glaze} onChange={v => handleRowChange(idx, 'count_glaze', v)} options={glazes} required />
+                <Sel label="Weight Glaze" value={it.weight_glaze} onChange={v => handleRowChange(idx, 'weight_glaze', v)} options={glazes} required />
                 <Sel label="Species" value={it.species} onChange={v => handleRowChange(idx, 'species', v)} options={species} required />
                 <Sel label="Variety" value={it.variety} onChange={v => handleRowChange(idx, 'variety', v)} options={varieties} required />
                 <Sel label="Grade" value={it.grade} onChange={v => handleRowChange(idx, 'grade', v)} options={grades} required />

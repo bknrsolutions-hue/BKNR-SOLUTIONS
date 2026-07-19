@@ -38,6 +38,7 @@ class ProformaInvoice(Base):
     grade = Column(String, nullable=True)
     no_of_pieces = Column(String, nullable=True)
     no_of_mc = Column(Integer, default=0, nullable=True)
+    items_json = Column(Text, nullable=True)
     approval_status = Column(String, default="PENDING", index=True, nullable=False)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)

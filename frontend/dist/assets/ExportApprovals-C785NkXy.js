@@ -1,1 +1,0 @@
-import{r as e}from"./index-cTLiCevm.js";import t from"./SupportingDocuments-DS5Ms1-c.js";var n=e();function r(){return(0,n.jsx)(t,{initialStatus:`PENDING_APPROVAL`,pageTitle:`Export Document Approvals`,pageSubtitle:`Review documents assigned to you and complete approval decisions.`,approvalsOnly:!0})}export{r as default};

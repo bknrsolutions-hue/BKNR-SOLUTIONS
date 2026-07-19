@@ -2422,6 +2422,7 @@ class ProformaInvoiceSchema(BaseModel):
     grade: str = None
     no_of_pieces: str = None
     no_of_mc: int = 0
+    items_json: str = None
 
     @model_validator(mode="after")
     def validate_proforma(self):
@@ -2729,6 +2730,7 @@ def serialize_proforma(row: ProformaInvoice) -> dict:
         "grade": getattr(row, "grade", "") or "",
         "no_of_pieces": getattr(row, "no_of_pieces", "") or "",
         "no_of_mc": getattr(row, "no_of_mc", 0) or 0,
+        "items_json": getattr(row, "items_json", "") or "",
         "created_by": row.created_by,
         "created_at": _dt(row.created_at),
     }

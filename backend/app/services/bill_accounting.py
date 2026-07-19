@@ -45,6 +45,7 @@ def ensure_bill_accounting_schema(db: Session) -> None:
         "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS grade VARCHAR(100)",
         "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100)",
         "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0",
+        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS items_json TEXT",
         """
         CREATE TABLE IF NOT EXISTS employee_salary_advance_recovery (
             id SERIAL PRIMARY KEY,
