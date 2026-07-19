@@ -20,8 +20,12 @@
 }
 
 .raw-gate-page .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
   gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 6px;
   max-width: 100%;
 }
 
