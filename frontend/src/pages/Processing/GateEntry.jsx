@@ -578,7 +578,7 @@ const autoFieldStyle = {
 export default function GateEntry() {
   const [activeTab, setActiveTab] = useState('raw');
   return (
-    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+    <div style={{ height: '100%', minHeight: 0, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
       <div style={{
         display: 'flex',
         gap: '7px',
@@ -596,7 +596,7 @@ export default function GateEntry() {
           <PackageSearch size={15} /> Goods IN / OUT
         </button>
       </div>
-      <div style={{ flex: 1, minHeight: 0, overflow: 'hidden' }}>
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {activeTab === 'raw' ? <RawMaterialGateEntry /> : <GoodsGateMovements />}
       </div>
     </div>
