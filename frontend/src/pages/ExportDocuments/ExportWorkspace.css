@@ -131,6 +131,15 @@
   gap: 12px;
 }
 
+.register-library {
+  --att-accent: var(--accent);
+  --att-border: var(--border);
+  --att-card: var(--card-bg);
+  --att-text: var(--text);
+  --att-muted: var(--text-muted);
+  --att-shadow: var(--shadow-soft);
+}
+
 .export-register-card {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
@@ -176,4 +185,77 @@
   .export-workspace-current { display: none; }
   .export-workspace-tabs button { min-width: 82px; }
   .export-register-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Gate Entry / RMP Style Alignment for Export Documents ───────── */
+.export-workspace,
+.export-document-page {
+  font-family: inherit;
+}
+
+.export-document-page .attendance-table th,
+.export-document-page .bknr-table th,
+.export-document-page .erp-data-table th {
+  padding: 6px 8px !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.35px !important;
+  text-transform: uppercase !important;
+  height: 28px !important;
+}
+
+.export-document-page .attendance-table td,
+.export-document-page .bknr-table td,
+.export-document-page .erp-data-table td {
+  padding: 5px 8px !important;
+  font-size: 11px !important;
+  line-height: 1.35 !important;
+}
+
+.export-document-page .attendance-input,
+.export-document-page .attendance-select,
+.export-document-page select,
+.export-document-page input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]) {
+  height: 28px !important;
+  min-height: 28px !important;
+  padding: 0 8px !important;
+  font-size: 10px !important;
+  font-weight: 550 !important;
+  border-radius: 5px !important;
+}
+
+.export-document-page textarea.attendance-input,
+.export-document-page textarea {
+  height: auto !important;
+  min-height: 50px !important;
+  padding: 6px 8px !important;
+  font-size: 10px !important;
+  font-weight: 550 !important;
+  border-radius: 5px !important;
+}
+
+.export-document-page .attendance-form-group label,
+.export-document-page .attendance-filter-group label {
+  font-size: 9px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.35px !important;
+  text-transform: uppercase !important;
+  color: var(--att-muted, var(--text-secondary)) !important;
+}
+
+.export-document-page .attendance-btn {
+  height: 28px !important;
+  padding: 0 12px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  border-radius: 5px !important;
+}
+
+.export-document-page .attendance-page-header h1 {
+  font-size: 18px !important;
+  font-weight: 800 !important;
+}
+
+.export-document-page .attendance-page-header p {
+  font-size: 10px !important;
 }
