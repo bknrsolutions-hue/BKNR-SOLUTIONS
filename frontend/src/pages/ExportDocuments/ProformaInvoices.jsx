@@ -3,6 +3,7 @@ import { Ban, Building2, Calculator, Download, FileText, Pencil, Plus, Printer, 
 import '../Attendance/Attendance.css';
 import './ProformaInvoices.css';
 import ExportSearchPanel from './ExportSearchPanel';
+import { secureDownload } from '../../utils/secureDownload';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const emptyForm = (piNo = '') => ({
@@ -183,7 +184,7 @@ export default function ProformaInvoices() {
   };
 
   return (
-    <div className="attendance-container">
+    <div className="attendance-container export-document-page">
       {notice && <div className={`attendance-toast ${notice.type === 'error' ? 'error' : 'success'}`} style={{ top: 80 }}>{notice.msg}</div>}
 
       <div className="attendance-page-header">
@@ -197,7 +198,7 @@ export default function ProformaInvoices() {
           <button className="attendance-btn attendance-btn-secondary" onClick={() => setShowAudit(value => !value)}>
             AUDIT LOGS ({auditLogs.length})
           </button>
-          <button className="attendance-btn attendance-btn-secondary" onClick={() => confirmAndOpen('/export_documents/proforma_invoice/register.xlsx', 'Proforma Invoice Register')}>
+          <button className="attendance-btn attendance-btn-secondary" onClick={() => secureDownload('/export_documents/proforma_invoice/register.xlsx', 'Proforma Invoice Register')}>
             <Download size={16} /> EXPORT
           </button>
           <button className="attendance-btn attendance-btn-primary" onClick={openNew}>
@@ -276,23 +277,18 @@ export default function ProformaInvoices() {
           <form onSubmit={save}>
             <div className="attendance-modal-body pi-form-body">
               <section className="pi-form-section">
-                <div className="pi-form-section-title"><FileText size={15} /><span>Document Details</span></div>
-                <div className="attendance-form-grid pi-form-grid">
-                <Field label="PI Number" name="pi_no" value={form.pi_no} onChange={change} required placeholder="PI-2026-0001" />
-                <Field label="PI Date" name="pi_date" type="date" value={form.pi_date} onChange={change} required />
-                <Field label="Valid Until" name="validity_date" type="date" min={form.pi_date} value={form.validity_date} onChange={change} />
-                <Field label="Buyer PO (Optional)" name="po_number" value={form.po_number} onChange={change} />
-                {editingId
-                  ? <Select label="PI Status" name="status" value={form.status} onChange={change} options={statuses} />
-                  : <div className="attendance-form-group"><label>PI Status</label><div className="attendance-input pi-readonly-value">DRAFT</div></div>}
-                </div>
-              </section>
+                <div className="pi-form-section-title"><FileText size={15} /><span>1. Document & Buyer Details</span></div>
+                <div className="pi-form-grid-organized">
+                  <Field label="PI Number *" name="pi_no" value={form.pi_no} onChange={change} required placeholder="PI-2026-0001" />
+                  <Field label="PI Date *" name="pi_date" type="date" value={form.pi_date} onChange={change} required />
+                  <Field label="Valid Until" name="validity_date" type="date" min={form.pi_date} value={form.validity_date} onChange={change} />
+                  <Field label="Buyer PO (Optional)" name="po_number" value={form.po_number} onChange={change} placeholder="Buyer PO #" />
+                  {editingId
+                    ? <Select label="PI Status" name="status" value={form.status} onChange={change} options={statuses} />
+                    : <div className="attendance-form-group"><label>PI Status</label><div className="attendance-input pi-readonly-value">DRAFT</div></div>}
 
-              <section className="pi-form-section">
-                <div className="pi-form-section-title"><Building2 size={15} /><span>Buyer Details</span></div>
-                <div className="attendance-form-grid pi-form-grid">
                   <div className="attendance-form-group">
-                    <label>Buyer Name</label>
+                    <label>Buyer Name *</label>
                     <select className="attendance-select" name="buyer_name" value={form.buyer_name} onChange={changeBuyer} required>
                       <option value="">Select Buyer</option>
                       {buyerOptions.map(buyer => <option key={buyer.name} value={buyer.name}>{buyer.name}{buyer.country ? ` · ${buyer.country}` : ''}</option>)}
@@ -300,37 +296,37 @@ export default function ProformaInvoices() {
                     </select>
                   </div>
                   <div className="attendance-form-group">
-                    <label>Country</label>
+                    <label>Country *</label>
                     <select className="attendance-select" name="country" value={form.country} onChange={change} required>
                       <option value="">Select Country</option>
                       {countryOptions.map(country => <option key={country} value={country}>{country}</option>)}
                       {form.country && !countryOptions.includes(form.country) && <option value={form.country}>{form.country}</option>}
                     </select>
                   </div>
-                  <Select label="Currency" name="currency" value={form.currency} onChange={change} options={['USD', 'EUR', 'GBP', 'AED', 'JPY', 'INR']} />
-                  <div className="attendance-form-group pi-span-4"><label>Buyer Address</label><textarea className="attendance-input" name="buyer_address" value={form.buyer_address} onChange={change} required rows="2" placeholder="Complete buyer billing address" /></div>
+                  <Select label="Currency *" name="currency" value={form.currency} onChange={change} options={['USD', 'EUR', 'GBP', 'AED', 'JPY', 'INR']} />
+                  <div className="attendance-form-group pi-full-row"><label>Buyer Address *</label><textarea className="attendance-input" name="buyer_address" value={form.buyer_address} onChange={change} required rows="2" placeholder="Complete buyer billing & shipping address" /></div>
                 </div>
               </section>
 
               <section className="pi-form-section">
-                <div className="pi-form-section-title"><Ship size={15} /><span>Trade & Shipment Terms</span></div>
-                <div className="attendance-form-grid pi-form-grid">
-                  <Select label="Incoterm" name="incoterm" value={form.incoterm} onChange={change} options={['FOB', 'CFR', 'CIF', 'EXW', 'FCA', 'CPT', 'CIP', 'DDP']} />
-                  <Field label="Payment Terms" name="payment_terms" value={form.payment_terms} onChange={change} required placeholder="Advance / LC / documents" />
+                <div className="pi-form-section-title"><Ship size={15} /><span>2. Trade & Shipment Terms</span></div>
+                <div className="pi-form-grid-organized">
+                  <Select label="Incoterm *" name="incoterm" value={form.incoterm} onChange={change} options={['FOB', 'CFR', 'CIF', 'EXW', 'FCA', 'CPT', 'CIP', 'DDP']} />
+                  <Field label="Payment Terms *" name="payment_terms" value={form.payment_terms} onChange={change} required placeholder="Advance / LC / documents" />
                   <Field label="Port of Loading" name="port_of_loading" value={form.port_of_loading} onChange={change} placeholder="Loading port" />
                   <Field label="Port of Discharge" name="port_of_discharge" value={form.port_of_discharge} onChange={change} placeholder="Destination port" />
                 </div>
               </section>
 
               <section className="pi-form-section">
-                <div className="pi-form-section-title"><Calculator size={15} /><span>Product & Commercial Value</span></div>
-                <div className="attendance-form-grid pi-form-grid">
-                  <div className="attendance-form-group pi-span-4"><label>Product Description</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="3" placeholder="Product, species, grade, glaze, freezing type and packing specification" /></div>
-                <Field label="Quantity" name="quantity" type="number" min="0.001" step="0.001" value={form.quantity} onChange={change} required />
-                <Select label="Unit" name="unit" value={form.unit} onChange={change} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
-                <Field label="Unit Price" name="unit_price" type="number" min="0" step="0.0001" value={form.unit_price} onChange={change} required />
+                <div className="pi-form-section-title"><Calculator size={15} /><span>3. Product & Commercial Value</span></div>
+                <div className="pi-form-grid-organized">
+                  <div className="attendance-form-group pi-full-row"><label>Product Description *</label><textarea className="attendance-input" name="product_description" value={form.product_description} onChange={change} required rows="2" placeholder="Product, species, grade, glaze, freezing type and packing specification" /></div>
+                  <Field label="Quantity *" name="quantity" type="number" min="0.001" step="0.001" value={form.quantity} onChange={change} required placeholder="0.000" />
+                  <Select label="Unit *" name="unit" value={form.unit} onChange={change} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
+                  <Field label="Unit Price *" name="unit_price" type="number" min="0" step="0.0001" value={form.unit_price} onChange={change} required placeholder="0.00" />
                   <div className="attendance-form-group"><label>Total PI Value</label><div className="pi-total-value"><small>{form.currency}</small><strong>{total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div></div>
-                  <div className="attendance-form-group pi-span-4"><label>Remarks / Special Conditions</label><textarea className="attendance-input" name="remarks" value={form.remarks} onChange={change} rows="2" placeholder="Quality, delivery, documentation or offer conditions" /></div>
+                  <div className="attendance-form-group pi-full-row"><label>Remarks / Special Conditions</label><textarea className="attendance-input" name="remarks" value={form.remarks} onChange={change} rows="2" placeholder="Quality, delivery, documentation or offer conditions" /></div>
                 </div>
               </section>
             </div>

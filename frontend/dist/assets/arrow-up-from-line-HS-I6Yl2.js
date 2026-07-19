@@ -1,0 +1,1 @@
+import{t as e}from"./createLucideIcon-CEzcNqSh.js";var t=e(`arrow-down-to-line`,[[`path`,{d:`M12 17V3`,key:`1cwfxf`}],[`path`,{d:`m6 11 6 6 6-6`,key:`12ii2o`}],[`path`,{d:`M19 21H5`,key:`150jfl`}]]),n=e(`arrow-up-from-line`,[[`path`,{d:`m18 9-6-6-6 6`,key:`kcunyi`}],[`path`,{d:`M12 3v14`,key:`7cf3v8`}],[`path`,{d:`M5 21h14`,key:`11awu3`}]]);export{t as n,n as t};

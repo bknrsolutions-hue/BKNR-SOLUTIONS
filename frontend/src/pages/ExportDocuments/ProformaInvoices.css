@@ -31,14 +31,17 @@
   text-transform: uppercase;
 }
 
-.pi-form-grid {
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
-  gap: 9px;
-  padding: 10px;
+.pi-form-grid,
+.pi-form-grid-organized {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(130px, 1fr));
+  gap: 8px 10px;
+  padding: 12px;
 }
 
-.pi-span-4 {
-  grid-column: span 4;
+.pi-span-4,
+.pi-full-row {
+  grid-column: 1 / -1 !important;
 }
 
 .pi-readonly-value {
