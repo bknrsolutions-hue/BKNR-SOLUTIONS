@@ -58,7 +58,7 @@
     "@type": "Organization",
     "name": "SVBK IT SOLUTIONS",
     "url": "https://bknrerp.in/",
-    "logo": "https://bknrerp.in/static/images/svbk-it-solutions-logo.png"
+    "logo": "https://bknrerp.in/static/images/svbk-it-solutions-logo-3d-transparent.png"
   }
 }
 </script>
@@ -268,15 +268,32 @@
 
         .brand-wordmark {
             display: block;
-            width: clamp(220px, 24vw, 340px);
+            width: clamp(155px, 16vw, 190px);
             height: auto;
-            max-height: 72px;
+            max-height: 76px;
             object-fit: contain;
+            background: transparent;
+            transform-origin: center;
+            backface-visibility: hidden;
+            will-change: transform, filter;
+            filter: drop-shadow(0 5px 8px rgba(13, 45, 114, 0.18));
+            animation: companyWordmark3D 4.6s ease-in-out infinite;
         }
 
         .form-brand .brand-wordmark {
-            width: min(390px, 92vw);
-            max-height: 128px;
+            width: min(190px, 60vw);
+            max-height: 76px;
+        }
+
+        @keyframes companyWordmark3D {
+            0%, 100% {
+                transform: perspective(900px) translateY(1px) rotateX(0deg) rotateY(-7deg) scale(.985);
+                filter: drop-shadow(-3px 6px 7px rgba(13, 45, 114, 0.16)) brightness(.96);
+            }
+            50% {
+                transform: perspective(900px) translateY(-4px) rotateX(2deg) rotateY(7deg) scale(1.02);
+                filter: drop-shadow(4px 9px 11px rgba(13, 45, 114, 0.24)) brightness(1.06);
+            }
         }
 
         .brand-mark {
@@ -2666,7 +2683,7 @@
             }
 
             .login-page .brand-wordmark {
-                width: min(220px, 68vw) !important;
+                width: min(165px, 49vw) !important;
                 height: auto !important;
             }
 
@@ -2707,7 +2724,26 @@
                 opacity: 1 !important;
                 transform: none !important;
             }
+
+            .brand-wordmark {
+                animation-duration: 4.6s !important;
+                animation-iteration-count: infinite !important;
+            }
         }
+
+        /* SAP flat corporate login, including icons and branding. */
+        body *,
+        body *::before,
+        body *::after {
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+
+        body :is(.auth-panel, .auth-card, .hero-dashboard-photo, .hero-photo-caption, .feature-card, .solution-card, .site-nav) {
+            transform: none !important;
+            transform-style: flat !important;
+        }
+
     </style>
 </head>
 
@@ -2715,8 +2751,7 @@
     <div class="site-shell">
         <nav class="site-nav">
             <a class="brand" href="/auth/landing" aria-label="SVBK IT SOLUTIONS home">
-                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo.png" alt="SVBK IT Solutions"
-                    style="width:340px;height:72px">
+                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo-3d-transparent.png" alt="SVBK IT Solutions">
             </a>
             <div class="nav-actions-container" style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
                 {% if not show_login|default(false) %}

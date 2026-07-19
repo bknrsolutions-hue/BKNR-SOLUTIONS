@@ -5,10 +5,10 @@ from sqlalchemy.orm import Session
 from datetime import datetime
 
 from app.database import get_db
-# 2 మోడల్స్‌ను కరెక్ట్‌గా ఇంపోర్ట్ చేసుకుంటున్నాం
+# 2 ‌ ‌
 from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 
-# మెయిన్ ప్రిఫిక్స్: /general_stock/items
+#  : /general_stock/items
 router = APIRouter(prefix="/items", tags=["GENERAL STORE ITEMS"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -17,14 +17,14 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 def general_items_page(request: Request, db: Session = Depends(get_db)):
-    
+
     # 🔐 Session Check
     comp_code = request.session.get("company_code")
     session_email = request.session.get("email")
     if not comp_code or not session_email:
         return RedirectResponse("/", status_code=302)
 
-    # ✅ FIX: మాస్టర్ ఐటమ్స్ టేబుల్ (GeneralStoreItems) నుండి ఈ కంపెనీ డేటా మాత్రమే లాగుతున్నాం
+    # ✅ FIX:    (GeneralStoreItems)
     items = (
         db.query(GeneralStoreItems)
         .filter(GeneralStoreItems.company_id == comp_code)
@@ -72,7 +72,7 @@ def add_item(
     if not comp_code:
         return {"error": "Unauthorized session"}, 401
 
-    # ✅ FIX: GeneralStoreItems మాస్టర్ టేబుల్‌లో డూప్లికేట్ చెక్ చేస్తున్నాం
+    # ✅ FIX: GeneralStoreItems  ‌
     row = db.query(GeneralStoreItems).filter(
         GeneralStoreItems.item_name == item_name,
         GeneralStoreItems.unit_name == unit_name,
@@ -80,10 +80,10 @@ def add_item(
     ).first()
 
     if row:
-        # ఉంటే కనుక మినిమం లెవెల్ అప్‌డేట్
+        #     ‌
         row.minimum_level = minimum_level
     else:
-        # లేకపోతే కొత్త మాస్టర్ ఐటమ్ ఎంట్రీ
+        #
         new_item = GeneralStoreItems(
             item_name=item_name,
             unit_name=unit_name,
@@ -95,8 +95,8 @@ def add_item(
 
     db.commit()
 
-    # HTML లో popup modal లో `fetch` ద్వారా కాల్ చేస్తున్నాం కాబట్టి 
-    # డైరెక్ట్ JSON రెస్పాన్స్ ఇస్తే `res.ok` సక్సెస్ అవుతుంది, పేజీ లోడ్ సేవ్ అవుతుంది!
+    # HTML  popup modal  `fetch`
+    #  JSON   `res.ok`  ,    !
     return {"status": "success", "message": f"Item '{item_name}' saved successfully!"}
 
 
@@ -108,13 +108,13 @@ def delete_item(request: Request, item: str, unit: str, db: Session = Depends(ge
     if not comp_code:
         return RedirectResponse("/", status_code=302)
 
-    # మాస్టర్ టేబుల్ నుండి రికార్డును డిలీట్ చేయడం
+    #
     db.query(GeneralStoreItems).filter(
         GeneralStoreItems.item_name == item,
         GeneralStoreItems.unit_name == unit,
         GeneralStoreItems.company_id == comp_code
     ).delete()
-    
+
     db.commit()
 
     return RedirectResponse(url="/general_stock/items/", status_code=303)

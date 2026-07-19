@@ -219,12 +219,47 @@ def run_migration():
             print("  ✔ Column 'mpeda_registration_code' added successfully to companies table.")
         else:
             print("  ✔ Column 'mpeda_registration_code' already exists in table 'companies'.")
+        if "logo_path" not in existing_company_columns:
+            conn.execute(text(
+                "ALTER TABLE companies ADD COLUMN logo_path VARCHAR(500)"
+            ))
+            print("  ✔ Column 'logo_path' added successfully to companies table.")
+        else:
+            print("  ✔ Column 'logo_path' already exists in table 'companies'.")
         conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS "
             "ix_companies_mpeda_registration_code "
             "ON companies (mpeda_registration_code) "
             "WHERE mpeda_registration_code IS NOT NULL"
         ))
+
+        permission_aliases = {
+            "bank_transactions": "bank_transaction",
+            "customer_receivables": "customer_receivable",
+            "expense_vouchers": "expense_voucher",
+            "journal_entries": "journal_entry",
+            "payment_receipts": "payment_receipt",
+            "vendor_payments": "vendor_payment",
+            "export_shipments": "export_shipment",
+            "container_logs": "logistics_bills",
+        }
+        for old_key, new_key in permission_aliases.items():
+            conn.execute(
+                text(
+                    "UPDATE users SET permissions = regexp_replace("
+                    "permissions, '(^|,)' || :old_key || '(,|$)', "
+                    "'\\1' || :new_key || '\\2', 'g') "
+                    "WHERE permissions ~ ('(^|,)' || :old_key || '(,|$)')"
+                ),
+                {"old_key": old_key, "new_key": new_key},
+            )
+        conn.execute(text(
+            "UPDATE user_login_activities AS activity "
+            "SET company_id = company.company_code "
+            "FROM companies AS company "
+            "WHERE activity.company_id = CAST(company.id AS VARCHAR)"
+        ))
+        print("  ✔ Account permission keys and activity tenant references normalized.")
                     
     # -----------------------------------------------------
     # Create required indexes on critical lookup columns

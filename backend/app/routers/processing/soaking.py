@@ -347,7 +347,7 @@ def update_soaking(
     if is_edit_locked(request, row.date):
         return JSONResponse({"error": edit_lock_message()}, status_code=403)
 
-    # ⚡ Issue 1 Fix: species & variety పక్కాగా యాడ్ చేసి Row Mismatch బగ్‌ను పూర్తిగా క్లియర్ చేశాం అన్నా!
+    # ⚡ Issue 1 Fix: species & variety    Row Mismatch ‌    !
     is_same_row = (
         row.batch_number == batch_number.strip() and 
         row.in_count == in_count.strip() and 

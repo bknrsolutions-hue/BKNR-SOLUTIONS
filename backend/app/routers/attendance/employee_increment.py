@@ -6,7 +6,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import date
 
-from app.database import get_db  
+from app.database import get_db
 from app.database.models.attendance import (
     EmployeeRegistration,
     EmployeeIncrement
@@ -23,8 +23,8 @@ templates = Jinja2Templates(directory="app/templates")
 # ==================================================
 def calculate_and_apply_salary_breakup(emp: EmployeeRegistration, gross_salary: float):
     """
-    కొత్త Gross Salary ఆధారంగా అన్ని శాలరీ కంపోనెంట్స్ ని 
-    ఆటోమేటిక్‌గా క్యాలిక్యులేట్ చేసి మోడల్‌కి అసైన్ చేసే యుటిలిటీ ఫంక్షన్.
+     Gross Salary
+    ‌   ‌    .
     """
     emp.current_salary = float(gross_salary)
     emp.basic_salary = round(gross_salary * 0.50, 2)              # 50% Basic Salary
@@ -49,7 +49,7 @@ def increment_page(request: Request, format: str = Query(default="html"), db: Se
     error_param = request.query_params.get("error")
     success_param = request.query_params.get("success")
     system_message = None
-    
+
     if error_param == "employee_not_found":
         system_message = "❌ Active Employee Number Not Found in Database!"
     elif error_param == "record_not_found":
@@ -103,11 +103,11 @@ def increment_page(request: Request, format: str = Query(default="html"), db: Se
 def save_increment(
     request: Request,
     employee_id: str = Form(...),
-    increment_type: str = Form(...),   
+    increment_type: str = Form(...),
     increment_value: float = Form(...),
     effective_from: date = Form(...),
-    reason: str = Form(None),          
-    approved_by: str = Form(None),     
+    reason: str = Form(None),
+    approved_by: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_id = request.session.get("company_code")
@@ -132,7 +132,7 @@ def save_increment(
 
     if increment_type == "FIXED":
         new_salary = old_salary + increment_value
-    else:  
+    else:
         new_salary = old_salary + (old_salary * increment_value / 100)
 
     final_approver = approved_by if approved_by and approved_by.strip() else session_user
@@ -144,14 +144,14 @@ def save_increment(
         increment_value=increment_value,
         new_salary=new_salary,
         effective_from=effective_from,
-        reason=reason,                 
-        approved_by=final_approver,     
+        reason=reason,
+        approved_by=final_approver,
         status="ACTIVE",
         company_id=company_id
     )
     db.add(new_inc_record)
 
-    # 🔥 ఎఫెక్టివ్ డేట్ ఈరోజు లేదా అంతకంటే ముందైతే బ్రేక్-అప్స్ అప్లై చేయడం
+    # 🔥       -
     if effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, new_salary)
 
@@ -209,7 +209,7 @@ def save_update_increment(
     if not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # 🛠️ FIX: 'Company_id' టైపోని 'EmployeeIncrement.company_id' గా మార్చడం జరిగింది
+    # 🛠️ FIX: 'Company_id'  'EmployeeIncrement.company_id'
     record = db.query(EmployeeIncrement).filter(
         EmployeeIncrement.id == record_id,
         EmployeeIncrement.company_id == company_id
@@ -225,7 +225,7 @@ def save_update_increment(
         EmployeeRegistration.company_id == company_id
     ).first()
 
-    # ఎడిట్ చేసేటప్పుడు పాత రికార్డును రోల్‌బ్యాక్ చేయడానికి బేస్ గ్రాస్ తెచ్చాం
+    #     ‌
     if emp and record.effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, record.old_salary)
 
@@ -240,7 +240,7 @@ def save_update_increment(
     else:
         record.new_salary = record.old_salary + (record.old_salary * increment_value / 100)
 
-    # కొత్త మార్పులను శాలరీ బ్రేక్-అప్ కాలమ్స్ కి సింక్ చేయడం
+    #    -
     if effective_from <= date.today() and emp:
         calculate_and_apply_salary_breakup(emp, record.new_salary)
 
@@ -326,7 +326,7 @@ def delete_increment(request: Request, record_id: int, db: Session = Depends(get
         EmployeeRegistration.company_id == company_id
     ).first()
 
-    # ట్రాన్సాక్షన్ డిలీట్ చేస్తే పాత శాలరీ అలవెన్స్ బ్రేక్-అప్స్ రీ-అప్లై అవుతాయి
+    #       - -
     if emp and record.effective_from <= date.today():
         calculate_and_apply_salary_breakup(emp, record.old_salary)
 

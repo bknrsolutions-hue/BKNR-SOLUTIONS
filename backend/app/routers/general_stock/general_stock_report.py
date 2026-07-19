@@ -8,6 +8,7 @@ from app.database.models.general_stock import GeneralStock, GeneralStoreItems
 
 # Prefix and tags configuration
 router = APIRouter(tags=["GENERAL STOCK"])
+report_router = APIRouter(tags=["GENERAL STOCK"])
 
 # ============================================================
 # 1. ITEMS MASTER LOGIC
@@ -225,7 +226,7 @@ async def get_item_grns(request: Request, item_name: str, db: Session = Depends(
 # 3. GENERAL STOCK REPORT LOGIC
 # ============================================================
 
-@router.get("/report", response_class=HTMLResponse)
+@report_router.get("/report", response_class=HTMLResponse)
 async def general_stock_report(
     request: Request,
     fy: str = "",

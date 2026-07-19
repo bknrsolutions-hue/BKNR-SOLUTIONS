@@ -49,20 +49,20 @@ def vendors_page(request: Request, db: Session = Depends(get_db)):
 def save_vendor(
     request: Request,
     name: str = Form(...),
-    email: str = Form(""),          # ఇది వెండర్ యొక్క ఈమెయిల్ ఐడి
+    email: str = Form(""),          #
     service_for: str = Form(""),
-    payment_cycle: str = Form(""),  # 👈 ఇక్కడ FastAPI Form parameter యాడ్ చేసాను
+    payment_cycle: str = Form(""),  # 👈  FastAPI Form parameter
     gst_number: str = Form(""),
     address: str = Form(""),
     bank_name: str = Form(""),
     account_no: str = Form(""),
     ifsc: str = Form(""),
     id: str = Form(""),
-    date: str = Form(...),          
-    time: str = Form(...),          
+    date: str = Form(...),
+    time: str = Form(...),
     db: Session = Depends(get_db)
 ):
-    session_email = request.session.get("email") # 👈 సెషన్ నుండి లాగిన్ యూజర్ ఈమెయిల్ తీసుకుంటున్నాం
+    session_email = request.session.get("email") # 👈
     company_code = request.session.get("company_code")
 
     if not session_email or not company_code:
@@ -84,17 +84,17 @@ def save_vendor(
     # UPDATE MODE
     if record_id:
         row = db.query(vendors).filter(
-            vendors.id == record_id, 
+            vendors.id == record_id,
             vendors.company_id == company_code
         ).first()
-        
-        if not row: 
+
+        if not row:
             return JSONResponse({"error": "Vendor not found"}, status_code=404)
-        
+
         row.name = name
         row.email = email
         row.service_for = service_for
-        row.payment_cycle = payment_cycle # 👈 అప్‌డేట్ రన్ అవుతున్నప్పుడు డేటా మ్యాప్ అవుతుంది
+        row.payment_cycle = payment_cycle # 👈 ‌
         row.gst_number = gst_number
         row.address = address
         row.bank_name = bank_name
@@ -102,25 +102,25 @@ def save_vendor(
         row.ifsc = ifsc
         row.date = date
         row.time = time
-        
-        # ఒకవేళ ఎడిట్ చేసినా లేదా రికార్డ్ అప్‌డేట్ చేసినా క్రియేటెడ్ యూజర్ ఈమెయిల్ మిస్ కాకుండా ట్రాక్ చేస్తుంది
-        row.created_by_email = session_email 
-        
+
+        #      ‌
+        row.created_by_email = session_email
+
     # INSERT MODE
     else:
         new_vendor = vendors(
-            name=name, 
-            email=email, 
+            name=name,
+            email=email,
             service_for=service_for,
-            payment_cycle=payment_cycle, # 👈 కొత్త ఎంట్రీ క్రియేట్ ఐనప్పుడు ఇక్కడ సేవ్ అవుతుంది
-            gst_number=gst_number, 
+            payment_cycle=payment_cycle, # 👈
+            gst_number=gst_number,
             address=address,
-            bank_name=bank_name, 
-            account_no=account_no, 
+            bank_name=bank_name,
+            account_no=account_no,
             ifsc=ifsc,
-            date=date,                        
-            time=time,                        
-            created_by_email=session_email,   
+            date=date,
+            time=time,
+            created_by_email=session_email,
             company_id=company_code
         )
         db.add(new_vendor)
@@ -139,9 +139,9 @@ def delete_vendor(id: int, request: Request, db: Session = Depends(get_db)):
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
     db.query(vendors).filter(
-        vendors.id == id, 
+        vendors.id == id,
         vendors.company_id == company_code
     ).delete()
-    
+
     db.commit()
     return JSONResponse({"status": "ok"})

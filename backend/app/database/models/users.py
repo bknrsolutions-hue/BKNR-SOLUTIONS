@@ -33,6 +33,7 @@ class Company(Base):
 
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=ist_now_naive)
+    logo_path = deferred(Column(String(500), nullable=True))
 
     # relationships
     users = relationship("User", back_populates="company")
@@ -105,7 +106,8 @@ class UserLoginActivity(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    company_id = Column(Integer, ForeignKey("companies.id"), nullable=False)
+    # Existing activity data and reporting use the tenant company code.
+    company_id = Column(String, nullable=False)
     
     login_at = Column(DateTime, default=ist_now_naive)
     logout_at = Column(DateTime, nullable=True)

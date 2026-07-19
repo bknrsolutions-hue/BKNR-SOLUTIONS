@@ -257,7 +257,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
     else:
         user_allowed_locations = session_locations
 
-    # 🟢 🔴 REFACTOR: ఇప్పుడు సమ్మరీ క్యాలిక్యులేషన్ కూడా యూజర్ పర్మిషన్స్ మరియు గ్లోబల్ ఫిల్టర్స్ కి మ్యాచ్ అయి మారుతుంది!
+    # 🟢 🔴 REFACTOR:             !
     hoso_summary, drill_down = get_cached_hoso_summary_data(
         db=db, 
         company_code=company_code, 

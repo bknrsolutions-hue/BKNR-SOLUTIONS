@@ -1,8 +1,9 @@
-const CACHE_NAME = "bknr-erp-v22";
+const CACHE_NAME = "svbk-erp-v25";
 const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",
-  "/static/images/svbk-it-solutions-logo.png",
+  "/static/brand-dp-3d.png",
+  "/static/images/svbk-it-solutions-logo-3d-transparent.png",
   "/static/screenshot.png",
   "/static/css/app-splash.min.css",
   "/static/js/app-splash.min.js"

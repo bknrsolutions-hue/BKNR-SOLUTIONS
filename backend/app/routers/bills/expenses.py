@@ -96,7 +96,7 @@ def expenses_entry_page(
         end_date = dt.date(selected_year + 1, 3, 31)
 
         try:
-            # 🌟 మోడల్‌లోని 'date' కాలమ్ బేస్డ్ ఫిల్టరింగ్
+            # 🌟 ‌ 'date'
             expense_history = (
                 db.query(OtherExpense, production_at.production_at.label("location_name"))
                 .join(production_at, OtherExpense.unit_id == production_at.id)
@@ -109,12 +109,12 @@ def expenses_entry_page(
                 .all()
             )
 
-            # ఒకవేళ ఫాల్‌బ్యాక్ కింద పాత డేటా (remarks లో స్టోర్ అయిన పాత ఫార్మాట్) లోడ్ అవ్వడానికి:
+            #  ‌    (remarks     )  :
             if not expense_history:
                 fy_filters = [OtherExpense.remarks.like(f"Date: {selected_year}-%")]
                 for m in [1, 2, 3]:
                     fy_filters.append(OtherExpense.remarks.like(f"Date: {selected_year + 1}-{m:02d}-%"))
-                
+
                 from sqlalchemy import or_
                 expense_history = (
                     db.query(OtherExpense, production_at.production_at.label("location_name"))
@@ -266,7 +266,7 @@ def delete_expense(expense_id: int, request: Request, db: Session = Depends(get_
     email = request.session.get("email")
     if not company_code:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
-    
+
     entry = db.query(OtherExpense).join(
         production_at, OtherExpense.unit_id == production_at.id
     ).filter(
@@ -289,7 +289,7 @@ def delete_expense(expense_id: int, request: Request, db: Session = Depends(get_
         except Exception as e:
             db.rollback()
             return JSONResponse({"success": False, "message": str(e)}, status_code=500)
-    
+
     return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
 
 
@@ -319,7 +319,7 @@ def export_expenses_excel(request: Request, db: Session = Depends(get_db)):
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
     data_font = Font(name="Arial", size=10)
     total_font = Font(name="Arial", size=11, bold=True)
-    
+
     thin_border = Border(
         left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
         top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
@@ -343,7 +343,7 @@ def export_expenses_excel(request: Request, db: Session = Depends(get_db)):
             log.OtherExpense.remarks
         ]
         ws.append(row_data)
-        
+
         curr_row = ws.max_row
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=curr_row, column=col_idx)

@@ -8,7 +8,7 @@
 <meta name="robots" content="noindex,nofollow">
 
 <link rel="manifest" href="/static/manifest.json">
-<link rel="icon" href="/static/favicon.ico">
+<link rel="icon" type="image/png" href="/static/pwa-icon-192.png">
 <link rel="apple-touch-icon" href="/static/pwa-icon-192.png">
 <meta name="theme-color" content="#0f172a">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -370,7 +370,7 @@ body {
 .corp-profile-btn:hover, .corp-profile-btn.active { background: rgba(255,255,255,0.05); border-color: var(--border-light); }
 [data-theme="light"] .corp-profile-btn:hover { background: rgba(0,0,0,0.03); }
 
-.corp-avatar { width: 34px; height: 34px; background: var(--corp-dash); color: #FFF; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 800; }
+.corp-avatar { width: 34px; height: 34px; object-fit:cover; background:#fff; border-radius: 6px; display:block; box-shadow:0 4px 12px rgba(13,45,114,.2); }
 .corp-info { display: flex; flex-direction: column; justify-content: center; }
 .corp-name { font-size: 12px; font-weight: 800; color: var(--text-primary); }
 .corp-role { font-size: 10px; font-weight: 600; color: var(--text-tertiary); }
@@ -396,10 +396,14 @@ body {
 @keyframes dropSlide { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
 /* Profile & Masters Mega Menu */
-#profileDropdownConsole { width: 650px; gap: 16px; }
-.mega-menu-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-height: 390px; overflow-y: auto; padding-right: 4px;}
-.dropdown-pillar-block { display: flex; flex-direction: column; gap: 4px; }
-.dropdown-pillar-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: var(--text-tertiary); border-bottom: 1px solid var(--border-light); padding-bottom: 6px; margin-bottom: 4px; }
+#profileDropdownConsole { width:min(300px,calc(100vw - 24px)); gap:16px; }
+.mega-menu-grid { display:grid; grid-template-columns:1fr !important; align-items:start; gap:7px; max-height:390px; overflow-y:auto; padding-inline:0; }
+.dropdown-pillar-block { display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--border-light); border-radius:9px; background:color-mix(in srgb,var(--surface-panel) 92%,var(--corp-dash) 8%); }
+.dropdown-pillar-title { width:100%; min-height:38px; display:flex; align-items:center; justify-content:space-between; padding:10px 11px; border:0; background:transparent; color:var(--text-tertiary); font-size:10px; font-weight:800; letter-spacing:1px; text-align:left; text-transform:uppercase; cursor:pointer; }
+.dropdown-pillar-title i { color:var(--corp-dash); transition:transform .2s ease; }
+.dropdown-pillar-block.open .dropdown-pillar-title i { transform:rotate(90deg); }
+.dropdown-pillar-items { display:none; padding:2px 7px 7px; border-top:1px solid var(--border-light); }
+.dropdown-pillar-block.open .dropdown-pillar-items { display:block; }
 .dropdown-submenu-item { display: flex; align-items: center; padding: 6px 8px; color: var(--text-secondary); font-size: 11.5px; font-weight: 600; cursor: pointer; text-decoration: none; border-radius: var(--radius-element); transition: 0.2s; border-left: 2px solid transparent; }
 .dropdown-submenu-item:hover { background: rgba(255,255,255,0.05); color: var(--text-primary); border-left-color: var(--corp-mstr); }
 [data-theme="light"] .dropdown-submenu-item:hover { background: rgba(0,0,0,0.04); }
@@ -409,6 +413,24 @@ body {
 .dropdown-filter-box label { font-size: 9px; font-weight: 800; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; }
 .global-select-input { background: rgba(0,0,0,0.1); color: var(--text-primary); border: 1px solid var(--border-light); font-size: 12px; font-weight: 700; padding: 8px 24px 8px 12px; border-radius: 8px; outline: none; width: 100%; cursor: pointer; transition: 0.2s; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%2394a3b8'><path d='M0 3l6 6 6-6z'/></svg>"); background-repeat: no-repeat; background-position: right 12px center; }
 [data-theme="light"] .global-select-input { background: rgba(0,0,0,0.03); }
+
+.profile-details-overlay { position:fixed; inset:0; z-index:100000000; display:none; place-items:center; padding:18px; background:rgba(15,23,42,.34); backdrop-filter:blur(3px); }
+.profile-details-overlay.show { display:grid; }
+.profile-details-popup { width:min(470px,100%); max-height:min(680px,calc(100vh - 36px)); overflow:auto; border:1px solid var(--border-light); border-radius:16px; background:var(--surface-panel); box-shadow:var(--shadow-float); }
+.profile-details-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:12px; padding:15px 16px; border-bottom:1px solid var(--border-light); background:var(--surface-panel); }
+.profile-details-logo { width:42px; height:42px; flex:0 0 auto; border-radius:10px; object-fit:cover; }
+.profile-details-head-copy { flex:1; min-width:0; }
+.profile-details-head-copy strong { display:block; color:var(--text-primary); font-size:15px; }
+.profile-details-head-copy span { display:block; margin-top:3px; color:var(--text-tertiary); font-size:10px; font-weight:700; }
+.profile-details-close { width:32px; height:32px; display:grid; place-items:center; border:1px solid var(--border-light); border-radius:9px; background:transparent; color:var(--text-secondary); cursor:pointer; }
+.profile-details-body { padding:8px 16px 16px; }
+.profile-details-state { padding:34px 12px; color:var(--text-secondary); font-size:12px; font-weight:700; text-align:center; }
+.profile-details-row { display:grid; grid-template-columns:34px minmax(0,1fr); align-items:center; gap:11px; min-height:55px; border-bottom:1px solid var(--border-light); }
+.profile-details-row:last-child { border-bottom:0; }
+.profile-details-row-icon { width:32px; height:32px; display:grid; place-items:center; border-radius:9px; background:color-mix(in srgb,var(--corp-dash) 10%,transparent); color:var(--corp-dash); font-size:12px; }
+.profile-details-row-copy span { display:block; color:var(--text-tertiary); font-size:8px; font-weight:900; letter-spacing:.06em; text-transform:uppercase; }
+.profile-details-row-copy strong { display:block; margin-top:3px; color:var(--text-primary); font-size:12px; font-weight:800; overflow-wrap:anywhere; }
+.profile-details-row-copy strong.attention { color:#b45309; }
 
 /* Notifications Dropdown */
 #notifDropdownConsole { width: 320px; padding: 0; right: 150px; }
@@ -541,8 +563,8 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
     .mobile-top-menu-btn, .header-home-btn { display: flex; } 
     .app-container { padding: 10px 10px 25px 10px; margin-left: 0; width: 100%; } 
     .user-profile span, .corp-info { display: none; }
-    #profileDropdownConsole { width: calc(100vw - 32px); right: 16px; }
-    .mega-menu-grid { grid-template-columns: 1fr 1fr; }
+    #profileDropdownConsole { width:min(300px,calc(100vw - 24px)); right:12px; }
+    .mega-menu-grid { grid-template-columns: 1fr !important; }
 }
 
 @media (max-width: 768px) {
@@ -562,7 +584,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 
 @media (max-width: 600px) {
     .header-brand-title-box { display: none; }
-    .mega-menu-grid { grid-template-columns: 1fr; }
+    .mega-menu-grid { grid-template-columns: 1fr !important; }
     #notifDropdownConsole { width: calc(100vw - 32px); right: 16px; }
     
     /* Header controls compact mode */
@@ -626,6 +648,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
 <div id="appSplash" class="{{ '' if has_app_session else 'app-splash-empty' }}" aria-label="Opening workspace">
     {% if has_app_session %}
     <div class="app-splash-card">
+        <img class="app-splash-logo" src="{{ request.session.get('company_logo_url') or '/static/brand-dp-3d.png' }}" alt="{{ request.session.get('company_name') }} logo">
         <h1 class="app-splash-company">{{ request.session.get('company_name') }}</h1>
         <div class="app-splash-quote" id="appSplashQuote">Preparing your workspace.</div>
         <div class="app-splash-track"><span></span></div>
@@ -698,7 +721,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
             </div>
             
             <div class="corp-profile-btn" id="userProfileBtn" onclick="toggleDropdown(event, 'profileDropdownConsole')">
-                <div class="corp-avatar" id="navUserInitial">U</div>
+                <img class="corp-avatar" src="/static/brand-dp-3d.png" alt="SVBK ERP">
                 <div class="corp-info">
                     <span class="corp-name">{{ request.session.get('name', 'User') }}</span>
                     <span class="corp-role">{{ request.session.get('role', 'Role') }} | {{ request.session.get('company_name', 'Company') }}</span>
@@ -805,7 +828,7 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
                 </div>
                 <div class="mega-menu-grid" id="dropdownMenuScrollBox"></div>
                 <div class="profile-logout-section">
-                    <button style="width:100%; margin-bottom:8px; padding:10px; background:var(--surface-panel, #fff); color:var(--corp-dash, #2563eb); border:1px solid var(--border-light, #dbe3ef); border-radius:8px; font-weight:800; cursor:pointer;" onclick="loadPage('/auth/profile', null, 'My Profile')"><i class="fa-solid fa-user" style="margin-right:7px;"></i>MY PROFILE</button>
+                    <button style="width:100%; margin-bottom:8px; padding:10px; background:var(--surface-panel, #fff); color:var(--corp-dash, #2563eb); border:1px solid var(--border-light, #dbe3ef); border-radius:8px; font-weight:800; cursor:pointer;" onclick="openProfileDetails(event)"><i class="fa-solid fa-user" style="margin-right:7px;"></i>MY PROFILE</button>
                     <button style="width:100%; padding:10px; background:rgba(239,68,68,0.1); color:#ef4444; border:1px solid rgba(239,68,68,0.2); border-radius:8px; font-weight:800; cursor:pointer;" onclick="logout()">SIGN OUT</button>
                 </div>
             </div>
@@ -820,6 +843,22 @@ iframe { flex: 1; border: none; width: 100%; height: 100%; background: transpare
         <div id="targetPageSkeleton" class="target-page-skeleton" role="status" aria-label="Loading original page structure" aria-hidden="true"></div>
         <iframe id="frame" name="frame"></iframe>
     </div>
+</div>
+
+<div class="profile-details-overlay" id="profileDetailsOverlay" onclick="closeProfileDetails(event)">
+    <section class="profile-details-popup" role="dialog" aria-modal="true" aria-label="My Profile" onclick="event.stopPropagation()">
+        <div class="profile-details-head">
+            <img class="profile-details-logo" src="/static/brand-dp-3d.png" alt="SVBK ERP">
+            <div class="profile-details-head-copy">
+                <strong id="profileDetailsName">My Profile</strong>
+                <span id="profileDetailsMeta">Account details</span>
+            </div>
+            <button class="profile-details-close" type="button" onclick="closeProfileDetails()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="profile-details-body" id="profileDetailsBody">
+            <div class="profile-details-state">Loading profile…</div>
+        </div>
+    </section>
 </div>
 
 <div class="quick-action-panel" id="qaPanel">
@@ -961,10 +1000,6 @@ document.addEventListener('DOMContentLoaded', () => {
     updateThemeIcon(savedTheme);
     if (window.applyBKNRUiColors) window.applyBKNRUiColors();
 
-    // Initialize user avatar dynamically based on session name
-    const userName = "{{ request.session.get('name', 'U') }}";
-    const initial = userName.trim() ? userName.trim().charAt(0).toUpperCase() : 'U';
-    document.getElementById('navUserInitial').innerText = initial;
 });
 
 // DROPDOWNS & PANELS
@@ -974,6 +1009,10 @@ function toggleDropdown(e, id) {
         if(el.id !== id) el.classList.remove('show');
     });
     const target = document.getElementById(id);
+    if (id === 'profileDropdownConsole') {
+        target.querySelectorAll('.dropdown-pillar-block.open').forEach(block => block.classList.remove('open'));
+        target.querySelector('.dropdown-pillar-block[data-group="Admin & Support"]')?.classList.add('open');
+    }
     target.classList.toggle('show');
     
     if (id === 'notifDropdownConsole' && target.classList.contains('show')) {
@@ -1017,7 +1056,10 @@ function closeCmdPalette(e) {
 }
 document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'k') { e.preventDefault(); openCommandPalette(); }
-    if (e.key === 'Escape') closeCmdPalette();
+    if (e.key === 'Escape') {
+        closeCmdPalette();
+        closeProfileDetails();
+    }
 });
 function launchCmdApp(url, title) {
     closeCmdPalette();
@@ -1404,7 +1446,7 @@ frame.addEventListener('load', () => {
         }
         if (!frameDoc.querySelector('script[src*="global-loader.js"]')) {
             const loaderScript = frameDoc.createElement('script');
-            loaderScript.src = '/static/js/global-loader.js?v=skel9';
+            loaderScript.src = '/static/js/global-loader.js?v=skel10';
             frameDoc.body.appendChild(loaderScript);
         }
 
@@ -1542,6 +1584,12 @@ const permissions = {{ request.session.get('permissions')|tojson|default("[]") }
 const currentUserRole = "{{ request.session.get('role', '') }}"; 
 const currentUserEmail = "{{ request.session.get('email', '') }}"; 
 const isDefaultSuperAdmin = (currentUserEmail === "bknr.solutions@gmail.com");
+const registerPermissionMap = {
+    processing_registers: ['gate_entry', 'raw_material_purchasing', 'de_heading', 'grading', 'peeling', 'soaking', 'production', 'reprocess'],
+    inventory_registers: ['stock_entry', 'pending_orders', 'sales_report', 'cold_storage_holding', 'cold_storage'],
+    accounts_registers: ['ledger_master', 'journal_entry', 'customer_receivable', 'vendor_payment', 'bank_transaction', 'expense_voucher', 'payment_receipt'],
+    hrms_registers: ['employee_registration', 'daily_attendance', 'employee_increment', 'tax_master', 'salary_advance']
+};
 
 function allow(key){ 
     if (['admin_helpdesk', 'manage_support', 'user_activity'].includes(key)) {
@@ -1549,6 +1597,9 @@ function allow(key){
     }
     if (isDefaultSuperAdmin) return true;
     if (!permissions) return false;
+    if (registerPermissionMap[key]) {
+        return permissions.includes("ALL") || registerPermissionMap[key].some(permission => permissions.includes(permission));
+    }
     return permissions.includes("ALL") || permissions.includes(key); 
 }
 
@@ -1559,7 +1610,7 @@ function getCorporateStatus(oldBadge) {
         'Misc': 'CLOSED', 'Acc': 'ACTIVE', 'Bank': 'ACTIVE', 'Fin': 'CLOSED',
         'Logs': 'CLOSED', 'Data': 'CLOSED', 'Inv': 'ACTIVE', 'Hold': 'PENDING',
         'Out': 'CLOSED', 'Val': 'CLOSED', 'Time': 'CLOSED', 'Run': 'CLOSED',
-        'HR': 'ACTIVE', 'Ops-1': 'PENDING', 'Ops-2': 'PENDING'
+        'HR': 'ACTIVE', 'Ops-1': 'PENDING', 'Ops-2': 'PENDING', 'XLSX': 'CLOSED'
     };
     const s = map[oldBadge] || oldBadge;
     if(s === 'ACTIVE') return { text: s, cls: 'badge-active' };
@@ -1594,7 +1645,8 @@ const sidebarMenuData = [
                     ['grading', '/processing/grading', 'fa-filter', 'Grading', 'WIP'],
                     ['peeling', '/processing/peeling', 'fa-hand-dots', 'Peeling', 'WIP'],
                     ['soaking', '/processing/soaking', 'fa-droplet', 'Soaking', 'WIP'],
-                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP']
+                    ['production', '/processing/production', 'fa-industry', 'Production', 'WIP'],
+                    ['processing_registers', '/registers/processing', 'fa-file-excel', 'Processing Registers', 'XLSX']
                 ]
             },
             {
@@ -1603,7 +1655,8 @@ const sidebarMenuData = [
                     ['stock_entry', '/inventory/stock_entry', 'fa-boxes-stacked', 'Stock Entry', 'Stock'],
                     ['pending_orders', '/inventory/pending_orders', 'fa-clock-rotate-left', 'Pending Orders', 'Orders'],
                     ['cold_storage_holding', '/inventory/cold_storage_holding', 'fa-snowflake', 'Cold Storage Holding', 'Cold'],
-                    ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store']
+                    ['general_store_entry', '/general_stock/entry', 'fa-shop', 'General Store Entry', 'Store'],
+                    ['inventory_registers', '/registers/inventory', 'fa-file-excel', 'Inventory Registers', 'XLSX']
                 ]
             },
             {
@@ -1652,7 +1705,8 @@ const sidebarMenuData = [
                     ['bank_master', '/finance_accounts/bank_master/entry', 'fa-building-columns', 'Bank Master', 'Acc'],
                     ['item_accounting_link', '/finance_accounts/item_accounting_link/entry', 'fa-link', 'Item Accounting Link', 'Acc'],
                     ['fixed_assets', '/finance_accounts/fixed_assets/entry', 'fa-building', 'Fixed Assets', 'Acc'],
-                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Acc']
+                    ['gst_register', '/finance_accounts/gst_register/entry', 'fa-percent', 'GST Register', 'Acc'],
+                    ['accounts_registers', '/registers/accounts', 'fa-file-excel', 'Accounts Registers', 'XLSX']
                 ]
             },
             {
@@ -1720,7 +1774,8 @@ const sidebarMenuData = [
             ['salary_report', '/attendance/salary/monthly-sheet', 'fa-money-check-dollar', 'Monthly Salary Sheet', 'HR'],
             ['tax_master', '/attendance/tax-master', 'fa-file-shield', 'Payroll Master', 'HR'],
             ['salary_advance', '/attendance/salary-advance', 'fa-hand-holding-dollar', 'Salary Advance', 'HR'],
-            ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'HR']
+            ['salary_processing', '/finance_accounts/salary_processing/entry', 'fa-calculator', 'Salary Processing', 'HR'],
+            ['hrms_registers', '/registers/hrms', 'fa-file-excel', 'HRMS Registers', 'XLSX']
         ]
     },
     {
@@ -1901,16 +1956,65 @@ function renderDropdownConsoleMenu() {
         let allowedItems = cat.items.filter(item => allow(item[0]));
         if (allowedItems.length === 0) return;
 
-        html += `<div class="dropdown-pillar-block"><div class="dropdown-pillar-title">${cat.title}</div>`;
+        html += `<div class="dropdown-pillar-block${cat.title === 'Admin & Support' ? ' open' : ''}" data-group="${cat.title}">
+            <button type="button" class="dropdown-pillar-title" onclick="toggleDropdownPillar(this)">
+                <span>${cat.title}</span><i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="dropdown-pillar-items">`;
         allowedItems.forEach(item => {
             const [permissionKey, route, label, icon] = item;
             const iconClass = icon ? `fa-solid ${icon}` : 'fa-solid fa-circle';
             const iconStyle = icon ? 'font-size:12px; margin-right:8px;' : 'font-size:5px; margin-right:8px;';
             html += `<div class="dropdown-item-row"><a class="dropdown-submenu-item" href="javascript:void(0)" onclick="loadPage('${route}', null, 'MASTERS > ${label.toUpperCase()}')"><i class="${iconClass}" style="${iconStyle} color:var(--corp-dash) !important;"></i> ${label}</a></div>`;
         });
-        html += `</div>`;
+        html += `</div></div>`;
     });
     document.getElementById("dropdownMenuScrollBox").innerHTML = html;
+}
+
+function toggleDropdownPillar(element) {
+    element.closest('.dropdown-pillar-block')?.classList.toggle('open');
+}
+
+async function openProfileDetails(event) {
+    if (event) event.stopPropagation();
+    document.getElementById('profileDropdownConsole')?.classList.remove('show');
+    const overlay = document.getElementById('profileDetailsOverlay');
+    const body = document.getElementById('profileDetailsBody');
+    overlay?.classList.add('show');
+    if (body) body.innerHTML = '<div class="profile-details-state">Loading profile…</div>';
+    try {
+        const response = await fetch('/auth/profile?format=json', { credentials:'include', headers:{ Accept:'application/json' } });
+        const payload = await response.json();
+        if (!response.ok) throw new Error(payload.detail || 'Unable to load profile');
+        const profile = payload.profile || {};
+        document.getElementById('profileDetailsName').textContent = profile.name || 'My Profile';
+        document.getElementById('profileDetailsMeta').textContent = `${profile.company_name || 'Company'} · ${profile.role || 'Role'}`;
+        const rows = [
+            ['fa-id-card', 'Employee ID', profile.employee_id],
+            ['fa-envelope', 'Login Email', profile.email],
+            ['fa-id-badge', 'Designation', profile.designation],
+            ['fa-calendar', 'Date of Birth', profile.date_of_birth],
+            ['fa-droplet', 'Blood Group', profile.blood_group],
+            ['fa-location-dot', 'Working Location', profile.working_location],
+            ['fa-house', 'Address', profile.address || 'Please update', !profile.address]
+        ];
+        if (body) body.innerHTML = rows.map(([icon, label, value, attention]) => `
+            <div class="profile-details-row">
+                <span class="profile-details-row-icon"><i class="fa-solid ${icon}"></i></span>
+                <div class="profile-details-row-copy">
+                    <span>${escapeHtml(label)}</span>
+                    <strong class="${attention ? 'attention' : ''}">${escapeHtml(value || '—')}</strong>
+                </div>
+            </div>`).join('');
+    } catch (error) {
+        if (body) body.innerHTML = `<div class="profile-details-state">${escapeHtml(error.message || 'Unable to load profile')}</div>`;
+    }
+}
+
+function closeProfileDetails(event) {
+    if (event && event.target !== event.currentTarget) return;
+    document.getElementById('profileDetailsOverlay')?.classList.remove('show');
 }
 
 function togglePillar(element) {
@@ -2494,7 +2598,7 @@ if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("/static/service-worker.js");
 }
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 <script src="/static/js/app-splash.js"></script>
 </body>
 </html>

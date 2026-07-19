@@ -1196,6 +1196,90 @@
       text-transform: none !important;
     }
 
+    .festival-list {
+      display: grid;
+      gap: 6px;
+    }
+
+    .festival-row {
+      --festival: #0284c7;
+      --festival-bg: #f0f9ff;
+      min-height: 58px;
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 9px;
+      padding: 6px 9px;
+      border: 1px solid color-mix(in srgb, var(--festival) 24%, var(--border-color));
+      border-radius: 10px;
+      background: linear-gradient(105deg, var(--festival-bg), var(--card-bg));
+    }
+
+    .festival-row.saffron { --festival: #ea580c; --festival-bg: #fff7ed; }
+    .festival-row.emerald { --festival: #059669; --festival-bg: #ecfdf5; }
+    .festival-row.rose { --festival: #e11d48; --festival-bg: #fff1f2; }
+    .festival-row.violet { --festival: #7c3aed; --festival-bg: #f5f3ff; }
+    .festival-row.amber { --festival: #d97706; --festival-bg: #fffbeb; }
+    .festival-row.indigo { --festival: #4f46e5; --festival-bg: #eef2ff; }
+    .festival-row.green { --festival: #16a34a; --festival-bg: #f0fdf4; }
+
+    .festival-photo {
+      position: relative;
+      width: 44px;
+      height: 44px;
+      overflow: hidden;
+      border: 2px solid color-mix(in srgb, var(--festival) 35%, #fff);
+      border-radius: 11px;
+      background: var(--festival);
+      box-shadow: 0 4px 10px color-mix(in srgb, var(--festival) 22%, transparent);
+    }
+
+    .festival-photo img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .festival-photo i {
+      position: absolute;
+      right: 2px;
+      bottom: 2px;
+      width: 15px;
+      height: 15px;
+      display: grid;
+      place-items: center;
+      border: 1px solid rgba(255,255,255,.8);
+      border-radius: 50%;
+      background: var(--festival);
+      color: #fff;
+      font-size: 7px;
+    }
+
+    .festival-copy {
+      min-width: 0;
+      color: var(--text-main);
+    }
+
+    .festival-copy strong,
+    .festival-copy small {
+      display: block;
+    }
+
+    .festival-copy small {
+      margin-top: 2px;
+      color: var(--text-muted);
+      font-size: 8.5px;
+      font-weight: 700;
+    }
+
+    .festival-date {
+      color: var(--festival);
+      font-size: 11px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
     @media(max-width: 992px) {
       .module-shell {
         grid-template-columns: 1fr;
@@ -2069,12 +2153,12 @@
                 {% endfor %}
               </div>
 
-              <!-- Calendar & Leaves -->
+              <!-- Calendar & Upcoming Festivals -->
               <div class="section-card">
                 <div class="section-header">
                   <div class="sh-left">
                     <i class="fa-solid fa-cake-candles" style="color:var(--indigo);"></i>
-                    Calendar &amp; Leaves
+                    Calendar &amp; Upcoming Festivals
                   </div>
                 </div>
                 <div class="data-row">
@@ -2085,10 +2169,6 @@
                   <span>Upcoming Birthdays (30D)</span>
                   <span class="badge badge-slate">{{ bday_30|length }}</span>
                 </div>
-                <div class="data-row">
-                  <span>Work Anniversaries (7D)</span>
-                  <span class="badge badge-solid-green">{{ anniv_7|length }}</span>
-                </div>
                 {% if bday_7 %}
                 <div class="sub-label">Upcoming Birthdays (Next 7 Days)</div>
                 {% for emp in bday_7[:4] %}
@@ -2098,24 +2178,17 @@
                 </div>
                 {% endfor %}
                 {% endif %}
-                <div class="sub-label" style="margin-top:12px;">Leave Balances (Company Aggregate)</div>
-                <div class="mini-cards-row">
-                  <div class="mini-card">
-                    <h4>CL</h4>
-                    <div class="mini-val">{{ leave_module.cl }}</div>
-                  </div>
-                  <div class="mini-card">
-                    <h4>SL</h4>
-                    <div class="mini-val">{{ leave_module.sl }}</div>
-                  </div>
-                  <div class="mini-card">
-                    <h4>EL</h4>
-                    <div class="mini-val">{{ leave_module.el }}</div>
-                  </div>
-                  <div class="mini-card" style="border:1px solid var(--amber);">
-                    <h4>Pending</h4>
-                    <div class="mini-val" style="color:var(--amber);">{{ leave_module.pending_approvals }}</div>
-                  </div>
+                <div class="sub-label" style="margin-top:12px;"><i class="fa-solid fa-calendar-day"></i> Upcoming Festivals</div>
+                <div class="festival-list">
+                {% for festival in upcoming_festivals %}
+                <div class="festival-row {{ festival.tone }}">
+                  <span class="festival-photo"><img src="{{ festival.image_url }}" alt="" loading="lazy"><i class="fa-solid {{ festival.icon }}"></i></span>
+                  <span class="festival-copy"><strong>{{ festival.name }}</strong><small>{{ festival.day }} · {{ festival.days_remaining }} days</small></span>
+                  <span class="festival-date">{{ festival.date.strftime('%d %b') }}</span>
+                </div>
+                {% else %}
+                <div style="color:var(--text-muted); font-size:10px; padding:10px 0; text-align:center;">No upcoming festivals in the current calendar.</div>
+                {% endfor %}
                 </div>
               </div>
 
@@ -2758,7 +2831,7 @@
   </script>
 
   <link rel="stylesheet" href="/static/css/ui-color-customizer.css?v=2.4">
-  <script src="/static/js/global-loader.js?v=skel9"></script>
+  <script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 
 </html>

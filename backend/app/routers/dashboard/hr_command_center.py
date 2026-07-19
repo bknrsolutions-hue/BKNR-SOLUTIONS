@@ -33,6 +33,37 @@ router = APIRouter(tags=["ENTERPRISE HR COMMAND CENTER"])
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
 
+# Official Andhra Pradesh / Central Government holiday calendar dates used by
+# the dashboard. Keep dated entries here so movable festivals are never
+# calculated approximately.
+FESTIVAL_CALENDAR = (
+    ("2026-08-15", "Independence Day", "fa-flag", "saffron", "independence-day.png"),
+    ("2026-08-26", "Milad-un-Nabi", "fa-mosque", "emerald", "milad-un-nabi.png"),
+    ("2026-09-14", "Ganesh Chaturthi", "fa-om", "rose", "ganesh-chaturthi.png"),
+    ("2026-10-02", "Mahatma Gandhi Jayanti", "fa-glasses", "sky", "gandhi-jayanti.png"),
+    ("2026-10-20", "Dussehra", "fa-shield-halved", "violet", "dussehra.png"),
+    ("2026-11-08", "Diwali", "fa-fire-flame-curved", "amber", "diwali.png"),
+    ("2026-11-24", "Guru Nanak Jayanti", "fa-khanda", "indigo", "guru-nanak-jayanti.png"),
+    ("2026-12-25", "Christmas Day", "fa-tree", "green", "christmas-day.png"),
+)
+
+
+def get_upcoming_festivals(today: date, limit: int = 6) -> list[dict]:
+    upcoming = []
+    for date_text, name, icon, tone, image_name in FESTIVAL_CALENDAR:
+        festival_date = date.fromisoformat(date_text)
+        if festival_date >= today:
+            upcoming.append({
+                "name": name,
+                "date": festival_date,
+                "day": festival_date.strftime("%A"),
+                "days_remaining": (festival_date - today).days,
+                "icon": icon,
+                "tone": tone,
+                "image_url": f"/static/images/festivals/{image_name}",
+            })
+    return upcoming[:limit]
+
 
 def clean_filter_value(value):
     if value is None:
@@ -196,6 +227,7 @@ def hr_command_center(
     today = ist_now().date()
     start_of_month = today.replace(day=1)
     current_year = today.year
+    upcoming_festivals = get_upcoming_festivals(today)
 
     try:
         allowed_emp_ids, g_loc_clean, emp_loc_col = get_secure_hr_scope(db, comp_code, global_location, user_allowed_locations)
@@ -635,6 +667,10 @@ def hr_command_center(
             "adv_balance": round(adv_balance, 0),
             "adv_recovery_pct": round(adv_recovery_pct, 1),
             "leave_module": leave_module,
+            "upcoming_festivals": [{
+                **row,
+                "date": row["date"].isoformat(),
+            } for row in upcoming_festivals],
             "bday_7": [{
                 "employee_id": row.employee_id,
                 "employee_name": row.employee_name,
@@ -735,6 +771,7 @@ def hr_command_center(
             "risk_missing_statutory": risk_missing_statutory,
             # Calendar & Leaves
             "bday_7": bday_7, "bday_30": bday_30, "anniv_7": anniv_7,
+            "upcoming_festivals": upcoming_festivals,
             "adv_issued": round(adv_issued, 0), "adv_recovered": round(adv_recovered, 0),
             "adv_balance": round(adv_balance, 0), "adv_recovery_pct": round(adv_recovery_pct, 1),
             "top_10_advances": top_10_advances, "leave_module": leave_module,

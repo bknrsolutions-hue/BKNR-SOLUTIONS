@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func  # 👈 func.trim() వాడటానికి ఇంపోర్ట్ చేశాను
+from sqlalchemy import func  # 👈 func.trim()
 from datetime import datetime, date
 from app.utils.timezone import ist_now
 import datetime as dt
@@ -20,8 +20,16 @@ from app.utils.global_filters import get_global_filters
 from app.utils.cancel_math import signed_number
 
 from app.database import get_db
-from app.database.models.processing import GateEntry, AuditLog
-from app.services.cache import cache_get_or_set
+from app.database.models.processing import (
+    AuditLog,
+    GateEntry,
+    GoodsGateMovement,
+    GoodsGateMovementItem,
+)
+from app.database.models.users import Company
+from app.services.cache import cache_get_or_set, invalidate_company_cache
+from app.utils.edit_lock import is_edit_locked, edit_lock_message
+from app.utils.trace_lock import is_batch_used_in_rmp
 
 router = APIRouter(
     prefix="/gate_entry",
@@ -49,10 +57,7 @@ async def gate_entry_report(
     db: Session = Depends(get_db)
 ):
     production_for, location = get_global_filters(request)
-    
-    # 🟢 TEMPORARY DEBUG PRINT: టెర్మినల్ అవుట్‌పుట్ చెక్ చేయడానికి యాడ్ చేశాను
-    print("GLOBAL FILTERS =", production_for, location)
-    
+
     company_id = request.session.get("company_code")
     role = request.session.get("role")
     if not company_id:
@@ -66,18 +71,22 @@ async def gate_entry_report(
         meta_q = db.query(GateEntry).filter(
             GateEntry.company_id == company_id,
         )
-        
+
         if production_for:
             meta_q = meta_q.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
         if location:
             meta_q = meta_q.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
-            
+
         meta_base = meta_q.all()
-        
+
         def extract_global_unique(field_attr):
             return sorted(list({getattr(r, field_attr) for r in meta_base if getattr(r, field_attr)}))
 
         all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == company_id, GateEntry.date != None).all()
+        all_dates += db.query(GoodsGateMovement.movement_date).filter(
+            GoodsGateMovement.company_id == company_id,
+            GoodsGateMovement.movement_date != None,
+        ).all()
         fy_set = set()
         for d_tuple in all_dates:
             d = d_tuple[0]
@@ -114,26 +123,102 @@ async def gate_entry_report(
             query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
 
         rows = [row_to_dict(row) for row in query.order_by(GateEntry.date.desc(), GateEntry.time.desc()).all()]
-        
+
         for r in rows:
             if isinstance(r.get("date"), (date, datetime)):
                 r["date"] = r["date"].isoformat()
             if isinstance(r.get("time"), (dt.time, datetime)):
                 r["time"] = r["time"].strftime("%H:%M")
 
-        return {**base_context, "rows": rows, "selected_fy": fy}
+        goods_query = db.query(GoodsGateMovement).filter(
+            GoodsGateMovement.company_id == company_id,
+        )
+        if fy:
+            goods_query = goods_query.filter(
+                GoodsGateMovement.movement_date >= start_date,
+                GoodsGateMovement.movement_date <= end_date,
+            )
+        if production_for:
+            goods_query = goods_query.filter(
+                func.trim(GoodsGateMovement.production_for) == func.trim(production_for)
+            )
+        if location:
+            goods_query = goods_query.filter(
+                func.trim(GoodsGateMovement.plant_location) == func.trim(location)
+            )
 
-    cache_key = f"bknr:processing_reports:{company_id}:gate_report:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
+        goods_models = goods_query.order_by(
+            GoodsGateMovement.movement_date.desc(),
+            GoodsGateMovement.movement_time.desc(),
+            GoodsGateMovement.id.desc(),
+        ).all()
+        movement_ids = [row.id for row in goods_models]
+        items_by_movement = {movement_id: [] for movement_id in movement_ids}
+        if movement_ids:
+            goods_items = db.query(GoodsGateMovementItem).filter(
+                GoodsGateMovementItem.movement_id.in_(movement_ids)
+            ).order_by(
+                GoodsGateMovementItem.movement_id,
+                GoodsGateMovementItem.id,
+            ).all()
+            for item in goods_items:
+                items_by_movement.setdefault(item.movement_id, []).append(item)
+
+        goods_rows = []
+        goods_categories = set()
+        for row in goods_models:
+            items = items_by_movement.get(row.id, [])
+            categories = sorted({item.item_category for item in items if item.item_category})
+            goods_categories.update(categories)
+            goods_rows.append({
+                "id": row.id,
+                "movement_number": row.movement_number,
+                "movement_type": row.movement_type,
+                "movement_date": row.movement_date.isoformat() if row.movement_date else "",
+                "movement_time": row.movement_time.strftime("%H:%M") if row.movement_time else "",
+                "production_for": row.production_for,
+                "plant_location": row.plant_location,
+                "party_name": row.party_name,
+                "source_destination": row.source_destination,
+                "po_number": row.po_number,
+                "challan_number": row.challan_number,
+                "invoice_number": row.invoice_number,
+                "vehicle_number": row.vehicle_number,
+                "purpose": row.purpose,
+                "department": row.department,
+                "is_returnable": bool(row.is_returnable),
+                "return_status": row.return_status,
+                "status": row.status,
+                "is_cancelled": bool(row.is_cancelled),
+                "created_by": row.created_by,
+                "item_categories": categories,
+                "item_summary": ", ".join(
+                    f"{item.item_name} ({float(item.quantity or 0):g} {item.unit})"
+                    for item in items
+                ),
+                "total_quantity": round(sum(float(item.quantity or 0) for item in items), 3),
+                "total_packages": round(sum(float(item.packages or 0) for item in items), 3),
+            })
+
+        return {
+            **base_context,
+            "rows": rows,
+            "goods_rows": goods_rows,
+            "goods_categories": sorted(goods_categories),
+            "selected_fy": fy,
+        }
+
+    cache_key = f"bknr:processing_reports:{company_id}:gate_report_v2:{fy or 'NONE'}:{production_for or 'ALL'}:{location or 'ALL'}"
     context = cache_get_or_set(cache_key, build_report_context, ttl=75)
     context = dict(context)
-    
+
     from app.utils.report_permissions import check_report_permission
     context.update({
         "can_edit": check_report_permission(request, "report_edit"),
         "can_delete": check_report_permission(request, "report_delete"),
         "can_print": check_report_permission(request, "report_print"),
         "can_export": check_report_permission(request, "report_export"),
-        "is_admin": role == "admin", 
+        "is_admin": role == "admin",
         "today_date": ist_now()
     })
 
@@ -171,7 +256,7 @@ async def gate_entry_report(
 # ============================================================================
 @router.get("/export_pdf")
 async def gate_export_pdf(
-    request: Request, 
+    request: Request,
     fy: str = Query(None),
     supplier: str = Query(None),
     factory: str = Query(None),
@@ -183,9 +268,9 @@ async def gate_export_pdf(
     company_name = request.session.get("company_name", "BKNR ENTERPRISES")
     company = db.query(Company).filter(Company.company_code == company_id).first()
     mpeda_registration_code = company.mpeda_registration_code if company and company.mpeda_registration_code else ""
-    if not fy: 
+    if not fy:
         raise HTTPException(status_code=400, detail="Financial Year parameter missing")
-        
+
     selected_fy = int(fy)
     start_date = date(selected_fy, 4, 1)
     end_date = date(selected_fy + 1, 3, 31)
@@ -195,7 +280,7 @@ async def gate_export_pdf(
         GateEntry.date >= start_date,
         GateEntry.date <= end_date,
     )
-    
+
     # 🟢 GLOBAL FILTERS LOCK FOR PDF WITH func.trim()
     production_for, location = get_global_filters(request)
 
@@ -203,7 +288,7 @@ async def gate_export_pdf(
         query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
     if location:
         query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
-    
+
     if supplier and supplier.strip() != "":
         query = query.filter(GateEntry.supplier_name == supplier)
     if factory and factory.strip() != "":
@@ -217,13 +302,13 @@ async def gate_export_pdf(
         "mpeda_registration_code": mpeda_registration_code,
         "rows": rows,
         "printed_on": ist_now(),
-        "auto": 0  
+        "auto": 0
     })
-    
+
     pdf = render_pdf_from_html(html_content)
     return StreamingResponse(
-        BytesIO(pdf), 
-        media_type="application/pdf", 
+        BytesIO(pdf),
+        media_type="application/pdf",
         headers={"Content-Disposition": f"attachment; filename=GATE_ENTRY_FY{fy}.pdf"}
     )
 
@@ -232,7 +317,7 @@ async def gate_export_pdf(
 # ============================================================================
 @router.get("/export_excel")
 async def gate_export_excel(
-    request: Request, 
+    request: Request,
     fy: str = Query(None),
     supplier: str = Query(None),
     factory: str = Query(None),
@@ -242,9 +327,9 @@ async def gate_export_excel(
     enforce_report_permission(request, "report_export")
     company_id = request.session.get("company_code")
     company_name = request.session.get("company_name", "BKNR ENTERPRISES")
-    if not fy: 
+    if not fy:
         raise HTTPException(status_code=400, detail="Financial Year parameter missing")
-        
+
     selected_fy = int(fy)
     start_date = date(selected_fy, 4, 1)
     end_date = date(selected_fy + 1, 3, 31)
@@ -254,7 +339,7 @@ async def gate_export_excel(
         GateEntry.date >= start_date,
         GateEntry.date <= end_date,
     )
-    
+
     # 🟢 GLOBAL FILTERS LOCK FOR EXCEL WITH func.trim()
     production_for, location = get_global_filters(request)
 
@@ -262,7 +347,7 @@ async def gate_export_excel(
         query = query.filter(func.trim(GateEntry.production_for) == func.trim(production_for))
     if location:
         query = query.filter(func.trim(GateEntry.receiving_center) == func.trim(location))
-    
+
     if supplier and supplier.strip() != "":
         query = query.filter(GateEntry.supplier_name == supplier)
     if factory and factory.strip() != "":
@@ -279,16 +364,16 @@ async def gate_export_excel(
     ws["A1"] = company_name.upper()
     ws["A1"].font = Font(name="Arial", size=14, bold=True, color="003366")
     ws["A1"].alignment = Alignment(horizontal="center")
-    
+
     ws.merge_cells("A2:M2")
     ws["A2"] = f"GATE ENTRY SHEET | FY: {fy}-{int(fy)+1}"
     ws["A2"].font = Font(name="Arial", size=10, bold=True, color="475569")
     ws["A2"].alignment = Alignment(horizontal="center")
-    ws.append([]) 
+    ws.append([])
 
     headers = ["SL", "Date", "Time", "Batch Number", "Challan No", "Gate Pass", "Factory", "Supplier Name", "Location", "Vehicle No", "Material Box", "Empty Box", "Ice Box"]
     ws.append(headers)
-    
+
     header_font = Font(name="Arial", size=9, bold=True, color="FFFFFF")
     header_fill = PatternFill(start_color="003366", end_color="003366", fill_type="solid")
     center_align = Alignment(horizontal="center", vertical="center")
@@ -306,13 +391,13 @@ async def gate_export_excel(
     for idx, r in enumerate(rows, 1):
         dt_str = r.date.strftime("%d-%m-%Y") if isinstance(r.date, (date, datetime)) else str(r.date)
         tm_str = r.time.strftime("%H:%M") if r.time else ""
-        
+
         ws.append([
             idx, dt_str, tm_str, r.batch_number, r.challan_number or "", r.gate_pass_number or "",
             r.receiving_center or "", r.supplier_name or "", r.purchasing_location or "", r.vehicle_number or "",
             signed_number(r, r.no_of_material_boxes), signed_number(r, r.no_of_empty_boxes), signed_number(r, r.no_of_ice_boxes)
         ])
-        
+
         current_row = start_data_row + idx - 1
         for col_num in range(1, len(headers) + 1):
             cell = ws.cell(row=current_row, column=col_num)
@@ -327,10 +412,10 @@ async def gate_export_excel(
 
     last_data_row = start_data_row + len(rows) - 1
     total_row_idx = last_data_row + 1
-    
+
     ws.append(["GRAND TOTAL SUMMARY COUNT", "", "", "", "", "", "", "", "", "", f"=SUM(K{start_data_row}:K{last_data_row})", f"=SUM(L{start_data_row}:L{last_data_row})", f"=SUM(M{start_data_row}:M{last_data_row})"])
     ws.merge_cells(start_row=total_row_idx, start_column=1, end_row=total_row_idx, end_column=10)
-    
+
     for col_num in range(1, len(headers) + 1):
         cell = ws.cell(row=total_row_idx, column=col_num)
         cell.font = Font(name="Arial", size=9, bold=True, color="003366")
@@ -348,7 +433,7 @@ async def gate_export_excel(
             col_letter = first_cell.column_letter
         else:
             col_letter = get_column_letter(first_cell.column)
-            
+
         for cell in col:
             if cell.row > 3 and cell.row < total_row_idx and cell.value:
                 max_len = max(max_len, len(str(cell.value)))
@@ -358,8 +443,8 @@ async def gate_export_excel(
     wb.save(stream)
     stream.seek(0)
     return StreamingResponse(
-        stream, 
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
+        stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": f"attachment; filename=GATE_ENTRY_FY{fy}.xlsx"}
     )
 
@@ -368,8 +453,8 @@ async def gate_export_excel(
 # ============================================================
 @router.post("/update")
 async def update_gate_entry(
-    request: Request, 
-    payload: dict = Body(...), 
+    request: Request,
+    payload: dict = Body(...),
     db: Session = Depends(get_db)
 ):
     from app.utils.report_permissions import enforce_report_permission
@@ -378,16 +463,20 @@ async def update_gate_entry(
     user_email = request.session.get("email")
 
     row = db.query(GateEntry).filter(
-        GateEntry.id == payload.get("id"), 
+        GateEntry.id == payload.get("id"),
         GateEntry.company_id == company_id
     ).first()
-    
-    if not row: 
+
+    if not row:
         raise HTTPException(status_code=404, detail="Record not found")
+    if row.is_cancelled:
+        raise HTTPException(status_code=400, detail="Cancelled records cannot be edited")
+    if is_edit_locked(request, row.date):
+        raise HTTPException(status_code=403, detail=edit_lock_message())
 
     fields = [
         "batch_number", "challan_number", "gate_pass_number", "receiving_center",
-        "supplier_name", "purchasing_location", "vehicle_number", "production_for",
+        "supplier_name", "purchasing_location", "vehicle_number", "driver_name", "production_for",
         "no_of_material_boxes", "no_of_empty_boxes", "no_of_ice_boxes"
     ]
 
@@ -395,25 +484,26 @@ async def update_gate_entry(
         if f in payload:
             old_val = str(getattr(row, f))
             new_val = payload[f]
-            
+
             if f in ["no_of_material_boxes", "no_of_empty_boxes", "no_of_ice_boxes"]:
                 try: new_val = float(new_val or 0)
                 except: new_val = 0.0
 
             if old_val != str(new_val):
                 db.add(AuditLog(
-                    table_name="gate_entry", 
-                    record_id=row.id, 
+                    table_name="gate_entry",
+                    record_id=row.id,
                     company_id=company_id,
-                    field_name=f, 
-                    old_value=old_val, 
+                    field_name=f,
+                    old_value=old_val,
                     new_value=str(new_val),
-                    edited_by=user_email, 
+                    edited_by=user_email,
                     edited_at=dt.datetime.now(dt.timezone.utc)
                 ))
                 setattr(row, f, new_val)
 
     db.commit()
+    invalidate_company_cache(company_id, "processing_reports")
     return {"status": "success"}
 
 @router.get("/audit")
@@ -440,14 +530,31 @@ async def delete_gate_row(request: Request, payload: dict = Body(...), db: Sessi
     from app.utils.report_permissions import enforce_report_permission
     enforce_report_permission(request, "report_delete")
     company_id = request.session.get("company_code")
+    reason = str(payload.get("reason") or "").strip()
+    if not reason:
+        raise HTTPException(status_code=400, detail="Cancellation reason is required")
     row = db.query(GateEntry).filter(GateEntry.id == payload.get("id"), GateEntry.company_id == company_id).first()
     if row:
+        if row.is_cancelled:
+            raise HTTPException(status_code=400, detail="This record is already cancelled")
+        if is_edit_locked(request, row.date):
+            raise HTTPException(status_code=403, detail=edit_lock_message())
+        if is_batch_used_in_rmp(db, row.batch_number, row.company_id):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Batch '{row.batch_number}' is already used in Raw Material Purchasing",
+            )
         db.add(AuditLog(
-            table_name="gate_entry", record_id=row.id, company_id=company_id, 
-            field_name="is_cancelled", old_value="False", new_value="True", 
+            table_name="gate_entry", record_id=row.id, company_id=company_id,
+            field_name="is_cancelled", old_value="False", new_value=f"True | {reason}",
             edited_by=request.session.get("email"), edited_at=dt.datetime.now(dt.timezone.utc)
         ))
         row.is_cancelled = True
+        row.status = "Cancelled"
+        row.cancel_reason = reason
+        row.cancelled_by = request.session.get("email")
+        row.cancelled_at = ist_now()
         db.commit()
+        invalidate_company_cache(company_id, "processing_reports")
         return {"status": "success"}
     return {"status": "error"}

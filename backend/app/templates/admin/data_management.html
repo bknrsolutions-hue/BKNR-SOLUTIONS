@@ -218,6 +218,7 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
         <div class="export-grid">
             <button class="btn-module" onclick="triggerSecureExport('Processing', '/export/processing')"><i class="fa-solid fa-industry" style="color:var(--warning);"></i> Processing</button>
             <button class="btn-module" onclick="triggerSecureExport('Inventory', '/export/inventory')"><i class="fa-solid fa-boxes-stacked" style="color:var(--accent);"></i> Inventory</button>
+            <button class="btn-module" onclick="triggerSecureExport('Accounts', '/export/accounts')"><i class="fa-solid fa-book" style="color:#0ea5e9;"></i> Accounts</button>
             <button class="btn-module" onclick="triggerSecureExport('Bills', '/export/bills')"><i class="fa-solid fa-file-invoice-dollar" style="color:var(--success);"></i> Bills</button>
             <button class="btn-module" onclick="triggerSecureExport('General Stock', '/export/general-stock')"><i class="fa-solid fa-pallet" style="color:#6366f1;"></i> General Stock</button>
             <button class="btn-module" onclick="triggerSecureExport('Payments', '/export/payments')"><i class="fa-solid fa-money-check-dollar" style="color:var(--danger);"></i> Payments</button>
@@ -246,6 +247,18 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
                     <i class="fa-solid fa-layer-group"></i> All Tables
                 </button>
             </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <h3><i class="fa-solid fa-file-excel" style="color:var(--success)"></i> Department Register Library</h3>
+        <p>Open the complete register center for each department. Master and individual tenant registers are available in the same format as Export Registers.</p>
+        <div class="export-grid">
+            <button class="btn-module" onclick="window.top.location.href='/app/#/page/export_registers'"><i class="fa-solid fa-file-export" style="color:#2563eb;"></i> Export Registers</button>
+            <button class="btn-module" onclick="window.top.location.href='/app/#/page/processing_registers'"><i class="fa-solid fa-industry" style="color:var(--warning);"></i> Processing Registers</button>
+            <button class="btn-module" onclick="window.top.location.href='/app/#/page/inventory_registers'"><i class="fa-solid fa-boxes-stacked" style="color:var(--accent);"></i> Inventory Registers</button>
+            <button class="btn-module" onclick="window.top.location.href='/app/#/page/accounts_registers'"><i class="fa-solid fa-book" style="color:#0ea5e9;"></i> Accounts Registers</button>
+            <button class="btn-module" onclick="window.top.location.href='/app/#/page/hrms_registers'"><i class="fa-solid fa-users-gear" style="color:#ec4899;"></i> HRMS Registers</button>
         </div>
     </div>
 
@@ -390,7 +403,7 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
             ? `/data-management/template/blank?table=${encodeURIComponent(table)}`
             : `/data-management/template/blank`;
 
-        secureActionWithOTP('download', label, () => {
+        secureActionWithOTP('download', label, (downloadToken) => {
             // Step 1: Spinner while generating
             Swal.fire({
                 title: 'Preparing File...',
@@ -403,7 +416,7 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
             // Step 2: Download via hidden iframe (page stays, no redirect)
             const iframe = document.createElement('iframe');
             iframe.style.display = 'none';
-            iframe.src = url;
+            iframe.src = `${url}${url.includes('?') ? '&' : '?'}download_token=${encodeURIComponent(downloadToken)}`;
             document.body.appendChild(iframe);
 
             // Step 3: Close spinner → success toast
@@ -488,7 +501,7 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
             const verifyData = await verifyRes.json();
 
             if (verifyData.success) {
-                callback();
+                callback(verifyData.download_token || '');
             } else {
                 Swal.fire('Verification Failed', verifyData.error, 'error');
             }
@@ -501,36 +514,42 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
     // 🟢 SECURED EXPORT LOGIC
     // ==========================================
     function triggerSecureExport(moduleName, endpointUrl) {
-        secureActionWithOTP('export', moduleName, () => {
-            executeModuleExport(moduleName, endpointUrl);
+        secureActionWithOTP('export', moduleName, (downloadToken) => {
+            executeModuleExport(moduleName, endpointUrl, downloadToken);
         });
     }
 
-    async function executeModuleExport(moduleName, endpointUrl) {
+    async function executeModuleExport(moduleName, endpointUrl, downloadToken) {
         Swal.fire({ title: `Exporting ${moduleName}...`, text: `Extracting data...`, allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
         try {
-            const response = await fetch(endpointUrl, { method: 'POST' });
-            if (!response.ok) throw new Error("Export failed or unauthorized.");
-
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            
-            let filename = `BKNR_${moduleName}_Export.xlsx`;
-            const disposition = response.headers.get('content-disposition');
-            if (disposition && disposition.indexOf('attachment') !== -1) {
-                const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
-                if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+            const response = await fetch(endpointUrl, {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'X-SVBK-Download-Token': downloadToken, 'Accept': 'application/json' }
+            });
+            if (!response.ok) {
+                const failure = await response.json().catch(() => ({}));
+                throw new Error(failure.detail || failure.error || 'Download failed');
             }
-            a.download = filename;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            
-            Swal.fire("Success!", `${moduleName} export downloaded.`, "success").then(() => loadHistory());
-        } catch (error) { Swal.fire("Export Failed", error.message, "error"); }
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement('a');
+            const disposition = response.headers.get('content-disposition') || '';
+            const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1];
+            anchor.href = objectUrl;
+            anchor.download = filename || `SVBK_${moduleName}_Export.xlsx`;
+            anchor.style.display = 'none';
+            document.body.appendChild(anchor);
+            anchor.click();
+            window.setTimeout(() => {
+                anchor.remove();
+                URL.revokeObjectURL(objectUrl);
+            }, 1500);
+            await loadHistory();
+            Swal.fire("Success!", `${moduleName} export downloaded.`, "success");
+        } catch (error) {
+            Swal.fire("Export Failed", error.message, "error");
+        }
     }
 
     // ==========================================
@@ -704,6 +723,6 @@ html[data-theme="dark"] .swal2-input, html[data-theme="dark"] .swal2-select {
         } catch (e) { console.error("Could not fetch history"); }
     }
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel14"></script>
 </body>
 </html>

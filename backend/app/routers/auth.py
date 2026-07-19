@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, Form
+from fastapi import APIRouter, Depends, HTTPException, Request, Form, File, UploadFile
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -6,7 +6,9 @@ from sqlalchemy import func, or_
 from pydantic import BaseModel, Field
 from datetime import date, datetime, timedelta
 from typing import Optional
-import logging, random, json, os, re, requests, secrets
+from pathlib import Path
+from uuid import uuid4
+import logging, random, json, os, re, requests, secrets, time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -36,6 +38,22 @@ logger = logging.getLogger("BKNR_ERP.auth")
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
+TENANT_LOGO_DIR = Path("app/static/uploads/company_logos")
+TENANT_LOGO_MAX_BYTES = 2 * 1024 * 1024
+TENANT_LOGO_TYPES = {
+    "image/png": ("png", b"\x89PNG\r\n\x1a\n"),
+    "image/jpeg": ("jpg", b"\xff\xd8\xff"),
+    "image/webp": ("webp", b"RIFF"),
+}
+
+def activate_exclusive_email_session(db: Session, email: str, session_id: str) -> None:
+    normalized_email = str(email or "").strip().lower()
+    db.query(User).filter(
+        func.lower(func.trim(User.email)) == normalized_email
+    ).update(
+        {User.current_session_id: session_id},
+        synchronize_session=False,
+    )
 
 def get_ist_time():
     return ist_now().replace(tzinfo=None)
@@ -400,7 +418,11 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     if not company.is_active:
         raise HTTPException(400, "Your company has not been approved or is deactivated. Please contact support.")
 
-    user = db.query(User).filter(User.email == data.email.strip(), User.company_id == company.id).first()
+    normalized_email = data.email.strip().lower()
+    user = db.query(User).filter(
+        func.lower(func.trim(User.email)) == normalized_email,
+        User.company_id == company.id,
+    ).first()
 
     if not user or not verify_password(data.password, user.password):
         raise HTTPException(400, "Invalid credentials")
@@ -474,9 +496,17 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     if not company:
         raise HTTPException(400, "Invalid credentials")
 
-    user = db.query(User).filter(User.email == data.email.strip(), User.company_id == company.id).first()
+    if not company.is_active:
+        raise HTTPException(400, "Company account is inactive")
+    normalized_email = data.email.strip().lower()
+    user = db.query(User).filter(
+        func.lower(func.trim(User.email)) == normalized_email,
+        User.company_id == company.id,
+    ).first()
     if not user:
         raise HTTPException(400, "Invalid credentials")
+    if not getattr(user, "is_active", True):
+        raise HTTPException(400, "Account has been deactivated")
 
     # Verify matching active OTP
     rec = db.query(OTPTable).filter(
@@ -487,6 +517,19 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
 
     if not rec:
         raise HTTPException(400, "Invalid or expired OTP")
+    if not rec.created_at or get_ist_time() > rec.created_at + timedelta(minutes=OTP_EXPIRY_MIN):
+        rec.is_used = True
+        db.commit()
+        raise HTTPException(400, "Login OTP has expired")
+    try:
+        otp_context = json.loads(rec.extra or "{}")
+    except (TypeError, ValueError):
+        otp_context = {}
+    if (
+        otp_context.get("purpose") != "login"
+        or str(otp_context.get("company_code") or "").strip().upper() != company.company_code.strip().upper()
+    ):
+        raise HTTPException(400, "OTP does not match this company login")
 
     rec.is_used = True
 
@@ -497,7 +540,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     # Invalidate previous sessions by generating a new session UUID
     import uuid
     session_id = uuid.uuid4().hex
-    user.current_session_id = session_id
+    activate_exclusive_email_session(db, user.email, session_id)
 
     # Record login activity
     activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")
@@ -509,6 +552,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "company_id": company.id,
         "company_code": company.company_code,
         "company_name": company.company_name,
+        "company_logo_url": company.logo_path,
         "mpeda_registration_code": company.mpeda_registration_code,
         "name": user.name,
         "role": user.role,
@@ -527,14 +571,51 @@ def session_info(request: Request, db: Session = Depends(get_db)):
     # their normal 401/redirect guards.
     if not request.session.get("email"):
         return {"authenticated": False}
+    now_ts = time.time()
+    idle_timeout = int(os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60)))
+    try:
+        last_activity = float(request.session.get("last_activity") or now_ts)
+    except (TypeError, ValueError):
+        last_activity = now_ts
+    if now_ts - last_activity > idle_timeout:
+        request.session.clear()
+        return JSONResponse(
+            {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+            status_code=401,
+        )
+    session_id = request.session.get("session_id")
+    if not session_id:
+        request.session.clear()
+        return JSONResponse(
+            {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+            status_code=401,
+        )
+    if session_id:
+        user = db.query(User).filter(
+            User.company_id == request.session.get("company_id"),
+            func.lower(func.trim(User.email)) == str(request.session.get("email") or "").strip().lower(),
+        ).first()
+        if not user or not getattr(user, "is_active", True) or getattr(user, "current_session_id", None) != session_id:
+            request.session.clear()
+            return JSONResponse(
+                {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},
+                status_code=401,
+            )
+        request.session["email"] = user.email
+        request.session["name"] = user.name
+        request.session["role"] = user.role
+        request.session["permissions"] = user.permissions or ""
     mpeda_code = request.session.get("mpeda_registration_code")
-    if not mpeda_code and request.session.get("company_code"):
+    company = None
+    if request.session.get("company_code"):
         company = db.query(Company).filter(
             Company.company_code == request.session.get("company_code")
         ).first()
-        mpeda_code = company.mpeda_registration_code if company else None
+        if not mpeda_code:
+            mpeda_code = company.mpeda_registration_code if company else None
         if mpeda_code:
             request.session["mpeda_registration_code"] = mpeda_code
+        request.session["company_logo_url"] = company.logo_path if company else None
     return {
         "authenticated": True,
         "email": request.session.get("email"),
@@ -542,6 +623,7 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         "company_name": request.session.get("company_name"),
         "company_code": request.session.get("company_code"),
         "mpeda_registration_code": mpeda_code,
+        "company_logo_url": company.logo_path if company else None,
         "role": request.session.get("role"),
         "permissions": request.session.get("permissions") or [],
     }
@@ -591,8 +673,78 @@ def _profile_payload(request: Request, db: Session, company: Company, user: User
         "address": (employee.present_address if employee else "") or (employee.permanent_address if employee else "") or user.address or "",
         "company_name": company.company_name,
         "company_code": company.company_code,
+        "company_logo_url": company.logo_path,
         "role": user.role or "",
     }
+
+def _require_tenant_logo_admin(request: Request, db: Session):
+    company, user = _current_profile(request, db)
+    role = str(user.role or request.session.get("role") or "").strip().lower()
+    email = str(user.email or request.session.get("email") or "").strip().lower()
+    if role not in {"admin", "super_admin", "super admin"} and email != "bknr.solutions@gmail.com":
+        raise HTTPException(status_code=403, detail="Only tenant administrators can change the company logo")
+    return company
+
+@router.get("/tenant-logo")
+def tenant_logo(request: Request, db: Session = Depends(get_db)):
+    company, _ = _current_profile(request, db)
+    return {"status": "success", "company_logo_url": company.logo_path}
+
+@router.post("/tenant-logo")
+async def update_tenant_logo(
+    request: Request,
+    logo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+):
+    company = _require_tenant_logo_admin(request, db)
+    content_type = str(logo.content_type or "").lower()
+    type_info = TENANT_LOGO_TYPES.get(content_type)
+    if not type_info:
+        raise HTTPException(status_code=400, detail="Upload a PNG, JPEG or WebP image")
+    extension, signature = type_info
+    content = await logo.read(TENANT_LOGO_MAX_BYTES + 1)
+    if not content:
+        raise HTTPException(status_code=400, detail="Logo file is empty")
+    if len(content) > TENANT_LOGO_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Logo must be 2 MB or smaller")
+    if not content.startswith(signature):
+        raise HTTPException(status_code=400, detail="The uploaded file is not a valid image")
+    if content_type == "image/webp" and (len(content) < 12 or content[8:12] != b"WEBP"):
+        raise HTTPException(status_code=400, detail="The uploaded file is not a valid WebP image")
+
+    TENANT_LOGO_DIR.mkdir(parents=True, exist_ok=True)
+    safe_company_code = re.sub(r"[^A-Za-z0-9_-]", "", company.company_code) or "tenant"
+    filename = f"{safe_company_code}_{uuid4().hex}.{extension}"
+    destination = TENANT_LOGO_DIR / filename
+    destination.write_bytes(content)
+    old_logo = company.logo_path
+    company.logo_path = f"/static/uploads/company_logos/{filename}"
+    db.commit()
+    request.session["company_logo_url"] = company.logo_path
+    if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
+        old_path = Path("app") / old_logo.lstrip("/")
+        try:
+            if old_path.is_file() and old_path != destination:
+                old_path.unlink()
+        except OSError:
+            logger.warning("Unable to remove previous tenant logo: %s", old_path)
+    return {"status": "success", "company_logo_url": company.logo_path}
+
+@router.delete("/tenant-logo")
+def remove_tenant_logo(request: Request, db: Session = Depends(get_db)):
+    company = _require_tenant_logo_admin(request, db)
+    old_logo = company.logo_path
+    company.logo_path = None
+    db.commit()
+    request.session["company_logo_url"] = None
+    if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
+        old_path = Path("app") / old_logo.lstrip("/")
+        try:
+            if old_path.is_file():
+                old_path.unlink()
+        except OSError:
+            logger.warning("Unable to remove tenant logo: %s", old_path)
+    return {"status": "success", "company_logo_url": None}
 
 @router.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request, format: str = "html", db: Session = Depends(get_db)):
@@ -703,6 +855,8 @@ def masters_check(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/auto-login")
 def auto_login(request: Request, db: Session = Depends(get_db)):
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        raise HTTPException(status_code=404, detail="Not found")
     user = db.query(User).filter(User.email == "garikinanagaraju73@gmail.com").first()
     if not user:
         user = db.query(User).first()
@@ -716,8 +870,8 @@ def auto_login(request: Request, db: Session = Depends(get_db)):
     # Add login activity
     import uuid
     session_id = uuid.uuid4().hex
-    user.current_session_id = session_id
-    activity = UserLoginActivity(user_id=user.id, company_id=company.id, login_at=get_ist_time(), session_hours="Active Now")
+    activate_exclusive_email_session(db, user.email, session_id)
+    activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")
     db.add(activity)
     db.commit()
 
@@ -738,6 +892,17 @@ def auto_login(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/logout")
 def logout(request: Request, db: Session = Depends(get_db)):
+    email = str(request.session.get("email") or "").strip().lower()
+    session_id = request.session.get("session_id")
+    if email and session_id:
+        db.query(User).filter(
+            func.lower(func.trim(User.email)) == email,
+            User.current_session_id == session_id,
+        ).update(
+            {User.current_session_id: None},
+            synchronize_session=False,
+        )
+        db.commit()
     request.session.clear()
     return RedirectResponse("/", status_code=303)
 

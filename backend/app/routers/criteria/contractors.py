@@ -22,7 +22,7 @@ def contractors_page(request: Request, db: Session = Depends(get_db)):
     if not email or not company_code:
         return RedirectResponse("/", status_code=302)
 
-    # కంపెనీ వైజ్ డేటా ఫిల్టర్ (company_id == company_code)
+    #     (company_id == company_code)
     rows = (
         db.query(contractors)
         .filter(contractors.company_id == company_code)
@@ -148,7 +148,7 @@ def delete_contractor(id: int, request: Request, db: Session = Depends(get_db)):
     if not company_code:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
-    # వేరే కంపెనీ డేటా డిలీట్ అవ్వకుండా సెక్యూరిటీ చెక్
+    #
     target_row = (
         db.query(contractors)
         .filter(contractors.id == id, contractors.company_id == company_code)

@@ -14,7 +14,7 @@ from app.utils.timezone import ist_now
 from app.utils.global_filters import get_global_filters
 from app.services.cache import cache_get_or_set, invalidate_company_cache
 
-import openpyxl 
+import openpyxl
 from io import BytesIO
 from app.services.pdf_renderer import render_pdf_from_html
 from openpyxl import Workbook
@@ -23,7 +23,7 @@ from openpyxl.styles import Font, Alignment, PatternFill
 from app.database import get_db
 from app.database.models.inventory_management import stock_entry
 from app.database.models.users import Company
-from app.database.models.processing import AuditLog, GateEntry 
+from app.database.models.processing import AuditLog, GateEntry
 from app.database.models.criteria import (
     production_for as production_for_model, production_at, freezers, packing_styles, production_types,
     glazes, varieties, grades, brands, species as species_model
@@ -144,8 +144,8 @@ async def stock_report_page(
 
     # --- Financial Year Logic ---
     selected_fy = fy if fy is not None else ""
-    
-    # బాచ్ నంబర్ లింక్ మిస్ అవ్వకుండా ఇక్కడ LEFT OUTER JOIN ఉపయోగించాం
+
+    #       LEFT OUTER JOIN
     q = db.query(stock_entry).outerjoin(
         GateEntry,
         and_(
@@ -166,8 +166,8 @@ async def stock_report_page(
         start_year = int(selected_fy)
         fy_start = date(start_year, 4, 1)
         fy_end = date(start_year + 1, 3, 31)
-        
-        # గేట్ ఎంట్రీ డేట్ ఉంటే దాని ప్రకారం, లేకపోతే స్టాక్ ఎంట్రీ ఓన్ డేట్ ప్రకారం కండిషన్ అప్లై అవుతుంది
+
+        #      ,
         q = q.filter(
             case(
                 (GateEntry.date != None, and_(GateEntry.date >= fy_start, GateEntry.date <= fy_end)),
@@ -184,9 +184,9 @@ async def stock_report_page(
     rows = q.order_by(stock_entry.date.desc(), stock_entry.time.desc()).all()
 
     context = {
-        "request": request, 
-        "rows": rows, 
-        "from_date": from_date, 
+        "request": request,
+        "rows": rows,
+        "from_date": from_date,
         "to_date": to_date,
         "financial_years": financial_years,
         "selected_fy": selected_fy,
@@ -265,13 +265,13 @@ async def update_stock(request: Request, payload: dict = Body(...), db: Session 
 # ------------------------------------------------------------
 @router.get("/export_xlsx")
 def export_xlsx(
-    request: Request, db: Session = Depends(get_db), 
+    request: Request, db: Session = Depends(get_db),
     from_date: str = "", to_date: str = "", type: str = "",
     batch: str = "", brand: str = "", species: str = "",
     variety: str = "", location: str = ""
 ):
     comp_code = request.session.get("company_code")
-    
+
     # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
     global_production_for, global_location = get_global_filters(request)
 
@@ -293,16 +293,16 @@ def export_xlsx(
     if species: q = q.filter(stock_entry.species == species)
     if variety: q = q.filter(stock_entry.variety == variety)
     if location: q = q.filter(stock_entry.location == location)
-    
+
     rows = q.order_by(stock_entry.date.asc(), stock_entry.time.asc()).all()
-    
+
     wb = Workbook()
     ws = wb.active
     ws.title = "Stock Ledger"
-    
+
     headers = ["Date", "Batch #", "Type", "Brand", "Species", "Variety", "Grade", "Glaze", "Freezer", "Pack Style", "Location", "PO #", "Prod For", "Prod At", "HLSO", "HOSO", "MC", "Lse", "Qty", "Cost", "Value", "Sales Rate", "User"]
     ws.append(headers)
-    
+
     header_fill = PatternFill(start_color="0F172A", end_color="0F172A", fill_type="solid")
     for cell in ws[1]:
         cell.font = Font(bold=True, color="FFFFFF")
@@ -328,14 +328,14 @@ def export_xlsx(
 # ------------------------------------------------------------
 @router.get("/export_pdf")
 def export_pdf(
-    request: Request, db: Session = Depends(get_db), 
+    request: Request, db: Session = Depends(get_db),
     from_date: str = "", to_date: str = "", type: str = "",
     batch: str = "", brand: str = "", species: str = "",
     variety: str = "", location: str = "",
     download: bool = Query(False)
 ):
     comp_code = request.session.get("company_code")
-    
+
     # 🟢 FIX: Extract with unique names to bypass explicit route variable clash
     global_production_for, global_location = get_global_filters(request)
 
@@ -357,23 +357,23 @@ def export_pdf(
     if species: q = q.filter(stock_entry.species == species)
     if variety: q = q.filter(stock_entry.variety == variety)
     if location: q = q.filter(stock_entry.location == location)
-    
+
     rows = q.order_by(stock_entry.date.asc(), stock_entry.time.asc()).all()
     company_name, company_address = get_company_info(db, comp_code)
-    
+
     html = request.app.state.templates.get_template("inventory_management/stock_report_print.html").render({
-        "request": request, "rows": rows, "company_name": company_name, 
+        "request": request, "rows": rows, "company_name": company_name,
         "company_address": company_address,
         "mpeda_registration_code": get_company_mpeda_code(db, comp_code),
         "printed_on": ist_now().strftime("%d-%m-%Y %H:%M:%S")
     })
-    
+
     pdf_file = render_pdf_from_html(html)
     disposition = "attachment" if download else "inline"
-    
+
     return StreamingResponse(
-        BytesIO(pdf_file), 
-        media_type="application/pdf", 
+        BytesIO(pdf_file),
+        media_type="application/pdf",
         headers={"Content-Disposition": f"{disposition}; filename=Stock_Report.pdf"}
     )
 

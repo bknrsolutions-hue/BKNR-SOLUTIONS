@@ -38,7 +38,7 @@ def floor_balance_value_report(request: Request, db: Session = Depends(get_db)):
     # Your floor balance logic here...
     return templates.TemplateResponse("summary/floor_balance_value.html", {"request": request, "rows_batch": [], "company_id": company_id})
 
-# ఇక్కడ స్పెల్లింగ్ మరియు స్లాష్ కరెక్ట్ గా ఉందో లేదో చూడు
+#
 @router.get("/periodic-report", response_class=HTMLResponse)
 async def get_periodic_summary_report(
     request: Request,

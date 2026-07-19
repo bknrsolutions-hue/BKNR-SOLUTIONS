@@ -317,6 +317,28 @@
         hideLoader();
     });
 
+    let sessionRedirecting = false;
+    function redirectExpiredSession() {
+        if (sessionRedirecting || window.location.pathname.startsWith("/auth/login")) return;
+        sessionRedirecting = true;
+        try {
+            if (window.top && window.top !== window) {
+                window.top.location.replace("/auth/login");
+            } else {
+                window.location.replace("/auth/login");
+            }
+        } catch (error) {
+            window.location.replace("/auth/login");
+        }
+    }
+
+    function isExpiredSessionResponse(response) {
+        return response && (
+            response.status === 401
+            || (response.redirected && String(response.url || "").includes("/auth/login"))
+        );
+    }
+
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
         const useLoader = shouldShowForFetch(args);
@@ -326,7 +348,9 @@
         }
 
         try {
-            return await originalFetch(...args);
+            const response = await originalFetch(...args);
+            if (isExpiredSessionResponse(response)) redirectExpiredSession();
+            return response;
         } finally {
             if (useLoader) {
                 activeRequests = Math.max(0, activeRequests - 1);
@@ -334,6 +358,50 @@
             }
         }
     };
+
+    if (!window.__bknrSessionXhrGuard) {
+        window.__bknrSessionXhrGuard = true;
+        const nativeXhrOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function (...args) {
+            this.addEventListener("loadend", () => {
+                const redirectedToLogin = String(this.responseURL || "").includes("/auth/login");
+                if (this.status === 401 || redirectedToLogin) redirectExpiredSession();
+            }, { once: true });
+            return nativeXhrOpen.apply(this, args);
+        };
+    }
+
+    let sessionProbeActive = false;
+    async function probeActiveSession() {
+        if (sessionProbeActive || document.visibilityState === "hidden") return;
+        sessionProbeActive = true;
+        try {
+            const response = await originalFetch("/auth/session-info", {
+                cache: "no-store",
+                credentials: "include",
+                headers: { "Accept": "application/json" },
+            });
+            if (isExpiredSessionResponse(response)) {
+                redirectExpiredSession();
+                return;
+            }
+            if (response.ok) {
+                const payload = await response.clone().json();
+                if (!payload.authenticated) redirectExpiredSession();
+            }
+        } catch (error) {
+            // Keep the current page during transient connectivity failures.
+        } finally {
+            sessionProbeActive = false;
+        }
+    }
+    if (window.top === window.self) {
+        window.setInterval(probeActiveSession, 15000);
+        window.addEventListener("focus", probeActiveSession);
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "visible") probeActiveSession();
+        });
+    }
 
     window.showLoader = function () {
         activeRequests += 1;
@@ -399,6 +467,60 @@
 
     window.openAuditRecord = function (recordId) {
         return openAuditRecord(recordId, null);
+    };
+
+    window.svbkSecureDownload = async function (url, label, method = "GET") {
+        const downloadLabel = label || "this file";
+        if (!window.confirm(`Admin OTP verification is required to download ${downloadLabel}. Send OTP?`)) return false;
+        try {
+            const generateResponse = await fetch("/data-management/generate-otp", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "download", module: downloadLabel })
+            });
+            const generated = await generateResponse.json();
+            if (!generateResponse.ok || !generated.success) throw new Error(generated.error || "Unable to send Admin OTP");
+            const otp = window.prompt(`${generated.message}\nEnter the 6-digit Admin OTP:`);
+            if (!otp) return false;
+            const verifyResponse = await fetch("/data-management/verify-otp", {
+                method: "POST",
+                credentials: "include",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action: "download", otp: otp.trim() })
+            });
+            const verified = await verifyResponse.json();
+            if (!verifyResponse.ok || !verified.success || !verified.download_token) {
+                throw new Error(verified.error || "Invalid Admin OTP");
+            }
+            const response = await fetch(url, {
+                method,
+                credentials: "include",
+                headers: { "X-SVBK-Download-Token": verified.download_token, "Accept": "application/json" }
+            });
+            if (!response.ok) {
+                const failure = await response.json().catch(() => ({}));
+                throw new Error(failure.detail || failure.error || "Download failed");
+            }
+            const blob = await response.blob();
+            const objectUrl = URL.createObjectURL(blob);
+            const anchor = document.createElement("a");
+            const disposition = response.headers.get("content-disposition") || "";
+            const match = disposition.match(/filename="?([^";]+)"?/i);
+            anchor.href = objectUrl;
+            anchor.download = match?.[1] || downloadLabel.replace(/[^a-z0-9]+/gi, "_");
+            anchor.style.display = "none";
+            document.body.appendChild(anchor);
+            anchor.click();
+            window.setTimeout(() => {
+                anchor.remove();
+                URL.revokeObjectURL(objectUrl);
+            }, 1500);
+            return true;
+        } catch (error) {
+            window.alert(error.message || "Download failed");
+            return false;
+        }
     };
 
     document.addEventListener("click", (event) => {

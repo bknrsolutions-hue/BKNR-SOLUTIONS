@@ -47,7 +47,7 @@ def storage_cost_report(
         billing_start_date = date(today.year, today.month, 1)
         billing_end_date = today
 
-    # 🔍 FETCH ALL DATA (FIFO కోసం Billing End Date వరకు ఉన్నవన్నీ కావాలి)
+    # 🔍 FETCH ALL DATA (FIFO  Billing End Date   )
     q = db.query(Inventory).filter(Inventory.company_id == company_code)
     
     # 🟢 FIX 2: Manual screen selection OR Global header selection fallback mechanism

@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Optional
 
 from app.database import get_db
-from app.database.models.attendance import Shift 
+from app.database.models.attendance import Shift
 from app.database.models.users import Company
 from app.database.models.criteria import production_at as ProductionAtModel
 
@@ -27,7 +27,7 @@ def get_session_context(request: Request, db: Session):
     email = request.session.get("email")
     if not comp_code:
         return None
-    
+
     company_info = db.query(Company).filter(Company.company_code == comp_code).first()
     return {
         "comp_code": comp_code,
@@ -45,7 +45,7 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/auth/login", status_code=302)
 
     comp = ctx["comp_code"]
-    
+
     global_production_for, global_location = get_global_filters(request)
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",")] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
@@ -69,7 +69,7 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
         name="admin/shifts.html",
         context={
             "company": ctx["company_info"],
-            "sites": site_list,          
+            "sites": site_list,
             "shifts": all_shifts,
             "email": ctx["email"],
             "message": request.session.pop("message", None),
@@ -84,9 +84,9 @@ def shift_master_page(request: Request, db: Session = Depends(get_db)):
 @router.post("/shifts/add")
 async def save_or_update_shift(
     request: Request,
-    shift_id: str = Form(default=""),          
+    shift_id: str = Form(default=""),
     shift_name: str = Form(default=""),
-    production_at: str = Form(default=""),     
+    production_at: str = Form(default=""),
     start_time: str = Form(default=""),
     end_time: str = Form(default=""),
     break_minutes: str = Form(default="0"),
@@ -94,13 +94,13 @@ async def save_or_update_shift(
     db: Session = Depends(get_db)
 ):
     ctx = get_session_context(request, db)
-    if not ctx: 
+    if not ctx:
         return RedirectResponse("/auth/login", status_code=302)
-    
+
     comp = ctx["comp_code"]
     comp_name = ctx["company_info"].company_name if ctx["company_info"] else "BKNR Enterprise"
 
-    # 🟢 🔴 TERMINAL DEBUG: ఫారమ్ నుండి డేటా వస్తుందో లేదో ఇక్కడ ప్రింట్ అవుతుంది
+    # 🟢 🔴 TERMINAL DEBUG:
     print(f"--- SHIFT FORM DATA ---")
     print(f"ID: '{shift_id}', Name: '{shift_name}', Plant: '{production_at}', Start: '{start_time}', End: '{end_time}', Break: '{break_minutes}', Night: '{is_night_shift}'")
 
@@ -122,7 +122,7 @@ async def save_or_update_shift(
         # 4. Safe Time Parsing (Only taking HH:MM to avoid HH:MM:SS errors)
         start_t = datetime.strptime(start_time[:5], "%H:%M").time()
         end_t = datetime.strptime(end_time[:5], "%H:%M").time()
-        
+
         now = ist_now()
 
         safe_production_at = production_at.strip()
@@ -162,7 +162,7 @@ async def save_or_update_shift(
             new_shift = Shift(
                 company_id=comp,
                 company_name=comp_name,
-                production_at=safe_production_at, 
+                production_at=safe_production_at,
                 shift_name=safe_shift_name,
                 start_time=start_t,
                 end_time=end_t,
@@ -180,7 +180,7 @@ async def save_or_update_shift(
 
     except Exception as e:
         db.rollback()
-        print(f"--- DB ERROR ---: {str(e)}") # టెర్మినల్ లో ఎర్రర్ చూపిస్తుంది
+        print(f"--- DB ERROR ---: {str(e)}") #
         request.session["message"] = f"❌ Error: {str(e)}"
 
     return RedirectResponse("/attendance/shifts", status_code=303)
@@ -195,17 +195,17 @@ def delete_shift(shift_id: int, request: Request, db: Session = Depends(get_db))
         return RedirectResponse("/auth/login", status_code=302)
 
     row = db.query(Shift).filter(
-        Shift.id == shift_id, 
+        Shift.id == shift_id,
         Shift.company_id == comp
     ).first()
-    
+
     if row:
         try:
-            row.is_active = False 
+            row.is_active = False
             db.commit()
             request.session["message"] = "✅ Shift Deleted Successfully!"
         except Exception as e:
             db.rollback()
             request.session["message"] = f"❌ Error Deleting Shift: {str(e)}"
-            
+
     return RedirectResponse("/attendance/shifts", status_code=303)

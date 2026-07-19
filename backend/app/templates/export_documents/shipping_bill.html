@@ -106,7 +106,7 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
             <div id="dropdownMenu">
                 <div class="menu-item" onclick="printSelected()"><i class="fa-solid fa-print"></i> Print Format</div>
                 <div class="menu-item" onclick="pdfSelected()"><i class="fa-solid fa-file-pdf"></i> Generate PDF</div>
-                <div class="menu-item" onclick="window.location.href='/export_documents/shipping_bill/register.xlsx'"><i class="fa-solid fa-file-excel"></i> Export Register</div>
+                <div class="menu-item" onclick="window.svbkSecureDownload('/export_documents/shipping_bill/register.xlsx', 'Shipping Bill Register')"><i class="fa-solid fa-file-excel"></i> Export Register</div>
                 <div class="menu-item" onclick="uploadPdfSelected()"><i class="fa-solid fa-upload"></i> Upload PDF Copy</div>
                 <div class="menu-item cancel-item" onclick="cancelSelected()"><i class="fa-solid fa-ban"></i> Cancel Entry</div>
             </div>
@@ -340,6 +340,6 @@ tr.selected-row { background: #eff6ff !important; border-left: 4px solid var(--a
     
     applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel14"></script>
 </body>
 </html>

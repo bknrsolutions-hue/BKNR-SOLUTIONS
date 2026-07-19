@@ -15,7 +15,7 @@ from app.database.models.enterprise_finance import AccountGroup, LedgerMaster, V
 from app.services.bill_accounting import cancel_linked_bill_voucher, list_posting_ledgers, resolve_posting_ledger
 from app.services.posting_engine import PostingEngineService
 
-# 🔥 URL లో Duplicate రాకుండా prefix తీసేశాం, కేవలం tags మాత్రమే ఉంచాం
+# 🔥 URL  Duplicate  prefix ,  tags
 router = APIRouter(tags=["GENERAL STOCK"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -290,12 +290,12 @@ def repair_general_stock_in_accounting(db: Session, company_id: str, email: str)
         db.flush()
 
 # =============================================================
-# 1. PAGE LOAD (GET) - సెషన్ వైజ్ డ్రాప్‌డౌన్స్ & ఈరోజు డేటా
+# 1. PAGE LOAD (GET) -   ‌ &
 # =============================================================
 @router.get("/entry", response_class=HTMLResponse)
 def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
     user_email = request.session.get("email")
-    comp_code = (request.session.get("company_code") or "").strip().upper() 
+    comp_code = (request.session.get("company_code") or "").strip().upper()
 
     if not user_email or not comp_code:
         return RedirectResponse("/", status_code=302)
@@ -303,27 +303,27 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
     repair_general_stock_in_accounting(db, comp_code, user_email)
     db.commit()
 
-    # GRN నంబర్లు (డిఫాల్ట్ గా చూపించడానికి)
+    # GRN  (  )
     grn_list = [x[0] for x in db.query(GeneralStock.grn_number).filter(
         func.upper(func.trim(GeneralStock.company_id)) == comp_code
     ).distinct().all() if x[0]]
-    
-    # మాస్టర్ ఐటమ్స్ ఫిల్టరింగ్
+
+    #
     all_master_records = db.query(GeneralStoreItems).all()
-    
+
     items_set = set()
     units_set = set()
-    
+
     for record in all_master_records:
         record_comp_id = str(record.company_id or "").strip().upper()
         is_global = record_comp_id in ["", "NULL", "NONE"]
-        
+
         if record_comp_id == comp_code or is_global:
             if record.item_name:
                 items_set.add(str(record.item_name).strip().upper())
             if record.unit_name:
                 units_set.add(str(record.unit_name).strip())
-                
+
     items = sorted(list(items_set))
     units = sorted(list(units_set))
     vendor_list = db.query(vendors).filter(vendors.company_id == comp_code).order_by(vendors.name).all()
@@ -368,7 +368,7 @@ def general_stock_entry_page(request: Request, db: Session = Depends(get_db)):
             for col in r.__table__.columns:
                 d[col.name] = ser(getattr(r, col.name))
             return d
-        
+
         v_list = [{"id": v.id, "name": v.name} for v in vendor_list]
         h_list = [
             {
@@ -427,15 +427,15 @@ def get_item_details(request: Request, item_name: str, unit_id: int = 0, db: Ses
     comp_code = (request.session.get("company_code") or "").strip().upper()
     ensure_general_stock_accounting_schema(db)
     req_item_name = item_name.strip().upper()
-    
+
     all_items = db.query(GeneralStoreItems).all()
     master_item = None
-    
+
     for m in all_items:
         db_item_name = str(m.item_name or "").strip().upper()
         c_id = str(m.company_id or "").strip().upper()
         is_global = c_id in ["", "NULL", "NONE"]
-        
+
         if db_item_name == req_item_name and (c_id == comp_code or is_global):
             master_item = m
             break
@@ -459,7 +459,7 @@ def get_item_grns(request: Request, item_name: str, unit_id: int = 0, db: Sessio
     comp_code = (request.session.get("company_code") or "").strip().upper()
     req_item_name = item_name.strip().upper()
     ensure_general_stock_accounting_schema(db)
-    
+
     filters = [
         func.upper(func.trim(GeneralStock.company_id)) == comp_code,
         func.upper(func.trim(GeneralStock.item_name)) == req_item_name,
@@ -469,12 +469,12 @@ def get_item_grns(request: Request, item_name: str, unit_id: int = 0, db: Sessio
     if unit_id:
         filters.append(GeneralStock.unit_id == unit_id)
     rows = db.query(GeneralStock.grn_number).filter(*filters).distinct().all()
-    
+
     grn_list = [
         g[0] for g in rows
         if g[0] and grn_available_qty(db, comp_code, req_item_name, g[0], unit_id) > 0
     ]
-    
+
     return JSONResponse({"grns": grn_list})
 
 
@@ -525,7 +525,7 @@ def save_stock_entry(
     # --- EDIT MODE ---
     if id and id.strip() != "":
         existing_row = db.query(GeneralStock).filter(
-            GeneralStock.id == int(id), 
+            GeneralStock.id == int(id),
             func.upper(func.trim(GeneralStock.company_id)) == comp_code
         ).first()
         if existing_row:
@@ -648,7 +648,7 @@ def save_stock_entry(
 def delete_stock(request: Request, id: int, db: Session = Depends(get_db)):
     comp_code = (request.session.get("company_code") or "").strip().upper()
     row = db.query(GeneralStock).filter(
-        GeneralStock.id == id, 
+        GeneralStock.id == id,
         func.upper(func.trim(GeneralStock.company_id)) == comp_code
     ).first()
     if row:

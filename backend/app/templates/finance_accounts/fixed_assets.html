@@ -63,6 +63,6 @@ function runDep(e){e.preventDefault();postJson('/finance_accounts/fixed_assets/r
 async function cancelAsset(id){if((await Swal.fire({title:'Cancel asset?',showCancelButton:true,icon:'warning'})).isConfirmed){await fetch(`/finance_accounts/fixed_assets/delete/${id}`,{method:'POST'});location.reload()}}
 applyFilters();
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

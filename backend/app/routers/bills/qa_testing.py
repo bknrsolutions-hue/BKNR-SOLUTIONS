@@ -245,7 +245,7 @@ async def save_qa_testing(
                 ))
                 db.flush()
 
-        # ఇక్కడ payload నుండి వచ్చిన 'test_date' ఆటోమేటిక్‌గా సేవ్ అవుతుంది 📅
+        #  payload   'test_date' ‌   📅
         new_entry = QATestingLog(
             unit_id=payload.production_at_id,
             product_name=clean_product,

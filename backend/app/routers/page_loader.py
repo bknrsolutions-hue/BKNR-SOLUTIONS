@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 router = APIRouter()
-# Path ని నీ ప్రాజెక్ట్ స్ట్రక్చర్ ప్రకారం సరిచూసుకో (e.g., "backend/app/templates")
+# Path       (e.g., "backend/app/templates")
 templates = Jinja2Templates(directory="app/templates")
 
 
@@ -12,19 +12,19 @@ templates = Jinja2Templates(directory="app/templates")
 # ============================================================
 def render_page(request: Request, page: str, context: dict = None):
     """
-    TypeError: unhashable type: 'dict' ఎర్రర్ రాకుండా ఉండటానికి 
-    request ని మొదటి ఆర్గ్యుమెంట్ గా పంపిస్తున్నాను.
+    TypeError: unhashable type: 'dict'
+    request     .
     """
     if context is None:
         context = {}
-    
-    # Context లో కచ్చితంగా request ఉండాలి
+
+    # Context   request
     context["request"] = request
 
     # ✅ FIXED SYNTAX: (request, name, context)
     return templates.TemplateResponse(
-        request=request, 
-        name=page, 
+        request=request,
+        name=page,
         context=context
     )
 

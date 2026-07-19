@@ -1,16 +1,16 @@
 {
-  "name": "BKNR ERP",
-  "short_name": "BKNR",
+  "name": "SVBK ERP",
+  "short_name": "SVBK",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#2563eb",
+  "background_color": "#ffffff",
+  "theme_color": "#0d2d72",
   "screenshots": [
     {
       "src": "/static/screenshot.png",
       "sizes": "400x400",
       "type": "image/png",
-      "label": "BKNR ERP premium workspace preview"
+      "label": "SVBK ERP premium workspace preview"
     }
   ],
   "icons": [

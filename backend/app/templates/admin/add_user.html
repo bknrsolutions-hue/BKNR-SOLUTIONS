@@ -204,6 +204,7 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
                   <label class="item-label"><input type="checkbox" name="access" value="hr_command_center" onchange="updateSelectedCount()"><i class="fa-solid fa-user-tie"></i> HR Command Center</label>
                   <label class="item-label"><input type="checkbox" name="access" value="export_documents_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-export"></i> Export Documents Dashboard</label>
                   <label class="item-label"><input type="checkbox" name="access" value="costing_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice-dollar"></i> Costing Dashboard</label>
+                  <label class="item-label"><input type="checkbox" name="access" value="finance_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-wallet"></i> Finance Dashboard</label>
                   <label class="item-label"><input type="checkbox" name="access" value="tally_dashboard" onchange="updateSelectedCount()"><i class="fa-solid fa-chart-pie"></i> Tally Dashboard</label>
                 </div>
               </div>
@@ -247,6 +248,11 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
                   <label class="item-label"><input type="checkbox" name="access" value="diesel_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-gas-pump"></i> Diesel Consumption <span class="badge-tag">Exp</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="packaging_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice-dollar"></i> Purchase & Packaging <span class="badge-tag">Exp</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="logistics_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-truck-fast"></i> Logistics & Freight <span class="badge-tag">Exp</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="contractor_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-users-gear"></i> Contractor Bills <span class="badge-tag">Exp</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="salaries" onchange="updateSelectedCount()"><i class="fa-solid fa-money-check-dollar"></i> Salaries <span class="badge-tag">Pay</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="vendor_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-file-invoice"></i> Vendor Bills <span class="badge-tag">AP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="supplier_bills" onchange="updateSelectedCount()"><i class="fa-solid fa-truck-field"></i> Supplier Bills <span class="badge-tag">AP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="payment_logs" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Payment Logs <span class="badge-tag">Pay</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="qa_testing" onchange="updateSelectedCount()"><i class="fa-solid fa-microscope"></i> QA Testing Charges <span class="badge-tag">Exp</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="other_expenses" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Other Expenses <span class="badge-tag">Misc</span></label>
                 </div>
@@ -262,6 +268,7 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
                 </div>
                 <div class="category-title"><i class="fa-solid fa-building-columns"></i> Banking & Ledger</div>
                 <div class="items-grid">
+                  <label class="item-label"><input type="checkbox" name="access" value="accounts_flow_guide" onchange="updateSelectedCount()"><i class="fa-solid fa-diagram-project"></i> Accounts Flow Guide <span class="badge-tag">ACC</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="bank_transaction" onchange="updateSelectedCount()"><i class="fa-solid fa-building-columns"></i> Bank Transactions <span class="badge-tag">BANK</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="payment_receipt" onchange="updateSelectedCount()"><i class="fa-solid fa-receipt"></i> Payment Receipts <span class="badge-tag">PAY</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="journal_entry" onchange="updateSelectedCount()"><i class="fa-solid fa-book"></i> Journal Entries <span class="badge-tag">JV</span></label>
@@ -282,9 +289,8 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
               <div class="category-block">
                 <div class="category-title"><i class="fa-solid fa-ship"></i> Operational Lifecycle</div>
                 <div class="items-grid">
-                  <label class="item-label"><input type="checkbox" name="access" value="export_shipments" onchange="updateSelectedCount()"><i class="fa-solid fa-ship"></i> Export Shipments <span class="badge-tag">EXP</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="export_shipment" onchange="updateSelectedCount()"><i class="fa-solid fa-ship"></i> Export Shipments <span class="badge-tag">EXP</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="container_stuffing" onchange="updateSelectedCount()"><i class="fa-solid fa-truck-ramp-box"></i> Container Stuffing <span class="badge-tag">OPS</span></label>
-                  <label class="item-label"><input type="checkbox" name="access" value="container_logs" onchange="updateSelectedCount()"><i class="fa-solid fa-file-contract"></i> Logistics Container Logs <span class="badge-tag">FRT</span></label>
                 </div>
                 <div class="category-title"><i class="fa-solid fa-file-contract"></i> Statutory Documents</div>
                 <div class="items-grid">
@@ -380,6 +386,7 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
                   <label class="item-label"><input type="checkbox" name="access" value="species" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Species <span class="badge-tag">Prod</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="varieties" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Varieties <span class="badge-tag">Prod</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="grades" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Grades <span class="badge-tag">Prod</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="freezers" onchange="updateSelectedCount()"><i class="fa-solid fa-snowflake"></i> Freezers <span class="badge-tag">Prod</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="glazes" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Glazes <span class="badge-tag">Prod</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="packing_styles" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Packing Styles <span class="badge-tag">Prod</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="contractors" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Contractors <span class="badge-tag">Prod</span></label>
@@ -398,6 +405,7 @@ tr.clickable-user-row.selected-row td { background: var(--row-selected) !importa
                   <label class="item-label"><input type="checkbox" name="access" value="cold_storage" onchange="updateSelectedCount()"><i class="fa-solid fa-warehouse"></i> Cold Storage Master <span class="badge-tag">InvM</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="coldstore_locations" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Coldstore Locations <span class="badge-tag">InvM</span></label>
                   <label class="item-label"><input type="checkbox" name="access" value="vehicle_numbers" onchange="updateSelectedCount()"><i class="fa-solid fa-caret-right"></i> Vehicle Numbers <span class="badge-tag">InvM</span></label>
+                  <label class="item-label"><input type="checkbox" name="access" value="general_store_items" onchange="updateSelectedCount()"><i class="fa-solid fa-cubes"></i> General Store Items <span class="badge-tag">InvM</span></label>
                 </div>
                 <div class="category-title"><i class="fa-solid fa-coins"></i> Finance Masters</div>
                 <div class="items-grid">
@@ -923,6 +931,6 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 </script>
 
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

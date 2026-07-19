@@ -3,14 +3,19 @@ from fastapi import APIRouter, Request, Form, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from datetime import datetime, timedelta
+from functools import lru_cache
+from pathlib import Path
 import random
 import json
+import re
 
 from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password
 from app.routers.auth import get_ist_time, professional_email_html, send_email, send_security_email
+from app.utils.access_control import has_permission, normalize_permission
 
 # ==========================================================
 # CONFIG & INITIALIZATION PARAMETERS
@@ -21,6 +26,8 @@ templates = Jinja2Templates(directory="app/templates")
 SESSION_EXPIRY_MIN = 30  # ⏱️ 30 min session timeout trace limit
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
 SUPER_ADMIN_EMAIL = "bknr.solutions@gmail.com"
+USER_OTP_EXPIRY_MIN = 10
+DEFAULT_USER_PASSWORD = "12345678"
 
 SCREEN_POPUP_FORMS = [
     {"group": "Dashboards", "label": "Processing Dashboard", "route": "/dashboard/processing_dashboard"},
@@ -142,6 +149,114 @@ def apply_no_cache_headers(response):
     return response
 
 
+@lru_cache(maxsize=1)
+def get_user_permission_catalog():
+    """Read the canonical permission matrix from the template used by all clients."""
+    template_path = Path(__file__).resolve().parents[1] / "templates" / "admin" / "add_user.html"
+    catalog = []
+    current_group = "General"
+    seen = set()
+    for line in template_path.read_text(encoding="utf-8").splitlines():
+        pillar = re.search(r'data-pillar="([^"]+)"', line)
+        if pillar:
+            current_group = pillar.group(1).strip()
+        match = re.search(
+            r'<input[^>]+name="access"[^>]+value="([^"]+)"[^>]*>(.*)</label>',
+            line,
+        )
+        if not match:
+            continue
+        value = match.group(1).strip()
+        if not value or value in seen:
+            continue
+        label = re.sub(r"<[^>]+>", " ", match.group(2))
+        label = re.sub(r"\s+", " ", label).strip()
+        seen.add(value)
+        catalog.append({"value": value, "label": label or value.replace("_", " ").title(), "group": current_group})
+    return catalog
+
+
+def _wants_json(request: Request):
+    return (
+        request.query_params.get("format") == "json"
+        or request.headers.get("x-mobile-app") == "true"
+        or "application/json" in request.headers.get("accept", "")
+    )
+
+
+def _user_config_context(request: Request, db: Session):
+    company_code = request.session.get("company_code")
+    if not request.session.get("email") or not company_code:
+        raise HTTPException(status_code=401, detail="Session expired. Please login again.")
+    if request.session.get("role") not in {"admin", "super_admin"}:
+        raise HTTPException(status_code=403, detail="System administrator access is required.")
+    if not has_permission(request.session, "add_user"):
+        raise HTTPException(status_code=403, detail="User Configuration permission is required.")
+    company = db.query(Company).filter(Company.company_code == company_code).first()
+    if not company:
+        raise HTTPException(status_code=404, detail="Company not found.")
+    return company
+
+
+def _clean_user_config(
+    *,
+    full_name,
+    designation,
+    email,
+    mobile,
+    password,
+    role,
+    access,
+    creating,
+):
+    full_name = (full_name or "").strip()
+    designation = (designation or "").strip()
+    email = (email or "").strip().lower()
+    mobile = re.sub(r"\s+", "", (mobile or "").strip())
+    password = (password or "").strip()
+    if not full_name or not designation or not email or not mobile:
+        raise HTTPException(status_code=422, detail="Full name, designation, email and mobile are required.")
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(status_code=422, detail="Enter a valid email address.")
+    if not re.fullmatch(r"[0-9+()\-]{7,20}", mobile):
+        raise HTTPException(status_code=422, detail="Enter a valid mobile number.")
+    if role not in {"user", "admin"}:
+        raise HTTPException(status_code=422, detail="Invalid system role.")
+    if creating and not password:
+        password = DEFAULT_USER_PASSWORD
+    if password and not 8 <= len(password) <= 64:
+        raise HTTPException(status_code=422, detail="Password must contain 8 to 64 characters.")
+    allowed = {item["value"] for item in get_user_permission_catalog()}
+    unknown = sorted(set(access or []) - allowed)
+    if unknown:
+        raise HTTPException(status_code=422, detail=f"Invalid permissions: {', '.join(unknown)}")
+    permissions = list(dict.fromkeys(normalize_permission(value) for value in (access or []) if normalize_permission(value) in allowed))
+    return {
+        "full_name": full_name,
+        "designation": designation,
+        "email": email,
+        "mobile": mobile,
+        "password": password,
+        "role": role,
+        "permissions": permissions,
+    }
+
+
+def _serialize_user(user: User):
+    return {
+        "id": user.id,
+        "name": user.name,
+        "designation": user.designation,
+        "email": user.email,
+        "mobile": user.mobile,
+        "role": user.role,
+        "permissions": [value.strip() for value in (user.permissions or "").split(",") if value.strip()],
+        "data_management_access": bool(user.data_management_access),
+        "is_verified": bool(user.is_verified),
+        "is_active": bool(user.is_active),
+    }
+
+
 def get_screen_popup_settings(db: Session):
     from app.database.models.system_settings import SystemSetting
 
@@ -247,7 +362,7 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
     if not logged_email or not company_code:
         return RedirectResponse("/", status_code=302)
 
-    if logged_role != "admin":
+    if logged_role not in {"admin", "super_admin"}:
         return RedirectResponse("/home?msg=Access Denied", status_code=302)
 
     # Company Wise Data Filter configuration boundary schema mapping
@@ -274,6 +389,28 @@ def add_user_page(request: Request, db: Session = Depends(get_db)):
     return apply_no_cache_headers(response)
 
 
+@router.get("/user-configuration")
+def user_configuration_api(request: Request, db: Session = Depends(get_db)):
+    company = _user_config_context(request, db)
+    users = (
+        db.query(User)
+        .filter(User.company_id == company.id)
+        .order_by(User.id.desc())
+        .all()
+    )
+    return JSONResponse({
+        "company": {"id": company.id, "code": company.company_code, "name": company.company_name},
+        "roles": [
+            {"value": "user", "label": "Operational User"},
+            {"value": "admin", "label": "System Administrator"},
+        ],
+        "password_policy": {"minimum": 8, "maximum": 64, "default_applied_when_empty": True},
+        "otp_expiry_minutes": USER_OTP_EXPIRY_MIN,
+        "permissions": get_user_permission_catalog(),
+        "users": [_serialize_user(user) for user in users],
+    })
+
+
 # ==========================================================
 # SAVE USER (CREATE ACTION)
 # ==========================================================
@@ -290,65 +427,59 @@ def save_user(
     data_management_access: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
-    logged_role = request.session.get("role")
-    if not company_code or logged_role != "admin":
-        return RedirectResponse("/", status_code=302)
-
-    # Company wise multi-tenant schema isolation validation checks mapping logic block execution sequences
-    company = db.query(Company).filter(Company.company_code == company_code).first()
-    if not company:
-        return RedirectResponse("/", status_code=302)
-
-    # Unique parameters verification strictly mapped bounded to target tenant ecosystem identity boundary
-    if db.query(User).filter(User.email == email, User.company_id == company.id).first():
-        return RedirectResponse("/admin/add_user?msg=Email Exists", status_code=302)
-
-    if db.query(User).filter(User.mobile == mobile, User.company_id == company.id).first():
-        return RedirectResponse("/admin/add_user?msg=Mobile Exists", status_code=302)
-
-    permissions_csv = ",".join(access)
-
-    new_user = User(
-        company_id=company.id,
-        name=full_name,
-        designation=designation,
-        email=email,
-        mobile=mobile,
-        password=hash_password(password if password else "123456"),
-        role=role,
-        permissions=permissions_csv,
-        data_management_access=(data_management_access == "true"),
-        is_verified=False,
-        is_active=True,
-        created_at=ist_now()
+    company = _user_config_context(request, db)
+    values = _clean_user_config(
+        full_name=full_name, designation=designation, email=email, mobile=mobile,
+        password=password, role=role, access=access, creating=True,
     )
 
-    db.add(new_user)
-    db.commit()
+    # Unique parameters verification strictly mapped bounded to target tenant ecosystem identity boundary
+    if db.query(User).filter(
+        func.lower(func.trim(User.email)) == values["email"],
+        User.company_id == company.id,
+    ).first():
+        return JSONResponse({"status": "error", "msg": "Email already exists for this company."}, status_code=409)
 
-    # Generate OTP for email verification
-    otp = str(random.randint(1000, 9999))
-    db.query(OTPTable).filter(OTPTable.email == email).delete()
-    db.add(OTPTable(
-        email=email,
-        otp=otp,
-        extra=json.dumps({"company_code": company.company_code}),
-        is_used=False,
-        created_at=get_ist_time()
-    ))
+    if db.query(User).filter(User.mobile == values["mobile"]).first():
+        return JSONResponse({"status": "error", "msg": "Mobile number is already assigned to another account."}, status_code=409)
+
+    otp = str(random.randint(100000, 999999))
+    pending = {
+        "purpose": "add_user",
+        "company_id": company.id,
+        "company_code": company.company_code,
+        "name": values["full_name"],
+        "designation": values["designation"],
+        "email": values["email"],
+        "mobile": values["mobile"],
+        "password": hash_password(values["password"]),
+        "role": values["role"],
+        "permissions": ",".join(values["permissions"]),
+        "data_management_access": data_management_access == "true",
+    }
+    otp_record = db.query(OTPTable).filter(OTPTable.email == values["email"]).first()
+    if otp_record:
+        otp_record.otp = otp
+        otp_record.extra = json.dumps(pending)
+        otp_record.is_used = False
+        otp_record.created_at = datetime.utcnow().replace(tzinfo=None)
+    else:
+        db.add(OTPTable(
+            email=values["email"], otp=otp, extra=json.dumps(pending),
+            is_used=False, created_at=datetime.utcnow().replace(tzinfo=None),
+        ))
     db.commit()
     
     # Send email with credentials and OTP
     subject = "SVBK – Account Verification Required"
     body_html = professional_email_html(
-        title=f"Welcome to SVBK, {full_name}",
+        title=f"Welcome to SVBK, {values['full_name']}",
         intro=f"An administrator has created your profile under {company.company_name}. Please use the details below to sign in and verify your email.",
         content_html=f"""
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:14px;margin-bottom:18px;">
             <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;width:36%;">Company ID</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;font-weight:700;">{company.company_code}</td></tr>
-            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{email}</td></tr>
-            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Temporary Password</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{password if password else '123456'}</td></tr>
+            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Email</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{values['email']}</td></tr>
+            <tr><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#64748b;">Temporary Password</td><td style="padding:8px;border-bottom:1px solid #e5eefb;color:#0f172a;">{values['password']}</td></tr>
           </table>
           <div style="padding:18px;background:#f0f7ff;border:1px solid #bfdbfe;border-radius:10px;text-align:center;">
             <div style="font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;">Verification Code</div>
@@ -357,10 +488,95 @@ def save_user(
         """,
         note="Please change your password after your first successful login."
     )
-    send_security_email(email, subject, body_html, otp, "new user verification OTP")
+    try:
+        send_security_email(values["email"], subject, body_html, otp, "new user verification OTP")
+    except Exception:
+        return JSONResponse({"status": "error", "msg": "Unable to send verification email. Please try again."}, status_code=503)
+    return JSONResponse({
+        "status": "otp_required",
+        "email": values["email"],
+        "msg": f"OTP sent to {values['email']}.",
+        "expires_in_minutes": USER_OTP_EXPIRY_MIN,
+    })
 
-    response = RedirectResponse("/admin/add_user?msg=User Saved. Verification email sent.", status_code=302)
-    return apply_no_cache_headers(response)
+
+@router.post("/verify_add_user_otp")
+def verify_add_user_otp(
+    request: Request,
+    email: str = Form(...),
+    otp: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    company = _user_config_context(request, db)
+    normalized_email = email.strip().lower()
+    otp_record = db.query(OTPTable).filter(OTPTable.email == normalized_email).first()
+    if not otp_record or otp_record.is_used:
+        return JSONResponse({"status": "error", "msg": "OTP is invalid or already used."}, status_code=400)
+    created = otp_record.created_at
+    if not created or (datetime.utcnow().replace(tzinfo=None) - created).total_seconds() > USER_OTP_EXPIRY_MIN * 60:
+        return JSONResponse({"status": "error", "msg": "OTP has expired. Please resend it."}, status_code=400)
+    if otp_record.otp != otp.strip():
+        return JSONResponse({"status": "error", "msg": "Incorrect OTP. Please try again."}, status_code=400)
+    try:
+        pending = json.loads(otp_record.extra or "{}")
+    except (TypeError, ValueError):
+        pending = {}
+    if pending.get("purpose") != "add_user" or pending.get("company_id") != company.id or pending.get("email") != normalized_email:
+        return JSONResponse({"status": "error", "msg": "Pending user data is invalid. Submit the form again."}, status_code=400)
+    if db.query(User).filter(
+        func.lower(func.trim(User.email)) == normalized_email,
+        User.company_id == company.id,
+    ).first():
+        otp_record.is_used = True
+        db.commit()
+        return JSONResponse({"status": "error", "msg": "User with this email already exists."}, status_code=409)
+    if db.query(User).filter(User.mobile == pending.get("mobile")).first():
+        return JSONResponse({"status": "error", "msg": "Mobile number is already assigned to another account."}, status_code=409)
+    user = User(
+        company_id=company.id, name=pending["name"], designation=pending["designation"],
+        email=pending["email"], mobile=pending["mobile"], password=pending["password"],
+        role=pending["role"], permissions=pending["permissions"],
+        data_management_access=bool(pending.get("data_management_access")),
+        is_verified=True, is_active=True, created_at=ist_now(),
+    )
+    db.add(user)
+    otp_record.is_used = True
+    db.commit()
+    return JSONResponse({"status": "success", "msg": f"User '{user.name}' created successfully.", "user": _serialize_user(user)})
+
+
+@router.post("/resend_add_user_otp")
+def resend_add_user_otp(
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    company = _user_config_context(request, db)
+    normalized_email = email.strip().lower()
+    otp_record = db.query(OTPTable).filter(OTPTable.email == normalized_email).first()
+    if not otp_record or otp_record.is_used:
+        return JSONResponse({"status": "error", "msg": "No pending verification was found."}, status_code=400)
+    try:
+        pending = json.loads(otp_record.extra or "{}")
+    except (TypeError, ValueError):
+        pending = {}
+    if pending.get("purpose") != "add_user" or pending.get("company_id") != company.id:
+        return JSONResponse({"status": "error", "msg": "Pending user data is invalid."}, status_code=400)
+    otp_record.otp = str(random.randint(100000, 999999))
+    otp_record.created_at = datetime.utcnow().replace(tzinfo=None)
+    otp_record.is_used = False
+    db.commit()
+    body_html = professional_email_html(
+        title="User Account Verification",
+        intro=f"Enter this verification code to complete the profile for {pending['name']}.",
+        content_html=f'<div style="font-size:32px;font-weight:800;text-align:center;letter-spacing:6px;">{otp_record.otp}</div>',
+        note=f"This code expires in {USER_OTP_EXPIRY_MIN} minutes.",
+    )
+    try:
+        send_security_email(normalized_email, "SVBK – Account Verification Required", body_html, otp_record.otp, "new user verification OTP")
+    except Exception:
+        return JSONResponse({"status": "error", "msg": "Unable to resend verification email."}, status_code=503)
+    return JSONResponse({"status": "success", "msg": f"OTP resent to {normalized_email}."})
 
 
 # ==========================================================
@@ -380,14 +596,11 @@ def edit_user(
     data_management_access: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
-    logged_role = request.session.get("role")
-    if not company_code or logged_role != "admin":
-        return RedirectResponse("/", status_code=302)
-
-    company = db.query(Company).filter(Company.company_code == company_code).first()
-    if not company:
-        return RedirectResponse("/", status_code=302)
+    company = _user_config_context(request, db)
+    values = _clean_user_config(
+        full_name=full_name, designation=designation, email=email, mobile=mobile,
+        password=password, role=role, access=access, creating=False,
+    )
 
     # Find target profile and isolate boundary inside target client tenant scope
     user = db.query(User).filter(
@@ -396,40 +609,54 @@ def edit_user(
     ).first()
 
     if not user:
-        return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
+        raise HTTPException(status_code=404, detail="User not found.")
+    is_current_user = (
+        str(request.session.get("email") or "").strip().lower()
+        == str(user.email or "").strip().lower()
+    )
 
     # Cross-validation validation to avoid email overlapping duplicates
     email_check = db.query(User).filter(
-        User.email == email, 
+        func.lower(func.trim(User.email)) == values["email"],
         User.company_id == company.id,
         User.id != uid
     ).first()
     if email_check:
-        return RedirectResponse("/admin/add_user?msg=Email Already Assigned", status_code=302)
+        raise HTTPException(status_code=409, detail="Email is already assigned.")
 
     # Cross-validation validation to avoid mobile overlapping duplicates
     mobile_check = db.query(User).filter(
-        User.mobile == mobile, 
-        User.company_id == company.id,
+        User.mobile == values["mobile"],
         User.id != uid
     ).first()
     if mobile_check:
-        return RedirectResponse("/admin/add_user?msg=Mobile Already Assigned", status_code=302)
+        raise HTTPException(status_code=409, detail="Mobile number is already assigned.")
 
     # Bind request stream objects to data structures
-    user.name = full_name
-    user.designation = designation
-    user.email = email
-    user.mobile = mobile
-    user.role = role
-    user.permissions = ",".join(access)
+    user.name = values["full_name"]
+    user.designation = values["designation"]
+    user.email = values["email"]
+    user.mobile = values["mobile"]
+    user.role = values["role"]
+    user.permissions = ",".join(values["permissions"])
     user.data_management_access = (data_management_access == "true")
 
     # If the operator specified a new pass string, inject security layer overhead
-    if password and password.strip() != "":
-        user.password = hash_password(password.strip())
+    if values["password"]:
+        user.password = hash_password(values["password"])
 
+    if is_current_user:
+        request.session["email"] = user.email
+        request.session["name"] = user.name
+        request.session["role"] = user.role
+        request.session["permissions"] = user.permissions
+    else:
+        # Force an already-open React, Native, or template session to reload the
+        # new access matrix through the normal login flow.
+        user.current_session_id = None
     db.commit()
+    if _wants_json(request):
+        return JSONResponse({"status": "success", "msg": "User updated successfully.", "user": _serialize_user(user)})
     response = RedirectResponse("/admin/add_user?msg=Updated Successfully", status_code=302)
     return apply_no_cache_headers(response)
 
@@ -443,14 +670,7 @@ def delete_user(uid: int, request: Request):
 
 @router.post("/toggle_user/{uid}")
 def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
-    logged_role = request.session.get("role")
-    if not company_code or logged_role != "admin":
-        return RedirectResponse("/", status_code=302)
-
-    company = db.query(Company).filter(Company.company_code == company_code).first()
-    if not company:
-        return RedirectResponse("/", status_code=302)
+    company = _user_config_context(request, db)
 
     # Find user profile inside target company scope
     user = db.query(User).filter(
@@ -459,9 +679,11 @@ def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
     ).first()
 
     if not user:
-        return RedirectResponse("/admin/add_user?msg=User Not Found", status_code=302)
+        raise HTTPException(status_code=404, detail="User not found.")
 
     user.is_active = not getattr(user, "is_active", True)
+    if not user.is_active:
+        user.current_session_id = None
     db.commit()
 
     status_str = "Activated" if user.is_active else "Deactivated"
@@ -488,6 +710,8 @@ def toggle_user(uid: int, request: Request, db: Session = Depends(get_db)):
         except Exception as e:
             print(f"USER ACTIVATION EMAIL ERROR: {e}")
 
+    if _wants_json(request):
+        return JSONResponse({"status": "success", "msg": f"User {status_str.lower()} successfully.", "user": _serialize_user(user)})
     response = RedirectResponse(f"/admin/add_user?msg=User {status_str} Successfully", status_code=302)
     return apply_no_cache_headers(response)
 

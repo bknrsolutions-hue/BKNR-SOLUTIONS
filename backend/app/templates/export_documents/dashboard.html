@@ -248,9 +248,7 @@ syncThemeFromParent();
 
 <script>
 function confirmDashboardExport(url, label) {
-    if (!window.confirm('Do you want to download this file?')) return;
-    window.location.href = url;
-    window.setTimeout(() => window.alert(`${label} export started successfully.`), 100);
+    window.svbkSecureDownload(url, label);
 }
 function openModule(url, title) {
     document.getElementById("moduleTitle").innerText = title;
@@ -268,6 +266,6 @@ document.getElementById("moduleModal").addEventListener("click", function(e) {
     if (e.target === this) closeModule();
 });
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel14"></script>
 </body>
 </html>

@@ -221,7 +221,7 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         
         sale_po = clean_po(s.po_number)
         
-        # 🟢 FIX: Cost Proration (పలు ఇన్వాయిస్లు ఉంటే ఖర్చులను KGల ఆధారంగా విభజించడం)
+        # 🟢 FIX: Cost Proration (    KG  )
         total_qty_for_po = po_total_kg.get(sale_po, 1) or 1
         qty_ratio = qty / total_qty_for_po
 

@@ -56,8 +56,8 @@ async def save_supplier(
     supplier_email: str = Form(""),
     phone: str = Form(""),
     address: str = Form(""),
-    
-    # ఒరిజినల్ కాలమ్స్ ఇక్కడ ఫారమ్ పారామీటర్లుగా యాడ్ చేయబడ్డాయి
+
+    #
     gst_number: str = Form(""),
     bank_name: str = Form(""),
     account_no: str = Form(""),
@@ -117,14 +117,14 @@ async def save_supplier(
         row.supplier_email = supplier_email
         row.phone = phone
         row.address = address
-        
-        # అప్‌డేట్ మ్యాపింగ్
+
+        # ‌
         row.gst_number = gst_number
         row.bank_name = bank_name
         row.account_no = account_no
         row.ifsc = ifsc
         row.payment_cycle = payment_cycle or None
-        
+
         row.date = date_val
         row.time = time_val
         row.email = email
@@ -136,14 +136,14 @@ async def save_supplier(
             supplier_email=supplier_email,
             phone=phone,
             address=address,
-            
-            # ఇన్సర్ట్ మ్యాపింగ్
+
+            #
             gst_number=gst_number,
             bank_name=bank_name,
             account_no=account_no,
             ifsc=ifsc,
             payment_cycle=payment_cycle or None,
-            
+
             date=date_val,
             time=time_val,
             email=email,

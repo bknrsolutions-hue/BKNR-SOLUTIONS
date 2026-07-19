@@ -3,9 +3,9 @@
   const STORAGE_KEY = "bknr_ui_colors";
   const defaults = {
     accent: "#2563eb",
-    sidebar: "#ffffff",
-    header: "#ffffff",
-    dashboard: "#eef6ff"
+    sidebar: "#102a43",
+    header: "#0b1f3a",
+    dashboard: "#f5f6f7"
   };
 
   const darkDefaults = {

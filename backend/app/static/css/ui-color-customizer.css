@@ -247,6 +247,22 @@ html[data-ui-customizer-active="true"] .sidebar-menu .menu-link.active i {
   color: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
 }
 
+/* Corporate active navigation: match the Admin Console's solid accent state.
+   Hover remains understated; only the current destination receives emphasis. */
+html[data-ui-customizer-active="true"] .sidebar .submenu-item.active,
+html[data-ui-customizer-active="true"] .module-rail .rail-link.active,
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link.active {
+  background: var(--ui-accent, var(--corp-dash, #2563eb)) !important;
+  border-color: color-mix(in srgb, var(--ui-accent, #2563eb) 58%, #ffffff) !important;
+  color: #ffffff !important;
+}
+
+html[data-ui-customizer-active="true"] .sidebar .submenu-item.active *,
+html[data-ui-customizer-active="true"] .module-rail .rail-link.active *,
+html[data-ui-customizer-active="true"] .sidebar-menu .menu-link.active * {
+  color: #ffffff !important;
+}
+
 
 /* Color Console Styles (always active, no prefix required) */
 .color-console {

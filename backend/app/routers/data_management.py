@@ -5,6 +5,8 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text, or_
 from app.database import get_db
+from app.utils.download_security import issue_download_grant, require_download_grant
+from app.utils.data_management_audit import DATA_MANAGEMENT_HISTORY_FILE, log_data_management_action
 
 import os
 import json
@@ -14,7 +16,10 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import pandas as pd
 import numpy as np
+from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.utils import get_column_letter
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import re
 
 # =====================================================
@@ -81,30 +86,50 @@ ALL_MODELS = {
     "EmployeeSalaryAdvance": EmployeeSalaryAdvance
 }
 
+REGISTER_GROUPS = {
+    "processing": {
+        "gate-entry": ("Gate Entry Register", GateEntry, "GateEntry"),
+        "raw-material-purchasing": ("Raw Material Purchasing Register", RawMaterialPurchasing, "RawMaterial"),
+        "de-heading": ("De-Heading Register", DeHeading, "DeHeading"),
+        "grading": ("Grading Register", Grading, "Grading"),
+        "peeling": ("Peeling Register", Peeling, "Peeling"),
+        "soaking": ("Soaking Register", Soaking, "Soaking"),
+        "production": ("Production Register", Production, "Production"),
+        "reprocess": ("Reprocess Register", Reprocess, "Reprocess"),
+    },
+    "inventory": {
+        "stock-entry": ("Stock Entry Register", stock_entry, "StockEntry"),
+        "pending-orders": ("Pending Orders Register", pending_orders, "PendingOrders"),
+        "sales-dispatch": ("Sales Dispatch Register", sales_dispatch, "SalesDispatch"),
+        "cold-storage-holding": ("Cold Storage Holding Register", cold_storage_holding, "ColdStorageHolding"),
+        "cold-storage-master": ("Cold Storage Master Register", cold_storage, "ColdStorageMaster"),
+    },
+    "accounts": {
+        "ledger-master": ("Ledger Master Register", LedgerMaster, "LedgerMaster"),
+        "journal-entries": ("Journal Entries Register", JournalEntry, "JournalEntry"),
+        "customer-receivables": ("Customer Receivables Register", CustomerReceivable, "CustomerReceivable"),
+        "vendor-payments": ("Vendor Payments Register", VendorPayment, "VendorPayment"),
+        "bank-transactions": ("Bank Transactions Register", BankTransaction, "BankTransaction"),
+        "expense-vouchers": ("Expense Vouchers Register", ExpenseVoucher, "ExpenseVoucher"),
+        "payment-receipts": ("Payment Receipts Register", PaymentReceipt, "PaymentReceipt"),
+        "purchase-invoices": ("Purchase Invoices Register", PurchaseInvoice, "PurchaseInvoice"),
+        "container-costs": ("Container & Logistics Register", ContainerLog, "ContainerLog"),
+    },
+    "hrms": {
+        "employee-registration": ("Employee Registration Register", EmployeeRegistration, "EmployeeRegistration"),
+        "daily-attendance": ("Daily Attendance Register", DailyAttendance, "DailyAttendance"),
+        "employee-increments": ("Employee Increment Register", EmployeeIncrement, "EmployeeIncrement"),
+        "statutory-master": ("Employee Statutory Register", EmployeeStatutoryMaster, "StatutoryMaster"),
+        "salary-advances": ("Salary Advance Register", EmployeeSalaryAdvance, "SalaryAdvance"),
+    },
+}
+
 
 # =====================================================
 # 🟢 3. HISTORY LOGGING HELPER
 # =====================================================
-HISTORY_LOG_FILE = os.path.join(os.getcwd(), "data_management_history.json")
-
-def log_data_action(comp_code, action_type, module_name, status, message):
-    log_entry = {
-        "company_code": comp_code,
-        "type": action_type,
-        "module": module_name,
-        "date": ist_now().strftime('%Y-%m-%d %H:%M:%S'),
-        "status": status,
-        "details": message
-    }
-    logs = []
-    if os.path.exists(HISTORY_LOG_FILE):
-        try:
-            with open(HISTORY_LOG_FILE, "r") as f:
-                logs = json.load(f)
-        except: pass
-    logs.append(log_entry)
-    with open(HISTORY_LOG_FILE, "w") as f:
-        json.dump(logs, f, indent=4)
+HISTORY_LOG_FILE = str(DATA_MANAGEMENT_HISTORY_FILE)
+log_data_action = log_data_management_action
 
 def build_security_otp_email(otp: str, action: str, module: str, company_code: str):
     action_label = str(action or "").replace("_", " ").title()
@@ -168,25 +193,87 @@ def get_comp_code(request: Request):
 def export_sheet(writer, data, sheet_name):
     if data:
         df = pd.DataFrame([{k: v for k, v in vars(row).items() if k != "_sa_instance_state"} for row in data])
+        def excel_safe_value(value):
+            if isinstance(value, datetime) and value.tzinfo is not None and value.utcoffset() is not None:
+                return value.astimezone(ZoneInfo("Asia/Kolkata")).replace(tzinfo=None)
+            if isinstance(value, (dict, list, tuple, set)):
+                return json.dumps(value, default=str, ensure_ascii=False)
+            return value
+        df = df.map(excel_safe_value)
         df.insert(0, "Sl No", range(1, len(df) + 1))
     else:
         df = pd.DataFrame()
+    acronym_labels = {
+        "id": "ID", "po": "PO", "grn": "GRN", "gst": "GST", "hsn": "HSN",
+        "esi": "ESI", "pf": "PF", "uan": "UAN", "utr": "UTR", "ifsc": "IFSC",
+        "pan": "PAN", "tds": "TDS", "qty": "Qty", "rm": "RM",
+    }
+    df.columns = [
+        " ".join(acronym_labels.get(part.lower(), part.capitalize()) for part in str(column).split("_"))
+        for column in df.columns
+    ]
     df.to_excel(writer, sheet_name=sheet_name[:31], index=False)
+
+def style_department_register_workbook(writer, company_code: str):
+    for sheet in writer.book.worksheets:
+        sheet.insert_rows(1, amount=3)
+        max_column = max(1, sheet.max_column)
+        max_row = max(4, sheet.max_row)
+        title = re.sub(r"(?<!^)(?=[A-Z])", " ", sheet.title).strip()
+        if not title.lower().endswith("register"):
+            title = f"{title} Register"
+
+        sheet.freeze_panes = "A5"
+        sheet.sheet_view.showGridLines = False
+        sheet.merge_cells(start_row=1, start_column=1, end_row=1, end_column=max_column)
+        title_cell = sheet.cell(1, 1, title)
+        title_cell.font = Font(size=16, bold=True, color="FFFFFF")
+        title_cell.fill = PatternFill("solid", fgColor="123B5D")
+        title_cell.alignment = Alignment(horizontal="center", vertical="center")
+        sheet.row_dimensions[1].height = 28
+
+        sheet.merge_cells(start_row=2, start_column=1, end_row=2, end_column=max_column)
+        meta_cell = sheet.cell(
+            2, 1,
+            f"Company: {company_code} | Generated: {datetime.utcnow():%d-%b-%Y %H:%M UTC}",
+        )
+        meta_cell.alignment = Alignment(horizontal="center", vertical="center")
+        meta_cell.font = Font(size=10, color="475569")
+
+        for column in range(1, max_column + 1):
+            header = sheet.cell(4, column)
+            header.font = Font(bold=True, color="FFFFFF")
+            header.fill = PatternFill("solid", fgColor="176B87")
+            header.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
+        sheet.row_dimensions[4].height = 24
+
+        for row in sheet.iter_rows(min_row=5, max_row=sheet.max_row):
+            for cell in row:
+                cell.alignment = Alignment(vertical="center", wrap_text=False)
+
+        for column in range(1, max_column + 1):
+            values = [
+                len(str(sheet.cell(row, column).value or ""))
+                for row in range(4, min(sheet.max_row, 504) + 1)
+            ]
+            sheet.column_dimensions[get_column_letter(column)].width = min(max(max(values, default=10) + 2, 12), 42)
+        sheet.auto_filter.ref = f"A4:{get_column_letter(max_column)}{max_row}"
+
+def register_rows(db: Session, model, company_code: str):
+    query = db.query(model)
+    if hasattr(model, "company_id"):
+        query = query.filter(model.company_id == company_code)
+    return query.all()
 
 def generate_export_response(comp_code, module_name, export_logic, db):
     export_dir = "exports"
     os.makedirs(export_dir, exist_ok=True)
-    filename = f"BKNR_{module_name}_{comp_code}_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    filename = f"SVBK_{module_name}_{comp_code}_{ist_now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     filepath = os.path.join(export_dir, filename)
 
     with pd.ExcelWriter(filepath, engine="openpyxl") as writer:
-        pd.DataFrame({
-            "SVBK Export": [f"{module_name} Module Generated Successfully"],
-            "Company ID": [comp_code],
-            "Timestamp": [ist_now().strftime('%Y-%m-%d %H:%M:%S')]
-        }).to_excel(writer, sheet_name="INFO", index=False)
-        
         export_logic(writer, db, comp_code)
+        style_department_register_workbook(writer, comp_code)
 
     return FileResponse(filepath, filename=filename, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 
@@ -270,7 +357,10 @@ async def verify_otp(payload: OTPVerify, request: Request):
     
     if OTP_STORE.get(key) == payload.otp:
         del OTP_STORE[key]
-        return {"success": True, "message": "OTP Verified!"}
+        response = {"success": True, "message": "OTP Verified!"}
+        if payload.action in {"download", "export"}:
+            response["download_token"] = issue_download_grant(request)
+        return response
     return {"success": False, "error": "Invalid OTP."}
 
 
@@ -287,8 +377,9 @@ async def data_management(request: Request, db: Session = Depends(get_db)):
     )
     
 @router.get("/data-management/template/blank")
-async def download_blank_template(table: str = ""):
+async def download_blank_template(request: Request, table: str = ""):
     """Download a blank Excel sheet for one table or all tables."""
+    require_download_grant(request)
     from fastapi import Query as FastQuery
     template_dir = "templates_excel"
     os.makedirs(template_dir, exist_ok=True)
@@ -345,15 +436,17 @@ async def download_blank_template(table: str = ""):
 
 # Kept for backward compatibility
 @router.get("/data-management/template/master")
-async def download_master_template():
-    return await download_blank_template(table="GateEntry")
+async def download_master_template(request: Request):
+    return await download_blank_template(request=request, table="GateEntry")
 
 
 # =====================================================
 # 🟢 7. SEGREGATED EXPORT ROUTES (7 MODULES)
 # =====================================================
-@router.post("/export/processing")
+@router.get("/export/processing", operation_id="export_processing_get")
+@router.post("/export/processing", operation_id="export_processing_post")
 async def export_processing(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(GateEntry).filter(GateEntry.company_id == cc).all(), "GateEntry")
         export_sheet(writer, db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.company_id == cc).all(), "RawMaterial")
@@ -366,8 +459,10 @@ async def export_processing(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "Processing Module", "Success", "Exported Processing records")
     return generate_export_response(get_comp_code(request), "Processing", logic, db)
 
-@router.post("/export/inventory")
+@router.get("/export/inventory", operation_id="export_inventory_get")
+@router.post("/export/inventory", operation_id="export_inventory_post")
 async def export_inventory(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(stock_entry).filter(stock_entry.company_id == cc).all(), "StockEntry")
         export_sheet(writer, db.query(pending_orders).filter(pending_orders.company_id == cc).all(), "PendingOrders")
@@ -377,8 +472,10 @@ async def export_inventory(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "Inventory Module", "Success", "Exported Inventory records")
     return generate_export_response(get_comp_code(request), "Inventory", logic, db)
 
-@router.post("/export/bills")
+@router.get("/export/bills", operation_id="export_bills_get")
+@router.post("/export/bills", operation_id="export_bills_post")
 async def export_bills(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(PurchaseInvoice).filter(PurchaseInvoice.company_id == cc).all(), "PurchaseInvoice")
         export_sheet(writer, db.query(ContainerLog).filter(ContainerLog.company_id == cc).all(), "ContainerLog")
@@ -389,8 +486,10 @@ async def export_bills(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "Bills Module", "Success", "Exported Commercial Bills")
     return generate_export_response(get_comp_code(request), "Bills", logic, db)
 
-@router.post("/export/general-stock")
+@router.get("/export/general-stock", operation_id="export_general_stock_get")
+@router.post("/export/general-stock", operation_id="export_general_stock_post")
 async def export_general_stock(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         # 🌟 FIX: Removed extract_company_id, using 'cc' directly
         export_sheet(writer, db.query(GeneralStock).filter(GeneralStock.company_id == cc).all(), "GeneralStock")
@@ -398,8 +497,10 @@ async def export_general_stock(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "General Stock Module", "Success", "Exported General Stock records")
     return generate_export_response(get_comp_code(request), "GeneralStock", logic, db)
 
-@router.post("/export/payments")
+@router.get("/export/payments", operation_id="export_payments_get")
+@router.post("/export/payments", operation_id="export_payments_post")
 async def export_payments(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(CustomerReceivable).filter(CustomerReceivable.company_id == cc).all(), "CustomerReceivable")
         export_sheet(writer, db.query(VendorPayment).filter(VendorPayment.company_id == cc).all(), "VendorPayment")
@@ -412,8 +513,20 @@ async def export_payments(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "Finance/Payments Module", "Success", "Exported Financial records")
     return generate_export_response(get_comp_code(request), "Payments", logic, db)
 
-@router.post("/export/masters")
+@router.get("/export/accounts", operation_id="export_accounts_get")
+@router.post("/export/accounts", operation_id="export_accounts_post")
+async def export_accounts(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
+    def logic(writer, db, cc):
+        for _, model, sheet_name in REGISTER_GROUPS["accounts"].values():
+            export_sheet(writer, register_rows(db, model, cc), sheet_name)
+        log_data_action(cc, "EXPORT", "Accounts Module", "Success", "Exported tenant accounts and ledger registers")
+    return generate_export_response(get_comp_code(request), "Accounts", logic, db)
+
+@router.get("/export/masters", operation_id="export_masters_get")
+@router.post("/export/masters", operation_id="export_masters_post")
 async def export_masters(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(brands).filter(brands.company_id == cc).all(), "Brands")
         export_sheet(writer, db.query(purposes).filter(purposes.company_id == cc).all(), "Purposes")
@@ -429,16 +542,41 @@ async def export_masters(request: Request, db: Session = Depends(get_db)):
         log_data_action(cc, "EXPORT", "Masters Module", "Success", "Exported System Masters")
     return generate_export_response(get_comp_code(request), "Masters", logic, db)
 
-@router.post("/export/hrms")
+@router.get("/export/hrms", operation_id="export_hrms_get")
+@router.post("/export/hrms", operation_id="export_hrms_post")
 async def export_hrms(request: Request, db: Session = Depends(get_db)):
+    require_download_grant(request)
     def logic(writer, db, cc):
         export_sheet(writer, db.query(EmployeeRegistration).filter(EmployeeRegistration.company_id == cc).all(), "EmployeeReg")
-        export_sheet(writer, db.query(DailyAttendance).all(), "DailyAttendance")
-        export_sheet(writer, db.query(EmployeeIncrement).all(), "EmployeeIncrement")
+        export_sheet(writer, db.query(DailyAttendance).filter(DailyAttendance.company_id == cc).all(), "DailyAttendance")
+        export_sheet(writer, db.query(EmployeeIncrement).filter(EmployeeIncrement.company_id == cc).all(), "EmployeeIncrement")
         export_sheet(writer, db.query(EmployeeStatutoryMaster).filter(EmployeeStatutoryMaster.company_id == cc).all(), "StatutoryMaster")
         export_sheet(writer, db.query(EmployeeSalaryAdvance).filter(EmployeeSalaryAdvance.company_id == cc).all(), "SalaryAdvance")
         log_data_action(cc, "EXPORT", "HRMS Module", "Success", "Exported HRMS records")
     return generate_export_response(get_comp_code(request), "HRMS", logic, db)
+
+@router.get("/data-management/register/{module}/{register_key}.xlsx")
+async def download_module_register(
+    module: str,
+    register_key: str,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    require_download_grant(request)
+    company_code = get_comp_code(request)
+    group = REGISTER_GROUPS.get(str(module or "").strip().lower())
+    register = group.get(str(register_key or "").strip().lower()) if group else None
+    if not register:
+        raise HTTPException(status_code=404, detail="Register not found")
+    label, model, sheet_name = register
+
+    def logic(writer, db, cc):
+        rows = register_rows(db, model, cc)
+        export_sheet(writer, rows, sheet_name)
+        log_data_action(cc, "REGISTER", label, "Success", f"Downloaded {len(rows)} tenant records")
+
+    safe_name = re.sub(r"[^A-Za-z0-9]+", "", sheet_name) or "Register"
+    return generate_export_response(company_code, safe_name, logic, db)
 
 
 # =====================================================
@@ -636,7 +774,7 @@ async def import_history(request: Request):
         try:
             with open(HISTORY_LOG_FILE, "r") as f:
                 all_logs = json.load(f)
-                logs = [l for l in all_logs if l.get("company_code") == comp_code]
+                logs = [l for l in all_logs if str(l.get("company_code") or "") == str(comp_code or "")]
         except Exception as e:
             pass
             

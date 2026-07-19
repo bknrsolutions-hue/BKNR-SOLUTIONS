@@ -10,12 +10,12 @@
     * { box-sizing:border-box; }
     body { margin:0; padding:18px; background:var(--bg); color:var(--text); font-family:Inter,Arial,sans-serif; }
     .profile-shell { max-width:1020px; margin:0 auto; }
-    .profile-hero { position:relative; overflow:hidden; display:flex; align-items:center; gap:18px; min-height:132px; padding:24px; border-radius:22px; background:linear-gradient(125deg,#0b2345,#15385f 52%,#2563eb 145%); box-shadow:0 16px 38px rgba(15,23,42,.15); }
-    .profile-hero:after { content:""; position:absolute; width:210px; height:210px; right:-70px; top:-120px; border-radius:50%; background:rgba(255,255,255,.08); }
-    .avatar { width:76px; height:76px; display:grid; place-items:center; flex:0 0 auto; border:7px solid rgba(255,255,255,.17); border-radius:25px; background:#fff; color:var(--primary); font-size:29px; font-weight:900; box-shadow:0 10px 24px rgba(2,8,23,.2); }
-    h1 { margin:0; color:#fff; font-size:25px; letter-spacing:-.03em; }
-    .hero-email { margin-top:6px; color:#dbeafe; font-size:12px; font-weight:700; }
-    .badge { display:inline-block; margin-top:10px; padding:5px 10px; border:1px solid rgba(255,255,255,.2); border-radius:999px; background:rgba(255,255,255,.1); color:#eff6ff; font-size:9px; font-weight:900; text-transform:uppercase; }
+    .profile-hero { position:relative; display:flex; align-items:center; gap:18px; min-height:112px; padding:20px; border:1px solid var(--border); border-radius:22px; background:var(--card); box-shadow:0 12px 28px rgba(15,23,42,.08); }
+    .profile-hero:after { display:none; }
+    .avatar { width:76px; height:76px; display:block; object-fit:cover; flex:0 0 auto; border:0; border-radius:25px; background:#fff; box-shadow:inset 0 0 0 7px rgba(255,255,255,.17),0 10px 24px rgba(2,8,23,.2); }
+    h1 { margin:0; color:var(--text); font-size:22px; letter-spacing:-.03em; }
+    .hero-email { margin-top:6px; color:var(--muted); font-size:12px; font-weight:700; }
+    .badge { display:inline-block; margin-top:10px; padding:5px 10px; border:1px solid var(--border); border-radius:999px; background:var(--soft); color:var(--muted); font-size:9px; font-weight:900; text-transform:uppercase; }
     .profile-card { margin-top:16px; padding:22px; border:1px solid var(--border); border-radius:22px; background:var(--card); box-shadow:0 16px 38px rgba(15,23,42,.09); }
     .section-title { margin-bottom:17px; padding-bottom:12px; border-bottom:1px solid var(--border); color:var(--muted); font-size:10px; font-weight:900; letter-spacing:.1em; text-transform:uppercase; }
     .profile-list { display:flex; flex-direction:column; }
@@ -44,7 +44,7 @@
 <body>
   <main class="profile-shell">
     <section class="profile-hero">
-      <div class="avatar" id="profileInitial">{{ (profile.name or 'U')[0] | upper }}</div>
+      <img class="avatar" src="{{ profile.company_logo_url or '/static/brand-dp-3d.png' }}" alt="{{ profile.company_name }} logo">
       <div>
         <h1 id="profileHeading">{{ profile.name or 'My Profile' }}</h1>
         <div class="hero-email">{{ profile.email }}</div>

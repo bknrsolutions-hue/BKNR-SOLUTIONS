@@ -7,10 +7,10 @@ from app.database.models.criteria import metacolumns
 class EmployeeRegistration(Base, metacolumns):
     __tablename__ = "employee_registration"
     id = Column(Integer, primary_key=True, index=True)
-    
+
     # 🌐 GLOBAL FILTER
     production_at = Column(String(255), index=True, nullable=True) # Plant Location
-    
+
     employee_id = Column(String(50), unique=True, index=True, nullable=False)
     employee_name = Column(String(100), nullable=False)
     designation = Column(String(100))
@@ -19,14 +19,14 @@ class EmployeeRegistration(Base, metacolumns):
     contractor_name = Column(String(100), nullable=True)
     joining_date = Column(Date)
     resignation_date = Column(Date, nullable=True)
-    
+
     current_salary = Column(Float, default=0)
-    basic_salary = Column(Float, default=0)         
-    hra = Column(Float, default=0)                  
-    conveyance_allowance = Column(Float, default=0) 
-    other_expenses = Column(Float, default=0)       
-    tds = Column(Float, default=0)                  
-    
+    basic_salary = Column(Float, default=0)
+    hra = Column(Float, default=0)
+    conveyance_allowance = Column(Float, default=0)
+    other_expenses = Column(Float, default=0)
+    tds = Column(Float, default=0)
+
     bank_name = Column(String(100))
     account_number = Column(String(50))
     ifsc_code = Column(String(20))
@@ -34,16 +34,16 @@ class EmployeeRegistration(Base, metacolumns):
     account_holder_name = Column(String(100))
     pan_number = Column(String(20))
     aadhar_number = Column(String(20))
-    uan_number = Column(String(50))                 
-    
+    uan_number = Column(String(50))
+
     mobile = Column(String(15))
-    email = Column(String(100)) 
+    email = Column(String(100))
     status = Column(String(20), default="ACTIVE")
-    company_id = Column(String(50), index=True) 
-    
+    company_id = Column(String(50), index=True)
+
     created_at = Column(DateTime, default=datetime.utcnow)
-    date = Column(Date) 
-    time = Column(Time) 
+    date = Column(Date)
+    time = Column(Time)
     gender = Column(String(20))
     personal_email = Column(String(100))
     dob = Column(Date)
@@ -64,23 +64,23 @@ class DailyAttendance(Base, metacolumns):
     __tablename__ = "daily_attendance"
     id = Column(Integer, primary_key=True, index=True)
     production_at = Column(String(255), index=True, nullable=True)
-    
+
     employee_id = Column(String(50), ForeignKey("employee_registration.employee_id"), nullable=False, index=True)
     employee_name = Column(String(100))
     designation = Column(String(100))
     employee_type = Column(String(30))
-    
+
     # 🟢 🔴 OT APPROVAL ENGINE FIELDS
-    shift_name = Column(String(100), nullable=True, default="GENERAL") 
+    shift_name = Column(String(100), nullable=True, default="GENERAL")
     duty_type = Column(String(20), nullable=True)          # HALF, SINGLE, DOUBLE
     calculated_ot_hours = Column(Float, default=0.0)      # System calculate chesina hours
     approved_ot_hours = Column(Float, default=0.0)        # Manager approve cheshaka save ayye hours
     approved_duty_credit = Column(Float, default=0.0)     # 1.0 / 1.5 / 2.0 / 2.5 / 3.0 approved payable duty
     ot_status = Column(String(20), default="PENDING")     # PENDING, APPROVED, REJECTED
-    ot_approved_by = Column(String(100), nullable=True) 
+    ot_approved_by = Column(String(100), nullable=True)
     duty_status = Column(String(20), default="PENDING")
     duty_approved_by = Column(String(100))  # Approve chesina manager email
-    
+
     duty_date = Column(Date)
     first_in = Column(DateTime)
     exit_time = Column(DateTime, nullable=True)
@@ -88,8 +88,8 @@ class DailyAttendance(Base, metacolumns):
     salary_adjustment = Column(Float, default=0.0)
     salary_adjustment_reason = Column(Text, nullable=True)
     journal_id = Column(Integer, nullable=True)
-    movements = Column(JSONB, default=list) 
-    status = Column(String(20), default="OPEN") 
+    movements = Column(JSONB, default=list)
+    status = Column(String(20), default="OPEN")
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class EmployeeIncrement(Base, metacolumns):
@@ -179,11 +179,11 @@ class EmployeeSalaryAdvanceRecovery(Base):
 
 
 from sqlalchemy import Column, Integer, String, Time, Boolean, Date
-# మీ బేస్ ఇంపోర్ట్ ఇక్కడ ఉంచుకోండి (ఉదా: from app.database import Base)
+#      (: from app.database import Base)
 
 class Shift(Base):
     __tablename__ = "shifts"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     production_at = Column(String(255), index=True, nullable=True)
     company_id = Column(String, nullable=False, index=True)
@@ -198,7 +198,7 @@ class Shift(Base):
     time = Column(Time)
     email = Column(String(255))
 
-    # 🟢 🔴 కొత్త UNIQUE CONSTRAINT ఇక్కడే యాడ్ చేశాను
+    # 🟢 🔴  UNIQUE CONSTRAINT
     __table_args__ = (
         UniqueConstraint('company_id', 'production_at', 'shift_name', name='uq_company_plant_shift'),
     )

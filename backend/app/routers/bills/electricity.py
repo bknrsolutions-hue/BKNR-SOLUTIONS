@@ -17,7 +17,7 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 from app.database import get_db
 from app.database.models.bills import ElectricityLog
-from app.database.models.processing import AuditLog  # మాస్టర్ ఆడిట్ ట్రాక్ మోడల్ సింక్
+from app.database.models.processing import AuditLog  #
 from app.database.models.criteria import production_at
 
 router = APIRouter(
@@ -173,7 +173,7 @@ async def save_electricity_entry(
         ElectricityLog.reading_date == payload.reading_date,
         ElectricityLog.is_cancelled != True,
     ).first()
-    
+
     if exists:
         return JSONResponse(
             {"success": False, "status": "error", "message": "Entry already exists for this unit & date"},
@@ -213,7 +213,7 @@ async def save_electricity_entry(
         db.commit()
         return JSONResponse({
             "success": True,
-            "status": "success", 
+            "status": "success",
             "message": "Electricity tracking data saved successfully",
             "units_consumed": units_consumed,
             "total_cost": total_cost
@@ -311,7 +311,7 @@ def export_electricity_excel(request: Request, db: Session = Depends(get_db)):
     header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
     data_font = Font(name="Arial", size=10)
     total_font = Font(name="Arial", size=11, bold=True)
-    
+
     thin_border = Border(
         left=Side(style='thin', color='CBD5E1'), right=Side(style='thin', color='CBD5E1'),
         top=Side(style='thin', color='CBD5E1'), bottom=Side(style='thin', color='CBD5E1')
@@ -339,7 +339,7 @@ def export_electricity_excel(request: Request, db: Session = Depends(get_db)):
             log.ElectricityLog.total_cost
         ]
         ws.append(row_data)
-        
+
         curr_row = ws.max_row
         for col_idx in range(1, len(headers) + 1):
             cell = ws.cell(row=curr_row, column=col_idx)

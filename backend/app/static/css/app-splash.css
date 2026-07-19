@@ -59,6 +59,15 @@
     letter-spacing: 0;
 }
 
+.app-splash-logo {
+    display: block;
+    width: 104px;
+    height: 104px;
+    margin: 0 auto 16px;
+    border-radius: 16px;
+    object-fit: contain;
+}
+
 .app-splash-quote {
     margin: 22px auto 0;
     max-width: 330px;

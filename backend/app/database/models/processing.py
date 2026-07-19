@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, Time, Float, Boolean, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, String, Date, Time, Float, Boolean, DateTime, UniqueConstraint, ForeignKey, Text
 from app.database import Base
 
 class GateEntry(Base):
@@ -41,6 +41,73 @@ class GateEntry(Base):
             name="uix_company_gatepass_challan"
         ),
     )
+
+
+# ---------------------------------------------------------
+# NON-RMP GOODS GATE MOVEMENTS
+# ---------------------------------------------------------
+class GoodsGateMovement(Base):
+    """Security gate register for all non-raw-material goods movements."""
+    __tablename__ = "goods_gate_movements"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), nullable=False, index=True)
+    movement_number = Column(String(100), nullable=False, index=True)
+    movement_type = Column(String(10), nullable=False, index=True)  # IN / OUT
+    movement_date = Column(Date, nullable=False, index=True)
+    movement_time = Column(Time, nullable=False)
+    production_for = Column(String(255), nullable=False, index=True)
+    plant_location = Column(String(255), nullable=False, index=True)
+
+    party_name = Column(String(255), nullable=False)
+    source_destination = Column(String(255))
+    po_number = Column(String(100))
+    challan_number = Column(String(100))
+    invoice_number = Column(String(100))
+    vehicle_number = Column(String(100))
+    driver_name = Column(String(255))
+    department = Column(String(255))
+    purpose = Column(String(255), nullable=False)
+    authorized_received_by = Column(String(255))
+
+    is_returnable = Column(Boolean, default=False, nullable=False)
+    expected_return_date = Column(Date)
+    linked_movement_id = Column(Integer, ForeignKey("goods_gate_movements.id"), nullable=True)
+    return_status = Column(String(30), default="NOT_APPLICABLE", nullable=False)
+    status = Column(String(30), default="ACTIVE", nullable=False)
+    remarks = Column(Text)
+
+    created_by = Column(String(255), nullable=False)
+    created_at = Column(DateTime, nullable=False)
+    is_cancelled = Column(Boolean, default=False, nullable=False)
+    cancel_reason = Column(Text)
+    cancelled_by = Column(String(255))
+    cancelled_at = Column(DateTime)
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "movement_number", name="uix_company_goods_gate_movement"),
+    )
+
+
+class GoodsGateMovementItem(Base):
+    __tablename__ = "goods_gate_movement_items"
+
+    id = Column(Integer, primary_key=True, index=True)
+    movement_id = Column(
+        Integer,
+        ForeignKey("goods_gate_movements.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    item_category = Column(String(150), nullable=False, index=True)
+    item_name = Column(String(255), nullable=False)
+    description = Column(Text)
+    quantity = Column(Float, nullable=False)
+    unit = Column(String(50), nullable=False)
+    packages = Column(Float, default=0)
+    returned_quantity = Column(Float, default=0)
+    material_condition = Column(String(100))
+    remarks = Column(Text)
 
 # ---------------------------------------------------------
 # RAW MATERIAL PURCHASING
@@ -108,7 +175,7 @@ class DeHeading(Base):
     hlso_qty = Column(Float)
     yield_percent = Column(Float)
     target_yield_percent = Column(Float)
-    diff_qty = Column(Float)        
+    diff_qty = Column(Float)
     diff_percent = Column(Float)
 
     contractor = Column(String(255))
@@ -141,7 +208,7 @@ class Grading(Base):
     variety_name = Column(String(100))
     graded_count = Column(String(50))
     quantity = Column(Float)
-    
+
 
     email = Column(String)
     company_id = Column(String(50))
@@ -153,7 +220,7 @@ class Grading(Base):
     cancelled_at = Column(DateTime, nullable=True)
 
 
-    
+
 
 
 # ---------------------------------------------------------
@@ -179,8 +246,8 @@ class Peeling(Base):
     rate = Column(Float)
     amount = Column(Float)
     journal_id = Column(Integer, nullable=True)
- 
-    diff_qty = Column(Float)        
+
+    diff_qty = Column(Float)
     diff_percent = Column(Float)
     date = Column(Date)
     time = Column(Time)
@@ -205,7 +272,7 @@ class Soaking(Base):
 
     id = Column(Integer, primary_key=True, index=True)
 
-    sintex_number = Column(String(100)) # కొత్తగా యాడ్ చేసిన కాలమ్
+    sintex_number = Column(String(100)) #
     batch_number = Column(String(100), index=True)
     variety_name = Column(String(100))
     in_count = Column(String(50))
@@ -218,7 +285,7 @@ class Soaking(Base):
     salt_percent = Column(Float)
     salt_qty = Column(Float)
     rejection_qty = Column(Float, default=0)
-    rejection_for = Column(String(100)) # కొత్తగా యాడ్ చేసిన కాలమ్
+    rejection_for = Column(String(100)) #
 
     species = Column(String(100))
     company_id = Column(String(50))
@@ -262,7 +329,7 @@ class Production(Base):
     production_qty = Column(Float)
 
     target_yield_percent = Column(Float)
-    diff_qty = Column(Float)        
+    diff_qty = Column(Float)
     diff_percent = Column(Float)
 
     company_id = Column(String(50))
@@ -297,7 +364,7 @@ class AuditLog(Base):
     edited_at = Column(DateTime, default=datetime.utcnow)
 
 from sqlalchemy import Column, Integer, String, Float, Date, Time
-from app.database import Base  # నీ ప్రాజెక్ట్ Base మోడల్ ఇంపోర్ట్ పాత్ ఇక్కడ ఇవ్వు
+from app.database import Base  #   Base
 
 class HlsoForGrading(Base):
     __tablename__ = "hlso_for_grading"
@@ -305,20 +372,20 @@ class HlsoForGrading(Base):
     id = Column(Integer, primary_key=True, index=True)
     date = Column(Date, nullable=False)
     time = Column(Time, nullable=False)
-    
+
     # Core Tracking Attributes
     batch_number = Column(String(100), index=True, nullable=False)
-    production_for = Column(String(255), index=True, nullable=False) # ఏ కంపెనీ మెటీరియల్
-    peeling_at = Column(String(255), nullable=False)                 # ఏ లొకేషన్ లో ఉంది
+    production_for = Column(String(255), index=True, nullable=False) #
+    peeling_at = Column(String(255), nullable=False)                 #
     species = Column(String(100), nullable=False)
-    hoso_count = Column(String(50), nullable=False)                  # ఇన్‌పుట్ హ్యాండ్లింగ్ కౌంట్
-    
+    hoso_count = Column(String(50), nullable=False)                  # ‌
+
     # Live Balance Columns
-    total_hlso_qty = Column(Float, default=0.0)  # DeHeading నుండి వచ్చిన టోటల్ ఇన్‌పుట్ బరువు
-    graded_qty = Column(Float, default=0.0)      # ఇప్పటివరకు గ్రేడింగ్ చేసిన నికర బరువు
-    available_qty = Column(Float, default=0.0)   # నిల్వ ఉన్న కరెంట్ స్టాక్ (total_hlso_qty - graded_qty)
-    
+    total_hlso_qty = Column(Float, default=0.0)  # DeHeading    ‌
+    graded_qty = Column(Float, default=0.0)      #
+    available_qty = Column(Float, default=0.0)   #     (total_hlso_qty - graded_qty)
+
     # State Control Engine
-    status = Column(String(50), default="Pending") # Pending / Completed (Done) గా మారినప్పుడు హైడ్ అవుతుంది
+    status = Column(String(50), default="Pending") # Pending / Completed (Done)
     email = Column(String(255))
-    company_id = Column(String(50), index=True, nullable=False)    # మల్టీ-టెనెంట్ ఐడి
+    company_id = Column(String(50), index=True, nullable=False)    # -

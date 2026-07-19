@@ -21,90 +21,156 @@
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
-    --primary: var(--text);
-    --accent: var(--accent);
-    --border: var(--border);
-    --bg: var(--bg);
-    --header: var(--card-bg);
-    --text: var(--text);
-    --text-muted: var(--text-muted);
-    --muted: var(--text-muted);
-    --danger: var(--cancelled-text);
-    --success: var(--completed-text);
-    --card-bg: var(--card-bg);
-    --header-bg: var(--header-bg);
-    --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
+    --primary: var(--text-primary, #1e293b);
+    --accent: var(--sap-accent, #2563eb);
+    --border: var(--border-light, #e2e8f0);
+    --bg: var(--bg-app, #f8fafc);
+    --header: var(--surface-panel, #ffffff);
+    --text: var(--text-primary, #1e293b);
+    --text-muted: var(--text-secondary, #64748b);
+    --muted: var(--text-secondary, #64748b);
+    --danger: var(--cancelled-text, #ef4444);
+    --success: var(--completed-text, #16a34a);
+    --card-bg: var(--surface-panel, #ffffff);
+    --header-bg: var(--bg-app, #f8fafc);
+    --row-hover: var(--row-hover, #f1f5f9);
+    --processing-bg: var(--bg-app, #f8fafc);
 
     /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
+    --bg-light: var(--bg-app, #f8fafc);
+    --panel-bg: var(--surface-panel, #ffffff);
+    --sidebar-bg: var(--bg-app, #f8fafc);
+    --primary-dark: var(--text-primary, #1e293b);
+    --accent-blue: var(--sap-accent, #2563eb);
+    --accent-glow: var(--sap-accent, #2563eb);
+    --text-main: var(--text-primary, #1e293b);
+    --border-color: var(--border-light, #e2e8f0);
+    --table-header-bg: var(--bg-app, #f8fafc);
     
     /* Finance / Others specific mapping */
-    --card: var(--card-bg);
+    --card: var(--surface-panel, #ffffff);
 }
 
 
 *{box-sizing:border-box;font-family: 'Inter', sans-serif; margin: 0; padding: 0;}
 body{ background:var(--bg); height:100vh; display:flex; flex-direction:column; overflow:hidden; color:var(--text); padding-bottom: 20px; -webkit-font-smoothing: antialiased; }
 
-/* HEADER & FILTERS */
-.header{ background:var(--header); padding:10px 15px; border-bottom:2px solid var(--primary); }
-.header h2{ margin:0; font-size:14px; font-weight:800; color:var(--primary); text-transform:uppercase; letter-spacing:0.5px; }
-
-/* FILTERS - FORCED TO SINGLE ROW WITH HORIZONTAL SCROLL ENGINE FOR MOBILE */
-.filters{
- margin-top:8px; display:flex; flex-wrap: nowrap !important; overflow-x: auto !important;
- gap:12px; background:var(--header-bg); padding:8px; border-radius:6px; border:1px solid var(--border);
- -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin;
+/* ===== HEADER ===== */
+.header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 0;
+    display: flex;
+    flex-direction: column;
 }
-.filters::-webkit-scrollbar { height: 4px; }
-.filters::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+.header-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px 0 12px;
+}
+.header-title-row h2 {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--text);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
 
-.fbox{ display:flex; flex-direction:column; gap:2px; flex-shrink: 0 !important; min-width: 120px; }
-.fbox label{ font-size:8px; font-weight:700; color:var(--primary); text-transform:uppercase; }
-select,input[type=date],#searchBox{ padding:6px; font-size:11px; border:1px solid var(--border); border-radius:4px; background:var(--card-bg); outline:none; height: 32px !important; color: var(--primary); font-weight: 600; }
-#searchBox{ min-width: 200px !important; width: 200px !important; border-left:4px solid var(--accent); }
-#f_fy { border: 1.5px solid var(--accent); font-weight: 700; color: var(--accent); }
+/* ===== TABS ===== */
+.tab-bar {
+    display: flex;
+    gap: 4px;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    background: var(--card-bg);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.report-tab {
+    height: 30px;
+    min-width: 180px;
+    padding: 0 14px;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    background: var(--bg);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+.report-tab:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.report-tab.active {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+}
 
-@media(max-width: 600px) {
-    .fbox { min-width: 110px; }
-    select, input[type=date], #searchBox { font-size: 10px; padding: 4px 6px; }
-    #searchBox { min-width: 150px !important; width: 150px !important; }
+/* ===== GOODS BADGE ===== */
+.goods-filter { display: none; }
+.goods-type {
+    display: inline-flex;
+    min-width: 36px;
+    justify-content: center;
+    padding: 2px 7px;
+    border-radius: 999px;
+    font-size: 9px;
+    font-weight: 900;
+}
+.goods-type.in  { color: #166534; background: #dcfce7; }
+.goods-type.out { color: #9a3412; background: #ffedd5; }
+.goods-items-cell { white-space: normal !important; text-align: left !important; line-height: 1.35; overflow: visible; }
+
+/* ===== FILTER BAR (uses global .filters / .fbox from bknr-standard.css) ===== */
+#searchBox {
+    min-width: 200px !important;
+    width: 200px !important;
+    border-left: 3px solid var(--accent) !important;
+}
+#f_fy {
+    border-color: var(--accent) !important;
+    font-weight: 700 !important;
+    color: var(--accent) !important;
 }
 
 /* ACTIONS */
-.actions{ background:var(--card-bg); padding:6px 15px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
+.actions{ background:var(--card-bg); padding:5px 12px; display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border); }
 #rowCount{ font-size:10px; font-weight:700; color:var(--accent); }
 .menu-box{position:relative;}
-.dots{ width:26px; height:26px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:14px; user-select:none;}
+.dots{ width:24px; height:24px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; border-radius:4px; cursor:pointer; background:var(--card-bg); font-size:14px; user-select:none;}
 .menu-list{
- position:absolute; right:0; top:30px; width:200px; background:var(--card-bg); border:1px solid var(--border);
+ position:absolute; right:0; top:28px; width:200px; background:var(--card-bg); border:1px solid var(--border);
  border-radius:4px; display:none; z-index:5000; box-shadow:0 4px 12px rgba(0,0,0,0.1);
 }
-.menu-list div{ padding:8px 12px; font-size:10px; border-bottom:1px solid #f1f5f9; cursor:pointer; }
-.menu-list div:hover{ background:#eff6ff; color:var(--accent); }
+.menu-list div{ padding:7px 12px; font-size:10px; border-bottom:1px solid var(--border); cursor:pointer; }
+.menu-list div:hover{ background:var(--row-hover); color:var(--accent); }
 
 /* TABLE AREA */
 .section{ flex:1; margin:5px; background:var(--card-bg); border:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
-.table-wrap{ flex:1; overflow:auto; width: 100%; -webkit-overflow-scrolling: touch; } 
-table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width: 1550px; } 
-thead th{
- background:#f1f5f9; padding:8px 2px; font-size:10px; font-weight:800;
- text-transform:uppercase; border-bottom:2px solid var(--border);
- border-right:1px solid #e2e8f0; position:sticky; top:0; z-index:10;
-}
-tbody td{ padding:6px 2px; font-size:9.5px; border-bottom:1px solid #f1f5f9; border-right:1px solid #f8fafc; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color: var(--primary); font-weight: 600; }
-tbody tr:hover{background:#f0f9ff; cursor:pointer;}
-tr.selected{background:#dbeafe !important;}
-.cancelled-row { background:#fff1f2 !important; opacity:.78; }
+.table-wrap{ flex:1; overflow:auto; width:100%; -webkit-overflow-scrolling: touch; }
+table{ width:100%; border-collapse:collapse; table-layout:fixed; min-width:1550px; }
+#mainTable{ min-width:1760px; }
+/* thead/tbody font sizes come from bknr-standard.css (11px header, 12px data) */
+thead th{ border-right:1px solid var(--border); }
+tbody td{ border-bottom:1px solid var(--border); border-right:1px solid var(--border); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer; }
+tbody tr:hover{ background:var(--row-hover) !important; }
+tr.selected{ background:var(--processing-bg) !important; }
+.cancelled-row { background:rgba(239,68,68,0.08) !important; opacity:.78; }
 .cancelled-row td { color:var(--danger) !important; text-decoration:line-through; }
 
 /* Empty State */
@@ -129,7 +195,7 @@ tr.selected{background:#dbeafe !important;}
 .searchable-dropdown-item:hover { background: #eff6ff; color: var(--accent); }
 
 /* FOOTER */
-tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:10px; color:var(--primary); }
+tfoot td{ background:var(--header-bg); font-weight:800; border-top:2px solid var(--border); position:sticky; bottom:0; z-index:10; padding:6px 8px; color:var(--text); }
 
 /* AUDIT PANEL */
 .audit-panel{ 
@@ -163,7 +229,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 <div class="print-header-block">
     <div style="text-align: left;">
         <h2 style="margin:0; font-size:16px; color:#0f172a; font-weight:800; text-transform:uppercase;">ENTERPRISES ERP</h2>
-        <div style="margin:2px 0 0 0; font-size:11px; font-weight:bold; color:#475569;">GATE ENTRY REPORT — DETAILED MATRIX</div>
+        <div id="printReportTitle" style="margin:2px 0 0 0; font-size:11px; font-weight:bold; color:#475569;">GATE ENTRY REPORT — DETAILED MATRIX</div>
     </div>
     <div style="text-align: right; font-size: 9.5px; font-weight: bold; line-height: 1.4;">
         <div style="color:#2563eb; font-size:11px; text-transform:uppercase;">SUPPLIER: <span id="printSupplierLabel">ALL SUPPLIERS</span></div>
@@ -172,13 +238,24 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 </div>
 
 <div class="header">
-    <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h2>GATE ENTRY REPORT</h2>
-        <div style="font-size: 11px; color: var(--text-muted);">{{ today_date }}</div>
+    <!-- Title Row -->
+    <div class="header-title-row">
+        <i class="fa-solid fa-truck-ramp-box" style="color:var(--accent);font-size:14px;"></i>
+        <h2>Gate Entry Report</h2>
     </div>
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+        <button type="button" id="rawReportTab" class="report-tab active" onclick="switchReportTab('raw')">
+            <i class="fa-solid fa-clipboard-list"></i> Raw Material Gate Entry
+        </button>
+        <button type="button" id="goodsReportTab" class="report-tab" onclick="switchReportTab('goods')">
+            <i class="fa-solid fa-boxes-stacked"></i> Goods IN / OUT Report
+        </button>
+    </div>
+    <!-- Filter Bar -->
     <div class="filters">
-        <div class="fbox">
-            <label style="color:var(--accent)">Financial Year *</label>
+        <div class="fbox" style="min-width:120px;">
+            <label style="color:var(--accent);font-weight:800;">Financial Year ★</label>
             <select id="f_fy" onchange="changeFY(this.value)">
                 <option value="">-- SELECT FY --</option>
                 {% set start_yr = 2024 %}
@@ -190,22 +267,34 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
         </div>
         <div class="fbox"><label>From Date</label><input type="date" id="f_from" onchange="applyFilters()"></div>
         <div class="fbox"><label>To Date</label><input type="date" id="f_to" onchange="applyFilters()"></div>
-        
-        <div class="fbox"><label>Supplier</label>
+        <div class="fbox raw-filter"><label>Supplier</label>
             <select id="f_supplier" onchange="applyFilters()">
                 <option value="">All Suppliers</option>
                 {% for s in suppliers_list %}<option value="{{ s }}">{{ s }}</option>{% endfor %}
             </select>
         </div>
-        <div class="fbox"><label>Factory</label>
+        <div class="fbox raw-filter"><label>Factory</label>
             <select id="f_factory" onchange="applyFilters()">
                 <option value="">All Factories</option>
                 {% for f in factories_list %}<option value="{{ f }}">{{ f }}</option>{% endfor %}
             </select>
         </div>
-        <div class="fbox">
-            <label>Search Parameters</label>
-            <input id="searchBox" placeholder="Search Batch, Vehicle, Location, Company..." onkeyup="applyFilters()">
+        <div class="fbox goods-filter"><label>Movement Type</label>
+            <select id="f_goods_type" onchange="applyFilters()">
+                <option value="">All Movements</option>
+                <option value="IN">Goods IN</option>
+                <option value="OUT">Goods OUT</option>
+            </select>
+        </div>
+        <div class="fbox goods-filter"><label>Item Category</label>
+            <select id="f_goods_category" onchange="applyFilters()">
+                <option value="">All Categories</option>
+                {% for category in goods_categories %}<option value="{{ category }}">{{ category }}</option>{% endfor %}
+            </select>
+        </div>
+        <div class="fbox" style="min-width:210px;max-width:260px;">
+            <label>Search</label>
+            <input id="searchBox" placeholder="Batch, Vehicle, Location, Company..." onkeyup="applyFilters()">
         </div>
     </div>
 </div>
@@ -213,32 +302,32 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
 <div class="actions">
     <div id="rowCount">0 rows found</div>
     <div class="menu-box">
-        <div class="dots" onclick="toggleMenu(event)">⋮</div>
+        <div class="dots" id="mainMenuButton" onclick="toggleMenu(event)">⋮</div>
         <div class="menu-list" id="mainMenu">
             {% if can_edit %}
-            <div onclick="enableEdit()">✏️ Edit Selected Row</div>
-            <div onclick="saveEdit()">💾 Save Changes</div>
+            <div class="raw-menu-only" onclick="enableEdit()">✏️ Edit Selected Row</div>
+            <div class="raw-menu-only" onclick="saveEdit()">💾 Save Changes</div>
             {% endif %}
-            <div onclick="toggleAudit()">📜 View Audit Logs</div>
+            <div class="raw-menu-only" onclick="toggleAudit()">📜 View Audit Logs</div>
             {% if can_print or can_export %}
-            <hr>
+            <hr class="raw-menu-only">
             {% if can_print %}
             <div onclick="triggerLocalPrint()">🖨️ Print Native Table</div>
             {% endif %}
             {% if can_export %}
-            <div onclick="exportAction('pdf')">📄 Export PDF</div>
-            <div onclick="exportAction('excel')">📊 Export Excel</div>
+            <div class="raw-menu-only" onclick="exportAction('pdf')">📄 Export PDF</div>
+            <div class="raw-menu-only" onclick="exportAction('excel')">📊 Export Excel</div>
             {% endif %}
             {% endif %}
             {% if can_delete %}
-            <hr>
-            <div onclick="deleteRow()" style="color:red">🗑 Cancel Record</div>
+            <hr class="raw-menu-only">
+            <div class="raw-menu-only" onclick="deleteRow()" style="color:red">🗑 Cancel Record</div>
             {% endif %}
         </div>
     </div>
 </div>
 
-<div class="section">
+<div class="section" id="rawReportSection">
     <div class="table-wrap">
         <table id="mainTable">
             <thead>
@@ -248,11 +337,12 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
                     <th class="w-tm">Time</th>
                     <th class="w-bt">Batch No</th>
                     <th class="w-ch">Challan No</th>
-                    <th class="w-fc">Factory Name</th>
+                    <th class="w-fc">Receiving Center</th>
                     <th class="w-gp">Gatepass No</th>
                     <th class="w-sp">Supplier Name</th>
-                    <th class="w-lc">PR Location</th>
+                    <th class="w-lc">Purchasing Location</th>
                     <th class="w-vn">Vehicle No</th>
+                    <th style="width:140px;">Driver Name</th>
                     <th class="w-pf">Production For</th> 
                     <th class="w-bx">Mat.</th>
                     <th class="w-bx">Emp.</th>
@@ -263,18 +353,18 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
             <tbody id="tbody">
                 {% if not rows %}
                 <tr>
-                    <td colspan="15" class="empty-state">
+                    <td colspan="16" class="empty-state">
                         <i class="fa-solid fa-calendar-day"></i><br>
-                        <b>Financial Year Not Selected</b><br>
-                        <span>Please select a Financial Year to load data.</span>
+                        <b>No matching Gate Entry records</b><br>
+                        <span>Change the filters or select another Financial Year.</span>
                     </td>
                 </tr>
                 {% else %}
                     {% for r in rows %}
                     <tr data-id="{{ r.id }}" data-date="{{ r.date }}" data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}" class="{% if r.is_cancelled %}cancelled-row{% endif %}" onclick="selectRow(this)">
                         <td class="slno">{{ (rows|length) - loop.index0 }}</td>
-                        <td>{{ r.date.strftime('%d-%m-%Y') }}</td>
-                        <td>{{ r.time.strftime('%H:%M') if r.time else '' }}</td>
+                        <td>{{ r.date[8:10] }}-{{ r.date[5:7] }}-{{ r.date[0:4] }}</td>
+                        <td>{{ r.time or '' }}</td>
                         <td class="editable" data-field="batch_number">{{ r.batch_number }}</td>
                         <td class="editable" data-field="challan_number">{{ r.challan_number }}</td>
                         <td class="lookup factory" data-field="receiving_center">{{ r.receiving_center }}</td>
@@ -282,6 +372,7 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
                         <td class="lookup supplier" data-field="supplier_name">{{ r.supplier_name }}</td>
                         <td class="lookup location" data-field="purchasing_location">{{ r.purchasing_location }}</td>
                         <td class="editable" data-field="vehicle_number">{{ r.vehicle_number or '' }}</td>
+                        <td class="editable" data-field="driver_name">{{ r.driver_name or '' }}</td>
                         <td class="lookup prodfor" data-field="production_for">{{ r.production_for or '' }}</td> 
                         <td class="editable mat-box" data-field="no_of_material_boxes">{{ r.no_of_material_boxes }}</td>
                         <td class="editable emp-box" data-field="no_of_empty_boxes">{{ r.no_of_empty_boxes }}</td>
@@ -293,10 +384,84 @@ tfoot td{ background:var(--header-bg); font-weight:800; font-size:10px; border-t
             </tbody>
             <tfoot>
                 <tr>
-                    <td colspan="11" style="text-align:right">TOTAL BOXES:</td> <td id="tot_mat">0</td>
+                    <td colspan="12" style="text-align:right">NET BOX TOTALS:</td> <td id="tot_mat">0</td>
                     <td id="tot_emp">0</td>
                     <td id="tot_ice">0</td>
                     <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<div class="section" id="goodsReportSection" style="display:none;">
+    <div class="table-wrap">
+        <table id="goodsReportTable" style="min-width:1760px;">
+            <thead>
+                <tr>
+                    <th class="w-sl">#</th>
+                    <th style="width:125px;">Movement No</th>
+                    <th class="w-dt">Date</th>
+                    <th class="w-tm">Time</th>
+                    <th style="width:68px;">Type</th>
+                    <th style="width:135px;">Production For</th>
+                    <th style="width:130px;">Plant Location</th>
+                    <th style="width:165px;">Party / Vendor</th>
+                    <th style="width:145px;">Source / Destination</th>
+                    <th style="width:150px;">PO / Challan / Invoice</th>
+                    <th style="width:105px;">Vehicle</th>
+                    <th style="width:280px;">Item Details</th>
+                    <th style="width:88px;">Quantity</th>
+                    <th style="width:80px;">Packages</th>
+                    <th style="width:150px;">Purpose</th>
+                    <th style="width:105px;">Return</th>
+                    <th style="width:88px;">Status</th>
+                    <th style="width:155px;">User</th>
+                </tr>
+            </thead>
+            <tbody id="goodsReportBody">
+                {% if not goods_rows %}
+                <tr><td colspan="18" class="empty-state"><i class="fa-solid fa-box-open"></i><br><b>No Goods IN / OUT movements found.</b></td></tr>
+                {% else %}
+                    {% for r in goods_rows %}
+                    <tr
+                        data-id="{{ r.id }}"
+                        data-date="{{ r.movement_date }}"
+                        data-type="{{ r.movement_type }}"
+                        data-categories="{{ r.item_categories|join('|') }}"
+                        data-quantity="{{ r.total_quantity }}"
+                        data-packages="{{ r.total_packages }}"
+                        data-cancelled="{{ 'true' if r.is_cancelled else 'false' }}"
+                        class="{% if r.is_cancelled %}cancelled-row{% endif %}"
+                    >
+                        <td class="goods-slno">{{ (goods_rows|length) - loop.index0 }}</td>
+                        <td><b>{{ r.movement_number }}</b><br><small>Row #{{ r.id }}</small></td>
+                        <td>{{ r.movement_date }}</td>
+                        <td>{{ r.movement_time }}</td>
+                        <td><span class="goods-type {{ r.movement_type|lower }}">{{ r.movement_type }}</span></td>
+                        <td>{{ r.production_for or '—' }}</td>
+                        <td>{{ r.plant_location or '—' }}</td>
+                        <td>{{ r.party_name or '—' }}</td>
+                        <td>{{ r.source_destination or '—' }}</td>
+                        <td>{{ [r.po_number, r.challan_number, r.invoice_number]|select|join(' / ') or '—' }}</td>
+                        <td>{{ r.vehicle_number or '—' }}</td>
+                        <td class="goods-items-cell">{{ r.item_summary or '—' }}</td>
+                        <td>{{ '%.3f'|format(r.total_quantity) }}</td>
+                        <td>{{ '%.3f'|format(r.total_packages) }}</td>
+                        <td class="goods-items-cell">{{ r.purpose or '—' }}</td>
+                        <td>{{ r.return_status or '—' }}</td>
+                        <td><b>{{ r.status or '—' }}</b></td>
+                        <td style="font-size:8px;color:var(--text-muted);">{{ r.created_by or '—' }}</td>
+                    </tr>
+                    {% endfor %}
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="12" style="text-align:right;">ACTIVE MOVEMENT TOTALS:</td>
+                    <td id="goodsTotalQty">0</td>
+                    <td id="goodsTotalPackages">0</td>
+                    <td colspan="4"></td>
                 </tr>
             </tfoot>
         </table>
@@ -319,26 +484,81 @@ const lookups = {
 };
 
 let selectedRow = null;
-const allRows = [...document.querySelectorAll("#tbody tr:not(.empty-state)")];
+let activeReportTab = "raw";
+const allRows = [...document.querySelectorAll("#tbody tr[data-id]")];
+const allGoodsRows = [...document.querySelectorAll("#goodsReportBody tr[data-id]")];
 
 function changeFY(val) {
     let currentUrl = new URL(window.location.href);
     currentUrl.searchParams.set("fy", val || "");
+    currentUrl.searchParams.set("tab", activeReportTab);
     window.location.href = currentUrl.toString();
+}
+
+function switchReportTab(tab) {
+    activeReportTab = tab === "goods" ? "goods" : "raw";
+    const goodsActive = activeReportTab === "goods";
+    document.getElementById("rawReportSection").style.display = goodsActive ? "none" : "flex";
+    document.getElementById("goodsReportSection").style.display = goodsActive ? "flex" : "none";
+    document.getElementById("rawReportTab").classList.toggle("active", !goodsActive);
+    document.getElementById("goodsReportTab").classList.toggle("active", goodsActive);
+    document.querySelectorAll(".raw-filter").forEach(element => { element.style.display = goodsActive ? "none" : "flex"; });
+    document.querySelectorAll(".goods-filter").forEach(element => { element.style.display = goodsActive ? "flex" : "none"; });
+    document.querySelectorAll(".raw-menu-only").forEach(element => {
+        element.style.display = goodsActive ? "none" : "block";
+    });
+    selectedRow = null;
+    allRows.forEach(row => row.classList.remove("selected"));
+    applyFilters();
 }
 
 function selectRow(tr) {
     allRows.forEach(r => r.classList.remove("selected"));
+    if (tr.dataset.cancelled === "true") {
+        selectedRow = null;
+        return;
+    }
     tr.classList.add("selected");
     selectedRow = tr;
 }
 
 function applyFilters() {
-    if(allRows.length === 0) return;
     const f1 = document.getElementById("f_from").value, f2 = document.getElementById("f_to").value;
+    const q = document.getElementById("searchBox").value.toLowerCase();
+    if(activeReportTab === "goods") {
+        const movementType = document.getElementById("f_goods_type").value;
+        const category = document.getElementById("f_goods_category").value.toLowerCase();
+        let visibleCount = 0, totalQuantity = 0, totalPackages = 0;
+        const visibleRows = [];
+        allGoodsRows.forEach(row => {
+            const rowCategories = (row.dataset.categories || "").toLowerCase().split("|");
+            let ok = true;
+            if(f1 && row.dataset.date < f1) ok = false;
+            if(f2 && row.dataset.date > f2) ok = false;
+            if(movementType && row.dataset.type !== movementType) ok = false;
+            if(category && !rowCategories.includes(category)) ok = false;
+            if(q && !row.innerText.toLowerCase().includes(q)) ok = false;
+            row.style.display = ok ? "" : "none";
+            if(ok) {
+                visibleCount++;
+                visibleRows.push(row);
+                if(row.dataset.cancelled !== "true") {
+                    totalQuantity += parseFloat(row.dataset.quantity || 0);
+                    totalPackages += parseFloat(row.dataset.packages || 0);
+                }
+            }
+        });
+        visibleRows.forEach((row, index) => {
+            row.querySelector(".goods-slno").innerText = visibleRows.length - index;
+        });
+        document.getElementById("rowCount").innerText = `${visibleCount} rows found`;
+        document.getElementById("goodsTotalQty").innerText = totalQuantity.toFixed(3);
+        document.getElementById("goodsTotalPackages").innerText = totalPackages.toFixed(3);
+        return;
+    }
+
     const fs = document.getElementById("f_supplier").value.toLowerCase();
     const ff = document.getElementById("f_factory").value.toLowerCase();
-    const q = document.getElementById("searchBox").value.toLowerCase();
     
     let m_tot=0, e_tot=0, i_tot=0, vCount=0;
     let filteredRows = [];
@@ -531,10 +751,15 @@ async function saveEdit() {
 function triggerLocalPrint() {
     const activeSupplierSelection = document.getElementById("f_supplier").value;
     const badgeEl = document.getElementById("printSupplierLabel");
-    
-    if(activeSupplierSelection && activeSupplierSelection.trim() !== "") {
+    const printTitle = document.getElementById("printReportTitle");
+    if(activeReportTab === "goods") {
+        printTitle.innerText = "GOODS IN / OUT REPORT — DETAILED MATRIX";
+        badgeEl.innerText = "NON-RMP GOODS";
+    } else if(activeSupplierSelection && activeSupplierSelection.trim() !== "") {
+        printTitle.innerText = "GATE ENTRY REPORT — DETAILED MATRIX";
         badgeEl.innerText = activeSupplierSelection.toUpperCase();
     } else {
+        printTitle.innerText = "GATE ENTRY REPORT — DETAILED MATRIX";
         badgeEl.innerText = "ALL SUPPLIERS";
     }
     window.print();
@@ -544,20 +769,28 @@ async function deleteRow() {
     if(!selectedRow) return;
     const confirmDelete = await Swal.fire({
         title: 'Confirm Cancellation?',
-        text: 'Are you sure you want to cancel this record?',
+        input: 'text',
+        inputLabel: 'Cancellation reason',
+        inputPlaceholder: 'Enter reason',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#ef4444',
         confirmButtonText: 'Yes, Cancel it!',
-        cancelButtonText: 'Cancel'
+        cancelButtonText: 'Cancel',
+        inputValidator: value => !value || !value.trim() ? 'Cancellation reason is required' : undefined
     });
     if (!confirmDelete.isConfirmed) return;
 
-    const res = await fetch("/reports/gate_entry/delete", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({id: selectedRow.dataset.id}) });
+    const res = await fetch("/reports/gate_entry/delete", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({id: selectedRow.dataset.id, reason: confirmDelete.value.trim()})
+    });
+    const responseData = await res.json().catch(() => ({}));
     if(res.ok) {
         Swal.fire({ icon: 'success', title: 'Cancelled!', timer: 800, showConfirmButton: false }).then(() => location.reload());
     } else {
-        Swal.fire('Error', 'Cancellation Failed!', 'error');
+        Swal.fire('Error', responseData.detail || responseData.error || 'Cancellation failed.', 'error');
     }
 }
 
@@ -583,8 +816,9 @@ function exportAction(type) {
     window.location.href = exportUrl.toString();
 }
 
-applyFilters();
+const initialTab = new URLSearchParams(window.location.search).get("tab");
+switchReportTab(initialTab === "goods" ? "goods" : "raw");
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

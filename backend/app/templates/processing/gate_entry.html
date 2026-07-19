@@ -25,34 +25,34 @@
 
 <style>:root {
     /* Standard theme variables mapped to global standard styles */
-    --primary: var(--text);
-    --accent: var(--accent);
-    --border: var(--border);
-    --bg: var(--bg);
-    --header: var(--card-bg);
-    --text: var(--text);
-    --text-muted: var(--text-muted);
-    --muted: var(--text-muted);
-    --danger: var(--cancelled-text);
-    --success: var(--completed-text);
-    --card-bg: var(--card-bg);
-    --header-bg: var(--header-bg);
-    --row-hover: var(--row-hover);
-    --processing-bg: var(--processing-bg);
+    --primary: var(--text-primary, #1e293b);
+    --accent: var(--sap-accent, #2563eb);
+    --border: var(--border-light, #e2e8f0);
+    --bg: var(--bg-app, #f8fafc);
+    --header: var(--surface-panel, #ffffff);
+    --text: var(--text-primary, #1e293b);
+    --text-muted: var(--text-secondary, #64748b);
+    --muted: var(--text-secondary, #64748b);
+    --danger: var(--cancelled-text, #ef4444);
+    --success: var(--completed-text, #16a34a);
+    --card-bg: var(--surface-panel, #ffffff);
+    --header-bg: var(--bg-app, #f8fafc);
+    --row-hover: var(--row-hover, #f1f5f9);
+    --processing-bg: var(--bg-app, #f8fafc);
 
     /* Report specific variables mapping */
-    --bg-light: var(--bg);
-    --panel-bg: var(--card-bg);
-    --sidebar-bg: var(--bg);
-    --primary-dark: var(--text);
-    --accent-blue: var(--accent);
-    --accent-glow: var(--accent);
-    --text-main: var(--text);
-    --border-color: var(--border);
-    --table-header-bg: var(--header-bg);
+    --bg-light: var(--bg-app, #f8fafc);
+    --panel-bg: var(--surface-panel, #ffffff);
+    --sidebar-bg: var(--bg-app, #f8fafc);
+    --primary-dark: var(--text-primary, #1e293b);
+    --accent-blue: var(--sap-accent, #2563eb);
+    --accent-glow: var(--sap-accent, #2563eb);
+    --text-main: var(--text-primary, #1e293b);
+    --border-color: var(--border-light, #e2e8f0);
+    --table-header-bg: var(--bg-app, #f8fafc);
     
     /* Finance / Others specific mapping */
-    --card: var(--card-bg);
+    --card: var(--surface-panel, #ffffff);
 }
 
 
@@ -98,9 +98,10 @@ body{ background: var(--bg); color: var(--text); padding-bottom: 40px; overflow-
   background: var(--card-bg); padding: 20px; border-radius: 8px;
   border: 1px solid var(--border);
   box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  display: {% if today_data %} none {% else %} block {% endif %};
+  display: block;
   transition: background 0.3s ease, border-color 0.3s ease;
 }
+#formSection { display: {% if today_data %} none {% else %} block {% endif %}; }
 
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 15px; }
 @media(min-width:768px){ .form-grid{ grid-template-columns: repeat(3, 1fr); } }
@@ -209,11 +210,34 @@ tr.selected { background: var(--processing-bg) !important; }
   th { padding: 6px 3px !important; font-size: 9px !important; }
   td { padding: 6px 3px !important; font-size: 9px !important; }
 }
+.gate-tabs { width:92%; margin:10px auto 0; display:flex; gap:7px; padding:5px; border:1px solid var(--border-light, #e2e8f0); border-radius:9px; background:var(--bg-app, #f8fafc); overflow-x:auto; }
+.gate-tab { height:36px; min-width:190px; padding:0 14px; border:1px solid var(--border-light, #e2e8f0); border-radius:7px; background:var(--surface-panel, #ffffff); color:var(--text-secondary, #64748b); font-size:11px; font-weight:800; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; gap:7px; transition: all 160ms ease; }
+.gate-tab.active { border-color:var(--accent, #2563eb); background:var(--accent, #2563eb); color:#fff; }
+#goodsGateTab { display:none; width:92%; margin:12px auto 50px; }
+.goods-note { margin-bottom:9px; padding:8px 10px; border:1px solid #bfdbfe; border-radius:7px; color:#1d4ed8; background:#eff6ff; font-size:10px; font-weight:700; }
+.goods-toggle { display:flex; gap:6px; margin-bottom:10px; }
+.goods-toggle button { flex:1; height:34px; border:1px solid var(--border); border-radius:7px; background:var(--bg); color:var(--muted); font-size:10px; font-weight:800; cursor:pointer; }
+.goods-toggle button.active[data-type="IN"] { color:#166534; border-color:#86efac; background:#dcfce7; }
+.goods-toggle button.active[data-type="OUT"] { color:#9a3412; border-color:#fdba74; background:#ffedd5; }
+.goods-item-line { min-width:900px; display:grid; grid-template-columns:140px 170px 1fr 85px 80px 85px 32px; gap:5px; margin-bottom:5px; }
+.goods-item-scroll { overflow-x:auto; margin-top:8px; }
+.goods-item-remove { border:1px solid var(--border); border-radius:6px; color:#dc2626; background:transparent; cursor:pointer; }
+.goods-register { margin-top:12px; overflow-x:auto; border:1px solid var(--border); border-radius:8px; }
+.goods-register table { min-width:1250px; margin:0 !important; }
+.goods-form-tools { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-top:10px; padding-top:9px; border-top:1px solid var(--border); }
+.goods-form-tools button { width:auto !important; padding:0 14px !important; }
+.goods-status { display:inline-block; padding:3px 6px; border-radius:5px; background:#e2e8f0; font-size:8px; font-weight:900; }
+.goods-status.in { color:#166534; background:#dcfce7; }.goods-status.out { color:#9a3412; background:#ffedd5; }
 </style>
 </head>
 
 <body>
 <div id="statusAlert"></div>
+<div class="gate-tabs">
+  <button type="button" id="rawGateTabBtn" class="gate-tab active" onclick="switchGateTab('raw')"><i class="fa-solid fa-truck"></i> Raw Material Gate Entry</button>
+  <button type="button" id="goodsGateTabBtn" class="gate-tab" onclick="switchGateTab('goods')"><i class="fa-solid fa-boxes-stacked"></i> Goods IN / OUT</button>
+</div>
+<div id="rawGateTab">
 
 <div class="header">
   <div class="header-titles">
@@ -246,9 +270,9 @@ tr.selected { background: var(--processing-bg) !important; }
       <div class="field">
         <label>Production For</label>
         <select name="production_for" id="prod_for" required onchange="handleCompanyChange()">
-          <option value="" disabled selected>Select Company</option>
+          <option value="" disabled {% if not selected_production_for %}selected{% endif %}>Select Company</option>
           {% for p in prod_for_list %}
-          <option value="{{p}}">{{p}}</option>
+          <option value="{{p}}" {% if selected_production_for == p %}selected{% endif %}>{{p}}</option>
           {% endfor %}
         </select>
       </div> 
@@ -257,7 +281,7 @@ tr.selected { background: var(--processing-bg) !important; }
         <label>Factory Name</label>
         <select name="receiving_center" id="receiving_dd" required onchange="handleFactoryChange()">
           <option value="">Select Factory</option>
-          {% for p in peeling_ats %}<option value="{{p}}">{{p}}</option>{% endfor %}
+          {% for p in peeling_ats %}<option value="{{p}}" {% if selected_location == p %}selected{% endif %}>{{p}}</option>{% endfor %}
         </select>
       </div>
 
@@ -385,6 +409,181 @@ tr.selected { background: var(--processing-bg) !important; }
 </div>
 
 {% endif %}
+</div>
+
+<div id="goodsGateTab">
+  <div class="header"><div class="header-titles"><h2>Non-RMP Goods Gate Register</h2></div></div>
+  <div class="goods-note">Security movement record only. Saving here does not post inventory or accounting. Raw shrimp/RMP must use the Raw Material Gate Entry tab.</div>
+  <form id="goodsGateForm" class="section" autocomplete="off">
+    <div class="goods-toggle">
+      <button type="button" data-type="IN" class="active" onclick="setGoodsMovementType('IN')"><i class="fa-solid fa-arrow-right-to-bracket"></i> Goods IN</button>
+      <button type="button" data-type="OUT" onclick="setGoodsMovementType('OUT')"><i class="fa-solid fa-arrow-right-from-bracket"></i> Goods OUT</button>
+    </div>
+    <input type="hidden" id="goodsMovementType" value="IN">
+    <div class="form-grid">
+      <div class="field"><label>Production For *</label><select id="goodsProductionFor" required><option value="">Select Company</option>{% for p in prod_for_list %}<option value="{{p}}" {% if selected_production_for == p %}selected{% endif %}>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Plant Location *</label><select id="goodsPlantLocation" required><option value="">Select Plant</option>{% for p in peeling_ats %}<option value="{{p}}" {% if selected_location == p %}selected{% endif %}>{{p}}</option>{% endfor %}</select></div>
+      <div class="field"><label>Party / Vendor *</label><input id="goodsParty" list="goodsPartyList" placeholder="Select or type party" required></div>
+      <div class="field"><label id="goodsDirectionLabel">Source / From Location</label><input id="goodsDirection" list="goodsLocationList" placeholder="Select or type location"></div>
+      <div class="field"><label>Purpose *</label><input id="goodsPurpose" list="goodsPurposeList" placeholder="Select or type purpose" required></div>
+      <div class="field"><label id="goodsAuthLabel">Received By</label><input id="goodsAuthorizedBy" list="goodsEmployeeList" placeholder="Select employee"></div>
+      <div class="field"><label>PO Number</label><input id="goodsPo"></div>
+      <div class="field"><label>Challan Number</label><input id="goodsChallan"></div>
+      <div class="field"><label>Invoice Number</label><input id="goodsInvoice"></div>
+      <div class="field"><label>Vehicle Number</label><input id="goodsVehicle" list="goodsVehicleList"><datalist id="goodsVehicleList">{% for v in vehicles %}<option value="{{v}}"></option>{% endfor %}</datalist></div>
+      <div class="field"><label>Driver Name</label><input id="goodsDriver" list="driver_name_list"></div>
+      <div class="field"><label>Department</label><input id="goodsDepartment" list="goodsDepartmentList" placeholder="Select department"></div>
+      <div class="field"><label>Linked Return Movement</label><select id="goodsLinked" onchange="selectGoodsReturn(this.value)"><option value="">Not linked</option></select></div>
+      <div class="field"><label>Returnable</label><select id="goodsReturnable" onchange="toggleGoodsReturnDate()"><option value="false">No</option><option value="true">Yes</option></select></div>
+      <div class="field" id="goodsReturnDateField" style="display:none"><label>Expected Return Date *</label><input type="date" id="goodsReturnDate"></div>
+      <div class="field"><label>Remarks</label><input id="goodsRemarks"></div>
+    </div>
+    <datalist id="goodsPartyList">{% for value in goods_parties %}<option value="{{value}}"></option>{% endfor %}</datalist>
+    <datalist id="goodsLocationList">{% for value in locations %}<option value="{{value}}"></option>{% endfor %}</datalist>
+    <datalist id="goodsPurposeList">{% for value in purposes %}<option value="{{value}}"></option>{% endfor %}</datalist>
+    <datalist id="goodsEmployeeList">{% for value in employee_names %}<option value="{{value}}"></option>{% endfor %}</datalist>
+    <datalist id="goodsDepartmentList">{% for value in departments %}<option value="{{value}}"></option>{% endfor %}</datalist>
+    <div class="goods-form-tools">
+      <div><b style="font-size:10px">ITEM DETAILS</b><div style="font-size:8px;color:#b45309">Multiple non-RMP items are allowed.</div></div>
+      <button type="button" class="btn" onclick="addGoodsItem()"><i class="fa-solid fa-plus"></i> Add Item</button>
+    </div>
+    <div class="goods-item-scroll"><div id="goodsItems"></div></div>
+    <div class="actions">
+      <button type="submit" class="btn btn-primary" id="goodsSaveBtn">SAVE</button>
+      <button type="button" class="btn btn-clear" onclick="resetGoodsForm()">RESET</button>
+    </div>
+  </form>
+  <div class="table-header-bar"><h3 class="table-title">Goods Movement Register</h3><button type="button" class="btn-toggle" onclick="loadGoodsRegister()"><i class="fa-solid fa-refresh"></i> Refresh</button></div>
+  <div class="goods-register">
+    <table>
+      <thead><tr><th>Movement</th><th>Date / Time</th><th>IN/OUT</th><th>Company / Plant</th><th>Party</th><th>Document</th><th>Vehicle</th><th>Items</th><th>Qty</th><th>Return</th><th>Status</th><th>Action</th></tr></thead>
+      <tbody id="goodsRegisterBody"><tr><td colspan="12">Open the tab to load goods movements.</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+const goodsCategories = ['Packing Materials','Chemicals','General Store Items','Machinery','Spare Parts','Office Materials','Repair / Service Items','Samples','Scrap','Returnable Materials','Other'];
+const goodsUnits = ['Nos','KG','Boxes','Bags','Litres','Metres','Sets','Lots'];
+let goodsReturnables = [];
+
+function escapeGoods(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function switchGateTab(tab) {
+  document.getElementById('rawGateTab').style.display = tab === 'raw' ? 'block' : 'none';
+  document.getElementById('goodsGateTab').style.display = tab === 'goods' ? 'block' : 'none';
+  document.getElementById('rawGateTabBtn').classList.toggle('active', tab === 'raw');
+  document.getElementById('goodsGateTabBtn').classList.toggle('active', tab === 'goods');
+  if (tab === 'goods') loadGoodsRegister();
+}
+function setGoodsMovementType(type) {
+  document.getElementById('goodsMovementType').value = type;
+  document.querySelectorAll('.goods-toggle button').forEach(button => button.classList.toggle('active', button.dataset.type === type));
+  document.getElementById('goodsDirectionLabel').textContent = type === 'IN' ? 'Source / From Location' : 'Destination / To Location';
+  document.getElementById('goodsAuthLabel').textContent = type === 'IN' ? 'Received By' : 'Authorized By';
+  toggleGoodsReturnDate();
+}
+function toggleGoodsReturnDate() {
+  const show = document.getElementById('goodsReturnable').value === 'true' && document.getElementById('goodsMovementType').value === 'OUT';
+  document.getElementById('goodsReturnDateField').style.display = show ? 'flex' : 'none';
+  document.getElementById('goodsReturnDate').required = show;
+}
+function addGoodsItem(item = {}) {
+  const row = document.createElement('div');
+  row.className = 'goods-item-line';
+  row.innerHTML = `
+    <select class="gi-category" required><option value="">Category *</option>${goodsCategories.map(value => `<option ${value === item.item_category ? 'selected' : ''}>${escapeGoods(value)}</option>`).join('')}</select>
+    <input class="gi-name" required placeholder="Item name *" value="${escapeGoods(item.item_name || '')}">
+    <input class="gi-description" placeholder="Description" value="${escapeGoods(item.description || '')}">
+    <input class="gi-quantity" type="number" min="0.001" step="0.001" required placeholder="Qty *" value="${escapeGoods(item.quantity || '')}">
+    <select class="gi-unit">${goodsUnits.map(value => `<option ${value === (item.unit || 'Nos') ? 'selected' : ''}>${value}</option>`).join('')}</select>
+    <input class="gi-packages" type="number" min="0" step="0.001" placeholder="Packages" value="${escapeGoods(item.packages || 0)}">
+    <button type="button" class="goods-item-remove" onclick="if(document.querySelectorAll('.goods-item-line').length>1)this.parentElement.remove()"><i class="fa-solid fa-trash"></i></button>`;
+  document.getElementById('goodsItems').appendChild(row);
+}
+function selectGoodsReturn(value) {
+  const source = goodsReturnables.find(row => String(row.id) === String(value));
+  if (!source) return;
+  setGoodsMovementType(source.movement_type === 'IN' ? 'OUT' : 'IN');
+  document.getElementById('goodsParty').value = source.party_name || '';
+  document.getElementById('goodsProductionFor').value = source.production_for || '';
+  document.getElementById('goodsPlantLocation').value = source.plant_location || '';
+  document.getElementById('goodsPurpose').value = `Return against ${source.movement_number}`;
+  document.getElementById('goodsReturnable').value = 'false';
+  document.getElementById('goodsItems').innerHTML = '';
+  (source.items || []).filter(item => Number(item.balance_quantity || 0) > 0).forEach(item => addGoodsItem({...item, quantity:item.balance_quantity, description:`Return against ${source.movement_number}`}));
+  toggleGoodsReturnDate();
+}
+function goodsPayload() {
+  return {
+    movement_type: document.getElementById('goodsMovementType').value,
+    production_for: document.getElementById('goodsProductionFor').value,
+    plant_location: document.getElementById('goodsPlantLocation').value,
+    party_name: document.getElementById('goodsParty').value,
+    source_destination: document.getElementById('goodsDirection').value,
+    purpose: document.getElementById('goodsPurpose').value,
+    authorized_received_by: document.getElementById('goodsAuthorizedBy').value,
+    po_number: document.getElementById('goodsPo').value,
+    challan_number: document.getElementById('goodsChallan').value,
+    invoice_number: document.getElementById('goodsInvoice').value,
+    vehicle_number: document.getElementById('goodsVehicle').value,
+    driver_name: document.getElementById('goodsDriver').value,
+    department: document.getElementById('goodsDepartment').value,
+    linked_movement_id: Number(document.getElementById('goodsLinked').value) || null,
+    is_returnable: document.getElementById('goodsReturnable').value === 'true',
+    expected_return_date: document.getElementById('goodsReturnDate').value || null,
+    remarks: document.getElementById('goodsRemarks').value,
+    items: [...document.querySelectorAll('.goods-item-line')].map(row => ({
+      item_category: row.querySelector('.gi-category').value, item_name: row.querySelector('.gi-name').value,
+      description: row.querySelector('.gi-description').value, quantity: Number(row.querySelector('.gi-quantity').value),
+      unit: row.querySelector('.gi-unit').value, packages: Number(row.querySelector('.gi-packages').value || 0)
+    }))
+  };
+}
+async function loadGoodsRegister() {
+  const body = document.getElementById('goodsRegisterBody');
+  body.innerHTML = '<tr><td colspan="12">Loading…</td></tr>';
+  try {
+    const response = await fetch('/processing/gate_entry/goods', {headers:{Accept:'application/json'}});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Unable to load goods movements');
+    goodsReturnables = data.returnable_movements || [];
+    document.getElementById('goodsLinked').innerHTML = '<option value="">Not linked</option>' + goodsReturnables.map(row => `<option value="${row.id}">${escapeGoods(row.movement_number)} · ${escapeGoods(row.party_name)} · ${escapeGoods(row.return_status)}</option>`).join('');
+    body.innerHTML = (data.rows || []).map(row => `<tr class="${row.is_cancelled ? 'cancelled-row' : ''}">
+      <td><b>${escapeGoods(row.movement_number)}</b><br><small>Row #${row.id}</small></td><td>${escapeGoods(row.movement_date)}<br><small>${escapeGoods(row.movement_time)}</small></td>
+      <td><span class="goods-status ${row.movement_type.toLowerCase()}">${row.movement_type}</span></td><td>${escapeGoods(row.production_for)}<br><small>${escapeGoods(row.plant_location)}</small></td>
+      <td>${escapeGoods(row.party_name)}</td><td>${escapeGoods(row.challan_number || row.invoice_number || row.po_number || '—')}</td><td>${escapeGoods(row.vehicle_number || '—')}</td>
+      <td style="text-align:left!important;white-space:normal">${escapeGoods(row.item_summary)}</td><td>${escapeGoods(row.total_quantity)}<br><small>${escapeGoods(row.total_packages)} packs</small></td>
+      <td>${escapeGoods(row.return_status)}</td><td>${escapeGoods(row.status)}</td><td>${row.is_cancelled ? '' : `<button class="goods-item-remove" onclick="cancelGoodsMovement(${row.id},'${escapeGoods(row.movement_number)}')"><i class="fa-solid fa-ban"></i></button>`}</td></tr>`).join('') || '<tr><td colspan="12">No goods movements found.</td></tr>';
+  } catch (error) { body.innerHTML = `<tr><td colspan="12" style="color:#dc2626">${escapeGoods(error.message)}</td></tr>`; }
+}
+async function cancelGoodsMovement(id, number) {
+  const reason = prompt(`Cancellation reason for ${number}:`);
+  if (reason === null || !reason.trim()) return;
+  const response = await fetch(`/processing/gate_entry/goods/${id}/cancel`, {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({reason:reason.trim()})});
+  const data = await response.json();
+  if (!response.ok) return Swal.fire({icon:'error',title:'Unable to cancel',text:data.message || 'Cancellation failed'});
+  Swal.fire({icon:'success',title:'Cancelled',text:data.message,timer:1800,showConfirmButton:false});
+  loadGoodsRegister();
+}
+function resetGoodsForm() {
+  document.getElementById('goodsGateForm').reset(); document.getElementById('goodsItems').innerHTML = ''; addGoodsItem(); setGoodsMovementType('IN'); toggleGoodsReturnDate();
+}
+document.getElementById('goodsGateForm').addEventListener('submit', async event => {
+  event.preventDefault();
+  const button = document.getElementById('goodsSaveBtn'); button.disabled = true;
+  try {
+    const response = await fetch('/processing/gate_entry/goods', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(goodsPayload())});
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || 'Save failed');
+    Swal.fire({icon:'success',title:'Saved',text:data.message});
+    resetGoodsForm(); loadGoodsRegister();
+  } catch (error) { Swal.fire({icon:'error',title:'Unable to save',text:error.message}); }
+  finally { button.disabled = false; }
+});
+addGoodsItem();
+</script>
 
 <script>
 const lastBatchMap = JSON.parse('{{ last_batch_map_json | safe }}');
@@ -401,6 +600,9 @@ window.onload = function() {
         document.getElementById("formSection").style.display = "block";
         const toggle = document.getElementById("toggleActionArea");
         if (toggle) toggle.style.display = "none";
+    }
+    if (document.getElementById("prod_for").value && document.getElementById("receiving_dd").value) {
+        handleFactoryChange();
     }
 }
 
@@ -644,6 +846,6 @@ window.onclick = () => {
     if(d) d.style.display = "none";
 }
 </script>
-<script src="/static/js/global-loader.js?v=skel9"></script>
+<script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
 </html>

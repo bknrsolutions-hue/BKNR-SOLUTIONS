@@ -280,3 +280,44 @@ table td, .data-table td, .data-row { font-size: 13px !important; }
 .module-rail .rail-title, .module-rail .rail-link { font-size: 13px !important; font-weight: 600 !important; }
 .module-rail .rail-label { font-size: 11px !important; }
 .card, .kpi-card, .mini-card, .header-panel, .filter-panel, .chart-container, .table-container, .panel, .kpi, .tally-panel, .module-rail { border-radius: 8px !important; box-shadow: 0 1px 2px rgb(34 53 72 / 10%) !important; }
+
+/* Dashboard tables follow the same partition and totals hierarchy. */
+@media screen {
+  table { border: 1px solid var(--table-line) !important; }
+  table :is(th, td) {
+    border-right: 1px solid var(--table-line) !important;
+    border-bottom: 1px solid var(--table-line) !important;
+  }
+  table :is(th, td):last-child { border-right: 0 !important; }
+  table thead th {
+    border-bottom: 2px solid color-mix(in srgb, var(--accent) 32%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--accent) 9%, var(--card-bg)) !important;
+    color: var(--text) !important;
+    font-weight: 700 !important;
+  }
+  table tbody td { font-weight: 400 !important; }
+  table tbody tr:not([class*="subtotal"]):not([class*="total"]):not(.company-row):not(.location-row):not(.row-location):not(.factory-row):not(.group-row) > td {
+    font-weight: 400 !important;
+  }
+  table tbody tr[class*="subtotal"] > td,
+  table tbody tr:is(.subtotal, .batch-subtotal, .row-batch-total, .sum-total-row) > td {
+    border-top: 1px solid color-mix(in srgb, var(--accent) 38%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--accent) 7%, var(--card-bg)) !important;
+    color: var(--text) !important;
+    font-weight: 700 !important;
+  }
+  table tbody tr:is(.company-row, .location-row, .row-location, .factory-row, .group-row) > td {
+    background: color-mix(in srgb, var(--accent) 5%, var(--card-bg)) !important;
+    color: var(--text) !important;
+    font-weight: 700 !important;
+  }
+  table tfoot td,
+  table tr[class*="grand-total"] > td,
+  table tr:is(.total-row, .is-grand) > td {
+    border-top: 2px solid color-mix(in srgb, var(--accent) 52%, var(--table-line)) !important;
+    border-bottom: 2px solid color-mix(in srgb, var(--accent) 52%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--accent) 13%, var(--card-bg)) !important;
+    color: var(--text) !important;
+    font-weight: 700 !important;
+  }
+}
