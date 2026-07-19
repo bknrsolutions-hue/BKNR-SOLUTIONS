@@ -358,7 +358,7 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
             email=extra["email"],
             company_code=new_company_code,
             mpeda_registration_code=mpeda_code,
-            is_active=False,
+            is_active=True,
         )
         db.add(company)
         db.flush()
