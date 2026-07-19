@@ -202,11 +202,23 @@ export default function GoodsGateMovements() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(body),
       }));
-      setMessage({ type: 'success', text: payload.message });
-      resetForm();
+      const successMsg = payload.message || 'Goods Gate Movement saved successfully!';
+      setMessage({ type: 'success', text: successMsg });
+      const currentProdFor = form.production_for;
+      const currentPlantLoc = form.plant_location;
+      setForm({
+        ...emptyHeader(),
+        production_for: currentProdFor,
+        plant_location: currentPlantLoc,
+      });
+      setItems([emptyItem()]);
+      setFilters(cur => ({ ...cur, search: '' }));
       await load();
+      window.alert(`✅ ${successMsg}`);
     } catch (error) {
-      setMessage({ type: 'error', text: error.message });
+      const errorMsg = error.message || 'Unable to save goods gate movement';
+      setMessage({ type: 'error', text: errorMsg });
+      window.alert(`❌ Save Failed: ${errorMsg}`);
     } finally {
       setSaving(false);
     }
