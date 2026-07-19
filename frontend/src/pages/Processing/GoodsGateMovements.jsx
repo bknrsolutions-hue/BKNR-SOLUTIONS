@@ -438,18 +438,30 @@ export default function GoodsGateMovements() {
           <button type="button" className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 'auto', height: '30px' }} onClick={() => setItems(current => [...current, emptyItem()])}><Plus size={14} /> Add Item</button>
         </div>
         <div className="goods-items">
+          {/* Column Headers */}
+          <div className="goods-item-row goods-item-header" style={{ background: 'var(--bg-app)', borderBottom: '2px solid var(--border-medium)', paddingBottom: '4px', marginBottom: '4px' }}>
+            <span className="goods-item-index" style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)' }}>#</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Category *</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Item Name *</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Description</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Quantity *</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Unit *</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Packages</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px' }}>Condition</span>
+            <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--text-secondary)', padding: '0 4px', textAlign: 'center' }}>Del</span>
+          </div>
           {items.map((item, index) => (
             <div className="goods-item-row" key={index}>
               <span className="goods-item-index">{index + 1}</span>
               <select className="form-control" value={item.item_category} onChange={e => updateItem(index, 'item_category', e.target.value)} required>
-                <option value="">Category *</option>
+                <option value="">Select…</option>
                 {categories.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
               <input className="form-control" value={item.item_name} onChange={e => updateItem(index, 'item_name', e.target.value)} placeholder="Item name *" required />
               <input className="form-control" value={item.description} onChange={e => updateItem(index, 'description', e.target.value)} placeholder="Description" />
               <input className="form-control" type="number" min="0.001" step="0.001" value={item.quantity} onChange={e => updateItem(index, 'quantity', e.target.value)} placeholder="Qty *" required />
               <select className="form-control" value={item.unit} onChange={e => updateItem(index, 'unit', e.target.value)} required>{units.map(value => <option key={value}>{value}</option>)}</select>
-              <input className="form-control" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="Packages (e.g. 10 Boxes)" />
+              <input className="form-control" value={item.packages} onChange={e => updateItem(index, 'packages', e.target.value)} placeholder="e.g. 10 Boxes" />
               <input className="form-control" value={item.material_condition} onChange={e => updateItem(index, 'material_condition', e.target.value)} placeholder="Condition" />
               <button type="button" className="goods-remove" onClick={() => setItems(current => current.length === 1 ? current : current.filter((_, itemIndex) => itemIndex !== index))} disabled={items.length === 1}><Trash2 size={14} /></button>
             </div>
