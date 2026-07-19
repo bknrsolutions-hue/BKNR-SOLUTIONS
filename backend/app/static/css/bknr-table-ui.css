@@ -1,0 +1,271 @@
+/* Uniform interactive table contract for server-rendered ERP screens.
+   Print, invoice-layout, signature and drill-down document tables opt out. */
+:root {
+  --erp-table-header-height: 30px;
+  --erp-table-row-height: 30px;
+  --erp-table-heading-size: 9px;
+  --erp-table-text-size: 10px;
+  --erp-table-cell-padding-x: 10px;
+}
+
+@media screen {
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: auto !important;
+    border-color: var(--table-line, var(--border, #d5dadd)) !important;
+    border-radius: 6px !important;
+    background: var(--card-bg, #ffffff) !important;
+    box-shadow: none !important;
+    scrollbar-gutter: stable;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ),
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) {
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    border: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: auto;
+    color: var(--text, #1d2d3e) !important;
+    background: var(--card-bg, #ffffff) !important;
+    font-size: var(--erp-table-text-size) !important;
+    text-align: center;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ) > thead > tr > th,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) > thead > tr > th {
+    height: var(--erp-table-header-height) !important;
+    min-height: var(--erp-table-header-height) !important;
+    padding: 0 var(--erp-table-cell-padding-x) !important;
+    border-right: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-bottom: 2px solid var(--accent, #2563eb) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 9%, var(--card-bg, #ffffff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-size: var(--erp-table-heading-size) !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.3px !important;
+    text-align: center !important;
+    text-transform: uppercase !important;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table:not(
+    .sum-table,
+    .drill-mini-table,
+    .card-details-table,
+    .invoice-parties,
+    .invoice-facts,
+    .details,
+    .items,
+    .value-table,
+    .summary,
+    .signatures,
+    .header-table,
+    .cold-bill-table,
+    .cold-invoice-total-table
+  ) > tbody > tr > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ):not(.drill-mini-table, .card-details-table) > tbody > tr > td {
+    height: var(--erp-table-row-height) !important;
+    min-height: var(--erp-table-row-height) !important;
+    padding: 4px var(--erp-table-cell-padding-x) !important;
+    border-right: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    border-bottom: 1px solid var(--table-line, var(--border, #d5dadd)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-size: var(--erp-table-text-size) !important;
+    font-weight: 400 !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    white-space: nowrap;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table > :is(thead, tbody, tfoot) > tr > :is(th, td):last-child,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ) > :is(thead, tbody, tfoot) > tr > :is(th, td):last-child {
+    border-right: 0 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) :is(
+    .table-wrap,
+    .table-container,
+    .table-wrapper,
+    .table-responsive-container,
+    .pi-table-wrap,
+    .rd-table-wrap
+  ) > table > tbody > tr:hover > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table:is(
+    .main-table,
+    .data-table,
+    .rm-table,
+    .summary-table,
+    .history-table,
+    .pi-table,
+    .rd-table
+  ) > tbody > tr:hover > td {
+    background: var(--row-hover, #eaf3fc) !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table :is(
+    .text-left,
+    .cell-text,
+    .cell-description,
+    .cell-address,
+    .description,
+    .wrap-text
+  ) {
+    text-align: left !important;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table :is(
+    .text-right,
+    .cell-number,
+    .num
+  ) {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr[class*="subtotal"] > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr:is(
+    .subtotal,
+    .batch-subtotal,
+    .row-batch-total,
+    .main-subtotal-row,
+    .sum-total-row
+  ) > td {
+    border-top: 1px solid var(--accent, #2563eb) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 7%, var(--card-bg, #ffffff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tbody > tr:is(
+    .company-row,
+    .location-row,
+    .row-location,
+    .group-row,
+    .sub-group-row,
+    .row-date-group,
+    .factory-row
+  ) > td {
+    background: color-mix(in srgb, var(--accent, #2563eb) 5%, var(--card-bg, #ffffff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
+
+  html body:not(.erp-print):not(.erp-pending-orders) table > tfoot > tr > :is(th, td),
+  html body:not(.erp-print):not(.erp-pending-orders) table > :is(tbody, tfoot) > tr[class*="grand-total"] > td,
+  html body:not(.erp-print):not(.erp-pending-orders) table > :is(tbody, tfoot) > tr:is(
+    .grand-total,
+    .total-row,
+    .total,
+    .is-grand
+  ) > td {
+    border-top: 2px solid var(--accent, #2563eb) !important;
+    border-bottom: 2px solid var(--accent, #2563eb) !important;
+    background: color-mix(in srgb, var(--accent, #2563eb) 13%, var(--card-bg, #ffffff)) !important;
+    color: var(--text, #1d2d3e) !important;
+    font-weight: 700 !important;
+  }
+}
