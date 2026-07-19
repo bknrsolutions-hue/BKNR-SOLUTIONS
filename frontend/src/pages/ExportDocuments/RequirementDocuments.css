@@ -14,14 +14,13 @@
 }
 
 .requirement-form-selector {
-  display: grid;
-  grid-template-columns: minmax(240px, 1fr) auto;
-  align-items: end;
+  display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 12px;
-  margin-bottom: 12px;
+  padding: 6px 12px;
+  margin-bottom: 10px;
   border: 1px solid var(--att-border);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--att-card);
   position: sticky;
   top: 0;
@@ -29,27 +28,28 @@
 }
 
 .requirement-result-count {
-  min-width: 110px;
-  height: 48px;
+  min-width: auto;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  padding: 0 12px;
+  gap: 6px;
+  padding: 0 10px;
   border: 1px solid var(--att-border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--att-table-header-bg);
+  white-space: nowrap;
 }
 
 .requirement-result-count strong {
   color: var(--att-accent);
-  font-size: 18px;
+  font-size: 13px;
 }
 
 .requirement-result-count span {
   color: var(--att-muted);
-  font-size: 8px;
-  font-weight: 900;
+  font-size: 9px;
+  font-weight: 800;
   text-transform: uppercase;
 }
 

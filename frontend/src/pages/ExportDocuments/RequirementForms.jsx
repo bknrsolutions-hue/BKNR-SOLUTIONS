@@ -63,9 +63,10 @@ export default function RequirementForms() {
       })}
     </div>
     <div className="requirement-form-selector">
-      <div className="attendance-filter-group" style={{ position: 'relative' }}>
-      <label htmlFor="requirement-search">Search Document Form</label><Search size={15} style={{ position: 'absolute', left: 10, bottom: 9 }} />
-      <input id="requirement-search" className="attendance-input" style={{ paddingLeft: 32 }} value={query} onChange={event => { setQuery(event.target.value); setSelectedKind(''); }} placeholder="PI, certificate, bank, shipping..." />
+      <label htmlFor="requirement-search" style={{ fontSize: '10px', fontWeight: 800, whiteSpace: 'nowrap', textTransform: 'uppercase', color: 'var(--att-muted)', margin: 0 }}>Search Document Form:</label>
+      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+        <Search size={13} style={{ position: 'absolute', left: 8, color: 'var(--att-muted)' }} />
+        <input id="requirement-search" className="attendance-input" style={{ paddingLeft: 28, width: '100%' }} value={query} onChange={event => { setQuery(event.target.value); setSelectedKind(''); }} placeholder="PI, certificate, bank, shipping..." />
       </div>
       <div className="requirement-result-count"><strong>{filteredDocuments.length}</strong><span>Forms Available</span></div>
     </div>
