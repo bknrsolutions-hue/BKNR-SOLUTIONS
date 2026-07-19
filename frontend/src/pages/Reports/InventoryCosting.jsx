@@ -7,7 +7,6 @@ import {
 } from './ReportShell';
 import './CostingReports.css';
 
-<<<<<<< HEAD
 /**
  * Aggregate raw stock rows into grade-level dashboard cards.
  * Exported so it can be unit-tested independently.
@@ -151,11 +150,6 @@ export default function InventoryCosting({ activeRoute }) {
     ? buildGradeDashboardEntries(filteredRows)
     : [];
 
-<<<<<<< HEAD
-=======
-  const dashboardEntries = Object.values(dashboardGroups);
-
->>>>>>> origin/main
   const switchView = id => {
     setCurrentView(id);
     if (id === 'table') {
