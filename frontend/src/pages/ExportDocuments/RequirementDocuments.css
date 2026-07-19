@@ -238,7 +238,7 @@
 
 .requirement-inline-form-head h2 { margin: 0; font-size: 16px; }
 .requirement-inline-form-head p { margin: 4px 0 14px; color: var(--att-muted); font-size: 12px; }
-.requirement-fields-grid { grid-template-columns: repeat(3, minmax(190px, 1fr)); }
+.requirement-fields-grid { grid-template-columns: repeat(6, minmax(108px, 1fr)); gap: 6px; }
 .requirement-approver-field { grid-column: 1 / -1; }
 .requirement-email-dropdown { border: 1px solid var(--att-border); border-radius: 7px; padding: 10px; }
 .requirement-email-dropdown summary { cursor: pointer; font-weight: 700; }

@@ -260,12 +260,23 @@
   font-size: 10px !important;
 }
 
-/* Gate Entry / RMP Form Grid Multi-Column Alignment (170px minwidth, 8px gap) */
+/* Gate Entry / RMP Form Grid Multi-Column Alignment (6 Columns per Row, 108px minwidth) */
 .export-document-page .attendance-form-grid,
 .export-document-page .pi-form-grid,
-.export-document-page .form-grid {
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)) !important;
-  gap: 8px !important;
+.export-document-page .requirement-fields-grid,
+.export-document-page .form-grid,
+.attendance-form-grid,
+.pi-form-grid,
+.requirement-fields-grid,
+.form-grid {
+  grid-template-columns: repeat(6, minmax(108px, 1fr)) !important;
+  gap: 6px !important;
+}
+
+.export-document-page .pi-span-4,
+.pi-span-4,
+.full-width {
+  grid-column: 1 / -1 !important;
 }
 
 .export-document-page .attendance-form-group,
