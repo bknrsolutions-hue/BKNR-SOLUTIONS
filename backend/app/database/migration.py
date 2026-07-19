@@ -227,6 +227,10 @@ def run_migration():
         else:
             print("  ✔ Column 'logo_path' already exists in table 'companies'.")
         conn.execute(text(
+            "UPDATE companies SET logo_path = '/static/images/svbk-it-solutions-logo-multicolor-key-v2.png' "
+            "WHERE logo_path IS NULL OR logo_path = '' OR logo_path LIKE '%3d-transparent.png' OR logo_path LIKE '%brand-dp-3d.png'"
+        ))
+        conn.execute(text(
             "CREATE UNIQUE INDEX IF NOT EXISTS "
             "ix_companies_mpeda_registration_code "
             "ON companies (mpeda_registration_code) "
