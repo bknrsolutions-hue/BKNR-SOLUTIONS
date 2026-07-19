@@ -196,20 +196,30 @@ export default function ProformaInvoices() {
     setSaving(true);
     try {
       const firstItem = (form.items && form.items[0]) || {};
-      const totalQty = (form.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || Number(form.quantity) || 0;
-      const avgPrice = (form.items && form.items.length) ? (form.items[0].unit_price || form.unit_price) : form.unit_price;
-      const descSummary = form.product_description || (form.items || []).map(i => `${i.species} ${i.variety} ${i.grade}`.trim()).filter(Boolean).join('; ');
+      const totalQty = (form.items || []).reduce((sum, item) => sum + (Number(item.quantity) || 0), 0) || Number(form.quantity) || 1;
+      const firstPrice = firstItem.unit_price !== '' && firstItem.unit_price !== undefined ? firstItem.unit_price : form.unit_price;
+      const avgPrice = Number(firstPrice) || 0;
+      const descSummary = (form.product_description || '').trim() || (form.items || []).map(i => `${i.species || ''} ${i.variety || ''} ${i.grade || ''}`.trim()).filter(Boolean).join('; ') || 'Seafood Export Offer';
 
       const payload = {
-        ...form,
+        pi_no: (form.pi_no || '').trim(),
+        pi_date: form.pi_date,
         validity_date: form.validity_date || null,
-        po_number: form.po_number || null,
-        port_of_loading: form.port_of_loading || null,
-        port_of_discharge: form.port_of_discharge || null,
-        remarks: form.remarks || null,
-        product_description: descSummary || 'Seafood Export Products',
-        quantity: Number(totalQty) || 1,
-        unit_price: Number(avgPrice) || 0,
+        po_number: (form.po_number || '').trim() || null,
+        buyer_name: (form.buyer_name || '').trim(),
+        buyer_address: (form.buyer_address || '').trim(),
+        country: form.country || '',
+        currency: form.currency || 'USD',
+        incoterm: form.incoterm || 'FOB',
+        payment_terms: (form.payment_terms || '').trim(),
+        port_of_loading: (form.port_of_loading || '').trim() || null,
+        port_of_discharge: (form.port_of_discharge || '').trim() || null,
+        status: form.status || 'DRAFT',
+        remarks: (form.remarks || '').trim() || null,
+        product_description: descSummary,
+        quantity: Number(totalQty) > 0 ? Number(totalQty) : 1,
+        unit: form.unit || 'KG',
+        unit_price: Number(avgPrice) >= 0 ? Number(avgPrice) : 0,
         brand: firstItem.brand || form.brand || null,
         packing_style: firstItem.packing_style || form.packing_style || null,
         freezer: firstItem.freezer || form.freezer || null,
@@ -227,7 +237,19 @@ export default function ProformaInvoices() {
         { method: editingId ? 'PUT' : 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) },
       );
       const data = await response.json();
-      if (!response.ok || !data.success) throw new Error(data.message || data.detail || 'Save failed');
+      if (!response.ok || !data.success) {
+        let errStr = data.message;
+        if (data.detail) {
+          if (typeof data.detail === 'string') {
+            errStr = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errStr = data.detail.map(e => `${e.loc ? e.loc.slice(-1)[0] : 'Field'}: ${e.msg}`).join('; ');
+          } else if (typeof data.detail === 'object') {
+            errStr = JSON.stringify(data.detail);
+          }
+        }
+        throw new Error(errStr || 'Save failed');
+      }
       setModalOpen(false);
       await loadData();
       notify(data.message);

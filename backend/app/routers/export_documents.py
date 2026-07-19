@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
+from typing import Any
 from pydantic import BaseModel, Field, model_validator
 from decimal import Decimal
 from sqlalchemy.orm import Session
@@ -2424,6 +2425,33 @@ class ProformaInvoiceSchema(BaseModel):
     no_of_pieces: str = None
     no_of_mc: int = 0
     items_json: str = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def preprocess_payload(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("validity_date"):
+                data["validity_date"] = None
+            if not data.get("po_number"):
+                data["po_number"] = None
+            if not data.get("port_of_loading"):
+                data["port_of_loading"] = None
+            if not data.get("port_of_discharge"):
+                data["port_of_discharge"] = None
+            if not data.get("remarks"):
+                data["remarks"] = None
+            if data.get("quantity") is None or data.get("quantity") == "":
+                data["quantity"] = 1
+            if data.get("unit_price") is None or data.get("unit_price") == "":
+                data["unit_price"] = 0
+            if data.get("no_of_mc") is None or data.get("no_of_mc") == "":
+                data["no_of_mc"] = 0
+            else:
+                try:
+                    data["no_of_mc"] = int(data["no_of_mc"])
+                except (ValueError, TypeError):
+                    data["no_of_mc"] = 0
+        return data
 
     @model_validator(mode="after")
     def validate_proforma(self):
