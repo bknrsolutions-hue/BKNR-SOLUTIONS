@@ -47,7 +47,7 @@ function GenericRequirementDocumentPage({ documentKind, embedded = false }) {
   const [details, setDetails] = useState({});
   const [shipmentId, setShipmentId] = useState('');
   const [pdfFile, setPdfFile] = useState(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [formOpen, setFormOpen] = useState(true);
   const [query, setQuery] = useState('');
   const [saving, setSaving] = useState(false);
   const [generating, setGenerating] = useState(false);
@@ -210,58 +210,32 @@ function GenericRequirementDocumentPage({ documentKind, embedded = false }) {
     ? '/page/export_supporting_documents?backend=%2Fexport_documents%2Fsupporting_documents%2Fentry'
     : '/page/export_requirement_forms?backend=%2Fexport_documents%2Frequirement-pages%2Fentry');
 
-  return <div className={`attendance-container requirement-document-page export-document-page ${embedded ? 'embedded' : ''}`}>
+  return <div className={`attendance-container requirement-document-page ${embedded ? 'embedded' : ''}`}>
     {notice && <div className={`attendance-toast ${notice.type === 'error' ? 'error' : 'success'}`} style={{ top: 80 }}>{notice.message}</div>}
     <div className="attendance-page-header"><div>{!embedded && <button type="button" onClick={goBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'var(--att-muted)', cursor: 'pointer', fontSize: 12 }}><ArrowLeft size={14} /> {returnToShipmentStatus ? 'Back to Shipment Status' : 'All Requirement Forms'}</button>}
       <h1 style={{ marginTop: 6 }}>{definition.label}</h1><p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--att-muted)' }}>{definition.stage} · {documentMode.replaceAll('_', ' ')} · Versioned PDF storage and unanimous email approval</p></div>
       <button className="attendance-btn attendance-btn-primary" onClick={() => formOpen ? setFormOpen(false) : openForm()}><Plus size={16} /> {formOpen ? 'HIDE ENTRY FORM' : 'NEW ENTRY & UPLOAD'}</button>
     </div>
 
-    {formOpen && (
-      <div className="attendance-modal-overlay" onClick={() => setFormOpen(false)}>
-        <div className="attendance-modal-content" style={{ maxWidth: '980px', maxHeight: '92vh' }} onClick={e => e.stopPropagation()}>
-          <div className="attendance-modal-header">
-            <div>
-              <small style={{ fontSize: '9px', fontWeight: 800, color: 'var(--att-muted)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>{definition.stage}</small>
-              <h2 style={{ margin: 0, fontSize: '15px' }}>{definition.label} — Details & PDF</h2>
-            </div>
-            <button type="button" className="attendance-modal-close-btn" onClick={() => setFormOpen(false)}><X size={20} /></button>
-          </div>
-          <div className="attendance-modal-body" style={{ padding: '16px', overflowY: 'auto' }}>
-            <form onSubmit={upload}>
-              <div className="attendance-form-grid requirement-fields-grid">
-                <div className="attendance-form-group">
-                  <label>{definition.reference_label}</label>
-                  <select className="attendance-select" value={shipmentId} onChange={event => changeReference(event.target.value)} required>
-                    <option value="">{definition.pre_po_allowed ? 'Select PI Number / Buyer' : 'Select PO'}</option>
-                    {poOptions.map(po => <option key={po.shipment_id} value={po.shipment_id}>{definition.pre_po_allowed ? `${po.shipment_no} · ${po.buyer_name}${po.po_number !== 'PRE-PO' ? ` · PO ${po.po_number}` : ' · PRE-PO'}` : `${po.po_number} · ${po.buyer_name}${po.is_required ? ' · REQUIRED' : ''}`}</option>)}
-                  </select>
-                </div>
-                {definition.fields.map(field => <DynamicField key={field.name} field={field} options={field.lookup ? lookupOptions[field.lookup] || [] : field.options || []} value={details[field.name] || ''} onChange={value => setDetails(values => ({ ...values, [field.name]: value }))} />)}
-                {canImport && <div className="attendance-form-group"><label>{['GENERATE_AND_IMPORT_FINAL', 'IMPORT_FINAL_PDF'].includes(documentMode) ? 'Final / Signed PDF (Maximum 25 MB)' : 'Original PDF (Maximum 25 MB)'}</label><input className="attendance-input" type="file" accept="application/pdf,.pdf" onChange={event => setPdfFile(event.target.files?.[0] || null)} required={!canGenerate} /></div>}
-                <div className="attendance-form-group requirement-approver-field">
-                  <label>Approval Emails ({selectedEmails.length} selected)</label>
-                  <details open className="requirement-email-dropdown">
-                    <summary>{selectedEmails.length ? selectedEmails.join(', ') : 'Select approvers'}</summary>
-                    <div className="requirement-email-grid">
-                      {emailOptions.map(item => <label key={item.email}>
-                        <input type="checkbox" checked={selectedEmails.includes(item.email)} onChange={() => toggleEmail(item.email)} />
-                        <span><strong>{item.name}</strong> · {item.email}{item.email === currentEmail ? ' (Current Session)' : ''}<small>{item.designation}</small></span>
-                      </label>)}
-                    </div>
-                  </details>
-                  <small>Only the selected email users can approve this document. The overall status becomes APPROVED only after every selected approver has approved it.</small>
-                </div>
-                <div className="requirement-save-row">
-                  {canGenerate && <button type="button" className="attendance-btn attendance-btn-primary" disabled={generating || saving} onClick={generatePdf}><FileText size={14} /> {generating ? 'GENERATING...' : 'GENERATE, SAVE & OPEN PDF'}</button>}
-                  {canImport && <button type="submit" className="attendance-btn attendance-btn-secondary" disabled={saving || generating}><Upload size={14} /> {saving ? 'UPLOADING...' : ['GENERATE_AND_IMPORT_FINAL', 'IMPORT_FINAL_PDF'].includes(documentMode) ? 'IMPORT FINAL PDF' : 'IMPORT & SAVE PDF'}</button>}
-                </div>
-              </div>
-            </form>
-          </div>
+    {formOpen && <section className="requirement-inline-form">
+      <div className="requirement-inline-form-head"><div><h2>{definition.label} — Details & PDF</h2><p>Complete the fields, upload the PDF, and save the entry.</p></div></div>
+      <form onSubmit={upload}><div className="attendance-form-grid requirement-fields-grid">
+        <div className="attendance-form-group"><label>{definition.reference_label}</label><select className="attendance-select" value={shipmentId} onChange={event => changeReference(event.target.value)} required><option value="">{definition.pre_po_allowed ? 'Select PI Number / Buyer' : 'Select PO'}</option>{poOptions.map(po => <option key={po.shipment_id} value={po.shipment_id}>{definition.pre_po_allowed ? `${po.shipment_no} · ${po.buyer_name}${po.po_number !== 'PRE-PO' ? ` · PO ${po.po_number}` : ' · PRE-PO'}` : `${po.po_number} · ${po.buyer_name}${po.is_required ? ' · REQUIRED' : ''}`}</option>)}</select>
         </div>
-      </div>
-    )}
+        {definition.fields.map(field => <DynamicField key={field.name} field={field} options={field.lookup ? lookupOptions[field.lookup] || [] : field.options || []} value={details[field.name] || ''} onChange={value => setDetails(values => ({ ...values, [field.name]: value }))} />)}
+        {canImport && <div className="attendance-form-group"><label>{['GENERATE_AND_IMPORT_FINAL', 'IMPORT_FINAL_PDF'].includes(documentMode) ? 'Final / Signed PDF (Maximum 25 MB)' : 'Original PDF (Maximum 25 MB)'}</label><input className="attendance-input" type="file" accept="application/pdf,.pdf" onChange={event => setPdfFile(event.target.files?.[0] || null)} required={!canGenerate} /></div>}
+        <div className="attendance-form-group requirement-approver-field"><label>Approval Emails ({selectedEmails.length} selected)</label>
+          <details open className="requirement-email-dropdown"><summary>{selectedEmails.length ? selectedEmails.join(', ') : 'Select approvers'}</summary>
+            <div className="requirement-email-grid">{emailOptions.map(item => <label key={item.email}>
+              <input type="checkbox" checked={selectedEmails.includes(item.email)} onChange={() => toggleEmail(item.email)} /><span><strong>{item.name}</strong> · {item.email}{item.email === currentEmail ? ' (Current Session)' : ''}<small>{item.designation}</small></span>
+            </label>)}</div>
+          </details><small>Only the selected email users can approve this document. The overall status becomes APPROVED only after every selected approver has approved it.</small></div>
+        <div className="requirement-save-row">
+          {canGenerate && <button type="button" className="attendance-btn attendance-btn-primary" disabled={generating || saving} onClick={generatePdf}><FileText size={14} /> {generating ? 'GENERATING...' : 'GENERATE, SAVE & OPEN PDF'}</button>}
+          {canImport && <button type="submit" className="attendance-btn attendance-btn-secondary" disabled={saving || generating}><Upload size={14} /> {saving ? 'UPLOADING...' : ['GENERATE_AND_IMPORT_FINAL', 'IMPORT_FINAL_PDF'].includes(documentMode) ? 'IMPORT FINAL PDF' : 'IMPORT & SAVE PDF'}</button>}
+        </div>
+      </div></form>
+    </section>}
 
     <ExportSearchPanel
       id="document-entry-search"

@@ -316,148 +316,142 @@ function RawMaterialGateEntry() {
         <div style={autoFieldStyle}><Mail size={14} /> <strong>Email:</strong> {email}</div>
       </div>
 
-      {/* Form Popup Modal */}
+      {/* Form Card */}
       {showForm && (
-        <div style={modalOverlayStyle} onClick={clearForm}>
-          <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '13px', fontWeight: '800', color: 'var(--corp-dash)' }}>
-                RECORD NEW VEHICLE ARRIVAL
-              </h3>
-              <button type="button" onClick={clearForm} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}>&times;</button>
+        <form onSubmit={handleSubmit} className="card" style={{ marginBottom: '30px', flexShrink: 0 }}>
+          <h3 style={{ fontSize: '14px', fontWeight: '800', marginBottom: '16px', color: 'var(--text-secondary)' }}>
+            RECORD NEW VEHICLE ARRIVAL
+          </h3>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label>Production For *</label>
+              <select
+                className="form-control"
+                value={productionFor} 
+                onChange={e => handleCompanyChange(e.target.value)}
+                required
+              >
+                <option value="">Select Company</option>
+                {Array.from(new Set([productionFor, ...prodForList].filter(Boolean))).map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="form-grid">
-                <div className="form-group">
-                  <label>Production For *</label>
-                  <select
-                    className="form-control"
-                    value={productionFor} 
-                    onChange={e => handleCompanyChange(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Company</option>
-                    {Array.from(new Set([productionFor, ...prodForList].filter(Boolean))).map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
 
-                <div className="form-group">
-                  <label>Factory Name *</label>
-                  <select
-                    className="form-control"
-                    value={receivingCenter} 
-                    onChange={e => handleFactoryChange(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Peeling At</option>
-                    {Array.from(new Set([receivingCenter, ...peelingAts].filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label>Factory Name *</label>
+              <select
+                className="form-control"
+                value={receivingCenter} 
+                onChange={e => handleFactoryChange(e.target.value)}
+                required
+              >
+                <option value="">Select Peeling At</option>
+                {Array.from(new Set([receivingCenter, ...peelingAts].filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
+              </select>
+            </div>
 
-                <div className="form-group">
-                  <label>Gate Pass Number</label>
-                  <input type="text" className="form-control" value={gatePassNumber} onChange={e => setGatePassNumber(e.target.value)} placeholder="Auto Generated" />
-                </div>
-                <div className="form-group">
-                  <label>Batch Number</label>
-                  <input type="text" className="form-control" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="Auto Generated" />
-                </div>
-                <div className="form-group">
-                  <label>Challan Number</label>
-                  <input type="text" className="form-control" value={challanNumber} onChange={e => setChallanNumber(e.target.value)} placeholder="Auto Generated" />
-                </div>
+            <div className="form-group">
+              <label>Gate Pass Number</label>
+              <input type="text" className="form-control" value={gatePassNumber} onChange={e => setGatePassNumber(e.target.value)} placeholder="Auto Generated" />
+            </div>
+            <div className="form-group">
+              <label>Batch Number</label>
+              <input type="text" className="form-control" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} placeholder="Auto Generated" />
+            </div>
+            <div className="form-group">
+              <label>Challan Number</label>
+              <input type="text" className="form-control" value={challanNumber} onChange={e => setChallanNumber(e.target.value)} placeholder="Auto Generated" />
+            </div>
 
-                <div className="form-group">
-                  <label>Supplier Name *</label>
-                  <select
-                    className="form-control"
-                    value={supplierName} 
-                    onChange={e => setSupplierName(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Supplier</option>
-                    {Array.from(new Set([supplierName, ...suppliers].filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label>Supplier Name *</label>
+              <select
+                className="form-control"
+                value={supplierName} 
+                onChange={e => setSupplierName(e.target.value)}
+                required
+              >
+                <option value="">Select Supplier</option>
+                {Array.from(new Set([supplierName, ...suppliers].filter(Boolean))).map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
 
-                <div className="form-group">
-                  <label>Purchasing Location *</label>
-                  <select
-                    className="form-control"
-                    value={purchasingLocation} 
-                    onChange={e => setPurchasingLocation(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Location</option>
-                    {Array.from(new Set([purchasingLocation, ...locations].filter(Boolean))).map(l => <option key={l} value={l}>{l}</option>)}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label>Purchasing Location *</label>
+              <select
+                className="form-control"
+                value={purchasingLocation} 
+                onChange={e => setPurchasingLocation(e.target.value)}
+                required
+              >
+                <option value="">Select Location</option>
+                {Array.from(new Set([purchasingLocation, ...locations].filter(Boolean))).map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
 
-                <div className="form-group">
-                  <label>Vehicle Number *</label>
-                  <select
-                    className="form-control"
-                    value={vehicleNumber} 
-                    onChange={e => setVehicleNumber(e.target.value)}
-                    required
-                  >
-                    <option value="">Select Vehicle</option>
-                    {Array.from(new Set([vehicleNumber, ...vehicles].filter(Boolean))).map(v => <option key={v} value={v}>{v}</option>)}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label>Vehicle Number *</label>
+              <select
+                className="form-control"
+                value={vehicleNumber} 
+                onChange={e => setVehicleNumber(e.target.value)}
+                required
+              >
+                <option value="">Select Vehicle</option>
+                {Array.from(new Set([vehicleNumber, ...vehicles].filter(Boolean))).map(v => <option key={v} value={v}>{v}</option>)}
+              </select>
+            </div>
 
-                <div className="form-group">
-                  <label>Driver Name</label>
-                  <select
-                    className="form-control"
-                    value={driverName}
-                    onChange={e => setDriverName(e.target.value)}
-                  >
-                    <option value="">Select Driver</option>
-                    {Array.from(new Set([driverName, ...drivers].filter(Boolean))).map(d => <option key={d} value={d}>{d}</option>)}
-                  </select>
-                </div>
+            <div className="form-group">
+              <label>Driver Name</label>
+              <select
+                className="form-control"
+                value={driverName}
+                onChange={e => setDriverName(e.target.value)}
+              >
+                <option value="">Select Driver</option>
+                {Array.from(new Set([driverName, ...drivers].filter(Boolean))).map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
 
-                <div className="form-group">
-                  <label>Material Boxes</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={noOfMaterialBoxes} 
-                    onChange={e => setNoOfMaterialBoxes(e.target.value)} 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Empty Boxes</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={noOfEmptyBoxes} 
-                    onChange={e => setNoOfEmptyBoxes(e.target.value)} 
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ice Boxes</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={noOfIceBoxes} 
-                    onChange={e => setNoOfIceBoxes(e.target.value)} 
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  <Plus size={16} /> Save
-                </button>
-                <button type="button" className="btn btn-clear" onClick={clearForm}>
-                  Cancel
-                </button>
-              </div>
-            </form>
+            <div className="form-group">
+              <label>Material Boxes</label>
+              <input 
+                type="number" 
+                className="form-control" 
+                value={noOfMaterialBoxes} 
+                onChange={e => setNoOfMaterialBoxes(e.target.value)} 
+              />
+            </div>
+            <div className="form-group">
+              <label>Empty Boxes</label>
+              <input 
+                type="number" 
+                className="form-control" 
+                value={noOfEmptyBoxes} 
+                onChange={e => setNoOfEmptyBoxes(e.target.value)} 
+              />
+            </div>
+            <div className="form-group">
+              <label>Ice Boxes</label>
+              <input 
+                type="number" 
+                className="form-control" 
+                value={noOfIceBoxes} 
+                onChange={e => setNoOfIceBoxes(e.target.value)} 
+              />
+            </div>
           </div>
-        </div>
+
+          <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
+            <button type="submit" className="btn btn-primary" disabled={loading}>
+              <Plus size={16} /> Save
+            </button>
+            <button type="button" className="btn btn-clear" onClick={clearForm}>
+              Cancel
+            </button>
+          </div>
+        </form>
       )}
 
       {/* Entries Log Table Header */}
