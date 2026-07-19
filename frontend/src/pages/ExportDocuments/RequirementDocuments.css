@@ -2,7 +2,9 @@
 .main-content > .attendance-container.requirement-document-page {
   display: block !important;
   overflow-y: auto !important;
-  overflow-x: hidden !important;
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
   height: 100% !important;
   scrollbar-width: thin;
 }
@@ -234,6 +236,11 @@
   border-radius: 12px;
   background: var(--att-card);
   box-shadow: var(--att-shadow);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  box-sizing: border-box;
+  scrollbar-width: thin;
 }
 
 .requirement-inline-form-head h2 { margin: 0; font-size: 16px; }

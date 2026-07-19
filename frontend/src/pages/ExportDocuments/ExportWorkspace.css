@@ -260,12 +260,13 @@
   font-size: 10px !important;
 }
 
-/* Gate Entry / RMP Form Grid Multi-Column Horizontal Scroll Alignment */
+/* Gate Entry / RMP Form Grid Multi-Column 2D Scroll Alignment */
 .export-document-page .attendance-table-wrapper,
 .export-document-page .table-responsive,
 .attendance-table-wrapper,
 .table-responsive {
   overflow-x: auto !important;
+  overflow-y: auto !important;
   max-width: 100% !important;
   scrollbar-width: thin !important;
   padding-bottom: 4px !important;
@@ -280,12 +281,14 @@
 .requirement-fields-grid,
 .form-grid {
   display: grid !important;
-  grid-template-columns: repeat(6, minmax(130px, 1fr)) !important;
+  grid-template-columns: repeat(6, minmax(125px, 1fr)) !important;
   gap: 6px 10px !important;
+  min-width: 780px !important;
+  max-width: 100% !important;
   overflow-x: auto !important;
+  overflow-y: auto !important;
   scrollbar-width: thin !important;
   padding-bottom: 6px !important;
-  max-width: 100% !important;
   box-sizing: border-box !important;
 }
 
