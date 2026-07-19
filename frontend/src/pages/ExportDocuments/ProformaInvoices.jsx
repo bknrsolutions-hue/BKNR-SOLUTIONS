@@ -362,34 +362,65 @@ export default function ProformaInvoices() {
                   </button>
                 </div>
                 <div style={{ padding: 12, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  {(form.items || []).map((it, idx) => (
-                    <div key={idx} style={{ border: '1px solid var(--att-border)', borderRadius: 8, padding: 10, background: 'var(--att-card)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--att-accent)' }}>Item Specification #{idx + 1}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {(form.items || []).map((it, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: 'var(--att-card)', border: '1px solid var(--att-border)', borderRadius: 8, padding: 10 }}>
+                        <div style={{ minWidth: 120, flex: '1 1 120px' }}>
+                          <Select label="Brand" value={it.brand} onChange={e => handleItemRowChange(idx, 'brand', e.target.value)} options={['', ...brandOptions]} />
+                        </div>
+                        <div style={{ minWidth: 125, flex: '1 1 125px' }}>
+                          <Select label="Pack Style" value={it.packing_style} onChange={e => handleItemRowChange(idx, 'packing_style', e.target.value)} options={['', ...packingOptions]} />
+                        </div>
+                        <div style={{ minWidth: 110, flex: '1 1 110px' }}>
+                          <Select label="Freezer" value={it.freezer} onChange={e => handleItemRowChange(idx, 'freezer', e.target.value)} options={['', ...freezerOptions]} />
+                        </div>
+                        <div style={{ minWidth: 115, flex: '1 1 115px' }}>
+                          <Select label="Count Glaze" value={it.count_glaze} onChange={e => handleItemRowChange(idx, 'count_glaze', e.target.value)} options={['', ...glazeOptions]} />
+                        </div>
+                        <div style={{ minWidth: 115, flex: '1 1 115px' }}>
+                          <Select label="Weight Glaze" value={it.weight_glaze} onChange={e => handleItemRowChange(idx, 'weight_glaze', e.target.value)} options={['', ...glazeOptions]} />
+                        </div>
+                        <div style={{ minWidth: 115, flex: '1 1 115px' }}>
+                          <Select label="Species" value={it.species} onChange={e => handleItemRowChange(idx, 'species', e.target.value)} options={['', ...speciesOptions]} />
+                        </div>
+                        <div style={{ minWidth: 115, flex: '1 1 115px' }}>
+                          <Select label="Variety" value={it.variety} onChange={e => handleItemRowChange(idx, 'variety', e.target.value)} options={['', ...varietyOptions]} />
+                        </div>
+                        <div style={{ minWidth: 100, flex: '1 1 100px' }}>
+                          <Select label="Grade" value={it.grade} onChange={e => handleItemRowChange(idx, 'grade', e.target.value)} options={['', ...gradeOptions]} />
+                        </div>
+                        <div style={{ minWidth: 85, flex: '1 1 85px' }}>
+                          <Field label="Pcs / Lb" value={it.no_of_pieces} onChange={e => handleItemRowChange(idx, 'no_of_pieces', e.target.value)} placeholder="16/20" />
+                        </div>
+                        <div style={{ minWidth: 90, flex: '1 1 90px' }}>
+                          <Field label="Order MC" type="number" min="0" value={it.no_of_mc} onChange={e => handleItemRowChange(idx, 'no_of_mc', e.target.value)} placeholder="0" />
+                        </div>
+                        <div style={{ minWidth: 95, flex: '1 1 95px' }}>
+                          <Field label="Quantity *" type="number" min="0.001" step="0.001" value={it.quantity} onChange={e => handleItemRowChange(idx, 'quantity', e.target.value)} required placeholder="0.000" />
+                        </div>
+                        <div style={{ minWidth: 75, flex: '1 1 75px' }}>
+                          <Select label="Unit *" value={it.unit} onChange={e => handleItemRowChange(idx, 'unit', e.target.value)} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
+                        </div>
+                        <div style={{ minWidth: 95, flex: '1 1 95px' }}>
+                          <Field label="Unit Price *" type="number" min="0" step="0.0001" value={it.unit_price} onChange={e => handleItemRowChange(idx, 'unit_price', e.target.value)} required placeholder="0.00" />
+                        </div>
+                        <div style={{ minWidth: 100, flex: '1 1 100px' }}>
+                          <div className="attendance-form-group">
+                            <label>Total Value</label>
+                            <div className="pi-total-value" style={{ height: 38, display: 'flex', alignItems: 'center' }}>
+                              <small>{form.currency}</small>
+                              <strong style={{ fontSize: 12 }}>{((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+                            </div>
+                          </div>
+                        </div>
                         {(form.items || []).length > 1 && (
-                          <button type="button" className="attendance-btn attendance-btn-secondary" style={{ color: 'var(--att-danger)', padding: '2px 6px', fontSize: 10 }} onClick={() => handleRemoveItemRow(idx)}>
-                            <X size={13} /> Remove
+                          <button type="button" className="attendance-btn attendance-btn-secondary" style={{ color: 'var(--att-danger)', height: 38, padding: '0 10px', fontSize: 14, marginBottom: 2 }} onClick={() => handleRemoveItemRow(idx)}>
+                            ✕
                           </button>
                         )}
                       </div>
-                      <div className="pi-form-grid-organized" style={{ padding: 0 }}>
-                        <Select label="Brand" value={it.brand} onChange={e => handleItemRowChange(idx, 'brand', e.target.value)} options={['', ...brandOptions]} />
-                        <Select label="Packing Style" value={it.packing_style} onChange={e => handleItemRowChange(idx, 'packing_style', e.target.value)} options={['', ...packingOptions]} />
-                        <Select label="Freezer" value={it.freezer} onChange={e => handleItemRowChange(idx, 'freezer', e.target.value)} options={['', ...freezerOptions]} />
-                        <Select label="Count Glaze" value={it.count_glaze} onChange={e => handleItemRowChange(idx, 'count_glaze', e.target.value)} options={['', ...glazeOptions]} />
-                        <Select label="Weight Glaze" value={it.weight_glaze} onChange={e => handleItemRowChange(idx, 'weight_glaze', e.target.value)} options={['', ...glazeOptions]} />
-                        <Select label="Species" value={it.species} onChange={e => handleItemRowChange(idx, 'species', e.target.value)} options={['', ...speciesOptions]} />
-                        <Select label="Variety" value={it.variety} onChange={e => handleItemRowChange(idx, 'variety', e.target.value)} options={['', ...varietyOptions]} />
-                        <Select label="Grade" value={it.grade} onChange={e => handleItemRowChange(idx, 'grade', e.target.value)} options={['', ...gradeOptions]} />
-                        <Field label="Pcs / Lb" value={it.no_of_pieces} onChange={e => handleItemRowChange(idx, 'no_of_pieces', e.target.value)} placeholder="e.g. 16/20" />
-                        <Field label="Order MC (Boxes)" type="number" min="0" value={it.no_of_mc} onChange={e => handleItemRowChange(idx, 'no_of_mc', e.target.value)} placeholder="0" />
-                        <Field label="Quantity *" type="number" min="0.001" step="0.001" value={it.quantity} onChange={e => handleItemRowChange(idx, 'quantity', e.target.value)} required placeholder="0.000" />
-                        <Select label="Unit *" value={it.unit} onChange={e => handleItemRowChange(idx, 'unit', e.target.value)} options={['KG', 'MT', 'LB', 'CTN', 'PCS']} />
-                        <Field label="Unit Price *" type="number" min="0" step="0.0001" value={it.unit_price} onChange={e => handleItemRowChange(idx, 'unit_price', e.target.value)} required placeholder="0.00" />
-                        <div className="attendance-form-group"><label>Line Amount</label><div className="pi-total-value"><small>{form.currency}</small><strong>{((Number(it.quantity) || 0) * (Number(it.unit_price) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong></div></div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
 
                   <button type="button" className="attendance-btn attendance-btn-secondary" style={{ alignSelf: 'flex-start' }} onClick={handleAddItemRow}>
                     <Plus size={14} /> Add Product Line Item
