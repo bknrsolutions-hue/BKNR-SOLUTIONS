@@ -149,26 +149,30 @@ def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
                 header_index = max(debit_header_index, credit_header_index)
                 break
 
-        if header_index is not None:
-            amount_positions = sorted(
-                position for position in (debit_position, credit_position, balance_position)
-                if position is not None
-            )
-            first_amount_position = amount_positions[0]
-
-            def column_slice(line: str, start: int) -> str:
-                following = [position for position in amount_positions if position > start]
-                end = min(following) if following else len(line)
-                return line[start:end]
-
+        if header_index is not None and (debit_position is not None or credit_position is not None):
             for line in lines[header_index + 1:]:
                 date_match = date_pattern.search(line[:35])
                 if not date_match:
                     continue
-                debit = abs(_pdf_amount(column_slice(line, debit_position)))
-                credit = abs(_pdf_amount(column_slice(line, credit_position)))
-                description = line[date_match.end():first_amount_position].strip(" |")
-                append_row(date_match.group(1), description, debit, credit)
+                matches = list(amount_pattern.finditer(line[date_match.end():]))
+                if not matches:
+                    continue
+                tx_match = matches[0]
+                amt_val = abs(_pdf_amount(tx_match.group(0)))
+                if amt_val == 0:
+                    continue
+                amt_pos = date_match.end() + tx_match.start()
+                desc = line[date_match.end():date_match.end() + tx_match.start()].strip(" |")
+
+                dist_debit = abs(amt_pos - debit_position) if debit_position is not None else float("inf")
+                dist_credit = abs(amt_pos - credit_position) if credit_position is not None else float("inf")
+
+                debit = amt_val if dist_debit <= dist_credit else 0.0
+                credit = amt_val if dist_credit < dist_debit else 0.0
+                append_row(date_match.group(1), desc, debit, credit)
+
+    if parsed_rows:
+        return pd.DataFrame(parsed_rows)
 
         # Fallback 1: statements that print transaction amount with an explicit DR/CR suffix.
         for line in lines:
