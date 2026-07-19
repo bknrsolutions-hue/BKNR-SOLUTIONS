@@ -292,14 +292,24 @@ function RawMaterialGateEntry() {
         <h2 style={{ color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <Truck /> Gate Entry Worksheet
         </h2>
-        <button 
-          onClick={fetchBackendData} 
-          className="btn btn-clear" 
-          style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className={showForm ? 'btn btn-secondary' : 'btn btn-primary'}
+            onClick={() => setShowForm(!showForm)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
+          >
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : '+ Record New Arrival'}
+          </button>
+          <button 
+            onClick={fetchBackendData} 
+            className="btn btn-clear" 
+            style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {message && (
@@ -481,9 +491,9 @@ function RawMaterialGateEntry() {
               <th className="text-left" style={{ width: '130px' }}>Location</th>
               <th className="text-left" style={{ width: '110px' }}>Vehicle</th>
               <th className="text-left" style={{ width: '150px' }}>Driver Name</th>
-              <th className="text-right" style={{ width: '80px' }}>Mat</th>
-              <th className="text-right" style={{ width: '80px' }}>Emp</th>
-              <th className="text-right" style={{ width: '80px' }}>Ice</th>
+              <th className="text-right" style={{ width: '95px' }}>Mat Packages</th>
+              <th className="text-right" style={{ width: '95px' }}>Empty Packages</th>
+              <th className="text-right" style={{ width: '95px' }}>Ice Packages</th>
               <th className="text-left" style={{ width: '100px' }}>Channel</th>
               <th className="text-center" style={{ width: '80px' }}>Action</th>
             </tr>

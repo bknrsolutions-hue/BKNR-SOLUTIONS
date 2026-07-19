@@ -59,6 +59,7 @@ export default function GoodsGateMovements() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showForm, setShowForm] = useState(false);
   const [message, setMessage] = useState(null);
   const [filters, setFilters] = useState({ movement_type: '', category: '', search: '' });
 
@@ -212,6 +213,7 @@ export default function GoodsGateMovements() {
         plant_location: currentPlantLoc,
       });
       setItems([emptyItem()]);
+      setShowForm(false);
       setFilters(cur => ({ ...cur, search: '' }));
       await load();
       window.alert(`✅ ${successMsg}`);
@@ -285,20 +287,31 @@ export default function GoodsGateMovements() {
             Security movement log only — no inventory or accounting posting.
           </p>
         </div>
-        <button 
-          type="button" 
-          className="btn btn-clear" 
-          style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-          onClick={load} 
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <button
+            type="button"
+            className={showForm ? 'btn btn-secondary' : 'btn btn-primary'}
+            onClick={() => setShowForm(!showForm)}
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
+          >
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : '+ New Goods Movement'}
+          </button>
+          <button 
+            type="button" 
+            className="btn btn-clear" 
+            style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+            onClick={load} 
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {message && <div className={`goods-message ${message.type}`}>{message.text}<button type="button" onClick={() => setMessage(null)}>×</button></div>}
 
-      <form className="card" onSubmit={submit} style={{ marginBottom: '30px', flexShrink: 0 }}>
+      {showForm && (
+        <form className="card" onSubmit={submit} style={{ marginBottom: '30px', flexShrink: 0 }}>
         <div className="goods-movement-toggle">
           <button type="button" className={form.movement_type === 'IN' ? 'active in' : ''} onClick={() => updateForm('movement_type', 'IN')} disabled={Boolean(linked)}>
             <ArrowDownToLine size={16} /> Goods IN
@@ -445,9 +458,10 @@ export default function GoodsGateMovements() {
         </div>
         <div className="goods-form-actions" style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
           <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-          <button type="button" className="btn btn-clear" onClick={resetForm}>Reset</button>
+          <button type="button" className="btn btn-clear" onClick={() => { resetForm(); setShowForm(false); }}>Cancel / Close</button>
         </div>
       </form>
+      )}
 
       {/* Entries Log Table Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: '30px', flexShrink: 0 }}>
