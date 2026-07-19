@@ -90,7 +90,7 @@ def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
     date_pattern = re.compile(
         r"(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})"
     )
-    amount_pattern = re.compile(r"(?<![A-Za-z0-9])(?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?(?:\s*(?:DR|CR))?", re.I)
+    amount_pattern = re.compile(r"(?<![A-Za-z])(?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?(?:\s*(?:DR|CR))?", re.I)
     tagged_amount_pattern = re.compile(
         r"((?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?)\s*(DR|CR)\b",
         re.I,
