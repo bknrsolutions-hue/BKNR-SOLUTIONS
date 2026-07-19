@@ -15,13 +15,13 @@
 }
 
 .pi-form-body {
-  max-height: 68vh;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto !important;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 10px 4px;
-  scrollbar-width: thin;
+  padding: 14px 18px;
 }
 
 .pi-form-section {
