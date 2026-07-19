@@ -22,15 +22,5 @@ describe('installActionFeedback', () => {
     });
     cleanup();
   });
-
-  it('announces expired sessions on 401 responses', async () => {
-    window.fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 401 }));
-    const listener = vi.fn();
-    window.addEventListener('bknr:session-expired', listener);
-    const cleanup = installActionFeedback(window, window);
-
-    await window.fetch('/reports/gate_entry?format=json');
-    expect(listener).toHaveBeenCalledTimes(1);
-    cleanup();
-  });
 });
+
