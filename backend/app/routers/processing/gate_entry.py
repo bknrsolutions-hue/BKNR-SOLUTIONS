@@ -197,6 +197,9 @@ def _serialize_goods_movement(db: Session, row: GoodsGateMovement) -> dict:
         "item_summary": ", ".join(
             f"{item.item_name} ({item.quantity:g} {item.unit})" for item in items
         ),
+        "packages_summary": ", ".join(
+            str(item.packages) for item in items if item.packages and str(item.packages).strip() not in ('', '0', '0.0')
+        ),
         "total_quantity": round(sum(float(item.quantity or 0) for item in items), 3),
         "total_packages": round(sum(float(item.packages or 0) for item in items), 3),
     }
