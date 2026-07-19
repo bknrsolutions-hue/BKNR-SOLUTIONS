@@ -57,11 +57,15 @@ def _pdf_amount(value: str) -> float:
     if not raw or raw in {"-", "—"}:
         return 0.0
     negative = raw.startswith("(") and raw.endswith(")")
+    match = re.search(r"\(?-?\d[\d,]*\.\d{2}\)?", raw)
+    if match:
+        raw = match.group(0)
     cleaned = re.sub(r"[^0-9.\-]", "", raw)
     if not cleaned or cleaned in {"-", ".", "-."}:
         return 0.0
     amount = float(cleaned)
     return -abs(amount) if negative else amount
+
 
 
 def _statement_text(value, limit: int) -> str | None:
@@ -73,7 +77,12 @@ def _statement_text(value, limit: int) -> str | None:
 
 def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
     """Extract standard text-based bank tables with labelled debit/credit columns."""
-    from pypdf import PdfReader
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        raise ValueError(
+            "pypdf package is not installed. Install pypdf to process text-based bank statement PDFs."
+        )
 
     reader = PdfReader(io.BytesIO(content))
     parsed_rows = []

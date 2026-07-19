@@ -14,10 +14,14 @@ import os
 import time
 import uuid
 from pathlib import Path
-import threading
-from apscheduler.schedulers.background import BackgroundScheduler
-from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
-from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+    from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
+    from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+except ImportError:
+    BackgroundScheduler = None
+    create_inventory_snapshot = None
+    create_floor_balance_snapshot = None
 from app.utils.access_control import has_permission, required_permission_for_path
 from sqlalchemy import func
 

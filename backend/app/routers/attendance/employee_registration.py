@@ -9,8 +9,6 @@ from typing import Optional
 import io
 import pandas as pd
 import re
-from xhtml2pdf import pisa
-
 from app.database import get_db
 from app.database.models.attendance import EmployeeRegistration
 from app.database.models.criteria import contractors, production_at
@@ -269,6 +267,7 @@ def export_employee_details(emp_id: str, request: Request, db: Session = Depends
     
     context = { "request": request, "e": emp, "company": ctx["company_info"], "printed_on": ist_now().strftime("%d-%m-%Y %H:%M") }
     if "pdf" in request.url.path:
+        from xhtml2pdf import pisa
         html_content = templates.get_template("attendance/print_employee.html").render(context)
         pdf_output = io.BytesIO()
         pisa.CreatePDF(io.StringIO(html_content), dest=pdf_output)
