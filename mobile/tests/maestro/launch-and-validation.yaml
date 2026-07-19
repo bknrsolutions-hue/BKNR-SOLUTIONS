@@ -1,0 +1,14 @@
+appId: com.bknr.erp
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- assertVisible: "SVBK IT Solutions"
+- tapOn: "Continue Securely"
+- assertVisible: "ERP tenant code, email and password are required."
+- tapOn: "Forgot password?"
+- assertVisible: "Reset password"
+- tapOn: "Back to login"
+- assertVisible: "Welcome back"

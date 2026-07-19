@@ -1,0 +1,28 @@
+appId: com.bknr.erp
+env:
+  TENANT_CODE: ${SVBK_MOBILE_TENANT_CODE}
+  USER_EMAIL: ${SVBK_MOBILE_EMAIL}
+  USER_PASSWORD: ${SVBK_MOBILE_PASSWORD}
+  LOGIN_OTP: ${SVBK_MOBILE_OTP}
+---
+- launchApp:
+    clearState: true
+- extendedWaitUntil:
+    visible: "Welcome back"
+    timeout: 30000
+- tapOn: "Enter tenant code"
+- inputText: ${TENANT_CODE}
+- tapOn: "name@company.com"
+- inputText: ${USER_EMAIL}
+- tapOn: "Enter password"
+- inputText: ${USER_PASSWORD}
+- tapOn: "Continue Securely"
+- extendedWaitUntil:
+    visible: "Verify OTP"
+    timeout: 15000
+- tapOn: "••••"
+- inputText: ${LOGIN_OTP}
+- tapOn: "Verify OTP"
+- extendedWaitUntil:
+    visible: "Home"
+    timeout: 30000
