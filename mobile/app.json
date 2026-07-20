@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "BKNR ERP",
+    "name": "SVBK ERP",
     "slug": "bknr-erp",
     "scheme": "bknrerp",
     "version": "3.0.0",
@@ -9,9 +9,9 @@
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f7fb",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/brand-dp-3d.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f4f7fb"
+      "backgroundColor": "#f7fbff"
     },
     "ios": {
       "supportsTablet": true,
@@ -25,10 +25,8 @@
     "android": {
       "package": "com.bknr.erp",
       "adaptiveIcon": {
-        "backgroundColor": "#060913",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/brand-dp-3d.png"
       },
       "usesCleartextTraffic": true
     },

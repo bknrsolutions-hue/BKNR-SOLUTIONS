@@ -3,22 +3,24 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Screen } from '../components/NativeScreenKit';
 
 const processingItems = [
-  { key: 'gate_entry', icon: '🚪', label: 'Gate Entry', note: 'Vehicle and material arrival', color: '#f59e0b' },
-  { key: 'raw_material_purchasing', icon: '🚚', label: 'RM Purchasing', note: 'Raw material purchase entry', color: '#2563eb' },
-  { key: 'de_heading', icon: '✂️', label: 'De-Heading', note: 'De-heading production entry', color: '#7c3aed' },
-  { key: 'grading', icon: '⚖️', label: 'Grading', note: 'Grade and count allocation', color: '#0891b2' },
-  { key: 'peeling', icon: '🧤', label: 'Peeling', note: 'Peeling process terminal', color: '#16a34a' },
-  { key: 'soaking', icon: '💧', label: 'Soaking', note: 'Soaking batch monitoring', color: '#0d9488' },
-  { key: 'production', icon: '🏭', label: 'Production', note: 'Final production entry', color: '#dc2626' },
+  { key: 'gate_entry', perm: 'gate_entry', icon: '🚪', label: 'Gate Entry', note: 'Vehicle and material arrival', color: '#f59e0b' },
+  { key: 'raw_material_purchasing', perm: 'raw_material_purchasing', icon: '🚚', label: 'RM Purchasing', note: 'Raw material purchase entry', color: '#2563eb' },
+  { key: 'de_heading', perm: 'de_heading', icon: '✂️', label: 'De-Heading', note: 'De-heading production entry', color: '#7c3aed' },
+  { key: 'grading', perm: 'grading', icon: '⚖️', label: 'Grading', note: 'Grade and count allocation', color: '#0891b2' },
+  { key: 'peeling', perm: 'peeling', icon: '🧤', label: 'Peeling', note: 'Peeling process terminal', color: '#16a34a' },
+  { key: 'soaking', perm: 'soaking', icon: '💧', label: 'Soaking', note: 'Soaking batch monitoring', color: '#0d9488' },
+  { key: 'production', perm: 'production', icon: '🏭', label: 'Production', note: 'Final production entry', color: '#dc2626' },
 ];
 
 const inventoryItems = [
-  { key: 'stock_entry', icon: '📦', label: 'Stock Entry', note: 'Stock inward and outward', color: '#2563eb' },
+  { key: 'stock_entry', perm: 'stock_entry', icon: '📦', label: 'Stock Entry', note: 'Stock inward and outward', color: '#2563eb' },
 ];
 
-export default function NativeOperationsScreen({ type, filters = {}, onBack, onOpenOperation, onOpenDashboard, onOpenFloorBalance, onOpenStockStatus }) {
+export default function NativeOperationsScreen({ type, filters = {}, permissions = [], onBack, onOpenOperation, onOpenDashboard, onOpenFloorBalance, onOpenStockStatus }) {
   const isProcessing = type === 'processing';
-  const items = isProcessing ? processingItems : inventoryItems;
+  const granted = new Set(permissions);
+  const has = permission => granted.has('ALL') || granted.has(permission);
+  const items = (isProcessing ? processingItems : inventoryItems).filter(item => has(item.perm));
   const title = isProcessing ? 'Processing Operations' : 'Inventory Operations';
 
   return <Screen
@@ -50,9 +52,9 @@ export default function NativeOperationsScreen({ type, filters = {}, onBack, onO
     </View>
 
     <View style={styles.quickRow}>
-      {isProcessing ? <Pressable onPress={onOpenDashboard} style={styles.quickButton}><Text style={styles.quickIcon}>◫</Text><Text style={styles.quickLabel}>Dashboard</Text></Pressable> : null}
-      {isProcessing ? <Pressable onPress={onOpenFloorBalance} style={styles.quickButton}><Text style={styles.quickIcon}>⚖</Text><Text style={styles.quickLabel}>Floor Balance</Text></Pressable> : null}
-      {!isProcessing ? <Pressable onPress={onOpenStockStatus} style={styles.quickButton}><Text style={styles.quickIcon}>▤</Text><Text style={styles.quickLabel}>Stock Status</Text></Pressable> : null}
+      {isProcessing && has('processing_dashboard') ? <Pressable onPress={onOpenDashboard} style={styles.quickButton}><Text style={styles.quickIcon}>◫</Text><Text style={styles.quickLabel}>Dashboard</Text></Pressable> : null}
+      {isProcessing && has('floor_balance_report') ? <Pressable onPress={onOpenFloorBalance} style={styles.quickButton}><Text style={styles.quickIcon}>⚖</Text><Text style={styles.quickLabel}>Floor Balance</Text></Pressable> : null}
+      {!isProcessing && has('inventory_report') ? <Pressable onPress={onOpenStockStatus} style={styles.quickButton}><Text style={styles.quickIcon}>▤</Text><Text style={styles.quickLabel}>Stock Status</Text></Pressable> : null}
     </View>
   </Screen>;
 }

@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Animated, Image, PanResponder, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import NativeDropdown from '../components/NativeDropdown';
 import { apiRequest } from '../services/api';
@@ -11,25 +11,28 @@ import NativeOperationsScreen from './NativeOperationsScreen';
 import NativeProcessingDashboard from './NativeProcessingDashboard';
 import NativeProfile from './NativeProfile';
 import NativeStockStatus from './NativeStockStatus';
+import NativeUserConfiguration from './NativeUserConfiguration';
 import { useERPTheme } from '../theme/ERPThemeContext';
+import { API_URL } from '../config';
 
 const appItems = [
-  { key: 'operations_processing', tab: 'operations', icon: 'factory', label: 'Processing', note: '7 stages', color: '#f97316' },
-  { key: 'operations_inventory', tab: 'operations', icon: 'warehouse', label: 'Inventory', note: 'Stock actions', color: '#2563eb' },
-  { key: 'operation:gate_entry:processing', tab: 'operations', icon: 'gate', label: 'Gate Entry', note: 'Processing form', color: '#2563eb' },
-  { key: 'operation:raw_material_purchasing:processing', tab: 'operations', icon: 'truck-fast-outline', label: 'RM Purchasing', note: 'Processing form', color: '#16a34a' },
-  { key: 'operation:de_heading:processing', tab: 'operations', icon: 'content-cut', label: 'De-Heading', note: 'Processing form', color: '#7c3aed' },
-  { key: 'operation:grading:processing', tab: 'operations', icon: 'scale-balance', label: 'Grading', note: 'Processing form', color: '#f59e0b' },
-  { key: 'operation:peeling:processing', tab: 'operations', icon: 'layers-triple-outline', label: 'Peeling', note: 'Processing form', color: '#0891b2' },
-  { key: 'operation:soaking:processing', tab: 'operations', icon: 'water-outline', label: 'Soaking', note: 'Processing form', color: '#0d9488' },
-  { key: 'operation:production:processing', tab: 'operations', icon: 'cog-transfer-outline', label: 'Production', note: 'Processing form', color: '#dc2626' },
-  { key: 'operation:stock_entry:inventory', tab: 'operations', icon: 'package-variant-closed-plus', label: 'Stock Entry', note: 'Inventory form', color: '#2563eb' },
-  { key: 'dashboard_processing', tab: 'home', icon: 'chart-box-outline', label: 'Processing Dashboard', note: 'Output summary', color: '#7c3aed' },
-  { key: 'report_floor_balance', tab: 'reports', icon: 'scale-balance', label: 'Floor Balance', note: 'Processing stock', color: '#dc2626' },
-  { key: 'report_stock_status', tab: 'reports', icon: 'clipboard-text-outline', label: 'Stock Status', note: 'Ledger report', color: '#0891b2' },
-  { key: 'hrms_daily_attendance', tab: 'home', icon: 'badge-account-horizontal-outline', label: 'Daily Attendance', note: 'HR terminal', color: '#0f766e' },
+  { key: 'operations_processing', tab: 'operations', icon: 'factory', label: 'Processing', note: '7 stages', color: '#f97316', anyPerm: ['gate_entry', 'raw_material_purchasing', 'de_heading', 'grading', 'peeling', 'soaking', 'production'] },
+  { key: 'operations_inventory', tab: 'operations', icon: 'warehouse', label: 'Inventory', note: 'Stock actions', color: '#2563eb', anyPerm: ['stock_entry'] },
+  { key: 'operation:gate_entry:processing', tab: 'operations', icon: 'gate', label: 'Gate Entry', note: 'Processing form', color: '#2563eb', perm: 'gate_entry' },
+  { key: 'operation:raw_material_purchasing:processing', tab: 'operations', icon: 'truck-fast-outline', label: 'RM Purchasing', note: 'Processing form', color: '#16a34a', perm: 'raw_material_purchasing' },
+  { key: 'operation:de_heading:processing', tab: 'operations', icon: 'content-cut', label: 'De-Heading', note: 'Processing form', color: '#7c3aed', perm: 'de_heading' },
+  { key: 'operation:grading:processing', tab: 'operations', icon: 'scale-balance', label: 'Grading', note: 'Processing form', color: '#f59e0b', perm: 'grading' },
+  { key: 'operation:peeling:processing', tab: 'operations', icon: 'layers-triple-outline', label: 'Peeling', note: 'Processing form', color: '#0891b2', perm: 'peeling' },
+  { key: 'operation:soaking:processing', tab: 'operations', icon: 'water-outline', label: 'Soaking', note: 'Processing form', color: '#0d9488', perm: 'soaking' },
+  { key: 'operation:production:processing', tab: 'operations', icon: 'cog-transfer-outline', label: 'Production', note: 'Processing form', color: '#dc2626', perm: 'production' },
+  { key: 'operation:stock_entry:inventory', tab: 'operations', icon: 'package-variant-closed-plus', label: 'Stock Entry', note: 'Inventory form', color: '#2563eb', perm: 'stock_entry' },
+  { key: 'dashboard_processing', tab: 'home', icon: 'chart-box-outline', label: 'Processing Dashboard', note: 'Output summary', color: '#7c3aed', perm: 'processing_dashboard' },
+  { key: 'report_floor_balance', tab: 'reports', icon: 'scale-balance', label: 'Floor Balance', note: 'Processing stock', color: '#dc2626', perm: 'floor_balance_report' },
+  { key: 'report_stock_status', tab: 'reports', icon: 'clipboard-text-outline', label: 'Stock Status', note: 'Ledger report', color: '#0891b2', perm: 'inventory_report' },
+  { key: 'hrms_daily_attendance', tab: 'home', icon: 'badge-account-horizontal-outline', label: 'Daily Attendance', note: 'HR terminal', color: '#0f766e', perm: 'daily_attendance' },
   { key: 'user_profile', tab: 'profile', icon: 'account-details-outline', label: 'My Profile', note: 'Personal & work details', color: '#2563eb' },
   { key: 'admin_my_complaints', tab: 'profile', icon: 'headset', label: 'My Complaints', note: 'Support desk', color: '#be123c' },
+  { key: 'admin_user_configuration', tab: 'profile', icon: 'account-cog-outline', label: 'User Configuration', note: 'Users, roles and access', color: '#7c3aed', perm: 'add_user', adminOnly: true },
 ];
 
 const tabs = [
@@ -41,7 +44,7 @@ const tabs = [
 
 export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
   const { theme, cycleHeaderColor } = useERPTheme();
-  const [activeItem, setActiveItem] = useState('dashboard_processing');
+  const [activeItem, setActiveItem] = useState(null);
   const [activeTab, setActiveTab] = useState('home');
   const [search, setSearch] = useState('');
   const [companies, setCompanies] = useState([]);
@@ -49,7 +52,24 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
   const [productionFor, setProductionFor] = useState('');
   const [plantLocation, setPlantLocation] = useState('');
   const [filterError, setFilterError] = useState('');
+  const [supportOpen, setSupportOpen] = useState(false);
   const displayName = user?.name || user?.email || 'User';
+  const grantedPermissions = useMemo(() => {
+    const values = Array.isArray(user?.permissions) ? user.permissions : String(user?.permissions || '').split(',');
+    return new Set(values.map(value => String(value).trim()).filter(Boolean));
+  }, [user?.permissions]);
+  const allow = item => {
+    if (item.adminOnly && !['admin', 'super_admin'].includes(user?.role)) return false;
+    if (grantedPermissions.has('ALL')) return true;
+    if (item.perm && !grantedPermissions.has(item.perm)) return false;
+    if (item.anyPerm && !item.anyPerm.some(permission => grantedPermissions.has(permission))) return false;
+    return true;
+  };
+  useEffect(() => {
+    if (!activeItem) return;
+    const target = appItems.find(item => item.key === activeItem);
+    if (target && !allow(target)) setActiveItem(null);
+  }, [activeItem, grantedPermissions, user?.role]);
 
   useEffect(() => {
     apiRequest('/auth/global-dropdowns')
@@ -62,14 +82,24 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
 
   const visibleItems = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (query) return appItems.filter(item => `${item.label} ${item.note}`.toLowerCase().includes(query));
-    if (activeTab === 'home') return appItems.filter(item => ['dashboard_processing', 'hrms_daily_attendance'].includes(item.key));
-    return appItems.filter(item => item.tab === activeTab);
-  }, [activeTab, search]);
+    const allowedItems = appItems.filter(allow);
+    if (query) return allowedItems.filter(item => `${item.label} ${item.note}`.toLowerCase().includes(query));
+    if (activeTab === 'home') return allowedItems.filter(item => ['dashboard_processing', 'hrms_daily_attendance'].includes(item.key));
+    return allowedItems.filter(item => item.tab === activeTab);
+  }, [activeTab, search, user?.role, grantedPermissions]);
 
   const openItem = key => {
+    if (key === 'admin_my_complaints') {
+      setSupportOpen(true);
+      return;
+    }
+    const target = appItems.find(item => item.key === key);
+    if (target && !allow(target)) {
+      setFilterError('This module is not assigned to your account.');
+      return;
+    }
     if (key === 'hrms_daily_attendance' && (!productionFor || !plantLocation)) {
-      setFilterError('Daily Attendance కోసం Production For మరియు Plant Location రెండూ select చేయాలి.');
+      setFilterError('Select both Production For and Plant Location to open Daily Attendance.');
       return;
     }
     setFilterError('');
@@ -82,31 +112,33 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     setActiveItem('user_profile');
   };
 
+  const filters = {
+    productionFor,
+    location: plantLocation,
+    companyName: user?.company_name || user?.company_code || 'SVBK ERP',
+    companies,
+    locations,
+    onProductionForChange: value => { setProductionFor(value); setFilterError(''); },
+    onLocationChange: value => { setPlantLocation(value); setFilterError(''); },
+    onSupport: () => setSupportOpen(true),
+    permissions: [...grantedPermissions],
+  };
+
   let activeScreen = null;
   if (activeItem) {
     const back = () => setActiveItem(null);
-    const filters = {
-      productionFor,
-      location: plantLocation,
-      companyName: user?.company_name || user?.company_code || 'SVBK ERP',
-      companies,
-      locations,
-      onProductionForChange: value => { setProductionFor(value); setFilterError(''); },
-      onLocationChange: value => { setPlantLocation(value); setFilterError(''); },
-      onSupport: () => setActiveItem('admin_my_complaints'),
-    };
     if (activeItem.startsWith('operation:')) {
       const parent = activeItem.split(':')[2];
       activeScreen = <NativeOperationWorkspace moduleKey={activeItem.split(':')[1]} filters={filters} onBack={() => setActiveItem(parent.startsWith('dashboard_') ? parent : parent === 'inventory' ? 'operations_inventory' : 'operations_processing')} />;
     }
-    if (activeItem === 'operations_processing') activeScreen = <NativeOperationsScreen type="processing" filters={filters} onBack={back} onOpenOperation={key => setActiveItem(`operation:${key}:processing`)} onOpenDashboard={() => setActiveItem('dashboard_processing')} onOpenFloorBalance={() => setActiveItem('report_floor_balance')} />;
-    if (activeItem === 'operations_inventory') activeScreen = <NativeOperationsScreen type="inventory" filters={filters} onBack={back} onOpenOperation={key => setActiveItem(`operation:${key}:inventory`)} onOpenStockStatus={() => setActiveItem('report_stock_status')} />;
+    if (activeItem === 'operations_processing') activeScreen = <NativeOperationsScreen type="processing" filters={filters} permissions={[...grantedPermissions]} onBack={back} onOpenOperation={key => openItem(`operation:${key}:processing`)} onOpenDashboard={() => openItem('dashboard_processing')} onOpenFloorBalance={() => openItem('report_floor_balance')} />;
+    if (activeItem === 'operations_inventory') activeScreen = <NativeOperationsScreen type="inventory" filters={filters} permissions={[...grantedPermissions]} onBack={back} onOpenOperation={key => openItem(`operation:${key}:inventory`)} onOpenStockStatus={() => openItem('report_stock_status')} />;
     if (activeItem === 'report_stock_status') activeScreen = <NativeStockStatus filters={filters} onBack={back} />;
     if (activeItem === 'report_floor_balance') activeScreen = <NativeFloorBalance filters={filters} onBack={() => setActiveItem('dashboard_processing')} />;
     if (activeItem === 'dashboard_processing') activeScreen = <NativeProcessingDashboard filters={filters} onBack={back} onOpenSource={key => setActiveItem(key === 'floor_balance_report' ? 'report_floor_balance' : `operation:${key}:dashboard_processing`)} />;
     if (activeItem === 'hrms_daily_attendance') activeScreen = <NativeDailyAttendance filters={filters} onBack={back} />;
     if (activeItem === 'user_profile') activeScreen = <NativeProfile user={user} filters={filters} onBack={back} onProfileUpdated={onUserUpdated} />;
-    if (activeItem === 'admin_my_complaints') activeScreen = <NativeComplaints filters={filters} onBack={back} />;
+    if (activeItem === 'admin_user_configuration' && ['admin', 'super_admin'].includes(user?.role) && (grantedPermissions.has('ALL') || grantedPermissions.has('add_user'))) activeScreen = <NativeUserConfiguration onBack={back} />;
   }
 
   const selectTab = key => {
@@ -115,9 +147,19 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     setSearch('');
   };
 
+  const supportDrawer = supportOpen ? (
+    <View pointerEvents="box-none" style={styles.supportLayer}>
+      <View style={[styles.supportDrawer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+        <NativeComplaints panelMode filters={filters} onBack={() => setSupportOpen(false)} />
+      </View>
+    </View>
+  ) : null;
+
   if (activeScreen) return <View style={[styles.page, { backgroundColor: theme.background }]}>
     <View style={styles.activePage}>{activeScreen}</View>
     <BottomNavigation theme={theme} activeTab={activeTab} onSelect={selectTab} />
+    {!supportOpen ? <FloatingSupportButton theme={theme} onPress={() => setSupportOpen(true)} /> : null}
+    {supportDrawer}
   </View>;
 
   return <SafeAreaView style={[styles.page, { backgroundColor: theme.background }]}>
@@ -126,7 +168,12 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
         <View style={styles.headerCopy}>
           <Text style={[styles.eyebrow, { color: theme.headerAccent }]}>WELCOME BACK</Text>
           <Text style={[styles.welcome, { color: theme.headerText }]}>Hello, {displayName.split(' ')[0]}</Text>
-          <View style={styles.companyRow}><MaterialCommunityIcons name="map-marker-outline" size={13} color={theme.headerMuted} /><Text numberOfLines={1} style={[styles.company, { color: theme.headerMuted }]}>{user?.company_name || user?.company_code || 'SVBK ERP'}</Text></View>
+          <View style={styles.companyRow}>
+            {user?.company_logo_url
+              ? <Image source={{ uri: /^https?:\/\//i.test(user.company_logo_url) ? user.company_logo_url : `${API_URL}${user.company_logo_url}` }} resizeMode="contain" style={styles.companyLogo} />
+              : <MaterialCommunityIcons name="map-marker-outline" size={13} color={theme.headerMuted} />}
+            <Text numberOfLines={1} style={[styles.company, { color: theme.headerMuted }]}>{user?.company_name || user?.company_code || 'SVBK ERP'}</Text>
+          </View>
         </View>
         <View style={styles.headerActions}>
           <HeaderAction label="Theme" icon="palette-outline" theme={theme} onPress={cycleHeaderColor} />
@@ -155,7 +202,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
         {activeTab === 'home' && !search ? <>
           <View style={styles.titleRow}><Text style={styles.heading}>Operations</Text><Pressable onPress={() => setActiveTab('operations')}><Text style={styles.seeAll}>See all ›</Text></Pressable></View>
           <View style={styles.featureRow}>
-            {appItems.filter(item => ['operations_processing', 'operations_inventory'].includes(item.key)).map(item => <FeatureCard key={item.key} item={item} onPress={() => openItem(item.key)} />)}
+            {appItems.filter(item => ['operations_processing', 'operations_inventory'].includes(item.key) && allow(item)).map(item => <FeatureCard key={item.key} item={item} onPress={() => openItem(item.key)} />)}
           </View>
           <Text style={styles.heading}>Quick access</Text>
         </> : <Text style={styles.heading}>{search ? 'Search results' : tabs.find(item => item.key === activeTab)?.label}</Text>}
@@ -167,6 +214,8 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
       </ScrollView>
 
       <BottomNavigation theme={theme} activeTab={activeTab} onSelect={selectTab} />
+      {!supportOpen ? <FloatingSupportButton theme={theme} onPress={() => setSupportOpen(true)} /> : null}
+      {supportDrawer}
     </View>
   </SafeAreaView>;
 }
@@ -188,6 +237,25 @@ function HeaderAction({ label, icon, theme, onPress }) {
     </View>
     <Text style={[styles.headerActionLabel, { color: theme.headerMuted }]}>{label}</Text>
   </Pressable>;
+}
+
+function FloatingSupportButton({ theme, onPress }) {
+  const position = React.useRef(new Animated.ValueXY()).current;
+  const panResponder = React.useRef(PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 4 || Math.abs(gesture.dy) > 4,
+    onPanResponderGrant: () => position.extractOffset(),
+    onPanResponderMove: Animated.event([null, { dx: position.x, dy: position.y }], { useNativeDriver: false }),
+    onPanResponderRelease: () => position.flattenOffset(),
+    onPanResponderTerminate: () => position.flattenOffset(),
+  })).current;
+
+  return <Animated.View style={[styles.floatingSupport, { transform: position.getTranslateTransform() }]} {...panResponder.panHandlers}>
+    <Pressable accessibilityRole="button" accessibilityLabel="Open Support" onPress={onPress} style={styles.floatingSupportPressable}>
+      <View style={styles.floatingSupportIcon}>
+        <MaterialCommunityIcons name="headset" size={33} color="#fff" />
+      </View>
+    </Pressable>
+  </Animated.View>;
 }
 
 function FeatureCard({ item, onPress }) {
@@ -217,7 +285,8 @@ const styles = StyleSheet.create({
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: { color: '#67e8f9', fontSize: 11, fontWeight: '900', letterSpacing: 1.1 },
   welcome: { marginTop: 3, color: '#ffffff', fontSize: 24, fontWeight: '900', letterSpacing: -.5 },
-  companyRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 2, minWidth: 0 },
+  companyRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: 0 },
+  companyLogo: { width: 18, height: 18 },
   company: { flexShrink: 1, color: '#b8c7dc', fontSize: 12, fontWeight: '750' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerAction: { width: 43, alignItems: 'center', justifyContent: 'center' },
@@ -255,4 +324,9 @@ const styles = StyleSheet.create({
   bottomItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },
   bottomIcon: { width: 31, height: 31, alignItems: 'center', justifyContent: 'center', borderRadius: 11 },
   bottomLabel: { color: '#64748b', fontSize: 10, fontWeight: '850' },
+  floatingSupport: { position: 'absolute', right: 14, bottom: 79, zIndex: 30, alignItems: 'center', justifyContent: 'center' },
+  floatingSupportPressable: { alignItems: 'center', justifyContent: 'center' },
+  floatingSupportIcon: { width: 69, height: 69, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#60a5fa', borderRadius: 35, backgroundColor: '#2563eb' },
+  supportLayer: { ...StyleSheet.absoluteFillObject, zIndex: 50, alignItems: 'flex-end', justifyContent: 'flex-end', paddingRight: 10, paddingBottom: 78 },
+  supportDrawer: { width: '92%', maxWidth: 380, height: '64%', maxHeight: 540, minHeight: 360, overflow: 'hidden', borderWidth: 1, borderRadius: 18, backgroundColor: '#fff' },
 });

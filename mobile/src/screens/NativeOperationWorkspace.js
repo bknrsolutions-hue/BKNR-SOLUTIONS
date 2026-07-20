@@ -2,8 +2,10 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import NativeDropdown from '../components/NativeDropdown';
 import { Loading, number, Screen, SectionTitle } from '../components/NativeScreenKit';
+import { nativeTableStyles, resolveColumns, tableWidth as resolvedTableWidth } from '../components/NativeTableKit';
 import { apiRequest } from '../services/api';
 import { useERPTheme } from '../theme/ERPThemeContext';
+import NativeGoodsGateMovements from './NativeGoodsGateMovements';
 
 const text = (name, label, keyboardType, readOnly = false) => ({ name, label, keyboardType, readOnly });
 const select = (name, label, source, values) => ({ name, label, source, values, select: true });
@@ -143,6 +145,7 @@ export default function NativeOperationWorkspace({ moduleKey, filters = {}, onBa
   const [stockOutLoading, setStockOutLoading] = useState(false);
   const [pendingItems, setPendingItems] = useState([emptyPendingItem()]);
   const [statusBusy, setStatusBusy] = useState('');
+  const [gateSection, setGateSection] = useState('raw');
   const activeFields = moduleKey === 'stock_entry' && form.cargo_movement_type === 'OUT' ? stockOutFields : module.fields;
   const meta = operationMeta[moduleKey] || operationMeta.gate_entry;
   const rows = operationData[meta.rowsKey] || [];
@@ -772,7 +775,15 @@ export default function NativeOperationWorkspace({ moduleKey, filters = {}, onBa
     );
   };
 
+  if (moduleKey === 'gate_entry' && gateSection === 'goods') {
+    return <Screen title="Gate Entry" subtitle="Non-RMP Goods IN / OUT" globalFilters={filters} onBack={onBack}>
+      <WorkspaceTabs tabs={[{ key: 'raw', label: 'RAW MATERIAL' }, { key: 'goods', label: 'GOODS IN / OUT' }]} value={gateSection} onChange={setGateSection} />
+      <NativeGoodsGateMovements filters={filters} />
+    </Screen>;
+  }
+
   return <Screen title={module.title} subtitle={`${rows.length} register rows`} globalFilters={filters} onBack={onBack} onRefresh={loadOperation}>
+    {moduleKey === 'gate_entry' ? <WorkspaceTabs tabs={[{ key: 'raw', label: 'RAW MATERIAL' }, { key: 'goods', label: 'GOODS IN / OUT' }]} value={gateSection} onChange={setGateSection} /> : null}
     <WorkspaceTabs tabs={workspaceTabs} value={view} onChange={setView} />
     {message ? <View style={styles.errorBanner}><Text style={styles.errorBannerText}>{message}</Text><Pressable accessibilityLabel="Dismiss error" onPress={() => setMessage('')} style={styles.errorClose}><Text style={styles.errorCloseText}>×</Text></Pressable></View> : null}
     {view === 'form' ? <>
@@ -833,7 +844,13 @@ function WorkspaceTabs({ tabs, value, onChange }) {
 
 function OperationTable({ rows, columns, onCancel, groupByPo = false, tableHeight = 430 }) {
   const { theme } = useERPTheme();
-  const fixed = columns.length <= 3;
+  const { width: windowWidth } = useWindowDimensions();
+  const resolved = useMemo(() => resolveColumns(columns, rows), [columns, rows]);
+  const actionWidth = 58;
+  const contentWidth = resolvedTableWidth(resolved, actionWidth);
+  const availableWidth = Math.max(280, windowWidth - 22);
+  const fixed = columns.length <= 3 && contentWidth <= availableWidth;
+  const width = fixed ? availableWidth : contentWidth;
   const displayRows = useMemo(() => {
     if (!groupByPo) return rows.slice(0, 150).map((row, index) => ({ type: 'data', row, key: row.id || `${row.po_number}-${index}` }));
     const groups = new Map();
@@ -859,16 +876,76 @@ function OperationTable({ rows, columns, onCancel, groupByPo = false, tableHeigh
     if (key === 'exchange_rate') return `₹ ${number(item.averageExchange)}`;
     return '';
   };
-  const table = <View style={fixed && styles.fixedTable}><View style={[styles.tableHeader, { backgroundColor: theme.tableHead }]}>{columns.map(([key, label]) => <Text key={key} style={[styles.headerCell, fixed ? styles.flexCell : { width: columnWidth(key, label) }]}>{label}</Text>)}<Text style={[styles.headerCell, fixed ? styles.actionFlexCell : { width: 58 }]}>Action</Text></View><ScrollView style={[styles.tableBody, { height: Math.max(260, tableHeight - 30) }]} nestedScrollEnabled>{displayRows.length ? displayRows.map(item => item.type === 'data' ? <View key={item.key} style={[styles.tableRow, { borderTopColor: theme.border }, item.row.is_cancelled && styles.cancelledRow]}>{columns.map(([key, label]) => <Text numberOfLines={2} key={key} style={[styles.tableCell, fixed ? styles.flexCell : { width: columnWidth(key, label) }]}>{displayValue(item.row, key)}</Text>)}<View style={[styles.actionCell, fixed ? styles.actionFlexCell : { width: 58 }]}>{item.row.is_cancelled ? <Text style={styles.cancelledText}>CANCELLED</Text> : <Pressable onPress={() => onCancel(item.row)} style={styles.rowCancel}><Text style={styles.rowCancelText}>Cancel</Text></Pressable>}</View></View> : <View key={item.key} style={[styles.tableRow, styles.poSubtotalRow]}>{columns.map(([key, label]) => <Text numberOfLines={2} key={key} style={[styles.tableCell, styles.poSubtotalCell, fixed ? styles.flexCell : { width: columnWidth(key, label) }]}>{subtotalValue(item, key)}</Text>)}<View style={[styles.actionCell, fixed ? styles.actionFlexCell : { width: 58 }]} /></View>) : <Text style={styles.noRows}>No register rows found.</Text>}</ScrollView></View>;
-  return <View style={[styles.tableShell, { backgroundColor: theme.surface, borderColor: theme.border }]}>{fixed ? table : <ScrollView horizontal showsHorizontalScrollIndicator>{table}</ScrollView>}</View>;
-}
-
-function columnWidth(key, label = '') {
-  if (['id', 'sl_no', 'no_of_mc', 'loose', 'count', 'hoso_count', 'hlso_count', 'in_count', 'graded_count', 'status'].includes(key)) return 52;
-  if (['date', 'time', 'timer', 'glaze', 'grade', 'freezer', 'source'].includes(key)) return 70;
-  if (['quantity', 'available_qty', 'production_qty', 'received_qty', 'hoso_qty', 'hlso_qty', 'peeled_qty', 'amount', 'rate_per_kg'].includes(key)) return 72;
-  if (String(label).length > 14 || ['production_for', 'packing_style', 'supplier_name', 'product_description', 'species_variety'].includes(key)) return 92;
-  return 76;
+  const table = (
+    <View style={[fixed && styles.fixedTable, { width }]}>
+      <View style={[styles.tableHeader, nativeTableStyles.header, { backgroundColor: theme.tableHead }]}>
+        {resolved.map(column => (
+          <Text
+            key={column.key}
+            style={[
+              styles.headerCell,
+              nativeTableStyles.headerCell,
+              fixed ? styles.flexCell : { width: column.width },
+              { textAlign: column.align },
+            ]}
+          >
+            {column.label}
+          </Text>
+        ))}
+        <Text style={[styles.headerCell, nativeTableStyles.headerCell, fixed ? styles.actionFlexCell : { width: actionWidth }, { textAlign: 'center' }]}>Action</Text>
+      </View>
+      <ScrollView style={[styles.tableBody, { height: Math.max(260, tableHeight - 30) }]} nestedScrollEnabled>
+        {displayRows.length ? displayRows.map(item => item.type === 'data' ? (
+          <View key={item.key} style={[styles.tableRow, nativeTableStyles.row, item.row.is_cancelled && styles.cancelledRow]}>
+            {resolved.map(column => (
+              <Text
+                numberOfLines={2}
+                key={column.key}
+                style={[
+                  styles.tableCell,
+                  nativeTableStyles.cell,
+                  fixed ? styles.flexCell : { width: column.width },
+                  { textAlign: column.align },
+                ]}
+              >
+                {displayValue(item.row, column.key)}
+              </Text>
+            ))}
+            <View style={[styles.actionCell, nativeTableStyles.partition, fixed ? styles.actionFlexCell : { width: actionWidth }]}>
+              {item.row.is_cancelled
+                ? <Text style={styles.cancelledText}>CANCELLED</Text>
+                : <Pressable onPress={() => onCancel(item.row)} style={styles.rowCancel}><Text style={styles.rowCancelText}>Cancel</Text></Pressable>}
+            </View>
+          </View>
+        ) : (
+          <View key={item.key} style={[styles.tableRow, nativeTableStyles.row, styles.poSubtotalRow, nativeTableStyles.subtotalRow]}>
+            {resolved.map(column => (
+              <Text
+                numberOfLines={2}
+                key={column.key}
+                style={[
+                  styles.tableCell,
+                  nativeTableStyles.cell,
+                  styles.poSubtotalCell,
+                  nativeTableStyles.subtotalCell,
+                  fixed ? styles.flexCell : { width: column.width },
+                  { textAlign: column.align },
+                ]}
+              >
+                {subtotalValue(item, column.key)}
+              </Text>
+            ))}
+            <View style={[styles.actionCell, nativeTableStyles.partition, fixed ? styles.actionFlexCell : { width: actionWidth }]} />
+          </View>
+        )) : <Text style={[styles.noRows, nativeTableStyles.empty, { width }]}>No register rows found.</Text>}
+      </ScrollView>
+    </View>
+  );
+  return (
+    <View style={[styles.tableShell, nativeTableStyles.shell, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      {fixed ? table : <ScrollView horizontal showsHorizontalScrollIndicator>{table}</ScrollView>}
+    </View>
+  );
 }
 
 function displayValue(row, key) {
@@ -925,39 +1002,43 @@ function ProductionStatusTable({ dataKey, rows, keys, tableHeight = 430, statusB
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
   }, [isSoaking]);
-  const actionWidth = isSoaking ? 84 : 64;
-  const tableWidth = keys.reduce((sum, key) => sum + columnWidth(key, key.replaceAll('_', ' ')), 0) + (isSoaking ? 0 : actionWidth);
+  const actionWidth = 64;
+  const resolved = useMemo(
+    () => resolveColumns(keys.map(key => [key, key.replaceAll('_', ' ')]), rows),
+    [keys, rows],
+  );
+  const width = resolvedTableWidth(resolved, isSoaking ? 0 : actionWidth);
   return (
-    <View style={[styles.tableShell, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+    <View style={[styles.tableShell, nativeTableStyles.shell, { backgroundColor: theme.surface, borderColor: theme.border }]}>
       <ScrollView horizontal showsHorizontalScrollIndicator>
-        <View style={{ width: tableWidth }}>
-          <View style={[styles.tableHeader, { backgroundColor: theme.tableHead }]}>
-            {keys.map(key => <Text key={key} style={[styles.headerCell, { width: columnWidth(key, key.replaceAll('_', ' ')) }]}>{key.replaceAll('_', ' ')}</Text>)}
-            {!isSoaking ? <Text style={[styles.headerCell, { width: actionWidth }]}>Action</Text> : null}
+        <View style={{ width }}>
+          <View style={[styles.tableHeader, nativeTableStyles.header, { backgroundColor: theme.tableHead }]}>
+            {resolved.map(column => <Text key={column.key} style={[styles.headerCell, nativeTableStyles.headerCell, { width: column.width, textAlign: column.align }]}>{column.label}</Text>)}
+            {!isSoaking ? <Text style={[styles.headerCell, nativeTableStyles.headerCell, { width: actionWidth, textAlign: 'center' }]}>Action</Text> : null}
           </View>
           <ScrollView style={[styles.auxTableBody, { height: Math.max(260, tableHeight - 30) }]} nestedScrollEnabled>
             {rows.length ? rows.map((row, index) => {
               const busyKey = `${isSoaking ? 'soaking' : 'rejection'}:${row.id}`;
               const busy = statusBusy === busyKey;
               return (
-                <View key={row.id || index} style={[styles.tableRow, { borderTopColor: theme.border }]}>
-                  {keys.map(key => {
-                    if (key === 'status' && isSoaking) {
-                      return <View key={key} style={[styles.statusCell, { width: columnWidth(key, 'status') }]}><StatusPicker value={row.status || 'Pending'} disabled={busy} onChange={status => onSoakingStatus(row, status)} /></View>;
+                <View key={row.id || index} style={[styles.tableRow, nativeTableStyles.row]}>
+                  {resolved.map(column => {
+                    if (column.key === 'status' && isSoaking) {
+                      return <View key={column.key} style={[styles.statusCell, nativeTableStyles.partition, { width: column.width }]}><StatusPicker value={row.status || 'Pending'} disabled={busy} onChange={status => onSoakingStatus(row, status)} /></View>;
                     }
-                    if (key === 'timer' && isSoaking) {
-                      return <Text numberOfLines={1} key={key} style={[styles.tableCell, styles.timerCell, { width: columnWidth(key, 'timer') }]}>{elapsedTime(row.date, row.time, now)}</Text>;
+                    if (column.key === 'timer' && isSoaking) {
+                      return <Text numberOfLines={1} key={column.key} style={[styles.tableCell, nativeTableStyles.cell, styles.timerCell, { width: column.width, textAlign: column.align }]}>{elapsedTime(row.date, row.time, now)}</Text>;
                     }
-                    return <Text numberOfLines={2} key={key} style={[styles.tableCell, { width: columnWidth(key, key.replaceAll('_', ' ')) }]}>{displayValue(row, key)}</Text>;
+                    return <Text numberOfLines={2} key={column.key} style={[styles.tableCell, nativeTableStyles.cell, { width: column.width, textAlign: column.align }]}>{displayValue(row, column.key)}</Text>;
                   })}
-                  {!isSoaking ? <View style={[styles.actionCell, { width: actionWidth }]}>
+                  {!isSoaking ? <View style={[styles.actionCell, nativeTableStyles.partition, { width: actionWidth }]}>
                     <Pressable disabled={busy} onPress={() => onRejectionComplete(row)} style={[styles.doneButton, busy && styles.disabled]}>
                       {busy ? <ActivityIndicator color="#fff" size="small" /> : <Text style={styles.doneButtonText}>DONE</Text>}
                     </Pressable>
                   </View> : null}
                 </View>
               );
-            }) : <Text style={[styles.noRows, { width: tableWidth }]}>No active rows found.</Text>}
+            }) : <Text style={[styles.noRows, nativeTableStyles.empty, { width }]}>No active rows found.</Text>}
           </ScrollView>
         </View>
       </ScrollView>
@@ -990,7 +1071,15 @@ const productionRequirementTotalKeys = new Set(['no_of_pieces', 'no_of_mc', 'sto
 
 function ReadOnlyTable({ rows, keys, tableHeight = 430, groupedSubtotals = false, groupByPo = false }) {
   const { theme } = useERPTheme();
-  const fixed = keys.length <= 4;
+  const { width: windowWidth } = useWindowDimensions();
+  const resolved = useMemo(
+    () => resolveColumns(keys.map(key => [key, key.replaceAll('_', ' ')]), rows),
+    [keys, rows],
+  );
+  const contentWidth = resolvedTableWidth(resolved);
+  const availableWidth = Math.max(280, windowWidth - 22);
+  const fixed = keys.length <= 4 && contentWidth <= availableWidth;
+  const width = fixed ? availableWidth : contentWidth;
   const locationKey = keys.find(key => ['location', 'peeling_at', 'production_at'].includes(key));
   const companyKey = keys.find(key => ['production_for', 'company_name'].includes(key));
   const subtotalRows = useMemo(() => {
@@ -1042,9 +1131,98 @@ function ReadOnlyTable({ rows, keys, tableHeight = 430, groupedSubtotals = false
     });
     return output;
   }, [companyKey, groupByPo, groupedSubtotals, locationKey, rows]);
-  const subtotalWidth = keys.reduce((sum, key) => sum + columnWidth(key, key.replaceAll('_', ' ')), 0);
-  const table = <View style={fixed && styles.fixedTable}><View style={[styles.tableHeader, { backgroundColor: theme.tableHead }]}>{keys.map(key => <Text key={key} style={[styles.headerCell, fixed ? styles.flexCell : { width: columnWidth(key, key.replaceAll('_', ' ')) }]}>{key.replaceAll('_', ' ')}</Text>)}</View><ScrollView style={[styles.auxTableBody, { height: Math.max(260, tableHeight - 30) }]} nestedScrollEnabled>{subtotalRows.length ? subtotalRows.map(item => item.type === 'data' ? <View key={item.key} style={[styles.tableRow, { borderTopColor: theme.border }]}>{keys.map(key => <Text numberOfLines={2} key={key} style={[styles.tableCell, fixed ? styles.flexCell : { width: columnWidth(key, key.replaceAll('_', ' ')) }]}>{displayValue(item.row, key)}</Text>)}</View> : item.type === 'poHeader' ? <View key={item.key} style={[styles.auxLocationHeader, { width: subtotalWidth }]}><Text style={styles.auxLocationHeaderText}>PO • {item.label}</Text></View> : item.type === 'poSubtotal' ? <View key={item.key} style={[styles.tableRow, styles.poSubtotalRow]}>{keys.map(key => <Text numberOfLines={2} key={key} style={[styles.tableCell, styles.poSubtotalCell, fixed ? styles.flexCell : { width: columnWidth(key, key.replaceAll('_', ' ')) }]}>{key === 'po_number' ? `SUBTOTAL (${item.label})` : productionRequirementTotalKeys.has(key) ? number(item.totals[key]) : ''}</Text>)}</View> : item.type === 'locationHeader' ? <View key={item.key} style={[styles.auxLocationHeader, { width: subtotalWidth }]}><Text style={styles.auxLocationHeaderText}>{item.label.toUpperCase()}</Text></View> : <View key={item.key} style={[styles.auxSubtotalRow, item.type === 'locationSubtotal' && styles.auxLocationSubtotal, { width: subtotalWidth }]}><Text style={styles.auxSubtotalLabel}>{item.label}</Text><Text style={styles.auxSubtotalValue}>{number(item.total)} KG</Text></View>) : <Text style={[styles.noRows, { width: subtotalWidth }]}>No rows found.</Text>}</ScrollView></View>;
-  return <View style={[styles.tableShell, { backgroundColor: theme.surface, borderColor: theme.border }]}>{fixed ? table : <ScrollView horizontal showsHorizontalScrollIndicator>{table}</ScrollView>}</View>;
+  const table = (
+    <View style={[fixed && styles.fixedTable, { width }]}>
+      <View style={[styles.tableHeader, nativeTableStyles.header, { backgroundColor: theme.tableHead }]}>
+        {resolved.map(column => (
+          <Text
+            key={column.key}
+            style={[
+              styles.headerCell,
+              nativeTableStyles.headerCell,
+              fixed ? styles.flexCell : { width: column.width },
+              { textAlign: column.align },
+            ]}
+          >
+            {column.label}
+          </Text>
+        ))}
+      </View>
+      <ScrollView style={[styles.auxTableBody, { height: Math.max(260, tableHeight - 30) }]} nestedScrollEnabled>
+        {subtotalRows.length ? subtotalRows.map(item => {
+          if (item.type === 'data') {
+            return (
+              <View key={item.key} style={[styles.tableRow, nativeTableStyles.row]}>
+                {resolved.map(column => (
+                  <Text
+                    numberOfLines={2}
+                    key={column.key}
+                    style={[
+                      styles.tableCell,
+                      nativeTableStyles.cell,
+                      fixed ? styles.flexCell : { width: column.width },
+                      { textAlign: column.align },
+                    ]}
+                  >
+                    {displayValue(item.row, column.key)}
+                  </Text>
+                ))}
+              </View>
+            );
+          }
+          if (item.type === 'poHeader') {
+            return <View key={item.key} style={[styles.auxLocationHeader, { width }]}><Text style={styles.auxLocationHeaderText}>PO • {item.label}</Text></View>;
+          }
+          if (item.type === 'poSubtotal') {
+            return (
+              <View key={item.key} style={[styles.tableRow, nativeTableStyles.row, styles.poSubtotalRow, nativeTableStyles.subtotalRow]}>
+                {resolved.map(column => (
+                  <Text
+                    numberOfLines={2}
+                    key={column.key}
+                    style={[
+                      styles.tableCell,
+                      nativeTableStyles.cell,
+                      styles.poSubtotalCell,
+                      nativeTableStyles.subtotalCell,
+                      fixed ? styles.flexCell : { width: column.width },
+                      { textAlign: column.align },
+                    ]}
+                  >
+                    {column.key === 'po_number'
+                      ? `SUBTOTAL (${item.label})`
+                      : productionRequirementTotalKeys.has(column.key) ? number(item.totals[column.key]) : ''}
+                  </Text>
+                ))}
+              </View>
+            );
+          }
+          if (item.type === 'locationHeader') {
+            return <View key={item.key} style={[styles.auxLocationHeader, { width }]}><Text style={styles.auxLocationHeaderText}>{item.label.toUpperCase()}</Text></View>;
+          }
+          return (
+            <View
+              key={item.key}
+              style={[
+                styles.auxSubtotalRow,
+                nativeTableStyles.subtotalRow,
+                item.type === 'locationSubtotal' && styles.auxLocationSubtotal,
+                { width },
+              ]}
+            >
+              <Text style={[styles.auxSubtotalLabel, nativeTableStyles.subtotalCell]}>{item.label}</Text>
+              <Text style={[styles.auxSubtotalValue, nativeTableStyles.subtotalCell]}>{number(item.total)} KG</Text>
+            </View>
+          );
+        }) : <Text style={[styles.noRows, nativeTableStyles.empty, { width }]}>No rows found.</Text>}
+      </ScrollView>
+    </View>
+  );
+  return (
+    <View style={[styles.tableShell, nativeTableStyles.shell, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+      {fixed ? table : <ScrollView horizontal showsHorizontalScrollIndicator>{table}</ScrollView>}
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

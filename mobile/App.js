@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Image, Linking, StatusBar, StyleSheet, Text, View } from 'react-native';
+import { AppState, Image, Linking, StatusBar, StyleSheet, Text, View } from 'react-native';
+import AnimatedBrandLogo from './src/components/AnimatedBrandLogo';
 import NativeAuthScreen from './src/screens/NativeAuthScreen';
 import NativeHomeScreen from './src/screens/NativeHomeScreen';
 import NativeResetPassword from './src/screens/NativeResetPassword';
-import { apiRequest } from './src/services/api';
+import { apiRequest, setSessionExpiredHandler } from './src/services/api';
+import { API_URL } from './src/config';
 import { ERPThemeProvider, useERPTheme } from './src/theme/ERPThemeContext';
 
 export default function App() {
@@ -16,23 +18,43 @@ function AppContent() {
   const [user, setUser] = useState(null);
   const [resetToken, setResetToken] = useState('');
 
-  const loadSession = useCallback(async () => {
+  const loadSession = useCallback(async ({ preserveOnError = false } = {}) => {
     try {
       const data = await apiRequest('/auth/session-info');
       if (data.authenticated) {
         setUser(data);
+        await new Promise(resolve => setTimeout(resolve, 450));
         setSessionState('authenticated');
       } else {
         setUser(null);
         setSessionState('guest');
       }
     } catch {
-      setUser(null);
-      setSessionState('guest');
+      if (!preserveOnError) {
+        setUser(null);
+        setSessionState('guest');
+      }
     }
   }, []);
 
   useEffect(() => { void loadSession(); }, [loadSession]);
+  useEffect(() => setSessionExpiredHandler(() => {
+    setUser(null);
+    setResetToken('');
+    setSessionState('guest');
+  }), []);
+  useEffect(() => {
+    if (sessionState !== 'authenticated') return undefined;
+    const checkSession = () => { void loadSession({ preserveOnError: true }); };
+    const interval = setInterval(checkSession, 15000);
+    const subscription = AppState.addEventListener('change', state => {
+      if (state === 'active') checkSession();
+    });
+    return () => {
+      clearInterval(interval);
+      subscription.remove();
+    };
+  }, [loadSession, sessionState]);
   useEffect(() => {
     const handleUrl = ({ url }) => {
       if (!url) return;
@@ -51,7 +73,20 @@ function AppContent() {
   };
 
   if (sessionState === 'checking') {
-    return <View style={styles.loading}><StatusBar barStyle="dark-content" backgroundColor="#f4f7fb" /><Image source={require('./assets/icon.png')} style={styles.logo} /><ActivityIndicator color="#2563eb" size="large" /><Text style={styles.loadingText}>Opening secure workspace…</Text></View>;
+    const companyName = user?.company_name || 'SVBK ERP';
+    const companyLogo = user?.company_logo_url
+      ? (/^https?:\/\//i.test(user.company_logo_url) ? user.company_logo_url : `${API_URL}${user.company_logo_url}`)
+      : '';
+    return <View style={styles.loading}>
+      <StatusBar barStyle="dark-content" backgroundColor="#f7fbff" />
+      {companyLogo
+        ? <Image source={{ uri: companyLogo }} resizeMode="contain" style={styles.tenantLogo} />
+        : <AnimatedBrandLogo size={160} />}
+      <View style={styles.loadingCopy}>
+        <Text style={styles.loadingTitle}>{companyName}</Text>
+        <Text style={styles.loadingText}>Opening secure workspace…</Text>
+      </View>
+    </View>;
   }
   if (resetToken) return <><StatusBar barStyle="dark-content" backgroundColor="#f4f7fb" /><NativeResetPassword token={resetToken} onComplete={() => { setResetToken(''); setSessionState('guest'); }} /></>;
 
@@ -71,7 +106,9 @@ function AppContent() {
 }
 
 const styles = StyleSheet.create({
-  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, backgroundColor: '#f4f7fb' },
-  logo: { width: 64, height: 64, borderRadius: 18 },
-  loadingText: { color: '#475569', fontSize: 14, fontWeight: '700' },
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#f7fbff' },
+  loadingCopy: { alignItems: 'center', marginTop: -4 },
+  tenantLogo: { width: 150, height: 150, marginBottom: 4, borderRadius: 20 },
+  loadingTitle: { color: '#075985', fontSize: 18, fontWeight: '900', letterSpacing: 1.8 },
+  loadingText: { marginTop: 6, color: '#64748b', fontSize: 12, fontWeight: '700', letterSpacing: 0.2 },
 });
