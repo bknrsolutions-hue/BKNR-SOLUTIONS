@@ -195,6 +195,11 @@ export default function PendingOrders() {
   };
 
   const handleStatusChange = async (poNum, status) => {
+    if (status === 'completed') {
+      setSelectedPo(poNum);
+      setShowMoveModal(true);
+      return;
+    }
     if (!window.confirm(`Change PO ${poNum} status to ${status.toUpperCase()}?`)) return;
     setLoading(true);
     try {
@@ -219,7 +224,7 @@ export default function PendingOrders() {
     <div className="pending-orders-exempt" style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
         <h2 style={{ color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-          <Clock size={22} /> Sales Pending Orders Worksheet
+          <Clock size={22} /> Pending Orders
         </h2>
         <div style={{ display: 'flex', gap: 8 }}>
           <button className="btn btn-clear" onClick={fetchData} disabled={loading}>
@@ -227,7 +232,7 @@ export default function PendingOrders() {
           </button>
           {!showForm && (
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={13} /> Log New Purchase Order (PO)
+              <Plus size={13} /> New Order (PO)
             </button>
           )}
         </div>
@@ -243,7 +248,7 @@ export default function PendingOrders() {
       {showForm && (
         <form onSubmit={handleSubmit} className="card" style={{ flexShrink: 0 }}>
           <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 14, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            RECORD NEW SALES BACKLOG ORDER
+            New Purchase Order (PO)
           </h3>
           <div className="form-grid" style={{ marginBottom: 16 }}>
             <div className="form-group">
@@ -301,7 +306,7 @@ export default function PendingOrders() {
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
-            <button type="button" className="btn btn-secondary" onClick={handleAddRow}>+ Add Item Specifications</button>
+            <button type="button" className="btn btn-secondary" onClick={handleAddRow}>+ Add Item</button>
             <button type="submit" className="btn btn-primary">Save</button>
             <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
           </div>
@@ -321,14 +326,14 @@ export default function PendingOrders() {
           className={`btn ${orderView === 'completed' ? 'btn-primary' : 'btn-clear'}`}
           onClick={() => setOrderView('completed')}
         >
-          Completed Dispatch ({completedRows.length})
+          Completed Dispatches ({completedRows.length})
         </button>
       </div>
 
       {/* ACTIVE PO LIST */}
       {orderView === 'pending' && <div>
         <h3 style={{ fontSize: 13, fontWeight: 800, margin: '10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Active Pending Backlogs
+          Pending Orders
         </h3>
         {activeRows.length === 0 ? (
           <div className="card text-center" style={{ padding: 20, color: 'var(--text-secondary)' }}>No active pending orders.</div>
@@ -346,7 +351,7 @@ export default function PendingOrders() {
       {/* COMPLETED PO LIST */}
       {orderView === 'completed' && <div>
         <h3 style={{ fontSize: 13, fontWeight: 800, margin: '10px 0', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Completed Dispatch
+          Completed Dispatches
         </h3>
         {completedRows.length === 0 ? (
           <div className="card text-center" style={{ padding: 20, color: 'var(--text-secondary)' }}>No completed dispatch orders.</div>
@@ -362,14 +367,14 @@ export default function PendingOrders() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9998 }} onClick={() => setShowPoActions(false)}>
           <div className="card" style={{ width: 380, display: 'flex', flexDirection: 'column', gap: 14 }} onClick={event => event.stopPropagation()}>
             <div>
-              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>PO {selectedPo}</h3>
+              <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>PO: {selectedPo}</h3>
               <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: 11 }}>Select an action for this purchase order.</p>
             </div>
             <button className="btn btn-primary" type="button" onClick={() => { setShowPoActions(false); setShowMoveModal(true); }}>
-              <Eye size={13} /> Move to Dispatch &amp; Ledger
+              <Eye size={13} /> Move to Sales Dispatch
             </button>
             <button className="btn btn-clear" type="button" style={{ color: '#ef4444' }} onClick={() => handleDeletePo(selectedPo)}>
-              Cancel PO
+              Cancel Order
             </button>
             <button className="btn btn-clear" type="button" onClick={() => setShowPoActions(false)}>Close</button>
           </div>
@@ -399,7 +404,7 @@ export default function PendingOrders() {
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
               <button type="button" className="btn btn-clear" onClick={() => setShowMoveModal(false)}>Close</button>
-              <button type="submit" className="btn btn-primary">Move & Post Voucher</button>
+              <button type="submit" className="btn btn-primary">Confirm Dispatch</button>
             </div>
           </form>
         </div>
@@ -424,11 +429,11 @@ function OrdersTable({ rows, completed = false, onStatusChange, onRowClick }) {
             <th>Sl</th><th>Company</th><th>Location</th><th>PO Number</th><th>Buyer</th><th>Agent</th><th>Ship.Date</th>
             <th>Brand</th><th>Packing</th><th>Freezer</th><th>C.G</th><th>W.G</th><th>Species</th><th>Variety</th>
             <th>Grade</th><th>Pieces</th><th className="text-right">M.C Box</th><th className="text-right">Price</th>
-            <th className="text-right">Exch Rate</th><th>{completed ? 'Status' : 'Workflow Architecture'}</th>
+            <th className="text-right">Exch Rate</th><th>Status</th>
           </tr>
         </thead>
         <tbody>
-          {Object.entries(groupedRows).map(([poNumber, poRows]) => {
+          {Object.entries(groupedRows).map(([poNumber, poRows], groupIdx) => {
             const totalMc = poRows.reduce((sum, row) => sum + Number(row.no_of_mc || 0), 0);
             const totalPrice = poRows.reduce((sum, row) => sum + Number(row.selling_price || 0), 0);
             const averageExchange = poRows.length
@@ -445,13 +450,21 @@ function OrdersTable({ rows, completed = false, onStatusChange, onRowClick }) {
                     onKeyDown={event => event.key === 'Enter' && onRowClick?.(row)}
                     style={{ cursor: onRowClick ? 'pointer' : 'default' }}
                   >
-                    <td>{row.sl_no || index + 1}</td>
-                    <td>{row.company_name || '—'}</td>
-                    <td>{row.production_at || '—'}</td>
-                    <td style={{ fontWeight: 800, color: completed ? 'var(--success)' : 'var(--accent)' }}>{row.po_number || '—'}</td>
+                    {index === 0 && (
+                      <>
+                        <td rowSpan={poRows.length} className="text-center">{row.sl_no || groupIdx + 1}</td>
+                        <td rowSpan={poRows.length}>{row.company_name || '—'}</td>
+                        <td rowSpan={poRows.length}>{row.production_at || '—'}</td>
+                        <td rowSpan={poRows.length} style={{ fontWeight: 800, color: completed ? 'var(--success)' : 'var(--accent)' }}>{row.po_number || '—'}</td>
+                      </>
+                    )}
                     <td>{row.buyer || '—'}</td>
-                    <td>{row.agent_name || '—'}</td>
-                    <td>{row.shipment_date || '—'}</td>
+                    {index === 0 && (
+                      <>
+                        <td rowSpan={poRows.length}>{row.agent_name || '—'}</td>
+                        <td rowSpan={poRows.length}>{row.shipment_date || '—'}</td>
+                      </>
+                    )}
                     <td>{row.brand || '—'}</td>
                     <td>{row.packing_style || '—'}</td>
                     <td>{row.freezer || '—'}</td>
@@ -463,24 +476,28 @@ function OrdersTable({ rows, completed = false, onStatusChange, onRowClick }) {
                     <td>{row.no_of_pieces ?? 0}</td>
                     <td className="text-right" style={{ fontWeight: 800 }}>{Number(row.no_of_mc || 0).toLocaleString('en-IN')}</td>
                     <td className="text-right" style={{ fontWeight: 800, color: 'var(--success)' }}>${Number(row.selling_price || 0).toFixed(2)}</td>
-                    <td className="text-right" style={{ fontWeight: 800, color: 'var(--accent)' }}>₹{Number(row.exchange_rate || 0).toFixed(2)}</td>
-                    <td>
-                      {completed ? (
-                        <span className="status-badge" style={{ color: 'var(--success)', fontWeight: 800 }}>COMPLETED</span>
-                      ) : (
-                        <select
-                          className="form-control"
-                          style={{ minWidth: 120, height: 30, padding: '2px 7px', fontSize: 10, fontWeight: 800 }}
-                          value={String(row.progress_steps || 'pending').toLowerCase()}
-                          onClick={event => event.stopPropagation()}
-                          onChange={event => onStatusChange?.(row.po_number, event.target.value)}
-                        >
-                          <option value="pending">PENDING</option>
-                          <option value="processing">PROCESSING</option>
-                          <option value="completed">COMPLETED</option>
-                        </select>
-                      )}
-                    </td>
+                    {index === 0 && (
+                      <>
+                        <td rowSpan={poRows.length} className="text-right" style={{ fontWeight: 800, color: 'var(--accent)' }}>₹{Number(row.exchange_rate || 0).toFixed(2)}</td>
+                        <td rowSpan={poRows.length}>
+                          {completed ? (
+                            <span className="status-badge" style={{ color: 'var(--success)', fontWeight: 800 }}>COMPLETED</span>
+                          ) : (
+                            <select
+                              className="form-control"
+                              style={{ minWidth: 120, height: 30, padding: '2px 7px', fontSize: 10, fontWeight: 800 }}
+                              value={String(row.progress_steps || 'pending').toLowerCase()}
+                              onClick={event => event.stopPropagation()}
+                              onChange={event => onStatusChange?.(row.po_number, event.target.value)}
+                            >
+                              <option value="pending">PENDING</option>
+                              <option value="processing">PROCESSING</option>
+                              <option value="completed">COMPLETED</option>
+                            </select>
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
                 <tr style={{ background: 'var(--table-header-bg)', borderTop: '2px solid var(--border-light)' }}>

@@ -40,7 +40,7 @@ export default function StockEntry() {
   const [loose, setLoose] = useState(0);
   const [prodAt, setProdAt] = useState('');
   const [purpose, setPurpose] = useState('');
-  const [poNumber, setPoNumber] = useState('');
+  const [poNumber, setPoNumber] = useState('N/A');
 
   // Stock OUT rows
   const [outRows, setOutRows] = useState([]);
@@ -71,7 +71,8 @@ export default function StockEntry() {
       setProductionPlaces(d.production_places || []);
       setLocations(d.locations || []);
       setProdForList(d.production_for_list || []);
-      setPoNumbers(d.po_numbers || []);
+      const rawPos = d.po_numbers || [];
+      setPoNumbers(rawPos.includes('N/A') ? rawPos : ['N/A', ...rawPos]);
       setTableData(d.table_data || []);
       if ((d.table_data || []).length === 0) setShowForm(true);
     } catch (e) {
@@ -342,30 +343,37 @@ export default function StockEntry() {
           Today's Stock Entries
         </h3>
         <div className="table-responsive">
-          <table className="bknr-table" style={{ minWidth: 1400 }}>
+          <table className="bknr-table" style={{ minWidth: 1850 }}>
             <thead><tr>
-              <th>ID</th><th>Time</th><th>Type</th><th>Batch</th><th>Location</th>
-              <th>Brand</th><th>Species</th><th>Variety</th><th>Grade</th>
-              <th>Glaze</th><th>Freezer</th><th>Pack Style</th>
-              <th className="text-right">MC</th><th className="text-right">Loose</th><th className="text-right">Qty (Kg)</th>
-              <th>Purpose</th><th>PO #</th><th>Action</th>
+              <th>ID</th><th>Date</th><th>Time</th><th>Type</th><th>Batch</th><th>Stock Loc</th>
+              <th>Prod For</th><th>Prod At</th><th>Type of Prod</th><th>Purpose</th><th>PO No</th>
+              <th>Brand</th><th>Species</th><th>Variety</th><th>Freezer</th><th>Glaze</th><th>Pack Style</th>
+              <th>Grade</th><th className="text-right">MC</th><th className="text-right">Loose</th><th className="text-right">Qty (Kg)</th>
+              <th>Email</th><th>Action</th>
             </tr></thead>
             <tbody>
               {tableData.length === 0 ? (
-                <tr><td colSpan={18} className="text-center" style={{ padding: 24, color: 'var(--text-secondary)' }}>No stock entries recorded today.</td></tr>
+                <tr><td colSpan={23} className="text-center" style={{ padding: 24, color: 'var(--text-secondary)' }}>No stock entries recorded today.</td></tr>
               ) : tableData.map(row => (
                 <tr key={row.id} style={{ opacity: row.is_cancelled ? 0.5 : 1, textDecoration: row.is_cancelled ? 'line-through' : 'none' }}>
                   <td className="text-center">{row.id}</td>
+                  <td className="text-center">{row.date || ''}</td>
                   <td className="text-center">{row.time ? String(row.time).substring(0, 5) : ''}</td>
                   <td className="text-center">{row.cargo_movement_type === 'IN' ? <INBadge /> : <OUTBadge />}</td>
                   <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{row.batch_number}</td>
                   <td>{row.location}</td>
-                  <td>{row.brand}</td><td>{row.species}</td><td>{row.variety}</td><td>{row.grade}</td>
-                  <td>{row.glaze}</td><td>{row.freezer}</td><td>{row.packing_style}</td>
-                  <td className="text-right">{row.no_of_mc}</td>
+                  <td>{row.production_for || ''}</td>
+                  <td>{row.production_at || ''}</td>
+                  <td>{row.type_of_production || ''}</td>
+                  <td>{row.purpose || ''}</td>
+                  <td>{row.po_number || ''}</td>
+                  <td>{row.brand}</td><td>{row.species}</td><td>{row.variety}</td>
+                  <td>{row.freezer}</td><td>{row.glaze}</td><td>{row.packing_style}</td>
+                  <td style={{ fontWeight: '700', color: 'var(--corp-ops)' }}>{row.grade}</td>
+                  <td className="text-right" style={{ fontWeight: '700' }}>{row.no_of_mc}</td>
                   <td className="text-right">{row.loose}</td>
-                  <td className="text-right">{Number(row.quantity || 0).toFixed(2)}</td>
-                  <td>{row.purpose}</td><td>{row.po_number}</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-ops)' }}>{Number(row.quantity || 0).toFixed(2)}</td>
+                  <td style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{row.email ? row.email.split('@')[0] : ''}</td>
                   <td className="text-center">
                     {!row.is_cancelled && (
                       <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}

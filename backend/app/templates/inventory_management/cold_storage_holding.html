@@ -197,13 +197,56 @@ thead th{
   text-transform: uppercase;
   font-size: 10px;
 }
-tbody td{ padding:12px 10px; border-bottom: 1px solid #edf2f7; text-align:center; color: var(--primary); }
-tbody tr:hover{background:#f8fbff; cursor:pointer}
-
-.badge { padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
-.badge-holding { background: #fef3c7; color: #92400e; }
-.badge-in { background: #dcfce7; color: #166534; }
-.badge-out { background: #fee2e2; color: #991b1b; }
+/* Master table styling overrides to match React UI */
+.master-table-wrap {
+    background: var(--surface-panel, var(--card-bg)) !important;
+    border-radius: 12px;
+    border: 1px solid var(--border-light, var(--border)) !important;
+    box-shadow: var(--shadow-soft, 0 4px 6px -1px rgba(0,0,0,0.05));
+    overflow-x: auto;
+    width: 98%;
+    margin: 12px auto 30px;
+}
+.master-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+.master-th {
+    background: rgba(255,255,255,0.02) !important;
+    color: var(--text-secondary, #475569) !important;
+    padding: 10px 12px;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-light, var(--border)) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+[data-theme="light"] .master-th {
+    background: rgba(0,0,0,0.02) !important;
+}
+.master-td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light, #edf2f7) !important;
+    font-size: 11px !important;
+    color: var(--text-primary, var(--primary)) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.master-tr {
+    transition: background 0.2s;
+}
+.master-tr:hover {
+    background: var(--row-hover, #f8fbff) !important;
+    cursor: pointer;
+}
+.master-tr.selected {
+    background: rgba(234, 88, 12, 0.08) !important;
+    border-left: 3px solid var(--corp-ops, var(--accent));
+}
 </style>
 <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
@@ -227,7 +270,7 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
   <div>
       <!-- 🟢 ADD NEW BUTTON -->
       <button class="btn btn-primary" id="toggleFormBtn" onclick="toggleForm()">
-          <i class="fa-solid fa-plus"></i> Add New Entry
+          <i class="fa-solid fa-plus"></i> Add
       </button>
   </div>
 </div>
@@ -397,33 +440,48 @@ tbody tr:hover{background:#f8fbff; cursor:pointer}
     </div>
 
     <div class="actions">
-      <button type="button" class="btn" onclick="toggleForm()">Cancel</button>
-      <button type="submit" id="saveBtn" class="btn btn-primary">Save Holding Entry</button>
+      <button type="button" class="btn btn-clear" onclick="toggleForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
+      <button type="submit" id="saveBtn" class="btn btn-primary"><i class="fa-solid fa-check"></i> SAVE</button>
     </div>
   </div>
   </form>
 </div>
 
 {% if current_holdings %}
-<div class="table-wrap">
-<table id="holdTable">
+<div class="master-table-wrap">
+<table class="master-table" id="holdTable">
 <thead>
   <tr>
-    <th>Status</th><th>Facility</th><th>Production For</th><th>Batch #</th><th>Movement</th><th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Loose</th><th>Total Qty</th><th>In Date</th>
+    <th class="master-th">Status</th>
+    <th class="master-th">Facility</th>
+    <th class="master-th">Production For</th>
+    <th class="master-th">Batch #</th>
+    <th class="master-th">Movement</th>
+    <th class="master-th">Species</th>
+    <th class="master-th">Variety</th>
+    <th class="master-th">Grade</th>
+    <th class="master-th">MC</th>
+    <th class="master-th">Loose</th>
+    <th class="master-th">Total Qty</th>
+    <th class="master-th">In Date</th>
   </tr>
 </thead>
 <tbody>
 {% for r in current_holdings %}
     {% if r.in_date|string == today_date %}
-    <tr>
-      <td><span class="badge badge-holding">{{r.status}}</span></td>
-      <td style="font-weight:600">{{r.cold_storage_name}}</td>
-      <td style="font-weight:600; color:#475569">{{r.production_for}}</td>
-      <td style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
-      <td><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
-      <td>{{r.species}}</td><td>{{r.variety}}</td><td>{{r.grade}}</td>
-      <td style="font-weight: 700;">{{r.no_of_mc}}</td><td>{{r.loose}}</td>
-      <td style="font-weight: 800;">{{r.quantity}}</td><td style="color:var(--muted)">{{r.in_date}}</td>
+    <tr class="master-tr">
+      <td class="master-td"><span class="badge badge-holding">{{r.status}}</span></td>
+      <td class="master-td" style="font-weight:600">{{r.cold_storage_name}}</td>
+      <td class="master-td" style="font-weight:600; color:#475569">{{r.production_for}}</td>
+      <td class="master-td" style="font-weight:800; color:var(--accent)">{{r.batch_number}}</td>
+      <td class="master-td"><span class="badge {{ 'badge-in' if r.cargo_movement_type == 'IN' else 'badge-out' }}">{{r.cargo_movement_type}}</span></td>
+      <td class="master-td">{{r.species}}</td>
+      <td class="master-td">{{r.variety}}</td>
+      <td class="master-td">{{r.grade}}</td>
+      <td class="master-td" style="font-weight: 700;">{{r.no_of_mc}}</td>
+      <td class="master-td">{{r.loose}}</td>
+      <td class="master-td" style="font-weight: 800;">{{r.quantity}}</td>
+      <td class="master-td" style="color:var(--muted)">{{r.in_date}}</td>
     </tr>
     {% endif %}
 {% endfor %}
@@ -449,7 +507,7 @@ function toggleForm() {
         btn.style.background = 'var(--danger)';
     } else {
         formWrap.style.display = 'none';
-        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Add New Entry';
+        btn.innerHTML = '<i class="fa-solid fa-plus"></i> Add';
         btn.style.background = 'var(--primary)';
     }
 }

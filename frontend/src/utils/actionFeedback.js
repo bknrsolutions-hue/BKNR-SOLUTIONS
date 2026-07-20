@@ -127,11 +127,12 @@ export function installActionFeedback(targetWindow = window, feedbackWindow = wi
         } catch {
           // Some successful endpoints intentionally return an empty response.
         }
+        const isSuccess = response.ok || (response.status >= 200 && response.status < 400) || response.type === 'opaqueredirect' || response.status === 0;
         dispatchFeedback({
-          type: response.ok ? 'success' : 'error',
+          type: isSuccess ? 'success' : 'error',
           message: responseMessage(
             payload,
-            response.ok ? 'Action completed successfully.' : `Action failed (${response.status}).`,
+            isSuccess ? 'Action completed successfully.' : `Action failed (${response.status}).`,
           ),
         });
       }

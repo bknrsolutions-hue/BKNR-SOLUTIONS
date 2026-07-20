@@ -396,11 +396,15 @@ tr.selected-row td {
                 <th style="width: 120px; text-align: left;">Stock Loc</th>
                 <th style="width: 140px; text-align: left;">Prod For</th>
                 <th style="width: 120px; text-align: left;">Prod At</th>
+                <th style="width: 120px; text-align: left;">Type of Prod</th>
                 <th style="width: 110px; text-align: left;">Purpose</th>
                 <th style="width: 95px;">PO No</th>
                 <th style="width: 110px; text-align: left;">Brand</th>
                 <th style="width: 90px;">Species</th>
                 <th style="width: 120px; text-align: left;">Variety</th>
+                <th style="width: 100px;">Freezer</th>
+                <th style="width: 90px;">Glaze</th>
+                <th style="width: 120px;">Pack Style</th>
                 <th style="width: 80px;">Grade</th>
                 <th style="width: 65px; text-align: right;">MC</th>
                 <th style="width: 65px; text-align: right;">Lse</th>
@@ -419,15 +423,19 @@ tr.selected-row td {
             <td style="text-align: left;">{{r.location}}</td>
             <td style="text-align: left;">{{r.production_for or ""}}</td>
             <td style="text-align: left;">{{r.production_at}}</td>
+            <td style="text-align: left;">{{r.type_of_production or ""}}</td>
             <td style="text-align: left;">{{r.purpose or ""}}</td>
             <td>{{r.po_number or ""}}</td>
             <td style="text-align: left;">{{r.brand}}</td>
             <td style="font-weight: 700; color: var(--accent);">{{r.species}}</td>
             <td style="text-align: left;">{{r.variety}}</td>
-            <td>{{r.grade}}</td>
-            <td style="text-align: right !important; padding-right: 8px;">{{r.no_of_mc}}</td>
+            <td>{{r.freezer or ""}}</td>
+            <td>{{r.glaze or ""}}</td>
+            <td>{{r.packing_style or ""}}</td>
+            <td style="font-weight: 700; color: var(--accent);">{{r.grade}}</td>
+            <td style="text-align: right !important; padding-right: 8px; font-weight: 700;">{{r.no_of_mc}}</td>
             <td style="text-align: right !important; padding-right: 8px;">{{r.loose}}</td>
-            <td style="font-weight: 800; text-align: right !important; padding-right: 8px;">{{r.quantity}}</td>
+            <td style="font-weight: 800; text-align: right !important; padding-right: 8px; color: var(--accent);">{{r.quantity}}</td>
             <td style="font-size: 10px; color: var(--muted); text-align: left;">{{r.email.split('@')[0] if r.email else ''}}</td>
         </tr>
         {% endfor %}

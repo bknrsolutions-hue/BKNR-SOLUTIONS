@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import RedirectResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, or_
 import re
 from datetime import datetime
 from app.utils.timezone import ist_now
@@ -45,8 +45,53 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
 
     sales_q = db.query(sales_dispatch).filter(sales_dispatch.company_id == company_code)
     if production_for_filter:
-        sales_q = sales_q.filter(func.trim(sales_dispatch.company_name) == func.trim(production_for_filter))
-    sales_data = sales_q.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no).all()
+        sales_q = sales_q.filter(
+            or_(
+                func.lower(func.trim(sales_dispatch.company_name)) == func.lower(func.trim(production_for_filter)),
+                sales_dispatch.company_name == None,
+                func.trim(sales_dispatch.company_name) == ""
+            )
+        )
+
+    # Permanently delete invalid/empty records from sales_dispatch table in DB
+    # (Removes records if invoice_no, po_number, buyer_name, container_no, or shipping_bill are blank)
+    empty_records = db.query(sales_dispatch).filter(
+        sales_dispatch.company_id == company_code,
+        or_(
+            sales_dispatch.invoice_no == None, func.trim(sales_dispatch.invoice_no) == "",
+            sales_dispatch.po_number == None, func.trim(sales_dispatch.po_number) == "",
+            sales_dispatch.buyer_name == None, func.trim(sales_dispatch.buyer_name) == "",
+            sales_dispatch.container_no == None, func.trim(sales_dispatch.container_no) == "",
+            sales_dispatch.shipping_bill == None, func.trim(sales_dispatch.shipping_bill) == ""
+        )
+    ).all()
+    if empty_records:
+        for rec in empty_records:
+            db.delete(rec)
+        db.commit()
+
+    raw_sales_data = sales_q.order_by(sales_dispatch.invoice_date.desc(), sales_dispatch.invoice_no, sales_dispatch.id.asc()).all()
+
+    # 🟢 Auto Deduplication: Delete any duplicate/double entries permanently from DB
+    seen_keys = set()
+    sales_data = []
+    for s in raw_sales_data:
+        key = (
+            str(s.company_id or '').strip().upper(),
+            str(s.invoice_no or '').strip().upper(),
+            str(s.po_number or '').strip().upper(),
+            str(s.variety or '').strip().upper(),
+            str(s.grade or '').strip().upper(),
+            str(s.container_no or '').strip().upper(),
+            str(s.no_of_mc or 0),
+            str(s.price or 0.0)
+        )
+        if key in seen_keys:
+            db.delete(s)
+        else:
+            seen_keys.add(key)
+            sales_data.append(s)
+    db.commit()
 
     packing_data = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
     weight_map = {str(p.packing_style).strip(): float(p.mc_weight or 1.0) for p in packing_data}
@@ -88,7 +133,15 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
     processed = []
     current_invoice, sl_no = None, 0
 
-    for s in sales_data:
+    # Filter out completely empty rows where key fields (invoice_no, po_number, buyer_name) are all blank
+    valid_sales_data = [
+        s for s in sales_data
+        if (s.invoice_no and str(s.invoice_no).strip()) or 
+           (s.po_number and str(s.po_number).strip()) or 
+           (s.buyer_name and str(s.buyer_name).strip())
+    ]
+
+    for s in valid_sales_data:
         if s.invoice_no != current_invoice:
             sl_no += 1
             current_invoice = s.invoice_no

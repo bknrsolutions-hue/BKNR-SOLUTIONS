@@ -706,7 +706,7 @@ export default function RawMaterialPurchasing() {
                   <td className="text-right">{(row.dc_qty || 0).toFixed(2)}</td>
                   <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : row.received_qty).toFixed(2)}</td>
                   <td className="text-right">₹{row.rate_per_kg.toFixed(2)}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{(row.is_cancelled ? 0 : row.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{(row.is_cancelled ? 0 : (Number(row.amount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-left" style={{ fontSize: '10px' }}>{row.remarks}</td>
                   <td className="text-left" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
                     {row.email ? row.email.split('@')[0] : ''}

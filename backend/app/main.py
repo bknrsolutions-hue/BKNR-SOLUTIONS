@@ -492,6 +492,7 @@ from app.routers.export_documents import router as export_documents_router
 from app.routers.admin_feature_flags import router as feature_flags_router
 from app.routers.admin_maintenance import router as maintenance_router
 from app.routers.admin_deploy import router as deploy_router
+from app.routers.page_tokens import router as page_tokens_router
 
 #
 application.include_router(auth_router)
@@ -523,6 +524,7 @@ application.include_router(export_documents_router, prefix="/export_documents")
 application.include_router(feature_flags_router)
 application.include_router(maintenance_router)
 application.include_router(deploy_router)
+application.include_router(page_tokens_router)  # opaque page-token resolver
 
 
 # =====================================================

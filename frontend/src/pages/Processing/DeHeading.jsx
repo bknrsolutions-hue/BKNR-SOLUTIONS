@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
-import Chart from 'chart.js/auto';
+import { Chart, registerables } from 'chart.js';
+Chart.register(...registerables);
 
 export default function DeHeading() {
   const [date, setDate] = useState('');
@@ -570,7 +571,7 @@ export default function DeHeading() {
                                         <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
                                           <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>{i.species}</td>
                                           <td style={{ padding: '3px 0', textAlign: 'center', fontWeight: '700' }}>{i.batch} / {i.count}</td>
-                                          <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: '750', color: 'var(--corp-dash)' }}>{i.available_qty.toFixed(2)} KG</td>
+                                          <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: '750', color: 'var(--corp-dash)' }}>{(Number(i.available_qty) || 0).toFixed(2)} KG</td>
                                         </tr>
                                       ))}
                                     </tbody>
@@ -677,7 +678,7 @@ export default function DeHeading() {
                         <td className="text-right" style={{ fontWeight: '700' }}>{row.hlso_qty}</td>
                         <td className="text-center">{row.yield_percent}%</td>
                         <td className="text-left">{row.contractor}</td>
-                        <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>₹{row.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>₹{(Number(row.amount) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td className="text-center">
                           {!row.is_cancelled && (
                             <button 
@@ -700,7 +701,7 @@ export default function DeHeading() {
                       <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{subHoso.toFixed(2)}</td>
                       <td className="text-right" style={{ fontWeight: '800' }}>{subHlso.toFixed(2)}</td>
                       <td colSpan="2"></td>
-                      <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{subAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                      <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(Number(subAmt) || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                       <td></td>
                     </tr>
                   </React.Fragment>

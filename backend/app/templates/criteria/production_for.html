@@ -53,6 +53,58 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+/* Master table styling overrides to match React UI */
+.master-table-wrap {
+    background: var(--surface-panel) !important;
+    border-radius: 12px;
+    border: 1px solid var(--border-light) !important;
+    box-shadow: var(--shadow-soft);
+    overflow-x: auto;
+    width: 95%;
+    max-width: 1400px;
+    margin: 0 auto 40px;
+}
+.master-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+.master-th {
+    background: rgba(255,255,255,0.02) !important;
+    color: var(--text-secondary) !important;
+    padding: 10px 12px;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-light) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+[data-theme="light"] .master-th {
+    background: rgba(0,0,0,0.02) !important;
+}
+.master-td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light) !important;
+    font-size: 12px !important;
+    color: var(--text-primary) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.master-tr {
+    transition: background 0.2s;
+}
+.master-tr:hover {
+    background: var(--row-hover) !important;
+    cursor: pointer;
+}
+.master-tr.selected {
+    background: rgba(234, 88, 12, 0.08) !important;
+    border-left: 3px solid var(--corp-ops);
+}
 </style>
 </head>
 
@@ -124,7 +176,7 @@
     <input type="hidden" name="id" id="record_id">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE STRUCTURE</button>
+      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE</button>
       <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
     </div>
   </div>
@@ -138,7 +190,7 @@
     
     <div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Costing Configuration</button>
+            <button class="btn btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Costing</button>
             
             <button 
                 type="button" 
@@ -152,11 +204,11 @@
         <div class="menu-container" id="threeDotsMenu" style="display: none;">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Record</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Costing</div>
-            <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print Row</div>
-            <div onclick="exportAction('PDF')" class="menu-item"><i class="fa-solid fa-file-pdf"></i> Export PDF</div>
-            <div onclick="exportAction('Excel')" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete</div>
+            <div onclick="window.print()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
+            <div onclick="exportAction('PDF')" class="menu-item"><i class="fa-solid fa-file-pdf"></i> PDF</div>
+            <div onclick="exportAction('Excel')" class="menu-item"><i class="fa-solid fa-file-excel"></i> Excel</div>
           </div>
         </div>
     </div>
@@ -198,40 +250,40 @@
 </div>
 
 <!-- COMPACT FULL TABLE VIEW -->
-<div class="table-wrap">
-  <table id="dataTable">
+<div class="master-table-wrap">
+  <table class="master-table" id="dataTable">
     <thead>
       <tr>
-        <th style="width:60px;">ID</th>
-        <th>Production For</th>
-        <th>Apply From</th>
-        <th>Freezer Name</th>
-        <th>Repack ₹</th>
-        <th>MC/Day</th>
-        <th>Ice ₹</th>
-        <th>Grade ₹</th>
-        <th>Peel ₹</th>
-        <th>DH ₹</th>
-        <th>Status</th>
+        <th class="master-th" style="width:60px;">ID</th>
+        <th class="master-th">Production For</th>
+        <th class="master-th">Apply From</th>
+        <th class="master-th">Freezer Name</th>
+        <th class="master-th">Repack ₹</th>
+        <th class="master-th">MC/Day</th>
+        <th class="master-th">Ice ₹</th>
+        <th class="master-th">Grade ₹</th>
+        <th class="master-th">Peel ₹</th>
+        <th class="master-th">DH ₹</th>
+        <th class="master-th">Status</th>
       </tr>
     </thead>
     <tbody>
       {% for r in today_data %}
-      <tr data-id="{{ r.id }}" data-production="{{ r.production_for }}" data-apply="{{ r.apply_from }}" data-freezer="{{ r.freezer_name }}"
+      <tr class="master-tr" data-id="{{ r.id }}" data-production="{{ r.production_for }}" data-apply="{{ r.apply_from }}" data-freezer="{{ r.freezer_name }}"
           data-repack="{{ r.repacking_cost_per_kg }}" data-mc="{{ r.rate_per_mc_day }}" data-ice="{{ r.ice_rate_per_kg }}" data-grading="{{ r.grading_rate_per_kg }}"
           data-peeling="{{ r.peeling_rate_per_kg }}" data-deheading="{{ r.deheading_rate_per_kg }}" data-status="{{ r.status }}" data-free-days="{{ r.free_days }}"
           onclick="selectRowOrCard(this)">
-        <td>{{ r.id }}</td>
-        <td class="text-left" style="font-weight:700; color: var(--primary);">{{ r.production_for }}</td>
-        <td>{{ r.apply_from }}</td>
-        <td style="font-weight:600; color: var(--accent);">{{ r.freezer_name }}</td>
-        <td>{{ r.repacking_cost_per_kg }}</td>
-        <td>{{ r.rate_per_mc_day }}</td>
-        <td>{{ r.ice_rate_per_kg }}</td>
-        <td>{{ r.grading_rate_per_kg }}</td>
-        <td>{{ r.peeling_rate_per_kg }}</td>
-        <td>{{ r.deheading_rate_per_kg }}</td>
-        <td style="font-weight:800; color: {% if r.status == 'Active' %}var(--success){% else %}var(--danger){% endif %};">{{ r.status }}</td>
+        <td class="master-td">{{ r.id }}</td>
+        <td class="master-td text-left" style="font-weight:700; color: var(--primary);">{{ r.production_for }}</td>
+        <td class="master-td">{{ r.apply_from }}</td>
+        <td class="master-td" style="font-weight:600; color: var(--accent);">{{ r.freezer_name }}</td>
+        <td class="master-td">{{ r.repacking_cost_per_kg }}</td>
+        <td class="master-td">{{ r.rate_per_mc_day }}</td>
+        <td class="master-td">{{ r.ice_rate_per_kg }}</td>
+        <td class="master-td">{{ r.grading_rate_per_kg }}</td>
+        <td class="master-td">{{ r.peeling_rate_per_kg }}</td>
+        <td class="master-td">{{ r.deheading_rate_per_kg }}</td>
+        <td class="master-td" style="font-weight:800; color: {% if r.status == 'Active' %}var(--success){% else %}var(--danger){% endif %};">{{ r.status }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -325,7 +377,7 @@ function editSelected(){
   document.getElementById("repacking_cost_per_kg").value = d.repack;
   document.getElementById("rate_per_mc_day").value = d.mc;
   
-  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE STRUCTURE";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE";
   document.getElementById("formSection").style.display = "block";
   document.getElementById("toggleActionArea").style.display = "none";
   window.scrollTo({top:0, behavior:'smooth'});
@@ -359,7 +411,7 @@ function clearForm(){
   selectedElement = null;
   document.getElementById("costingForm").reset();
   document.getElementById("record_id").value = "";
-  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE STRUCTURE";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> SAVE";
   document.querySelectorAll(".data-card, tr.selected").forEach(r => r.classList.remove("selected"));
   document.getElementById("threeDotsMenu").style.display = "none";
   

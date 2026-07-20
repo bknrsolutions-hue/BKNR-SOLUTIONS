@@ -726,7 +726,7 @@ export default function Peeling() {
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>
-                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(row.is_cancelled ? 0 : row.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(row.is_cancelled ? 0 : (Number(row.amount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-center">
                     {!row.is_cancelled && (
                       <button 

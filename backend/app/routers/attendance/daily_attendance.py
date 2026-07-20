@@ -94,7 +94,7 @@ def calculate_duty_type_and_ot(working_hours: float) -> tuple[str, float]:
         return "DOUBLE", round(wh - 16, 2) if wh > 16 else 0.0
     if wh >= 8:
         return "SINGLE", round(wh - 8, 2) if wh > 8 else 0.0
-    if wh >= 4:
+    if wh > 0:
         return "HALF", 0.0
     return "ABSENT", 0.0
 

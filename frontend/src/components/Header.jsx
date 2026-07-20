@@ -236,59 +236,59 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
     {
       title: "Business Masters",
       items: [
-        { id: 'criteria_buyers', perm: 'buyers', icon: 'fa-users', label: 'Buyers', route: '/criteria/buyers' },
-        { id: 'criteria_buyer_agents', perm: 'buyer_agents', icon: 'fa-user-tie', label: 'Buyer Agents', route: '/criteria/buyer_agents' },
-        { id: 'criteria_suppliers', perm: 'suppliers', icon: 'fa-truck-field', label: 'Suppliers', route: '/criteria/suppliers' },
-        { id: 'criteria_vendors', perm: 'vendors', icon: 'fa-store', label: 'Vendors', route: '/criteria/vendors' },
-        { id: 'criteria_countries', perm: 'countries', icon: 'fa-globe', label: 'Countries', route: '/criteria/countries' },
-        { id: 'criteria_brands', perm: 'brands', icon: 'fa-building', label: 'Brands', route: '/criteria/brands' }
+        { id: 'criteria_buyers',         token: 'mst_byr', perm: 'buyers',          icon: 'fa-users',             label: 'Buyers',             route: '/criteria/buyers' },
+        { id: 'criteria_buyer_agents',   token: 'mst_bya', perm: 'buyer_agents',    icon: 'fa-user-tie',          label: 'Buyer Agents',       route: '/criteria/buyer_agents' },
+        { id: 'criteria_suppliers',      token: 'mst_sup', perm: 'suppliers',       icon: 'fa-truck-field',       label: 'Suppliers',          route: '/criteria/suppliers' },
+        { id: 'criteria_vendors',        token: 'mst_vnd', perm: 'vendors',         icon: 'fa-store',             label: 'Vendors',            route: '/criteria/vendors' },
+        { id: 'criteria_countries',      token: 'mst_cty', perm: 'countries',       icon: 'fa-globe',             label: 'Countries',          route: '/criteria/countries' },
+        { id: 'criteria_brands',         token: 'mst_brd', perm: 'brands',          icon: 'fa-building',          label: 'Brands',             route: '/criteria/brands' }
       ]
     },
     {
       title: "Production Masters",
       items: [
-        { id: 'criteria_species', perm: 'species', icon: 'fa-fish', label: 'Species', route: '/criteria/species' },
-        { id: 'criteria_varieties', perm: 'varieties', icon: 'fa-seedling', label: 'Varieties', route: '/criteria/varieties' },
-        { id: 'criteria_grades', perm: 'grades', icon: 'fa-medal', label: 'Grades', route: '/criteria/grades' },
-        { id: 'criteria_freezers', perm: 'freezers', icon: 'fa-snowflake', label: 'Freezers', route: '/criteria/freezers' },
-        { id: 'criteria_glazes', perm: 'glazes', icon: 'fa-igloo', label: 'Glazes', route: '/criteria/glazes' },
-        { id: 'criteria_packing_styles', perm: 'packing_styles', icon: 'fa-box', label: 'Packing Styles', route: '/criteria/packing_styles' },
-        { id: 'criteria_contractors', perm: 'contractors', icon: 'fa-hard-hat', label: 'Contractors', route: '/criteria/contractors' },
-        { id: 'criteria_peeling_at', perm: 'peeling_at', icon: 'fa-map-pin', label: 'Peeling At', route: '/criteria/peeling_at' },
-        { id: 'criteria_peeling_rates', perm: 'peeling_rates', icon: 'fa-money-bill', label: 'Peeling Rates', route: '/criteria/peeling_rates' },
-        { id: 'criteria_production_at', perm: 'production_at', icon: 'fa-industry', label: 'Production At', route: '/criteria/production_at' },
-        { id: 'criteria_production_for', perm: 'production_for', icon: 'fa-building-flag', label: 'Production For', route: '/criteria/production_for' },
-        { id: 'criteria_production_types', perm: 'production_types', icon: 'fa-tags', label: 'Production Types', route: '/criteria/production_types' },
-        { id: 'criteria_chemicals', perm: 'chemicals', icon: 'fa-flask', label: 'Chemicals', route: '/criteria/chemicals' },
-        { id: 'criteria_purposes', perm: 'purposes', icon: 'fa-bullseye', label: 'Purposes', route: '/criteria/purposes' },
-        { id: 'criteria_grade_to_hoso', perm: 'grade_to_hoso', icon: 'fa-exchange-alt', label: 'Grade to HOSO', route: '/criteria/grade_to_hoso' },
-        { id: 'criteria_hoso_hlso', perm: 'hoso_hlso', icon: 'fa-ruler-combined', label: 'HOSO & HLSO', route: '/criteria/hoso_hlso' }
+        { id: 'criteria_species',          token: 'mst_spc',      perm: 'species',          icon: 'fa-fish',             label: 'Species',           route: '/criteria/species' },
+        { id: 'criteria_varieties',        token: 'mst_var',      perm: 'varieties',        icon: 'fa-seedling',         label: 'Varieties',         route: '/criteria/varieties' },
+        { id: 'criteria_grades',           token: 'mst_grd',      perm: 'grades',           icon: 'fa-medal',            label: 'Grades',            route: '/criteria/grades' },
+        { id: 'criteria_freezers',         token: 'mst_frz',      perm: 'freezers',         icon: 'fa-snowflake',        label: 'Freezers',          route: '/criteria/freezers' },
+        { id: 'criteria_glazes',           token: 'mst_glz',      perm: 'glazes',           icon: 'fa-igloo',            label: 'Glazes',            route: '/criteria/glazes' },
+        { id: 'criteria_packing_styles',   token: 'mst_pks',      perm: 'packing_styles',   icon: 'fa-box',              label: 'Packing Styles',    route: '/criteria/packing_styles' },
+        { id: 'criteria_contractors',      token: 'mst_con',      perm: 'contractors',      icon: 'fa-hard-hat',         label: 'Contractors',       route: '/criteria/contractors' },
+        { id: 'criteria_peeling_at',       token: 'mst_pat',      perm: 'peeling_at',       icon: 'fa-map-pin',          label: 'Peeling At',        route: '/criteria/peeling_at' },
+        { id: 'criteria_peeling_rates',    token: 'mst_prt',      perm: 'peeling_rates',    icon: 'fa-money-bill',       label: 'Peeling Rates',     route: '/criteria/peeling_rates' },
+        { id: 'criteria_production_at',    token: 'mst_pra',      perm: 'production_at',    icon: 'fa-industry',         label: 'Production At',     route: '/criteria/production_at' },
+        { id: 'criteria_production_for',   token: 'pf_8Kx92LmQ',  perm: 'production_for',   icon: 'fa-building-flag',    label: 'Production For',    route: '/criteria/production_for' },
+        { id: 'criteria_production_types', token: 'mst_prt2',     perm: 'production_types', icon: 'fa-tags',             label: 'Production Types',  route: '/criteria/production_types' },
+        { id: 'criteria_chemicals',        token: 'mst_chem',     perm: 'chemicals',        icon: 'fa-flask',            label: 'Chemicals',         route: '/criteria/chemicals' },
+        { id: 'criteria_purposes',         token: 'mst_purp',     perm: 'purposes',         icon: 'fa-bullseye',         label: 'Purposes',          route: '/criteria/purposes' },
+        { id: 'criteria_grade_to_hoso',    token: 'mst_gth',      perm: 'grade_to_hoso',    icon: 'fa-exchange-alt',     label: 'Grade to HOSO',     route: '/criteria/grade_to_hoso' },
+        { id: 'criteria_hoso_hlso',        token: 'mst_hh',       perm: 'hoso_hlso',        icon: 'fa-ruler-combined',   label: 'HOSO & HLSO',       route: '/criteria/hoso_hlso' }
       ]
     },
     {
       title: "Inv & Fin Masters",
       items: [
-        { id: 'criteria_cold_storage', perm: 'cold_storage', icon: 'fa-igloo', label: 'Cold Storage Master', route: '/inventory/cold_storage' },
-        { id: 'criteria_coldstore_locations', perm: 'coldstore_locations', icon: 'fa-map-location-dot', label: 'Coldstore Locations', route: '/criteria/coldstore_locations' },
-        { id: 'criteria_vehicle_numbers', perm: 'vehicle_numbers', icon: 'fa-truck', label: 'Vehicle Numbers', route: '/criteria/vehicle_numbers' },
-        { id: 'criteria_hsn_codes', perm: 'hsn_codes', icon: 'fa-barcode', label: 'HSN Codes', route: '/criteria/hsn_codes' },
-        { id: 'criteria_general_store_items', perm: 'general_store_items', icon: 'fa-cubes', label: 'General Store Items', route: '/general_stock/items' }
+        { id: 'criteria_cold_storage',        token: 'mst_cs',  perm: 'cold_storage',        icon: 'fa-igloo',            label: 'Cold Storage Master',    route: '/inventory/cold_storage' },
+        { id: 'criteria_coldstore_locations', token: 'mst_csl', perm: 'coldstore_locations', icon: 'fa-map-location-dot', label: 'Coldstore Locations',    route: '/criteria/coldstore_locations' },
+        { id: 'criteria_vehicle_numbers',     token: 'mst_veh', perm: 'vehicle_numbers',     icon: 'fa-truck',            label: 'Vehicle Numbers',        route: '/criteria/vehicle_numbers' },
+        { id: 'criteria_hsn_codes',           token: 'mst_hsn', perm: 'hsn_codes',           icon: 'fa-barcode',          label: 'HSN Codes',              route: '/criteria/hsn_codes' },
+        { id: 'criteria_general_store_items', token: 'mst_gsi', perm: 'general_store_items', icon: 'fa-cubes',            label: 'General Store Items',    route: '/general_stock/items' }
       ]
     },
     {
       title: "Admin & Support",
       items: [
-        { id: 'admin_add_user', perm: 'add_user', icon: 'fa-user-gear', label: 'User Configuration', route: '/admin/add_user' },
-        { id: 'admin_shifts', perm: 'shifts', icon: 'fa-business-time', label: 'Shifts', route: '/attendance/shifts' },
-        { id: 'admin_data_management', perm: 'data_management', icon: 'fa-database', label: 'Data Management', route: '/data-management' },
+        { id: 'admin_add_user',          token: 'adm_usr',  perm: 'add_user',          icon: 'fa-user-gear',          label: 'User Configuration',    route: '/admin/add_user' },
+        { id: 'admin_shifts',            token: 'adm_shf',  perm: 'shifts',            icon: 'fa-business-time',      label: 'Shifts',                route: '/attendance/shifts' },
+        { id: 'admin_data_management',   token: 'adm_dm',   perm: 'data_management',   icon: 'fa-database',           label: 'Data Management',       route: '/data-management' },
         ...(isDefaultSuperAdmin ? [
-          { id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' },
-          { id: 'admin_system_architecture', perm: 'system_architecture', icon: 'fa-sitemap', label: 'System Architecture', route: '/admin/system_architecture' }
+          { id: 'admin_system_settings',      token: 'adm_sys', perm: 'system_settings',      icon: 'fa-sliders', label: 'System & Pipeline',    route: '/admin/system_settings' },
+          { id: 'admin_system_architecture',  token: 'adm_arc', perm: 'system_architecture',  icon: 'fa-sitemap', label: 'System Architecture',  route: '/admin/system_architecture' }
         ] : []),
-        { id: 'admin_raise_ticket', perm: 'raise_ticket', icon: 'fa-support-agent', label: 'My Complaints', route: '/support/my_tickets' },
-        { id: 'admin_helpdesk', perm: 'admin_helpdesk', icon: 'fa-ticket', label: 'Helpdesk', route: '/admin/all_tickets' },
-        { id: 'admin_manage_support', perm: 'manage_support', icon: 'fa-users-gear', label: 'Support Team', route: '/admin/support_team' },
-        { id: 'admin_user_activity', perm: 'user_activity', icon: 'fa-clock-rotate-left', label: 'User Activity Logs', route: '/admin/activities' }
+        { id: 'admin_raise_ticket',      token: 'sup_tkt',  perm: 'raise_ticket',      icon: 'fa-support-agent',      label: 'My Complaints',         route: '/support/my_tickets' },
+        { id: 'admin_helpdesk',          token: 'sup_hd',   perm: 'admin_helpdesk',    icon: 'fa-ticket',             label: 'Helpdesk',              route: '/admin/all_tickets' },
+        { id: 'admin_manage_support',    token: 'sup_team', perm: 'manage_support',    icon: 'fa-users-gear',         label: 'Support Team',          route: '/admin/support_team' },
+        { id: 'admin_user_activity',     token: 'sup_act',  perm: 'user_activity',     icon: 'fa-clock-rotate-left',  label: 'User Activity Logs',    route: '/admin/activities' }
       ]
     }
   ];
@@ -380,7 +380,8 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
       openSupportPage(item.id);
       return;
     }
-    setActivePage(item.id, item.route);
+    // Use token for clean URL; fallback to id for any unlisted items
+    setActivePage(item.token || item.id, item.route);
     setDropdownOpen(false);
     setQaPanelOpen(false);
   };

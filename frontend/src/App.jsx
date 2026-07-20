@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { TOKEN_MAP, PAGE_ID_MAP } from './utils/pageTokens';
 import './App.css';
 import './SapHorizon.css';
 import './ErpTables.css';
@@ -343,10 +344,24 @@ export default function App() {
   const floatingSupportRef = useRef(null);
   const floatingSupportDragged = useRef(false);
 
-  const activePage = location.pathname.startsWith('/page/')
-    ? decodeURIComponent(location.pathname.slice('/page/'.length))
+  // ── Opaque token routing (/p/<token>) with legacy /page/<id> fallback ──────
+  // Resolves the current URL to activePage + activeRoute without an API call.
+  // Security for backend data remains in the existing FastAPI AuthMiddleware.
+  const _rawPath = location.pathname;
+  const _isTokenRoute  = _rawPath.startsWith('/p/');
+  const _isLegacyRoute = _rawPath.startsWith('/page/');
+  const _currentToken  = _isTokenRoute  ? decodeURIComponent(_rawPath.slice('/p/'.length))    : null;
+  const _tokenEntry    = _currentToken  ? (TOKEN_MAP[_currentToken] ?? null)                   : null;
+
+  const activePage = _isTokenRoute
+    ? (_tokenEntry?.page_id || 'dashboard_processing')
+    : _isLegacyRoute
+    ? decodeURIComponent(_rawPath.slice('/page/'.length))
     : 'dashboard_processing';
-  const activeRoute = new URLSearchParams(location.search).get('backend');
+
+  const activeRoute = _isTokenRoute
+    ? (_tokenEntry?.backend ?? null)
+    : new URLSearchParams(location.search).get('backend');
   const isEmbedded = new URLSearchParams(location.search).get('embedded') === 'true';
   const compactFormModule = COMPACT_PROCESSING_FORM_PAGES.has(activePage)
     ? 'processing'
@@ -357,18 +372,31 @@ export default function App() {
         : '';
   const mainContentClass = `main-content${compactFormModule ? ` erp-compact-module-forms erp-${compactFormModule}-forms` : ''}`;
 
-  const setActivePage = useCallback((id, route) => {
-    if (id === 'admin_raise_ticket' || id === 'admin_helpdesk') {
+  const setActivePage = useCallback((idOrToken, legacyRoute) => {
+    // Support drawer pages open in a floating panel — not a full navigation.
+    if (idOrToken === 'admin_raise_ticket' || idOrToken === 'admin_helpdesk') {
       setSupportDrawer({
-        activePage: id,
-        activeRoute: route || (id === 'admin_helpdesk' ? '/admin/all_tickets' : '/support/my_tickets'),
+        activePage: idOrToken,
+        activeRoute: legacyRoute || (idOrToken === 'admin_helpdesk' ? '/admin/all_tickets' : '/support/my_tickets'),
       });
       setSupportDrawerPosition(null);
       setSidebarOpen(false);
       return;
     }
-    const search = route ? `?backend=${encodeURIComponent(route)}` : '';
-    navigate(`/page/${encodeURIComponent(id)}${search}`);
+    // 1. Direct token passed (e.g. from Sidebar item.token)
+    if (TOKEN_MAP[idOrToken]) {
+      navigate(`/p/${encodeURIComponent(idOrToken)}`);
+      return;
+    }
+    // 2. page_id passed — look up its token for a clean URL
+    const tok = PAGE_ID_MAP[idOrToken];
+    if (tok) {
+      navigate(`/p/${encodeURIComponent(tok)}`);
+      return;
+    }
+    // 3. Legacy fallback (unknown page_id / internal component calls)
+    const search = legacyRoute ? `?backend=${encodeURIComponent(legacyRoute)}` : '';
+    navigate(`/page/${encodeURIComponent(idOrToken)}${search}`);
   }, [navigate]);
 
   useEffect(() => {
@@ -701,7 +729,7 @@ export default function App() {
       );
     }
 
-    // Direct React Criteria / Masters pages
+    // Direct React Criteria / Masters / Operations pages
     if (CRITERIA_COMPONENTS[activePage]) {
       const Component = CRITERIA_COMPONENTS[activePage];
       return (
@@ -710,6 +738,7 @@ export default function App() {
           user={user}
           theme={theme}
           setActivePage={setActivePage}
+          activeRoute={activeRoute}
         />
       );
     }

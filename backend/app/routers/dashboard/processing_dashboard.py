@@ -8,7 +8,7 @@ from sqlalchemy import and_, distinct, extract, func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.attendance import DailyAttendance, EmployeeRegistration
+from app.database.models.attendance import DailyAttendance, EmployeeRegistration, Shift
 from app.database.models.processing import (
     DeHeading,
     GateEntry,
@@ -126,7 +126,7 @@ def processing_dashboard(
         elif hasattr(model, "location"):
             loc_field = model.location
 
-        if global_location and loc_field is not None:
+        if global_location and global_location.upper() != "ALL" and loc_field is not None:
             g_loc_clean = global_location.strip().upper()
             if g_loc_clean in ["FLOOR", "OTHER FLOOR"]:
                 query = query.filter(
@@ -139,8 +139,6 @@ def processing_dashboard(
                 )
             else:
                 query = query.filter(func.upper(func.trim(loc_field)) == g_loc_clean)
-        elif user_allowed_locations and loc_field is not None:
-            query = query.filter(func.upper(func.trim(loc_field)).in_(user_allowed_locations))
 
         return query
 
@@ -224,17 +222,25 @@ def processing_dashboard(
         active_employee_on(EmployeeRegistration, to_date),
     )
 
-    # Apply strict location isolation to both the employee population and the
-    # selected-date attendance rows so totals cannot leak across plants.
+    # Apply location isolation while ensuring employees with active punches at the location are included
     g_loc_clean = global_location.strip().upper() if global_location else None
+
+    active_punched_emp_ids = [
+        r[0] for r in db.query(DailyAttendance.employee_id).filter(
+            DailyAttendance.company_id == company_id,
+            or_(
+                DailyAttendance.duty_date == to_date,
+                DailyAttendance.status != "CLOSED"
+            )
+        ).all()
+    ]
 
     if g_loc_clean and g_loc_clean != "ALL":
         employee_q = employee_q.filter(
-            func.upper(func.trim(EmployeeRegistration.production_at)) == g_loc_clean
-        )
-    elif user_allowed_locations:
-        employee_q = employee_q.filter(
-            func.upper(func.trim(EmployeeRegistration.production_at)).in_(user_allowed_locations)
+            or_(
+                func.upper(func.trim(EmployeeRegistration.production_at)) == g_loc_clean,
+                EmployeeRegistration.employee_id.in_(active_punched_emp_ids)
+            )
         )
 
     employee_rows = employee_q.order_by(
@@ -246,17 +252,20 @@ def processing_dashboard(
 
     att_rows_q = db.query(DailyAttendance).filter(
         DailyAttendance.company_id == company_id,
-        DailyAttendance.duty_date == to_date,
         DailyAttendance.employee_id.in_(employee_ids),
+        or_(
+            DailyAttendance.duty_date == to_date,
+            DailyAttendance.status != "CLOSED"
+        )
     )
 
     if g_loc_clean and g_loc_clean != "ALL":
         att_rows_q = att_rows_q.filter(
-            func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean
-        )
-    elif user_allowed_locations:
-        att_rows_q = att_rows_q.filter(
-            func.upper(func.trim(DailyAttendance.production_at)).in_(user_allowed_locations)
+            or_(
+                func.upper(func.trim(DailyAttendance.production_at)) == g_loc_clean,
+                DailyAttendance.production_at == None,
+                func.trim(DailyAttendance.production_at) == ""
+            )
         )
 
     # Keep one selected-date record per employee if legacy data contains
@@ -295,6 +304,147 @@ def processing_dashboard(
             m[key][attendance_key] += 1
 
     # =====================================================
+    # 5.5 SHIFT-WISE KPI ENGINE & DOUBLE DUTIES / OT
+    # =====================================================
+    from datetime import timedelta, time
+    
+    # 1. Fetch active shifts for this tenant
+    db_shifts = db.query(Shift).filter(
+        Shift.company_id == company_id,
+        Shift.is_active == True
+    )
+    if global_location and global_location.upper() != "ALL":
+        db_shifts = db_shifts.filter(func.upper(func.trim(Shift.production_at)) == global_location.strip().upper())
+    shifts_list = db_shifts.all()
+    
+    # Fallback to unique shifts from today/yesterday or default if no shifts registered
+    if not shifts_list:
+        class VirtualShift:
+            def __init__(self, name):
+                self.shift_name = name
+                self.start_time = None
+                self.end_time = None
+                self.is_night_shift = False
+        shifts_list = [VirtualShift("GENERAL"), VirtualShift("SHIFT A"), VirtualShift("SHIFT B"), VirtualShift("SHIFT C")]
+        
+    yesterday_date = to_date - timedelta(days=1)
+    shift_kpis = []
+    current_time_dt = ist_now()
+    
+    for s in shifts_list:
+        s_name = s.shift_name
+        
+        # Today's present/active employees in this shift
+        today_att_q = db.query(DailyAttendance).filter(
+            DailyAttendance.company_id == company_id,
+            DailyAttendance.shift_name == s_name,
+            or_(
+                DailyAttendance.duty_date == to_date,
+                DailyAttendance.status != "CLOSED"
+            )
+        )
+        if global_location and global_location.upper() != "ALL":
+            today_att_q = today_att_q.filter(
+                or_(
+                    func.upper(func.trim(DailyAttendance.production_at)) == global_location.strip().upper(),
+                    DailyAttendance.production_at == None,
+                    func.trim(DailyAttendance.production_at) == ""
+                )
+            )
+        today_rows = today_att_q.all()
+        
+        # Yesterday's present list (Expectations list)
+        yesterday_att_q = db.query(DailyAttendance).filter(
+            DailyAttendance.company_id == company_id,
+            DailyAttendance.shift_name == s_name,
+            DailyAttendance.duty_date == yesterday_date
+        )
+        if global_location and global_location.upper() != "ALL":
+            yesterday_att_q = yesterday_att_q.filter(
+                or_(
+                    func.upper(func.trim(DailyAttendance.production_at)) == global_location.strip().upper(),
+                    DailyAttendance.production_at == None,
+                    func.trim(DailyAttendance.production_at) == ""
+                )
+            )
+        yesterday_rows = yesterday_att_q.all()
+        
+        present_count = len(today_rows)
+        yesterday_count = len(yesterday_rows)
+        
+        # Expected = yesterday's presence count
+        expected_count = yesterday_count
+                
+        # Check if shift time is done
+        start = getattr(s, "start_time", None)
+        end = getattr(s, "end_time", None)
+        if not start or not end:
+            defaults = {
+                "SHIFT A": (time(6, 0), time(14, 0)),
+                "SHIFT B": (time(14, 0), time(22, 0)),
+                "SHIFT C": (time(22, 0), time(6, 0)),
+                "GENERAL": (time(9, 0), time(17, 30))
+            }
+            start, end = defaults.get(s_name.upper(), (time(9, 0), time(17, 0)))
+            
+        now_time = current_time_dt.time()
+        is_night = getattr(s, "is_night_shift", False) or (end < start)
+        shift_done = False
+        if is_night:
+            shift_done = now_time >= end and now_time < start
+        else:
+            shift_done = now_time >= end
+            
+        # If shift is done, clear/finalize active count based on actual In & Out punches
+        if shift_done:
+            # Shift is done, present is actual punches, absent is expected - present
+            absent_count = max(0, expected_count - present_count)
+        else:
+            # Shift is active/running
+            absent_count = max(0, expected_count - present_count)
+            
+        inside_count = sum(1 for d in today_rows if d.status == "OPEN")
+        break_count = sum(1 for d in today_rows if d.status == "AWAY")
+        out_count = sum(1 for d in today_rows if d.status == "CLOSED")
+        
+        diff = present_count - yesterday_count
+        diff_str = f"+{diff}" if diff > 0 else str(diff)
+        
+        shift_kpis.append({
+            "name": s_name,
+            "expected": expected_count,
+            "present": present_count,
+            "absent": absent_count,
+            "inside": inside_count,
+            "break": break_count,
+            "out": out_count,
+            "diff": diff_str
+        })
+        
+    # Calculate double duties & OT count
+    double_ot_q = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        or_(
+            DailyAttendance.duty_date == to_date,
+            DailyAttendance.status != "CLOSED"
+        ),
+        or_(
+            DailyAttendance.duty_type == "DOUBLE",
+            DailyAttendance.calculated_ot_hours > 0,
+            DailyAttendance.approved_ot_hours > 0
+        )
+    )
+    if global_location and global_location.upper() != "ALL":
+        double_ot_q = double_ot_q.filter(
+            or_(
+                func.upper(func.trim(DailyAttendance.production_at)) == global_location.strip().upper(),
+                DailyAttendance.production_at == None,
+                func.trim(DailyAttendance.production_at) == ""
+            )
+        )
+    double_ot_val = double_ot_q.count()
+
+    # =====================================================
     # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
     # =====================================================
     floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
@@ -327,6 +477,8 @@ def processing_dashboard(
             "peeling_hourly_data": peeling_hourly,
             "prod_hourly_data": prod_hourly,
             "att_stats": att_stats,
+            "double_ot_val": double_ot_val,
+            "shift_kpis": shift_kpis,
             "dept_summary": dept_map,
             "desg_summary": desg_map,
             "from_date": str(from_date),
@@ -358,6 +510,8 @@ def processing_dashboard(
             "peeling_hourly_data": peeling_hourly,
             "prod_hourly_data": prod_hourly,
             "att_stats": att_stats,
+            "double_ot_val": double_ot_val,
+            "shift_kpis": shift_kpis,
             "dept_summary": dept_map,
             "desg_summary": desg_map,
             "from_date": from_date,

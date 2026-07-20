@@ -178,21 +178,30 @@
         /* ==========================================================
            🌟 ATTENDANCE RESPONSIVE FIT
         ========================================================== */
-        .attendance-viewport { overflow: visible; padding-bottom: 0; width: 100%; }
-        .attendance-stats {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
+        .attendance-viewport {
+            overflow-x: auto;
+            scrollbar-width: none;
+            margin-bottom: 20px;
+            padding: 6px 0;
             width: 100%;
         }
-        @media(min-width: 768px) { .attendance-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; } }
-        @media(min-width: 1200px) { .attendance-stats { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; } }
-        
-        .att-scroll-card { width: auto; min-width: 0; flex-shrink: 1; cursor: default; }
+        .attendance-viewport::-webkit-scrollbar {
+            display: none;
+        }
+        .attendance-stats {
+            display: flex;
+            gap: 12px;
+            width: max-content;
+        }
+        .att-scroll-card {
+            width: 180px;
+            flex-shrink: 0;
+            cursor: default;
+        }
         .att-scroll-card .kpi-title { font-size: 9px; line-height: 1.2; }
         .att-scroll-card .kpi-value { font-size: clamp(16px, 4vw, 22px); }
         @media(max-width: 520px) {
-            .att-scroll-card { padding: 14px 10px; gap: 8px; }
+            .att-scroll-card { width: 155px; padding: 14px 10px; gap: 8px; }
             .att-scroll-card .kpi-icon { width: 28px; height: 28px; font-size: 12px; }
         }
 
@@ -468,18 +477,25 @@
                 <div class="kpi-header"><span class="kpi-title">On Break</span><div class="kpi-icon"><i class="fa-solid fa-mug-hot"></i></div></div>
                 <div class="kpi-value" id="att-away-val">{{ att_stats.away }}</div>
             </div>
-            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--text-secondary);">
-                <div class="kpi-header"><span class="kpi-title">Half Day</span><div class="kpi-icon"><i class="fa-solid fa-user-clock"></i></div></div>
-                <div class="kpi-value" id="att-half-val">{{ att_stats.half }}</div>
+            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-danger);">
+                <div class="kpi-header"><span class="kpi-title">Double Duties & OT</span><div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div></div>
+                <div class="kpi-value" id="att-double-ot-val">{{ double_ot_val }}</div>
             </div>
-            <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-primary);">
-                <div class="kpi-header"><span class="kpi-title">Single Shift Workers</span><div class="kpi-icon"><i class="fa-solid fa-user-tie"></i></div></div>
-                <div class="kpi-value" id="att-single-val">{{ att_stats.single }}</div>
-            </div>
+            {% for sk in shift_kpis %}
             <div class="kpi-card att-scroll-card" style="--kpi-color: var(--corp-info);">
-                <div class="kpi-header"><span class="kpi-title">Double Shift Workers</span><div class="kpi-icon"><i class="fa-solid fa-user-plus"></i></div></div>
-                <div class="kpi-value" id="att-double-val">{{ att_stats.double }}</div>
+                <div class="kpi-header">
+                    <span class="kpi-title" style="font-weight: 800; font-size: 10px;">{{ sk.name }}</span>
+                    <div class="kpi-icon"><i class="fa-solid fa-clock"></i></div>
+                </div>
+                <div class="kpi-value">
+                    {{ sk.present }}<small style="color:var(--text-secondary); font-size: 11px;">/{{ sk.expected }}</small>
+                </div>
+                <div style="font-size: 9px; font-weight: 700; color: var(--text-secondary); margin-top: 2px; display: flex; flex-direction: column; gap: 2px;">
+                    <div>Inside: <strong style="color:var(--corp-success);">{{ sk.inside }}</strong> · Break: <strong style="color:var(--corp-warning);">{{ sk.break }}</strong></div>
+                    <div>Absent: <strong style="color:var(--corp-danger);">{{ sk.absent }}</strong> · Vs Yesterday: <strong style="color: {% if sk.diff.startswith('+') %}var(--corp-success){% elif sk.diff.startswith('-') %}var(--corp-danger){% else %}var(--text-tertiary){% endif %};">{{ sk.diff }}</strong></div>
+                </div>
             </div>
+            {% endfor %}
         </div>
     </div>
 

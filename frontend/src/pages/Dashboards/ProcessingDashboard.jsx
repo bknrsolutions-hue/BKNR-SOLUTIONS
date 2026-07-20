@@ -570,33 +570,31 @@ export default function ProcessingDashboard({ theme }) {
 
             <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-red">
               <div style={kpiMetaStyle}>
-                <div style={kpiLabelStyle}>Half Day</div>
-                <div style={kpiValueStyle}>{data?.att_stats?.half ?? 0}</div>
+                <div style={kpiLabelStyle}>Double Duties & OT</div>
+                <div style={kpiValueStyle}>{data?.double_ot_val ?? 0}</div>
               </div>
               <div style={{ ...kpiIconWrapperStyle, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-                <i className="fa-solid fa-user-clock"></i>
-              </div>
-            </div>
-
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-blue">
-              <div style={kpiMetaStyle}>
-                <div style={kpiLabelStyle}>Single Shift Workers</div>
-                <div style={kpiValueStyle}>{data?.att_stats?.single ?? 0}</div>
-              </div>
-              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
-                <i className="fa-solid fa-user-tie"></i>
-              </div>
-            </div>
-
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-purple">
-              <div style={kpiMetaStyle}>
-                <div style={kpiLabelStyle}>Double Shift Workers</div>
-                <div style={kpiValueStyle}>{data?.att_stats?.double ?? 0}</div>
-              </div>
-              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
                 <i className="fa-solid fa-user-plus"></i>
               </div>
             </div>
+
+            {data?.shift_kpis?.map((sk, idx) => (
+              <div key={idx} style={{ ...attendanceCardStyle, width: '200px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }} className="card erp-inline-kpi-card kpi-blue">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={kpiLabelStyle}>{sk.name}</div>
+                  <div style={{ ...kpiIconWrapperStyle, width: '28px', height: '28px', fontSize: '13px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>
+                    <i className="fa-solid fa-clock"></i>
+                  </div>
+                </div>
+                <div style={{ ...kpiValueStyle, fontSize: '20px', marginTop: 0 }}>
+                  {sk.present}<span style={{ fontSize: '11px', color: 'var(--text-secondary)', marginLeft: '2px' }}>/{sk.expected}</span>
+                </div>
+                <div style={{ fontSize: '9px', fontWeight: '700', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                  <div>Inside: <strong style={{ color: '#10b981' }}>{sk.inside}</strong> · Break: <strong style={{ color: '#ea580c' }}>{sk.break}</strong></div>
+                  <div>Absent: <strong style={{ color: '#ef4444' }}>{sk.absent}</strong> · Vs Yesterday: <strong style={{ color: sk.diff.startsWith('+') ? '#10b981' : sk.diff.startsWith('-') ? '#ef4444' : '#64748b' }}>{sk.diff}</strong></div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -163,10 +163,10 @@
 .cold-storage-report > .table-responsive .bknr-table td,
 .cold-storage-table th,
 .cold-storage-table td {
-  height: 30px;
-  padding: 5px 6px !important;
+  height: 32px;
+  padding: 6px 8px !important;
   overflow: hidden;
-  font-size: 9px !important;
+  font-size: 11px !important;
   text-align: center;
   text-overflow: ellipsis;
   vertical-align: middle;
@@ -178,13 +178,13 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  height: 33px;
+  height: 34px;
   color: var(--text-primary);
   background: var(--surface-secondary, #f8fafc) !important;
   border-bottom: 2px solid var(--border-color, #dbe2ea);
-  font-size: 8.5px !important;
+  font-size: 10px !important;
   font-weight: 800;
-  letter-spacing: .25px;
+  letter-spacing: .3px;
   text-transform: uppercase;
 }
 
@@ -196,15 +196,19 @@
 .cold-summary-table th:nth-child(9), .cold-summary-table th:nth-child(10) { width: 110px; }
 .cold-summary-table th:nth-child(11), .cold-summary-table th:nth-child(12) { width: 130px; }
 
+.cold-storage-report > .table-responsive .bknr-table tfoot td,
+.cold-storage-report > .table-responsive .cold-summary-table tfoot td,
+.cold-storage-table tfoot td,
 .cold-summary-table tfoot td {
   position: sticky;
   bottom: 0;
-  z-index: 2;
-  height: 34px;
-  color: var(--text-primary);
+  z-index: 5;
+  height: 40px !important;
+  color: var(--text-primary) !important;
   background: var(--surface-secondary, #f8fafc) !important;
-  border-top: 2px solid var(--border-color, #dbe2ea);
-  font-weight: 850;
+  border-top: 2.5px solid var(--accent, #2563eb) !important;
+  font-weight: 900 !important;
+  font-size: 13px !important;
 }
 
 .cold-storage-report .text-right {

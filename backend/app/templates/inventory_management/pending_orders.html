@@ -192,7 +192,7 @@ tr.selected-row td { background: var(--processing-bg) !important; }
 <body class="erp-pending-orders">
 
 <div class="header-dash">
-  <div class="header-titles"><h2><i class="fa-solid fa-layer-group me-2"></i>Pending Orders Engine Ledger</h2></div>
+  <div class="header-titles"><h2><i class="fa-solid fa-layer-group me-2"></i>Pending Orders</h2></div>
   <div class="grand-total" id="gt_display">TOTAL: 0 MC</div>
 </div>
 
@@ -211,10 +211,10 @@ tr.selected-row td { background: var(--processing-bg) !important; }
             <button class="menu-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-vertical"></i></button>
             <div id="dropdownMenu">
                 <div class="menu-item" onclick="editPO()"><i class="fa-solid fa-pen-to-square" style="color:var(--text-sub)"></i> Modify PO</div>
-                <div class="menu-item" onclick="deletePO()" style="color:var(--danger)"><i class="fa-solid fa-ban"></i> Cancel PO</div>
+                <div class="menu-item" onclick="deletePO()" style="color:var(--danger)"><i class="fa-solid fa-ban"></i> Cancel Order</div>
             </div>
         </div>
-        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ORDER ENTRY</button>
+        <button class="btn-add" onclick="openModal()"><i class="fa-solid fa-plus"></i> NEW ORDER (PO)</button>
     </div>
 </div>
 
@@ -333,8 +333,8 @@ tr.selected-row td { background: var(--processing-bg) !important; }
 </form>
 
 <div class="po-tabs">
-  <button type="button" class="po-tab active" onclick="switchPoTab('pendingTab', this)">Pending / Processing</button>
-  <button type="button" class="po-tab" onclick="switchPoTab('completedTab', this)">Completed Dispatch</button>
+  <button type="button" class="po-tab active" onclick="switchPoTab('pendingTab', this)">Pending Orders</button>
+  <button type="button" class="po-tab" onclick="switchPoTab('completedTab', this)">Completed Dispatches</button>
 </div>
 
 <div id="pendingTab" class="tab-panel active">
@@ -362,7 +362,7 @@ tr.selected-row td { background: var(--processing-bg) !important; }
           <th class="w-mc">M.C Box</th>
           <th class="w-pr">Price</th>
           <th class="w-ex">Exch Rate</th>
-          <th class="w-wf">Workflow Architecture</th>
+          <th class="w-wf">Status</th>
         </tr>
       </thead>
       <tbody>
@@ -396,8 +396,8 @@ tr.selected-row td { background: var(--processing-bg) !important; }
               <td>{{ r.no_of_pieces }}</td>
               <td class="v-mc fw-bold">{{ r.no_of_mc }}</td>
               <td class="v-price text-success fw-bold">${{ r.selling_price }}</td>
-              <td class="v-exch" style="color:var(--primary); font-weight:700;">₹{{ r.exchange_rate }}</td>
-              <td onclick="event.stopPropagation();">
+              <td class="m-exch v-exch" style="color:var(--primary); font-weight:700;">₹{{ r.exchange_rate }}</td>
+              <td class="m-status" onclick="event.stopPropagation();">
                   {% set current_status = r.progress_steps if r.progress_steps else 'pending' %}
                   <select class="status-select status-{{ current_status|lower }}" data-prev="{{ current_status|lower }}" onchange="updateStatusStyle(this,'{{ r.po_number }}')">
                       <option value="pending" {% if current_status|lower == 'pending' %}selected{% endif %}>PENDING</option>
@@ -487,14 +487,14 @@ tr.selected-row td { background: var(--processing-bg) !important; }
     <div class="modal-content border-0 custom-modal-layout">
       <div class="modal-header px-3 py-2 text-white border-0" style="background-color: var(--primary) !important;">
         <h5 class="modal-title" style="font-size: 12px; font-weight: 700; letter-spacing: 0.5px; color:#fff;">
-          <i class="fa-solid fa-truck-ramp-box me-1 text-info"></i> SALES ROUTER DISPATCH
+          <i class="fa-solid fa-truck-ramp-box me-1 text-info"></i> MOVE TO SALES DISPATCH
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" style="font-size: 9px;"></button>
       </div>
       <form id="salesDispatchForm" method="POST" action="/inventory/move_to_sales">
         <div class="custom-modal-grid">
           <div class="custom-modal-full-width field">
-            <label>PO Target Reference Model</label>
+            <label>PO Target Reference</label>
             <input type="text" name="po_number" id="sales_po_number" readonly>
           </div>
           <div class="field">
@@ -516,7 +516,7 @@ tr.selected-row td { background: var(--processing-bg) !important; }
         </div>
         <div class="modal-footer p-2 border-0 d-flex justify-content-end gap-2" style="background-color: var(--header-bg);">
           <button type="button" class="btn text-muted" data-bs-dismiss="modal" style="font-size:11px; font-weight:600; background:none; border:none;">Cancel</button>
-          <button type="submit" class="btn btn-primary px-3" style="font-size:11px; font-weight:700; background-color: var(--accent); border:none; height:28px; border-radius:4px; color:#fff;">Dispatch Matrix</button>
+          <button type="submit" class="btn btn-primary px-3" style="font-size:11px; font-weight:700; background-color: var(--accent); border:none; height:28px; border-radius:4px; color:#fff;">Confirm Dispatch</button>
         </div>
       </form>
     </div>
@@ -622,6 +622,7 @@ function resetMergedCell(tr, className) {
         else if(className === 'm-buyer') tr.insertBefore(cell, tr.children[4]);
         else if(className === 'm-agent') tr.insertBefore(cell, tr.children[5]);
         else if(className === 'm-date') tr.insertBefore(cell, tr.children[6]);
+        else if(className === 'm-exch' || className === 'm-status') tr.appendChild(cell);
     }
     cell.removeAttribute('rowspan');
     cell.style.display = "";
@@ -633,7 +634,7 @@ function applyFilters() {
     const rows = document.querySelectorAll("#dataTable tbody tr.data-row");
     
     document.querySelectorAll('.subtotal-row').forEach(el => el.remove());
-    const mergeClasses = ['m-sl', 'm-comp', 'm-loc', 'm-po', 'm-buyer', 'm-agent', 'm-date'];
+    const mergeClasses = ['m-sl', 'm-comp', 'm-loc', 'm-po', 'm-agent', 'm-date', 'm-exch', 'm-status'];
     rows.forEach(tr => {
         mergeClasses.forEach(cls => resetMergedCell(tr, cls));
     });
@@ -690,7 +691,6 @@ function applyFilters() {
             
             let slCell = tr.querySelector('.m-sl');
             if(slCell) {
-                // 🟢 Old Date = 1 (Ascending Order Progression)
                 slCell.innerText = groupIndex + 1;
                 slCell.setAttribute('rowspan', spanCount);
                 slCell.className = "m-sl merged-cell sl-no-merged";
@@ -714,12 +714,6 @@ function applyFilters() {
                 poCell.className = "m-po merged-cell";
             }
 
-            let buyerCell = tr.querySelector('.m-buyer');
-            if(buyerCell) {
-                buyerCell.setAttribute('rowspan', spanCount);
-                buyerCell.className = "m-buyer merged-cell";
-            }
-
             let agentCell = tr.querySelector('.m-agent');
             if(agentCell) {
                 agentCell.setAttribute('rowspan', spanCount);
@@ -732,14 +726,27 @@ function applyFilters() {
                 dateCell.className = "m-date merged-cell";
             }
 
+            let exchCell = tr.querySelector('.m-exch');
+            if(exchCell) {
+                exchCell.setAttribute('rowspan', spanCount);
+                exchCell.className = "m-exch v-exch merged-cell";
+            }
+
+            let statusCell = tr.querySelector('.m-status');
+            if(statusCell) {
+                statusCell.setAttribute('rowspan', spanCount);
+                statusCell.className = "m-status merged-cell";
+            }
+
         } else {
             if(tr.querySelector('.m-sl')) tr.querySelector('.m-sl').remove();
             if(tr.querySelector('.m-comp')) tr.querySelector('.m-comp').remove();
             if(tr.querySelector('.m-loc')) tr.querySelector('.m-loc').remove();
             if(tr.querySelector('.m-po')) tr.querySelector('.m-po').remove();
-            if(tr.querySelector('.m-buyer')) tr.querySelector('.m-buyer').remove();
             if(tr.querySelector('.m-agent')) tr.querySelector('.m-agent').remove();
             if(tr.querySelector('.m-date')) tr.querySelector('.m-date').remove();
+            if(tr.querySelector('.m-exch')) tr.querySelector('.m-exch').remove();
+            if(tr.querySelector('.m-status')) tr.querySelector('.m-status').remove();
         }
     });
 

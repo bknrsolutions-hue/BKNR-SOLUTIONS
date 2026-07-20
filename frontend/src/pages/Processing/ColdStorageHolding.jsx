@@ -179,7 +179,7 @@ export default function ColdStorageHolding() {
           </button>
           {!showForm && (
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={13} /> Record Holding
+              <Plus size={13} /> Add
             </button>
           )}
         </div>

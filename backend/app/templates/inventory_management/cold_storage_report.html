@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <script>
         function syncThemeFromParent() {
@@ -8,7 +9,7 @@
                     const parentTheme = window.parent.document.documentElement.getAttribute("data-theme");
                     if (parentTheme) { document.documentElement.setAttribute("data-theme", parentTheme); }
                 }
-            } catch(e) {}
+            } catch (e) { }
         }
         syncThemeFromParent();
     </script>
@@ -33,6 +34,7 @@
             border-bottom: 2px solid var(--accent);
             flex-shrink: 0;
         }
+
         .header h2 {
             margin: 0;
             font-size: 13px;
@@ -53,10 +55,17 @@
             border-radius: 6px;
             border: 1px solid var(--border);
         }
+
         @media(min-width: 600px) {
-            .filters { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+            .filters {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
         }
-        #searchBox { grid-column: span 2; border-left: 3px solid var(--accent) !important; }
+
+        #searchBox {
+            grid-column: span 2;
+            border-left: 3px solid var(--accent) !important;
+        }
 
         /* Summary strip */
         .summary-strip {
@@ -67,9 +76,13 @@
             background: var(--bg);
             flex-shrink: 0;
         }
+
         @media(min-width: 600px) {
-            .summary-strip { grid-template-columns: repeat(4, 1fr); }
+            .summary-strip {
+                grid-template-columns: repeat(4, 1fr);
+            }
         }
+
         .s-card {
             background: var(--card-bg);
             padding: 8px 10px;
@@ -77,12 +90,38 @@
             border: 1px solid var(--border);
             border-left: 4px solid var(--border);
         }
-        .s-card span { font-size: 8px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; display: block; }
-        .s-card b    { font-size: 14px; display: block; margin-top: 2px; color: var(--text); font-weight: 800; }
-        .blue   { border-left-color: var(--accent) !important; }
-        .red    { border-left-color: var(--cancelled-text) !important; }
-        .green  { border-left-color: var(--completed-text) !important; }
-        .val-card { border-left-color: #ca8a04 !important; }
+
+        .s-card span {
+            font-size: 8px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            display: block;
+        }
+
+        .s-card b {
+            font-size: 14px;
+            display: block;
+            margin-top: 2px;
+            color: var(--text);
+            font-weight: 800;
+        }
+
+        .blue {
+            border-left-color: var(--accent) !important;
+        }
+
+        .red {
+            border-left-color: var(--cancelled-text) !important;
+        }
+
+        .green {
+            border-left-color: var(--completed-text) !important;
+        }
+
+        .val-card {
+            border-left-color: #ca8a04 !important;
+        }
 
         /* Tabs */
         .tabs {
@@ -93,6 +132,7 @@
             gap: 15px;
             flex-shrink: 0;
         }
+
         .tab {
             padding: 10px 2px;
             font-size: 10px;
@@ -103,8 +143,15 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
-        .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-        .tab:hover  { color: var(--text); }
+
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        .tab:hover {
+            color: var(--text);
+        }
 
         /* Sections */
         .section {
@@ -116,7 +163,10 @@
             flex-direction: column;
             min-height: 0;
         }
-        .section.active { display: flex; }
+
+        .section.active {
+            display: flex;
+        }
 
         /* Table wrap */
         .table-wrap {
@@ -127,7 +177,12 @@
         }
 
         /* Tables */
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; min-width: 1600px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+            min-width: 1600px;
+        }
 
         thead th {
             background: var(--header-bg) !important;
@@ -142,8 +197,15 @@
             text-transform: uppercase;
             letter-spacing: 0.3px;
         }
-        tbody tr:nth-child(even) { background: var(--row-even) !important; }
-        tbody tr:hover { background: var(--row-hover) !important; }
+
+        tbody tr:nth-child(even) {
+            background: var(--row-even) !important;
+        }
+
+        tbody tr:hover {
+            background: var(--row-hover) !important;
+        }
+
         tbody td {
             padding: 6px 4px;
             font-size: 10px;
@@ -154,15 +216,20 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+
         tfoot td {
             padding: 6px 4px;
-            font-size: 10px;
-            font-weight: 800;
+            font-size: 11px !important;
+            font-weight: 850;
             border-top: 2px solid var(--border);
             color: var(--text);
             text-align: center;
         }
-        .qty-bold { font-weight: 700; color: var(--accent); }
+
+        .qty-bold {
+            font-weight: 700;
+            color: var(--accent);
+        }
 
         /* KPI Cards */
         .kpi-card {
@@ -176,13 +243,42 @@
             transition: all 0.3s ease;
             cursor: pointer;
         }
-        .kpi-card h5 { margin: 0; font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 700; }
-        .kpi-card span { font-size: 16px; font-weight: 800; color: var(--text); display: block; margin-top: 8px; }
+
+        .kpi-card h5 {
+            margin: 0;
+            font-size: 10px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .kpi-card span {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--text);
+            display: block;
+            margin-top: 8px;
+        }
 
         /* Bill section scrollable */
-        #billSection { flex: 1; overflow: auto; display: none; flex-direction: column; min-height: 0; }
-        #billSection.active { display: flex; }
-        #billContent { flex: 1; overflow: auto; padding: 16px 20px; background: var(--bg); }
+        #billSection {
+            flex: 1;
+            overflow: auto;
+            display: none;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        #billSection.active {
+            display: flex;
+        }
+
+        #billContent {
+            flex: 1;
+            overflow: auto;
+            padding: 16px 20px;
+            background: var(--bg);
+        }
 
         /* Bill toolbar */
         .bill-toolbar {
@@ -194,8 +290,19 @@
             background: var(--card-bg);
             flex-shrink: 0;
         }
-        .bill-toolbar h3 { margin: 0; font-size: 13px; font-weight: 800; color: var(--text); }
-        .bill-toolbar p  { margin: 2px 0 0; font-size: 10px; color: var(--text-muted); }
+
+        .bill-toolbar h3 {
+            margin: 0;
+            font-size: 13px;
+            font-weight: 800;
+            color: var(--text);
+        }
+
+        .bill-toolbar p {
+            margin: 2px 0 0;
+            font-size: 10px;
+            color: var(--text-muted);
+        }
 
         /* Print button (amber, intentionally not theme-forced) */
         .btn-print {
@@ -210,13 +317,30 @@
             white-space: nowrap;
             letter-spacing: 0.5px;
         }
-        .btn-print:hover { background: #ca8a04 !important; transform: translateY(-1px); }
+
+        .btn-print:hover {
+            background: #ca8a04 !important;
+            transform: translateY(-1px);
+        }
 
         /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
 
         /* ── BILL INVOICE CARD CLASSES ──
            These classes are used by buildStoreHTML() in JS.
@@ -241,13 +365,40 @@
             gap: 12px;
             border-bottom: 2px solid #0f172a;
         }
-        .bill-inv-hdr,
-        .bill-inv-hdr * { color: #0f172a !important; }
 
-        .bill-hdr-tag   { font-size: 8px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 4px; }
-        .bill-hdr-name  { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; text-transform: uppercase; }
-        .bill-hdr-addr  { font-size: 10px; opacity: 0.9; margin-top: 2px; }
-        .bill-hdr-client{ font-size: 10px; opacity: 0.9; margin-top: 4px; font-weight: 600; }
+        .bill-inv-hdr,
+        .bill-inv-hdr * {
+            color: #0f172a !important;
+        }
+
+        .bill-hdr-tag {
+            font-size: 8px;
+            font-weight: 700;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+
+        .bill-hdr-name {
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .bill-hdr-addr {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .bill-hdr-client {
+            font-size: 10px;
+            opacity: 0.9;
+            margin-top: 4px;
+            font-weight: 600;
+        }
 
         .bill-period-box {
             background: #ffffff !important;
@@ -256,9 +407,28 @@
             text-align: right;
             border: 1px solid #475569;
         }
-        .bill-period-lbl  { font-size: 8px; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; color: #475569 !important; }
-        .bill-period-val  { font-size: 16px; font-weight: 900; margin-top: 2px; color: #0f172a !important; }
-        .bill-period-days { font-size: 9px; opacity: 0.8; margin-top: 2px; color: #475569 !important; }
+
+        .bill-period-lbl {
+            font-size: 8px;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #475569 !important;
+        }
+
+        .bill-period-val {
+            font-size: 16px;
+            font-weight: 900;
+            margin-top: 2px;
+            color: #0f172a !important;
+        }
+
+        .bill-period-days {
+            font-size: 9px;
+            opacity: 0.8;
+            margin-top: 2px;
+            color: #475569 !important;
+        }
 
         /* Section separator bars */
         .bill-sec-bar {
@@ -267,16 +437,46 @@
             border-bottom: 1px solid #cbd5e1;
             background: #e2e8f0 !important;
         }
-        .bill-sec-open { border-left: 5px solid #2563eb; }
-        .bill-sec-in   { border-left: 5px solid #16a34a; }
-        .bill-sec-out  { border-left: 5px solid #475569; }
 
-        .bill-sec-title { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #0f172a !important; }
-        .bill-sec-sub   { font-size: 9px; color: #475569 !important; margin-left: 10px; }
+        .bill-sec-open {
+            border-left: 5px solid #2563eb;
+        }
+
+        .bill-sec-in {
+            border-left: 5px solid #16a34a;
+        }
+
+        .bill-sec-out {
+            border-left: 5px solid #475569;
+        }
+
+        .bill-sec-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #0f172a !important;
+        }
+
+        .bill-sec-sub {
+            font-size: 9px;
+            color: #475569 !important;
+            margin-left: 10px;
+        }
 
         /* Bill tables — auto layout, no sticky */
-        .bill-tbl { width: 100%; border-collapse: collapse; min-width: 920px; table-layout: auto !important; background: #ffffff !important; }
-        .bill-tbl thead tr { background: #f8fafc !important; }
+        .bill-tbl {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 920px;
+            table-layout: auto !important;
+            background: #ffffff !important;
+        }
+
+        .bill-tbl thead tr {
+            background: #f8fafc !important;
+        }
+
         .bill-tbl thead th {
             padding: 6px 8px;
             font-size: 9px;
@@ -289,7 +489,11 @@
             position: static !important;
             top: auto !important;
         }
-        .bill-tbl thead th:last-child { border-right: none; }
+
+        .bill-tbl thead th:last-child {
+            border-right: none;
+        }
+
         .bill-tbl tbody td {
             padding: 5px 8px;
             font-size: 9px;
@@ -298,18 +502,60 @@
             color: #1e293b !important;
             white-space: nowrap;
         }
-        .bill-tbl tbody td:last-child { border-right: none; }
-        .bill-tbl tbody tr:nth-child(even) { background: #f8fafc !important; }
-        
-        .bill-tbl .cell-batch  { font-weight: 700; color: #1e40af !important; }
-        .bill-tbl .cell-days   { font-weight: 800; color: #0f172a !important; text-align: center; }
-        .bill-tbl .cell-cost   { font-weight: 700; color: #0f172a !important; text-align: right; }
-        .bill-tbl .cell-total  { font-weight: 800; color: #1d4ed8 !important; text-align: right; }
-        .bill-tbl .cell-muted  { color: #64748b !important; text-align: center; }
-        .bill-tbl .cell-in-date{ font-weight: 600; color: #15803d !important; }
-        .bill-tbl .cell-out    { font-weight: 700; color: #475569 !important; }
-        .bill-tbl .cell-right  { text-align: right; }
-        .bill-tbl .cell-center { text-align: center; }
+
+        .bill-tbl tbody td:last-child {
+            border-right: none;
+        }
+
+        .bill-tbl tbody tr:nth-child(even) {
+            background: #f8fafc !important;
+        }
+
+        .bill-tbl .cell-batch {
+            font-weight: 700;
+            color: #1e40af !important;
+        }
+
+        .bill-tbl .cell-days {
+            font-weight: 800;
+            color: #0f172a !important;
+            text-align: center;
+        }
+
+        .bill-tbl .cell-cost {
+            font-weight: 700;
+            color: #0f172a !important;
+            text-align: right;
+        }
+
+        .bill-tbl .cell-total {
+            font-weight: 800;
+            color: #1d4ed8 !important;
+            text-align: right;
+        }
+
+        .bill-tbl .cell-muted {
+            color: #64748b !important;
+            text-align: center;
+        }
+
+        .bill-tbl .cell-in-date {
+            font-weight: 600;
+            color: #15803d !important;
+        }
+
+        .bill-tbl .cell-out {
+            font-weight: 700;
+            color: #475569 !important;
+        }
+
+        .bill-tbl .cell-right {
+            text-align: right;
+        }
+
+        .bill-tbl .cell-center {
+            text-align: center;
+        }
 
         /* Grand summary bar */
         .bill-grand {
@@ -320,6 +566,7 @@
             grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
             gap: 10px;
         }
+
         .bill-kpi {
             background: #ffffff !important;
             border: 1px solid #cbd5e1;
@@ -327,12 +574,37 @@
             padding: 10px;
             text-align: center;
         }
-        .bill-kpi-lbl { font-size: 7.5px; color: #475569 !important; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 700; }
-        .bill-kpi-val { font-size: 14px; font-weight: 900; color: #0f172a !important; margin-top: 4px; }
-        .bill-kpi-in   .bill-kpi-val { color: #16a34a !important; }
-        .bill-kpi-out  .bill-kpi-val { color: #475569 !important; }
-        .bill-kpi-cl   .bill-kpi-val { color: #2563eb !important; }
-        .bill-kpi-amt  .bill-kpi-val { color: #b45309 !important; }
+
+        .bill-kpi-lbl {
+            font-size: 7.5px;
+            color: #475569 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 700;
+        }
+
+        .bill-kpi-val {
+            font-size: 14px;
+            font-weight: 900;
+            color: #0f172a !important;
+            margin-top: 4px;
+        }
+
+        .bill-kpi-in .bill-kpi-val {
+            color: #16a34a !important;
+        }
+
+        .bill-kpi-out .bill-kpi-val {
+            color: #475569 !important;
+        }
+
+        .bill-kpi-cl .bill-kpi-val {
+            color: #2563eb !important;
+        }
+
+        .bill-kpi-amt .bill-kpi-val {
+            color: #b45309 !important;
+        }
 
         .bill-kpi-grand {
             background: #fffbeb !important;
@@ -342,371 +614,392 @@
             text-align: center;
             box-shadow: none;
         }
-        .bill-kpi-grand .bill-kpi-lbl { color: #b45309 !important; }
-        .bill-kpi-grand .bill-kpi-val { color: #b45309 !important; font-size: 16px; font-weight: 900; }
+
+        .bill-kpi-grand .bill-kpi-lbl {
+            color: #b45309 !important;
+        }
+
+        .bill-kpi-grand .bill-kpi-val {
+            color: #b45309 !important;
+            font-size: 16px;
+            font-weight: 900;
+        }
     </style>
-<link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
-<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
-<link rel="stylesheet" href="/static/css/bknr-columns.css">
-<link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
+    <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
+    <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+    <link rel="stylesheet" href="/static/css/bknr-columns.css">
+    <link rel="stylesheet" href="/static/css/premium-kpi.css?v=3">
 </head>
+
 <body>
 
-<div class="header">
-    <h2>CS INVENTORY DASHBOARD</h2>
-    <div class="filters">
-        <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
-        <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
-        <div class="fbox"><label>Storage</label><select id="f_storage"><option value="all">All Storage</option></select></div>
-        <div class="fbox"><label>Batch</label><select id="f_batch"><option value="all">All Batches</option></select></div>
-        <input id="searchBox" placeholder="Search batch, variety, brand, freezer...">
-    </div>
-</div>
-
-<div class="kpi-grid no-print" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:8px 14px; flex-shrink:0;">
-    <div class="kpi-card" id="card_age_30" onclick="filterByAgeRange(0,30,this)" style="border-left:5px solid var(--completed-text);">
-        <h5>0 – 30 Days</h5>
-        <span id="qty_age_30">0 KG</span>
-    </div>
-    <div class="kpi-card" id="card_age_90" onclick="filterByAgeRange(31,90,this)" style="border-left:5px solid #eab308;">
-        <h5>31 – 90 Days</h5>
-        <span id="qty_age_90">0 KG</span>
-    </div>
-    <div class="kpi-card" id="card_age_150" onclick="filterByAgeRange(91,150,this)" style="border-left:5px solid #ea580c;">
-        <h5>91 – 150 Days</h5>
-        <span id="qty_age_150">0 KG</span>
-    </div>
-    <div class="kpi-card" id="card_age_300" onclick="filterByAgeRange(151,300,this)" style="border-left:5px solid var(--cancelled-text);">
-        <h5>151 – 300 Days</h5>
-        <span id="qty_age_300">0 KG</span>
-    </div>
-    <div class="kpi-card" id="card_age_above" onclick="filterByAgeRange(301,999999,this)" style="border-left:5px solid #7f1d1d;">
-        <h5>300+ Days</h5>
-        <span id="qty_age_above">0 KG</span>
-    </div>
-</div>
-
-<div class="summary-strip">
-    <div class="s-card blue"><span>Total Inward</span><b id="sum_in">0 MC</b></div>
-    <div class="s-card red"><span>Total Outward</span><b id="sum_out">0 MC</b></div>
-    <div class="s-card green"><span>Net Stock</span><b id="sum_closing">0 MC</b></div>
-    <div class="s-card val-card"><span>Inv Value</span><b id="sum_val">₹ 0.00</b></div>
-</div>
-
-<div class="tabs">
-    <div class="tab active" onclick="switchTab('summary', this)">GROUPED SUMMARY</div>
-    <div class="tab" onclick="switchTab('stock', this)">STOCK BALANCE</div>
-    <div class="tab" onclick="switchTab('report', this)">MOVEMENT LEDGER</div>
-    <div class="tab" onclick="switchTab('bill', this)" style="color:#ca8a04;">&#128190; MONTHLY BILL</div>
-</div>
-
-<div class="section active" id="summarySection">
-    <div class="table-wrap">
-        <table id="summaryTable" style="min-width: 1500px;">
-            <thead>
-                <tr>
-                    <th style="width:45px">#</th>
-                    <th style="width:180px">Production For</th>
-                    <th style="width:180px">Production At</th>
-                    <th style="width:120px">Freezer</th>
-                    <th style="width:180px">Pack Style</th>
-                    <th style="width:180px">Variety</th>
-                    <th style="width:100px">Glaze</th>
-                    <th style="width:100px">Grade</th>
-                    <th style="width:110px" class="qty-col">Total MC</th>
-                    <th style="width:110px" class="qty-col">Total Loose</th>
-                    <th style="width:130px" class="qty-col">Total Qty (KG)</th>
-                    <th style="width:130px" class="qty-col">Valuation</th>
-                    <th style="width:100px">Ageing (Max)</th>
-                </tr>
-            </thead>
-            <tbody id="summaryTbody">
-                <!-- Javascript populated -->
-            </tbody>
-            <tfoot>
-                <tr>
-                    <td colspan="8" style="text-align:right; font-weight:800;">GRAND TOTALS (STOCK IN HAND):</td>
-                    <td id="sum_tot_mc" class="qty-bold">0</td>
-                    <td id="sum_tot_lse" class="qty-bold">0</td>
-                    <td id="sum_tot_qty" class="qty-bold" style="color:var(--accent)">0.00</td>
-                    <td id="sum_tot_val" class="qty-bold" style="color:var(--primary)">₹ 0.00</td>
-                    <td></td>
-                </tr>
-            </tfoot>
-        </table>
-    </div>
-</div>
-
-<div class="section" id="reportSection">
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:85px">Date</th>
-                    <th style="width:130px">Cold Storage</th>
-                    <th style="width:95px">Batch #</th>
-                    <th style="width:55px">Type</th>
-                    <th style="width:90px">Species</th>
-                    <th style="width:120px">Variety</th>
-                    <th style="width:80px">Brand</th>
-                    <th style="width:75px">Grade</th>
-                    <th style="width:90px">Freezer</th>
-                    <th style="width:95px">Pack Style</th>
-                    <th style="width:65px">Glaze</th>
-                    <th style="width:60px">MC</th>
-                    <th style="width:60px">Loose</th>
-                    <th style="width:90px">Qty (KG)</th>
-                    <th style="width:85px">Rate/KG</th>
-                    <th style="width:115px">Inv Value</th>
-                    <th style="width:85px">Status</th>
-                </tr>
-            </thead>
-            <tbody id="reportTbody"></tbody>
-        </table>
-    </div>
-</div>
-
-<div class="section" id="stockSection">
-    <div class="table-wrap">
-        <table>
-            <thead>
-                <tr>
-                    <th style="width:140px">Cold Storage</th>
-                    <th style="width:95px">Batch #</th>
-                    <th style="width:100px">Species</th>
-                    <th style="width:130px">Variety</th>
-                    <th style="width:85px">Brand</th>
-                    <th style="width:80px">Grade</th>
-                    <th style="width:90px">Freezer</th>
-                    <th style="width:100px">Pack Style</th>
-                    <th style="width:65px">Glaze</th>
-                    <th style="width:75px">Bal MC</th>
-                    <th style="width:75px">Bal Loose</th>
-                    <th style="width:100px">Bal Qty (KG)</th>
-                    <th style="width:120px">Valuation</th>
-                </tr>
-            </thead>
-            <tbody id="stockTbody"></tbody>
-        </table>
-    </div>
-</div>
-
-<div id="billSection">
-    <div class="bill-toolbar">
-        <div>
-            <h3>&#128190; MONTHLY COLD STORAGE BILL</h3>
-            <p>Grouped by Storage Facility &bull; Based on active filters</p>
-        </div>
-        <div style="display:flex; gap:8px; align-items:center;">
-            <div class="fbox" style="min-width:160px;">
-                <label>Cold Storage</label>
-                <select id="bill_storage"><option value="all">All Storage</option></select>
-            </div>
-            <div class="fbox" style="min-width:140px;">
-                <label>Bill Month</label>
-                <input type="month" id="bill_month">
-            </div>
-            <button class="btn-print" onclick="printBill()">&#128424; Print Bill</button>
+    <div class="header">
+        <h2>CS INVENTORY DASHBOARD</h2>
+        <div class="filters">
+            <div class="fbox"><label>From</label><input type="date" id="f_from"></div>
+            <div class="fbox"><label>To</label><input type="date" id="f_to"></div>
+            <div class="fbox"><label>Storage</label><select id="f_storage">
+                    <option value="all">All Storage</option>
+                </select></div>
+            <div class="fbox"><label>Batch</label><select id="f_batch">
+                    <option value="all">All Batches</option>
+                </select></div>
+            <input id="searchBox" placeholder="Search batch, variety, brand, freezer...">
         </div>
     </div>
-    <div id="billContent"></div>
-</div>
 
-<script>
-const rawData = [
-    {% for r in rows %}
-    {
-        in_date: "{{ r.in_date or '' }}",
-        cold_storage_name: "{{ r.cold_storage_name or '' }}",
-        batch_number: "{{ r.batch_number or '' }}",
-        cargo_movement_type: ("{{ r.cargo_movement_type or 'IN' }}").toUpperCase().trim(),
-        species: "{{ r.species or '' }}",
-        variety: "{{ r.variety or '' }}",
-        brand: "{{ r.brand or '' }}",
-        grade: "{{ r.grade or '' }}",
-        freezer: "{{ r.freezer or '' }}",
-        packing_style: "{{ r.packing_style or '' }}",
-        glaze: "{{ r.glaze or '' }}",
-        no_of_mc: parseInt("{{ r.no_of_mc or 0 }}") || 0,
-        loose: parseInt("{{ r.loose or 0 }}") || 0,
-        quantity: parseFloat("{{ r.quantity or 0 }}") || 0,
-        product_kg_value: parseFloat("{{ r.product_kg_value or 0 }}") || 0,
-        inventory_value: parseFloat("{{ r.inventory_value or 0 }}") || 0,
-        status: "{{ r.status or 'HOLDING' }}".toUpperCase(),
-        production_for: "{{ r.production_for or 'N/A' }}",
-        production_at: "{{ r.production_at or 'N/A' }}",
-        holding_cost: parseFloat("{{ r.holding_cost or 0 }}") || 0,
-        other_charges: parseFloat("{{ r.other_charges or 0 }}") || 0,
-        total_payable: parseFloat("{{ r.total_payable or 0 }}") || 0,
-        storage_rate_per_mc: parseFloat("{{ r.storage_rate_per_mc or 0 }}") || 0,
-        rent_type: "{{ r.rent_type or 'DAILY' }}",
-        paid_amount: parseFloat("{{ r.paid_amount or 0 }}") || 0,
-        address: "{{ r.address or '' }}"
-    },
-    {% endfor %}
+    <div class="kpi-grid no-print"
+        style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px; margin:8px 14px; flex-shrink:0;">
+        <div class="kpi-card" id="card_age_30" onclick="filterByAgeRange(0,30,this)"
+            style="border-left:5px solid var(--completed-text);">
+            <h5>0 – 30 Days</h5>
+            <span id="qty_age_30">0 KG</span>
+        </div>
+        <div class="kpi-card" id="card_age_90" onclick="filterByAgeRange(31,90,this)"
+            style="border-left:5px solid #eab308;">
+            <h5>31 – 90 Days</h5>
+            <span id="qty_age_90">0 KG</span>
+        </div>
+        <div class="kpi-card" id="card_age_150" onclick="filterByAgeRange(91,150,this)"
+            style="border-left:5px solid #ea580c;">
+            <h5>91 – 150 Days</h5>
+            <span id="qty_age_150">0 KG</span>
+        </div>
+        <div class="kpi-card" id="card_age_300" onclick="filterByAgeRange(151,300,this)"
+            style="border-left:5px solid var(--cancelled-text);">
+            <h5>151 – 300 Days</h5>
+            <span id="qty_age_300">0 KG</span>
+        </div>
+        <div class="kpi-card" id="card_age_above" onclick="filterByAgeRange(301,999999,this)"
+            style="border-left:5px solid #7f1d1d;">
+            <h5>300+ Days</h5>
+            <span id="qty_age_above">0 KG</span>
+        </div>
+    </div>
+
+    <div class="summary-strip">
+        <div class="s-card blue"><span>Total Inward</span><b id="sum_in">0 MC</b></div>
+        <div class="s-card red"><span>Total Outward</span><b id="sum_out">0 MC</b></div>
+        <div class="s-card green"><span>Net Stock</span><b id="sum_closing">0 MC</b></div>
+        <div class="s-card val-card"><span>Inv Value</span><b id="sum_val">₹ 0.00</b></div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('summary', this)">GROUPED SUMMARY</div>
+        <div class="tab" onclick="switchTab('stock', this)">STOCK BALANCE</div>
+        <div class="tab" onclick="switchTab('report', this)">MOVEMENT LEDGER</div>
+        <div class="tab" onclick="switchTab('bill', this)" style="color:#ca8a04;">&#128190; MONTHLY BILL</div>
+    </div>
+
+    <div class="section active" id="summarySection">
+        <div class="table-wrap">
+            <table id="summaryTable" style="min-width: 1500px;">
+                <thead>
+                    <tr>
+                        <th style="width:45px">#</th>
+                        <th style="width:180px">Production For</th>
+                        <th style="width:180px">Production At</th>
+                        <th style="width:120px">Freezer</th>
+                        <th style="width:180px">Pack Style</th>
+                        <th style="width:180px">Variety</th>
+                        <th style="width:100px">Glaze</th>
+                        <th style="width:100px">Grade</th>
+                        <th style="width:110px" class="qty-col">Total MC</th>
+                        <th style="width:110px" class="qty-col">Total Loose</th>
+                        <th style="width:130px" class="qty-col">Total Qty (KG)</th>
+                        <th style="width:130px" class="qty-col">Valuation</th>
+                        <th style="width:100px">Ageing (Max)</th>
+                    </tr>
+                </thead>
+                <tbody id="summaryTbody">
+                    <!-- Javascript populated -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="8" style="text-align:right; font-weight:800;">GRAND TOTALS (STOCK IN HAND):</td>
+                        <td id="sum_tot_mc" class="qty-bold">0</td>
+                        <td id="sum_tot_lse" class="qty-bold">0</td>
+                        <td id="sum_tot_qty" class="qty-bold" style="color:var(--accent)">0.00</td>
+                        <td id="sum_tot_val" class="qty-bold" style="color:var(--primary)">₹ 0.00</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <div class="section" id="reportSection">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:85px">Date</th>
+                        <th style="width:130px">Cold Storage</th>
+                        <th style="width:95px">Batch #</th>
+                        <th style="width:55px">Type</th>
+                        <th style="width:90px">Species</th>
+                        <th style="width:120px">Variety</th>
+                        <th style="width:80px">Brand</th>
+                        <th style="width:75px">Grade</th>
+                        <th style="width:90px">Freezer</th>
+                        <th style="width:95px">Pack Style</th>
+                        <th style="width:65px">Glaze</th>
+                        <th style="width:60px">MC</th>
+                        <th style="width:60px">Loose</th>
+                        <th style="width:90px">Qty (KG)</th>
+                        <th style="width:85px">Rate/KG</th>
+                        <th style="width:115px">Inv Value</th>
+                        <th style="width:85px">Status</th>
+                    </tr>
+                </thead>
+                <tbody id="reportTbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="section" id="stockSection">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:140px">Cold Storage</th>
+                        <th style="width:95px">Batch #</th>
+                        <th style="width:100px">Species</th>
+                        <th style="width:130px">Variety</th>
+                        <th style="width:85px">Brand</th>
+                        <th style="width:80px">Grade</th>
+                        <th style="width:90px">Freezer</th>
+                        <th style="width:100px">Pack Style</th>
+                        <th style="width:65px">Glaze</th>
+                        <th style="width:75px">Bal MC</th>
+                        <th style="width:75px">Bal Loose</th>
+                        <th style="width:100px">Bal Qty (KG)</th>
+                        <th style="width:120px">Valuation</th>
+                    </tr>
+                </thead>
+                <tbody id="stockTbody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="billSection">
+        <div class="bill-toolbar">
+            <div>
+                <h3>&#128190; MONTHLY COLD STORAGE BILL</h3>
+                <p>Grouped by Storage Facility &bull; Based on active filters</p>
+            </div>
+            <div style="display:flex; gap:8px; align-items:center;">
+                <div class="fbox" style="min-width:160px;">
+                    <label>Cold Storage</label>
+                    <select id="bill_storage">
+                        <option value="all">All Storage</option>
+                    </select>
+                </div>
+                <div class="fbox" style="min-width:140px;">
+                    <label>Bill Month</label>
+                    <input type="month" id="bill_month">
+                </div>
+                <button class="btn-print" onclick="printBill()">&#128424; Print Bill</button>
+            </div>
+        </div>
+        <div id="billContent"></div>
+    </div>
+
+    <script>
+        const rawData = [
+            {% for r in rows %}
+        {
+            in_date: "{{ r.in_date or '' }}",
+                cold_storage_name: "{{ r.cold_storage_name or '' }}",
+                    batch_number: "{{ r.batch_number or '' }}",
+                        cargo_movement_type: ("{{ r.cargo_movement_type or 'IN' }}").toUpperCase().trim(),
+                            species: "{{ r.species or '' }}",
+                                variety: "{{ r.variety or '' }}",
+                                    brand: "{{ r.brand or '' }}",
+                                        grade: "{{ r.grade or '' }}",
+                                            freezer: "{{ r.freezer or '' }}",
+                                                packing_style: "{{ r.packing_style or '' }}",
+                                                    glaze: "{{ r.glaze or '' }}",
+                                                        no_of_mc: parseInt("{{ r.no_of_mc or 0 }}") || 0,
+                                                            loose: parseInt("{{ r.loose or 0 }}") || 0,
+                                                                quantity: parseFloat("{{ r.quantity or 0 }}") || 0,
+                                                                    product_kg_value: parseFloat("{{ r.product_kg_value or 0 }}") || 0,
+                                                                        inventory_value: parseFloat("{{ r.inventory_value or 0 }}") || 0,
+                                                                            status: "{{ r.status or 'HOLDING' }}".toUpperCase(),
+                                                                                production_for: "{{ r.production_for or 'N/A' }}",
+                                                                                    production_at: "{{ r.production_at or 'N/A' }}",
+                                                                                        holding_cost: parseFloat("{{ r.holding_cost or 0 }}") || 0,
+                                                                                            other_charges: parseFloat("{{ r.other_charges or 0 }}") || 0,
+                                                                                                total_payable: parseFloat("{{ r.total_payable or 0 }}") || 0,
+                                                                                                    storage_rate_per_mc: parseFloat("{{ r.storage_rate_per_mc or 0 }}") || 0,
+                                                                                                        rent_type: "{{ r.rent_type or 'DAILY' }}",
+                                                                                                            paid_amount: parseFloat("{{ r.paid_amount or 0 }}") || 0,
+                                                                                                                address: "{{ r.address or '' }}"
+        },
+        {% endfor %}
 ];
 
-const companyName = "{{ company_name | default('ERP') }}";
+        const companyName = "{{ company_name | default('ERP') }}";
 
-let activeAgeMin = 0;
-let activeAgeMax = 999999;
-let activeAgeCard = null;
+        let activeAgeMin = 0;
+        let activeAgeMax = 999999;
+        let activeAgeCard = null;
 
-function filterByAgeRange(min, max, cardElement) {
-    if (activeAgeCard === cardElement) {
-        // Toggle off
-        activeAgeMin = 0;
-        activeAgeMax = 999999;
-        activeAgeCard.style.transform = "";
-        activeAgeCard.style.boxShadow = "";
-        activeAgeCard.style.background = "var(--card-bg)";
-        activeAgeCard = null;
-    } else {
-        // Toggle on
-        if (activeAgeCard) {
-            activeAgeCard.style.transform = "";
-            activeAgeCard.style.boxShadow = "";
-            activeAgeCard.style.background = "var(--card-bg)";
-        }
-        activeAgeMin = min;
-        activeAgeMax = max;
-        activeAgeCard = cardElement;
-        cardElement.style.transform = "translateY(-4px)";
-        cardElement.style.boxShadow = "0 8px 16px rgba(0,0,0,0.12)";
-        cardElement.style.background = "var(--row-hover)";
-    }
-    applyFilters();
-}
-
-function switchTab(type, el) {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    // Hide all sections (includes both .section and #billSection)
-    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-    document.getElementById('billSection').classList.remove('active');
-    el.classList.add('active');
-    document.getElementById(type + 'Section').classList.add('active');
-}
-
-const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const fmtInt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-
-function applyFilters() {
-    const f1 = document.getElementById('f_from').value;
-    const f2 = document.getElementById('f_to').value;
-    const fs = document.getElementById('f_storage').value;
-    const fb = document.getElementById('f_batch').value;
-    const q = document.getElementById('searchBox').value.toLowerCase();
-
-    // 1. Calculate Age card quantities based on general filters BEFORE age range is applied
-    let cardQty30 = 0, cardQty90 = 0, cardQty150 = 0, cardQty300 = 0, cardQtyAbove = 0;
-
-    rawData.forEach(r => {
-        let generalMatch = true;
-        if(f1 && r.in_date < f1) generalMatch = false;
-        if(f2 && r.in_date > f2) generalMatch = false;
-        if(fs !== 'all' && r.cold_storage_name !== fs) generalMatch = false;
-        if(fb !== 'all' && r.batch_number !== fb) generalMatch = false;
-        if(q && !Object.values(r).join(' ').toLowerCase().includes(q)) generalMatch = false;
-
-        if (generalMatch) {
-            let ageInDays = 0;
-            if (r.in_date) {
-                const parts = r.in_date.split('-');
-                if (parts.length === 3) {
-                    const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                    const today = new Date();
-                    today.setHours(0,0,0,0);
-                    recordDate.setHours(0,0,0,0);
-                    const diffTime = today - recordDate;
-                    ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+        function filterByAgeRange(min, max, cardElement) {
+            if (activeAgeCard === cardElement) {
+                // Toggle off
+                activeAgeMin = 0;
+                activeAgeMax = 999999;
+                activeAgeCard.style.transform = "";
+                activeAgeCard.style.boxShadow = "";
+                activeAgeCard.style.background = "var(--card-bg)";
+                activeAgeCard = null;
+            } else {
+                // Toggle on
+                if (activeAgeCard) {
+                    activeAgeCard.style.transform = "";
+                    activeAgeCard.style.boxShadow = "";
+                    activeAgeCard.style.background = "var(--card-bg)";
                 }
+                activeAgeMin = min;
+                activeAgeMax = max;
+                activeAgeCard = cardElement;
+                cardElement.style.transform = "translateY(-4px)";
+                cardElement.style.boxShadow = "0 8px 16px rgba(0,0,0,0.12)";
+                cardElement.style.background = "var(--row-hover)";
             }
-
-            const isIN = r.cargo_movement_type === 'IN';
-            const factor = isIN ? 1 : -1;
-            const netQty = r.quantity * factor;
-
-            if (ageInDays <= 30) cardQty30 += netQty;
-            else if (ageInDays <= 90) cardQty90 += netQty;
-            else if (ageInDays <= 150) cardQty150 += netQty;
-            else if (ageInDays <= 300) cardQty300 += netQty;
-            else cardQtyAbove += netQty;
-        }
-    });
-
-    // Update dynamic card UI elements
-    document.getElementById("qty_age_30").innerText = fmtInt.format(cardQty30) + " KG";
-    document.getElementById("qty_age_90").innerText = fmtInt.format(cardQty90) + " KG";
-    document.getElementById("qty_age_150").innerText = fmtInt.format(cardQty150) + " KG";
-    document.getElementById("qty_age_300").innerText = fmtInt.format(cardQty300) + " KG";
-    document.getElementById("qty_age_above").innerText = fmtInt.format(cardQtyAbove) + " KG";
-
-    // 2. Filter down the data that passes general + age range filters
-    const filtered = rawData.filter(r => {
-        if(f1 && r.in_date < f1) return false;
-        if(f2 && r.in_date > f2) return false;
-        if(fs !== 'all' && r.cold_storage_name !== fs) return false;
-        if(fb !== 'all' && r.batch_number !== fb) return false;
-        if(q && !Object.values(r).join(' ').toLowerCase().includes(q)) return false;
-
-        let ageInDays = 0;
-        if (r.in_date) {
-            const parts = r.in_date.split('-');
-            if (parts.length === 3) {
-                const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                recordDate.setHours(0,0,0,0);
-                const diffTime = today - recordDate;
-                ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-            }
-        }
-        if (ageInDays < activeAgeMin || ageInDays > activeAgeMax) return false;
-
-        return true;
-    });
-
-    render(filtered);
-}
-
-function render(data) {
-    let tin = 0, tout = 0, tval = 0;
-    const rBody = document.getElementById('reportTbody');
-    const sBody = document.getElementById('stockTbody');
-    const sumTbody = document.getElementById('summaryTbody');
-    
-    rBody.innerHTML = "";
-    sBody.innerHTML = "";
-    sumTbody.innerHTML = "";
-
-    const stockMap = {};
-    const summaryGroups = {}; // prodFor -> prodAt -> [items]
-
-    data.forEach(r => {
-        const isIN = r.cargo_movement_type === 'IN';
-        const val = r.inventory_value;
-        const mc = r.no_of_mc;
-        const loose = r.loose;
-        const qty = r.quantity;
-
-        if(isIN) { tin += mc; tval += val; } else { tout += mc; tval -= Math.abs(val); }
-
-        // Calculate record age
-        let ageInDays = 0;
-        if (r.in_date) {
-            const parts = r.in_date.split('-');
-            if (parts.length === 3) {
-                const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                const today = new Date();
-                today.setHours(0,0,0,0);
-                recordDate.setHours(0,0,0,0);
-                const diffTime = today - recordDate;
-                ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
-            }
+            applyFilters();
         }
 
-        // 1. Movement Ledger Row
-        rBody.innerHTML += `
+        function switchTab(type, el) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            // Hide all sections (includes both .section and #billSection)
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById('billSection').classList.remove('active');
+            el.classList.add('active');
+            document.getElementById(type + 'Section').classList.add('active');
+        }
+
+        const fmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmtInt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+        function applyFilters() {
+            const f1 = document.getElementById('f_from').value;
+            const f2 = document.getElementById('f_to').value;
+            const fs = document.getElementById('f_storage').value;
+            const fb = document.getElementById('f_batch').value;
+            const q = document.getElementById('searchBox').value.toLowerCase();
+
+            // 1. Calculate Age card quantities based on general filters BEFORE age range is applied
+            let cardQty30 = 0, cardQty90 = 0, cardQty150 = 0, cardQty300 = 0, cardQtyAbove = 0;
+
+            rawData.forEach(r => {
+                let generalMatch = true;
+                if (f1 && r.in_date < f1) generalMatch = false;
+                if (f2 && r.in_date > f2) generalMatch = false;
+                if (fs !== 'all' && r.cold_storage_name !== fs) generalMatch = false;
+                if (fb !== 'all' && r.batch_number !== fb) generalMatch = false;
+                if (q && !Object.values(r).join(' ').toLowerCase().includes(q)) generalMatch = false;
+
+                if (generalMatch) {
+                    let ageInDays = 0;
+                    if (r.in_date) {
+                        const parts = r.in_date.split('-');
+                        if (parts.length === 3) {
+                            const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            recordDate.setHours(0, 0, 0, 0);
+                            const diffTime = today - recordDate;
+                            ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                        }
+                    }
+
+                    const isIN = r.cargo_movement_type === 'IN';
+                    const factor = isIN ? 1 : -1;
+                    const netQty = r.quantity * factor;
+
+                    if (ageInDays <= 30) cardQty30 += netQty;
+                    else if (ageInDays <= 90) cardQty90 += netQty;
+                    else if (ageInDays <= 150) cardQty150 += netQty;
+                    else if (ageInDays <= 300) cardQty300 += netQty;
+                    else cardQtyAbove += netQty;
+                }
+            });
+
+            // Update dynamic card UI elements
+            document.getElementById("qty_age_30").innerText = fmtInt.format(cardQty30) + " KG";
+            document.getElementById("qty_age_90").innerText = fmtInt.format(cardQty90) + " KG";
+            document.getElementById("qty_age_150").innerText = fmtInt.format(cardQty150) + " KG";
+            document.getElementById("qty_age_300").innerText = fmtInt.format(cardQty300) + " KG";
+            document.getElementById("qty_age_above").innerText = fmtInt.format(cardQtyAbove) + " KG";
+
+            // 2. Filter down the data that passes general + age range filters
+            const filtered = rawData.filter(r => {
+                if (f1 && r.in_date < f1) return false;
+                if (f2 && r.in_date > f2) return false;
+                if (fs !== 'all' && r.cold_storage_name !== fs) return false;
+                if (fb !== 'all' && r.batch_number !== fb) return false;
+                if (q && !Object.values(r).join(' ').toLowerCase().includes(q)) return false;
+
+                let ageInDays = 0;
+                if (r.in_date) {
+                    const parts = r.in_date.split('-');
+                    if (parts.length === 3) {
+                        const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        recordDate.setHours(0, 0, 0, 0);
+                        const diffTime = today - recordDate;
+                        ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                    }
+                }
+                if (ageInDays < activeAgeMin || ageInDays > activeAgeMax) return false;
+
+                return true;
+            });
+
+            render(filtered);
+        }
+
+        function render(data) {
+            let tin = 0, tout = 0, tval = 0;
+            const rBody = document.getElementById('reportTbody');
+            const sBody = document.getElementById('stockTbody');
+            const sumTbody = document.getElementById('summaryTbody');
+
+            rBody.innerHTML = "";
+            sBody.innerHTML = "";
+            sumTbody.innerHTML = "";
+
+            const stockMap = {};
+            const summaryGroups = {}; // prodFor -> prodAt -> [items]
+
+            data.forEach(r => {
+                const isIN = r.cargo_movement_type === 'IN';
+                const val = r.inventory_value;
+                const mc = r.no_of_mc;
+                const loose = r.loose;
+                const qty = r.quantity;
+
+                if (isIN) { tin += mc; tval += val; } else { tout += mc; tval -= Math.abs(val); }
+
+                // Calculate record age
+                let ageInDays = 0;
+                if (r.in_date) {
+                    const parts = r.in_date.split('-');
+                    if (parts.length === 3) {
+                        const recordDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        recordDate.setHours(0, 0, 0, 0);
+                        const diffTime = today - recordDate;
+                        ageInDays = Math.max(0, Math.floor(diffTime / (1000 * 60 * 60 * 24)));
+                    }
+                }
+
+                // 1. Movement Ledger Row
+                rBody.innerHTML += `
             <tr>
                 <td>${r.in_date}</td>
                 <td>${r.cold_storage_name}</td>
@@ -723,51 +1016,51 @@ function render(data) {
                 <td>${loose}</td>
                 <td class="qty-bold" style="color:var(--primary);">${qty.toFixed(2)}</td>
                 <td>₹ ${r.product_kg_value.toFixed(2)}</td>
-                <td style="font-weight:600; color:var(--primary);">₹ ${val.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                <td style="font-weight:600; color:var(--primary);">₹ ${val.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 <td>${r.status}</td>
             </tr>`;
 
-        // 2. Stock Balance Map Grouping
-        const key = `${r.cold_storage_name}|${r.batch_number}|${r.species}|${r.variety}|${r.brand}|${r.grade}|${r.freezer}|${r.packing_style}|${r.glaze}`;
-        if(!stockMap[key]) stockMap[key] = { ...r, no_of_mc: 0, loose: 0, quantity: 0, inventory_value: 0 };
-        const factor = isIN ? 1 : -1;
-        stockMap[key].no_of_mc += (mc * factor);
-        stockMap[key].loose += (loose * factor);
-        stockMap[key].quantity += (qty * factor);
-        stockMap[key].inventory_value += (val * factor);
+                // 2. Stock Balance Map Grouping
+                const key = `${r.cold_storage_name}|${r.batch_number}|${r.species}|${r.variety}|${r.brand}|${r.grade}|${r.freezer}|${r.packing_style}|${r.glaze}`;
+                if (!stockMap[key]) stockMap[key] = { ...r, no_of_mc: 0, loose: 0, quantity: 0, inventory_value: 0 };
+                const factor = isIN ? 1 : -1;
+                stockMap[key].no_of_mc += (mc * factor);
+                stockMap[key].loose += (loose * factor);
+                stockMap[key].quantity += (qty * factor);
+                stockMap[key].inventory_value += (val * factor);
 
-        // 3. Hierarchical Grouping for Summary
-        const prodFor = r.production_for.trim() || "N/A";
-        const prodAt = r.production_at.trim() || "N/A";
-        const freezer = r.freezer.trim() || "N/A";
-        const packStyle = r.packing_style.trim() || "N/A";
-        const variety = r.variety.trim() || "N/A";
-        const glaze = r.glaze.trim() || "N/A";
-        const grade = r.grade.trim() || "N/A";
+                // 3. Hierarchical Grouping for Summary
+                const prodFor = r.production_for.trim() || "N/A";
+                const prodAt = r.production_at.trim() || "N/A";
+                const freezer = r.freezer.trim() || "N/A";
+                const packStyle = r.packing_style.trim() || "N/A";
+                const variety = r.variety.trim() || "N/A";
+                const glaze = r.glaze.trim() || "N/A";
+                const grade = r.grade.trim() || "N/A";
 
-        if (!summaryGroups[prodFor]) summaryGroups[prodFor] = {};
-        if (!summaryGroups[prodFor][prodAt]) summaryGroups[prodFor][prodAt] = {};
+                if (!summaryGroups[prodFor]) summaryGroups[prodFor] = {};
+                if (!summaryGroups[prodFor][prodAt]) summaryGroups[prodFor][prodAt] = {};
 
-        const itemKey = `${freezer}#${packStyle}#${variety}#${glaze}#${grade}`;
-        if (!summaryGroups[prodFor][prodAt][itemKey]) {
-            summaryGroups[prodFor][prodAt][itemKey] = {
-                freezer, packStyle, variety, glaze, grade,
-                mc: 0, loose: 0, qty: 0, value: 0, maxAge: 0
-            };
-        }
-        summaryGroups[prodFor][prodAt][itemKey].mc += mc * factor;
-        summaryGroups[prodFor][prodAt][itemKey].loose += loose * factor;
-        summaryGroups[prodFor][prodAt][itemKey].qty += qty * factor;
-        summaryGroups[prodFor][prodAt][itemKey].value += val * factor;
-        if (ageInDays > summaryGroups[prodFor][prodAt][itemKey].maxAge) {
-            summaryGroups[prodFor][prodAt][itemKey].maxAge = ageInDays;
-        }
-    });
+                const itemKey = `${freezer}#${packStyle}#${variety}#${glaze}#${grade}`;
+                if (!summaryGroups[prodFor][prodAt][itemKey]) {
+                    summaryGroups[prodFor][prodAt][itemKey] = {
+                        freezer, packStyle, variety, glaze, grade,
+                        mc: 0, loose: 0, qty: 0, value: 0, maxAge: 0
+                    };
+                }
+                summaryGroups[prodFor][prodAt][itemKey].mc += mc * factor;
+                summaryGroups[prodFor][prodAt][itemKey].loose += loose * factor;
+                summaryGroups[prodFor][prodAt][itemKey].qty += qty * factor;
+                summaryGroups[prodFor][prodAt][itemKey].value += val * factor;
+                if (ageInDays > summaryGroups[prodFor][prodAt][itemKey].maxAge) {
+                    summaryGroups[prodFor][prodAt][itemKey].maxAge = ageInDays;
+                }
+            });
 
-    // 2. Render Stock Balance Row
-    Object.values(stockMap).forEach(s => {
-        if(Math.abs(s.quantity) > 0.001) {
-            sBody.innerHTML += `
+            // 2. Render Stock Balance Row
+            Object.values(stockMap).forEach(s => {
+                if (Math.abs(s.quantity) > 0.001) {
+                    sBody.innerHTML += `
                 <tr>
                     <td>${s.cold_storage_name}</td>
                     <td><b style="color:var(--primary);">${s.batch_number}</b></td>
@@ -781,42 +1074,42 @@ function render(data) {
                     <td class="qty-bold">${s.no_of_mc}</td>
                     <td>${s.loose}</td>
                     <td class="qty-bold" style="color:var(--accent)">${s.quantity.toFixed(2)}</td>
-                    <td style="font-weight:600; color:var(--primary);">₹ ${s.inventory_value.toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                    <td style="font-weight:600; color:var(--primary);">₹ ${s.inventory_value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
                 </tr>`;
-        }
-    });
+                }
+            });
 
-    // 3. Render Grouped Summary Table (Hierarchical Company/Plant wise with Subtotals)
-    let summaryIndex = 1;
-    let sumTotMc = 0, sumTotLse = 0, sumTotQty = 0, sumTotVal = 0;
+            // 3. Render Grouped Summary Table (Hierarchical Company/Plant wise with Subtotals)
+            let summaryIndex = 1;
+            let sumTotMc = 0, sumTotLse = 0, sumTotQty = 0, sumTotVal = 0;
 
-    const sortedCompanies = Object.keys(summaryGroups).sort();
-    sortedCompanies.forEach(prodFor => {
-        let companyMc = 0, companyLoose = 0, companyQty = 0, companyVal = 0;
-        let hasVisibleCompanyData = false;
+            const sortedCompanies = Object.keys(summaryGroups).sort();
+            sortedCompanies.forEach(prodFor => {
+                let companyMc = 0, companyLoose = 0, companyQty = 0, companyVal = 0;
+                let hasVisibleCompanyData = false;
 
-        const sortedPlants = Object.keys(summaryGroups[prodFor]).sort();
-        sortedPlants.forEach(prodAt => {
-            let plantMc = 0, plantLoose = 0, plantQty = 0, plantVal = 0;
-            let hasVisiblePlantData = false;
+                const sortedPlants = Object.keys(summaryGroups[prodFor]).sort();
+                sortedPlants.forEach(prodAt => {
+                    let plantMc = 0, plantLoose = 0, plantQty = 0, plantVal = 0;
+                    let hasVisiblePlantData = false;
 
-            const sortedItems = Object.keys(summaryGroups[prodFor][prodAt]).sort();
-            sortedItems.forEach(itemKey => {
-                const group = summaryGroups[prodFor][prodAt][itemKey];
-                // Only show combinations with non-zero quantity or MC
-                if (Math.abs(group.qty) > 0.01 || Math.abs(group.mc) > 0.01) {
-                    plantMc += group.mc;
-                    plantLoose += group.loose;
-                    plantQty += group.qty;
-                    plantVal += group.value;
-                    hasVisiblePlantData = true;
+                    const sortedItems = Object.keys(summaryGroups[prodFor][prodAt]).sort();
+                    sortedItems.forEach(itemKey => {
+                        const group = summaryGroups[prodFor][prodAt][itemKey];
+                        // Only show combinations with non-zero quantity or MC
+                        if (Math.abs(group.qty) > 0.01 || Math.abs(group.mc) > 0.01) {
+                            plantMc += group.mc;
+                            plantLoose += group.loose;
+                            plantQty += group.qty;
+                            plantVal += group.value;
+                            hasVisiblePlantData = true;
 
-                    let ageColor = "var(--success)";
-                    if (group.maxAge > 90) ageColor = "var(--danger)";
-                    else if (group.maxAge > 30) ageColor = "#ea580c";
+                            let ageColor = "var(--success)";
+                            if (group.maxAge > 90) ageColor = "var(--danger)";
+                            else if (group.maxAge > 30) ageColor = "#ea580c";
 
-                    const tr = document.createElement("tr");
-                    tr.innerHTML = `
+                            const tr = document.createElement("tr");
+                            tr.innerHTML = `
                         <td>${summaryIndex++}</td>
                         <td><strong>${prodFor}</strong></td>
                         <td><strong>${prodAt}</strong></td>
@@ -828,182 +1121,184 @@ function render(data) {
                         <td class="qty-bold">${group.mc.toLocaleString()}</td>
                         <td>${group.loose.toLocaleString()}</td>
                         <td class="qty-bold" style="color:var(--accent);">${group.qty.toFixed(2)}</td>
-                        <td style="font-weight:600;">₹ ${group.value.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                        <td style="font-weight:600;">₹ ${group.value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                         <td style="color:${ageColor}; font-weight:800; text-align:center;">${group.maxAge} D</td>
                     `;
-                    sumTbody.appendChild(tr);
+                            sumTbody.appendChild(tr);
+                        }
+                    });
+
+                    if (hasVisiblePlantData) {
+                        companyMc += plantMc;
+                        companyLoose += plantLoose;
+                        companyQty += plantQty;
+                        companyVal += plantVal;
+                        hasVisibleCompanyData = true;
+
+                        // Render Plant Subtotal Row
+                        const plantSubTr = document.createElement("tr");
+                        plantSubTr.style.background = "var(--header-bg)";
+                        plantSubTr.style.fontWeight = "bold";
+                        plantSubTr.style.fontSize = "11px";
+                        plantSubTr.innerHTML = `
+                    <td></td>
+                    <td><strong>${prodFor}</strong></td>
+                    <td colspan="6" style="text-align:right; font-style:italic; font-size:11px;">Sub-Total (Plant: ${prodAt}):</td>
+                    <td class="qty-bold" style="font-size:11px;">${plantMc.toLocaleString()}</td>
+                    <td style="font-size:11px;">${plantLoose.toLocaleString()}</td>
+                    <td class="qty-bold" style="color:var(--accent); font-size:11px;">${plantQty.toFixed(2)}</td>
+                    <td style="font-weight:700; font-size:11px;">₹ ${plantVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                    <td></td>
+                `;
+                        sumTbody.appendChild(plantSubTr);
+                    }
+                });
+
+                if (hasVisibleCompanyData) {
+                    sumTotMc += companyMc;
+                    sumTotLse += companyLoose;
+                    sumTotQty += companyQty;
+                    sumTotVal += companyVal;
+
+                    // Render Company Total Row
+                    const compTotalTr = document.createElement("tr");
+                    compTotalTr.style.background = "var(--row-hover)";
+                    compTotalTr.style.fontWeight = "800";
+                    compTotalTr.style.fontSize = "12px";
+                    compTotalTr.style.borderTop = "1px solid var(--accent)";
+                    compTotalTr.style.borderBottom = "1px solid var(--accent)";
+                    compTotalTr.innerHTML = `
+                <td></td>
+                <td colspan="7" style="text-align:right; font-weight:850; text-transform:uppercase; font-size:12px;">TOTAL (Company: ${prodFor}):</td>
+                <td class="qty-bold" style="font-size:12px;">${companyMc.toLocaleString()}</td>
+                <td style="font-size:12px;">${companyLoose.toLocaleString()}</td>
+                <td class="qty-bold" style="color:var(--accent); font-size:12px;">${companyQty.toFixed(2)}</td>
+                <td style="font-weight:850; color:var(--primary); font-size:12px;">₹ ${companyVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                <td></td>
+            `;
+                    sumTbody.appendChild(compTotalTr);
                 }
             });
 
-            if (hasVisiblePlantData) {
-                companyMc += plantMc;
-                companyLoose += plantLoose;
-                companyQty += plantQty;
-                companyVal += plantVal;
-                hasVisibleCompanyData = true;
+            document.getElementById('sum_in').innerText = tin + " MC";
+            document.getElementById('sum_out').innerText = tout + " MC";
+            document.getElementById('sum_closing').innerText = (tin - tout) + " MC";
+            document.getElementById('sum_val').innerText = "₹ " + tval.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-                // Render Plant Subtotal Row
-                const plantSubTr = document.createElement("tr");
-                plantSubTr.style.background = "var(--header-bg)";
-                plantSubTr.style.fontWeight = "bold";
-                plantSubTr.style.fontSize = "9px";
-                plantSubTr.innerHTML = `
-                    <td></td>
-                    <td><strong>${prodFor}</strong></td>
-                    <td colspan="6" style="text-align:right; font-style:italic;">Sub-Total (Plant: ${prodAt}):</td>
-                    <td class="qty-bold">${plantMc.toLocaleString()}</td>
-                    <td>${plantLoose.toLocaleString()}</td>
-                    <td class="qty-bold" style="color:var(--accent);">${plantQty.toFixed(2)}</td>
-                    <td style="font-weight:700;">₹ ${plantVal.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
-                    <td></td>
-                `;
-                sumTbody.appendChild(plantSubTr);
-            }
-        });
+            // Update grand totals of Grouped Summary table
+            document.getElementById('sum_tot_mc').innerText = sumTotMc.toLocaleString();
+            document.getElementById('sum_tot_lse').innerText = sumTotLse.toLocaleString();
+            document.getElementById('sum_tot_qty').innerText = sumTotQty.toFixed(2);
+            document.getElementById('sum_tot_val').innerText = "₹ " + sumTotVal.toLocaleString('en-IN', { minimumFractionDigits: 2 });
 
-        if (hasVisibleCompanyData) {
-            sumTotMc += companyMc;
-            sumTotLse += companyLoose;
-            sumTotQty += companyQty;
-            sumTotVal += companyVal;
-
-            // Render Company Total Row
-            const compTotalTr = document.createElement("tr");
-            compTotalTr.style.background = "var(--row-hover)";
-            compTotalTr.style.fontWeight = "800";
-            compTotalTr.style.fontSize = "9.5px";
-            compTotalTr.style.borderTop = "1px solid var(--accent)";
-            compTotalTr.style.borderBottom = "1px solid var(--accent)";
-            compTotalTr.innerHTML = `
-                <td></td>
-                <td colspan="7" style="text-align:right; font-weight:800; text-transform:uppercase;">TOTAL (Company: ${prodFor}):</td>
-                <td class="qty-bold">${companyMc.toLocaleString()}</td>
-                <td>${companyLoose.toLocaleString()}</td>
-                <td class="qty-bold" style="color:var(--accent);">${companyQty.toFixed(2)}</td>
-                <td style="font-weight:800; color:var(--primary);">₹ ${companyVal.toLocaleString('en-IN', {minimumFractionDigits:2})}</td>
-                <td></td>
-            `;
-            sumTbody.appendChild(compTotalTr);
-        }
-    });
-
-    document.getElementById('sum_in').innerText = tin + " MC";
-    document.getElementById('sum_out').innerText = tout + " MC";
-    document.getElementById('sum_closing').innerText = (tin - tout) + " MC";
-    document.getElementById('sum_val').innerText = "₹ " + tval.toLocaleString('en-IN', {minimumFractionDigits: 2});
-
-    // Update grand totals of Grouped Summary table
-    document.getElementById('sum_tot_mc').innerText = sumTotMc.toLocaleString();
-    document.getElementById('sum_tot_lse').innerText = sumTotLse.toLocaleString();
-    document.getElementById('sum_tot_qty').innerText = sumTotQty.toFixed(2);
-    document.getElementById('sum_tot_val').innerText = "₹ " + sumTotVal.toLocaleString('en-IN', {minimumFractionDigits: 2});
-
-    // Sync Monthly Bill tab
-    renderBill(data);
-}
-
-// ─────────────────────────────────────────────
-// MONTHLY BILL — PROFESSIONAL FORMAT
-// ─────────────────────────────────────────────
-let billFilteredData = [];
-
-function parseDateStr(s) {
-    if (!s) return null;
-    const p = s.split('-');
-    if (p.length !== 3) return null;
-    return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
-}
-
-function buildBillData(billMonth) {
-    if (!billMonth) return null;
-    const [year, month] = billMonth.split('-').map(Number);
-    const monthStart = new Date(year, month - 1, 1);
-    const monthEnd   = new Date(year, month, 0);     // last day
-    const monthDays  = monthEnd.getDate();
-    const label = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
-
-    // Apply storage & batch filters (but NOT from/to date)
-    const fs = document.getElementById('bill_storage').value;
-    const fb = document.getElementById('f_batch').value;
-    const q  = document.getElementById('searchBox').value.toLowerCase();
-
-    const src = rawData.filter(r => {
-        if (fs !== 'all' && r.cold_storage_name !== fs) return false;
-        if (fb !== 'all' && r.batch_number !== fb)       return false;
-        if (q && !Object.values(r).join(' ').toLowerCase().includes(q)) return false;
-        return true;
-    });
-
-    const inrFmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits:2, maximumFractionDigits:2 });
-
-    // Group by storage
-    const stores = {};
-    src.forEach(r => {
-        const s = r.cold_storage_name || 'Unknown';
-        if (!stores[s]) stores[s] = { address: r.address, rows: [] };
-        stores[s].rows.push(r);
-    });
-
-    const storeBlocks = [];
-    Object.entries(stores).sort(([a],[b]) => a.localeCompare(b)).forEach(([store, info]) => {
-        const rows = info.rows;
-
-        // Opening stock: IN before billing month
-        const openingIN = rows.filter(r => {
-            const d = parseDateStr(r.in_date);
-            return r.cargo_movement_type === 'IN' && d && d < monthStart;
-        });
-
-        // IN during billing month
-        const inMonth = rows.filter(r => {
-            const d = parseDateStr(r.in_date);
-            return r.cargo_movement_type === 'IN' && d && d >= monthStart && d <= monthEnd;
-        });
-
-        // OUT during billing month
-        const outMonth = rows.filter(r => {
-            const d = parseDateStr(r.in_date);
-            return r.cargo_movement_type === 'OUT' && d && d >= monthStart && d <= monthEnd;
-        });
-
-        if (!openingIN.length && !inMonth.length && !outMonth.length) return;
-
-        function calcBillingRow(r, isOpening) {
-            const inDate = parseDateStr(r.in_date);
-            let days = isOpening ? monthDays
-                : Math.max(1, Math.floor((monthEnd - inDate) / 86400000) + 1);
-            const rt = (r.rent_type || 'DAILY').toUpperCase();
-            const holdCost = rt === 'MONTHLY'
-                ? r.no_of_mc * r.storage_rate_per_mc
-                : r.no_of_mc * r.storage_rate_per_mc * days;
-            const otherChg = isOpening ? 0 : (r.other_charges || 0);
-            return { ...r, days, holdCost, otherChg, rowTotal: holdCost + otherChg };
+            // Sync Monthly Bill tab
+            renderBill(data);
         }
 
-        const openRows = openingIN.map(r => calcBillingRow(r, true));
-        const inRows   = inMonth.map(r => calcBillingRow(r, false));
+        // ─────────────────────────────────────────────
+        // MONTHLY BILL — PROFESSIONAL FORMAT
+        // ─────────────────────────────────────────────
+        let billFilteredData = [];
 
-        const totOpenMC  = openRows.reduce((s, r) => s + r.no_of_mc, 0);
-        const totInMC    = inRows.reduce((s, r) => s + r.no_of_mc, 0);
-        const totOutMC   = outMonth.reduce((s, r) => s + r.no_of_mc, 0);
-        const closingMC  = totOpenMC + totInMC - totOutMC;
-        const totHolding = [...openRows, ...inRows].reduce((s, r) => s + r.holdCost, 0);
-        const totOther   = inRows.reduce((s, r) => s + r.otherChg, 0);
-        const grandTotal = totHolding + totOther;
+        function parseDateStr(s) {
+            if (!s) return null;
+            const p = s.split('-');
+            if (p.length !== 3) return null;
+            return new Date(parseInt(p[0]), parseInt(p[1]) - 1, parseInt(p[2]));
+        }
 
-        storeBlocks.push({ store, info, openRows, inRows, outMonth,
-            totOpenMC, totInMC, totOutMC, closingMC, totHolding, totOther, grandTotal, monthDays, label, billMonth });
-    });
+        function buildBillData(billMonth) {
+            if (!billMonth) return null;
+            const [year, month] = billMonth.split('-').map(Number);
+            const monthStart = new Date(year, month - 1, 1);
+            const monthEnd = new Date(year, month, 0);     // last day
+            const monthDays = monthEnd.getDate();
+            const label = monthStart.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
-    return { storeBlocks, monthDays, label, inrFmt };
-}
+            // Apply storage & batch filters (but NOT from/to date)
+            const fs = document.getElementById('bill_storage').value;
+            const fb = document.getElementById('f_batch').value;
+            const q = document.getElementById('searchBox').value.toLowerCase();
 
-function billTableHeader(showCharges) {
-    const chargeCols = showCharges ? `
+            const src = rawData.filter(r => {
+                if (fs !== 'all' && r.cold_storage_name !== fs) return false;
+                if (fb !== 'all' && r.batch_number !== fb) return false;
+                if (q && !Object.values(r).join(' ').toLowerCase().includes(q)) return false;
+                return true;
+            });
+
+            const inrFmt = new Intl.NumberFormat('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            // Group by storage
+            const stores = {};
+            src.forEach(r => {
+                const s = r.cold_storage_name || 'Unknown';
+                if (!stores[s]) stores[s] = { address: r.address, rows: [] };
+                stores[s].rows.push(r);
+            });
+
+            const storeBlocks = [];
+            Object.entries(stores).sort(([a], [b]) => a.localeCompare(b)).forEach(([store, info]) => {
+                const rows = info.rows;
+
+                // Opening stock: IN before billing month
+                const openingIN = rows.filter(r => {
+                    const d = parseDateStr(r.in_date);
+                    return r.cargo_movement_type === 'IN' && d && d < monthStart;
+                });
+
+                // IN during billing month
+                const inMonth = rows.filter(r => {
+                    const d = parseDateStr(r.in_date);
+                    return r.cargo_movement_type === 'IN' && d && d >= monthStart && d <= monthEnd;
+                });
+
+                // OUT during billing month
+                const outMonth = rows.filter(r => {
+                    const d = parseDateStr(r.in_date);
+                    return r.cargo_movement_type === 'OUT' && d && d >= monthStart && d <= monthEnd;
+                });
+
+                if (!openingIN.length && !inMonth.length && !outMonth.length) return;
+
+                function calcBillingRow(r, isOpening) {
+                    const inDate = parseDateStr(r.in_date);
+                    let days = isOpening ? monthDays
+                        : Math.max(1, Math.floor((monthEnd - inDate) / 86400000) + 1);
+                    const rt = (r.rent_type || 'DAILY').toUpperCase();
+                    const holdCost = rt === 'MONTHLY'
+                        ? r.no_of_mc * r.storage_rate_per_mc
+                        : r.no_of_mc * r.storage_rate_per_mc * days;
+                    const otherChg = isOpening ? 0 : (r.other_charges || 0);
+                    return { ...r, days, holdCost, otherChg, rowTotal: holdCost + otherChg };
+                }
+
+                const openRows = openingIN.map(r => calcBillingRow(r, true));
+                const inRows = inMonth.map(r => calcBillingRow(r, false));
+
+                const totOpenMC = openRows.reduce((s, r) => s + r.no_of_mc, 0);
+                const totInMC = inRows.reduce((s, r) => s + r.no_of_mc, 0);
+                const totOutMC = outMonth.reduce((s, r) => s + r.no_of_mc, 0);
+                const closingMC = totOpenMC + totInMC - totOutMC;
+                const totHolding = [...openRows, ...inRows].reduce((s, r) => s + r.holdCost, 0);
+                const totOther = inRows.reduce((s, r) => s + r.otherChg, 0);
+                const grandTotal = totHolding + totOther;
+
+                storeBlocks.push({
+                    store, info, openRows, inRows, outMonth,
+                    totOpenMC, totInMC, totOutMC, closingMC, totHolding, totOther, grandTotal, monthDays, label, billMonth
+                });
+            });
+
+            return { storeBlocks, monthDays, label, inrFmt };
+        }
+
+        function billTableHeader(showCharges) {
+            const chargeCols = showCharges ? `
         <th style="${thS}text-align:right;">Holding Cost</th>
         <th style="${thS}text-align:right;">L/U Chg</th>
         <th style="${thS}text-align:right;">Total</th>` : '';
-    return `<thead><tr style="background:#1e3a5f;color:#fff;">
+            return `<thead><tr style="background:#1e3a5f;color:#fff;">
         <th style="${thS}">#</th>
         <th style="${thS}">Batch #</th>
         <th style="${thS}">Species / Variety / Grade</th>
@@ -1014,22 +1309,22 @@ function billTableHeader(showCharges) {
         <th style="${thS}text-align:right;">Rate / MC</th>
         ${chargeCols}
     </tr></thead>`;
-}
+        }
 
-const thS = ''; // styles now come from .bill-tbl thead th CSS class
-const tdS = ''; // styles now come from .bill-tbl tbody td CSS class
+        const thS = ''; // styles now come from .bill-tbl thead th CSS class
+        const tdS = ''; // styles now come from .bill-tbl tbody td CSS class
 
-function buildStoreHTML(blk, inrFmt, isForPrint) {
-    const empty = (cols, msg) =>
-        `<tr><td colspan="${cols}" class="cell-muted" style="font-style:italic;padding:14px;">${msg}</td></tr>`;
+        function buildStoreHTML(blk, inrFmt, isForPrint) {
+            const empty = (cols, msg) =>
+                `<tr><td colspan="${cols}" class="cell-muted" style="font-style:italic;padding:14px;">${msg}</td></tr>`;
 
-    // Opening stock rows (no row bg inline — alternation from global CSS)
-    const openHtml = blk.openRows.length
-        ? blk.openRows.map((r, i) => `<tr>
-            <td>${i+1}</td>
+            // Opening stock rows (no row bg inline — alternation from global CSS)
+            const openHtml = blk.openRows.length
+                ? blk.openRows.map((r, i) => `<tr>
+            <td>${i + 1}</td>
             <td class="cell-batch">${r.batch_number}</td>
-            <td>${[r.species,r.variety,r.grade].filter(Boolean).join(' / ')}</td>
-            <td>${r.packing_style||''}</td>
+            <td>${[r.species, r.variety, r.grade].filter(Boolean).join(' / ')}</td>
+            <td>${r.packing_style || ''}</td>
             <td>${r.in_date}</td>
             <td class="cell-center" style="font-weight:700;">${r.no_of_mc}</td>
             <td class="cell-days">${r.days} days</td>
@@ -1038,15 +1333,15 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
             <td class="cell-muted">—</td>
             <td class="cell-total">₹${inrFmt.format(r.rowTotal)}</td>
         </tr>`).join('')
-        : empty(11, 'No opening stock for this period');
+                : empty(11, 'No opening stock for this period');
 
-    // IN during month rows
-    const inHtml = blk.inRows.length
-        ? blk.inRows.map((r, i) => `<tr>
-            <td>${i+1}</td>
+            // IN during month rows
+            const inHtml = blk.inRows.length
+                ? blk.inRows.map((r, i) => `<tr>
+            <td>${i + 1}</td>
             <td class="cell-batch">${r.batch_number}</td>
-            <td>${[r.species,r.variety,r.grade].filter(Boolean).join(' / ')}</td>
-            <td>${r.packing_style||''}</td>
+            <td>${[r.species, r.variety, r.grade].filter(Boolean).join(' / ')}</td>
+            <td>${r.packing_style || ''}</td>
             <td class="cell-in-date">${r.in_date}</td>
             <td class="cell-center" style="font-weight:700;">${r.no_of_mc}</td>
             <td class="cell-days">${r.days} days</td>
@@ -1055,24 +1350,24 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
             <td class="cell-right">₹${inrFmt.format(r.otherChg)}</td>
             <td class="cell-total">₹${inrFmt.format(r.rowTotal)}</td>
         </tr>`).join('')
-        : empty(11, 'No new receipts this month');
+                : empty(11, 'No new receipts this month');
 
-    // OUT during month rows
-    const outHtml = blk.outMonth.length
-        ? blk.outMonth.map((r, i) => `<tr>
-            <td>${i+1}</td>
+            // OUT during month rows
+            const outHtml = blk.outMonth.length
+                ? blk.outMonth.map((r, i) => `<tr>
+            <td>${i + 1}</td>
             <td class="cell-out">${r.batch_number}</td>
-            <td>${[r.species,r.variety,r.grade].filter(Boolean).join(' / ')}</td>
-            <td>${r.packing_style||''}</td>
+            <td>${[r.species, r.variety, r.grade].filter(Boolean).join(' / ')}</td>
+            <td>${r.packing_style || ''}</td>
             <td class="cell-out">${r.in_date}</td>
             <td class="cell-out cell-center">− ${r.no_of_mc}</td>
             <td class="cell-muted">—</td>
             <td class="cell-muted">—</td>
         </tr>`).join('')
-        : empty(8, 'No dispatches this month');
+                : empty(8, 'No dispatches this month');
 
-    const tbl = (rows) => `<div style="overflow-x:auto;"><table class="bill-tbl">${rows}</table></div>`;
-    const colHeaders = `<thead><tr>
+            const tbl = (rows) => `<div style="overflow-x:auto;"><table class="bill-tbl">${rows}</table></div>`;
+            const colHeaders = `<thead><tr>
         <th>#</th><th>Batch #</th><th>Species / Variety / Grade</th>
         <th>Pack Style</th><th>Date</th>
         <th class="cell-center">MC</th><th class="cell-center">Holding Days</th>
@@ -1081,7 +1376,7 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
         <th class="cell-right">L/U Chg</th>
         <th class="cell-right">Total</th>
     </tr></thead>`;
-    const outColHeaders = `<thead><tr>
+            const outColHeaders = `<thead><tr>
         <th>#</th><th>Batch #</th><th>Species / Variety / Grade</th>
         <th>Pack Style</th><th>Out Date</th>
         <th class="cell-center">MC Dispatched</th>
@@ -1089,9 +1384,9 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
         <th class="cell-right">Remarks</th>
     </tr></thead>`;
 
-    const printStyle = isForPrint ? 'page-break-inside:avoid;' : '';
+            const printStyle = isForPrint ? 'page-break-inside:avoid;' : '';
 
-    return `
+            return `
     <div class="bill-inv-card" style="padding:24px 28px; background:#fff; color:#000; border:1px solid #ccc; font-family:Arial,sans-serif; ${printStyle}">
         
         <!-- Header -->
@@ -1112,8 +1407,8 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
                 <b>Billing Period :</b> ${blk.label} (${blk.monthDays} Days)
             </div>
             <div style="width:48%; text-align:right;">
-                <b>Bill No :</b> CS-${blk.store.substring(0,3).toUpperCase()}-${(blk.billMonth || '').replace('-', '')}<br>
-                <b>Bill Date :</b> ${new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}<br>
+                <b>Bill No :</b> CS-${blk.store.substring(0, 3).toUpperCase()}-${(blk.billMonth || '').replace('-', '')}<br>
+                <b>Bill Date :</b> ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}<br>
                 <b>Client :</b> ${companyName}
             </div>
         </div>
@@ -1187,44 +1482,44 @@ function buildStoreHTML(blk, inrFmt, isForPrint) {
         </div>
 
     </div>`;
-}
+        }
 
-function renderBill(data) {
-    billFilteredData = data;
-    const billContent = document.getElementById('billContent');
-    if (!billContent) return;
+        function renderBill(data) {
+            billFilteredData = data;
+            const billContent = document.getElementById('billContent');
+            if (!billContent) return;
 
-    const billMonth = document.getElementById('bill_month').value;
-    if (!billMonth) {
-        billContent.innerHTML = `<div style="text-align:center;padding:70px 20px;color:var(--text-muted);">
+            const billMonth = document.getElementById('bill_month').value;
+            if (!billMonth) {
+                billContent.innerHTML = `<div style="text-align:center;padding:70px 20px;color:var(--text-muted);">
             <div style="font-size:42px;margin-bottom:14px;">📋</div>
             <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">Select a Billing Month</div>
             <div style="font-size:11px;">Use the month picker above to generate a professional monthly bill.</div>
         </div>`;
-        return;
-    }
+                return;
+            }
 
-    const result = buildBillData(billMonth);
-    if (!result || !result.storeBlocks.length) {
-        billContent.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">No transactions found for the selected billing period.</div>`;
-        return;
-    }
+            const result = buildBillData(billMonth);
+            if (!result || !result.storeBlocks.length) {
+                billContent.innerHTML = `<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:12px;">No transactions found for the selected billing period.</div>`;
+                return;
+            }
 
-    const { storeBlocks, inrFmt } = result;
-    billContent.innerHTML = storeBlocks.map(b => buildStoreHTML(b, inrFmt, false)).join('');
-}
-function printBill() {
-    const billMonth = document.getElementById('bill_month').value;
-    if (!billMonth) { alert('Please select a billing month first.'); return; }
+            const { storeBlocks, inrFmt } = result;
+            billContent.innerHTML = storeBlocks.map(b => buildStoreHTML(b, inrFmt, false)).join('');
+        }
+        function printBill() {
+            const billMonth = document.getElementById('bill_month').value;
+            if (!billMonth) { alert('Please select a billing month first.'); return; }
 
-    const result = buildBillData(billMonth);
-    if (!result || !result.storeBlocks.length) { alert('No data found for the selected period.'); return; }
+            const result = buildBillData(billMonth);
+            if (!result || !result.storeBlocks.length) { alert('No data found for the selected period.'); return; }
 
-    const { storeBlocks, label, inrFmt } = result;
-    const billsHtml = storeBlocks.map(b => buildStoreHTML(b, inrFmt, true)).join('');
+            const { storeBlocks, label, inrFmt } = result;
+            const billsHtml = storeBlocks.map(b => buildStoreHTML(b, inrFmt, true)).join('');
 
-    const printWin = window.open('', '_blank', 'width=1100,height=900');
-    printWin.document.write(`<!DOCTYPE html>
+            const printWin = window.open('', '_blank', 'width=1100,height=900');
+            printWin.document.write(`<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -1377,7 +1672,7 @@ function printBill() {
             <div class="doc-meta">Prepared by: <strong>${companyName}</strong> &nbsp;|&nbsp; Period: <strong>${label}</strong></div>
         </div>
         <div style="text-align:right; font-size:11px; color:#475569;">
-            Printed: ${new Date().toLocaleDateString('en-IN', {day:'numeric',month:'long',year:'numeric'})}<br>
+            Printed: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}<br>
             <span style="font-size:9px; opacity:0.6;">ERP — Cold Storage Module</span>
         </div>
     </div>
@@ -1385,38 +1680,39 @@ function printBill() {
     <script>window.onload = function(){ window.print(); }<\/script>
 </body>
 </html>`);
-    printWin.document.close();
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const s_el = document.getElementById('f_storage');
-    const b_el = document.getElementById('f_batch');
-    const bs_el = document.getElementById('bill_storage');
-    
-    // Dynamic Filter Sync Options (Inserted as Searchable Data Matrix)
-    const stores = [...new Set(rawData.map(d => d.cold_storage_name))].filter(Boolean).sort();
-    const batches = [...new Set(rawData.map(d => d.batch_number))].filter(Boolean).sort();
-    
-    stores.forEach(s => {
-        s_el.innerHTML += `<option value="${s}">${s}</option>`;
-        if (bs_el) bs_el.innerHTML += `<option value="${s}">${s}</option>`;
-    });
-    batches.forEach(b => b_el.innerHTML += `<option value="${b}">${b}</option>`);
-
-    applyFilters();
-    
-    document.querySelectorAll('input, select').forEach(el => {
-        if (el.id !== 'bill_storage' && el.id !== 'bill_month') {
-            el.onchange = applyFilters;
+            printWin.document.close();
         }
-    });
-    document.getElementById('searchBox').oninput = applyFilters;
-    
-    if (bs_el) bs_el.onchange = () => renderBill(billFilteredData);
-    document.getElementById('bill_month').onchange = () => renderBill(billFilteredData);
-});
 
-</script>
-<script src="/static/js/global-loader.js?v=skel10"></script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const s_el = document.getElementById('f_storage');
+            const b_el = document.getElementById('f_batch');
+            const bs_el = document.getElementById('bill_storage');
+
+            // Dynamic Filter Sync Options (Inserted as Searchable Data Matrix)
+            const stores = [...new Set(rawData.map(d => d.cold_storage_name))].filter(Boolean).sort();
+            const batches = [...new Set(rawData.map(d => d.batch_number))].filter(Boolean).sort();
+
+            stores.forEach(s => {
+                s_el.innerHTML += `<option value="${s}">${s}</option>`;
+                if (bs_el) bs_el.innerHTML += `<option value="${s}">${s}</option>`;
+            });
+            batches.forEach(b => b_el.innerHTML += `<option value="${b}">${b}</option>`);
+
+            applyFilters();
+
+            document.querySelectorAll('input, select').forEach(el => {
+                if (el.id !== 'bill_storage' && el.id !== 'bill_month') {
+                    el.onchange = applyFilters;
+                }
+            });
+            document.getElementById('searchBox').oninput = applyFilters;
+
+            if (bs_el) bs_el.onchange = () => renderBill(billFilteredData);
+            document.getElementById('bill_month').onchange = () => renderBill(billFilteredData);
+        });
+
+    </script>
+    <script src="/static/js/global-loader.js?v=skel10"></script>
 </body>
+
 </html>

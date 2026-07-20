@@ -15,6 +15,59 @@
 <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
 <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
 <link rel="stylesheet" href="/static/css/bknr-columns.css">
+<style>
+/* Master table styling overrides to match React UI */
+.master-table-wrap {
+    background: var(--surface-panel) !important;
+    border-radius: 12px;
+    border: 1px solid var(--border-light) !important;
+    box-shadow: var(--shadow-soft);
+    overflow-x: auto;
+    width: 95%;
+    max-width: 1400px;
+    margin: 0 auto 40px;
+}
+.master-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
+}
+.master-th {
+    background: rgba(255,255,255,0.02) !important;
+    color: var(--text-secondary) !important;
+    padding: 10px 12px;
+    font-size: 10px !important;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--border-light) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 800;
+    letter-spacing: 0.4px;
+}
+[data-theme="light"] .master-th {
+    background: rgba(0,0,0,0.02) !important;
+}
+.master-td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border-light) !important;
+    font-size: 12px !important;
+    color: var(--text-primary) !important;
+    text-align: center;
+    white-space: nowrap;
+    font-weight: 500;
+}
+.master-tr {
+    transition: background 0.2s;
+}
+.master-tr:hover {
+    background: var(--row-hover) !important;
+    cursor: pointer;
+}
+.master-tr.selected {
+    background: rgba(234, 88, 12, 0.08) !important;
+    border-left: 3px solid var(--corp-ops);
+}
+</style>
 </head>
 
 <body>
@@ -60,7 +113,7 @@
     <input type="hidden" id="meta_company_id">
 
     <div class="actions">
-      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE CONFIG</button>
+      <button class="btn btn-primary" type="submit" id="submitBtn"><i class="fa-solid fa-check"></i> SAVE</button>
       <button class="btn btn-clear" type="button" onclick="clearForm()"><i class="fa-solid fa-xmark"></i> CANCEL</button>
     </div>
   </div>
@@ -73,7 +126,7 @@
     
     <div style="display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap;">
         <div class="top-actions" id="toggleActionArea">
-            <button class="btn btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add Config</button>
+            <button class="btn btn-primary" onclick="toggleForm()"><i class="fa-solid fa-plus"></i> Add</button>
             <button type="button" class="btn btn-accent" onclick="window.location.href='/criteria/setup/next'">
                 NEXT STEP <i class="fa-solid fa-arrow-right"></i>
             </button>
@@ -82,10 +135,10 @@
         <div class="menu-container" id="threeDotsMenu">
           <button class="dots-trigger" id="dotsBtn"><i class="fa-solid fa-ellipsis-v"></i></button>
           <div id="dropdownMenu">
-            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit Entry</div>
-            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print PDF</div>
-            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Export Excel</div>
-            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete Mapping</div>
+            <div onclick="editSelected()" class="menu-item"><i class="fa-solid fa-pen"></i> Edit</div>
+            <div onclick="printSelected()" class="menu-item"><i class="fa-solid fa-print"></i> Print</div>
+            <div onclick="exportExcel()" class="menu-item"><i class="fa-solid fa-file-excel"></i> Excel</div>
+            <div onclick="deleteSelected()" class="menu-item" style="color:var(--danger); border-top:1px dashed #f1f5f9;"><i class="fa-solid fa-trash"></i> Delete</div>
           </div>
         </div>
     </div>
@@ -130,21 +183,21 @@
     {% endfor %}
 </div>
 
-<div class="table-wrap">
-  <table id="dataTable">
+<div class="master-table-wrap">
+  <table class="master-table" id="dataTable">
     <thead>
       <tr>
-        <th style="width:70px;">ID</th>
-        <th>Species Classification</th>
-        <th>HOSO Count</th>
-        <th>Yield (%)</th>
-        <th>Calculated HLSO Count</th>
-        <th>Log Timestamp</th>
+        <th class="master-th" style="width:70px;">ID</th>
+        <th class="master-th">Species Classification</th>
+        <th class="master-th">HOSO Count</th>
+        <th class="master-th">Yield (%)</th>
+        <th class="master-th">Calculated HLSO Count</th>
+        <th class="master-th">Log Timestamp</th>
       </tr>
     </thead>
     <tbody>
       {% for row in today_data %}
-      <tr data-id="{{ row.id }}" 
+      <tr class="master-tr" data-id="{{ row.id }}" 
           data-species="{{ row.species }}"
           data-hoso="{{ row.hoso_count }}"
           data-yield="{{ row.hlso_yield_pct }}"
@@ -152,12 +205,12 @@
           data-date="{{ row.date }}" 
           data-time="{{ row.time }}"
           onclick="selectRowOrCard(this)">
-        <td>#{{ row.id }}</td>
-        <td class="text-left" style="font-weight:700;color:var(--accent);">{{ row.species }}</td>
-        <td style="font-weight:600;">{{ row.hoso_count }}</td>
-        <td style="font-weight:700; color:var(--success);">{{ row.hlso_yield_pct }}%</td>
-        <td><strong>{{ row.hlso_count }}</strong></td>
-        <td style="color:#475569; font-size:11px;">{{ row.date if row.date else '' }} | {{ row.time if row.time else '' }}</td>
+        <td class="master-td">#{{ row.id }}</td>
+        <td class="master-td text-left" style="font-weight:700;color:var(--accent);">{{ row.species }}</td>
+        <td class="master-td" style="font-weight:600;">{{ row.hoso_count }}</td>
+        <td class="master-td" style="font-weight:700; color:var(--success);">{{ row.hlso_yield_pct }}%</td>
+        <td class="master-td"><strong>{{ row.hlso_count }}</strong></td>
+        <td class="master-td" style="color:#475569; font-size:11px;">{{ row.date if row.date else '' }} | {{ row.time if row.time else '' }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -266,7 +319,7 @@ function editSelected(){
   document.getElementById("hoso_count").value = d.hoso;
   document.getElementById("hlso_yield_pct").value = d.yield;
   
-  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE CONFIG";
+  document.getElementById("submitBtn").innerHTML = "<i class='fa-solid fa-check'></i> UPDATE";
   document.getElementById("formSection").style.display = "block";
   const t = document.getElementById("toggleActionArea");
   if(t) t.style.display = "none";

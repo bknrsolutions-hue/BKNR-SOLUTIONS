@@ -139,6 +139,10 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
     success_msg = request.session.pop("success_msg", None)
 
+    raw_po_list = [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number) if p.po_number]
+    if "N/A" not in raw_po_list:
+        raw_po_list.insert(0, "N/A")
+
     context = {
         "success_msg": success_msg,
         "table_data": table_data,
@@ -155,7 +159,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
         "production_places": production_places_list,
         "locations": coldstore_list,
         "packing_styles": db.query(packing_styles).filter(packing_styles.company_id == company_code).all(),
-        "po_numbers": [p.po_number for p in db.query(pending_orders.po_number).filter(pending_orders.company_id == company_code).distinct().order_by(pending_orders.po_number)],
+        "po_numbers": raw_po_list,
         "global_production_for": global_production_for or "",
         "global_location": global_location or ""
     }
