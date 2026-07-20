@@ -317,9 +317,11 @@ export default function MasterBase({
                         ) : (
                           lookups[field.id]?.map(item => {
                             // Dynamically identify lookup field display value
-                            const displayVal = item[field.lookupLabelKey] || item[`${field.lookupModel}_name`] || item.name || item.brand_name || item.species_name || item.variety_name || item.contractor_name || item.storage_name || item.location_name || item.peeling_at || item.production_at || item.production_for;
+                            const displayVal = typeof item === 'string' 
+                              ? item 
+                              : (item[field.lookupLabelKey] || item[field.lookupValueKey] || item.glaze_name || item.freezer_name || item.grade_name || item.packing_style || item.supplier_name || item.vendor_name || item.buyer_name || item.agent_name || item[`${field.lookupModel}_name`] || item.name || item.brand_name || item.species_name || item.variety_name || item.contractor_name || item.storage_name || item.location_name || item.peeling_at || item.production_at || item.production_for);
                             return (
-                              <option key={item.id} value={displayVal}>{displayVal}</option>
+                              <option key={item.id || displayVal} value={displayVal}>{displayVal}</option>
                             );
                           })
                         )}

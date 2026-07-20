@@ -352,13 +352,20 @@ body {
   height: 112px;
   margin-bottom: 4px;
   object-fit: contain;
-  border-radius: 18px;
+  border-radius: 50%;
+  background: #2563eb;
+  padding: 16px;
+  filter: brightness(0) invert(1);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
 }
 
 .tenant-loading-logo.compact {
   width: 64px;
   height: 64px;
-  border-radius: 12px;
+  border-radius: 50%;
+  background: #2563eb;
+  padding: 10px;
+  filter: brightness(0) invert(1);
 }
 
 .tenant-loading-screen h2,
@@ -701,8 +708,18 @@ body {
 }
 
 .header-left-meta { display: flex; align-items: center; gap: 10px; }
-.header-brand-title-box { border-left: 3px solid var(--corp-ops); padding-left: 12px; margin-left: 4px; display: flex; align-items: center; }
-.header-premium-title { font-size: 12px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-primary); }
+.header-premium-title {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #ffffff;
+  text-shadow: 
+    0 1px 0 #60a5fa,
+    0 2px 0 #2563eb,
+    0 3px 0 #1d4ed8,
+    0 4px 6px rgba(0, 0, 0, 0.45);
+}
 .header-right-actions { display: flex; align-items: center; gap: 10px; position: relative; }
 
 .hamburger-trigger-btn {

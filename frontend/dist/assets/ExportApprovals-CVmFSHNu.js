@@ -1,0 +1,1 @@
+import{r as e}from"./index-CyGOfsbx.js";import t from"./SupportingDocuments-B9ZaOCdh.js";var n=e();function r(){return(0,n.jsx)(t,{initialStatus:`PENDING_APPROVAL`,pageTitle:`Export Document Approvals`,pageSubtitle:`Review documents assigned to you and complete approval decisions.`,approvalsOnly:!0})}export{r as default};

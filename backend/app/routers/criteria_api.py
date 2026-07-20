@@ -108,6 +108,15 @@ def get_all(request: Request, model_name: str, db: Session = Depends(get_db)):
 
     records = query.all()
 
+    # 🔥 Auto-create grade_to_hoso records if table is empty for company
+    if model_name.lower() == "grade_to_hoso" and not records:
+        from app.services.grade_to_hoso_sync import sync_grade_to_hoso
+        try:
+            sync_grade_to_hoso(db, company_code, session_email)
+            records = query.all()
+        except Exception as e:
+            print("Auto create grade_to_hoso warning:", e)
+
     # Serialize rows dynamically
     serialized = []
     for row in records:
@@ -198,6 +207,13 @@ async def save_record(request: Request, model_name: str, db: Session = Depends(g
         db.rollback()
         return JSONResponse(status_code=400, content={"error": f"Database save failed: {str(e)}"})
 
+    if model_name.lower() in ["grades", "varieties", "glazes", "species", "hoso_hlso", "grade_to_hoso"]:
+        from app.services.grade_to_hoso_sync import sync_grade_to_hoso
+        try:
+            sync_grade_to_hoso(db, company_code, session_email or "system@bknr.com")
+        except Exception as e:
+            print("sync_grade_to_hoso trigger warning:", e)
+
     return {"status": "success", "message": "Record saved successfully"}
 
 # ---------------------------------------------------------
@@ -206,6 +222,7 @@ async def save_record(request: Request, model_name: str, db: Session = Depends(g
 @router.post("/{model_name}/delete/{id}")
 @router.delete("/{model_name}/{id}")
 def delete_record(request: Request, model_name: str, id: int, db: Session = Depends(get_db)):
+    session_email = request.session.get("email")
     company_code = request.session.get("company_code")
 
     if not company_code:
@@ -223,5 +240,12 @@ def delete_record(request: Request, model_name: str, id: int, db: Session = Depe
 
     db.delete(row)
     db.commit()
+
+    if model_name.lower() in ["grades", "varieties", "glazes", "species", "hoso_hlso", "grade_to_hoso"]:
+        from app.services.grade_to_hoso_sync import sync_grade_to_hoso
+        try:
+            sync_grade_to_hoso(db, company_code, session_email or "system@bknr.com")
+        except Exception as e:
+            print("sync_grade_to_hoso trigger warning:", e)
 
     return {"status": "success", "message": "Record deleted successfully"}

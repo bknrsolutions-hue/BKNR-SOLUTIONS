@@ -1,4 +1,5 @@
 import math
+import re
 from sqlalchemy.orm import Session
 
 from app.database.models.criteria import (
@@ -6,7 +7,8 @@ from app.database.models.criteria import (
     varieties,
     glazes,
     species,
-    grade_to_hoso
+    grade_to_hoso,
+    HOSO_HLSO_Yields
 )
 
 BASE_COUNT = {
@@ -30,6 +32,23 @@ BASE_COUNT = {
     "BKN": 180,
     "DC": 180,
 }
+
+
+def parse_base_count(grade_name: str) -> int:
+    if not grade_name:
+        return 0
+    g_str = grade_name.strip().upper()
+    if g_str in BASE_COUNT:
+        return BASE_COUNT[g_str]
+    if g_str in ["BKN", "DC"]:
+        return 180
+    nums = re.findall(r'\d+', g_str)
+    if nums:
+        try:
+            return int(nums[-1])
+        except ValueError:
+            return 0
+    return 0
 
 
 def get_nw_grade_from_hlso(hlso: int) -> str:
@@ -70,10 +89,21 @@ def get_nw_grade_from_hlso(hlso: int) -> str:
     return "DC"
 
 
+class ItemHolder:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
 def sync_grade_to_hoso(db: Session, company_id: str, email: str):
     """
-    🔥 FINAL – PHOTO BASED LOGIC
+    🔥 DYNAMIC & RESILIENT – GENERATES NEW COMBINATIONS FOR ANY GRADE / VARIETY / GLAZE / SPECIES
     """
+    from app.services.default_masters import seed_default_masters
+    try:
+        seed_default_masters(db, company_id, email)
+    except Exception as e:
+        print("seed_default_masters warning in sync:", e)
 
     # 1️⃣ FULL CLEAN
     db.query(grade_to_hoso).filter(
@@ -84,55 +114,112 @@ def sync_grade_to_hoso(db: Session, company_id: str, email: str):
     grade_list = db.query(grades).filter(
         grades.company_id == company_id
     ).all()
+    if not grade_list:
+        grade_list = [ItemHolder(grade_name=k) for k in BASE_COUNT.keys()]
 
     variety_list = db.query(varieties).filter(
         varieties.company_id == company_id
     ).all()
+    if not variety_list:
+        variety_list = [
+            ItemHolder(variety_name="HLSO", peeling_yield="100", soaking_yield="100"),
+            ItemHolder(variety_name="PUD", peeling_yield="100", soaking_yield="100")
+        ]
 
     glaze_list = db.query(glazes).filter(
         glazes.company_id == company_id
     ).all()
+    if not glaze_list:
+        glaze_list = [
+            ItemHolder(glaze_name="NWNC"),
+            ItemHolder(glaze_name="10%"),
+            ItemHolder(glaze_name="20%")
+        ]
 
     species_list = db.query(species).filter(
         species.company_id == company_id
     ).all()
+    if not species_list:
+        species_list = [
+            ItemHolder(species_name="Vannamei"),
+            ItemHolder(species_name="Black Tiger")
+        ]
 
-    # 2️⃣ REBUILD
+    # 2️⃣ HOSO COUNT LOOKUP MAP FROM HOSO_HLSO_YIELDS
+    yield_rows = db.query(HOSO_HLSO_Yields).filter(
+        HOSO_HLSO_Yields.company_id == company_id
+    ).all()
+    yield_map = {(y.species, y.hlso_count): y.hoso_count for y in yield_rows}
+
+    seen_combos = set()
+
+    # 3️⃣ REBUILD
     for sp in species_list:
+        sp_name = getattr(sp, 'species_name', 'Vannamei') or 'Vannamei'
         for g in grade_list:
+            g_name = getattr(g, 'grade_name', '')
+            base = parse_base_count(g_name)
+            if not base:
+                continue
+
             for v in variety_list:
+                v_name = getattr(v, 'variety_name', 'HLSO') or 'HLSO'
                 for z in glaze_list:
+                    z_name = getattr(z, 'glaze_name', 'NWNC') or 'NWNC'
 
-                    base = BASE_COUNT.get(g.grade_name)
-                    if not base:
+                    combo_key = (company_id, sp_name, g_name, v_name, z_name)
+                    if combo_key in seen_combos:
                         continue
+                    seen_combos.add(combo_key)
 
-                    glaze_factor = (
-                        1
-                        if z.glaze_name.upper() == "NWNC"
-                        else (100 - float(z.glaze_name.replace("%", ""))) / 100
-                    )
+                    # Safe glaze factor calculation
+                    try:
+                        gz_str = str(z_name).strip().upper()
+                        if not gz_str or gz_str in ["NWNC", "0", "0%"]:
+                            glaze_factor = 1.0
+                        else:
+                            gz_num = float(gz_str.replace("%", "").strip())
+                            glaze_factor = (100.0 - gz_num) / 100.0
+                            if glaze_factor <= 0:
+                                glaze_factor = 1.0
+                    except Exception:
+                        glaze_factor = 1.0
 
-                    peel = (float(v.peeling_yield or 100)) / 100
-                    soak = (float(v.soaking_yield or 100)) / 100
+                    # Safe peeling yield
+                    try:
+                        peel_num = float(getattr(v, 'peeling_yield', 100) or 100)
+                        peel = peel_num / 100.0 if peel_num > 0 else 1.0
+                    except Exception:
+                        peel = 1.0
+
+                    # Safe soaking yield
+                    try:
+                        soak_num = float(getattr(v, 'soaking_yield', 100) or 100)
+                        soak = soak_num / 100.0 if soak_num > 0 else 1.0
+                    except Exception:
+                        soak = 1.0
 
                     # ✅ HLSO FORMULA
                     hlso = math.floor(base / glaze_factor / peel / soak)
 
+                    # ✅ HOSO COUNT LOOKUP
+                    hoso_count_val = yield_map.get((sp_name, hlso))
+
                     # ✅ NW GRADE FROM HLSO
                     nw_grade = (
-                        g.grade_name
-                        if g.grade_name in ["BKN", "DC"]
+                        g_name
+                        if g_name in ["BKN", "DC"]
                         else get_nw_grade_from_hlso(hlso)
                     )
 
                     db.add(
                         grade_to_hoso(
-                            species=sp.species_name or "NA",
-                            grade_name=g.grade_name,
-                            variety_name=v.variety_name,
-                            glaze_name=z.glaze_name,
+                            species=sp_name,
+                            grade_name=g_name,
+                            variety_name=v_name,
+                            glaze_name=z_name,
                             hlso_count=hlso,
+                            hoso_count=hoso_count_val,
                             nw_grade=nw_grade,
                             email=email,
                             company_id=company_id

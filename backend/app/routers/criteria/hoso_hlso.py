@@ -10,6 +10,7 @@ import math
 
 from app.database import get_db
 from app.database.models.criteria import HOSO_HLSO_Yields, species
+from app.services.grade_to_hoso_sync import sync_grade_to_hoso
 
 router = APIRouter(tags=["HOSO → HLSO YIELDS"])
 templates = Jinja2Templates(directory="app/templates")
@@ -139,6 +140,11 @@ def save_hoso_hlso(
                 )
             )
 
+    try:
+        sync_grade_to_hoso(db, company_id, email)
+    except Exception as e:
+        print("sync_grade_to_hoso warning:", e)
+
     db.commit()
     return JSONResponse({"success": True})
 
@@ -153,6 +159,7 @@ def delete_hoso_hlso(
     db: Session = Depends(get_db)
 ):
 
+    email = request.session.get("email") or ""
     company_id = request.session.get("company_code")
     if not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
@@ -161,6 +168,11 @@ def delete_hoso_hlso(
         HOSO_HLSO_Yields.id == id,
         HOSO_HLSO_Yields.company_id == company_id
     ).delete()
+
+    try:
+        sync_grade_to_hoso(db, company_id, email)
+    except Exception as e:
+        print("sync_grade_to_hoso warning:", e)
 
     db.commit()
     return JSONResponse({"status": "ok"})

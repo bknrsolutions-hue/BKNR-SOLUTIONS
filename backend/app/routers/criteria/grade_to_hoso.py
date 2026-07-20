@@ -43,6 +43,23 @@ def grade_to_hoso_report(request: Request, db: Session = Depends(get_db)):
         )
         .all()
     )
+
+    if not rows:
+        try:
+            sync_grade_to_hoso(db, company_id, email)
+            rows = (
+                db.query(grade_to_hoso)
+                .filter(grade_to_hoso.company_id == company_id)
+                .order_by(
+                    grade_to_hoso.species,
+                    grade_to_hoso.grade_name,
+                    grade_to_hoso.variety_name,
+                    grade_to_hoso.glaze_name
+                )
+                .all()
+            )
+        except Exception as e:
+            print("Auto create grade_to_hoso warning:", e)
     
     # ✅ FIX: TemplateResponse arguments updated for Python 3.13 / FastAPI latest
     return templates.TemplateResponse(

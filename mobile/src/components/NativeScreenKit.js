@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
   header: { minHeight: 56, flexDirection: 'row', alignItems: 'center', gap: 9, paddingHorizontal: 11, borderBottomWidth: 1, borderBottomColor: '#31577d', backgroundColor: '#0b2345', shadowColor: '#061426', shadowOpacity: .24, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 7, zIndex: 2 },
   headerCopy: { flex: 1, minWidth: 0 },
   title: { color: '#0f172a', fontSize: 18, fontWeight: '900' },
-  companyName: { marginBottom: 1, fontSize: 9, fontWeight: '900', letterSpacing: .45, textTransform: 'uppercase' },
+  companyName: { marginBottom: 1, fontSize: 10, fontWeight: '900', letterSpacing: .6, textTransform: 'uppercase', color: '#67e8f9', textShadowColor: 'rgba(37, 99, 235, 0.95)', textShadowOffset: { width: 1, height: 2 }, textShadowRadius: 3 },
   subtitle: { marginTop: 2, color: '#64748b', fontSize: 11.5, fontWeight: '700' },
   headerTool: { width: 36, alignItems: 'center', justifyContent: 'center' },
   headerToolIcon: { width: 30, height: 27, alignItems: 'center', justifyContent: 'center', borderRadius: 8 },
