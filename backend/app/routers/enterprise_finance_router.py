@@ -57,11 +57,15 @@ def _pdf_amount(value: str) -> float:
     if not raw or raw in {"-", "—"}:
         return 0.0
     negative = raw.startswith("(") and raw.endswith(")")
+    match = re.search(r"\(?-?\d[\d,]*\.\d{2}\)?", raw)
+    if match:
+        raw = match.group(0)
     cleaned = re.sub(r"[^0-9.\-]", "", raw)
     if not cleaned or cleaned in {"-", ".", "-."}:
         return 0.0
     amount = float(cleaned)
     return -abs(amount) if negative else amount
+
 
 
 def _statement_text(value, limit: int) -> str | None:
@@ -73,15 +77,33 @@ def _statement_text(value, limit: int) -> str | None:
 
 def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
     """Extract standard text-based bank tables with labelled debit/credit columns."""
-    from pypdf import PdfReader
+    try:
+        from pypdf import PdfReader
+    except ImportError:
+        raise ValueError(
+            "pypdf package is not installed. Install pypdf to process text-based bank statement PDFs."
+        )
 
     reader = PdfReader(io.BytesIO(content))
+    all_lines = []
+    full_text_chunks = []
+    for page in reader.pages:
+        try:
+            p_text = page.extract_text(extraction_mode="layout") or ""
+        except TypeError:
+            p_text = page.extract_text() or ""
+        if not p_text.strip():
+            p_text = page.extract_text() or ""
+        full_text_chunks.append(p_text)
+        all_lines.extend([line.rstrip() for line in p_text.splitlines() if line.strip()])
+
+    page_text = "\n".join(full_text_chunks)
     parsed_rows = []
     seen_rows = set()
     date_pattern = re.compile(
         r"(\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}|\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}\s+[A-Za-z]{3,9}\s+\d{2,4})"
     )
-    amount_pattern = re.compile(r"(?<![A-Za-z0-9])(?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?(?:\s*(?:DR|CR))?", re.I)
+    amount_pattern = re.compile(r"(?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?(?:\s*(?:DR|CR))?", re.I)
     tagged_amount_pattern = re.compile(
         r"((?:INR|Rs\.?|₹)?\s*\(?-?\d[\d,]*\.\d{2}\)?)\s*(DR|CR)\b",
         re.I,
@@ -116,109 +138,151 @@ def extract_bank_statement_pdf(content: bytes) -> pd.DataFrame:
             "Remarks": _statement_text(description, 255),
         })
 
-    for page in reader.pages:
-        try:
-            page_text = page.extract_text(extraction_mode="layout") or ""
-        except TypeError:
-            page_text = page.extract_text() or ""
-        lines = [line.rstrip() for line in page_text.splitlines() if line.strip()]
-        header_index = None
-        debit_position = credit_position = balance_position = None
-        debit_header_index = credit_header_index = 0
-        for index, line in enumerate(lines):
-            if debit_position is None:
-                debit_position = _pdf_column_position(line, debit_aliases)
-                if debit_position is not None:
-                    debit_header_index = index
-            if credit_position is None:
-                credit_position = _pdf_column_position(line, credit_aliases)
-                if credit_position is not None:
-                    credit_header_index = index
-            if balance_position is None:
-                balance_position = _pdf_column_position(line, balance_aliases)
-            if debit_position is not None and credit_position is not None:
-                header_index = max(debit_header_index, credit_header_index)
-                break
+    header_index = None
+    debit_position = credit_position = balance_position = None
+    debit_header_index = credit_header_index = 0
+    for index, line in enumerate(all_lines[:50]):
+        if debit_position is None:
+            debit_position = _pdf_column_position(line, debit_aliases)
+            if debit_position is not None:
+                debit_header_index = index
+        if credit_position is None:
+            credit_position = _pdf_column_position(line, credit_aliases)
+            if credit_position is not None:
+                credit_header_index = index
+        if balance_position is None:
+            balance_position = _pdf_column_position(line, balance_aliases)
+        if debit_position is not None and credit_position is not None:
+            header_index = max(debit_header_index, credit_header_index)
+            break
 
-        if header_index is not None:
-            amount_positions = sorted(
-                position for position in (debit_position, credit_position, balance_position)
-                if position is not None
-            )
-            first_amount_position = amount_positions[0]
-
-            def column_slice(line: str, start: int) -> str:
-                following = [position for position in amount_positions if position > start]
-                end = min(following) if following else len(line)
-                return line[start:end]
-
-            for line in lines[header_index + 1:]:
-                date_match = date_pattern.search(line[:35])
-                if not date_match:
-                    continue
-                debit = abs(_pdf_amount(column_slice(line, debit_position)))
-                credit = abs(_pdf_amount(column_slice(line, credit_position)))
-                description = line[date_match.end():first_amount_position].strip(" |")
-                append_row(date_match.group(1), description, debit, credit)
-
-        # Fallback 1: statements that print transaction amount with an explicit DR/CR suffix.
-        for line in lines:
+    if header_index is not None and debit_position is not None and credit_position is not None:
+        raw_candidates = []
+        for line in all_lines[header_index + 1:]:
             date_match = date_pattern.search(line[:35])
             if not date_match:
                 continue
-            tagged = tagged_amount_pattern.findall(line[date_match.end():])
-            if not tagged:
+            matches = list(amount_pattern.finditer(line[date_match.end():]))
+            if not matches:
                 continue
-            transaction_amount, transaction_side = tagged[0]
-            amount = abs(_pdf_amount(transaction_amount))
-            description_end = line.upper().find(transaction_amount.strip().upper(), date_match.end())
-            description = line[date_match.end():description_end if description_end >= 0 else len(line)].strip(" |")
-            append_row(
-                date_match.group(1),
-                description,
-                amount if transaction_side.upper() == "DR" else 0.0,
-                amount if transaction_side.upper() == "CR" else 0.0,
-            )
+            tx_match = matches[0]
+            amt_val = abs(_pdf_amount(tx_match.group(0)))
+            if amt_val == 0:
+                continue
+            amt_pos = date_match.end() + tx_match.start()
+            desc = line[date_match.end():date_match.end() + tx_match.start()].strip(" |")
+            bal_val = abs(_pdf_amount(matches[-1].group(0))) if len(matches) >= 2 else None
+            raw_candidates.append((date_match.group(1), desc, amt_val, amt_pos, tx_match.group(0), bal_val))
 
-        # Fallback 2: compact rows containing transaction amount + running balance.
-        compact_candidates = []
-        opening_balance = None
-        opening_match = re.search(
-            r"opening\s+balance[^0-9]{0,20}((?:INR|Rs\.?|₹)?\s*\d[\d,]*\.\d{2})",
-            page_text,
-            re.I,
+        if raw_candidates:
+            positions = [c[3] for c in raw_candidates]
+            min_p, max_p = min(positions), max(positions)
+            has_two_columns = (max_p - min_p) > 15
+
+            for idx, (raw_date, desc, tx_val, tx_pos, raw_match, bal_val) in enumerate(raw_candidates):
+                debit = credit = 0.0
+                if "DR" in raw_match.upper():
+                    debit = tx_val
+                elif "CR" in raw_match.upper():
+                    credit = tx_val
+                elif has_two_columns:
+                    mid_p = (min_p + max_p) / 2
+                    is_left = tx_pos <= mid_p
+                    debit_is_left = debit_position <= credit_position
+                    debit = tx_val if is_left == debit_is_left else 0.0
+                    credit = tx_val if is_left != debit_is_left else 0.0
+                else:
+                    assigned = False
+                    if bal_val is not None and idx > 0 and raw_candidates[idx - 1][5] is not None:
+                        prev_bal = raw_candidates[idx - 1][5]
+                        diff = round(bal_val - prev_bal, 2)
+                        if abs(diff - tx_val) <= 0.05:
+                            credit = tx_val
+                            assigned = True
+                        elif abs(diff + tx_val) <= 0.05:
+                            debit = tx_val
+                            assigned = True
+                    if not assigned and bal_val is not None and idx == 0 and len(raw_candidates) > 1 and raw_candidates[1][5] is not None:
+                        next_bal = raw_candidates[1][5]
+                        next_tx = raw_candidates[1][2]
+                        diff_next = round(next_bal - bal_val, 2)
+                        if abs(diff_next - next_tx) <= 0.05:
+                            if re.search(r"\b(?:CREDIT|DEPOSIT|SALARY|REFUND|INWARD|INTEREST)\b", desc.upper()):
+                                credit = tx_val
+                            else:
+                                debit = tx_val
+                            assigned = True
+                    if not assigned:
+                        if re.search(r"\b(?:CREDIT|DEPOSIT|SALARY|REFUND|INWARD|INTEREST)\b", desc.upper()):
+                            credit = tx_val
+                        else:
+                            debit = tx_val
+                append_row(raw_date, desc, debit, credit)
+
+    if parsed_rows:
+        return pd.DataFrame(parsed_rows)
+
+    # Fallback 1: statements that print transaction amount with an explicit DR/CR suffix.
+    for line in all_lines:
+        date_match = date_pattern.search(line[:35])
+        if not date_match:
+            continue
+        tagged = tagged_amount_pattern.findall(line[date_match.end():])
+        if not tagged:
+            continue
+        transaction_amount, transaction_side = tagged[0]
+        amount = abs(_pdf_amount(transaction_amount))
+        description_end = line.upper().find(transaction_amount.strip().upper(), date_match.end())
+        description = line[date_match.end():description_end if description_end >= 0 else len(line)].strip(" |")
+        append_row(
+            date_match.group(1),
+            description,
+            amount if transaction_side.upper() == "DR" else 0.0,
+            amount if transaction_side.upper() == "CR" else 0.0,
         )
-        if opening_match:
-            opening_balance = abs(_pdf_amount(opening_match.group(1)))
-        for line in lines:
-            date_match = date_pattern.search(line[:35])
-            if not date_match:
-                continue
-            amounts = amount_pattern.findall(line[date_match.end():])
-            if len(amounts) < 2:
-                continue
-            transaction_amount = abs(_pdf_amount(amounts[-2]))
-            running_balance = abs(_pdf_amount(amounts[-1]))
-            amount_start = line.find(amounts[-2], date_match.end())
-            description = line[date_match.end():amount_start if amount_start >= 0 else len(line)].strip(" |")
-            compact_candidates.append((date_match.group(1), description, transaction_amount, running_balance))
 
-        previous_balance = opening_balance
-        for raw_date, description, transaction_amount, running_balance in compact_candidates:
-            debit = credit = 0.0
-            if previous_balance is not None:
-                difference = round(running_balance - previous_balance, 2)
-                if abs(abs(difference) - transaction_amount) <= 0.05:
-                    credit = transaction_amount if difference > 0 else 0.0
-                    debit = transaction_amount if difference < 0 else 0.0
-            if debit == 0 and credit == 0:
-                upper_description = description.upper()
-                if re.search(r"\b(?:CREDIT|DEPOSIT|SALARY|REFUND|INWARD|INTEREST)\b", upper_description):
-                    credit = transaction_amount
-                elif re.search(r"\b(?:DEBIT|WITHDRAWAL|ATM|POS|CHARGES|OUTWARD|PAYMENT)\b", upper_description):
-                    debit = transaction_amount
-            append_row(raw_date, description, debit, credit)
-            previous_balance = running_balance
+    if parsed_rows:
+        return pd.DataFrame(parsed_rows)
+
+    # Fallback 2: compact rows containing transaction amount + running balance.
+    compact_candidates = []
+    opening_balance = None
+    opening_match = re.search(
+        r"opening\s+balance[^0-9]{0,20}((?:INR|Rs\.?|₹)?\s*\d[\d,]*\.\d{2})",
+        page_text,
+        re.I,
+    )
+    if opening_match:
+        opening_balance = abs(_pdf_amount(opening_match.group(1)))
+    for line in all_lines:
+        date_match = date_pattern.search(line[:35])
+        if not date_match:
+            continue
+        amounts = amount_pattern.findall(line[date_match.end():])
+        if len(amounts) < 2:
+            continue
+        transaction_amount = abs(_pdf_amount(amounts[-2]))
+        running_balance = abs(_pdf_amount(amounts[-1]))
+        amount_start = line.find(amounts[-2], date_match.end())
+        description = line[date_match.end():amount_start if amount_start >= 0 else len(line)].strip(" |")
+        compact_candidates.append((date_match.group(1), description, transaction_amount, running_balance))
+
+    previous_balance = opening_balance
+    for raw_date, description, transaction_amount, running_balance in compact_candidates:
+        debit = credit = 0.0
+        if previous_balance is not None:
+            difference = round(running_balance - previous_balance, 2)
+            if abs(abs(difference) - transaction_amount) <= 0.05:
+                credit = transaction_amount if difference > 0 else 0.0
+                debit = transaction_amount if difference < 0 else 0.0
+        if debit == 0 and credit == 0:
+            upper_description = description.upper()
+            if re.search(r"\b(?:CREDIT|DEPOSIT|SALARY|REFUND|INWARD|INTEREST)\b", upper_description):
+                credit = transaction_amount
+            elif re.search(r"\b(?:DEBIT|WITHDRAWAL|ATM|POS|CHARGES|OUTWARD|PAYMENT)\b", upper_description):
+                debit = transaction_amount
+        append_row(raw_date, description, debit, credit)
+        previous_balance = running_balance
 
     if not parsed_rows:
         raise ValueError(
