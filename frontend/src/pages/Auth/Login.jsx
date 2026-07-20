@@ -19,7 +19,7 @@ export default function Login({ handleLogin, navigateToRegister }) {
       <div className="auth-card">
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '16px', color: 'var(--text-primary)' }}>
-            BKNR ERP Corporate Login
+            SVBK ERP Corporate Login
           </h2>
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
             Enter credentials to access plant worksheets

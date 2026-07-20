@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import SystemArchitecture from './SystemArchitecture';
+import { RegisterLibrary } from '../Registers/ModuleRegisters';
 import './AdminConsole.css';
 import './AdminConsoleOverrides.css';
 
@@ -19,6 +21,7 @@ const ADMIN_NAV_ITEMS = [
   { id: 'admin_shifts', perm: 'shifts', route: '/attendance/shifts', icon: 'fa-business-time', label: 'Shifts' },
   { id: 'admin_data_management', perm: 'data_management', route: '/data-management', icon: 'fa-database', label: 'Data Management' },
   { id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', superAdminOnly: true },
+  { id: 'admin_system_architecture', perm: 'system_architecture', route: '/admin/system_architecture', icon: 'fa-sitemap', label: 'System Architecture', superAdminOnly: true },
   { id: 'admin_raise_ticket', perm: 'raise_ticket', route: '/support/my_tickets', icon: 'fa-support-agent', label: 'My Complaints' },
   { id: 'admin_helpdesk', perm: 'admin_helpdesk', route: '/admin/all_tickets', icon: 'fa-ticket', label: 'Helpdesk', superAdminOnly: true },
   { id: 'admin_manage_support', perm: 'manage_support', route: '/admin/support_team', icon: 'fa-users-gear', label: 'Support Team', superAdminOnly: true },
@@ -160,6 +163,172 @@ function DynamicForm({ schema, onSaved }) {
   return <form className="admin-form-grid" onSubmit={submit}>{regular.map(field => <div className="admin-field" key={field.key}><label>{field.label}</label>{field.tag === 'select' ? <select value={values[field.name] || ''} required={field.required} onChange={event => setValues({ ...values, [field.name]: event.target.value })}>{field.options.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}</select> : field.tag === 'textarea' ? <textarea value={values[field.name] || ''} required={field.required} onChange={event => setValues({ ...values, [field.name]: event.target.value })}/> : <input type={field.type} value={values[field.name] || ''} required={field.required} onChange={event => setValues({ ...values, [field.name]: event.target.value })}/>}</div>)}{checks.length > 0 && <div className="permission-pillars">{checkGroups.map(([group, fields]) => { const isOpen = !!openPermissionGroups[group]; const selectedCount = fields.filter(field => (values[field.name] || []).includes?.(field.value)).length; return <div className={`permission-pillar ${isOpen ? 'open' : ''}`} key={group}><button type="button" className="permission-pillar-head" onClick={() => setOpenPermissionGroups(current => ({ ...current, [group]: !current[group] }))}><span><i className={`fa-solid ${isOpen ? 'fa-folder-open' : 'fa-folder'}`}></i>{group}</span><span>{selectedCount}/{fields.length}<i className="fa-solid fa-chevron-right"></i></span></button>{isOpen && <div className="permission-pillar-body">{fields.map(field => <label className="admin-check" key={field.key}><input type="checkbox" checked={(values[field.name] || []).includes?.(field.value)} onChange={() => toggleCheck(field)}/><span>{field.label}</span></label>)}</div>}</div>; })}</div>}<div className="admin-actions" style={{ gridColumn: '1/-1' }}><button className="admin-btn primary" disabled={saving}>{saving ? 'SAVING...' : 'SAVE'}</button>{message && <span className={message.includes('success') ? 'admin-status' : 'admin-error'}>{message}</span>}</div></form>;
 }
 
+const EMPTY_USER_FORM = {
+  full_name: '', designation: '', email: '', mobile: '', password: '',
+  role: 'user', data_management_access: false, access: [],
+};
+
+function UserConfiguration() {
+  const [config, setConfig] = useState(null);
+  const [form, setForm] = useState(EMPTY_USER_FORM);
+  const [editingId, setEditingId] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState('');
+  const [permissionSearch, setPermissionSearch] = useState('');
+  const [openGroups, setOpenGroups] = useState({ Dashboards: true });
+  const [otpEmail, setOtpEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setError('');
+    try {
+      const response = await fetch('/admin/user-configuration', {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || 'Unable to load user configuration.');
+      setConfig(data);
+    } catch (requestError) {
+      setError(requestError.message);
+    }
+  }, []);
+  // Load the authenticated tenant configuration after this screen mounts.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { void load(); }, [load]);
+
+  const groups = useMemo(() => {
+    const query = permissionSearch.trim().toLowerCase();
+    return Object.entries((config?.permissions || []).reduce((result, permission) => {
+      if (query && !`${permission.label} ${permission.value} ${permission.group}`.toLowerCase().includes(query)) return result;
+      if (!result[permission.group]) result[permission.group] = [];
+      result[permission.group].push(permission);
+      return result;
+    }, {}));
+  }, [config?.permissions, permissionSearch]);
+  const users = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return (config?.users || []).filter(user => !query || `${user.id} ${user.name} ${user.email} ${user.mobile} ${user.designation} ${user.role}`.toLowerCase().includes(query));
+  }, [config?.users, search]);
+
+  const startAdd = () => {
+    setEditingId(null); setForm(EMPTY_USER_FORM); setMessage(''); setError(''); setShowForm(true);
+  };
+  const startEdit = user => {
+    setEditingId(user.id);
+    setForm({
+      full_name: user.name, designation: user.designation, email: user.email,
+      mobile: user.mobile, password: '', role: user.role || 'user',
+      data_management_access: !!user.data_management_access,
+      access: user.permissions || [],
+    });
+    setMessage(''); setError(''); setShowForm(true);
+  };
+  const togglePermission = value => setForm(current => ({
+    ...current,
+    access: current.access.includes(value)
+      ? current.access.filter(permission => permission !== value)
+      : [...current.access, value],
+  }));
+  const toggleGroup = permissions => setForm(current => {
+    const values = permissions.map(permission => permission.value);
+    const allSelected = values.every(value => current.access.includes(value));
+    return { ...current, access: allSelected ? current.access.filter(value => !values.includes(value)) : [...new Set([...current.access, ...values])] };
+  });
+  const submit = async event => {
+    event.preventDefault(); setSaving(true); setError(''); setMessage('');
+    const body = new FormData();
+    Object.entries(form).forEach(([key, value]) => {
+      if (key === 'access') value.forEach(permission => body.append('access', permission));
+      else if (key === 'data_management_access') body.append(key, value ? 'true' : 'false');
+      else body.append(key, value);
+    });
+    const url = editingId ? `/admin/edit_user/${editingId}?format=json` : '/admin/add_user';
+    try {
+      const response = await fetch(url, { method: 'POST', body, credentials: 'include', headers: { Accept: 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.status === 'error') throw new Error(data.detail || data.msg || 'Unable to save user.');
+      if (data.status === 'otp_required') {
+        setOtpEmail(data.email); setOtp(''); setMessage(data.msg);
+      } else {
+        setMessage(data.msg || 'User updated successfully.');
+        setShowForm(false); setEditingId(null); await load();
+      }
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+  const verifyOtp = async () => {
+    if (!otp.trim()) { setError('Enter the verification OTP.'); return; }
+    setSaving(true); setError('');
+    const body = new FormData(); body.append('email', otpEmail); body.append('otp', otp.trim());
+    try {
+      const response = await fetch('/admin/verify_add_user_otp', { method: 'POST', body, credentials: 'include', headers: { Accept: 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.status !== 'success') throw new Error(data.detail || data.msg || 'OTP verification failed.');
+      setOtpEmail(''); setOtp(''); setShowForm(false); setMessage(data.msg); await load();
+    } catch (requestError) { setError(requestError.message); }
+    finally { setSaving(false); }
+  };
+  const resendOtp = async () => {
+    const body = new FormData(); body.append('email', otpEmail);
+    setSaving(true); setError('');
+    try {
+      const response = await fetch('/admin/resend_add_user_otp', { method: 'POST', body, credentials: 'include', headers: { Accept: 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.status !== 'success') throw new Error(data.detail || data.msg || 'Unable to resend OTP.');
+      setMessage(data.msg);
+    } catch (requestError) { setError(requestError.message); }
+    finally { setSaving(false); }
+  };
+  const toggleStatus = async user => {
+    if (!window.confirm(`${user.is_active ? 'Deactivate' : 'Activate'} ${user.name}?`)) return;
+    setError('');
+    try {
+      const response = await fetch(`/admin/toggle_user/${user.id}?format=json`, { method: 'POST', credentials: 'include', headers: { Accept: 'application/json' } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || 'Unable to update status.');
+      setMessage(data.msg); await load();
+    } catch (requestError) { setError(requestError.message); }
+  };
+
+  return <div className="admin-react-page user-config-page">
+    <PageHeader activePage="admin_add_user" actions={<><button className="admin-btn" onClick={load}>REFRESH</button><button className="admin-btn primary" onClick={showForm ? () => setShowForm(false) : startAdd}>{showForm ? 'CANCEL' : 'ADD NEW USER'}</button></>}/>
+    {error && <div className="admin-card admin-error user-config-feedback">{error}</div>}
+    {message && <div className="admin-card user-config-feedback"><span className="admin-status">{message}</span></div>}
+    {showForm && <div className="admin-card">
+      <div className="admin-toolbar"><h2>{editingId ? 'Edit User Profile' : 'Create New User Profile'}</h2><span className="admin-status">{config?.company?.code}</span></div>
+      <form className="admin-form-grid" onSubmit={submit}>
+        {[['full_name','Full Name','text'],['designation','Designation','text'],['email','Email Address','email'],['mobile','Mobile Reference','text'],['password',editingId ? 'New Password (optional)' : 'Access Password (default applied if empty)','password']].map(([name,label,type]) => <div className="admin-field" key={name}><label>{label}</label><input type={type} minLength={name === 'password' && form.password ? 8 : undefined} maxLength={name === 'password' ? 64 : undefined} required={!['password'].includes(name)} value={form[name]} onChange={event => setForm(current => ({ ...current, [name]: event.target.value }))}/></div>)}
+        <div className="admin-field"><label>System Role</label><select value={form.role} onChange={event => setForm(current => ({ ...current, role: event.target.value }))}>{(config?.roles || []).map(role => <option key={role.value} value={role.value}>{role.label}</option>)}</select></div>
+        <label className="admin-check user-config-dm"><input type="checkbox" checked={form.data_management_access} onChange={event => setForm(current => ({ ...current, data_management_access: event.target.checked }))}/><span>Data Management Access</span></label>
+        <div className="permission-pillars user-config-permissions">
+          <div className="admin-toolbar"><h2>Ecosystem Access Matrix</h2><input className="admin-search" placeholder="Search permissions…" value={permissionSearch} onChange={event => setPermissionSearch(event.target.value)}/></div>
+          {groups.map(([group, permissions]) => {
+            const isOpen = !!openGroups[group] || !!permissionSearch;
+            const selectedCount = permissions.filter(permission => form.access.includes(permission.value)).length;
+            return <div className={`permission-pillar ${isOpen ? 'open' : ''}`} key={group}>
+              <div className="permission-pillar-head"><button type="button" onClick={() => setOpenGroups(current => ({ ...current, [group]: !current[group] }))}><span><i className={`fa-solid ${isOpen ? 'fa-folder-open' : 'fa-folder'}`}></i>{group}</span></button><button type="button" onClick={() => toggleGroup(permissions)}>{selectedCount}/{permissions.length} • {selectedCount === permissions.length ? 'CLEAR' : 'SELECT ALL'}</button></div>
+              {isOpen && <div className="permission-pillar-body">{permissions.map(permission => <label className="admin-check" key={permission.value}><input type="checkbox" checked={form.access.includes(permission.value)} onChange={() => togglePermission(permission.value)}/><span>{permission.label}</span></label>)}</div>}
+            </div>;
+          })}
+        </div>
+        <div className="admin-actions user-config-save"><button className="admin-btn primary" disabled={saving}>{saving ? 'SAVING…' : 'SAVE'}</button></div>
+      </form>
+    </div>}
+    <div className="admin-card">
+      <div className="admin-toolbar"><h2>Configured User Accounts</h2><input className="admin-search" placeholder="Search users…" value={search} onChange={event => setSearch(event.target.value)}/></div>
+      {!config ? <div className="admin-empty">Loading users…</div> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>User ID</th><th>Name</th><th>Email</th><th>Mobile</th><th>Designation</th><th>Role</th><th>Status</th><th>Permissions</th><th>Actions</th></tr></thead><tbody>{users.map(user => <tr key={user.id}><td><b>{user.id}</b></td><td>{user.name}</td><td>{user.email}</td><td>{user.mobile}</td><td>{user.designation}</td><td>{user.role === 'admin' ? 'Administrator' : 'Operational User'}</td><td><span className={`user-status ${user.is_active ? 'active' : 'inactive'}`}>{user.is_active ? 'Active' : 'Inactive'}</span></td><td className="user-permissions-cell" title={user.permissions.join(', ')}>{user.permissions.length} assigned</td><td><div className="admin-actions"><button className="admin-btn" type="button" onClick={() => startEdit(user)}>EDIT</button><button className="admin-btn danger" type="button" onClick={() => toggleStatus(user)}>{user.is_active ? 'DEACTIVATE' : 'ACTIVATE'}</button></div></td></tr>)}</tbody></table>{!users.length && <div className="admin-empty">No matching users.</div>}</div>}
+    </div>
+    {otpEmail && <div className="user-otp-overlay"><div className="admin-card user-otp-card"><h2>Verify New User</h2><p>Enter the OTP sent to <b>{otpEmail}</b>. It expires in {config?.otp_expiry_minutes || 10} minutes.</p><input className="admin-search" inputMode="numeric" maxLength="6" autoFocus value={otp} onChange={event => setOtp(event.target.value.replace(/\D/g, ''))}/><div className="admin-actions"><button className="admin-btn primary" disabled={saving} onClick={verifyOtp}>VERIFY & SAVE</button><button className="admin-btn" disabled={saving} onClick={resendOtp}>RESEND OTP</button><button className="admin-btn danger" onClick={() => { setOtpEmail(''); setOtp(''); }}>CANCEL</button></div></div></div>}
+  </div>;
+}
+
 function StandardAdminPage({ activePage, activeRoute }) {
   const [snapshot, setSnapshot] = useState(null); const [error, setError] = useState(''); const [search, setSearch] = useState(''); const [showForm, setShowForm] = useState(false); const [selectedRow, setSelectedRow] = useState(null); const [editSchema, setEditSchema] = useState(null);
   const load = useCallback(async () => { setError(''); try { const response = await fetch(activeRoute, { credentials: 'include', headers: { Accept: 'text/html' } }); if (!response.ok) throw new Error(`Unable to load (${response.status})`); const html = await response.text(); setSnapshot(parseAdminHtml(html, activePage)); } catch (err) { setError(err.message); } }, [activePage, activeRoute]);
@@ -187,6 +356,12 @@ function StandardAdminPage({ activePage, activeRoute }) {
 
 export function TicketDesk({ activePage, activeRoute, compact = false }) {
   const isAdmin = activePage === 'admin_helpdesk';
+  const [supportView, setSupportView] = useState(isAdmin ? 'tickets' : 'knowledge');
+  const [knowledge, setKnowledge] = useState({ entries: [], categories: [], total: 0 });
+  const [knowledgeSearch, setKnowledgeSearch] = useState('');
+  const [expandedAnswer, setExpandedAnswer] = useState('');
+  const [knowledgeSuggestOpen, setKnowledgeSuggestOpen] = useState(false);
+  const [knowledgeLoading, setKnowledgeLoading] = useState(true);
   const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -228,6 +403,18 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
   }, [activePage, activeRoute]);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { loadTickets(); }, [loadTickets]);
+  useEffect(() => {
+    let active = true;
+    fetch('/support/knowledge-base', { credentials: 'include', headers: { Accept: 'application/json' } })
+      .then(response => {
+        if (!response.ok) throw new Error('Unable to load the knowledge base.');
+        return response.json();
+      })
+      .then(payload => { if (active) setKnowledge(payload); })
+      .catch(error => { if (active) setTicketError(error.message); })
+      .finally(() => { if (active) setKnowledgeLoading(false); });
+    return () => { active = false; };
+  }, []);
 
   const openTicket = async ticket => {
     setSelected(ticket); setStatus(ticket.status); setAttachment(null);
@@ -252,9 +439,41 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
     if (response.ok) { setNewOpen(false); setSubject(''); setDetail(''); loadTickets(); }
   };
   const visible = tickets.filter(ticket => `${ticket.ticket_number} ${ticket.subject} ${ticket.user_email || ''}`.toLowerCase().includes(search.toLowerCase()));
+  const normalizeQuestion = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const knowledgeQuery = normalizeQuestion(knowledgeSearch);
+  const questionMatchScore = question => {
+    if (!knowledgeQuery) return 0;
+    const normalized = normalizeQuestion(question);
+    const queryWords = knowledgeQuery.split(' ').filter(Boolean);
+    if (!queryWords.every(word => normalized.includes(word))) return -1;
+    const questionWords = normalized.split(' ');
+    return (normalized.startsWith(knowledgeQuery) ? 1000 : 0)
+      + (normalized.includes(knowledgeQuery) ? 500 : 0)
+      + queryWords.reduce((score, word) => score + (questionWords.some(questionWord => questionWord.startsWith(word)) ? 50 : 10), 0)
+      - normalized.length / 1000;
+  };
+  const visibleKnowledge = (knowledge.entries || []).filter(item => {
+    if (!knowledgeQuery) return false;
+    return questionMatchScore(item.question) >= 0;
+  });
+  const knowledgeSuggestions = knowledgeQuery ? (knowledge.entries || [])
+    .filter(item => questionMatchScore(item.question) >= 0)
+    .sort((left, right) => questionMatchScore(right.question) - questionMatchScore(left.question))
+    .slice(0, 8) : [];
+  const selectKnowledgeSuggestion = item => {
+    setKnowledgeSearch(item.question);
+    setExpandedAnswer(item.id);
+    setKnowledgeSuggestOpen(false);
+  };
+  const openNewComplaint = () => { setSupportView('tickets'); setNewOpen(true); };
 
   return <div className={`admin-react-page ${compact ? 'support-drawer-page' : ''}`}>
-    {compact ? <div className="admin-toolbar support-drawer-toolbar"><h2>{isAdmin ? 'Support Queue' : 'My Complaints'}</h2>{!isAdmin && <button className="admin-btn primary" onClick={() => setNewOpen(value => !value)}>NEW COMPLAINT</button>}</div> : <PageHeader activePage={activePage} actions={!isAdmin && <button className="admin-btn primary" onClick={() => setNewOpen(value => !value)}>NEW COMPLAINT</button>}/>} 
+    {compact ? <div className="admin-toolbar support-drawer-toolbar"><h2>{isAdmin ? 'Support Queue' : 'SVBK Support'}</h2>{!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}</div> : <PageHeader activePage={activePage} actions={!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}/>}
+    <div className="support-mode-tabs"><button type="button" className={supportView === 'knowledge' ? 'active' : ''} onClick={() => setSupportView('knowledge')}><i className="fa-solid fa-book-open"></i> Knowledge Base <span>{knowledge.total || 0}</span></button><button type="button" className={supportView === 'tickets' ? 'active' : ''} onClick={() => setSupportView('tickets')}><i className="fa-solid fa-ticket"></i> {isAdmin ? 'Support Queue' : 'My Complaints'} <span>{tickets.length}</span></button></div>
+    {supportView === 'knowledge' ? <div className="support-kb">
+      <div className="support-kb-search"><i className="fa-solid fa-magnifying-glass"></i><input value={knowledgeSearch} onFocus={() => setKnowledgeSuggestOpen(true)} onBlur={() => window.setTimeout(() => setKnowledgeSuggestOpen(false), 150)} onChange={event => { setKnowledgeSearch(event.target.value); setKnowledgeSuggestOpen(true); }} placeholder="Type a question…" />{knowledgeSuggestOpen && knowledgeQuery ? <div className="support-kb-suggestions">{knowledgeSuggestions.length ? knowledgeSuggestions.map(item => <button type="button" key={item.id} onMouseDown={event => event.preventDefault()} onClick={() => selectKnowledgeSuggestion(item)}><i className="fa-regular fa-circle-question"></i><span><strong>{item.question}</strong></span></button>) : <div>No related questions found.</div>}</div> : null}</div>
+      <div className="support-kb-results">{!knowledgeQuery ? null : knowledgeLoading ? <div className="admin-empty">Loading complete ERP knowledge base…</div> : visibleKnowledge.length ? visibleKnowledge.map(item => <article className={`support-kb-item ${expandedAnswer === item.id ? 'open' : ''}`} key={item.id}><button type="button" onClick={() => setExpandedAnswer(current => current === item.id ? '' : item.id)}><span><strong>{item.question}</strong></span><i className={`fa-solid fa-chevron-${expandedAnswer === item.id ? 'up' : 'down'}`}></i></button>{expandedAnswer === item.id ? <div className="support-kb-answer"><p>{item.answer}</p>{item.route ? <code>{item.route}</code> : null}</div> : null}</article>) : <div className="admin-empty">No matching answer found. Raise a complaint with the page name and exact issue.</div>}</div>
+    </div> : <>
     {newOpen && <div className="admin-card"><form className="admin-form-grid" onSubmit={createTicket}><div className="admin-field"><label>Issue Summary</label><input required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field" style={{ gridColumn: 'span 2' }}><label>Detailed Message</label><textarea required value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
     {ticketError && <div className="admin-card admin-error" role="alert">{ticketError} <button className="admin-btn" type="button" onClick={loadTickets}>RETRY</button></div>}
     <div className="ticket-layout">
@@ -265,6 +484,7 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
         {selected.status === 'RESOLVED' && isAdmin ? <div className="admin-empty">This ticket is permanently closed.</div> : <div className="chat-compose"><label className="admin-btn" style={{ display: 'grid', placeItems: 'center' }} title="Attach file"><i className="fa-solid fa-paperclip"></i><input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/></label><input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/><button className="admin-btn primary" onClick={send}>SEND</button></div>}
       </> : <div className="admin-empty">Select a ticket to view conversation.</div>}</div>
     </div>
+    </>}
   </div>;
 }
 
@@ -279,30 +499,40 @@ function DataManagement({ activePage }) {
   const [sheet, setSheet] = useState('');
   const [mapping, setMapping] = useState({});
   const [message, setMessage] = useState('');
-  const modules = ['processing', 'inventory', 'bills', 'general-stock', 'payments', 'masters', 'hrms'];
+  const modules = ['processing', 'inventory', 'accounts', 'bills', 'general-stock', 'payments', 'masters', 'hrms'];
 
   const load = useCallback(async () => {
-    const [schemaRes, historyRes] = await Promise.all([fetch('/data-management/db-schema'), fetch('/data-management/history')]);
+    const [schemaRes, historyRes] = await Promise.all([
+      fetch('/data-management/db-schema', { credentials: 'include' }),
+      fetch('/data-management/history', { credentials: 'include' }),
+    ]);
     const schemaData = await schemaRes.json(); const historyData = await historyRes.json();
     setSchema(schemaData.tables || {}); setHistory(historyData.history || []);
   }, []);
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
-  const downloadBlob = async (endpoint, label) => {
-    const response = await fetch(endpoint, { method: 'POST', credentials: 'include' });
-    if (!response.ok) throw new Error('Export failed');
+  const downloadBlob = async (endpoint, label, method = 'POST', downloadToken = '') => {
+    const response = await fetch(endpoint, { method, credentials: 'include', headers: { 'X-SVBK-Download-Token': downloadToken, Accept: 'application/json' } });
+    if (!response.ok) {
+      const failure = await response.json().catch(() => ({}));
+      throw new Error(failure.detail || failure.error || `${label} download failed`);
+    }
     const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
-    anchor.href = url; anchor.download = `BKNR_${label}_Export.xlsx`; anchor.click(); URL.revokeObjectURL(url);
+    const disposition = response.headers.get('content-disposition') || '';
+    const filename = disposition.match(/filename=\"?([^\";]+)\"?/i)?.[1];
+    anchor.href = url; anchor.download = filename || `SVBK_${label}_Export.xlsx`; anchor.style.display = 'none';
+    document.body.appendChild(anchor); anchor.click();
+    window.setTimeout(() => { anchor.remove(); URL.revokeObjectURL(url); }, 1500);
   };
   const secureAction = async (action, module, callback) => {
     if (!window.confirm(`Security clearance is required to ${action} ${module}. Send OTP?`)) return;
-    const generate = await fetch('/data-management/generate-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, module }) });
+    const generate = await fetch('/data-management/generate-otp', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, module }) });
     const generated = await generate.json(); if (!generated.success) return setMessage(generated.error || 'OTP failed');
     const otp = window.prompt(`${generated.message}\nEnter 6-digit Admin OTP:`); if (!otp) return;
-    const verify = await fetch('/data-management/verify-otp', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, otp }) });
+    const verify = await fetch('/data-management/verify-otp', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, otp }) });
     const verified = await verify.json(); if (!verified.success) return setMessage(verified.error || 'Invalid OTP');
-    try { await callback(); setMessage(`${action.toUpperCase()} completed successfully.`); load(); } catch (error) { setMessage(error.message); }
+    try { await callback(verified.download_token || ''); setMessage(`${action.toUpperCase()} completed successfully.`); load(); } catch (error) { setMessage(error.message); }
   };
   const inspectFile = async () => {
     if (!upload) return setMessage('Select an Excel file first.');
@@ -330,9 +560,10 @@ function DataManagement({ activePage }) {
     <PageHeader activePage={activePage}/>
     {message && <div className="admin-card"><span className="admin-status">{message}</span></div>}
     <div className="admin-control-grid">
-      <div className="admin-card"><div className="admin-toolbar"><h2>Secure Module Data Exports</h2></div><div className="admin-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>{modules.map(module => <button className="admin-btn" key={module} onClick={() => secureAction('export', module, () => downloadBlob(`/export/${module}`, module))}>{module.replace('-', ' ').toUpperCase()}</button>)}</div></div>
-      <div className="admin-card"><div className="admin-toolbar"><h2>Blank Import Sheets</h2></div><p style={{ color: 'var(--text-secondary)' }}>Select a table to download a blank template with column headers and format hints.</p><div className="admin-field"><label>Database Table</label><select value={blankTable} onChange={event => setBlankTable(event.target.value)}><option value="">All Tables (Full Workbook)</option>{Object.keys(schema).map(name => <option key={name}>{name}</option>)}</select></div><button className="admin-btn primary" style={{ marginTop: 10 }} onClick={() => { window.location.href = `/data-management/template/blank${blankTable ? `?table=${encodeURIComponent(blankTable)}` : ''}`; }}>DOWNLOAD BLANK SHEET</button></div>
+      <div className="admin-card"><div className="admin-toolbar"><h2>Secure Module Data Exports</h2></div><div className="admin-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>{modules.map(module => <button className="admin-btn" key={module} onClick={() => secureAction('export', module, token => downloadBlob(`/export/${module}`, module, 'GET', token))}>{module.replace('-', ' ').toUpperCase()}</button>)}</div></div>
+      <div className="admin-card"><div className="admin-toolbar"><h2>Blank Import Sheets</h2></div><p style={{ color: 'var(--text-secondary)' }}>Select a table to download a blank template with column headers and format hints.</p><div className="admin-field"><label>Database Table</label><select value={blankTable} onChange={event => setBlankTable(event.target.value)}><option value="">All Tables (Full Workbook)</option>{Object.keys(schema).map(name => <option key={name}>{name}</option>)}</select></div><button className="admin-btn primary" style={{ marginTop: 10 }} onClick={() => secureAction('download', blankTable || 'All Blank Import Sheets', token => downloadBlob(`/data-management/template/blank${blankTable ? `?table=${encodeURIComponent(blankTable)}` : ''}`, blankTable || 'All Blank Import Sheets', 'GET', token))}>DOWNLOAD BLANK SHEET</button></div>
     </div>
+    <RegisterLibrary modules={['exports', 'processing', 'inventory', 'accounts', 'hrms']} embedded onDownload={(url, label, method) => secureAction('export', label, token => downloadBlob(url, label, method, token))} />
     <div className="admin-card"><div className="admin-toolbar"><h2>Dynamic Excel Import & Column Mapping</h2></div><div className="admin-form-grid"><div className="admin-field"><label>Excel File</label><input type="file" accept=".xlsx,.xls" onChange={event => setUpload(event.target.files?.[0] || null)}/></div><div className="admin-actions" style={{ alignItems: 'end' }}><button className="admin-btn primary" onClick={inspectFile}>INSPECT FILE</button></div>{uploadInfo && <><div className="admin-field"><label>Excel Sheet</label><select value={sheet} onChange={event => { const next = event.target.value; setSheet(next); setMapping(buildMapping(targetTable, next)); }}>{Object.keys(uploadInfo.sheets || {}).map(name => <option key={name}>{name}</option>)}</select></div><div className="admin-field"><label>Database Table</label><select value={targetTable} onChange={event => { const next = event.target.value; setTargetTable(next); setMapping(buildMapping(next, sheet)); }}><option value="">Select table</option>{Object.keys(schema).map(name => <option key={name}>{name}</option>)}</select></div></>}</div>{targetTable && sheet && <><div className="admin-table-wrap" style={{ marginTop: 12 }}><table className="admin-table"><thead><tr><th>Database Field Name</th><th>Matching Excel Column</th></tr></thead><tbody>{(schema[targetTable] || []).map(column => <tr key={column}><td>{column}</td><td><select className="admin-search" value={mapping[column] || ''} onChange={event => setMapping({ ...mapping, [column]: event.target.value })}><option value="">-- Ignore --</option>{excelColumns.map(excel => <option key={excel}>{excel}</option>)}</select></td></tr>)}</tbody></table></div><button className="admin-btn primary" style={{ marginTop: 12 }} onClick={executeImport}>VERIFY OTP & IMPORT DATA</button></>}</div>
     <div className="admin-card"><div className="admin-toolbar"><h2>Emergency Recovery & Cleanup</h2></div><div className="admin-form-grid"><div className="admin-field"><label>Database Table</label><select value={cleanupTable} onChange={event => setCleanupTable(event.target.value)}><option value="">Select table</option>{Object.keys(schema).map(name => <option key={name}>{name}</option>)}</select></div><div className="admin-actions" style={{ alignItems: 'end' }}><button className="admin-btn" disabled={!cleanupTable} onClick={() => recovery('undo')}>UNDO LAST IMPORT</button><button className="admin-btn danger" disabled={!cleanupTable} onClick={() => recovery('clear')}>CLEAR TABLE</button></div></div></div>
     <div className="admin-card"><div className="admin-toolbar"><h2>Data Management History</h2></div><DataTable table={{ headers: ['Timestamp','Action','Module / Table','Details','Status'], rows: history.map((item,index) => ({ id:index,cells:[item.timestamp || item.date || '',item.type || '',item.module || '',item.details || '',item.status || ''] })) }}/></div>
@@ -364,7 +595,7 @@ function ActivityLogs({ activePage, activeRoute }) {
 
 export default function AdminConsole({ activePage, activeRoute, user, setActivePage }) {
   const permissions = user?.permissions || [];
-  const isDefaultSuperAdmin = user?.email === 'bknr.solutions@gmail.com';
+  const isDefaultSuperAdmin = user?.email?.trim().toLowerCase() === 'bknr.solutions@gmail.com';
   const allow = permission => {
     if (isDefaultSuperAdmin) return true;
     if (typeof permissions === 'string') {
@@ -380,8 +611,10 @@ export default function AdminConsole({ activePage, activeRoute, user, setActiveP
   let pageContent;
   if (activePage === 'admin_data_management') pageContent = <DataManagement activePage={activePage}/>;
   else if (activePage === 'admin_system_settings') pageContent = <SystemSettings activePage={activePage} activeRoute={activeRoute}/>;
+  else if (activePage === 'admin_system_architecture') pageContent = <SystemArchitecture user={user}/>;
   else if (activePage === 'admin_raise_ticket' || activePage === 'admin_helpdesk') pageContent = <TicketDesk activePage={activePage} activeRoute={activeRoute}/>;
   else if (activePage === 'admin_user_activity') pageContent = <ActivityLogs activePage={activePage} activeRoute={activeRoute}/>;
+  else if (activePage === 'admin_add_user') pageContent = <UserConfiguration/>;
   else pageContent = <StandardAdminPage activePage={activePage} activeRoute={activeRoute}/>;
 
   return (

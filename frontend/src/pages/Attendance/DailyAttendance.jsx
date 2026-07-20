@@ -320,7 +320,7 @@ export default function DailyAttendance() {
           </div>
           {error && <div className="attendance-inline-error">{error}<button type="button" onClick={loadPage}>Retry</button></div>}
           <div className="attendance-table-wrap">
-            <table>
+            <table className="erp-data-table">
               <thead>
                 <tr><th>Personnel Info</th><th>Active Shift</th><th>Movement Timeline</th><th>Current State</th></tr>
               </thead>

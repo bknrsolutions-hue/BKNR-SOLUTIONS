@@ -2,6 +2,113 @@
 
 .hr-kpis .enterprise-kpi strong { font-size: 16px; }
 
+.hr-festival-heading {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 0 5px;
+  color: var(--corp-dash);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.hr-festival-list {
+  display: grid;
+  gap: 6px;
+}
+
+.hr-festival-row {
+  --festival: #0284c7;
+  --festival-bg: #f0f9ff;
+  display: grid;
+  min-height: 58px;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 9px;
+  border: 1px solid color-mix(in srgb, var(--festival) 24%, var(--border-light));
+  border-radius: 10px;
+  background: linear-gradient(105deg, var(--festival-bg), var(--surface-panel));
+}
+
+.hr-festival-row.saffron { --festival: #ea580c; --festival-bg: #fff7ed; }
+.hr-festival-row.emerald { --festival: #059669; --festival-bg: #ecfdf5; }
+.hr-festival-row.rose { --festival: #e11d48; --festival-bg: #fff1f2; }
+.hr-festival-row.violet { --festival: #7c3aed; --festival-bg: #f5f3ff; }
+.hr-festival-row.amber { --festival: #d97706; --festival-bg: #fffbeb; }
+.hr-festival-row.indigo { --festival: #4f46e5; --festival-bg: #eef2ff; }
+.hr-festival-row.green { --festival: #16a34a; --festival-bg: #f0fdf4; }
+
+.hr-festival-photo {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--festival) 35%, #fff);
+  border-radius: 11px;
+  background: var(--festival);
+  box-shadow: 0 4px 10px color-mix(in srgb, var(--festival) 22%, transparent);
+}
+
+.hr-festival-photo img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.hr-festival-photo i {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 15px;
+  height: 15px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(255,255,255,.8);
+  border-radius: 50%;
+  background: var(--festival);
+  color: #fff;
+  font-size: 7px;
+}
+
+.hr-festival-copy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.hr-festival-copy strong {
+  overflow: hidden;
+  color: var(--text-primary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hr-festival-row small {
+  color: var(--text-tertiary);
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.hr-festival-date {
+  color: var(--festival);
+  font-size: 11px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.hr-empty-block {
+  padding: 12px 0 4px;
+  color: var(--text-tertiary);
+  font-size: 10px;
+  text-align: center;
+}
+
 .hr-analytics-chart {
   width: 100%;
   overflow-x: auto;

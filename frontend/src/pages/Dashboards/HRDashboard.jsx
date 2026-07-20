@@ -191,11 +191,9 @@ function ComplianceTab({ data }) {
     <Panel title="Salary Advance Control"><InfoRows rows={[
       ['Total Disbursed (YTD)', money(data?.adv_issued)], ['Total Recovered', `${money(data?.adv_recovered)} · ${number(data?.adv_recovery_pct)}%`, 'green'], ['Net Outstanding', money(data?.adv_balance), 'red'],
     ]} />{(data?.top_10_advances || []).slice(0, 6).map(row => <div className="hr-data-row compact" key={row.id}><span>{row.employee_name}</span><strong className="red">{money(row.remaining_balance)}</strong></div>)}</Panel>
-    <Panel title="Calendar & Leaves"><InfoRows rows={[
-      ['Upcoming Birthdays (7D)', number(data?.bday_7?.length)], ['Upcoming Birthdays (30D)', number(data?.bday_30?.length)], ['Work Anniversaries (7D)', number(data?.anniv_7?.length)],
-    ]} />{(data?.bday_7 || []).slice(0, 4).map(row => <div className="hr-data-row compact" key={row.employee_id}><span>{row.employee_name}</span><strong>{formatDate(row.date, { day: '2-digit', month: 'short' })}</strong></div>)}<StatTiles rows={[
-      ['CL', data?.leave_module?.cl], ['SL', data?.leave_module?.sl], ['EL', data?.leave_module?.el], ['Pending', data?.leave_module?.pending_approvals, 'amber'],
-    ]} /></Panel>
+    <Panel title="Calendar & Upcoming Festivals"><InfoRows rows={[
+      ['Upcoming Birthdays (7D)', number(data?.bday_7?.length)], ['Upcoming Birthdays (30D)', number(data?.bday_30?.length)],
+    ]} />{(data?.bday_7 || []).slice(0, 4).map(row => <div className="hr-data-row compact" key={row.employee_id}><span>{row.employee_name}</span><strong>{formatDate(row.date, { day: '2-digit', month: 'short' })}</strong></div>)}<div className="hr-festival-heading"><i className="fa-solid fa-calendar-day"></i> Upcoming Festivals</div><div className="hr-festival-list">{(data?.upcoming_festivals || []).length ? data.upcoming_festivals.map(row => <div className={`hr-festival-row ${row.tone || 'sky'}`} key={`${row.name}-${row.date}`}><span className="hr-festival-photo"><img src={row.image_url} alt="" loading="lazy" /><i className={`fa-solid ${row.icon || 'fa-calendar-day'}`}></i></span><span className="hr-festival-copy"><strong>{row.name}</strong><small>{row.day} · {number(row.days_remaining)} days</small></span><strong className="hr-festival-date">{formatDate(row.date, { day: '2-digit', month: 'short' })}</strong></div>) : <div className="hr-empty-block">No upcoming festivals in the current calendar.</div>}</div></Panel>
   </div>;
 }
 

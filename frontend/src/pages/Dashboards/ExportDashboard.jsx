@@ -9,6 +9,7 @@ import {
   useDashboardData,
 } from './DashboardPrimitives';
 import './ExportDashboard.css';
+import { secureDownload } from '../../utils/secureDownload';
 
 const EXPORT_RAIL = [
   {
@@ -174,7 +175,7 @@ export default function ExportDashboard({ setActivePage }) {
                           <td>{row.buyer_name || '—'}</td><td>{row.country || '—'}</td>
                           <td>{formatDate(row.etd)}</td><td>{formatDate(row.eta)}</td>
                           <td><Status value={row.status} /></td>
-                          <td><a className="export-dossier-link" href={`/export_documents/shipment/${row.id}/dossier.zip`}><i className="fa-solid fa-file-zipper" /> Dossier</a></td>
+                          <td><button type="button" className="export-dossier-link" onClick={() => secureDownload(`/export_documents/shipment/${row.id}/dossier.zip`, `${row.shipment_no || 'Shipment'} Dossier`)}><i className="fa-solid fa-file-zipper" /> Dossier</button></td>
                         </tr>
                       )) : <tr><td colSpan="8" className="export-empty">No shipments found</td></tr>}
                     </tbody>

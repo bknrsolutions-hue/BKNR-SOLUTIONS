@@ -312,7 +312,7 @@ export default function SupportingDocuments({
     : visibleDocumentChoices.reduce((groups, item) => ({ ...groups, [item.stage]: [...(groups[item.stage] || []), item] }), {});
 
   return (
-    <div className="attendance-container supporting-documents-page">
+    <div className="attendance-container supporting-documents-page export-document-page">
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: 80 }}>
           {notification.message}

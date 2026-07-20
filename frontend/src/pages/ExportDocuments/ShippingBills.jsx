@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
 import ExportSearchPanel from './ExportSearchPanel';
+import { secureDownload } from '../../utils/secureDownload';
 
 export default function ShippingBills() {
   const [history, setHistory] = useState([]);
@@ -286,7 +287,7 @@ export default function ShippingBills() {
   });
 
   return (
-    <div className="attendance-container">
+    <div className="attendance-container export-document-page">
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: '80px' }}>
           {notification.msg}
@@ -331,7 +332,7 @@ export default function ShippingBills() {
                 <button className="attendance-dropdown-item" onClick={pdfSelected}>
                   <File size={14} /> Generate PDF
                 </button>
-                <button className="attendance-dropdown-item" onClick={() => window.open('/export_documents/registers.xlsx', '_blank')}>
+                <button className="attendance-dropdown-item" onClick={() => secureDownload('/export_documents/registers.xlsx', 'All Export Registers')}>
                   <Download size={14} /> Export Register
                 </button>
                 <button className="attendance-dropdown-item" onClick={uploadPdfSelected}>

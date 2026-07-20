@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, setSidebarOpen, onMenuItemsReady }) {
   // Enforce permission checks matching menu.html allow() function
   const permissions = user?.permissions || [];
-  const currentUserEmail = user?.email || '';
+  const currentUserEmail = user?.email?.trim().toLowerCase() || '';
   const isDefaultSuperAdmin = currentUserEmail === "bknr.solutions@gmail.com";
 
   const allow = (key) => {
@@ -11,7 +11,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     if (Array.isArray(key)) return key.some(permission => allow(permission));
     if (!permissions) return false;
     if (typeof permissions === 'string') {
-      return permissions === 'ALL' || permissions.split(',').includes(key);
+      return permissions === 'ALL' || permissions.split(',').map(item => item.trim()).includes(key);
     }
     return permissions.includes("ALL") || permissions.includes(key);
   };
@@ -71,7 +71,8 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
             { id: 'grading', perm: 'grading', route: '/processing/grading', icon: 'fa-filter', label: 'Grading', badge: 'WIP' },
             { id: 'peeling', perm: 'peeling', route: '/processing/peeling', icon: 'fa-hand-dots', label: 'Peeling', badge: 'WIP' },
             { id: 'soaking', perm: 'soaking', route: '/processing/soaking', icon: 'fa-droplet', label: 'Soaking', badge: 'WIP' },
-            { id: 'production', perm: 'production', route: '/processing/production', icon: 'fa-industry', label: 'Production', badge: 'WIP' }
+            { id: 'production', perm: 'production', route: '/processing/production', icon: 'fa-industry', label: 'Production', badge: 'WIP' },
+            { id: 'processing_registers', perm: ['gate_entry', 'raw_material_purchasing', 'de_heading', 'grading', 'peeling', 'soaking', 'production'], route: '/registers/processing', icon: 'fa-file-excel', label: 'Processing Registers', badge: 'XLSX' }
           ]
         },
         {
@@ -80,7 +81,8 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
             { id: 'stock_entry', perm: 'stock_entry', route: '/inventory/stock_entry', icon: 'fa-boxes-stacked', label: 'Stock Entry', badge: 'Stock' },
             { id: 'pending_orders', perm: 'pending_orders', route: '/inventory/pending_orders', icon: 'fa-clock-rotate-left', label: 'Pending Orders', badge: 'Orders' },
             { id: 'cold_storage_holding', perm: 'cold_storage_holding', route: '/inventory/cold_storage_holding', icon: 'fa-snowflake', label: 'Cold Storage Holding', badge: 'Cold' },
-            { id: 'general_stock_entry', perm: 'general_store_entry', route: '/general_stock/entry', icon: 'fa-shop', label: 'General Store Entry', badge: 'Store' }
+            { id: 'general_stock_entry', perm: 'general_store_entry', route: '/general_stock/entry', icon: 'fa-shop', label: 'General Store Entry', badge: 'Store' },
+            { id: 'inventory_registers', perm: ['stock_entry', 'pending_orders', 'cold_storage_holding', 'sales_report'], route: '/registers/inventory', icon: 'fa-file-excel', label: 'Inventory Registers', badge: 'XLSX' }
           ]
         },
         {
@@ -123,7 +125,11 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
             { id: 'finance_bank_master', perm: 'bank_master', route: '/finance_accounts/bank_master/entry', icon: 'fa-building-columns', label: 'Bank Master', badge: 'Acc' },
             { id: 'finance_item_accounting_link', perm: 'item_accounting_link', route: '/finance_accounts/item_accounting_link/entry', icon: 'fa-link', label: 'Item Accounting Link', badge: 'Acc' },
             { id: 'finance_fixed_assets', perm: 'fixed_assets', route: '/finance_accounts/fixed_assets/entry', icon: 'fa-building', label: 'Fixed Assets', badge: 'Acc' },
-            { id: 'finance_gst_register', perm: 'gst_register', route: '/finance_accounts/gst_register/entry', icon: 'fa-percent', label: 'GST Register', badge: 'Acc' }
+            { id: 'finance_gst_register', perm: 'gst_register', route: '/finance_accounts/gst_register/entry', icon: 'fa-percent', label: 'GST Register', badge: 'Acc' },
+            { id: 'finance_customer_receivable', perm: 'customer_receivable', route: '/finance_accounts/customer_receivable/entry', icon: 'fa-money-bill-transfer', label: 'Customer Receivables', badge: 'AR' },
+            { id: 'finance_vendor_payment', perm: 'vendor_payment', route: '/finance_accounts/vendor_payment/entry', icon: 'fa-money-check-dollar', label: 'Vendor Payments', badge: 'AP' },
+            { id: 'finance_expense_voucher', perm: 'expense_voucher', route: '/finance_accounts/expense_voucher/entry', icon: 'fa-file-circle-dollar', label: 'Expense Vouchers', badge: 'Vchr' },
+            { id: 'accounts_registers', perm: ['ledger_master', 'journal_entry', 'customer_receivable', 'vendor_payment', 'expense_voucher'], route: '/registers/accounts', icon: 'fa-file-excel', label: 'Accounts Registers', badge: 'XLSX' }
           ]
         },
         {
@@ -191,7 +197,8 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'attendance_salary_report', perm: 'salary_report', route: '/attendance/salary/monthly-sheet', icon: 'fa-money-check-dollar', label: 'Monthly Salary Sheet', badge: 'HR' },
         { id: 'attendance_tax_master', perm: 'tax_master', route: '/attendance/tax-master', icon: 'fa-file-shield', label: 'Payroll Master', badge: 'HR' },
         { id: 'attendance_salary_advance', perm: 'salary_advance', route: '/attendance/salary-advance', icon: 'fa-hand-holding-dollar', label: 'Salary Advance', badge: 'HR' },
-        { id: 'finance_salary_processing', perm: 'salary_processing', route: '/finance_accounts/salary_processing/entry', icon: 'fa-calculator', label: 'Salary Processing', badge: 'HR' }
+        { id: 'finance_salary_processing', perm: 'salary_processing', route: '/finance_accounts/salary_processing/entry', icon: 'fa-calculator', label: 'Salary Processing', badge: 'HR' },
+        { id: 'hrms_registers', perm: ['employee_registration', 'daily_attendance', 'employee_increment', 'tax_master', 'salary_advance'], route: '/registers/hrms', icon: 'fa-file-excel', label: 'HRMS Registers', badge: 'XLSX' }
       ]
     },
     {
@@ -245,7 +252,10 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
             { id: 'admin_add_user', perm: 'add_user', route: '/admin/add_user', icon: 'fa-user-gear', label: 'User Configuration', badge: 'Admin' },
             { id: 'admin_shifts', perm: 'shifts', route: '/attendance/shifts', icon: 'fa-business-time', label: 'Shifts', badge: 'Admin' },
             { id: 'admin_data_management', perm: 'data_management', route: '/data-management', icon: 'fa-database', label: 'Data Management', badge: 'Admin' },
-            ...(isDefaultSuperAdmin ? [{ id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', badge: 'Admin' }] : [])
+            ...(isDefaultSuperAdmin ? [
+              { id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', badge: 'Admin' },
+              { id: 'admin_system_architecture', perm: 'system_architecture', route: '/admin/system_architecture', icon: 'fa-sitemap', label: 'System Architecture', badge: 'Admin' }
+            ] : [])
           ]
         }
       ]

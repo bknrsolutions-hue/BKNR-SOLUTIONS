@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import AnimatedBrandLogo from '../../components/AnimatedBrandLogo';
 import './Profile.css';
 
 const emptyProfile = {
@@ -11,6 +12,7 @@ const emptyProfile = {
   working_location: '',
   address: '',
   company_name: '',
+  company_logo_url: '',
   role: '',
 };
 
@@ -40,7 +42,9 @@ export default function Profile() {
 
   return <div className="user-profile-page">
     <section className="user-profile-hero">
-      <div className="user-profile-avatar">{(profile.name || 'U').charAt(0).toUpperCase()}</div>
+      {profile.company_logo_url
+        ? <img className="user-profile-avatar" src={profile.company_logo_url} alt={`${profile.company_name} logo`} />
+        : <AnimatedBrandLogo size={76} className="user-profile-avatar" />}
       <div><h1>{profile.name || 'My Profile'}</h1><p>{profile.email}</p><span>{profile.company_name} · {profile.role}</span></div>
     </section>
     <section className="user-profile-card">

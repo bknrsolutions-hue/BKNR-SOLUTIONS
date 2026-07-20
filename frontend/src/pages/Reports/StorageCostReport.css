@@ -305,9 +305,139 @@
   body:not(.storage-monthly-print-mode) .storage-table-wrap th { position: static !important; height: auto !important; padding: 3px !important; border: 1px solid #000 !important; background: #f1f5f9 !important; color: #000 !important; font-size: 6.5px !important; }
   body:not(.storage-monthly-print-mode) .storage-table-wrap td { position: static !important; height: auto !important; padding: 3px !important; border: 1px solid #cbd5e1 !important; color: #000 !important; font-size: 6.5px !important; }
 
+  /* Active Monthly Bill Print Mode */
   body.storage-monthly-print-mode * { visibility: hidden !important; }
   body.storage-monthly-print-mode .storage-monthly-invoice,
   body.storage-monthly-print-mode .storage-monthly-invoice * { visibility: visible !important; }
-  body.storage-monthly-print-mode .storage-monthly-invoice { position: absolute; inset: 0 auto auto 0; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border: 0 !important; box-shadow: none !important; }
-  body.storage-monthly-print-mode .storage-invoice-table-wrap { overflow: visible !important; }
+
+  body.storage-monthly-print-mode .storage-monthly-invoice {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+  }
+
+  body.storage-monthly-print-mode,
+  body.storage-monthly-print-mode #root,
+  body.storage-monthly-print-mode .app-container,
+  body.storage-monthly-print-mode .main-content,
+  body.storage-monthly-print-mode .storage-cost-report,
+  body.storage-monthly-print-mode .storage-bill-panel {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: #fff !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table-wrap {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    border-collapse: collapse !important;
+    border: 1px solid #000 !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table tr {
+    page-break-inside: avoid !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table thead {
+    display: table-header-group !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table th,
+  body.storage-monthly-print-mode .storage-invoice-table td {
+    font-size: 7.2px !important;
+    padding: 3px 2px !important;
+    border: 1px solid #000 !important;
+    color: #000 !important;
+    word-wrap: break-word !important;
+    word-break: break-all !important;
+    white-space: normal !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-table th {
+    border-bottom: 2px solid #000 !important;
+    background: #f1f5f9 !important;
+    color: #003366 !important;
+  }
+
+  /* Distribute column widths for Available Table */
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(1),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(1) { width: 9% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(2),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(2) { width: 9% !important; white-space: nowrap !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(3),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(3) { width: 22% !important; text-align: left !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(4),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(4) { width: 6% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(5),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(5) { width: 9% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(6),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(6) { width: 7% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(7),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(7) { width: 5% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(8),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(8) { width: 5% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(9),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(9) { width: 5% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(10),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(10) { width: 9% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(11),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(11) { width: 5% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(12),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(12) { width: 9% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.available-table th:nth-child(13),
+  body.storage-monthly-print-mode .storage-invoice-table.available-table td:nth-child(13) { width: 9% !important; }
+
+  /* Distribute column widths for Dispatched Table */
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(1),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(1) { width: 10% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(2),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(2) { width: 10% !important; white-space: nowrap !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(3),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(3) { width: 10% !important; white-space: nowrap !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(4),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(4) { width: 22% !important; text-align: left !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(5),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(5) { width: 7% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(6),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(6) { width: 10% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(7),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(7) { width: 6% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(8),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(8) { width: 6% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(9),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(9) { width: 6% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(10),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(10) { width: 6% !important; }
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table th:nth-child(11),
+  body.storage-monthly-print-mode .storage-invoice-table.dispatched-table td:nth-child(11) { width: 7% !important; }
+
+  body.storage-monthly-print-mode .storage-invoice-totals,
+  body.storage-monthly-print-mode .storage-invoice-terms,
+  body.storage-monthly-print-mode .storage-invoice-signatures {
+    page-break-inside: avoid !important;
+  }
+
+  body.storage-monthly-print-mode .storage-invoice-signatures {
+    margin-top: 50px !important;
+  }
 }
+

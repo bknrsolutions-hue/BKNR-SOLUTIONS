@@ -1,0 +1,275 @@
+/* One screen-table contract for React registers, reports, masters and dashboards.
+   Document, print, payslip and nested calculation tables intentionally opt out. */
+@media screen {
+  :is(.main-content, .embedded-app-content) :is(
+    .table-responsive,
+    .attendance-table-wrapper,
+    .attendance-table-wrap,
+    .master-table-wrap,
+    .enterprise-table-wrap,
+    .admin-table-wrap,
+    .goods-table-wrap,
+    .general-stock-table-wrap,
+    .gs-items-table-wrap,
+    .inventory-stock-table-scroll
+  ) {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: auto;
+    border: 1px solid var(--table-line, var(--border-light)) !important;
+    border-radius: var(--radius-element, 6px) !important;
+    background: var(--surface-panel) !important;
+    box-shadow: none !important;
+    scrollbar-gutter: stable;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ):not(.erp-table-compact) {
+    width: 100%;
+    min-width: 100%;
+    max-width: none;
+    border: 1px solid var(--table-line) !important;
+    border-collapse: separate;
+    border-spacing: 0;
+    table-layout: auto;
+    color: var(--text-primary) !important;
+    background: var(--surface-panel);
+    font-size: var(--erp-table-text-size) !important;
+    text-align: center;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ):not(.erp-table-compact) > thead > tr > th {
+    height: var(--erp-table-header-height) !important;
+    min-height: var(--erp-table-header-height) !important;
+    padding: 0 var(--erp-table-cell-padding-x) !important;
+    border-right: 1px solid var(--table-line) !important;
+    border-bottom: 2px solid color-mix(in srgb, var(--sap-accent) 32%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--sap-accent) 9%, var(--surface-panel)) !important;
+    color: var(--text-primary) !important;
+    font-size: var(--erp-table-heading-size) !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.3px !important;
+    text-align: center;
+    text-transform: uppercase;
+    vertical-align: middle !important;
+    white-space: nowrap !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ):not(.erp-table-compact) > tbody > tr > td {
+    height: var(--erp-table-row-height) !important;
+    min-height: var(--erp-table-row-height) !important;
+    padding: 4px var(--erp-table-cell-padding-x) !important;
+    border-right: 1px solid var(--table-line) !important;
+    border-bottom: 1px solid var(--table-line) !important;
+    color: var(--text-primary) !important;
+    font-size: var(--erp-table-text-size) !important;
+    font-weight: 400 !important;
+    line-height: 1.2 !important;
+    text-align: center;
+    vertical-align: middle !important;
+    white-space: nowrap;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ):not(.erp-table-compact) > :is(thead, tbody, tfoot) > tr > :is(th, td):last-child {
+    border-right: 0 !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ):not(.erp-table-compact) > tbody > tr:hover > td {
+    background: var(--row-hover) !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) :is(.text-left, .cell-text, .cell-description, .erp-cell-wrap, .goods-summary) {
+    text-align: left !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) :is(.text-right, .cell-number, .num) {
+    text-align: right !important;
+    font-variant-numeric: tabular-nums;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) :is(.erp-cell-wrap, .goods-summary) {
+    min-width: 220px;
+    max-width: 360px;
+    overflow-wrap: anywhere;
+    white-space: normal !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > tbody > tr[class*="subtotal"] > td,
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > tbody > tr:is(
+    .subtotal,
+    .batch-subtotal,
+    .row-batch-total,
+    .sum-total-row,
+    .payment-logs-subtotal
+  ) > td {
+    border-top: 1px solid color-mix(in srgb, var(--sap-accent) 38%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--sap-accent) 7%, var(--surface-panel)) !important;
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > tbody > tr:is(
+    .stock-summary-company,
+    .stock-summary-unit,
+    .stock-summary-freezer,
+    .company-row,
+    .location-row,
+    .row-location,
+    .factory-row,
+    .group-row
+  ) > td {
+    background: color-mix(in srgb, var(--sap-accent) 5%, var(--surface-panel)) !important;
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > tfoot > tr > :is(th, td),
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > :is(tbody, tfoot) > tr[class*="grand-total"] > td,
+  :is(.main-content, .embedded-app-content) :is(
+    table.bknr-table,
+    table.attendance-table,
+    table.master-table,
+    table.enterprise-table,
+    table.admin-table,
+    table.rm-table,
+    table.general-stock-table,
+    table.gs-items-table,
+    table.erp-data-table
+  ) > :is(tbody, tfoot) > tr:is(.total-row, .is-grand) > td {
+    border-top: 2px solid color-mix(in srgb, var(--sap-accent) 52%, var(--table-line)) !important;
+    border-bottom: 2px solid color-mix(in srgb, var(--sap-accent) 52%, var(--table-line)) !important;
+    background: color-mix(in srgb, var(--sap-accent) 13%, var(--surface-panel)) !important;
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+  }
+}

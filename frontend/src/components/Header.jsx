@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import AnimatedBrandLogo from './AnimatedBrandLogo';
 
 const DEFAULT_QUICK_ACTION_IDS = [
   'raw_material_purchasing',
@@ -32,6 +33,14 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
   const [commandSearch, setCommandSearch] = useState('');
   const [entityResults, setEntityResults] = useState([]);
   const [entitySearchLoading, setEntitySearchLoading] = useState(false);
+  const [openMasterGroups, setOpenMasterGroups] = useState({ 'Admin & Support': true });
+  const [profilePopupOpen, setProfilePopupOpen] = useState(false);
+  const [profileDetails, setProfileDetails] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [tenantLogoUrl, setTenantLogoUrl] = useState(user?.company_logo_url || '');
+  const [tenantLogoSaving, setTenantLogoSaving] = useState(false);
+  const [tenantLogoMessage, setTenantLogoMessage] = useState('');
 
   const [companies, setCompanies] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -41,12 +50,13 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
   const [plantLocFilter, setPlantLocFilter] = useState('');
   const dropdownRef = useRef(null);
   const commandInputRef = useRef(null);
+  const tenantLogoInputRef = useRef(null);
 
   // Customizer States
   const [accentColor, setAccentColor] = useState('#2563eb');
-  const [sidebarColor, setSidebarColor] = useState('#0f172a');
-  const [headerColor, setHeaderColor] = useState('#060913');
-  const [dashboardColor, setDashboardColor] = useState('#0f172a');
+  const [sidebarColor, setSidebarColor] = useState('#102a43');
+  const [headerColor, setHeaderColor] = useState('#0b1f3a');
+  const [dashboardColor, setDashboardColor] = useState('#f5f6f7');
 
   const toggleColorCustomizer = () => {
     const nextOpen = !colorOpen;
@@ -54,9 +64,9 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
       const activeColors = window.BKNRColorCustomizer.read();
       if (activeColors) {
         setAccentColor(activeColors.accent || '#2563eb');
-        setSidebarColor(activeColors.sidebar || '#0f172a');
-        setHeaderColor(activeColors.header || '#060913');
-        setDashboardColor(activeColors.dashboard || '#0f172a');
+        setSidebarColor(activeColors.sidebar || '#102a43');
+        setHeaderColor(activeColors.header || '#0b1f3a');
+        setDashboardColor(activeColors.dashboard || '#f5f6f7');
       }
     }
     setColorOpen(nextOpen);
@@ -98,9 +108,9 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
     if (window.BKNRColorCustomizer) {
       const resetDefaults = window.BKNRColorCustomizer.reset();
       setAccentColor(resetDefaults.accent || '#2563eb');
-      setSidebarColor(resetDefaults.sidebar || '#0f172a');
-      setHeaderColor(resetDefaults.header || '#060913');
-      setDashboardColor(resetDefaults.dashboard || '#0f172a');
+      setSidebarColor(resetDefaults.sidebar || '#102a43');
+      setHeaderColor(resetDefaults.header || '#0b1f3a');
+      setDashboardColor(resetDefaults.dashboard || '#f5f6f7');
     }
     setColorOpen(false);
   };
@@ -140,6 +150,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         setCommandOpen(true);
       } else if (event.key === 'Escape') {
         setCommandOpen(false);
+        setProfilePopupOpen(false);
       }
     };
     window.addEventListener('keydown', handleCommandShortcut);
@@ -154,6 +165,14 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
       setEntityResults([]);
     }
   }, [commandOpen]);
+
+  useEffect(() => {
+    if (!dropdownOpen) setOpenMasterGroups({ 'Admin & Support': true });
+  }, [dropdownOpen]);
+
+  useEffect(() => {
+    setTenantLogoUrl(user?.company_logo_url || '');
+  }, [user?.company_logo_url]);
 
   // Fetch dropdown options and notifications on load
   useEffect(() => {
@@ -196,7 +215,9 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
   // Permission pipe matching allow() helper
   const permissions = user?.permissions || [];
-  const isDefaultSuperAdmin = user?.email === "bknr.solutions@gmail.com";
+  const isDefaultSuperAdmin = user?.email?.trim().toLowerCase() === "bknr.solutions@gmail.com";
+  const normalizedRole = String(user?.role || '').trim().toLowerCase();
+  const canManageTenantLogo = isDefaultSuperAdmin || ['admin', 'super_admin', 'super admin'].includes(normalizedRole);
 
   const allow = (key) => {
     if (['admin_helpdesk', 'manage_support', 'user_activity'].includes(key)) {
@@ -205,7 +226,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
     if (isDefaultSuperAdmin) return true;
     if (!permissions) return false;
     if (typeof permissions === 'string') {
-      return permissions === 'ALL' || permissions.split(',').includes(key);
+      return permissions === 'ALL' || permissions.split(',').map(item => item.trim()).includes(key);
     }
     return permissions.includes("ALL") || permissions.includes(key);
   };
@@ -260,7 +281,10 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         { id: 'admin_add_user', perm: 'add_user', icon: 'fa-user-gear', label: 'User Configuration', route: '/admin/add_user' },
         { id: 'admin_shifts', perm: 'shifts', icon: 'fa-business-time', label: 'Shifts', route: '/attendance/shifts' },
         { id: 'admin_data_management', perm: 'data_management', icon: 'fa-database', label: 'Data Management', route: '/data-management' },
-        ...(isDefaultSuperAdmin ? [{ id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' }] : []),
+        ...(isDefaultSuperAdmin ? [
+          { id: 'admin_system_settings', perm: 'system_settings', icon: 'fa-sliders', label: 'System & Pipeline', route: '/admin/system_settings' },
+          { id: 'admin_system_architecture', perm: 'system_architecture', icon: 'fa-sitemap', label: 'System Architecture', route: '/admin/system_architecture' }
+        ] : []),
         { id: 'admin_raise_ticket', perm: 'raise_ticket', icon: 'fa-support-agent', label: 'My Complaints', route: '/support/my_tickets' },
         { id: 'admin_helpdesk', perm: 'admin_helpdesk', icon: 'fa-ticket', label: 'Helpdesk', route: '/admin/all_tickets' },
         { id: 'admin_manage_support', perm: 'manage_support', icon: 'fa-users-gear', label: 'Support Team', route: '/admin/support_team' },
@@ -361,6 +385,56 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
     setQaPanelOpen(false);
   };
 
+  const openProfilePopup = async () => {
+    setDropdownOpen(false);
+    setProfilePopupOpen(true);
+    setProfileLoading(true);
+    setProfileError('');
+    try {
+      const response = await fetch('/auth/profile?format=json', {
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.detail || 'Unable to load profile');
+      setProfileDetails(payload.profile || null);
+      setTenantLogoUrl(payload.profile?.company_logo_url || user?.company_logo_url || '');
+    } catch (error) {
+      setProfileError(error.message || 'Unable to load profile');
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const uploadTenantLogo = async event => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+    setTenantLogoSaving(true);
+    setTenantLogoMessage('');
+    try {
+      const body = new FormData();
+      body.append('logo', file);
+      const response = await fetch('/auth/tenant-logo', {
+        method: 'POST',
+        body,
+        credentials: 'include',
+        headers: { Accept: 'application/json' },
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload.detail || 'Unable to update company logo');
+      const refreshedUrl = payload.company_logo_url ? `${payload.company_logo_url}?v=${Date.now()}` : '';
+      setTenantLogoUrl(refreshedUrl);
+      setProfileDetails(current => current ? { ...current, company_logo_url: refreshedUrl } : current);
+      setTenantLogoMessage('Company logo updated.');
+      window.dispatchEvent(new CustomEvent('tenant_logo_changed', { detail: { company_logo_url: refreshedUrl } }));
+    } catch (error) {
+      setTenantLogoMessage(error.message || 'Unable to update company logo');
+    } finally {
+      setTenantLogoSaving(false);
+    }
+  };
+
   const openCommandResult = (item) => {
     const menuItem = item.id ? item : allQuickActionOptions.find(option => option.route === item.route);
     if (menuItem) {
@@ -390,34 +464,59 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
           z-index: 99999999;
           overflow: hidden;
           padding: 20px;
-          width: 650px;
+          width: min(300px, calc(100vw - 24px));
           gap: 16px;
         }
 
         .mega-menu-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 16px;
+          grid-template-columns: 1fr !important;
+          align-items: start;
+          gap: 7px;
           max-height: 390px;
           overflow-y: auto;
-          padding-right: 4px;
+          padding-inline: 0;
         }
 
         .dropdown-pillar-block {
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          overflow: hidden;
+          border: 1px solid var(--border-light);
+          border-radius: 9px;
+          background: color-mix(in srgb, var(--surface-panel) 92%, var(--corp-dash) 8%);
         }
 
         .dropdown-pillar-title {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
           font-size: 10px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 1px;
           color: var(--text-tertiary);
-          border-bottom: 1px solid var(--border-light);
-          padding-bottom: 6px;
-          margin-bottom: 4px;
+          border: 0;
+          padding: 10px 11px;
+          background: transparent;
+          cursor: pointer;
+          text-align: left;
+          min-height: 38px;
+        }
+
+        .dropdown-pillar-title i {
+          color: var(--corp-dash);
+          transition: transform .2s ease;
+        }
+
+        .dropdown-pillar-title.open i {
+          transform: rotate(90deg);
+        }
+
+        .dropdown-pillar-items {
+          padding: 2px 7px 7px;
+          border-top: 1px solid var(--border-light);
         }
 
         .dropdown-submenu-item {
@@ -489,6 +588,72 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
           margin-top: 12px;
           border-top: 1px solid var(--border-light);
           padding-top: 12px;
+        }
+
+        .profile-popup-overlay {
+          position: fixed;
+          inset: 0;
+          z-index: 100000000;
+          display: grid;
+          place-items: center;
+          padding: 18px;
+          background: rgba(15, 23, 42, .34);
+          backdrop-filter: blur(3px);
+        }
+
+        .profile-popup {
+          width: min(470px, 100%);
+          max-height: min(680px, calc(100vh - 36px));
+          overflow: auto;
+          border: 1px solid var(--border-light);
+          border-radius: 16px;
+          background: var(--surface-panel);
+          box-shadow: var(--shadow-float);
+        }
+
+        .profile-popup-head {
+          position: sticky;
+          top: 0;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 15px 16px;
+          border-bottom: 1px solid var(--border-light);
+          background: var(--surface-panel);
+        }
+
+        .profile-popup-head-copy { flex: 1; min-width: 0; }
+        .profile-popup-head strong { display: block; color: var(--text-primary); font-size: 15px; }
+        .profile-popup-head span { display: block; margin-top: 3px; color: var(--text-tertiary); font-size: 10px; font-weight: 700; }
+        .profile-popup-close { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--border-light); border-radius: 9px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+        .profile-popup-body { padding: 8px 16px 16px; }
+        .profile-popup-state { padding: 34px 12px; color: var(--text-secondary); font-size: 12px; font-weight: 700; text-align: center; }
+        .profile-detail-row { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 11px; min-height: 55px; border-bottom: 1px solid var(--border-light); }
+        .profile-detail-row:last-child { border-bottom: 0; }
+        .profile-detail-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px; background: color-mix(in srgb, var(--corp-dash) 10%, transparent); color: var(--corp-dash); font-size: 12px; }
+        .profile-detail-copy span { display: block; color: var(--text-tertiary); font-size: 8px; font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
+        .profile-detail-copy strong { display: block; margin-top: 3px; color: var(--text-primary); font-size: 12px; font-weight: 800; overflow-wrap: anywhere; }
+        .profile-detail-copy strong.attention { color: #b45309; }
+        .tenant-logo-tools { margin: 10px 0 2px; padding: 11px; border: 1px solid var(--border-light); border-radius: 11px; background: color-mix(in srgb, var(--surface-panel) 94%, var(--corp-dash) 6%); }
+        .tenant-logo-tools-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; color: var(--text-primary); font-size: 10px; font-weight: 900; text-transform: uppercase; }
+        .tenant-logo-tools-title small { color: var(--text-tertiary); font-size: 8px; }
+        .tenant-logo-actions { display: flex; gap: 7px; margin-top: 9px; }
+        .tenant-logo-actions button { flex: 1; min-height: 34px; border: 1px solid var(--border-light); border-radius: 8px; background: var(--surface-panel); color: var(--text-secondary); font-size: 9px; font-weight: 900; cursor: pointer; }
+        .tenant-logo-actions button.primary { border-color: var(--corp-dash); background: var(--corp-dash); color: #fff; }
+        .tenant-logo-actions button:disabled { opacity: .55; cursor: wait; }
+        .tenant-logo-message { margin-top: 7px; color: var(--text-secondary); font-size: 9px; font-weight: 750; }
+        .corp-avatar-img { padding: 4px; object-fit: contain; background: transparent; }
+
+        @media (max-width: 700px) {
+          .dropdown-console-custom {
+            width: min(300px, calc(100vw - 24px));
+            right: 12px;
+            padding: 14px;
+          }
+          .mega-menu-grid {
+            grid-template-columns: 1fr !important;
+          }
         }
 
         /* 🌟 PANELS (QUICK ACTIONS & COMPLAINTS) 🌟 */
@@ -706,9 +871,9 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
             className={`corp-profile-btn ${dropdownOpen ? 'active' : ''}`} 
             onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); setColorOpen(false); }}
           >
-            <div className="corp-avatar">
-              {userName.trim() ? userName.trim().charAt(0).toUpperCase() : 'U'}
-            </div>
+            {tenantLogoUrl
+              ? <img className="corp-avatar corp-avatar-img" src={tenantLogoUrl} alt={`${companyName} logo`} />
+              : <AnimatedBrandLogo size={34} className="corp-avatar" />}
             <div className="corp-info">
               <span className="corp-name">{userName}</span>
               <span className="corp-role">{user?.role || 'Role'} | {companyName}</span>
@@ -755,8 +920,16 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
                   return (
                     <div key={idx} className="dropdown-pillar-block">
-                      <div className="dropdown-pillar-title">{cat.title}</div>
-                      {allowedItems.map((item) => {
+                      <button
+                        type="button"
+                        className={`dropdown-pillar-title ${openMasterGroups[cat.title] ? 'open' : ''}`}
+                        onClick={() => setOpenMasterGroups(current => ({ ...current, [cat.title]: !current[cat.title] }))}
+                        aria-expanded={Boolean(openMasterGroups[cat.title])}
+                      >
+                        <span>{cat.title}</span>
+                        <i className="fa-solid fa-chevron-right"></i>
+                      </button>
+                      {openMasterGroups[cat.title] && <div className="dropdown-pillar-items">{allowedItems.map((item) => {
                         const hasExplicitIcon = cat.title === 'Admin & Support' && item.icon;
                         return (
                         <div key={item.id} className="dropdown-item-row">
@@ -776,7 +949,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
                           </a>
                         </div>
                         );
-                      })}
+                      })}</div>}
                     </div>
                   );
                 })}
@@ -786,10 +959,7 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
               <div className="profile-logout-section">
                 <button
                   style={{ width: '100%', marginBottom: '8px', padding: '10px', background: 'var(--surface-panel)', color: 'var(--corp-dash)', border: '1px solid var(--border-light)', borderRadius: '8px', fontWeight: '800', cursor: 'pointer' }}
-                  onClick={() => {
-                    setActivePage('user_profile', '/auth/profile');
-                    setDropdownOpen(false);
-                  }}
+                  onClick={openProfilePopup}
                 >
                   <i className="fa-solid fa-user" style={{ marginRight: '7px' }}></i>
                   MY PROFILE
@@ -879,6 +1049,61 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
         </div>
       </header>
+
+      {profilePopupOpen && (
+        <div className="profile-popup-overlay" onMouseDown={() => setProfilePopupOpen(false)}>
+          <section className="profile-popup" role="dialog" aria-modal="true" aria-label="My Profile" onMouseDown={event => event.stopPropagation()}>
+            <div className="profile-popup-head">
+              {tenantLogoUrl
+                ? <img className="corp-avatar corp-avatar-img" src={tenantLogoUrl} alt={`${companyName} logo`} style={{ width: 42, height: 42 }} />
+                : <AnimatedBrandLogo size={42} />}
+              <div className="profile-popup-head-copy">
+                <strong>{profileDetails?.name || userName}</strong>
+                <span>{profileDetails?.company_name || companyName} · {profileDetails?.role || user?.role || 'Role'}</span>
+              </div>
+              <button type="button" className="profile-popup-close" onClick={() => setProfilePopupOpen(false)} aria-label="Close profile">
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            <div className="profile-popup-body">
+              {profileLoading && <div className="profile-popup-state">Loading profile…</div>}
+              {!profileLoading && profileError && <div className="profile-popup-state">{profileError}</div>}
+              {!profileLoading && !profileError && profileDetails && [
+                ['fa-id-card', 'Employee ID', profileDetails.employee_id],
+                ['fa-envelope', 'Login Email', profileDetails.email],
+                ['fa-id-badge', 'Designation', profileDetails.designation],
+                ['fa-calendar', 'Date of Birth', profileDetails.date_of_birth],
+                ['fa-droplet', 'Blood Group', profileDetails.blood_group],
+                ['fa-location-dot', 'Working Location', profileDetails.working_location],
+                ['fa-house', 'Address', profileDetails.address || 'Please update', !profileDetails.address],
+              ].map(([icon, label, value, attention]) => (
+                <div className="profile-detail-row" key={label}>
+                  <span className="profile-detail-icon"><i className={`fa-solid ${icon}`}></i></span>
+                  <div className="profile-detail-copy">
+                    <span>{label}</span>
+                    <strong className={attention ? 'attention' : ''}>{value || '—'}</strong>
+                  </div>
+                </div>
+              ))}
+              {!profileLoading && !profileError && profileDetails && canManageTenantLogo && (
+                <div className="tenant-logo-tools">
+                  <div className="tenant-logo-tools-title">
+                    <span>Tenant Logo</span>
+                    <small>PNG, JPEG or WebP · Max 2 MB</small>
+                  </div>
+                  <input ref={tenantLogoInputRef} type="file" accept="image/png,image/jpeg,image/webp" hidden onChange={uploadTenantLogo} />
+                  <div className="tenant-logo-actions">
+                    <button type="button" className="primary" disabled={tenantLogoSaving} onClick={() => tenantLogoInputRef.current?.click()}>
+                      {tenantLogoSaving ? 'UPDATING…' : tenantLogoUrl ? 'CHANGE' : 'UPLOAD'}
+                    </button>
+                  </div>
+                  {tenantLogoMessage && <div className="tenant-logo-message">{tenantLogoMessage}</div>}
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
 
       {commandOpen && (
         <div className="command-palette-overlay" onMouseDown={() => setCommandOpen(false)}>

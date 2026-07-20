@@ -1,11 +1,13 @@
-import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import './SapHorizon.css';
+import './ErpTables.css';
 
 // Components
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import AnimatedBrandLogo from './components/AnimatedBrandLogo';
 
 let initialSessionRequest;
 
@@ -100,6 +102,7 @@ const ColdStorageHolding = lazy(() => import('./pages/Processing/ColdStorageHold
 const GeneralStoreEntry = lazy(() => import('./pages/Processing/GeneralStoreEntry'));
 const DailyAttendance = lazy(() => import('./pages/Attendance/DailyAttendance'));
 const AdminConsole = lazy(() => import('./pages/Admin/AdminConsole'));
+const SupportTicketDesk = lazy(() => import('./pages/Admin/AdminConsole').then(module => ({ default: module.TicketDesk })));
 const StaffRegistration = lazy(() => import('./pages/Attendance/StaffRegistration'));
 const IncrementDetails = lazy(() => import('./pages/Attendance/IncrementDetails'));
 const MonthlySalarySheet = lazy(() => import('./pages/Attendance/MonthlySalarySheet'));
@@ -153,6 +156,10 @@ const RequirementDocumentPage = lazy(() => import('./pages/ExportDocuments/Requi
 const ExportWorkspace = lazy(() => import('./pages/ExportDocuments/ExportWorkspace'));
 const ExportApprovals = lazy(() => import('./pages/ExportDocuments/ExportApprovals'));
 const ExportRegisters = lazy(() => import('./pages/ExportDocuments/ExportRegisters'));
+const ProcessingRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.ProcessingRegisters })));
+const InventoryRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.InventoryRegisters })));
+const AccountsRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.AccountsRegisters })));
+const HRMSRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.HRMSRegisters })));
 const ExportDashboard = lazy(() => import('./pages/Dashboards/ExportDashboard'));
 
 const CRITERIA_COMPONENTS = {
@@ -251,6 +258,10 @@ const CRITERIA_COMPONENTS = {
   export_shipment_workspace: ExportWorkspace,
   export_document_approvals: ExportApprovals,
   export_registers: ExportRegisters,
+  processing_registers: ProcessingRegisters,
+  inventory_registers: InventoryRegisters,
+  accounts_registers: AccountsRegisters,
+  hrms_registers: HRMSRegisters,
 };
 
 const REPORT_COMPONENTS = {
@@ -273,11 +284,45 @@ const REPORT_COMPONENTS = {
   report_inventory_costing: InventoryCosting,
 };
 
-function PageLoading() {
+const COMPACT_PROCESSING_FORM_PAGES = new Set([
+  'gate_entry',
+  'raw_material_purchasing',
+  'de_heading',
+  'grading',
+  'peeling',
+  'soaking',
+  'production',
+]);
+
+const COMPACT_INVENTORY_FORM_PAGES = new Set([
+  'stock_entry',
+  'pending_orders',
+  'cold_storage_holding',
+  'general_stock_entry',
+  'general_store_entry',
+]);
+
+const isCompactHrmsFormPage = page => (
+  page.startsWith('attendance_')
+  || page === 'finance_salary_processing'
+  || page === 'admin_shifts'
+);
+
+function tenantLogoSource(url) {
+  if (!url) return '';
+  return /^https?:\/\//i.test(url) ? url : url.startsWith('/') ? url : `/${url}`;
+}
+
+function PageLoading({ user }) {
+  const companyName = user?.company || localStorage.getItem('tenant_company_name') || 'SVBK ERP';
+  const logoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
   return (
     <div className="route-loading" role="status" aria-live="polite">
-      <span className="route-loading-spinner" aria-hidden="true" />
-      <span>Loading page...</span>
+      {logoUrl
+        ? <img className="tenant-loading-logo compact" src={logoUrl} alt={`${companyName} logo`} />
+        : <AnimatedBrandLogo size={64} loop />}
+      <strong>{companyName}</strong>
+      <span>Loading workspace…</span>
     </div>
   );
 }
@@ -291,17 +336,134 @@ export default function App() {
   const [sidebarOpen, setSidebarOpen]   = useState(false);
   const [availableMenuItems, setAvailableMenuItems] = useState([]);
   const [appNotice, setAppNotice]       = useState(null);
+  const [supportDrawer, setSupportDrawer] = useState(null);
+  const [supportDrawerPosition, setSupportDrawerPosition] = useState(null);
+  const [floatingSupportPosition, setFloatingSupportPosition] = useState(null);
+  const supportDrawerRef = useRef(null);
+  const floatingSupportRef = useRef(null);
+  const floatingSupportDragged = useRef(false);
 
   const activePage = location.pathname.startsWith('/page/')
     ? decodeURIComponent(location.pathname.slice('/page/'.length))
     : 'dashboard_processing';
   const activeRoute = new URLSearchParams(location.search).get('backend');
   const isEmbedded = new URLSearchParams(location.search).get('embedded') === 'true';
+  const compactFormModule = COMPACT_PROCESSING_FORM_PAGES.has(activePage)
+    ? 'processing'
+    : COMPACT_INVENTORY_FORM_PAGES.has(activePage)
+      ? 'inventory'
+      : isCompactHrmsFormPage(activePage)
+        ? 'hrms'
+        : '';
+  const mainContentClass = `main-content${compactFormModule ? ` erp-compact-module-forms erp-${compactFormModule}-forms` : ''}`;
 
   const setActivePage = useCallback((id, route) => {
+    if (id === 'admin_raise_ticket' || id === 'admin_helpdesk') {
+      setSupportDrawer({
+        activePage: id,
+        activeRoute: route || (id === 'admin_helpdesk' ? '/admin/all_tickets' : '/support/my_tickets'),
+      });
+      setSupportDrawerPosition(null);
+      setSidebarOpen(false);
+      return;
+    }
     const search = route ? `?backend=${encodeURIComponent(route)}` : '';
     navigate(`/page/${encodeURIComponent(id)}${search}`);
   }, [navigate]);
+
+  useEffect(() => {
+    if (activePage !== 'admin_raise_ticket' && activePage !== 'admin_helpdesk') return;
+    setSupportDrawer({
+      activePage,
+      activeRoute: activeRoute || (activePage === 'admin_helpdesk' ? '/admin/all_tickets' : '/support/my_tickets'),
+    });
+    setSupportDrawerPosition(null);
+    navigate('/page/dashboard_processing', { replace: true });
+  }, [activePage, activeRoute, navigate]);
+
+  useEffect(() => {
+    if (!supportDrawer) return undefined;
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setSupportDrawer(null);
+    };
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, [supportDrawer]);
+
+  const startSupportDrawerDrag = useCallback(event => {
+    if (event.button !== 0 || event.target.closest('button, input, select, textarea, a')) return;
+    const panel = supportDrawerRef.current;
+    if (!panel) return;
+
+    const bounds = panel.getBoundingClientRect();
+    const offsetX = event.clientX - bounds.left;
+    const offsetY = event.clientY - bounds.top;
+
+    const moveDrawer = moveEvent => {
+      const maxLeft = Math.max(0, window.innerWidth - bounds.width);
+      const maxTop = Math.max(0, window.innerHeight - bounds.height);
+      setSupportDrawerPosition({
+        left: Math.min(maxLeft, Math.max(0, moveEvent.clientX - offsetX)),
+        top: Math.min(maxTop, Math.max(0, moveEvent.clientY - offsetY)),
+      });
+    };
+    const stopDragging = () => {
+      document.removeEventListener('pointermove', moveDrawer);
+      document.removeEventListener('pointerup', stopDragging);
+      document.body.classList.remove('support-drawer-dragging');
+    };
+
+    event.preventDefault();
+    document.body.classList.add('support-drawer-dragging');
+    document.addEventListener('pointermove', moveDrawer);
+    document.addEventListener('pointerup', stopDragging);
+  }, []);
+
+  const openFloatingSupport = useCallback(() => {
+    if (floatingSupportDragged.current) {
+      floatingSupportDragged.current = false;
+      return;
+    }
+    if (supportDrawer) return;
+    const isDefaultSuperAdmin = user?.email?.trim().toLowerCase() === 'bknr.solutions@gmail.com';
+    setActivePage(
+      isDefaultSuperAdmin ? 'admin_helpdesk' : 'admin_raise_ticket',
+      isDefaultSuperAdmin ? '/admin/all_tickets' : '/support/my_tickets',
+    );
+  }, [setActivePage, supportDrawer, user?.email]);
+
+  const startFloatingSupportDrag = useCallback(event => {
+    if (event.button !== 0) return;
+    const launcher = floatingSupportRef.current;
+    if (!launcher) return;
+
+    const bounds = launcher.getBoundingClientRect();
+    const originX = event.clientX;
+    const originY = event.clientY;
+    const offsetX = originX - bounds.left;
+    const offsetY = originY - bounds.top;
+    let moved = false;
+
+    const moveLauncher = moveEvent => {
+      if (!moved && Math.hypot(moveEvent.clientX - originX, moveEvent.clientY - originY) < 5) return;
+      moved = true;
+      floatingSupportDragged.current = true;
+      setFloatingSupportPosition({
+        left: Math.min(Math.max(0, window.innerWidth - bounds.width), Math.max(0, moveEvent.clientX - offsetX)),
+        top: Math.min(Math.max(0, window.innerHeight - bounds.height), Math.max(0, moveEvent.clientY - offsetY)),
+      });
+    };
+    const stopDragging = () => {
+      document.removeEventListener('pointermove', moveLauncher);
+      document.removeEventListener('pointerup', stopDragging);
+      document.body.classList.remove('floating-support-dragging');
+      if (moved) window.setTimeout(() => { floatingSupportDragged.current = false; }, 0);
+    };
+
+    document.body.classList.add('floating-support-dragging');
+    document.addEventListener('pointermove', moveLauncher);
+    document.addEventListener('pointerup', stopDragging);
+  }, []);
 
   // Sync theme to <html data-theme>
   useEffect(() => {
@@ -359,14 +521,21 @@ export default function App() {
             company: data.company_name,
             company_code: data.company_code,
             mpeda_registration_code: data.mpeda_registration_code,
+            company_logo_url: data.company_logo_url,
             name: data.name,
             role: data.role,
             permissions: data.permissions
           });
+          localStorage.setItem('tenant_company_name', data.company_name || 'SVBK ERP');
+          if (data.company_logo_url) localStorage.setItem('tenant_company_logo', data.company_logo_url);
+          else localStorage.removeItem('tenant_company_logo');
           localStorage.setItem('user_email', data.email);
         } else {
           setUser(null);
         }
+        return data.authenticated
+          ? new Promise(resolve => window.setTimeout(resolve, 450))
+          : undefined;
       })
       .catch(() => {
         if (active) setUser(null);
@@ -395,6 +564,54 @@ export default function App() {
     return () => window.removeEventListener('bknr:session-expired', handleSessionExpired);
   }, []);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    let checking = false;
+    const checkSession = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const response = await fetch('/auth/session-info', {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'application/json' },
+        });
+        if (response.ok) {
+          const data = await response.clone().json();
+          if (!data.authenticated) {
+            window.dispatchEvent(new CustomEvent('bknr:session-expired'));
+          } else {
+            setUser(current => current ? {
+              ...current,
+              email: data.email,
+              name: data.name,
+              company: data.company_name,
+              company_code: data.company_code,
+              company_logo_url: data.company_logo_url,
+              role: data.role,
+              permissions: data.permissions,
+            } : current);
+          }
+        }
+      } catch {
+        // A temporary network outage must not log out a valid local session.
+      } finally {
+        checking = false;
+      }
+    };
+    const interval = window.setInterval(checkSession, 15000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void checkSession();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', checkSession);
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', checkSession);
+    };
+  }, [user]);
+
   const toggleTheme = () => setTheme(prev => {
     const next = prev === 'dark' ? 'light' : 'dark';
     localStorage.setItem('theme', next);
@@ -419,6 +636,7 @@ export default function App() {
             company: data.company_name,
             company_code: data.company_code,
             mpeda_registration_code: data.mpeda_registration_code,
+            company_logo_url: data.company_logo_url,
             name: data.name,
             role: data.role,
             permissions: data.permissions
@@ -545,16 +763,15 @@ export default function App() {
 
   // ── Loading screen ───────────────────────────────────────────────────────
   if (loadingSession) {
+    const loadingCompanyName = user?.company || localStorage.getItem('tenant_company_name') || 'SVBK ERP';
+    const loadingLogoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center',
-        height: '100vh', width: '100vw',
-        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 25%, #e2e8f0 75%, #cbd5e1 100%)',
-        color: '#0f172a', fontFamily: "'Inter', sans-serif"
-      }}>
-        <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '8px' }}>BKNR ERP</h2>
-        <p style={{ color: '#475569', fontSize: '0.88rem' }}>Loading Workspace Architecture...</p>
+      <div className="tenant-loading-screen" role="status" aria-live="polite">
+        {loadingLogoUrl
+          ? <img className="tenant-loading-logo" src={loadingLogoUrl} alt={`${loadingCompanyName} logo`} />
+          : <AnimatedBrandLogo size={110} loop />}
+        <h2>{loadingCompanyName}</h2>
+        <p>Opening secure workspace…</p>
       </div>
     );
   }
@@ -562,7 +779,7 @@ export default function App() {
   // ── Auth screen ──────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <Suspense fallback={<PageLoading />}>
+      <Suspense fallback={<PageLoading user={user} />}>
         <AuthContainer handleLoginSuccess={handleLoginSuccess} />
       </Suspense>
     );
@@ -579,8 +796,8 @@ export default function App() {
   if (isEmbedded) {
     return (
       <div className="embedded-app-shell">
-        <main className="embedded-app-content">
-          <Suspense fallback={<PageLoading />}>
+        <main className={`embedded-app-content${compactFormModule ? ` erp-compact-module-forms erp-${compactFormModule}-forms` : ''}`}>
+          <Suspense fallback={<PageLoading user={user} />}>
             {renderActivePage()}
           </Suspense>
         </main>
@@ -618,12 +835,72 @@ export default function App() {
           availableMenuItems={availableMenuItems}
         />
 
-        <main className="main-content">
-          <Suspense fallback={<PageLoading />}>
+        <main className={mainContentClass}>
+          <Suspense fallback={<PageLoading user={user} />}>
             {renderActivePage()}
           </Suspense>
         </main>
       </div>
+      {supportDrawer && (
+        <div className="react-support-drawer" aria-label="Support and helpdesk">
+          <aside
+            ref={supportDrawerRef}
+            className="react-support-drawer-panel"
+            role="dialog"
+            aria-modal="false"
+            style={supportDrawerPosition ? {
+              left: supportDrawerPosition.left,
+              top: supportDrawerPosition.top,
+              right: 'auto',
+            } : undefined}
+          >
+            <div className="react-support-drawer-head" onPointerDown={startSupportDrawerDrag}>
+              <div>
+                <span>SVBK ERP</span>
+                <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSupportDrawer(null)}
+                title="Close Support"
+                aria-label="Close Support"
+              >
+                <i className="fa-solid fa-support-agent" aria-hidden="true" />
+              </button>
+            </div>
+            <div className="react-support-drawer-content">
+              <Suspense fallback={<PageLoading user={user} />}>
+                <SupportTicketDesk
+                  activePage={supportDrawer.activePage}
+                  activeRoute={supportDrawer.activeRoute}
+                  compact
+                />
+              </Suspense>
+            </div>
+            <span className="react-support-resize-hint" aria-hidden="true">
+              <i className="fa-solid fa-up-right-and-down-left-from-center" />
+            </span>
+          </aside>
+        </div>
+      )}
+      <button
+        ref={floatingSupportRef}
+        type="button"
+        className={`floating-support-launcher ${supportDrawer ? 'active' : ''}`}
+        onClick={openFloatingSupport}
+        onPointerDown={startFloatingSupportDrag}
+        style={floatingSupportPosition ? {
+          left: floatingSupportPosition.left,
+          top: floatingSupportPosition.top,
+          right: 'auto',
+          bottom: 'auto',
+        } : undefined}
+        title="Open Support"
+        aria-label="Open Support"
+        aria-pressed={Boolean(supportDrawer)}
+      >
+        <i className="fa-solid fa-support-agent" aria-hidden="true" />
+      </button>
       {noticePopup}
     </React.Fragment>
   );

@@ -14,6 +14,8 @@ export default defineConfig({
       '/criteria':         'http://127.0.0.1:8000',
       '/finance_accounts': 'http://127.0.0.1:8000',
       '/export_documents': 'http://127.0.0.1:8000',
+      '/data-management':  'http://127.0.0.1:8000',
+      '/export':           'http://127.0.0.1:8000',
       '/attendance':       'http://127.0.0.1:8000',
       '/admin':            'http://127.0.0.1:8000',
       '/support':          'http://127.0.0.1:8000',

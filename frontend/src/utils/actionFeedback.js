@@ -115,6 +115,11 @@ export function installActionFeedback(targetWindow = window, feedbackWindow = wi
     const url = requestUrl(input);
     try {
       const response = await nativeFetch(input, init);
+      const redirectedToLogin = response.redirected && String(response.url || '').includes('/auth/login');
+      if (response.status === 401 || redirectedToLogin) {
+        feedbackWindow.dispatchEvent(new feedbackWindow.CustomEvent('bknr:session-expired'));
+        return response;
+      }
       if (MUTATION_METHODS.has(method) && !isExcludedMutation(url)) {
         let payload = null;
         try {

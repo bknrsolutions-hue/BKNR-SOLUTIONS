@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import '../Attendance/Attendance.css';
 import ExportSearchPanel from './ExportSearchPanel';
+import { secureDownload } from '../../utils/secureDownload';
 
 export default function ExportShipments() {
   const [history, setHistory] = useState([]);
@@ -170,10 +171,10 @@ export default function ExportShipments() {
     window.open(`/export_documents/export_shipment/pdf/${selectedRow.id}`, "_blank");
   };
 
-  const downloadDossier = () => {
+  const downloadDossier = async () => {
     if (!selectedRow) return;
     setMenuOpen(false);
-    window.location.href = `/export_documents/shipment/${selectedRow.id}/dossier.zip`;
+    await secureDownload(`/export_documents/shipment/${selectedRow.id}/dossier.zip`, `${selectedRow.shipment_no || 'Shipment'} Dossier`);
   };
 
   const uploadPdfSelected = () => {
@@ -221,7 +222,7 @@ export default function ExportShipments() {
   });
 
   return (
-    <div className="attendance-container">
+    <div className="attendance-container export-document-page">
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: '80px' }}>
           {notification.msg}
@@ -266,7 +267,7 @@ export default function ExportShipments() {
                 <button className="attendance-dropdown-item" onClick={pdfSelected}>
                   <FileText size={14} /> Generate PDF
                 </button>
-                <button className="attendance-dropdown-item" onClick={() => window.open('/export_documents/registers.xlsx', '_blank')}>
+                <button className="attendance-dropdown-item" onClick={() => secureDownload('/export_documents/registers.xlsx', 'All Export Registers')}>
                   <Download size={14} /> Export Register
                 </button>
                 <button className="attendance-dropdown-item" onClick={downloadDossier}>

@@ -5,6 +5,7 @@ import {
 import '../Attendance/Attendance.css';
 import './PackingLists.css';
 import ExportSearchPanel from './ExportSearchPanel';
+import { secureDownload } from '../../utils/secureDownload';
 
 const newPackingLine = () => ({
   product_name: '',
@@ -321,7 +322,7 @@ export default function PackingLists() {
   });
 
   return (
-    <div className="attendance-container">
+    <div className="attendance-container export-document-page">
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: '80px' }}>
           {notification.msg}
@@ -366,7 +367,7 @@ export default function PackingLists() {
                 <button className="attendance-dropdown-item" onClick={pdfSelected}>
                   <FileText size={14} /> Generate PDF
                 </button>
-                <button className="attendance-dropdown-item" onClick={() => window.open('/export_documents/registers.xlsx', '_blank')}>
+                <button className="attendance-dropdown-item" onClick={() => secureDownload('/export_documents/registers.xlsx', 'All Export Registers')}>
                   <Download size={14} /> Export Register
                 </button>
                 <button className="attendance-dropdown-item" onClick={uploadPdfSelected}>

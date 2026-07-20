@@ -351,7 +351,7 @@ export default function PendingOrdersReport({ activeRoute }) {
   };
 
   return (
-    <div className="report-viewer-card">
+    <div className="report-viewer-card pending-orders-exempt">
       <ReportHeader
         title="Pending Orders Premium Detailed Report"
         subtitle={`${rows.length} active order items`}
