@@ -64,30 +64,16 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
     try {
       const query = selectedLocation ? `&location=${encodeURIComponent(selectedLocation)}` : '';
       const page = await apiRequest(`/attendance/daily?format=json${query}`);
-      const actualLocation = page.actual_location || (page.locations && page.locations.length > 0 ? page.locations[0] : '') || selectedLocation || '';
+      const actualLocation = page.actual_location || selectedLocation || '';
       setMeta(page);
       setLocation(actualLocation);
-      if (actualLocation) {
-        await loadRows(actualLocation);
-      }
+      await loadRows(actualLocation);
     } catch (requestError) {
       setError(ERROR_MESSAGES[requestError.message] || requestError.message);
     } finally {
       setLoading(false);
     }
   }, [loadRows, location]);
-
-  const [companies, setCompanies] = useState([]);
-  const [locations, setLocations] = useState([]);
-
-  useEffect(() => {
-    apiRequest('/auth/global-dropdowns')
-      .then(payload => {
-        setCompanies(payload.companies || []);
-        setLocations(payload.locations || []);
-      })
-      .catch(() => {});
-  }, []);
 
   useEffect(() => {
     void loadPage(filters.location || '');
@@ -188,26 +174,13 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
     }
   }, [location, showToast]);
 
-  const availableLocations = meta?.locations?.length
-    ? meta.locations
-    : locations.length
-    ? locations
-    : (filters.locations || []);
-
-  const availableCompanies = companies.length ? companies : (filters.companies || []);
-
   const attendanceFilters = {
     ...filters,
-    companies: undefined,
-    locations: availableLocations,
     location,
     onLocationChange: value => {
       filters.onLocationChange?.(value);
       setLocation(value);
       void loadPage(value);
-    },
-    onProductionForChange: value => {
-      filters.onProductionForChange?.(value);
     },
   };
 
@@ -269,25 +242,18 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
 
           <View style={styles.terminalCard}>
             <Text style={styles.scanLabel}>SCAN ID BADGE</Text>
-            <View style={styles.inputWrap}>
-              <TextInput
-                ref={employeeInput}
-                style={styles.employeeInput}
-                value={employeeId}
-                onChangeText={setEmployeeId}
-                onSubmitEditing={() => punch('IN', 'GENERAL')}
-                placeholder="SCAN ID / ENTER EMP ID"
-                placeholderTextColor="#94a3b8"
-                autoCapitalize="characters"
-                returnKeyType="done"
-                editable={Boolean(location) && !submitting}
-              />
-              {employeeId ? (
-                <Pressable onPress={() => { setEmployeeId(''); employeeInput.current?.focus(); }} style={styles.clearInputBtn}>
-                  <MaterialCommunityIcons name="close-circle" size={20} color="#94a3b8" />
-                </Pressable>
-              ) : null}
-            </View>
+            <TextInput
+              ref={employeeInput}
+              style={styles.employeeInput}
+              value={employeeId}
+              onChangeText={setEmployeeId}
+              onSubmitEditing={() => punch('IN', 'GENERAL')}
+              placeholder="SCAN ID"
+              placeholderTextColor="#94a3b8"
+              autoCapitalize="characters"
+              returnKeyType="done"
+              editable={Boolean(location) && !submitting}
+            />
             <View style={styles.shiftButtons}>
               {shifts.length ? shifts.map((shift, index) => (
                 <TerminalAction
@@ -480,9 +446,7 @@ const styles = StyleSheet.create({
   metricLabel: { marginTop: 1, color: '#64748b', fontSize: 8.5, fontWeight: '750' },
   terminalCard: { gap: 8, padding: 11, borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 10, backgroundColor: '#fff' },
   scanLabel: { color: '#64748b', fontSize: 9, fontWeight: '900', letterSpacing: .65 },
-  inputWrap: { position: 'relative', justifyContent: 'center' },
-  clearInputBtn: { position: 'absolute', right: 12, top: 14, zIndex: 10 },
-  employeeInput: { height: 48, paddingLeft: 12, paddingRight: 36, borderWidth: 2, borderColor: '#cbd5e1', borderRadius: 8, color: '#0f172a', backgroundColor: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1.2, textAlign: 'center' },
+  employeeInput: { height: 48, paddingHorizontal: 12, borderWidth: 2, borderColor: '#cbd5e1', borderRadius: 8, color: '#0f172a', backgroundColor: '#fff', fontSize: 18, fontWeight: '900', letterSpacing: 1.2, textAlign: 'center' },
   shiftButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: 7 },
   actionRow: { flexDirection: 'row', gap: 7 },
   terminalAction: { flex: 1, minWidth: 105, height: 39, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 7 },

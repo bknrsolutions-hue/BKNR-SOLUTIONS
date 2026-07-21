@@ -29,14 +29,12 @@ function Field({ label, value, onChangeText, placeholder, secureTextEntry, keybo
 
 function AnimatedCompanyLogo() {
   return (
-    <View style={styles.logoBadge}>
-      <Image
-        source={require('../../assets/svbk-it-solutions-logo-3d-transparent.png')}
-        resizeMode="contain"
-        style={styles.companyLogo}
-        accessibilityLabel="SVBK IT Solutions"
-      />
-    </View>
+    <Image
+      source={require('../../assets/svbk-it-solutions-logo-3d-transparent.png')}
+      resizeMode="contain"
+      style={styles.companyLogo}
+      accessibilityLabel="SVBK IT Solutions"
+    />
   );
 }
 
@@ -170,8 +168,7 @@ function PrimaryButton({ label, loading, onPress }) {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#f4f7fb' }, scroll: { flexGrow: 1, justifyContent: 'center', paddingHorizontal: 18, paddingTop: 28, paddingBottom: 24 }, glowOne: { position: 'absolute', top: -90, right: -70, width: 230, height: 230, borderRadius: 115, backgroundColor: '#dbeafe' }, glowTwo: { position: 'absolute', bottom: -120, left: -100, width: 270, height: 270, borderRadius: 135, backgroundColor: '#e0e7ff' },
   brand: { width: '100%', maxWidth: 440, alignSelf: 'center', alignItems: 'center', marginBottom: 14 },
-  logoBadge: { width: 72, height: 72, borderRadius: 36, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center', shadowColor: '#2563eb', shadowOpacity: .35, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6 },
-  companyLogo: { width: 44, height: 44, tintColor: '#ffffff' },
+  companyLogo: { width: 190, height: 76, backgroundColor: 'transparent' },
   card: { width: '100%', maxWidth: 440, alignSelf: 'center', padding: 21, borderWidth: 1, borderColor: '#dbe3ef', borderRadius: 24, backgroundColor: '#fff' }, back: { alignSelf: 'flex-start', marginBottom: 9, paddingVertical: 5 }, backText: { color: '#64748b', fontSize: 12, fontWeight: '800' }, shield: { width: 46, height: 46, alignSelf: 'center', alignItems: 'center', justifyContent: 'center', borderRadius: 15, backgroundColor: '#2563eb' }, shieldText: { color: '#fff', fontSize: 23, fontWeight: '900' }, title: { marginTop: 12, color: '#0f172a', fontSize: 25, fontWeight: '900', textAlign: 'center' }, subtitle: { marginTop: 6, marginBottom: 18, color: '#64748b', fontSize: 12, lineHeight: 18, fontWeight: '600', textAlign: 'center' },
   notice: { marginBottom: 13, padding: 10, borderWidth: 1, borderColor: '#bbf7d0', borderRadius: 10, color: '#15803d', backgroundColor: '#f0fdf4', fontSize: 11, lineHeight: 16, fontWeight: '700' }, error: { marginBottom: 13, padding: 10, borderWidth: 1, borderColor: '#fecaca', borderRadius: 10, color: '#dc2626', backgroundColor: '#fef2f2', fontSize: 11, lineHeight: 16, fontWeight: '700' }, form: { gap: 13 }, field: { gap: 5 }, label: { marginLeft: 2, color: '#64748b', fontSize: 13, fontWeight: '900', letterSpacing: .5 }, inputShell: { minHeight: 51, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 13, backgroundColor: '#fff' }, multilineShell: { minHeight: 88, alignItems: 'flex-start' }, input: { flex: 1, height: 50, paddingHorizontal: 13, color: '#0f172a', fontSize: 15, fontWeight: '700' }, multilineInput: { height: 86, paddingTop: 13 }, eye: { height: 49, justifyContent: 'center', paddingHorizontal: 12 }, eyeText: { color: '#2563eb', fontSize: 12, fontWeight: '900' }, forgot: { alignSelf: 'flex-end', marginTop: -4, color: '#2563eb', fontSize: 11, fontWeight: '800' }, primary: { height: 52, alignItems: 'center', justifyContent: 'center', borderRadius: 13, backgroundColor: '#2563eb' }, primaryPressed: { backgroundColor: '#1d4ed8' }, primaryDisabled: { opacity: .65 }, primaryText: { color: '#fff', fontSize: 14, fontWeight: '900' }, switchText: { marginTop: 3, color: '#64748b', fontSize: 11, fontWeight: '600', textAlign: 'center' }, link: { color: '#2563eb', fontWeight: '900' }, otp: { height: 62, borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 13, color: '#1d4ed8', backgroundColor: '#fff', fontSize: 29, fontWeight: '900', letterSpacing: 15, textAlign: 'center' }, created: { gap: 14 }, createdLabel: { color: '#64748b', fontSize: 13, fontWeight: '900', textAlign: 'center', letterSpacing: 1 }, companyCode: { padding: 15, borderWidth: 1, borderColor: '#2563eb', borderRadius: 13, color: '#1d4ed8', backgroundColor: '#eff6ff', fontSize: 24, fontWeight: '900', textAlign: 'center', letterSpacing: 1 }, createdHelp: { color: '#64748b', fontSize: 11, lineHeight: 17, textAlign: 'center' }, security: { marginTop: 17, color: '#64748b', fontSize: 13, fontWeight: '700', textAlign: 'center' },
 });

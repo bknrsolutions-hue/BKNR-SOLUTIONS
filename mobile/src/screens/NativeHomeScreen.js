@@ -170,8 +170,8 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
           <Text style={[styles.welcome, { color: theme.headerText }]}>Hello, {displayName.split(' ')[0]}</Text>
           <View style={styles.companyRow}>
             {user?.company_logo_url
-              ? <View style={styles.companyLogoBadge}><Image source={{ uri: /^https?:\/\//i.test(user.company_logo_url) ? user.company_logo_url : `${API_URL}${user.company_logo_url}` }} resizeMode="contain" style={styles.companyLogo} /></View>
-              : <View style={styles.companyLogoBadge}><MaterialCommunityIcons name="domain" size={12} color="#ffffff" /></View>}
+              ? <Image source={{ uri: /^https?:\/\//i.test(user.company_logo_url) ? user.company_logo_url : `${API_URL}${user.company_logo_url}` }} resizeMode="contain" style={styles.companyLogo} />
+              : <MaterialCommunityIcons name="map-marker-outline" size={13} color={theme.headerMuted} />}
             <Text numberOfLines={1} style={[styles.company, { color: theme.headerMuted }]}>{user?.company_name || user?.company_code || 'SVBK ERP'}</Text>
           </View>
         </View>
@@ -286,8 +286,7 @@ const styles = StyleSheet.create({
   eyebrow: { color: '#67e8f9', fontSize: 11, fontWeight: '900', letterSpacing: 1.1 },
   welcome: { marginTop: 3, color: '#ffffff', fontSize: 24, fontWeight: '900', letterSpacing: -.5 },
   companyRow: { marginTop: 4, flexDirection: 'row', alignItems: 'center', gap: 5, minWidth: 0 },
-  companyLogoBadge: { width: 22, height: 22, borderRadius: 11, backgroundColor: '#2563eb', alignItems: 'center', justifyContent: 'center' },
-  companyLogo: { width: 14, height: 14, tintColor: '#ffffff' },
+  companyLogo: { width: 18, height: 18 },
   company: { flexShrink: 1, color: '#b8c7dc', fontSize: 12, fontWeight: '750' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   headerAction: { width: 43, alignItems: 'center', justifyContent: 'center' },

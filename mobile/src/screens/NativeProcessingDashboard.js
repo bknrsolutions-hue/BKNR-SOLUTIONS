@@ -65,25 +65,6 @@ export default function NativeProcessingDashboard({ onBack, title = 'Processing 
         <Kpi label="Peeling" value={`${number(data.peeling_today)} KG`} icon="🧤" color="#0891b2" onPress={() => onOpenSource?.('peeling')} /><Kpi label="Soaking" value={`${number(data.soaking_today)} KG`} icon="💧" color="#0d9488" onPress={() => onOpenSource?.('soaking')} />
         <Kpi label="Production" value={`${number(data.production_today)} KG`} icon="🏭" color="#4f46e5" onPress={() => onOpenSource?.('production')} /><Kpi label="Floor Balance" value={`${number(data.floor_total)} KG`} icon="📦" color="#0284c7" onPress={() => onOpenSource?.('floor_balance_report')} />
       </View>
-      <SectionTitle>Shift KPIs & Attendance</SectionTitle>
-      {data.shift_kpis && data.shift_kpis.length > 0 && (
-        <View style={styles.summary}>
-          {data.shift_kpis.map((sk, idx) => (
-            <View key={sk.name || idx} style={styles.summaryRow}>
-              <View>
-                <Text style={styles.summaryMain}>{sk.name}</Text>
-                <Text style={styles.summarySub}>
-                  Inside: {sk.inside}  •  Break: {sk.break}  •  Vs Yest: {sk.diff}
-                </Text>
-              </View>
-              <View style={{ alignItems: 'flex-end' }}>
-                <Text style={styles.present}>P {number(sk.present)} / {number(sk.expected)}</Text>
-                <Text style={[styles.absent, { fontSize: 11, fontWeight: '800' }]}>Absent: {number(sk.absent)}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
       <SectionTitle>Raw Material Summary</SectionTitle><View style={styles.summary}>{(data.rm_summary || []).map((row, index) => <View key={`${row.species}-${row.variety}-${index}`} style={styles.summaryRow}><View><Text style={styles.summaryMain}>{row.species || '—'} • {row.variety || '—'}</Text><Text style={styles.summarySub}>Count: {row.count || '—'}</Text></View><Text style={styles.summaryValue}>{number(row.qty)} KG</Text></View>)}</View>
       <SectionTitle>Attendance Summary</SectionTitle>
       <View style={styles.summary}>{Object.entries(data.att_stats || {}).map(([key, value]) => <View key={key} style={styles.summaryRow}><Text style={styles.summaryLabel}>{key.replaceAll('_', ' ')}</Text><Text style={styles.summaryValue}>{number(value)}</Text></View>)}</View>
