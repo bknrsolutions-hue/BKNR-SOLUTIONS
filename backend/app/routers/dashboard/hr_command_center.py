@@ -574,15 +574,16 @@ def hr_command_center(
         # ---------------------------------------------------------
         # 🌟 11. APPROVALS QUEUE (OT & DUTY)
         # ---------------------------------------------------------
-        pending_ot_count = base_att.filter(
-            DailyAttendance.ot_status == "PENDING",
-            DailyAttendance.calculated_ot_hours > 0
-        ).count()
-
-        pending_ot_rows = base_att.filter(
-            DailyAttendance.ot_status == "PENDING",
-            DailyAttendance.calculated_ot_hours > 0
-        ).all()
+        pending_ot_filter = and_(
+            or_(
+                DailyAttendance.ot_status == None,
+                DailyAttendance.ot_status == "",
+                func.upper(func.trim(DailyAttendance.ot_status)).in_(["PENDING", "OPEN"]),
+            ),
+            DailyAttendance.calculated_ot_hours > 0,
+        )
+        pending_ot_count = base_att.filter(pending_ot_filter).count()
+        pending_ot_rows = base_att.filter(pending_ot_filter).all()
 
         # Safe fallback in case duty_status isn't in DB yet
         if hasattr(DailyAttendance, 'duty_status'):

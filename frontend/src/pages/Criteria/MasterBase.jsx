@@ -308,6 +308,19 @@ export default function MasterBase({
                         value={formData[field.id] || ''}
                         required={isRequired}
                         onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const allRequiredFilled = fields.every(f => {
+                              if (f.required === false) return true;
+                              const val = formData[f.id];
+                              return val !== undefined && val !== null && String(val).trim() !== '';
+                            });
+                            if (allRequiredFilled) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                            }
+                          }
+                        }}
                       >
                         <option value="">Select {field.label}</option>
                         {field.options ? (
@@ -333,6 +346,19 @@ export default function MasterBase({
                         value={formData[field.id] || ''}
                         required={isRequired}
                         onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.shiftKey) {
+                            const allRequiredFilled = fields.every(f => {
+                              if (f.required === false) return true;
+                              const val = formData[f.id];
+                              return val !== undefined && val !== null && String(val).trim() !== '';
+                            });
+                            if (allRequiredFilled) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                            }
+                          }
+                        }}
                       />
                     ) : (
                       <input
@@ -342,6 +368,19 @@ export default function MasterBase({
                         value={formData[field.id] || ''}
                         required={isRequired}
                         onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const allRequiredFilled = fields.every(f => {
+                              if (f.required === false) return true;
+                              const val = formData[f.id];
+                              return val !== undefined && val !== null && String(val).trim() !== '';
+                            });
+                            if (allRequiredFilled) {
+                              e.preventDefault();
+                              handleSubmit(e);
+                            }
+                          }
+                        }}
                       />
                     )}
                   </div>

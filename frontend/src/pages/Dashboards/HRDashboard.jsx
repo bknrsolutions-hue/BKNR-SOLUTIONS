@@ -199,6 +199,43 @@ function ComplianceTab({ data }) {
 
 function ApprovalsTab({ data, runApproval, actionBusy, dutyInputs, setDutyInputs }) {
   return <div className="enterprise-grid hr-grid">
+    <Panel title="Overtime (OT) Request Queue" meta={`${number(data?.pending_ot_count)} pending`} full>
+      <div className="enterprise-table-wrap hr-tall-table">
+        <table className="enterprise-table">
+          <thead>
+            <tr>
+              <th>Emp ID</th>
+              <th>Name</th>
+              <th>Department</th>
+              <th>Date</th>
+              <th>Shift</th>
+              <th className="num">Calculated OT</th>
+              <th className="text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(data?.pending_ot_rows || []).length ? (
+              data.pending_ot_rows.map(row => (
+                <tr key={row.id}>
+                  <td><strong>{row.employee_id}</strong></td>
+                  <td>{row.employee_name}</td>
+                  <td>{row.department || '—'}</td>
+                  <td>{formatDate(row.duty_date)}</td>
+                  <td><Pill>{row.shift_name}</Pill></td>
+                  <td className="num"><strong style={{ color: '#d97706' }}>{number(row.calculated_ot_hours)} Hrs</strong></td>
+                  <td className="text-center">
+                    <ActionButtons row={row} approve="approve_ot" reject="reject_ot" run={runApproval} busy={actionBusy} />
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <TableEmpty columns={7} text="All caught up. No pending OT requests." />
+            )}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+
     <Panel title="Multiple Duty (Double / Triple) Queue" meta={`${number(data?.pending_duty_count)} pending`} full><div className="enterprise-table-wrap hr-tall-table"><table className="enterprise-table"><thead><tr><th>Emp ID</th><th>Name</th><th>Date</th><th>Shift</th><th>Status</th><th className="num">Working Hrs</th><th className="num">Extra Hrs</th><th>Duty Credit</th><th>Approve OT</th><th>Action</th></tr></thead><tbody>{(data?.pending_duty_rows || []).length ? data.pending_duty_rows.map(row => {
       const values = dutyInputs[row.id] || {};
       return <tr key={row.id}><td><strong>{row.employee_id}</strong></td><td>{row.employee_name}</td><td>{formatDate(row.duty_date)}</td><td><Pill>{row.shift_name}</Pill></td><td><Pill tone="red">{row.duty_status}</Pill>{row.is_punch_missing ? <Pill tone="amber">Punch Miss</Pill> : null}</td><td className="num">{number(row.working_hours)}</td><td className="num">{number(row.extra_hours)}</td><td><select className="hr-inline-input" value={values.credit ?? row.suggested_duty_credit ?? 1} onChange={event => setDutyInputs(current => ({ ...current, [row.id]: { ...current[row.id], credit: event.target.value, ...(event.target.value === 'A' ? { ot: 0 } : {}) } }))}><option value="A">A (Absent)</option>{[1, 1.5, 2, 2.5, 3].map(value => <option value={value} key={value}>{value}P</option>)}</select></td><td><input className="hr-inline-input" type="number" min="0" max="16" step=".25" disabled={(values.credit ?? row.suggested_duty_credit) === 'A'} value={(values.credit ?? row.suggested_duty_credit) === 'A' ? 0 : values.ot ?? row.calculated_ot_hours ?? 0} onChange={event => setDutyInputs(current => ({ ...current, [row.id]: { ...current[row.id], ot: event.target.value } }))} /></td><td><ActionButtons row={row} approve="approve_duty" reject="reject_duty" run={runApproval} busy={actionBusy} /></td></tr>;

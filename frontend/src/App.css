@@ -340,30 +340,59 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 16px;
   padding: 24px;
-  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 48%, #e2e8f0 100%);
-  color: #0f172a;
+  background: radial-gradient(ellipse at 50% 40%, #0d1f3c 0%, #060913 70%);
+  color: #ffffff;
   text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle ambient glow behind logo */
+.tenant-loading-screen::before {
+  content: '';
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 70%);
+  border-radius: 50%;
+  pointer-events: none;
 }
 
 .tenant-loading-logo {
-  width: 112px;
-  height: 112px;
-  margin-bottom: 4px;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
-  border-radius: 50%;
-  background: #2563eb;
-  padding: 16px;
+  border-radius: 22px;
+  padding: 14px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(37, 99, 235, 0.4);
+  animation: loader-logo-pulse 2s ease-in-out infinite;
+}
+
+.tenant-loading-logo.is-brand-logo {
+  background: linear-gradient(135deg, #1e40af, #2563eb);
   filter: brightness(0) invert(1);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.3);
+}
+
+.tenant-loading-logo.is-tenant-logo {
+  background: rgba(255, 255, 255, 0.95);
+  filter: none;
+}
+
+@keyframes loader-logo-pulse {
+  0%, 100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 32px rgba(37, 99, 235, 0.4); }
+  50% { transform: scale(1.04); box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 12px 40px rgba(37, 99, 235, 0.6); }
 }
 
 .tenant-loading-logo.compact {
-  width: 64px;
-  height: 64px;
-  border-radius: 50%;
-  background: #2563eb;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #1e40af, #2563eb);
   padding: 10px;
   filter: brightness(0) invert(1);
 }
@@ -371,16 +400,36 @@ body {
 .tenant-loading-screen h2,
 .route-loading > strong {
   margin: 0;
-  color: #0f172a;
-  font-size: 20px;
-  font-weight: 900;
+  color: #ffffff;
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
 }
 
 .tenant-loading-screen p {
   margin: 0;
   color: #64748b;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* Loading bar at bottom */
+.tenant-loading-screen::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, #2563eb, transparent);
+  animation: loader-bar 1.8s ease-in-out infinite;
+}
+
+@keyframes loader-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
 /* Form Styles */

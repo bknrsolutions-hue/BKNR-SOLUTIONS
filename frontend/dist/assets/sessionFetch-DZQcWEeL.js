@@ -1,0 +1,1 @@
+async function i(n,s={}){const e=await fetch(n,{...s,credentials:"include"}),t=e.redirected&&e.url.includes("/auth/login");if(e.status===401||t)throw window.dispatchEvent(new CustomEvent("bknr:session-expired")),new Error("Session expired. Please login again.");return e}export{i as t};

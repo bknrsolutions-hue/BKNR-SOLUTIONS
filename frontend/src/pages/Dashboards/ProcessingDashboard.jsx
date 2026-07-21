@@ -378,70 +378,87 @@ export default function ProcessingDashboard({ theme }) {
       )}
 
       <main className="module-main" style={isMobile ? { width: '100%', height: '100%', overflowY: 'auto' } : { height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-        {/* Filters Toolbar */}
-        <div className="erp-horizontal-filter-row" style={filterToolbarStyle}>
-          <div style={filterGroupStyle}>
-            <label style={filterLabelStyle}>Dashboard Date</label>
-            <input type="date" style={filterInputStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
-          </div>
-          <div style={filterGroupStyle}>
-            <label style={filterLabelStyle}>Production For (Company)</label>
-            <select
-              style={filterSelectStyle}
-              value={selectedCompany}
-              onChange={e => {
-                const val = e.target.value;
-                setSelectedCompany(val);
-                localStorage.setItem('production_for_filter', val);
-                window.dispatchEvent(new CustomEvent('filter_change', { detail: { production_for: val, location: selectedLocation } }));
-              }}
-            >
-              <option value="">All Companies</option>
-              {companies.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div style={filterGroupStyle}>
-            <label style={filterLabelStyle}>Location</label>
-            <select
-              style={filterSelectStyle}
-              value={selectedLocation}
-              onChange={e => {
-                const val = e.target.value;
-                setSelectedLocation(val);
-                localStorage.setItem('plant_location_filter', val);
-                window.dispatchEvent(new CustomEvent('filter_change', { detail: { production_for: selectedCompany, location: val } }));
-              }}
-            >
-              <option value="">All Locations</option>
-              {locations.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </div>
-        </div>
+        <div style={{ padding: '12px 14px' }}>
 
-        {loading && data && (
-          <div style={loadingOverlayStyle}>
-            <SkeletonBlock width="180px" height="10px" />
-          </div>
-        )}
-
-        {error && (
-          <div role="alert" style={errorPanelStyle}>
-            <span><i className="fa-solid fa-triangle-exclamation"></i> {error}</span>
-            <button type="button" style={retryButtonStyle} onClick={() => setStatsReloadTrigger(value => value + 1)}>Retry</button>
-          </div>
-        )}
-
-        {/* KPI Cards Grid */}
-        <div className="kpi-grid">
-          <div className="kpi-card kpi-yellow" onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
-            <div className="kpi-header">
-              <h4>Gate Entries</h4>
-              <div className="kpi-icon"><i className="fa-solid fa-door-open"></i></div>
-            </div>
+          {/* Header Row */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <div className="value">{data?.gate_today ?? 0}</div>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className="fa-solid fa-industry" style={{ color: '#3b82f6' }}></i>
+                Processing Dashboard
+              </h2>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
+                {selectedDate}
+              </div>
             </div>
           </div>
+
+          {/* Filters Toolbar */}
+          <div className="erp-horizontal-filter-row" style={filterToolbarStyle}>
+            <div style={filterGroupStyle}>
+              <label style={filterLabelStyle}>Dashboard Date</label>
+              <input type="date" style={filterInputStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
+            </div>
+            <div style={filterGroupStyle}>
+              <label style={filterLabelStyle}>Production For (Company)</label>
+              <select
+                style={filterSelectStyle}
+                value={selectedCompany}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSelectedCompany(val);
+                  localStorage.setItem('production_for_filter', val);
+                  window.dispatchEvent(new CustomEvent('filter_change', { detail: { production_for: val, location: selectedLocation } }));
+                }}
+              >
+                <option value="">All Companies</option>
+                {companies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div style={filterGroupStyle}>
+              <label style={filterLabelStyle}>Location</label>
+              <select
+                style={filterSelectStyle}
+                value={selectedLocation}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSelectedLocation(val);
+                  localStorage.setItem('plant_location_filter', val);
+                  window.dispatchEvent(new CustomEvent('filter_change', { detail: { production_for: selectedCompany, location: val } }));
+                }}
+              >
+                <option value="">All Locations</option>
+                {locations.map(l => <option key={l} value={l}>{l}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {loading && data && (
+            <div style={loadingOverlayStyle}>
+              <SkeletonBlock width="180px" height="10px" />
+            </div>
+          )}
+
+          {error && (
+            <div role="alert" style={errorPanelStyle}>
+              <span><i className="fa-solid fa-triangle-exclamation"></i> {error}</span>
+              <button type="button" style={retryButtonStyle} onClick={() => setStatsReloadTrigger(value => value + 1)}>Retry</button>
+            </div>
+          )}
+
+          {/* KPI Cards Grid */}
+          <div className="kpi-grid">
+            <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
+              <div className="kpi-header">
+                <h4>Gate Entries</h4>
+                <div className="kpi-icon"><i className="fa-solid fa-door-open"></i></div>
+              </div>
+              <div>
+                <div className="value">{data?.gate_today ?? 0}</div>
+              </div>
+            </div>
 
           <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing')}>
             <div className="kpi-header">
@@ -731,6 +748,7 @@ export default function ProcessingDashboard({ theme }) {
             hideSnapshotStatus
           />
         </div>
+        </div>
       </main>
 
       {modalUrl && (
@@ -867,39 +885,38 @@ const containerStyle = {
 
 const filterToolbarStyle = {
   display: 'flex',
-  gap: '12px',
-  background: 'var(--border-light)',
-  padding: '12px 16px',
-  borderRadius: 'var(--radius-element)',
-  marginBottom: '20px',
-  flexWrap: 'nowrap',
-  alignItems: 'flex-end',
+  alignItems: 'center',
+  gap: '14px',
+  background: 'var(--surface-panel)',
+  padding: '4px 10px',
+  borderRadius: '8px',
+  marginBottom: '8px',
   border: '1px solid var(--border-light)',
   overflowX: 'auto',
-  overflowY: 'hidden',
-  WebkitOverflowScrolling: 'touch',
   scrollbarWidth: 'thin'
 };
 
 const filterGroupStyle = {
   display: 'flex',
-  flexDirection: 'column',
+  alignItems: 'center',
   gap: '6px',
-  flex: '0 0 180px'
+  flex: '0 0 auto'
 };
 
 const filterLabelStyle = {
-  fontSize: '11px',
+  fontSize: '9px',
   fontWeight: '800',
   color: 'var(--text-secondary)',
   textTransform: 'uppercase',
-  letterSpacing: '0.5px'
+  whiteSpace: 'nowrap',
+  letterSpacing: '0.4px'
 };
 
 const filterInputStyle = {
-  padding: '8px 12px',
-  fontSize: '13px',
-  borderRadius: '6px',
+  padding: '2px 6px',
+  fontSize: '11px',
+  height: '26px',
+  borderRadius: '5px',
   border: '1px solid var(--input-border)',
   background: 'var(--input-bg)',
   color: 'var(--text-primary)',
@@ -916,9 +933,9 @@ const loadingOverlayStyle = {
   gap: '10px',
   alignItems: 'center',
   background: 'rgba(255, 255, 255, 0.05)',
-  padding: '10px 16px',
+  padding: '8px 12px',
   borderRadius: '8px',
-  marginBottom: '20px',
+  marginBottom: '10px',
   border: '1px dashed var(--corp-dash)'
 };
 
@@ -927,8 +944,8 @@ const errorPanelStyle = {
   alignItems: 'center',
   justifyContent: 'space-between',
   gap: '14px',
-  padding: '12px 14px',
-  marginBottom: '16px',
+  padding: '10px 12px',
+  marginBottom: '10px',
   borderRadius: '8px',
   border: '1px solid rgba(220, 38, 38, .35)',
   background: 'rgba(220, 38, 38, .08)',
@@ -960,8 +977,8 @@ const centeredErrorShellStyle = {
 const skeletonFilterGridStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-  gap: '12px',
-  marginBottom: '20px'
+  gap: '10px',
+  marginBottom: '10px'
 };
 
 const kpiMetaStyle = {
@@ -985,13 +1002,13 @@ const kpiValueStyle = {
 };
 
 const kpiIconWrapperStyle = {
-  width: '36px',
-  height: '36px',
-  borderRadius: '10px',
+  width: '32px',
+  height: '32px',
+  borderRadius: '8px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  fontSize: '16px',
+  fontSize: '14px',
   flexShrink: 0
 };
 
@@ -1004,7 +1021,7 @@ const sectionHeaderStyle = {
   fontWeight: '800',
   letterSpacing: '1px',
   textTransform: 'uppercase',
-  margin: '20px 0 10px 0',
+  margin: '12px 0 6px 0',
   width: '100%'
 };
 
@@ -1012,7 +1029,7 @@ const sectionHeaderLineStyle = {
   flex: 1,
   height: '1px',
   background: 'var(--border-light)',
-  marginLeft: '16px',
+  marginLeft: '14px',
   border: 'none'
 };
 
@@ -1021,30 +1038,30 @@ const tableHeaderStyle = {
   fontWeight: '800',
   letterSpacing: '0.8px',
   background: 'var(--border-light)',
-  padding: '10px 14px'
+  padding: '8px 12px'
 };
 
 const tableTdStyle = {
-  padding: '12px 14px',
+  padding: '10px 12px',
   fontWeight: '700'
 };
 
 const chartsRowStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: '16px',
-  marginBottom: '20px'
+  gap: '12px',
+  marginBottom: '10px'
 };
 
 const chartBoxStyle = {
-  padding: '16px 12px'
+  padding: '12px 10px'
 };
 
 const chartTitleStyle = {
   fontSize: '10px',
   fontWeight: '800',
   color: 'var(--text-secondary)',
-  marginBottom: '14px',
+  marginBottom: '10px',
   textAlign: 'center',
   letterSpacing: '0.8px',
   textTransform: 'uppercase'
@@ -1053,21 +1070,21 @@ const chartTitleStyle = {
 const attendanceViewportStyle = {
   overflowX: 'auto',
   scrollbarWidth: 'none',
-  marginBottom: '20px',
-  padding: '6px 0',
+  marginBottom: '10px',
+  padding: '4px 0',
   width: '100%'
 };
 
 const attendanceStatsContainerStyle = {
   display: 'flex',
-  gap: '12px',
+  gap: '10px',
   width: 'max-content'
 };
 
 const attendanceCardStyle = {
-  width: '175px',
+  width: '165px',
   flexShrink: 0,
-  padding: '14px',
+  padding: '10px 12px',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between'
@@ -1076,8 +1093,8 @@ const attendanceCardStyle = {
 const summaryGridStyle = {
   display: 'grid',
   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-  gap: '16px',
-  marginBottom: '20px'
+  gap: '12px',
+  marginBottom: '10px'
 };
 
 const summaryCardTitleStyle = {

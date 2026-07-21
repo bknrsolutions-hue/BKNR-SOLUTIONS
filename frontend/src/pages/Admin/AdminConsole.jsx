@@ -110,9 +110,24 @@ function parseAdminHtml(html, activePage) {
   return { tables, forms, tickets, system };
 }
 
-function PageHeader({ activePage, actions }) {
+function PageHeader({ activePage, actions, onBack }) {
   const [title, subtitle] = PAGE_META[activePage] || ['Administration', 'ERP administration'];
-  return <div className="admin-page-head"><div><h1>{title}</h1><p>{subtitle}</p></div><div className="admin-actions">{actions}</div></div>;
+  return (
+    <div className="admin-page-head">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {onBack && (
+          <button type="button" className="admin-btn" onClick={onBack} style={{ padding: '6px 10px', cursor: 'pointer' }} title="Close">
+            <i className="fa-solid fa-arrow-left"></i>
+          </button>
+        )}
+        <div>
+          <h1>{title}</h1>
+          <p>{subtitle}</p>
+        </div>
+      </div>
+      <div className="admin-actions">{actions}</div>
+    </div>
+  );
 }
 
 function DataTable({ table, search = '', onRowClick, selectedId }) {
@@ -354,7 +369,7 @@ function StandardAdminPage({ activePage, activeRoute }) {
   return <div className="admin-react-page"><PageHeader activePage={activePage} actions={<><button className="admin-btn" onClick={load}>REFRESH</button>{selectedRow && snapshot?.forms?.length > 0 && <><button className="admin-btn" onClick={startEdit}>EDIT</button><button className="admin-btn danger" onClick={cancelRecord}>{activePage === 'admin_add_user' ? 'TOGGLE STATUS' : 'CANCEL SHIFT'}</button></>} {snapshot?.forms?.length > 0 && <button className="admin-btn primary" onClick={startAdd}>{showForm ? 'CANCEL' : addLabel}</button>}</>}/>{error && <div className="admin-card admin-error">{error}</div>}{showForm && (editSchema || snapshot?.forms?.[0]) && <div className="admin-card"><div className="admin-toolbar"><h2>{editSchema ? 'Edit Profile' : activePage === 'admin_add_user' ? 'Create New Profile' : 'Shift Configuration'}</h2></div><DynamicForm key={editSchema?.action || 'create'} schema={editSchema || snapshot.forms[0]} onSaved={() => { setShowForm(false); setEditSchema(null); setSelectedRow(null); load(); }}/></div>}<div className="admin-card"><div className="admin-toolbar"><h2>{tableTitle}</h2><input className="admin-search" placeholder="Search records..." value={search} onChange={event => setSearch(event.target.value)}/></div>{snapshot ? snapshot.tables.map((table, index) => <DataTable key={index} table={table} search={search} selectedId={index === 0 ? selectedRow?.id : null} onRowClick={index === 0 && snapshot.forms.length ? setSelectedRow : undefined}/>) : <div className="admin-empty">Loading...</div>}</div></div>;
 }
 
-export function TicketDesk({ activePage, activeRoute, compact = false }) {
+export function TicketDesk({ activePage, activeRoute, compact = false, onClose, setActivePage }) {
   const isAdmin = activePage === 'admin_helpdesk';
   const [supportView, setSupportView] = useState(isAdmin ? 'tickets' : 'knowledge');
   const [knowledge, setKnowledge] = useState({ entries: [], categories: [], total: 0 });
@@ -374,6 +389,21 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
   const [detail, setDetail] = useState('');
   const [loadingTickets, setLoadingTickets] = useState(true);
   const [ticketError, setTicketError] = useState('');
+
+  const handleSupportBack = () => {
+    if (selected) {
+      setSelected(null);
+      return;
+    }
+    if (onClose) {
+      onClose();
+      return;
+    }
+    if (window.BKNRCloseSupportDrawer) {
+      window.BKNRCloseSupportDrawer();
+      return;
+    }
+  };
 
   const loadTickets = useCallback(async () => {
     setLoadingTickets(true);
@@ -468,22 +498,101 @@ export function TicketDesk({ activePage, activeRoute, compact = false }) {
   const openNewComplaint = () => { setSupportView('tickets'); setNewOpen(true); };
 
   return <div className={`admin-react-page ${compact ? 'support-drawer-page' : ''}`}>
-    {compact ? <div className="admin-toolbar support-drawer-toolbar"><h2>{isAdmin ? 'Support Queue' : 'SVBK Support'}</h2>{!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}</div> : <PageHeader activePage={activePage} actions={!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}/>}
-    <div className="support-mode-tabs"><button type="button" className={supportView === 'knowledge' ? 'active' : ''} onClick={() => setSupportView('knowledge')}><i className="fa-solid fa-book-open"></i> Knowledge Base <span>{knowledge.total || 0}</span></button><button type="button" className={supportView === 'tickets' ? 'active' : ''} onClick={() => setSupportView('tickets')}><i className="fa-solid fa-ticket"></i> {isAdmin ? 'Support Queue' : 'My Complaints'} <span>{tickets.length}</span></button></div>
+    {compact ? (
+      <div className="admin-toolbar support-drawer-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button type="button" className="admin-btn" onClick={handleSupportBack} style={{ padding: '6px 10px', cursor: 'pointer' }} title="Go Back">
+            <i className="fa-solid fa-arrow-left"></i>
+          </button>
+          <h2>{isAdmin ? 'Support Queue' : 'SVBK Support'}</h2>
+        </div>
+        {!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}
+      </div>
+    ) : (
+      <PageHeader
+        activePage={activePage}
+        setActivePage={setActivePage}
+        onBack={handleSupportBack}
+        actions={!isAdmin && <button className="admin-btn primary" onClick={openNewComplaint}>NEW COMPLAINT</button>}
+      />
+    )}
+    <div className="support-mode-tabs"><button type="button" className={supportView === 'knowledge' ? 'active' : ''} onClick={() => { setSupportView('knowledge'); setSelected(null); }}><i className="fa-solid fa-book-open"></i> Knowledge Base <span>{knowledge.total || 0}</span></button><button type="button" className={supportView === 'tickets' ? 'active' : ''} onClick={() => setSupportView('tickets')}><i className="fa-solid fa-ticket"></i> {isAdmin ? 'Support Queue' : 'My Complaints'} <span>{tickets.length}</span></button></div>
     {supportView === 'knowledge' ? <div className="support-kb">
       <div className="support-kb-search"><i className="fa-solid fa-magnifying-glass"></i><input value={knowledgeSearch} onFocus={() => setKnowledgeSuggestOpen(true)} onBlur={() => window.setTimeout(() => setKnowledgeSuggestOpen(false), 150)} onChange={event => { setKnowledgeSearch(event.target.value); setKnowledgeSuggestOpen(true); }} placeholder="Type a question…" />{knowledgeSuggestOpen && knowledgeQuery ? <div className="support-kb-suggestions">{knowledgeSuggestions.length ? knowledgeSuggestions.map(item => <button type="button" key={item.id} onMouseDown={event => event.preventDefault()} onClick={() => selectKnowledgeSuggestion(item)}><i className="fa-regular fa-circle-question"></i><span><strong>{item.question}</strong></span></button>) : <div>No related questions found.</div>}</div> : null}</div>
       <div className="support-kb-results">{!knowledgeQuery ? null : knowledgeLoading ? <div className="admin-empty">Loading complete ERP knowledge base…</div> : visibleKnowledge.length ? visibleKnowledge.map(item => <article className={`support-kb-item ${expandedAnswer === item.id ? 'open' : ''}`} key={item.id}><button type="button" onClick={() => setExpandedAnswer(current => current === item.id ? '' : item.id)}><span><strong>{item.question}</strong></span><i className={`fa-solid fa-chevron-${expandedAnswer === item.id ? 'up' : 'down'}`}></i></button>{expandedAnswer === item.id ? <div className="support-kb-answer"><p>{item.answer}</p>{item.route ? <code>{item.route}</code> : null}</div> : null}</article>) : <div className="admin-empty">No matching answer found. Raise a complaint with the page name and exact issue.</div>}</div>
     </div> : <>
     {newOpen && <div className="admin-card"><form className="admin-form-grid" onSubmit={createTicket}><div className="admin-field"><label>Issue Summary</label><input required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field" style={{ gridColumn: 'span 2' }}><label>Detailed Message</label><textarea required value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
     {ticketError && <div className="admin-card admin-error" role="alert">{ticketError} <button className="admin-btn" type="button" onClick={loadTickets}>RETRY</button></div>}
-    <div className="ticket-layout">
-      <div className="admin-card"><input className="admin-search" style={{ maxWidth: '100%', marginBottom: 10 }} placeholder="Search tickets, subjects..." value={search} onChange={event => setSearch(event.target.value)}/><div className="ticket-list">{loadingTickets ? <div className="admin-empty">Loading complaints...</div> : visible.length ? visible.map(ticket => <div key={ticket.id} className={`ticket-card ${selected?.id === ticket.id ? 'active' : ''}`} onClick={() => openTicket(ticket)}><div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><strong>{ticket.ticket_number}</strong><small>{ticket.date}</small></div><span>{ticket.subject}</span><small>{ticket.status}{ticket.user_email ? ` · ${ticket.user_email}` : ''}</small></div>) : <div className="admin-empty">No complaints found.</div>}</div></div>
-      <div className="admin-card">{selected ? <>
-        <div className="admin-toolbar"><div><h2>{selected.subject}</h2><small style={{ color: 'var(--text-tertiary)' }}>{selected.ticket_number}{selected.user_email ? ` · ${selected.user_email} · ${selected.company_id}` : ''}</small></div>{isAdmin ? <div className="admin-actions"><select className="admin-search" value={status} onChange={event => setStatus(event.target.value)}><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN PROGRESS</option><option value="RESOLVED">RESOLVED</option></select><button className="admin-btn primary" onClick={updateStatus}>UPDATE STATUS</button></div> : <span className="admin-status">{selected.status}</span>}</div>
-        <div className="chat-box">{messages.map((message, index) => <div key={index} className={`chat-msg ${(isAdmin ? message.sender_type === 'ADMIN' : message.sender_type === 'USER') ? 'mine' : ''}`}>{message.message}{message.media_path && <div><a href={message.media_path} target="_blank" rel="noreferrer">Attachment</a></div>}<small>{message.time}</small></div>)}</div>
-        {selected.status === 'RESOLVED' && isAdmin ? <div className="admin-empty">This ticket is permanently closed.</div> : <div className="chat-compose"><label className="admin-btn" style={{ display: 'grid', placeItems: 'center' }} title="Attach file"><i className="fa-solid fa-paperclip"></i><input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/></label><input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/><button className="admin-btn primary" onClick={send}>SEND</button></div>}
-      </> : <div className="admin-empty">Select a ticket to view conversation.</div>}</div>
-    </div>
+    
+    {!selected ? (
+      <div className="admin-card" style={{ width: '100%' }}>
+        <input className="admin-search" style={{ maxWidth: '100%', marginBottom: 12 }} placeholder="Search complaints by ticket number or subject..." value={search} onChange={event => setSearch(event.target.value)}/>
+        <div className="ticket-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+          {loadingTickets ? <div className="admin-empty">Loading complaints...</div> : visible.length ? visible.map(ticket => (
+            <div key={ticket.id} className="ticket-card" style={{ cursor: 'pointer', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--surface-panel)' }} onClick={() => openTicket(ticket)}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: '6px' }}>
+                <strong style={{ color: 'var(--erp-accent)', fontSize: '14px' }}>{ticket.ticket_number}</strong>
+                <small style={{ color: 'var(--text-tertiary)' }}>{ticket.date}</small>
+              </div>
+              <span style={{ display: 'block', fontWeight: '700', fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>{ticket.subject}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <small style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', background: ticket.status === 'RESOLVED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: ticket.status === 'RESOLVED' ? '#22c55e' : '#3b82f6' }}>{ticket.status}</small>
+                {ticket.user_email && <small style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{ticket.user_email}</small>}
+              </div>
+            </div>
+          )) : <div className="admin-empty" style={{ gridColumn: '1 / -1' }}>No complaints found.</div>}
+        </div>
+      </div>
+    ) : (
+      <div className="admin-card" style={{ width: '100%' }}>
+        <div className="admin-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <button type="button" className="admin-btn" onClick={() => setSelected(null)} style={{ padding: '6px 10px', cursor: 'pointer' }} title="Back to Cards">
+              <i className="fa-solid fa-arrow-left"></i>
+            </button>
+            <div>
+              <h2>{selected.subject}</h2>
+              <small style={{ color: 'var(--text-tertiary)' }}>{selected.ticket_number}{selected.user_email ? ` · ${selected.user_email} · ${selected.company_id}` : ''}</small>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {isAdmin ? (
+              <div className="admin-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <select className="admin-search" value={status} onChange={event => setStatus(event.target.value)}>
+                  <option value="OPEN">OPEN</option>
+                  <option value="IN_PROGRESS">IN PROGRESS</option>
+                  <option value="RESOLVED">RESOLVED</option>
+                </select>
+                <button className="admin-btn primary" onClick={updateStatus}>UPDATE STATUS</button>
+              </div>
+            ) : (
+              <span className="admin-status">{selected.status}</span>
+            )}
+          </div>
+        </div>
+        <div className="chat-box" style={{ minHeight: '260px', maxHeight: '420px', overflowY: 'auto', marginBottom: '14px' }}>
+          {messages.map((message, index) => (
+            <div key={index} className={`chat-msg ${(isAdmin ? message.sender_type === 'ADMIN' : message.sender_type === 'USER') ? 'mine' : ''}`}>
+              {message.message}
+              {message.media_path && <div><a href={message.media_path} target="_blank" rel="noreferrer">Attachment</a></div>}
+              <small>{message.time}</small>
+            </div>
+          ))}
+        </div>
+        {selected.status === 'RESOLVED' && isAdmin ? (
+          <div className="admin-empty">This ticket is permanently closed.</div>
+        ) : (
+          <div className="chat-compose">
+            <label className="admin-btn" style={{ display: 'grid', placeItems: 'center' }} title="Attach file">
+              <i className="fa-solid fa-paperclip"></i>
+              <input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/>
+            </label>
+            <input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/>
+            <button className="admin-btn primary" onClick={send}>SEND</button>
+          </div>
+        )}
+      </div>
+    )}
     </>}
   </div>;
 }

@@ -5,6 +5,21 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/app/',
   plugins: [react()],
+  build: {
+    minify: 'esbuild',
+    target: 'es2020',
+    chunkSizeWarningLimit: 1000,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+            return 'vendor-react';
+          }
+        }
+      }
+    }
+  },
   server: {
     // Use IPv4 explicitly because localhost may resolve to ::1 while the
     // development backend is bound to 127.0.0.1.

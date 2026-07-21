@@ -1,0 +1,1 @@
+import{t as o}from"./createLucideIcon-DPLIUFqL.js";var r=[["path",{d:"M12 17V3",key:"1cwfxf"}],["path",{d:"m6 11 6 6 6-6",key:"12ii2o"}],["path",{d:"M19 21H5",key:"150jfl"}]],t=o("arrow-down-to-line",r),a=[["path",{d:"m18 9-6-6-6 6",key:"kcunyi"}],["path",{d:"M12 3v14",key:"7cf3v8"}],["path",{d:"M5 21h14",key:"11awu3"}]],i=o("arrow-up-from-line",a);export{t as n,i as t};

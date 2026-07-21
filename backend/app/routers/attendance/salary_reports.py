@@ -8,6 +8,7 @@ from sqlalchemy import extract, and_, or_
 import calendar
 from datetime import date, datetime, timedelta
 from collections import defaultdict
+import re
 
 from app.database import get_db
 from app.database.models.attendance import (
@@ -197,7 +198,10 @@ def get_salary_report(
             EmployeeRegistration.location == location,
         ))
 
-    employees = emp_query.all()
+    employees = sorted(
+        emp_query.all(),
+        key=lambda e: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', str(e.employee_id or ""))]
+    )
     result = []
 
     for emp in employees:
@@ -257,23 +261,20 @@ def get_salary_report(
             else:
                 duty_credit = 3.0
 
-            if str(getattr(rec, "duty_type", "") or "").strip().upper() == "ABSENT":
-                duty_credit = 0.0
-            
-            if duty_credit < 0.5:
+            d_status = str(getattr(rec, "duty_status", "APPROVED") or "APPROVED").strip().upper()
+            d_type = str(getattr(rec, "duty_type", "") or "").strip().upper()
+            approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
+
+            if d_status == "REJECTED" or d_type == "ABSENT":
                 val = 0.0
+            elif approved_credit > 0:
+                val = approved_credit
+            elif d_status == "APPROVED":
+                val = 1.0 if duty_credit > 1.0 else duty_credit
+            elif d_status == "PENDING":
+                val = 1.0 if duty_credit >= 1.0 else duty_credit
             else:
-                # 🟢 DOUBLE DUTY APPROVAL SAFETY
-                if duty_credit > 1.0:
-                    d_status = getattr(rec, 'duty_status', 'APPROVED') # Needs link to DutyApproval table
-                    if d_status == 'APPROVED':
-                        approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
-                        val = approved_credit if approved_credit > 0 else duty_credit
-                    else:
-                        approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
-                        val = approved_credit if approved_credit > 0 else 1.0 # Capped at single duty until HR approves
-                else:
-                    val = duty_credit
+                val = duty_credit if duty_credit <= 1.0 else 1.0
 
             daily_att_values[rec.duty_date.day] += val
 
@@ -477,15 +478,46 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         elif raw_credit < 3.0: duty_credit = 2.5
         else: duty_credit = 3.0
 
-        if str(getattr(r, "duty_type", "") or "").strip().upper() == "ABSENT":
+        d_status = str(getattr(r, "duty_status", "") or "APPROVED").strip().upper()
+        d_type = str(getattr(r, "duty_type", "") or "").strip().upper()
+        approved_credit = float(getattr(r, "approved_duty_credit", 0.0) or 0.0)
+
+        if d_status == "REJECTED" or d_type == "ABSENT":
+            effective_credit = 0.0
             status = "A"
-        elif duty_credit == 3.0: status = "3P"
-        elif duty_credit == 2.5: status = "2.5P"
-        elif duty_credit == 2.0: status = "2P"
-        elif duty_credit == 1.5: status = "1.5P"
-        elif duty_credit == 1.0: status = "P"
-        elif duty_credit == 0.5: status = "HP"
-        else: status = "A"
+        elif approved_credit > 0:
+            effective_credit = approved_credit
+            if approved_credit == 0.5: status = "HP"
+            elif approved_credit == 1.0: status = "P"
+            elif approved_credit == 1.5: status = "1.5P"
+            elif approved_credit == 2.0: status = "2P"
+            elif approved_credit == 2.5: status = "2.5P"
+            elif approved_credit >= 3.0: status = "3P"
+            else: status = f"{approved_credit}P"
+        elif d_status == "APPROVED":
+            effective_credit = 1.0 if duty_credit > 1.0 else duty_credit
+            if effective_credit == 1.0: status = "P"
+            elif effective_credit == 0.5: status = "HP"
+            else: status = "A"
+        else:
+            effective_credit = 1.0 if duty_credit >= 1.0 else duty_credit
+            if effective_credit == 1.0: status = "P"
+            elif effective_credit == 0.5: status = "HP"
+            else: status = "A"
+
+        # OT Info
+        ot_status = str(getattr(r, "ot_status", "") or "—").upper()
+        ot_hours = float(r.approved_ot_hours if ot_status == "APPROVED" and r.approved_ot_hours else (r.calculated_ot_hours or 0.0))
+
+        # Punch Missed Detection
+        punch_missed = False
+        punch_missed_reason = ""
+        if r.first_in and not r.exit_time:
+            punch_missed = True
+            punch_missed_reason = "Missing OUT Punch"
+        elif r.exit_time and not r.first_in:
+            punch_missed = True
+            punch_missed_reason = "Missing IN Punch"
 
         movement_rows = []
         movement_date = r.duty_date
@@ -518,11 +550,24 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
             if current_minutes is not None:
                 previous_minutes = current_minutes
 
+        if movement_rows:
+            in_count = sum(1 for m in movement_rows if m.get("type") == "IN")
+            out_count = sum(1 for m in movement_rows if m.get("type") == "OUT")
+            if in_count != out_count:
+                punch_missed = True
+                if not punch_missed_reason:
+                    punch_missed_reason = "Incomplete Punch Pair"
+
         data.append({
             "date": r.duty_date.strftime("%d-%m-%Y"),
             "shift": shift_name,
             "hours": round(wh, 2),
             "status": status,
+            "duty_status": d_status,
+            "ot_hours": round(ot_hours, 2),
+            "ot_status": ot_status,
+            "punch_missed": punch_missed,
+            "punch_missed_reason": punch_missed_reason,
             "movements": movement_rows
         })
 

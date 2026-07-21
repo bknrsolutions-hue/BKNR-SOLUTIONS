@@ -410,6 +410,13 @@ export default function App() {
   }, [activePage, activeRoute, navigate]);
 
   useEffect(() => {
+    window.BKNRCloseSupportDrawer = () => setSupportDrawer(null);
+    return () => {
+      delete window.BKNRCloseSupportDrawer;
+    };
+  }, []);
+
+  useEffect(() => {
     if (!supportDrawer) return undefined;
     const closeOnEscape = event => {
       if (event.key === 'Escape') setSupportDrawer(null);
@@ -793,12 +800,16 @@ export default function App() {
   // ── Loading screen ───────────────────────────────────────────────────────
   if (loadingSession) {
     const loadingCompanyName = user?.company || localStorage.getItem('tenant_company_name') || 'SVBK ERP';
-    const loadingLogoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
+    const cachedLogoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
+    const isTenantLogo = Boolean(cachedLogoUrl);
+    const loadingLogoUrl = cachedLogoUrl || '/svbk-it-solutions-logo-3d-transparent.png';
     return (
       <div className="tenant-loading-screen" role="status" aria-live="polite">
-        {loadingLogoUrl
-          ? <img className="tenant-loading-logo" src={loadingLogoUrl} alt={`${loadingCompanyName} logo`} />
-          : <AnimatedBrandLogo size={110} loop />}
+        <img
+          className={`tenant-loading-logo ${isTenantLogo ? 'is-tenant-logo' : 'is-brand-logo'}`}
+          src={loadingLogoUrl}
+          alt={`${loadingCompanyName} logo`}
+        />
         <h2>{loadingCompanyName}</h2>
         <p>Opening secure workspace…</p>
       </div>
@@ -903,6 +914,7 @@ export default function App() {
                   activePage={supportDrawer.activePage}
                   activeRoute={supportDrawer.activeRoute}
                   compact
+                  onClose={() => setSupportDrawer(null)}
                 />
               </Suspense>
             </div>

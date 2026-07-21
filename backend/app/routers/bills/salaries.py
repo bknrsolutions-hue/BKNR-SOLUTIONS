@@ -1,4 +1,5 @@
 from collections import defaultdict
+import re
 import calendar
 from datetime import date, datetime, timedelta
 
@@ -159,10 +160,13 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
     year, month_no = map(int, month.split("-"))
     days_in_month = calendar.monthrange(year, month_no)[1]
     shift_map = get_salary_shift_map(db, company_id)
-    employees = db.query(EmployeeRegistration).filter(
-        EmployeeRegistration.company_id == company_id,
-        EmployeeRegistration.status == "ACTIVE",
-    ).all()
+    employees = sorted(
+        db.query(EmployeeRegistration).filter(
+            EmployeeRegistration.company_id == company_id,
+            EmployeeRegistration.status == "ACTIVE",
+        ).all(),
+        key=lambda e: [int(t) if t.isdigit() else t.lower() for t in re.split(r'(\d+)', str(e.employee_id or ""))]
+    )
     result = []
 
     for emp in employees:
@@ -199,11 +203,22 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
                 duty_credit = 2.5
             else:
                 duty_credit = 3.0
-            if str(getattr(rec, "duty_type", "") or "").strip().upper() == "ABSENT":
-                duty_credit = 0.0
-            if duty_credit > 1.0 and getattr(rec, "duty_status", "APPROVED") != "APPROVED":
-                duty_credit = 1.0
-            daily_att_values[rec.duty_date.day] += duty_credit if duty_credit >= 0.5 else 0.0
+            d_status = str(getattr(rec, "duty_status", "APPROVED") or "APPROVED").strip().upper()
+            d_type = str(getattr(rec, "duty_type", "") or "").strip().upper()
+            approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)
+
+            if d_status == "REJECTED" or d_type == "ABSENT":
+                val = 0.0
+            elif approved_credit > 0:
+                val = approved_credit
+            elif d_status == "APPROVED":
+                val = 1.0 if duty_credit > 1.0 else duty_credit
+            elif d_status == "PENDING":
+                val = 1.0 if duty_credit >= 1.0 else duty_credit
+            else:
+                val = duty_credit if duty_credit <= 1.0 else 1.0
+
+            daily_att_values[rec.duty_date.day] += val
 
             if getattr(rec, "ot_status", None) == "APPROVED" and getattr(rec, "approved_ot_hours", None):
                 approved_ot_hrs = float(rec.approved_ot_hours)

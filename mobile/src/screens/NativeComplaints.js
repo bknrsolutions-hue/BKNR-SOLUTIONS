@@ -53,7 +53,7 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     if (!subject.trim() || !message.trim()) { setError('Subject and message are required.'); return; }
     setSubmitting(true); setError('');
     const form = new FormData(); form.append('subject', subject.trim()); form.append('message', message.trim());
-    apiRequest('/support/create_ticket', { method: 'POST', body: form })
+    apiRequest('/support/create_ticket?format=json', { method: 'POST', body: form })
       .then(() => { setCreateOpen(false); setSubject(''); setMessage(''); return load(); })
       .catch(requestError => setError(requestError.message))
       .finally(() => setSubmitting(false));
@@ -122,6 +122,11 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
   if (panelMode) {
     return <View style={[styles.panelPage, { backgroundColor: theme.surface }]}>
       <View style={[styles.panelHeader, { backgroundColor: theme.header, borderColor: theme.headerBorder }]}>
+        {onBack && (
+          <Pressable accessibilityLabel="Back to workspace" hitSlop={6} onPress={onBack} style={[styles.panelIcon, { backgroundColor: theme.headerAlt, marginRight: 6 }]}>
+            <MaterialCommunityIcons name="arrow-left" size={18} color={theme.headerAccent} />
+          </Pressable>
+        )}
         <View style={styles.panelTitleCopy}><Text numberOfLines={1} style={[styles.panelTitle, { color: theme.headerText }]}>SVBK Support</Text><Text numberOfLines={1} style={[styles.panelSubtitle, { color: theme.headerMuted }]}>{knowledge.total || 0} answers · {tickets.length} tickets</Text></View>
         <Pressable accessibilityLabel="Refresh support" hitSlop={6} onPress={load} style={[styles.panelIcon, { backgroundColor: theme.headerAlt }]}><MaterialCommunityIcons name="refresh" size={16} color={theme.headerAccent} /></Pressable>
         <Pressable accessibilityLabel="Close support" hitSlop={6} onPress={onBack} style={[styles.panelIcon, { backgroundColor: theme.headerAlt }]}><MaterialCommunityIcons name="close" size={18} color={theme.headerAccent} /></Pressable>

@@ -1,0 +1,1 @@
+function r(t){const n=String(t??"").match(/(\d{4})/);return n?Number(n[1]):null}function a(t){const n=r(t);return n?`FY ${n}-${n+1}`:String(t??"")}function e(t=new Date){return t.getMonth()>=3?t.getFullYear():t.getFullYear()-1}export{a as n,e as t};

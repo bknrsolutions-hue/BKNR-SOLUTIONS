@@ -33,14 +33,18 @@ export default function CostingDashboard({ setActivePage }) {
     </DashboardHeader>
     <DashboardState loading={loading} error={error}>
       <div className="enterprise-kpis">
-        <MetricCard label="Revenue" value={money(data?.total_sales)} note={`${number(data?.sales_qty)} kg dispatched`} icon="fa-arrow-trend-up" color="#16a34a" />
-        <MetricCard label="Total Expense" value={money(data?.total_expense)} note={`${money((data?.total_expense || 0) / (data?.prod_qty || 1))} per kg`} icon="fa-receipt" color="#dc2626" />
-        <MetricCard label="EBITDA" value={money(data?.ebitda)} note={`${number((data?.ebitda || 0) / (data?.total_sales || 1) * 100)}% margin`} icon="fa-chart-line" color="#7c3aed" />
-        <MetricCard label="Inventory Value" value={money(data?.inventory_value)} note={`${number(data?.inventory_days)} inventory days`} icon="fa-boxes-stacked" onClick={() => go('report_inventory_costing', '/summary/inventory_costing')} />
-        <MetricCard label="Raw Material Cost" value={money(data?.rmp_cost)} note={`${number(data?.total_qty)} kg purchased`} icon="fa-shrimp" color="#f59e0b" />
-        <MetricCard label="Receivables" value={money(data?.receivable_outstanding)} note={`${number(data?.receivable_days)} days outstanding`} icon="fa-file-invoice-dollar" color="#2563eb" />
-        <MetricCard label="Cash Cycle" value={`${number(data?.cash_conversion_cycle)} days`} note={`${number(data?.payable_days)} payable days`} icon="fa-arrows-rotate" color="#0d9488" />
-        <MetricCard label="MoM Profit" value={`${number(data?.mom_variance_pct)}%`} note={`${money(data?.current_month_profit)} current month`} icon="fa-scale-balanced" color={Number(data?.mom_variance_pct) >= 0 ? '#16a34a' : '#dc2626'} />
+        <MetricCard label="Raw Material Cost" value={money(data?.rmp_cost)} note={`${number(data?.total_qty)} kg purchased`} icon="fa-boxes-stacked" color="#2563eb" />
+        <MetricCard label="Production Cost" value={money((data?.deheading_cost || 0) + (data?.peeling_cost || 0) + (data?.grading_cost || 0) + (data?.soaking_cost || 0))} note="Wages & processing" icon="fa-industry" color="#2563eb" />
+        <MetricCard label="Conversion Cost/KG" value={`₹${data?.total_qty > 0 ? ((data?.total_expense || 0) / data.total_qty).toFixed(2) : '0.00'}`} note="Per kg processing" icon="fa-scale-balanced" color="#f59e0b" />
+        <MetricCard label="Staff Salary Cost" value={money(data?.payroll_cost)} note="Payroll expenses" icon="fa-users" color="#2563eb" />
+        <MetricCard label="Power & Fuel Expense" value={money((data?.electricity_cost || 0) + (data?.diesel_cost || 0) + (data?.water_cost || 0) + (data?.ice_cost || 0))} note="Utilities cost" icon="fa-plug" color="#64748b" />
+        <MetricCard label="Packing Material" value={money(data?.packaging_cost)} note="Packaging supply" icon="fa-box-open" color="#64748b" />
+        <MetricCard label="Transport & Freight" value={money(data?.logistics_cost)} note="Logistics cost" icon="fa-truck-fast" color="#2563eb" />
+        <MetricCard label="Stock Value" value={money(data?.inventory_value)} note={`${number(data?.inventory_days)} stock days`} icon="fa-warehouse" onClick={() => go('report_inventory_costing', '/summary/inventory_costing')} />
+        <MetricCard label="Gross Sales" value={money(data?.total_sales)} note={`${number(data?.sales_qty)} kg sold`} icon="fa-arrow-trend-up" color="#10b981" />
+        <MetricCard label="Pending Receivables" value={money(data?.receivable_outstanding)} note={`${number(data?.receivable_days)} days out`} icon="fa-file-invoice-dollar" color="#f59e0b" />
+        <MetricCard label="Gross Margin" value={money((data?.total_sales || 0) - (data?.total_expense || 0))} note="Profit pool" icon="fa-sack-dollar" color={((data?.total_sales || 0) - (data?.total_expense || 0)) >= 0 ? '#10b981' : '#f59e0b'} />
+        <MetricCard label="Net Profit %" value={`${data?.total_sales > 0 ? (((data?.total_sales - data?.total_expense) / data?.total_sales) * 100).toFixed(2) : '0.00'}%`} note="Profit margin %" icon="fa-percent" color={((data?.total_sales || 0) - (data?.total_expense || 0)) >= 0 ? '#10b981' : '#f59e0b'} />
       </div>
       <div className="enterprise-grid">
         <Panel title="Revenue vs Expense Trend" meta="Monthly"><Bars labels={data?.month_labels || []} primary={data?.revenue_trend || []} secondary={data?.expense_trend || []} /></Panel>

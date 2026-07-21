@@ -36,14 +36,25 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
   const [openPillars, setOpenPillars] = useState({});
 
   const toggleSection = (sectionName) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionName]: !prev[sectionName]
-    }));
+    setOpenSections(prev => {
+      const isCurrentlyOpen = !!prev[sectionName];
+      const nextState = { ...prev };
+      Object.keys(nextState).forEach(key => {
+        nextState[key] = key === sectionName ? !isCurrentlyOpen : false;
+      });
+      return nextState;
+    });
   };
 
   const togglePillar = (title) => {
-    setOpenPillars(prev => ({ ...prev, [title]: !prev[title] }));
+    setOpenPillars(prev => {
+      const isCurrentlyOpen = prev[title] ?? title === firstVisibleTitle;
+      const nextState = {};
+      visibleMenuConfig.forEach(cat => {
+        nextState[cat.title] = cat.title === title ? !isCurrentlyOpen : false;
+      });
+      return nextState;
+    });
   };
 
   // Menu data replicating menu.html sidebarMenuData exactly (first 6 pillars)
@@ -402,11 +413,13 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
       </div>
 
       {/* Quote Footer */}
-      <div className="sidebar-footer">
-        <div className="footer-quote">Precision in every process.</div>
-        <div className="footer-powered">
-          <i className="fa-brands fa-hubspot" style={{ color: 'var(--corp-dash)', marginRight: '4px' }}></i> HORIZON ENGINE
-        </div>
+      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+        <div className="footer-quote" style={{ fontSize: '9.5px', color: 'var(--text-tertiary)' }}>Powered by</div>
+        <img 
+          src={`${import.meta.env.BASE_URL || '/'}svbk-it-solutions-logo-3d-transparent.png`.replace(/\/+/g, '/')} 
+          alt="SVBK IT Solutions" 
+          style={{ height: '30px', width: 'auto', objectFit: 'contain', display: 'block' }} 
+        />
       </div>
     </div>
   );

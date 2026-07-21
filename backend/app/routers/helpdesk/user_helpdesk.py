@@ -118,6 +118,9 @@ async def create_new_ticket(
     #
     db.commit()
 
+    if request.headers.get("accept") == "application/json" or request.query_params.get("format") == "json" or "application/json" in request.headers.get("content-type", ""):
+        return JSONResponse(content={"status": "success", "message": "Ticket created successfully", "ticket_id": new_ticket.id, "ticket_number": new_ticket_no})
+
     return RedirectResponse(url="/support/my_tickets", status_code=303)
 
 # 3. 🌟        API (Ajax  )

@@ -179,7 +179,8 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         exact_paths = [
             "/", "/app", "/health", "/health/live", "/health/ready", "/docs",
-            "/openapi.json", "/robots.txt", "/sitemap.xml",
+            "/openapi.json", "/robots.txt", "/sitemap.xml", "/brand-dp-3d.png",
+            "/svbk-it-solutions-logo-3d.png", "/svbk-it-solutions-logo-3d-transparent.png",
             "/auth/login", "/auth/landing", "/auth/register", "/auth/verify-otp",
             "/auth/set-password", "/auth/verify-login-otp", "/auth/session-info",
             "/auth/forgot-password", "/auth/reset-password", "/auth/auto-login",
@@ -530,6 +531,17 @@ application.include_router(page_tokens_router)  # opaque page-token resolver
 # =====================================================
 # 📄 6. BASIC ROUTES
 # =====================================================
+from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSONResponse, PlainTextResponse, Response
+ 
+@application.get("/brand-dp-3d.png")
+async def serve_brand_dp():
+    return FileResponse("app/static/brand-dp-3d.png", media_type="image/png")
+
+@application.get("/svbk-it-solutions-logo-3d.png")
+@application.get("/svbk-it-solutions-logo-3d-transparent.png")
+async def serve_brand_logo():
+    return FileResponse("app/static/images/svbk-it-solutions-logo-3d.png", media_type="image/png")
+
 @application.get("/tally_dashboard", response_class=HTMLResponse)
 async def legacy_tally_dashboard_redirect():
     return RedirectResponse("/finance_accounts/tally_dashboard", status_code=303)

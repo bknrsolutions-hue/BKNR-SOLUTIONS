@@ -463,10 +463,9 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     flexDirection: 'column'
   };
 
-  const ageCardStyle = (isActive, color) => ({
+  const ageCardStyle = (isActive) => ({
     background: 'var(--surface-panel)',
-    border: isActive ? `2px solid ${color}` : '1px solid var(--border-light)',
-    borderLeft: `5px solid ${color}`,
+    border: isActive ? '1px solid var(--ui-accent, #2563eb)' : '1px solid var(--border-light)',
     borderRadius: '12px',
     padding: '20px 14px',
     textAlign: 'center',
@@ -477,17 +476,16 @@ export default function InventoryDashboard({ theme, setActivePage }) {
   });
 
   const filterBar = {
-    display: 'flex', gap: '10px', flexWrap: 'nowrap', padding: '12px 16px',
-    background: 'var(--surface-panel)', borderRadius: '10px', border: '1px solid var(--border-light)',
-    marginBottom: '16px', alignItems: 'flex-end', overflowX: 'auto', overflowY: 'hidden',
-    WebkitOverflowScrolling: 'touch', scrollbarWidth: 'thin'
+    display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'nowrap', padding: '4px 10px',
+    background: 'var(--surface-panel)', borderRadius: '8px', border: '1px solid var(--border-light)',
+    marginBottom: '8px', overflowX: 'auto', scrollbarWidth: 'thin'
   };
-  const filterGrp = { display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '130px', flex: '0 0 130px' };
-  const filterLbl = { fontSize: '9px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' };
+  const filterGrp = { display: 'flex', alignItems: 'center', gap: '5px', flex: '0 0 auto' };
+  const filterLbl = { fontSize: '8px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.4px', whiteSpace: 'nowrap' };
   const filterSelect = {
-    height: '32px', padding: '0 10px', fontSize: '11px', fontWeight: 700,
+    height: '26px', padding: '0 6px', fontSize: '10px', fontWeight: 700,
     background: 'var(--input-bg)', border: '1px solid var(--input-border)',
-    borderRadius: '7px', color: 'var(--text-primary)', outline: 'none'
+    borderRadius: '5px', color: 'var(--text-primary)', outline: 'none'
   };
   const card = {
     background: 'var(--surface-panel)', border: '1px solid var(--border-light)',
@@ -537,7 +535,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       )}
 
       <main className="module-main" style={isMobile ? { width: '100%', height: '100%', overflowY: 'auto' } : { height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-        <div style={{ padding: '20px', paddingRight: '16px' }}>
+        <div style={{ padding: '12px 14px' }}>
 
           {/* Header Row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>

@@ -141,7 +141,7 @@ export default function NativeAuthScreen({ onAuthenticated }) {
           <Text style={styles.switchText}>New company? <Text style={styles.link} onPress={() => { setScreen('register'); resetMessages(); }}>Register organisation</Text></Text>
         </View>}
 
-        {screen === 'otp' && <View style={styles.form}><TextInput style={styles.otp} value={otp} onChangeText={value => setOtp(value.replace(/\D/g, '').slice(0, 4))} placeholder="••••" placeholderTextColor="#8391a7" keyboardType="number-pad" textContentType="oneTimeCode" maxLength={4} autoFocus /><PrimaryButton label="Verify OTP" loading={loading} onPress={verifyOtp} /></View>}
+        {screen === 'otp' && <View style={styles.form}><TextInput style={styles.otp} value={otp} onChangeText={value => setOtp(value.replace(/\D/g, '').slice(0, 4))} placeholder="••••" placeholderTextColor="#8391a7" keyboardType="number-pad" textContentType="oneTimeCode" maxLength={4} autoFocus onSubmitEditing={verifyOtp} returnKeyType="done" /><PrimaryButton label="Verify OTP" loading={loading} onPress={verifyOtp} /></View>}
         {screen === 'forgot' && <View style={styles.form}><Field label="Registered Email" value={email} onChangeText={setEmail} placeholder="name@company.com" keyboardType="email-address" /><PrimaryButton label="Send Reset Link" loading={loading} onPress={forgotPassword} /></View>}
         {screen === 'register' && <View style={styles.form}>
           <Field label="Company Name *" value={registration.company_name} onChangeText={value => setRegistration(current => ({ ...current, company_name: value }))} placeholder="Company name" autoCapitalize="words" />

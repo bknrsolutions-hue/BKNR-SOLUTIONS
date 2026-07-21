@@ -1,0 +1,1 @@
+import{t}from"./vendor-react-hGlJzxye.js";import e from"./SupportingDocuments-v-KpTptG.js";var o=t();function i(){return(0,o.jsx)(e,{initialStatus:"PENDING_APPROVAL",pageTitle:"Export Document Approvals",pageSubtitle:"Review documents assigned to you and complete approval decisions.",approvalsOnly:!0})}export{i as default};

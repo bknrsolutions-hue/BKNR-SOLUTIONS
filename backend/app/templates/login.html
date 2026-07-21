@@ -62,8 +62,22 @@
   }
 }
 </script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preload" as="image" href="/static/images/svbk-it-solutions-logo-3d-transparent.png" fetchpriority="high">
+    <link rel="preload" as="image" href="/static/images/soaking.jpg" fetchpriority="high">
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+        font-display: swap;
+      }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+    <noscript><link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
     
     <script>
         const savedTheme = localStorage.getItem("theme") || "dark";
@@ -2751,7 +2765,7 @@
     <div class="site-shell">
         <nav class="site-nav">
             <a class="brand" href="/auth/landing" aria-label="SVBK IT SOLUTIONS home">
-                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo-3d-transparent.png" alt="SVBK IT Solutions">
+                <img class="brand-wordmark" src="/static/images/svbk-it-solutions-logo-3d-transparent.png" alt="SVBK IT Solutions" width="165" height="40" loading="eager">
             </a>
             <div class="nav-actions-container" style="display: flex; align-items: center; gap: 16px; margin-left: auto;">
                 {% if not show_login|default(false) %}
@@ -2852,11 +2866,11 @@
         <section class="login-section">
             <div class="login-showcase">
                 <div class="login-3d-carousel" id="login3dCarousel" aria-label="SVBK ERP operational modules">
-                    <figure class="login-carousel-slide active" data-label="Soaking"><img src="/static/images/soaking.jpg" alt="Seafood soaking operations"></figure>
-                    <figure class="login-carousel-slide" data-label="Seafood Processing"><img src="/static/images/seafood_processing.jpg" alt="Seafood processing operations"></figure>
-                    <figure class="login-carousel-slide" data-label="Logistics"><img src="/static/images/logistics.jpg" alt="Export logistics operations"></figure>
-                    <figure class="login-carousel-slide" data-label="Cold Storage"><img src="/static/images/cold_storage.jpg" alt="Cold storage management"></figure>
-                    <figure class="login-carousel-slide" data-label="Accounts Dashboard"><img src="/static/images/dash_accounts.png" alt="Accounts dashboard"></figure>
+                    <figure class="login-carousel-slide active" data-label="Soaking"><img src="/static/images/soaking.jpg" alt="Seafood soaking operations" width="600" height="400" loading="eager"></figure>
+                    <figure class="login-carousel-slide" data-label="Seafood Processing"><img src="/static/images/seafood_processing.jpg" alt="Seafood processing operations" width="600" height="400" loading="lazy"></figure>
+                    <figure class="login-carousel-slide" data-label="Logistics"><img src="/static/images/logistics.jpg" alt="Export logistics operations" width="600" height="400" loading="lazy"></figure>
+                    <figure class="login-carousel-slide" data-label="Cold Storage"><img src="/static/images/cold_storage.jpg" alt="Cold storage management" width="600" height="400" loading="lazy"></figure>
+                    <figure class="login-carousel-slide" data-label="Accounts Dashboard"><img src="/static/images/dash_accounts.png" alt="Accounts dashboard" width="600" height="400" loading="lazy"></figure>
                     <div class="login-carousel-dots" aria-label="Select carousel image"><i class="active"></i><i></i><i></i><i></i><i></i></div>
                 </div>
                 <div class="login-showcase-description"><strong>SVBK ERP</strong> is a modern, AI-powered business management platform designed to simplify and automate your daily operations. Manage inventory, production, finance, HR, sales, purchasing, and more from one secure cloud-based system. With real-time tracking, intelligent automation, and powerful analytics, SVBK ERP helps businesses improve efficiency, reduce manual work, and make smarter decisions.</div>
@@ -2887,23 +2901,28 @@
 
                     <div id="otpBox" class="card">
                         <h2>OTP Verification</h2>
-                        <div class="form-group">
-                            <label>Enter OTP</label>
-                            <input id="otp" maxlength="4" inputmode="numeric"
-                                style="text-align:center;font-size:1.3rem;font-weight:900;" required>
-                        </div>
-                        <button id="btn-otp" onclick="verifyOTP()">Verify OTP</button>
+                        <form onsubmit="event.preventDefault(); verifyOTP();">
+                            <div class="form-group">
+                                <label>Enter OTP</label>
+                                <input id="otp" maxlength="4" inputmode="numeric"
+                                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); verifyOTP(); }"
+                                    style="text-align:center;font-size:1.3rem;font-weight:900;" required>
+                            </div>
+                            <button id="btn-otp" type="submit">Verify OTP</button>
+                        </form>
                         <div id="otpErr" class="msg error"></div>
                         <div id="otpOk" class="msg success"></div>
                     </div>
 
                     <div id="passBox" class="card">
                         <h2>Set Login Password</h2>
-                        <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20"
-                                required></div>
-                        <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password"
-                                maxlength="20" required></div>
-                        <button id="btn-pass" onclick="savePassword()">Save Password</button>
+                        <form onsubmit="event.preventDefault(); savePassword();">
+                            <div class="form-group"><label>Password</label><input id="pass1" type="password" maxlength="20"
+                                    required></div>
+                            <div class="form-group"><label>Confirm Password</label><input id="pass2" type="password"
+                                    maxlength="20" onkeydown="if(event.key==='Enter'){ event.preventDefault(); savePassword(); }" required></div>
+                            <button id="btn-pass" type="submit">Save Password</button>
+                        </form>
                         <div id="passErr" class="msg error"></div>
                         <div id="passOk" class="msg success"></div>
                     </div>
@@ -2933,12 +2952,15 @@
 
                     <div id="loginOtpBox" class="card" style="display:none;">
                         <h2>Login OTP Verification</h2>
-                        <div class="form-group">
-                            <label>Enter OTP sent to your email</label>
-                            <input id="login_otp" maxlength="4" inputmode="numeric"
-                                style="text-align:center;font-size:1.3rem;font-weight:900;" required>
-                        </div>
-                        <button id="btn-login-otp" onclick="verifyLoginOTP()">Verify & Login</button>
+                        <form onsubmit="event.preventDefault(); verifyLoginOTP();">
+                            <div class="form-group">
+                                <label>Enter OTP sent to your email</label>
+                                <input id="login_otp" maxlength="4" inputmode="numeric"
+                                    onkeydown="if(event.key==='Enter'){ event.preventDefault(); verifyLoginOTP(); }"
+                                    style="text-align:center;font-size:1.3rem;font-weight:900;" required>
+                            </div>
+                            <button id="btn-login-otp" type="submit">Verify & Login</button>
+                        </form>
                         <div id="loginOtpErr" class="msg error"></div>
                         <div class="link"><span onclick="showBox('loginBox')">Back to Login</span></div>
                     </div>

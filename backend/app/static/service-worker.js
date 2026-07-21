@@ -1,12 +1,12 @@
-const CACHE_NAME = "svbk-erp-v25";
+const CACHE_NAME = "svbk-erp-v28";
 const ASSETS = [
   "/static/icon-192.png",
   "/static/icon-512.png",
+  "/brand-dp-3d.png",
+  "/svbk-it-solutions-logo-3d-transparent.png",
   "/static/brand-dp-3d.png",
   "/static/images/svbk-it-solutions-logo-3d-transparent.png",
-  "/static/screenshot.png",
-  "/static/css/app-splash.min.css",
-  "/static/js/app-splash.min.js"
+  "/static/screenshot.png"
 ];
 
 self.addEventListener("install", (event) => {

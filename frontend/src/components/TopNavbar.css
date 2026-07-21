@@ -1,0 +1,325 @@
+/* =========================================================
+   BKNR CORPORATE ERP - TOP NAVBAR SPLIT PANEL (DUAL THEME)
+   ========================================================= */
+
+.top-navbar-bar {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  position: relative;
+  z-index: 99999999 !important;
+  box-shadow: none;
+  margin-bottom: 6px;
+}
+
+.top-navbar-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.top-navbar-container::-webkit-scrollbar {
+  display: none;
+}
+
+.top-nav-item-wrap {
+  position: relative;
+}
+
+/* ── Individual Top Header Menu Pillar Buttons ───────────────────── */
+.top-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 16px;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: var(--shadow-soft);
+}
+
+.top-nav-btn i {
+  font-size: 13px;
+  color: var(--text-tertiary);
+  transition: color 0.18s ease;
+}
+
+.top-nav-btn .caret-icon {
+  font-size: 9px;
+  margin-left: 4px;
+  transition: transform 0.18s ease;
+}
+
+.top-nav-btn:hover {
+  color: var(--ui-accent, #3b82f6);
+  background: var(--surface-panel);
+  border-color: var(--ui-accent, #3b82f6);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.top-nav-btn:hover i {
+  color: var(--ui-accent, #3b82f6);
+}
+
+.top-nav-btn.active,
+.top-nav-btn.open {
+  color: #ffffff !important;
+  background: var(--ui-accent, #3b82f6) !important;
+  border-color: var(--ui-accent, #3b82f6) !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35);
+}
+
+.top-nav-btn.active i,
+.top-nav-btn.open i {
+  color: #ffffff !important;
+}
+
+.top-nav-btn.open .caret-icon {
+  transform: rotate(180deg);
+}
+
+/* Primary Flyout Panel */
+.top-nav-flyout-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--surface-panel, rgba(15, 23, 42, 0.98));
+  border: 1px solid var(--border-highlight, rgba(255, 255, 255, 0.15));
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+  z-index: 999999999 !important;
+  overflow: hidden;
+  animation: flyoutSlideDown 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Adjustment for rightmost menu items */
+.top-nav-item-wrap:nth-last-child(-n+2) .top-nav-flyout-panel {
+  left: auto;
+  right: 0;
+}
+
+.top-nav-flyout-panel.simple-list {
+  padding: 8px;
+  min-width: 230px;
+}
+
+.top-nav-simple-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+}
+
+/* 2-Column Split Flyout Layout */
+.top-nav-split-panel {
+  display: flex;
+  min-width: 580px;
+  min-height: 270px;
+  max-height: calc(100vh - 120px);
+}
+
+/* Left Column: Categories List */
+.top-nav-categories-column {
+  width: 220px;
+  background: var(--bg-app, rgba(2, 6, 23, 0.5));
+  border-right: 1px solid var(--border-light, rgba(255, 255, 255, 0.08));
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.top-nav-col-header {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-tertiary, #64748b);
+  padding: 4px 6px 6px 6px;
+  border-bottom: 1px solid var(--border-light, rgba(255, 255, 255, 0.08));
+  margin-bottom: 4px;
+}
+
+.top-nav-sg-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9.5px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-secondary, #94a3b8);
+  font-size: 11.5px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.top-nav-sg-btn i {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  color: var(--text-tertiary, #64748b);
+  transition: color 0.15s ease;
+}
+
+.top-nav-sg-btn .sg-arrow {
+  margin-left: auto;
+  font-size: 9px;
+  opacity: 0.5;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.top-nav-sg-btn:hover {
+  background: var(--row-hover, rgba(255, 255, 255, 0.04));
+  color: var(--text-primary, #ffffff);
+}
+
+.top-nav-sg-btn:hover i {
+  color: var(--ui-accent, #3b82f6);
+}
+
+.top-nav-sg-btn.active {
+  background: var(--ui-accent, #3b82f6) !important;
+  color: #ffffff !important;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
+}
+
+.top-nav-sg-btn.active i {
+  color: #ffffff !important;
+}
+
+.top-nav-sg-btn.active .sg-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+}
+
+/* Right Column: Submenu Pages Grid */
+.top-nav-pages-column {
+  flex: 1;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: var(--surface-panel, rgba(15, 23, 42, 0.98));
+}
+
+.top-nav-col-header.page-header {
+  font-size: 11px;
+  color: var(--ui-accent, #3b82f6);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-nav-col-header.page-header i {
+  font-size: 12px;
+}
+
+.top-nav-pages-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  max-height: calc(100vh - 180px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+/* Submenu Page Buttons */
+.top-nav-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8.5px 11px;
+  border-radius: 7px;
+  background: var(--input-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid var(--input-border, rgba(255, 255, 255, 0.08));
+  color: var(--text-primary, #ffffff);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  width: 100%;
+}
+
+.top-nav-item-btn i {
+  font-size: 12px;
+  width: 16px;
+  text-align: center;
+  color: var(--text-tertiary, #64748b);
+  transition: color 0.15s ease;
+}
+
+.top-nav-item-btn:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--ui-accent, #3b82f6);
+  transform: translateX(2px);
+}
+
+.top-nav-item-btn:hover i {
+  color: var(--ui-accent, #3b82f6);
+}
+
+.top-nav-item-btn.selected {
+  background: var(--ui-accent, #3b82f6) !important;
+  border-color: var(--ui-accent, #3b82f6) !important;
+  color: #ffffff !important;
+}
+
+.top-nav-item-btn.selected i {
+  color: #ffffff !important;
+}
+
+/* Scrollbars */
+.top-nav-simple-items::-webkit-scrollbar,
+.top-nav-categories-column::-webkit-scrollbar,
+.top-nav-pages-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.top-nav-simple-items::-webkit-scrollbar-track,
+.top-nav-categories-column::-webkit-scrollbar-track,
+.top-nav-pages-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.top-nav-simple-items::-webkit-scrollbar-thumb,
+.top-nav-categories-column::-webkit-scrollbar-thumb,
+.top-nav-pages-grid::-webkit-scrollbar-thumb {
+  background: var(--ui-accent, #3b82f6);
+  border-radius: 4px;
+}
+
+@keyframes flyoutSlideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

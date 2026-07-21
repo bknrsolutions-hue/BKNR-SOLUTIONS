@@ -30,6 +30,9 @@ export default function TallyDashboard() {
   const [controlAudit, setControlAudit] = useState(null);
   const [financialYears, setFinancialYears] = useState([]);
   const [workflowVouchers, setWorkflowVouchers] = useState([]);
+  const [voucherQueueStatusFilter, setVoucherQueueStatusFilter] = useState('ALL');
+  const [voucherQueueTypeFilter, setVoucherQueueTypeFilter] = useState('ALL');
+  const [voucherQueueSearch, setVoucherQueueSearch] = useState('');
   const [yearForm, setYearForm] = useState({ year_name: '', start_date: '', end_date: '' });
   const [bankLedgerId, setBankLedgerId] = useState('');
   const [bankFile, setBankFile] = useState(null);
@@ -132,7 +135,7 @@ export default function TallyDashboard() {
       const [auditRes, yearsRes, vouchersRes] = await Promise.all([
         fetch('/finance_accounts/controls/audit'),
         fetch('/finance_accounts/financial-years'),
-        fetch('/finance_accounts/reports/voucher-register'),
+        fetch('/finance_accounts/reports/voucher-register?all_time=true'),
       ]);
       const [audit, years, vouchers] = await Promise.all([auditRes.json(), yearsRes.json(), vouchersRes.json()]);
       if (audit.success) setControlAudit(audit.data);
@@ -481,6 +484,35 @@ export default function TallyDashboard() {
       </div>
     );
   };
+
+  const filteredWorkflowVouchers = workflowVouchers.filter(row => {
+    const matchesStatus =
+      voucherQueueStatusFilter === 'ALL'
+        ? true
+        : voucherQueueStatusFilter === 'SUBMITTED'
+        ? row.status === 'SUBMITTED'
+        : row.status === voucherQueueStatusFilter;
+
+    const matchesType =
+      voucherQueueTypeFilter === 'ALL'
+        ? true
+        : (row.voucher_type || '').toLowerCase() === voucherQueueTypeFilter.toLowerCase();
+
+    const q = voucherQueueSearch.trim().toLowerCase();
+    const matchesSearch =
+      !q ||
+      (row.voucher_no && row.voucher_no.toLowerCase().includes(q)) ||
+      (row.created_by && row.created_by.toLowerCase().includes(q)) ||
+      (row.voucher_type && row.voucher_type.toLowerCase().includes(q)) ||
+      (row.reference_no && row.reference_no.toLowerCase().includes(q));
+
+    return matchesStatus && matchesType && matchesSearch;
+  });
+
+  const totalFilteredWorkflowAmount = filteredWorkflowVouchers.reduce(
+    (sum, row) => sum + (parseFloat(row.total_debit) || 0),
+    0
+  );
 
   return (
     <div className="attendance-container tally-dashboard" style={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%', minHeight: 0, padding: 0, overflow: 'hidden' }}>
@@ -948,11 +980,110 @@ export default function TallyDashboard() {
               </div>
 
               <div className="attendance-card" style={{ padding: 18, border: '1px solid var(--att-border)', borderRadius: 8 }}>
-                <h2 style={{ fontSize: 14, marginTop: 0 }}>Maker–Checker Voucher Queue</h2>
-                <div className="attendance-table-wrapper"><table className="attendance-table"><thead><tr><th>Date</th><th>Voucher</th><th>Maker</th><th style={{ textAlign: 'right' }}>Amount</th><th>Status</th><th>Action</th></tr></thead><tbody>
-                  {workflowVouchers.filter(row => ['SUBMITTED', 'POSTED'].includes(row.status)).map(row => <tr key={row.id}><td>{row.voucher_date}</td><td>{row.voucher_no}</td><td>{row.created_by}</td><td style={{ textAlign: 'right' }}>₹{Number(row.total_debit).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td><td>{row.status}</td><td style={{ display: 'flex', gap: 5 }}>{row.status === 'SUBMITTED' ? <><button className="attendance-btn attendance-btn-primary" onClick={() => decideVoucher(row, 'approve')}>Approve</button><button className="attendance-btn attendance-btn-secondary" onClick={() => decideVoucher(row, 'reject')}>Reject</button></> : <button className="attendance-btn attendance-btn-secondary" onClick={() => reverseVoucher(row)}>Reverse</button>}</td></tr>)}
-                  {!workflowVouchers.length && <tr><td colSpan="6" className="attendance-empty">No vouchers found.</td></tr>}
-                </tbody></table></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+                  <div>
+                    <h2 style={{ fontSize: 14, margin: 0 }}>Maker–Checker Voucher Queue</h2>
+                    <small style={{ color: 'var(--att-muted)' }}>Approve, reject, or filter vouchers submitted for accounting control</small>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input
+                      className="attendance-input"
+                      style={{ minWidth: 180, height: 32, fontSize: 12 }}
+                      placeholder="Search voucher, maker..."
+                      value={voucherQueueSearch}
+                      onChange={e => setVoucherQueueSearch(e.target.value)}
+                    />
+                    <select
+                      className="attendance-select"
+                      style={{ height: 32, fontSize: 12 }}
+                      value={voucherQueueStatusFilter}
+                      onChange={e => setVoucherQueueStatusFilter(e.target.value)}
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="SUBMITTED">Pending Approval (SUBMITTED)</option>
+                      <option value="POSTED">Approved / Active (POSTED)</option>
+                      <option value="REJECTED">Rejected (REJECTED)</option>
+                      <option value="REVERSED">Reversed (REVERSED)</option>
+                    </select>
+                    <select
+                      className="attendance-select"
+                      style={{ height: 32, fontSize: 12 }}
+                      value={voucherQueueTypeFilter}
+                      onChange={e => setVoucherQueueTypeFilter(e.target.value)}
+                    >
+                      <option value="ALL">All Voucher Types</option>
+                      {voucherTypes.map(vt => (
+                        <option key={vt.id} value={vt.name}>{vt.name} ({vt.prefix})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="attendance-table-wrapper">
+                  <table className="attendance-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Voucher No</th>
+                        <th>Type</th>
+                        <th>Maker</th>
+                        <th style={{ textAlign: 'right' }}>Amount</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredWorkflowVouchers.map(row => (
+                        <tr key={row.id}>
+                          <td>{row.voucher_date}</td>
+                          <td style={{ fontWeight: '700' }}>{row.voucher_no}</td>
+                          <td>{row.voucher_type || '—'}</td>
+                          <td>{row.created_by || '—'}</td>
+                          <td style={{ textAlign: 'right', fontWeight: '700' }}>₹{Number(row.total_debit || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+                          <td>
+                            <span className="attendance-badge" style={
+                              row.status === 'SUBMITTED' ? { background: 'rgba(234, 179, 8, 0.15)', color: '#ca8a04', border: '1px solid #fde047', fontSize: 10, fontWeight: 700 } :
+                              row.status === 'POSTED' ? { background: 'rgba(34, 197, 94, 0.15)', color: '#16a34a', border: '1px solid #86efac', fontSize: 10, fontWeight: 700 } :
+                              { background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', border: '1px solid #fca5a5', fontSize: 10, fontWeight: 700 }
+                            }>
+                              {row.status}
+                            </span>
+                          </td>
+                          <td style={{ display: 'flex', gap: 5 }}>
+                            {row.status === 'SUBMITTED' ? (
+                              <>
+                                <button className="attendance-btn attendance-btn-primary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => decideVoucher(row, 'approve')}>Approve</button>
+                                <button className="attendance-btn attendance-btn-danger" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => decideVoucher(row, 'reject')}>Reject</button>
+                              </>
+                            ) : row.status === 'POSTED' ? (
+                              <button className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 8px', fontSize: 11 }} onClick={() => reverseVoucher(row)}>Reverse</button>
+                            ) : (
+                              <span style={{ fontSize: 11, color: 'var(--att-muted)' }}>Read Only</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {!filteredWorkflowVouchers.length && (
+                        <tr>
+                          <td colSpan="7" className="attendance-empty">No vouchers match the selected filter criteria.</td>
+                        </tr>
+                      )}
+                    </tbody>
+                    {filteredWorkflowVouchers.length > 0 && (
+                      <tfoot style={{ borderTop: '2px solid var(--att-border)', background: 'rgba(255, 255, 255, 0.03)' }}>
+                        <tr>
+                          <td colSpan="4" style={{ textAlign: 'right', fontWeight: '800', fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                            Subtotal ({filteredWorkflowVouchers.length} Vouchers):
+                          </td>
+                          <td style={{ textAlign: 'right', fontWeight: '900', fontSize: 12, color: 'var(--att-accent)' }}>
+                            ₹{totalFilteredWorkflowAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                          </td>
+                          <td colSpan="2"></td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
               </div>
 
               <div className="attendance-card" style={{ padding: 18, border: '1px solid var(--att-border)', borderRadius: 8 }}>

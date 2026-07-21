@@ -882,10 +882,16 @@ def report_gst_summary(request: Request, start_date: Optional[date] = None, end_
 
 
 @router.get("/reports/voucher-register")
-def report_voucher_register(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, db: Session = Depends(get_db)):
+def report_voucher_register(request: Request, start_date: Optional[date] = None, end_date: Optional[date] = None, all_time: Optional[bool] = False, db: Session = Depends(get_db)):
     comp_code = require_company_code(request)
-    default_start, default_end = current_financial_period()
-    return {"success": True, "data": AccountingReportsService.get_voucher_register(db, comp_code, start_date or default_start, end_date or default_end)}
+    if all_time:
+        start_date = date(1900, 1, 1)
+        end_date = date(2099, 12, 31)
+    else:
+        default_start, default_end = current_financial_period()
+        start_date = start_date or default_start
+        end_date = end_date or default_end
+    return {"success": True, "data": AccountingReportsService.get_voucher_register(db, comp_code, start_date, end_date)}
 
 
 @router.get("/reports/cash-flow")

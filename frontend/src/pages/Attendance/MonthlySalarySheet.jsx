@@ -107,7 +107,22 @@ export default function MonthlySalarySheet({ theme }) {
       const data = await res.json();
       setDaysInMonth(data.days_in_month || 30);
       setMonthName(data.month_name || '');
-      setEmployees(data.employees || []);
+      const rawEmployees = data.employees || [];
+      const naturalSortKey = (str) => String(str || '').split(/(\d+)/).map(t => /^\d+$/.test(t) ? parseInt(t, 10) : t.toLowerCase());
+      const sortedEmployees = [...rawEmployees].sort((a, b) => {
+        const keyA = naturalSortKey(a.id);
+        const keyB = naturalSortKey(b.id);
+        for (let i = 0; i < Math.max(keyA.length, keyB.length); i++) {
+          if (keyA[i] === undefined) return -1;
+          if (keyB[i] === undefined) return 1;
+          if (keyA[i] !== keyB[i]) {
+            if (typeof keyA[i] === 'number' && typeof keyB[i] === 'number') return keyA[i] - keyB[i];
+            return String(keyA[i]).localeCompare(String(keyB[i]));
+          }
+        }
+        return 0;
+      });
+      setEmployees(sortedEmployees);
       setReportMeta({
         company_name: data.company_name || '',
         company_address: data.company_address || '',
@@ -234,6 +249,62 @@ export default function MonthlySalarySheet({ theme }) {
     }
   };
 
+  const totals = React.useMemo(() => {
+    const res = {
+      hp: 0, p1: 0, p1_5: 0, p2: 0, p2_5: 0, p3: 0,
+      actual_duties: 0, worked_days: 0,
+      ot_hours: 0, ot_earnings: 0,
+      base_sal: 0, extra_holidays: 0, saved_adjustment: 0, earned_gross: 0,
+      salary_advance: 0, pf: 0, esi: 0, pt: 0, lwf: 0, tds: 0,
+      net_pay: 0,
+      daily_presents: {}
+    };
+
+    employees.forEach(emp => {
+      res.hp += Number(emp.duty_counts?.['HP'] || 0);
+      res.p1 += Number(emp.duty_counts?.['1P'] || 0);
+      res.p1_5 += Number(emp.duty_counts?.['1.5P'] || 0);
+      res.p2 += Number(emp.duty_counts?.['2P'] || 0);
+      res.p2_5 += Number(emp.duty_counts?.['2.5P'] || 0);
+      res.p3 += Number(emp.duty_counts?.['3P'] || 0);
+      res.actual_duties += Number(emp.actual_duties || 0);
+      res.worked_days += Number(emp.worked_days || 0);
+      res.ot_hours += Number(emp.ot_hours || 0);
+      res.ot_earnings += Number(emp.ot_earnings || 0);
+      res.base_sal += Number(emp.base_sal || 0);
+      res.extra_holidays += Number(emp.extra_holidays || 0);
+      res.saved_adjustment += Number(emp.saved_adjustment || 0);
+      res.earned_gross += Number(emp.earned_gross || 0);
+      res.salary_advance += Number(emp.salary_advance || 0);
+      res.pf += Number(emp.pf || 0);
+      res.esi += Number(emp.esi || 0);
+      res.pt += Number(emp.pt || 0);
+      res.lwf += Number(emp.lwf || 0);
+      res.tds += Number(emp.tds || 0);
+      res.net_pay += Number(emp.net_pay || 0);
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const st = emp.att_map?.[day];
+        if (st && st !== 'A') {
+          let credit = 1.0;
+          if (st === 'HP') credit = 0.5;
+          else if (st === 'P' || st === '1P') credit = 1.0;
+          else if (st === '1.5P') credit = 1.5;
+          else if (st === '2P') credit = 2.0;
+          else if (st === '2.5P') credit = 2.5;
+          else if (st === '3P') credit = 3.0;
+          else {
+            const m = String(st).match(/^([\d.]+)P?$/i);
+            if (m) credit = parseFloat(m[1]);
+          }
+          res.daily_presents[day] = (res.daily_presents[day] || 0) + credit;
+        }
+      }
+    });
+
+    return res;
+  }, [employees, daysInMonth]);
+
   // Generate date day columns headers
   const dayHeaders = [];
   for (let i = 1; i <= daysInMonth; i++) {
@@ -338,15 +409,15 @@ export default function MonthlySalarySheet({ theme }) {
               </tr>
             </thead>
             <tbody>
-              {employees.map(emp => (
+              {employees.map((emp, index) => (
                 <tr 
                   key={emp.id} 
                   className={selectedRow?.id === emp.id ? 'selected' : ''}
                   onClick={() => setSelectedRow(emp)}
                 >
                   <td className="sticky-col" style={{ zIndex: 10, background: 'var(--att-card)', borderRight: '2px solid var(--att-border)', textAlign: 'left' }}>
-                    <div style={{ fontWeight: '800', color: 'var(--att-heading)' }}>{emp.name}</div>
-                    <div style={{ fontSize: '9px', color: 'var(--att-muted)', fontWeight: '700' }}>{emp.id} | {emp.dept}</div>
+                    <div style={{ fontWeight: '800', color: 'var(--att-heading)' }}>{index + 1}. {emp.name}</div>
+                    <div style={{ fontSize: '9px', color: 'var(--att-muted)', fontWeight: '700' }}>ID: {emp.id} | {emp.dept}</div>
                   </td>
                   
                   {/* Daily attendance cells */}
@@ -455,6 +526,44 @@ export default function MonthlySalarySheet({ theme }) {
                 </tr>
               )}
             </tbody>
+            <tfoot>
+              <tr style={{ background: 'var(--att-table-header-bg)', color: 'var(--att-heading)', fontWeight: '800', borderTop: '2px solid var(--att-border)' }}>
+                <td className="sticky-col" style={{ zIndex: 10, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', textAlign: 'left' }}>
+                  <strong>TOTALS ({employees.length} Staff)</strong>
+                </td>
+                {Array.from({ length: daysInMonth }, (_, index) => {
+                  const day = index + 1;
+                  const dayTotal = totals.daily_presents[day] || 0;
+                  return (
+                    <td key={day} style={{ fontSize: '10px', textAlign: 'center', color: dayTotal > 0 ? 'var(--att-success)' : 'var(--att-muted)' }}>
+                      {dayTotal > 0 ? (Number.isInteger(dayTotal) ? dayTotal : dayTotal.toFixed(1)) : '—'}
+                    </td>
+                  );
+                })}
+                <td style={{ color: 'var(--att-warning)' }}>{totals.hp}</td>
+                <td style={{ color: 'var(--att-success)' }}>{totals.p1}</td>
+                <td style={{ color: 'var(--att-info)' }}>{totals.p1_5}</td>
+                <td style={{ color: 'var(--att-info)' }}>{totals.p2}</td>
+                <td style={{ color: 'var(--att-info)' }}>{totals.p2_5}</td>
+                <td style={{ color: 'var(--att-info)' }}>{totals.p3}</td>
+                <td style={{ color: 'var(--att-accent)', fontWeight: '800' }}>{totals.actual_duties.toFixed(1)}</td>
+                <td style={{ fontWeight: '800' }}>{totals.worked_days}</td>
+                <td style={{ color: 'var(--att-warning)' }}>{totals.ot_hours}</td>
+                <td style={{ color: 'var(--att-warning)' }}>₹{fmt(totals.ot_earnings)}</td>
+                <td>₹{fmt(totals.base_sal)}</td>
+                <td style={{ color: 'var(--att-success)' }}>+{totals.extra_holidays}</td>
+                <td>{totals.saved_adjustment > 0 ? `+${fmt(totals.saved_adjustment)}` : fmt(totals.saved_adjustment)}</td>
+                <td style={{ color: 'var(--att-muted)' }}>—</td>
+                <td style={{ color: 'var(--att-heading)', fontWeight: '800' }}>₹{fmt(totals.earned_gross)}</td>
+                <td style={{ color: 'var(--att-danger)' }}>₹{fmt(totals.salary_advance)}</td>
+                <td>₹{fmt(totals.pf)}</td>
+                <td>₹{fmt(totals.esi)}</td>
+                <td>₹{fmt(totals.pt)}</td>
+                <td>₹{fmt(totals.lwf)}</td>
+                <td>₹{fmt(totals.tds)}</td>
+                <td className="payout-col" style={{ color: 'var(--att-success)', fontWeight: '900', fontSize: '12px' }}>₹{fmt(totals.net_pay)}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -477,11 +586,12 @@ export default function MonthlySalarySheet({ theme }) {
                 <table className="attendance-table">
                   <thead>
                     <tr>
-                      <th style={{ textalign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Date</th>
-                      <th style={{ textalign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Shift</th>
-                      <th style={{ textalign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Timeline (Gate Entry/Exit)</th>
-                      <th style={{ border: 'none', borderBottom: '1px solid var(--att-border)' }}>Work Hrs</th>
-                      <th style={{ border: 'none', borderBottom: '1px solid var(--att-border)' }}>Status</th>
+                      <th style={{ textAlign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Date</th>
+                      <th style={{ textAlign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Shift</th>
+                      <th style={{ textAlign: 'left', border: 'none', borderBottom: '1px solid var(--att-border)' }}>Timeline (Gate Entry/Exit)</th>
+                      <th style={{ border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>Work Hrs</th>
+                      <th style={{ border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>Overtime (OT)</th>
+                      <th style={{ border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>Duty Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -490,40 +600,70 @@ export default function MonthlySalarySheet({ theme }) {
                         <td style={{ fontWeight: '600', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)' }}>{d.date}</td>
                         <td style={{ fontWeight: '800', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)' }}>{d.shift}</td>
                         <td style={{ padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)' }}>
-                          {d.movements && d.movements.length > 0 ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
-                              {d.movements.map((m, mIdx) => (
-                                <React.Fragment key={mIdx}>
-                                  {mIdx > 0 && <ChevronRight size={10} style={{ color: 'var(--att-muted)' }} />}
-                                  <span 
-                                    className="attendance-badge" 
-                                    style={{
-                                      background: m.type === 'IN' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                                      color: m.type === 'IN' ? 'var(--att-success)' : 'var(--att-danger)',
-                                      padding: '2px 6px',
-                                      fontSize: '9px'
-                                    }}
-                                  >
-                                    {m.type} {m.display_date || m.date || d.date} {m.time}
-                                  </span>
-                                </React.Fragment>
-                              ))}
-                            </div>
-                          ) : (
-                            <span style={{ color: 'var(--att-muted)', fontStyle: 'italic' }}>Manual Entry</span>
-                          )}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                            {d.movements && d.movements.length > 0 ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                                {d.movements.map((m, mIdx) => (
+                                  <React.Fragment key={mIdx}>
+                                    {mIdx > 0 && <ChevronRight size={10} style={{ color: 'var(--att-muted)' }} />}
+                                    <span 
+                                      className="attendance-badge" 
+                                      style={{
+                                        background: m.type === 'IN' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                                        color: m.type === 'IN' ? 'var(--att-success)' : 'var(--att-danger)',
+                                        padding: '2px 6px',
+                                        fontSize: '9px'
+                                      }}
+                                    >
+                                      {m.type} {m.display_date || m.date || d.date} {m.time}
+                                    </span>
+                                  </React.Fragment>
+                                ))}
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--att-muted)', fontStyle: 'italic' }}>Manual Entry</span>
+                            )}
+                            {d.punch_missed && (
+                              <div style={{ marginTop: 2 }}>
+                                <span className="attendance-badge" style={{ background: 'rgba(239, 68, 68, 0.15)', color: '#dc2626', border: '1px solid #fca5a5', fontSize: '9px', fontWeight: '800' }}>
+                                  ⚠️ Punch Missed ({d.punch_missed_reason || 'Incomplete Punch'})
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </td>
                         <td style={{ fontWeight: '800', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>
                           {d.hours} hrs
                         </td>
-                        <td style={{ fontWeight: '800', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center', color: 'var(--att-accent)' }}>
-                          {d.status}
+                        <td style={{ fontWeight: '800', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>
+                          {d.ot_hours > 0 ? (
+                            <span className="attendance-badge" style={{
+                              background: d.ot_status === 'APPROVED' ? 'rgba(34, 197, 94, 0.15)' : d.ot_status === 'REJECTED' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(234, 179, 8, 0.15)',
+                              color: d.ot_status === 'APPROVED' ? '#16a34a' : d.ot_status === 'REJECTED' ? '#dc2626' : '#ca8a04',
+                              fontSize: '10px',
+                              fontWeight: '800',
+                              padding: '2px 6px'
+                            }}>
+                              ⚡ {d.ot_hours} hrs ({d.ot_status})
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--att-muted)' }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ fontWeight: '800', padding: '10px 8px', border: 'none', borderBottom: '1px solid var(--att-border)', textAlign: 'center' }}>
+                          <span className="attendance-badge" style={{
+                            background: d.duty_status === 'REJECTED' ? 'rgba(239, 68, 68, 0.15)' : d.status === 'A' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                            color: d.duty_status === 'REJECTED' ? '#dc2626' : d.status === 'A' ? 'var(--att-danger)' : 'var(--att-success)',
+                            fontSize: '10px'
+                          }}>
+                            {d.status} {d.duty_status ? `(${d.duty_status})` : ''}
+                          </span>
                         </td>
                       </tr>
                     ))}
                     {!attendanceLogs.length && (
                       <tr>
-                        <td colSpan="5" style={{ padding: '24px', textAlign: 'center', color: 'var(--att-muted)' }}>
+                        <td colSpan="6" style={{ padding: '24px', textAlign: 'center', color: 'var(--att-muted)' }}>
                           No attendance records found for this selection.
                         </td>
                       </tr>
