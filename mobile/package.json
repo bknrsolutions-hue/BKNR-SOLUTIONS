@@ -10,6 +10,7 @@
     "expo-linear-gradient": "~56.0.4",
     "expo-sharing": "~56.0.22",
     "expo-speech": "~56.0.3",
+    "expo-updates": "~56.0.22",
     "react": "19.2.3",
     "react-native": "0.85.3"
   },
