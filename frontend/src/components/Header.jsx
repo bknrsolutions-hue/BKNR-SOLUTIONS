@@ -1,6 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import AnimatedBrandLogo from './AnimatedBrandLogo';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+
+function apiUrl(path) {
+  if (!API_BASE_URL || /^https?:\/\//i.test(path)) return path;
+  return `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
+}
+
+function assetUrl(path) {
+  if (!path || /^https?:\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:')) return path;
+  return apiUrl(path);
+}
+
 const DEFAULT_QUICK_ACTION_IDS = [
   'raw_material_purchasing',
   'production',
@@ -39,6 +51,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [tenantLogoUrl, setTenantLogoUrl] = useState(user?.company_logo_url || '');
+  const displayTenantLogoUrl = assetUrl(tenantLogoUrl);
   const [tenantLogoSaving, setTenantLogoSaving] = useState(false);
   const [tenantLogoMessage, setTenantLogoMessage] = useState('');
 
@@ -66,7 +79,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
 
   const loadNotifications = useCallback(async () => {
     try {
-      const response = await fetch('/menu/notifications', { credentials: 'include' });
+      const response = await fetch(apiUrl('/menu/notifications'), { credentials: 'include' });
       if (!response.ok) throw new Error('Failed to load notifications');
       setNotifications(await response.json() || []);
     } catch (error) {
@@ -198,7 +211,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
 
   // Fetch dropdown options and notifications on load
   useEffect(() => {
-    fetch('/auth/global-dropdowns')
+    fetch(apiUrl('/auth/global-dropdowns'), { credentials: 'include' })
       .then(res => {
         if (res.ok) return res.json();
         throw new Error('Failed to load global dropdowns');
@@ -245,7 +258,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
     if (broadcastMessage.trim()) formData.append('message', broadcastMessage.trim());
     if (broadcastFile) formData.append('file', broadcastFile);
     try {
-      const response = await fetch('/menu/create_company_announcement', { method: 'POST', body: formData, credentials: 'include' });
+      const response = await fetch(apiUrl('/menu/create_company_announcement'), { method: 'POST', body: formData, credentials: 'include' });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Unable to send broadcast');
       setBroadcastStatus('Sent!');
@@ -399,8 +412,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
     const timer = window.setTimeout(async () => {
       setEntitySearchLoading(true);
       try {
-        const response = await fetch(`/menu/search_entities?query=${encodeURIComponent(commandSearch.trim())}`, {
+        const response = await fetch(apiUrl(`/menu/search_entities?query=${encodeURIComponent(commandSearch.trim())}`), {
           signal: controller.signal,
+          credentials: 'include',
           headers: { Accept: 'application/json' },
         });
         if (response.ok) {
@@ -450,7 +464,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
     setProfileLoading(true);
     setProfileError('');
     try {
-      const response = await fetch('/auth/profile?format=json', {
+      const response = await fetch(apiUrl('/auth/profile?format=json'), {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
@@ -474,7 +488,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
     try {
       const body = new FormData();
       body.append('logo', file);
-      const response = await fetch('/auth/tenant-logo', {
+      const response = await fetch(apiUrl('/auth/tenant-logo'), {
         method: 'POST',
         body,
         credentials: 'include',
@@ -959,8 +973,8 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             className={`corp-profile-btn ${dropdownOpen ? 'active' : ''}`} 
             onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); setColorOpen(false); }}
           >
-            {tenantLogoUrl
-              ? <img className="corp-avatar corp-avatar-img" src={tenantLogoUrl} alt={`${companyName} logo`} />
+            {displayTenantLogoUrl
+              ? <img className="corp-avatar corp-avatar-img" src={displayTenantLogoUrl} alt={`${companyName} logo`} onError={() => setTenantLogoUrl('')} />
               : <AnimatedBrandLogo size={34} className="corp-avatar" />}
             <div className="corp-info">
               <span className="corp-name">{userName}</span>
@@ -1094,7 +1108,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
                       <div className="notif-text" style={{ flex: 1, minWidth: 0 }}>
                         <span className="notif-title" style={{ wordBreak: 'break-word' }}>{item.title}</span>
                         <span className="notif-time" style={{ fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px', wordBreak: 'break-word' }}>{item.desc}</span>
-                        {item.media_path && /\.(jpe?g|png|gif|webp|svg)(?:\?.*)?$/i.test(item.media_path) ? <div style={{ marginTop: '6px', borderRadius: '6px', overflow: 'hidden', maxWidth: '100%', maxHeight: '120px', border: '1px solid var(--border-light)' }}><img src={item.media_path} alt="Notification attachment" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', cursor: 'pointer' }} onClick={event => { event.stopPropagation(); window.open(item.media_path, '_blank'); }} /></div> : item.media_path ? <div className="notif-media-file"><i className="fa-solid fa-file-arrow-down"></i><a href={item.media_path} target="_blank" rel="noreferrer" download onClick={event => event.stopPropagation()}>{item.media_path.split('/').pop()?.replace(/^\d+_/, '') || 'Attachment'}</a></div> : null}
+                        {item.media_path && /\.(jpe?g|png|gif|webp|svg)(?:\?.*)?$/i.test(item.media_path) ? <div style={{ marginTop: '6px', borderRadius: '6px', overflow: 'hidden', maxWidth: '100%', maxHeight: '120px', border: '1px solid var(--border-light)' }}><img src={assetUrl(item.media_path)} alt="Notification attachment" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', cursor: 'pointer' }} onClick={event => { event.stopPropagation(); window.open(assetUrl(item.media_path), '_blank'); }} /></div> : item.media_path ? <div className="notif-media-file"><i className="fa-solid fa-file-arrow-down"></i><a href={assetUrl(item.media_path)} target="_blank" rel="noreferrer" download onClick={event => event.stopPropagation()}>{item.media_path.split('/').pop()?.replace(/^\d+_/, '') || 'Attachment'}</a></div> : null}
                         <span className="notif-time" style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>{item.time}</span>
                       </div>
                     </div>
@@ -1150,8 +1164,8 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         <div className="profile-popup-overlay" onMouseDown={() => setProfilePopupOpen(false)}>
           <section className="profile-popup" role="dialog" aria-modal="true" aria-label="My Profile" onMouseDown={event => event.stopPropagation()}>
             <div className="profile-popup-head">
-              {tenantLogoUrl
-                ? <img className="corp-avatar corp-avatar-img" src={tenantLogoUrl} alt={`${companyName} logo`} style={{ width: 42, height: 42 }} />
+              {displayTenantLogoUrl
+                ? <img className="corp-avatar corp-avatar-img" src={displayTenantLogoUrl} alt={`${companyName} logo`} style={{ width: 42, height: 42 }} onError={() => setTenantLogoUrl('')} />
                 : <AnimatedBrandLogo size={42} />}
               <div className="profile-popup-head-copy">
                 <strong>{profileDetails?.name || userName}</strong>
