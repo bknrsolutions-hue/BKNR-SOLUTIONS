@@ -8,11 +8,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "backgroundColor": "#f4f7fb",
-    "splash": {
-      "image": "./assets/brand-dp-3d.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#f7fbff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bknr.erp",
@@ -27,8 +22,7 @@
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/brand-dp-3d.png"
-      },
-      "usesCleartextTraffic": true
+      }
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -39,7 +33,8 @@
       }
     },
     "plugins": [
-      "expo-sharing"
+      "expo-sharing",
+      "expo-font"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
