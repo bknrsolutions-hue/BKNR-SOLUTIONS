@@ -30,6 +30,7 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
   const iframeRef = useRef(null);
   const actionFeedbackCleanupRef = useRef(null);
   const [filterVersion, setFilterVersion] = useState(0);
+  const [frameLoading, setFrameLoading] = useState(true);
 
   // Match menu.html loadPage(): propagate the universal filters to every
   // legacy route that is rendered through the fallback iframe.
@@ -70,6 +71,10 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
   useEffect(() => { syncTheme(); }, [syncTheme, activePage]);
 
   useEffect(() => {
+    setFrameLoading(true);
+  }, [iframeUrl]);
+
+  useEffect(() => {
     const handleFilterChange = () => setFilterVersion(version => version + 1);
     window.addEventListener('filter_change', handleFilterChange);
     return () => window.removeEventListener('filter_change', handleFilterChange);
@@ -79,6 +84,7 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
 
   const handleFrameLoad = () => {
     syncTheme();
+    setFrameLoading(false);
     actionFeedbackCleanupRef.current?.();
     try {
       const frameWindow = iframeRef.current?.contentWindow;
@@ -97,8 +103,18 @@ export default function BackendConsole({ activePage, activeRoute, theme }) {
   return (
     <div style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      height: '100%', width: '100%', overflow: 'hidden',
+      height: '100%', width: '100%', overflow: 'hidden', position: 'relative',
     }}>
+      {frameLoading && (
+        <div className="skel-iframe-overlay" role="status" aria-live="polite" aria-label="Loading page">
+          <div className="skel-row">
+            {[1, 2, 3, 4].map(item => <div className="skel-kpi-card" key={item}><div className="skel-block" /><div className="skel-block" /></div>)}
+          </div>
+          <div className="skel-table-wrap">
+            {[1, 2, 3, 4, 5, 6].map(row => <div className="skel-table-row" key={row}><div className="skel-block" /><div className="skel-block" /><div className="skel-block" /><div className="skel-block" /></div>)}
+          </div>
+        </div>
+      )}
       <iframe
         key={activePage}
         ref={iframeRef}

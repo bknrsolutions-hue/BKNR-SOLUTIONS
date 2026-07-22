@@ -291,16 +291,19 @@ def storage_cost_report(
     if request.query_params.get("format") == "json":
         from fastapi.responses import JSONResponse
         from fastapi.encoders import jsonable_encoder
+        def serialize_inventory(row):
+            return {column.name: getattr(row, column.name) for column in row.__table__.columns}
+
         serialized_report_data = []
         for item in report_data:
             ser_item = dict(item)
             if "details" in ser_item:
-                r = ser_item["details"]
-                ser_item["details"] = {col.name: getattr(r, col.name) for col in r.__table__.columns}
+                ser_item["details"] = serialize_inventory(ser_item["details"])
             serialized_report_data.append(ser_item)
             
         json_context = {
             "report_data": serialized_report_data,
+            "detailed_entries": [serialize_inventory(row) for row in all_rows],
             "available_stock_items": available_stock_items,
             "dispatches_this_month": dispatches_this_month,
             "production_for_list": p_for_list,
@@ -322,6 +325,7 @@ def storage_cost_report(
         name="reports/storage_report.html",
         context={
             "report_data": report_data,
+            "detailed_entries": all_rows,
             "available_stock_items": available_stock_items,
             "dispatches_this_month": dispatches_this_month,
             "production_for_list": p_for_list,

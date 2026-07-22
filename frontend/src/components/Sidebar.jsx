@@ -206,6 +206,9 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'attendance_employee_register', token: 'hr_er', perm: 'employee_registration', route: '/attendance/employee/register', icon: 'fa-id-card-clip', label: 'Staff Registration', badge: 'HR' },
         { id: 'attendance_employee_increment', token: 'hr_ei', perm: 'employee_increment', route: '/attendance/employee-increment', icon: 'fa-arrow-trend-up', label: 'Increment Details', badge: 'HR' },
         { id: 'attendance_daily_attendance', token: 'hr_da', perm: 'daily_attendance', route: '/attendance/daily', icon: 'fa-fingerprint', label: 'Daily Attendance', badge: 'HR' },
+        { id: 'attendance_labour_management', token: 'hr_lm', perm: 'labour_management', route: '/attendance/labour-management', icon: 'fa-people-group', label: 'Contract Workers', badge: 'HR' },
+        { id: 'attendance_kg_basis_labour', token: 'hr_kgl', perm: 'kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'KG Basis Company Workers', badge: 'HR' },
+        { id: 'attendance_visitors_day_workers', token: 'hr_vdw', perm: 'visitors_day_workers', route: '/attendance/visitors-day-workers', icon: 'fa-person-walking-arrow-right', label: 'Visitors & Day Workers', badge: 'HR' },
         { id: 'attendance_salary_report', token: 'hr_ss', perm: 'salary_report', route: '/attendance/salary/monthly-sheet', icon: 'fa-money-check-dollar', label: 'Monthly Salary Sheet', badge: 'HR' },
         { id: 'attendance_tax_master', token: 'hr_tm', perm: 'tax_master', route: '/attendance/tax-master', icon: 'fa-file-shield', label: 'Payroll Master', badge: 'HR' },
         { id: 'attendance_salary_advance', token: 'hr_sa', perm: 'salary_advance', route: '/attendance/salary-advance', icon: 'fa-hand-holding-dollar', label: 'Salary Advance', badge: 'HR' },
@@ -239,6 +242,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
             { id: 'criteria_contractors', token: 'mst_con', perm: 'contractors', route: '/criteria/contractors', icon: 'fa-hard-hat', label: 'Contractors', badge: 'Mstr' },
             { id: 'criteria_peeling_at', token: 'mst_pat', perm: 'peeling_at', route: '/criteria/peeling_at', icon: 'fa-map-pin', label: 'Peeling At', badge: 'Mstr' },
             { id: 'criteria_peeling_rates', token: 'mst_prt', perm: 'peeling_rates', route: '/criteria/peeling_rates', icon: 'fa-money-bill', label: 'Peeling Rates', badge: 'Mstr' },
+            { id: 'criteria_kg_basis_labour_rates', token: 'mst_kgl', perm: 'kg_basis_labour_rates', route: '/criteria/api/kg_basis_labour_rates', icon: 'fa-scale-balanced', label: 'KG Basis Worker Rates', badge: 'Mstr' },
             { id: 'criteria_production_at', token: 'mst_pra', perm: 'production_at', route: '/criteria/production_at', icon: 'fa-industry', label: 'Production At', badge: 'Mstr' },
             { id: 'criteria_production_for', token: 'pf_8Kx92LmQ', perm: 'production_for', route: '/criteria/production_for', icon: 'fa-building-flag', label: 'Production For', badge: 'Mstr' },
             { id: 'criteria_production_types', token: 'mst_prt2', perm: 'production_types', route: '/criteria/production_types', icon: 'fa-tags', label: 'Production Types', badge: 'Mstr' },
@@ -303,12 +307,13 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
   const firstVisibleTitle = visibleMenuConfig.find(categoryHasVisibleItems)?.title;
 
   return (
-    <div className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
+    <div id="app-sidebar" className={`sidebar ${sidebarOpen ? 'open' : ''}`}>
       {/* Sidebar Header */}
       <div className="sidebar-brand">
         <div className="brand-wrapper">
           <div className="brand-title">
-            <i className="fa-solid fa-layer-group"></i> MY ERP
+            <i className="fa-solid fa-layer-group"></i>
+            <span title={user?.company || user?.company_name || 'SVBK ERP'}>{user?.company || user?.company_name || 'SVBK ERP'}</span>
           </div>
           <div className="brand-subtitle">WORKSPACE</div>
         </div>
@@ -412,15 +417,6 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         })}
       </div>
 
-      {/* Quote Footer */}
-      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-        <div className="footer-quote" style={{ fontSize: '9.5px', color: 'var(--text-tertiary)' }}>Powered by</div>
-        <img 
-          src={`${import.meta.env.BASE_URL || '/'}svbk-it-solutions-logo-3d-transparent.png`.replace(/\/+/g, '/')} 
-          alt="SVBK IT Solutions" 
-          style={{ height: '30px', width: 'auto', objectFit: 'contain', display: 'block' }} 
-        />
-      </div>
     </div>
   );
 }

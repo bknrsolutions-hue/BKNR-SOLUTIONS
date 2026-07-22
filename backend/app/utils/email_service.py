@@ -1,5 +1,11 @@
-import os, smtplib
+import logging
+import os
+import smtplib
 from email.message import EmailMessage
+
+import requests
+
+from app.utils.timezone import ist_now
 
 SMTP_EMAIL = os.getenv("SMTP_EMAIL")
 SMTP_PASSWORD = os.getenv("SMTP_PASSWORD")
@@ -7,6 +13,52 @@ SENDER_NAME = os.getenv("EMAIL_SENDER_NAME", "SVBK")
 if not SENDER_NAME or "bknr" in SENDER_NAME.lower():
     SENDER_NAME = "SVBK"
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "bknr.solutions@gmail.com")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+logger = logging.getLogger("BKNR_ERP.email")
+
+
+def send_email(to_email, subject, html, text=None):
+    if BREVO_API_KEY:
+        try:
+            response = requests.post(
+                BREVO_URL,
+                json={
+                    "sender": {"name": SENDER_NAME, "email": SMTP_EMAIL or SUPPORT_EMAIL},
+                    "to": [{"email": to_email}],
+                    "subject": subject,
+                    "htmlContent": html,
+                },
+                headers={
+                    "accept": "application/json",
+                    "api-key": BREVO_API_KEY,
+                    "content-type": "application/json",
+                },
+                timeout=10,
+            )
+            if response.status_code in (200, 201, 202):
+                return
+            logger.warning("Brevo rejected approval email with status %s", response.status_code)
+        except Exception:
+            logger.warning("Brevo approval email delivery failed", exc_info=True)
+
+    if not SMTP_EMAIL or not SMTP_PASSWORD:
+        logger.warning("Approval email skipped because SMTP is not configured")
+        return
+
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = f"{SENDER_NAME} <{SMTP_EMAIL}>"
+    message["To"] = to_email
+    message.set_content(text or "Open SVBK ERP to review this approval request.")
+    message.add_alternative(html, subtype="html")
+
+    try:
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(message)
+    except Exception:
+        logger.warning("SMTP approval email delivery failed", exc_info=True)
 
 def build_otp_email(otp):
     html = f"""

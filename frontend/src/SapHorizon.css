@@ -205,13 +205,12 @@ body {
   }
 
   .sidebar .sidebar-brand,
-  .sidebar .sidebar-footer,
   .sidebar .menu-wrapper,
   .sidebar .reports-container {
     border-color: color-mix(in srgb, var(--ui-sidebar-text, #f8fafc) 14%, transparent) !important;
   }
 
-  .sidebar :is(.brand-title, .sidebar-footer .footer-powered),
+  .sidebar .brand-title,
   .app-header :is(.header-premium-title, .corp-name) {
     color: var(--ui-sidebar-text, #f8fafc) !important;
   }

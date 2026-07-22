@@ -26,6 +26,7 @@ model_mapping = {
     "contractors": criteria.contractors,
     "suppliers": criteria.suppliers,
     "peeling_rates": criteria.peeling_rates,
+    "kg_basis_labour_rates": criteria.kg_basis_labour_rates,
     "species": criteria.species,
     "purchasing_locations": criteria.purchasing_locations,
     "vehicle_numbers": criteria.vehicle_numbers,

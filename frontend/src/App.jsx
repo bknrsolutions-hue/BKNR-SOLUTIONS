@@ -9,6 +9,7 @@ import './ErpTables.css';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnimatedBrandLogo from './components/AnimatedBrandLogo';
+import ApprovalAlertPopup from './components/ApprovalAlertPopup';
 
 let initialSessionRequest;
 
@@ -77,6 +78,7 @@ const PackingStyles = lazy(() => import('./pages/Criteria/PackingStyles'));
 const Contractors = lazy(() => import('./pages/Criteria/Contractors'));
 const PeelingAt = lazy(() => import('./pages/Criteria/PeelingAt'));
 const PeelingRates = lazy(() => import('./pages/Criteria/PeelingRates'));
+const KgBasisLabourRates = lazy(() => import('./pages/Criteria/KgBasisLabourRates'));
 const ProductionAt = lazy(() => import('./pages/Criteria/ProductionAt'));
 const ProductionFor = lazy(() => import('./pages/Criteria/ProductionFor'));
 const ProductionTypes = lazy(() => import('./pages/Criteria/ProductionTypes'));
@@ -110,6 +112,9 @@ const MonthlySalarySheet = lazy(() => import('./pages/Attendance/MonthlySalarySh
 const StatutoryMaster = lazy(() => import('./pages/Attendance/StatutoryMaster'));
 const SalaryAdvance = lazy(() => import('./pages/Attendance/SalaryAdvance'));
 const SalaryProcessing = lazy(() => import('./pages/Attendance/SalaryProcessing'));
+const LabourManagement = lazy(() => import('./pages/Attendance/LabourManagement'));
+const KgBasisCompanyLabour = lazy(() => import('./pages/Attendance/KgBasisCompanyLabour'));
+const VisitorsDayWorkers = lazy(() => import('./pages/Attendance/VisitorsDayWorkers'));
 
 // Finance & Accounts Components
 const LedgerDirectory = lazy(() => import('./pages/FinanceAccounts/LedgerDirectory'));
@@ -180,6 +185,7 @@ const CRITERIA_COMPONENTS = {
   criteria_contractors: Contractors,
   criteria_peeling_at: PeelingAt,
   criteria_peeling_rates: PeelingRates,
+  criteria_kg_basis_labour_rates: KgBasisLabourRates,
   criteria_production_at: ProductionAt,
   criteria_production_for: ProductionFor,
   criteria_production_types: ProductionTypes,
@@ -211,6 +217,9 @@ const CRITERIA_COMPONENTS = {
   attendance_salary_report: MonthlySalarySheet,
   attendance_tax_master: StatutoryMaster,
   attendance_salary_advance: SalaryAdvance,
+  attendance_labour_management: LabourManagement,
+  attendance_kg_basis_labour: KgBasisCompanyLabour,
+  attendance_visitors_day_workers: VisitorsDayWorkers,
   finance_salary_processing: SalaryProcessing,
 
   // Finance & Accounts
@@ -309,21 +318,43 @@ const isCompactHrmsFormPage = page => (
   || page === 'admin_shifts'
 );
 
-function tenantLogoSource(url) {
-  if (!url) return '';
-  return /^https?:\/\//i.test(url) ? url : url.startsWith('/') ? url : `/${url}`;
-}
-
-function PageLoading({ user }) {
-  const companyName = user?.company || localStorage.getItem('tenant_company_name') || 'SVBK ERP';
-  const logoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
+function PageLoading() {
   return (
-    <div className="route-loading" role="status" aria-live="polite">
-      {logoUrl
-        ? <img className="tenant-loading-logo compact" src={logoUrl} alt={`${companyName} logo`} />
-        : <AnimatedBrandLogo size={64} loop />}
-      <strong>{companyName}</strong>
-      <span>Loading workspace…</span>
+    <div className="page-skeleton" role="status" aria-live="polite" aria-label="Loading...">
+      {/* Header bar skeleton */}
+      <div className="skel-header">
+        <div className="skel-block" style={{ width: 120, height: 18, borderRadius: 6 }} />
+        <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+          <div className="skel-circle" style={{ width: 32, height: 32 }} />
+          <div className="skel-circle" style={{ width: 32, height: 32 }} />
+          <div className="skel-circle" style={{ width: 32, height: 32 }} />
+        </div>
+      </div>
+      {/* Content skeleton */}
+      <div className="skel-body">
+        {/* KPI row */}
+        <div className="skel-row">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="skel-kpi-card">
+              <div className="skel-block" style={{ width: 40, height: 10, borderRadius: 4, marginBottom: 10 }} />
+              <div className="skel-block" style={{ width: 70, height: 22, borderRadius: 6, marginBottom: 6 }} />
+              <div className="skel-block" style={{ width: 50, height: 8, borderRadius: 4 }} />
+            </div>
+          ))}
+        </div>
+        {/* Table skeleton */}
+        <div className="skel-table-wrap">
+          <div className="skel-block" style={{ width: 160, height: 14, borderRadius: 5, marginBottom: 14 }} />
+          {[1,2,3,4,5,6].map(i => (
+            <div key={i} className="skel-table-row">
+              <div className="skel-block" style={{ flex: 2 }} />
+              <div className="skel-block" style={{ flex: 3 }} />
+              <div className="skel-block" style={{ flex: 2 }} />
+              <div className="skel-block" style={{ flex: 1 }} />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -343,6 +374,27 @@ export default function App() {
   const supportDrawerRef = useRef(null);
   const floatingSupportRef = useRef(null);
   const floatingSupportDragged = useRef(false);
+
+  useEffect(() => {
+    if (!sidebarOpen) return undefined;
+
+    const closeSidebar = event => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false);
+        return;
+      }
+      if (!(event.target instanceof Element)) return;
+      if (event.target.closest('#app-sidebar, .mobile-top-menu-btn, .hamburger-trigger-btn')) return;
+      setSidebarOpen(false);
+    };
+
+    document.addEventListener('pointerdown', closeSidebar);
+    document.addEventListener('keydown', closeSidebar);
+    return () => {
+      document.removeEventListener('pointerdown', closeSidebar);
+      document.removeEventListener('keydown', closeSidebar);
+    };
+  }, [sidebarOpen]);
 
   // ── Opaque token routing (/p/<token>) with legacy /page/<id> fallback ──────
   // Resolves the current URL to activePage + activeRoute without an API call.
@@ -398,6 +450,32 @@ export default function App() {
     const search = legacyRoute ? `?backend=${encodeURIComponent(legacyRoute)}` : '';
     navigate(`/page/${encodeURIComponent(idOrToken)}${search}`);
   }, [navigate]);
+
+  const dashboardPages = ['dashboard_processing', 'dashboard_inventory', 'dashboard_hr', 'dashboard_costing', 'dashboard_finance'];
+  const showBackNavigation = !dashboardPages.includes(activePage);
+  const isApplePlatform = /Mac|iPhone|iPad/i.test(navigator.platform || navigator.userAgent);
+  const backShortcutLabel = isApplePlatform ? '⌘ + [' : 'Alt + ←';
+  const navigateBack = useCallback(() => {
+    if (location.key && location.key !== 'default') {
+      navigate(-1);
+      return;
+    }
+    setActivePage('dashboard_processing');
+  }, [location.key, navigate, setActivePage]);
+
+  useEffect(() => {
+    if (!showBackNavigation) return undefined;
+    const handleBackShortcut = event => {
+      const isMacShortcut = event.metaKey && (event.key === '[' || event.key === 'ArrowLeft');
+      const isStandardShortcut = event.altKey && event.key === 'ArrowLeft';
+      if (isMacShortcut || isStandardShortcut) {
+        event.preventDefault();
+        navigateBack();
+      }
+    };
+    window.addEventListener('keydown', handleBackShortcut);
+    return () => window.removeEventListener('keydown', handleBackShortcut);
+  }, [navigateBack, showBackNavigation]);
 
   useEffect(() => {
     if (activePage !== 'admin_raise_ticket' && activePage !== 'admin_helpdesk') return;
@@ -799,27 +877,13 @@ export default function App() {
 
   // ── Loading screen ───────────────────────────────────────────────────────
   if (loadingSession) {
-    const loadingCompanyName = user?.company || localStorage.getItem('tenant_company_name') || 'SVBK ERP';
-    const cachedLogoUrl = tenantLogoSource(user?.company_logo_url || localStorage.getItem('tenant_company_logo'));
-    const isTenantLogo = Boolean(cachedLogoUrl);
-    const loadingLogoUrl = cachedLogoUrl || '/svbk-it-solutions-logo-3d-transparent.png';
-    return (
-      <div className="tenant-loading-screen" role="status" aria-live="polite">
-        <img
-          className={`tenant-loading-logo ${isTenantLogo ? 'is-tenant-logo' : 'is-brand-logo'}`}
-          src={loadingLogoUrl}
-          alt={`${loadingCompanyName} logo`}
-        />
-        <h2>{loadingCompanyName}</h2>
-        <p>Opening secure workspace…</p>
-      </div>
-    );
+    return <PageLoading />;
   }
 
   // ── Auth screen ──────────────────────────────────────────────────────────
   if (!user) {
     return (
-      <Suspense fallback={<PageLoading user={user} />}>
+      <Suspense fallback={<PageLoading />}>
         <AuthContainer handleLoginSuccess={handleLoginSuccess} />
       </Suspense>
     );
@@ -837,10 +901,11 @@ export default function App() {
     return (
       <div className="embedded-app-shell">
         <main className={`embedded-app-content${compactFormModule ? ` erp-compact-module-forms erp-${compactFormModule}-forms` : ''}`}>
-          <Suspense fallback={<PageLoading user={user} />}>
+          <Suspense fallback={<PageLoading />}>
             {renderActivePage()}
           </Suspense>
         </main>
+        <ApprovalAlertPopup />
         {noticePopup}
       </div>
     );
@@ -863,7 +928,7 @@ export default function App() {
         onMenuItemsReady={setAvailableMenuItems}
       />
 
-      <div className="app-container">
+      <div className={`app-container ${showBackNavigation ? 'has-back-navigation' : ''}`}>
         <Header
           theme={theme}
           toggleTheme={toggleTheme}
@@ -875,12 +940,21 @@ export default function App() {
           availableMenuItems={availableMenuItems}
         />
 
+        {showBackNavigation && (
+          <nav className="app-back-strip" aria-label="Page navigation">
+            <button type="button" onClick={navigateBack} title={`Back (${backShortcutLabel})`} aria-label="Go back">
+              <i className="fa-solid fa-arrow-left" aria-hidden="true"></i>
+            </button>
+          </nav>
+        )}
+
         <main className={mainContentClass}>
-          <Suspense fallback={<PageLoading user={user} />}>
+          <Suspense fallback={<PageLoading />}>
             {renderActivePage()}
           </Suspense>
         </main>
       </div>
+      <ApprovalAlertPopup />
       {supportDrawer && (
         <div className="react-support-drawer" aria-label="Support and helpdesk">
           <aside
@@ -909,7 +983,7 @@ export default function App() {
               </button>
             </div>
             <div className="react-support-drawer-content">
-              <Suspense fallback={<PageLoading user={user} />}>
+              <Suspense fallback={<PageLoading />}>
                 <SupportTicketDesk
                   activePage={supportDrawer.activePage}
                   activeRoute={supportDrawer.activeRoute}

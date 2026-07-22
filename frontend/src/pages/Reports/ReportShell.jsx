@@ -192,9 +192,14 @@ export function KPICard({ label, value, accent = 'var(--corp-rep)', onClick, tit
 /* ── Loader / Error ──────────────────────────────────────── */
 export function Loader() {
   return (
-    <div style={styles.center}>
-      <RefreshCw size={28} className="spin" style={{ color: 'var(--corp-rep)', marginBottom: 10 }} />
-      <span style={styles.subtitle}>Loading report data…</span>
+    <div className="report-data-skeleton" role="status" aria-live="polite" aria-label="Loading report data">
+      <div className="report-skeleton-kpis">
+        {[1, 2, 3, 4].map(item => <div className="report-skeleton-card" key={item}><span /><b /></div>)}
+      </div>
+      <div className="report-skeleton-table">
+        <div className="report-skeleton-heading" />
+        {[1, 2, 3, 4, 5, 6].map(row => <div className="report-skeleton-row" key={row}><span /><span /><span /><span /></div>)}
+      </div>
     </div>
   );
 }

@@ -9,7 +9,7 @@ const todayIso = () => {
   return `${year}-${month}-${day}`;
 };
 
-export default function ProcessingDashboard({ theme }) {
+export default function ProcessingDashboard({ theme, setActivePage }) {
   const [windowWidth, setWindowWidth] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -228,6 +228,32 @@ export default function ProcessingDashboard({ theme }) {
   };
 
   const openModal = (route, title) => {
+    const routePath = String(route || '').split('?')[0];
+    const pageMap = {
+      '/processing/gate_entry': 'gate_entry',
+      '/processing/raw_material_purchasing': 'raw_material_purchasing',
+      '/processing/de_heading': 'de_heading',
+      '/processing/grading': 'grading',
+      '/processing/peeling': 'peeling',
+      '/processing/soaking': 'soaking',
+      '/processing/production': 'production',
+      '/finance_accounts/production_cost_allocation/entry': 'finance_production_cost_allocation',
+      '/reports/gate_entry': 'report_gate_entry_report',
+      '/reports/raw_material_purchasing': 'report_rmp_report',
+      '/reports/de_heading': 'report_de_heading_report',
+      '/reports/grading_report': 'report_grading_report',
+      '/reports/peeling_report': 'report_peeling_report',
+      '/reports/soaking_report': 'report_soaking_report',
+      '/reports/production_report': 'report_production_report',
+      '/reports/re-process': 'report_reprocess_report',
+      '/reports/floor_balance_report': 'report_floor_balance_report',
+    };
+    const pageId = pageMap[routePath];
+    if (setActivePage && pageId) {
+      setActivePage(pageId, route);
+      return;
+    }
+
     setModalTitle(title);
     setModalLoading(true);
 
@@ -450,7 +476,7 @@ export default function ProcessingDashboard({ theme }) {
 
           {/* KPI Cards Grid */}
           <div className="kpi-grid">
-            <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
+            <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Gate Entry" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('gate_entry', '/processing/gate_entry'); }} onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
               <div className="kpi-header">
                 <h4>Gate Entries</h4>
                 <div className="kpi-icon"><i className="fa-solid fa-door-open"></i></div>
@@ -460,7 +486,7 @@ export default function ProcessingDashboard({ theme }) {
               </div>
             </div>
 
-          <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing')}>
+          <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open RM Purchasing" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing'); }} onClick={() => handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing')}>
             <div className="kpi-header">
               <h4>Raw Material</h4>
               <div className="kpi-icon"><i className="fa-solid fa-truck-ramp-box"></i></div>
@@ -472,7 +498,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('de_heading', '/processing/de_heading')}>
+          <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open De-Heading" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('de_heading', '/processing/de_heading'); }} onClick={() => handleKpiClick('de_heading', '/processing/de_heading')}>
             <div className="kpi-header">
               <h4>De-heading</h4>
               <div className="kpi-icon"><i className="fa-solid fa-scissors"></i></div>
@@ -484,7 +510,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('grading', '/processing/grading')}>
+          <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Grading" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('grading', '/processing/grading'); }} onClick={() => handleKpiClick('grading', '/processing/grading')}>
             <div className="kpi-header">
               <h4>Grading</h4>
               <div className="kpi-icon"><i className="fa-solid fa-filter"></i></div>
@@ -496,7 +522,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-green" onClick={() => handleKpiClick('peeling', '/processing/peeling')}>
+          <div className="kpi-card kpi-green" role="button" tabIndex="0" title="Open Peeling" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('peeling', '/processing/peeling'); }} onClick={() => handleKpiClick('peeling', '/processing/peeling')}>
             <div className="kpi-header">
               <h4>Peeling</h4>
               <div className="kpi-icon"><i className="fa-solid fa-hand-dots"></i></div>
@@ -508,7 +534,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-blue" onClick={() => handleKpiClick('soaking', '/processing/soaking')}>
+          <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Soaking" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('soaking', '/processing/soaking'); }} onClick={() => handleKpiClick('soaking', '/processing/soaking')}>
             <div className="kpi-header">
               <h4>Soaking</h4>
               <div className="kpi-icon"><i className="fa-solid fa-droplet"></i></div>
@@ -520,7 +546,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-green" onClick={() => handleKpiClick('production', '/processing/production')}>
+          <div className="kpi-card kpi-green" role="button" tabIndex="0" title="Open Production" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('production', '/processing/production'); }} onClick={() => handleKpiClick('production', '/processing/production')}>
             <div className="kpi-header">
               <h4>Production</h4>
               <div className="kpi-icon"><i className="fa-solid fa-industry"></i></div>
@@ -532,7 +558,7 @@ export default function ProcessingDashboard({ theme }) {
             </div>
           </div>
 
-          <div className="kpi-card kpi-gray" onClick={() => handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report')}>
+          <div className="kpi-card kpi-gray" role="button" tabIndex="0" title="Open Floor Balance Report" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report'); }} onClick={() => handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report')}>
             <div className="kpi-header">
               <h4>Floor Balance</h4>
               <div className="kpi-icon"><i className="fa-solid fa-snowflake"></i></div>

@@ -1,76 +1,78 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Snowflake, Plus, Ban, RefreshCw } from 'lucide-react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Check, MapPin, PackageOpen, Plus, Scale, Warehouse, X } from 'lucide-react';
+import './ColdStorageHolding.css';
+
+const emptyForm = (today = '') => ({
+  coldStorageName: '',
+  address: '',
+  rentStartDate: today,
+  storageRatePerMc: 0,
+  productionFor: '',
+  batchNumber: '',
+  cargoMovementType: 'IN',
+  species: '',
+  variety: '',
+  grade: '',
+  brand: '',
+  packingStyle: '',
+  glaze: '',
+  freezer: '',
+  poNumber: 'N/A',
+  purpose: 'Storing',
+  noOfMc: 0,
+  loose: 0,
+  quantity: 0,
+  remarks: '',
+});
 
 export default function ColdStorageHolding() {
   const initialFetchStarted = useRef(false);
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState('');
+  const [message, setMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [entries, setEntries] = useState([]);
-
-  // Masters
+  const [todayDate, setTodayDate] = useState('');
   const [storageMasters, setStorageMasters] = useState([]);
-  const [prodForList, setProdForList] = useState([]);
-  const [brands, setBrands] = useState([]);
-  const [species, setSpecies] = useState([]);
-  const [glazes, setGlazes] = useState([]);
-  const [varieties, setVarieties] = useState([]);
-  const [grades, setGrades] = useState([]);
-  const [freezers, setFreezers] = useState([]);
-  const [packingStyles, setPackingStyles] = useState([]);
-  const [pendingOrders, setPendingOrders] = useState([]);
+  const [productionForList, setProductionForList] = useState([]);
+  const [masters, setMasters] = useState({
+    brands: [], species: [], glazes: [], varieties: [], grades: [], freezers: [], packingStyles: [], pendingOrders: [],
+  });
   const [batches, setBatches] = useState([]);
+  const [form, setForm] = useState(emptyForm());
 
-  // Form Fields
-  const [coldStorageName, setColdStorageName] = useState('');
-  const [address, setAddress] = useState('');
-  const [batchNumber, setBatchNumber] = useState('');
-  const [cargoMovementType, setCargoMovementType] = useState('IN');
-  const [specie, setSpecie] = useState('');
-  const [variety, setVariety] = useState('');
-  const [grade, setGrade] = useState('');
-  const [brand, setBrand] = useState('');
-  const [packingStyle, setPackingStyle] = useState('');
-  const [noOfMc, setNoOfMc] = useState(0);
-  const [loose, setLoose] = useState(0);
-  const [quantity, setQuantity] = useState(0);
-  const [freezer, setFreezer] = useState('');
-  const [rentStartDate, setRentStartDate] = useState('');
-  const [storageRatePerMc, setStorageRatePerMc] = useState(0);
-  const [glaze, setGlaze] = useState('');
-  const [purpose, setPurpose] = useState('Storing');
-  const [productionFor, setProductionFor] = useState('');
-  const [poNumber, setPoNumber] = useState('N/A');
-  const [remarks, setRemarks] = useState('');
+  const updateForm = (field, value) => setForm(current => ({ ...current, [field]: value }));
 
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/cold_storage_holding?format=json', {
+      const response = await fetch('/inventory/cold_storage_holding?format=json', {
         credentials: 'include',
         headers: { Accept: 'application/json' },
       });
-      const contentType = res.headers.get('content-type') || '';
-      if (!res.ok) throw new Error(`Cold storage data request failed (HTTP ${res.status})`);
-      if (!contentType.includes('application/json')) {
-        throw new Error('Cold storage server returned HTML instead of data');
-      }
-      const d = await res.json();
-      setEntries(d.current_holdings || []);
-      setStorageMasters(d.storage_masters || []);
-      setProdForList(d.production_for_list || []);
-      setBrands(d.brands || []);
-      setSpecies(d.species || []);
-      setGlazes(d.glazes || []);
-      setVarieties(d.varieties || []);
-      setGrades(d.grades || []);
-      setFreezers(d.freezers || []);
-      setPackingStyles(d.packing_styles || []);
-      setPendingOrders(d.pending_orders || []);
-      if ((d.current_holdings || []).length === 0) setShowForm(true);
-    } catch (e) {
-      console.error(e);
-      setMsg(e.message || 'Unable to load cold storage data');
+      const contentType = response.headers.get('content-type') || '';
+      if (!response.ok) throw new Error(`Cold storage data request failed (HTTP ${response.status})`);
+      if (!contentType.includes('application/json')) throw new Error('Cold storage server returned HTML instead of data');
+
+      const data = await response.json();
+      const fetchedToday = data.today_date || new Date().toISOString().slice(0, 10);
+      setEntries(data.current_holdings || []);
+      setTodayDate(fetchedToday);
+      setStorageMasters(data.storage_masters || []);
+      setProductionForList(data.production_for_list || []);
+      setMasters({
+        brands: data.brands || [],
+        species: data.species || [],
+        glazes: data.glazes || [],
+        varieties: data.varieties || [],
+        grades: data.grades || [],
+        freezers: data.freezers || [],
+        packingStyles: data.packing_styles || [],
+        pendingOrders: data.pending_orders || [],
+      });
+      setForm(current => ({ ...current, rentStartDate: current.rentStartDate || fetchedToday }));
+    } catch (error) {
+      console.error(error);
+      setMessage(error.message || 'Unable to load cold storage data');
     } finally {
       setLoading(false);
     }
@@ -82,257 +84,271 @@ export default function ColdStorageHolding() {
     fetchData();
   }, []);
 
-  // Fetch batches when productionFor changes
   useEffect(() => {
-    if (!productionFor) { setBatches([]); return; }
-    fetch(`/get_storing_batches?production_for_val=${encodeURIComponent(productionFor)}&purpose_val=${encodeURIComponent(purpose)}`, { credentials: 'include' })
-      .then(r => r.json())
-      .then(d => setBatches(d.batches || []));
-  }, [productionFor, purpose]);
+    if (!message) return undefined;
+    const timeout = window.setTimeout(() => setMessage(''), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [message]);
 
-  // Sync address when coldStorageName changes
   useEffect(() => {
-    const matched = storageMasters.find(s => s.cold_storage_name === coldStorageName);
-    if (matched) {
-      setAddress(matched.address || '');
-      setStorageRatePerMc(matched.rate_per_mc || 0);
-    } else {
-      setAddress('');
-      setStorageRatePerMc(0);
+    if (!form.productionFor) {
+      setBatches([]);
+      return;
     }
-  }, [coldStorageName, storageMasters]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    const controller = new AbortController();
+    fetch(`/inventory/get_storing_batches?production_for_val=${encodeURIComponent(form.productionFor)}&purpose_val=${encodeURIComponent(form.purpose)}`, {
+      credentials: 'include',
+      signal: controller.signal,
+    })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Unable to load batches')))
+      .then(data => setBatches(data.batches || []))
+      .catch(error => {
+        if (error.name !== 'AbortError') console.error(error);
+      });
+    return () => controller.abort();
+  }, [form.productionFor, form.purpose]);
+
+  useEffect(() => {
+    const packing = masters.packingStyles.find(item => item.packing_style === form.packingStyle);
+    if (!packing) {
+      updateForm('quantity', 0);
+      return;
+    }
+    const total = (Number(form.noOfMc) * Number(packing.mc_weight || 0))
+      + (Number(form.loose) * Number(packing.slab_weight || 0));
+    updateForm('quantity', Number(total.toFixed(2)));
+  }, [form.noOfMc, form.loose, form.packingStyle, masters.packingStyles]);
+
+  const selectStorage = value => {
+    const storage = storageMasters.find(item => item.cold_storage_name === value);
+    setForm(current => ({
+      ...current,
+      coldStorageName: value,
+      address: storage?.address || '',
+      storageRatePerMc: Number(storage?.rate_per_mc || 0),
+    }));
+  };
+
+  const handleSubmit = async event => {
+    event.preventDefault();
     setLoading(true);
-    const fd = new URLSearchParams();
-    fd.append('cold_storage_name', coldStorageName);
-    fd.append('address', address);
-    fd.append('batch_number', batchNumber);
-    fd.append('cargo_movement_type', cargoMovementType);
-    fd.append('species', specie);
-    fd.append('variety', variety);
-    fd.append('grade', grade);
-    fd.append('brand', brand);
-    fd.append('packing_style', packingStyle);
-    fd.append('no_of_mc', noOfMc);
-    fd.append('loose', loose);
-    fd.append('quantity', quantity);
-    fd.append('freezer', freezer);
-    fd.append('rent_start_date', rentStartDate);
-    fd.append('storage_rate_per_mc', storageRatePerMc);
-    fd.append('glaze', glaze);
-    fd.append('purpose', purpose);
-    fd.append('production_for', productionFor);
-    fd.append('po_number', poNumber);
-    fd.append('remarks', remarks);
+    setMessage('');
+    const body = new URLSearchParams({
+      cold_storage_name: form.coldStorageName,
+      address: form.address,
+      batch_number: form.batchNumber,
+      cargo_movement_type: form.cargoMovementType,
+      species: form.species,
+      variety: form.variety,
+      grade: form.grade,
+      brand: form.brand,
+      packing_style: form.packingStyle,
+      no_of_mc: String(form.noOfMc),
+      loose: String(form.loose),
+      quantity: String(form.quantity),
+      freezer: form.freezer,
+      rent_start_date: form.rentStartDate,
+      storage_rate_per_mc: String(form.storageRatePerMc),
+      glaze: form.glaze,
+      purpose: form.purpose,
+      production_for: form.productionFor,
+      po_number: form.poNumber || 'N/A',
+      remarks: form.remarks,
+    });
 
     try {
-      const res = await fetch('/cold_storage_holding/save', {
+      const response = await fetch('/inventory/cold_storage_holding/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
         credentials: 'include',
-        body: fd,
+        body,
       });
-      if (res.ok) {
-        setMsg('✅ Cold Storage Holding saved successfully!');
-        setShowForm(false);
-        await fetchData();
-      } else {
-        const errData = await res.json();
-        setMsg(`❌ Error: ${errData.error || 'Failed to save holding'}`);
-      }
-    } catch (err) {
-      setMsg('❌ Connection error');
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'Failed to save holding');
+
+      setMessage('Holding entry saved successfully');
+      setShowForm(false);
+      setForm(emptyForm(todayDate));
+      await fetchData();
+    } catch (error) {
+      setMessage(error.message || 'Connection error');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to cancel this holding entry?')) return;
-    setLoading(true);
-    try {
-      await fetch(`/cold_storage_holding/delete/${id}`, {
-        method: 'POST',
-        credentials: 'include',
-        redirect: 'manual',
-      });
-      setMsg('Entry cancelled');
-      await fetchData();
-    } catch (err) {
-      setMsg('❌ Error deleting holding');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const productionForOptions = useMemo(
+    () => [...new Set(productionForList.map(item => item.production_for).filter(Boolean))],
+    [productionForList],
+  );
+  const todayEntries = useMemo(
+    () => entries.filter(entry => String(entry.in_date || '').slice(0, 10) === todayDate),
+    [entries, todayDate],
+  );
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-        <h2 style={{ color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-          <Snowflake size={22} /> Cold Storage Holding Entry
-        </h2>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn btn-clear" onClick={fetchData} disabled={loading}>
-            <RefreshCw size={13} className={loading ? 'spin-animation' : ''} /> Refresh
-          </button>
-          {!showForm && (
-            <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={13} /> Add
-            </button>
-          )}
+    <div className="cold-holding-page">
+      <header className="cold-holding-header">
+        <div>
+          <h2>Cold Storage Holding</h2>
+          <p><Warehouse size={13} /> External Inventory &amp; Rent Management</p>
         </div>
-      </div>
+        <button
+          type="button"
+          className={`btn btn-primary cold-holding-add${showForm ? ' is-open' : ''}`}
+          onClick={() => setShowForm(current => !current)}
+        >
+          {showForm ? <X size={14} /> : <><Plus size={14} /> Add</>}
+        </button>
+      </header>
 
-      {msg && (
-        <div style={{ padding: '10px 16px', borderRadius: 8, background: msg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: msg.startsWith('✅') ? '#10b981' : '#ef4444', fontSize: 13, fontWeight: 700 }}>
-          {msg}
-          <button style={{ float: 'right', background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => setMsg('')}>✕</button>
+      {message && (
+        <div className="cold-holding-alert" role="status">
+          {message}
+          <button type="button" onClick={() => setMessage('')} aria-label="Dismiss message"><X size={13} /></button>
         </div>
       )}
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="card" style={{ flexShrink: 0 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 14, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            NEW COLD STORAGE TRANSACTION
-          </h3>
-          <div className="form-grid">
-            <div className="form-group">
-              <label>Cold Storage Facility *</label>
-              <select className="form-control" value={coldStorageName} onChange={e => setColdStorageName(e.target.value)} required>
-                <option value="">— Select Storage —</option>
-                {storageMasters.map(s => <option key={s.id} value={s.cold_storage_name}>{s.cold_storage_name}</option>)}
+        <form className="cold-holding-form" onSubmit={handleSubmit} autoComplete="off">
+          <FormSection icon={<MapPin size={14} />} title="Storage Facility Details">
+            <Field label="Facility Name">
+              <select value={form.coldStorageName} onChange={event => selectStorage(event.target.value)} required>
+                <option value="">Select Cold Storage</option>
+                {storageMasters.map(storage => <option key={storage.id} value={storage.cold_storage_name}>{storage.cold_storage_name}</option>)}
               </select>
-            </div>
-            <div className="form-group">
-              <label>Address</label>
-              <input type="text" className="form-control" value={address} readOnly style={{ background: 'var(--input-bg-disabled)' }} />
-            </div>
-            <div className="form-group">
-              <label>Production For (Client) *</label>
-              <select className="form-control" value={productionFor} onChange={e => setProductionFor(e.target.value)} required>
-                <option value="">— Select Client —</option>
-                {prodForList.map(p => <option key={p.id} value={p.production_for}>{p.production_for}</option>)}
+            </Field>
+            <Field label="Full Address" wide>
+              <input list="holding-addresses" value={form.address} onChange={event => updateForm('address', event.target.value)} placeholder="Select/Type Address..." required />
+              <datalist id="holding-addresses">
+                {storageMasters
+                  .filter(storage => storage.cold_storage_name === form.coldStorageName && storage.address)
+                  .map(storage => <option key={`${storage.id}-${storage.address}`} value={storage.address} />)}
+              </datalist>
+            </Field>
+            <Field label="Rent Start Date">
+              <input type="date" value={form.rentStartDate} onChange={event => updateForm('rentStartDate', event.target.value)} />
+            </Field>
+            <Field label="Holding Cost (Per MC)">
+              <input type="number" step="any" value={form.storageRatePerMc} readOnly />
+            </Field>
+          </FormSection>
+
+          <FormSection icon={<PackageOpen size={14} />} title="Stock Identification">
+            <Field label="Production For">
+              <select value={form.productionFor} onChange={event => updateForm('productionFor', event.target.value)} required>
+                <option value="">Select Client</option>
+                {productionForOptions.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
-            </div>
-            <div className="form-group">
-              <label>Purpose</label>
-              <select className="form-control" value={purpose} onChange={e => setPurpose(e.target.value)}>
+            </Field>
+            <DatalistField label="Batch Number" value={form.batchNumber} onChange={value => updateForm('batchNumber', value)} options={batches} listId="holding-batches" placeholder="Select/Enter Batch" required />
+            <Field label="Movement Type">
+              <select value={form.cargoMovementType} onChange={event => updateForm('cargoMovementType', event.target.value)} required>
+                <option value="IN">📥 STOCK IN</option>
+                <option value="OUT">📤 STOCK OUT</option>
+              </select>
+            </Field>
+            <DatalistField label="Species" value={form.species} onChange={value => updateForm('species', value)} options={masters.species} listId="holding-species" placeholder="Select/Type Species" required />
+            <DatalistField label="Variety" value={form.variety} onChange={value => updateForm('variety', value)} options={masters.varieties} listId="holding-varieties" placeholder="Select/Type Variety" required />
+            <DatalistField label="Grade" value={form.grade} onChange={value => updateForm('grade', value)} options={masters.grades} listId="holding-grades" placeholder="Select/Type Grade" required />
+            <DatalistField label="Brand" value={form.brand} onChange={value => updateForm('brand', value)} options={masters.brands} listId="holding-brands" placeholder="Select/Type Brand" required />
+            <DatalistField label="Packing Style" value={form.packingStyle} onChange={value => updateForm('packingStyle', value)} options={masters.packingStyles.map(item => item.packing_style)} listId="holding-packing" placeholder="Select Style" required />
+            <DatalistField label="Glaze" value={form.glaze} onChange={value => updateForm('glaze', value)} options={masters.glazes} listId="holding-glazes" placeholder="Select/Type Glaze" />
+            <Field label="Freezer">
+              <select value={form.freezer} onChange={event => updateForm('freezer', event.target.value)}>
+                <option value="">N/A</option>
+                {masters.freezers.map(option => <option key={option} value={option}>{option}</option>)}
+              </select>
+            </Field>
+            <DatalistField label="PO Number" value={form.poNumber} onChange={value => updateForm('poNumber', value)} options={['N/A', ...masters.pendingOrders]} listId="holding-pos" placeholder="Default N/A" />
+            <Field label="Purpose">
+              <select value={form.purpose} onChange={event => updateForm('purpose', event.target.value)}>
                 <option value="Storing">Storing</option>
+                <option value="Sales">Sales</option>
                 <option value="Reprocess">Reprocess</option>
               </select>
-            </div>
-            <div className="form-group">
-              <label>Batch Number *</label>
-              <select className="form-control" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} required>
-                <option value="">— Select Batch —</option>
-                {batches.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Movement Type *</label>
-              <select className="form-control" value={cargoMovementType} onChange={e => setCargoMovementType(e.target.value)} required>
-                <option value="IN">Stock IN</option>
-                <option value="OUT">Stock OUT (Dispatch)</option>
-              </select>
-            </div>
-            <Sel label="Species *" value={specie} onChange={setSpecie} options={species} required />
-            <Sel label="Variety *" value={variety} onChange={setVariety} options={varieties} required />
-            <Sel label="Grade *" value={grade} onChange={setGrade} options={grades} required />
-            <Sel label="Brand *" value={brand} onChange={setBrand} options={brands} required />
-            <Sel label="Packing Style *" value={packingStyle} onChange={setPackingStyle} options={packingStyles.map(p => p.packing_style)} required />
-            <Num label="No of MC" value={noOfMc} onChange={setNoOfMc} />
-            <Num label="Loose Slabs" value={loose} onChange={setLoose} />
-            <Num label="Quantity (Kg) *" value={quantity} onChange={setQuantity} required />
-            <Sel label="Freezer" value={freezer} onChange={setFreezer} options={freezers} />
-            <div className="form-group">
-              <label>Rent Start Date</label>
-              <input type="date" className="form-control" value={rentStartDate} onChange={e => setRentStartDate(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Rate / MC (₹)</label>
-              <input type="number" step="0.01" className="form-control" value={storageRatePerMc} onChange={e => setStorageRatePerMc(parseFloat(e.target.value) || 0)} />
-            </div>
-            <Sel label="Glaze" value={glaze} onChange={setGlaze} options={glazes} />
-            <Sel label="PO Number" value={poNumber} onChange={setPoNumber} options={pendingOrders} />
-            <div className="form-group" style={{ gridColumn: 'span 2' }}>
-              <label>Remarks</label>
-              <input type="text" className="form-control" value={remarks} onChange={e => setRemarks(e.target.value)} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-            <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
-            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+            </Field>
+          </FormSection>
+
+          <FormSection icon={<Scale size={14} />} title="Inventory Counts">
+            <Field label="No of MC">
+              <input type="number" min="0" value={form.noOfMc} onChange={event => updateForm('noOfMc', Number(event.target.value) || 0)} required />
+            </Field>
+            <Field label="Loose (Slabs)">
+              <input type="number" min="0" value={form.loose} onChange={event => updateForm('loose', Number(event.target.value) || 0)} />
+            </Field>
+            <Field label="Total Quantity (KG)" accent>
+              <input type="number" step="any" value={form.quantity.toFixed(2)} readOnly required />
+            </Field>
+            <Field label="Remarks" wide>
+              <input value={form.remarks} onChange={event => updateForm('remarks', event.target.value)} placeholder="Enter remarks (if any)" />
+            </Field>
+          </FormSection>
+
+          <div className="cold-holding-actions">
+            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}><X size={14} /> Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={loading}><Check size={14} /> {loading ? 'Saving...' : 'Save'}</button>
           </div>
         </form>
       )}
 
-      {/* Table */}
-      <div style={{ flexShrink: 0 }}>
-        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Recent Storing logs & holdings
-        </h3>
-        <div className="table-responsive">
-          <table className="bknr-table" style={{ minWidth: 1400 }}>
-            <thead><tr>
-              <th>ID</th><th>Cold Storage</th><th>Batch</th><th>Move</th><th>Species</th><th>Variety</th>
-              <th>Grade</th><th>Brand</th><th>Pack Style</th><th>MC</th><th>Loose</th>
-              <th>Qty (Kg)</th><th>Rate/MC</th><th>Rent Start</th><th>Status</th><th>Action</th>
-            </tr></thead>
+      {entries.length > 0 && (
+        <div className="table-responsive cold-holding-table-wrap">
+          <table className="bknr-table cold-holding-table">
+            <thead>
+              <tr>
+                <th>Status</th><th>Facility</th><th>Production For</th><th>Batch #</th><th>Movement</th>
+                <th>Species</th><th>Variety</th><th>Grade</th><th>MC</th><th>Loose</th><th>Total Qty</th><th>In Date</th>
+              </tr>
+            </thead>
             <tbody>
-              {entries.map(r => (
-                <tr key={r.id}>
-                  <td className="text-center">{r.id}</td>
-                  <td>{r.cold_storage_name}</td>
-                  <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{r.batch_number}</td>
-                  <td className="text-center">
-                    <span style={{ background: r.cargo_movement_type === 'IN' ? '#10b981' : '#ef4444', color: '#fff', borderRadius: 4, padding: '2px 6px', fontSize: 10, fontWeight: 800 }}>
-                      {r.cargo_movement_type}
-                    </span>
-                  </td>
-                  <td>{r.species}</td><td>{r.variety}</td><td>{r.grade}</td><td>{r.brand}</td>
-                  <td>{r.packing_style}</td>
-                  <td className="text-right">{r.no_of_mc}</td>
-                  <td className="text-right">{r.loose}</td>
-                  <td className="text-right">{Number(r.quantity || 0).toFixed(2)}</td>
-                  <td className="text-right">₹{Number(r.storage_rate_per_mc || 0).toFixed(2)}</td>
-                  <td className="text-center">{r.rent_start_date ? String(r.rent_start_date).substring(0, 10) : ''}</td>
-                  <td className="text-center">{r.status}</td>
-                  <td className="text-center">
-                    <button style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }} title="Cancel entry" aria-label="Cancel holding entry"
-                      onClick={() => handleDelete(r.id)}>
-                      <Ban size={13} />
-                    </button>
-                  </td>
+              {todayEntries.map(entry => (
+                <tr key={entry.id}>
+                  <td><span className="cold-holding-badge status">{entry.status}</span></td>
+                  <td className="strong-cell">{entry.cold_storage_name}</td>
+                  <td className="strong-cell muted-cell">{entry.production_for}</td>
+                  <td className="batch-cell">{entry.batch_number}</td>
+                  <td><span className={`cold-holding-badge ${entry.cargo_movement_type === 'IN' ? 'movement-in' : 'movement-out'}`}>{entry.cargo_movement_type}</span></td>
+                  <td>{entry.species}</td><td>{entry.variety}</td><td>{entry.grade}</td>
+                  <td className="strong-cell">{entry.no_of_mc}</td><td>{entry.loose}</td>
+                  <td className="strong-cell">{Number(entry.quantity || 0).toFixed(2)}</td>
+                  <td className="muted-cell">{String(entry.in_date || '').slice(0, 10)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function Sel({ label, value, onChange, options = [], required = false }) {
+function FormSection({ icon, title, children }) {
   return (
-    <div className="form-group">
-      <label>{label}</label>
-      <select className="form-control" value={value} onChange={e => onChange(e.target.value)} required={required}>
-        <option value="">— Select —</option>
-        {options.map(o => <option key={o} value={o}>{o}</option>)}
-      </select>
-    </div>
+    <section className="cold-holding-section">
+      <h3>{icon}{title}</h3>
+      <div className="cold-holding-grid">{children}</div>
+    </section>
   );
 }
 
-function Num({ label, value, onChange, required = false }) {
+function Field({ label, children, wide = false, accent = false }) {
   return (
-    <div className="form-group">
-      <label>{label}</label>
-      <input type="number" className="form-control" value={value} min={0}
-        onChange={e => onChange(parseFloat(e.target.value) || 0)} required={required} />
-    </div>
+    <label className={`cold-holding-field${wide ? ' is-wide' : ''}${accent ? ' is-accent' : ''}`}>
+      <span>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function DatalistField({ label, value, onChange, options, listId, placeholder, required = false }) {
+  return (
+    <Field label={label}>
+      <input list={listId} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} required={required} />
+      <datalist id={listId}>
+        {[...new Set(options.filter(Boolean))].map(option => <option key={option} value={option} />)}
+      </datalist>
+    </Field>
   );
 }

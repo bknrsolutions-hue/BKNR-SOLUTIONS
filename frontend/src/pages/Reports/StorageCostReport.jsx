@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ReportHeader, Loader, ErrorBox, EmptyRow, useReport, fmt,
+  Loader, ErrorBox, EmptyRow, useReport, fmt,
 } from './ReportShell';
 import './StorageCostReport.css';
 
@@ -18,45 +18,85 @@ const displayDate = value => {
   return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('en-GB');
 };
 
+const openPrintView = (element, title, portrait = false) => {
+  const printWindow = window.open('', '_blank', 'width=1200,height=900');
+  if (!printWindow) {
+    window.alert('Print window blocked. Please allow popups for this site and try again.');
+    return;
+  }
+  if (!element) {
+    printWindow.close();
+    window.alert('Printable report data is not available.');
+    return;
+  }
+
+  const pageStyles = Array.from(document.querySelectorAll('link[rel="stylesheet"], style'))
+    .map(node => node.outerHTML)
+    .join('\n');
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>${pageStyles}<style>
+    @page { size: A4 ${portrait ? 'portrait' : 'landscape'}; margin: ${portrait ? '10mm 8mm' : '7mm'}; }
+    html, body { display:block !important; width:auto !important; height:auto !important; margin:0 !important; padding:0 !important; overflow:visible !important; background:#fff !important; color:#000 !important; }
+    .storage-tab-panel, .storage-monthly-invoice { display:block !important; width:100% !important; max-width:none !important; height:auto !important; margin:0 !important; padding:0 !important; overflow:visible !important; border:0 !important; box-shadow:none !important; background:#fff !important; color:#000 !important; }
+    .storage-table-wrap, .storage-invoice-table-wrap { display:block !important; width:100% !important; height:auto !important; max-height:none !important; overflow:visible !important; }
+    .storage-bill-actions, .storage-bill-warning { display:none !important; }
+    table { width:100% !important; min-width:100% !important; table-layout:auto !important; border-collapse:collapse !important; color:#000 !important; }
+    thead { display:table-header-group !important; }
+    th, td { position:static !important; height:auto !important; padding:3px !important; border:1px solid #94a3b8 !important; background:#fff !important; color:#000 !important; font-size:${portrait ? '7.2px' : '6.3px'} !important; white-space:normal !important; }
+    th { background:#f1f5f9 !important; font-weight:800 !important; }
+    tr { break-inside:avoid; page-break-inside:avoid; }
+    .storage-invoice-title, .storage-invoice-title * { color:#003366 !important; }
+  </style></head><body>${element.outerHTML}</body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.setTimeout(() => printWindow.print(), 500);
+};
+
 export default function StorageCostReport({ activeRoute }) {
   const [activeTab, setActiveTab] = useState('summary');
   const [prodFor, setProdFor] = useState('');
   const [freezer, setFreezer] = useState('');
   const [selectedMonth, setSelectedMonth] = useState('');
+  const [appliedFilters, setAppliedFilters] = useState({ prodFor: '', freezer: '', selectedMonth: '' });
   const monthlyInvoiceRef = useRef(null);
 
   const params = {
-    ...(prodFor ? { production_for: prodFor } : {}),
-    ...(freezer ? { freezer } : {}),
-    ...(selectedMonth ? { selected_month: selectedMonth } : {}),
+    ...(appliedFilters.prodFor ? { production_for: appliedFilters.prodFor } : {}),
+    ...(appliedFilters.freezer ? { freezer: appliedFilters.freezer } : {}),
+    ...(appliedFilters.selectedMonth ? { selected_month: appliedFilters.selectedMonth } : {}),
   };
   const { data, loading, error, reload } = useReport({
     url: activeRoute || '/reports/storage_cost_report',
     params,
-    deps: [prodFor, freezer, selectedMonth],
+    deps: [appliedFilters.prodFor, appliedFilters.freezer, appliedFilters.selectedMonth],
   });
 
+  useEffect(() => {
+    if (!selectedMonth && data?.selected_month) setSelectedMonth(data.selected_month);
+  }, [data?.selected_month, selectedMonth]);
+
   const reportRows = useMemo(() => data?.report_data || [], [data?.report_data]);
-  const originalRows = useMemo(() => reportRows.flatMap(row =>
-    (row.this_month_ledger || []).map(movement => ({
+  const originalRows = useMemo(() => {
+    if (Array.isArray(data?.detailed_entries)) return data.detailed_entries;
+    return reportRows.flatMap(row => (row.this_month_ledger || []).map(movement => ({
       ...movement,
-      batch_number: row.batch_number,
+      batch_number: movement.batch_number ?? row.batch_number,
       production_at: movement.production_at ?? row.production_at,
       production_for: movement.production_for ?? row.production_for,
-    }))
-  ), [reportRows]);
+    })));
+  }, [data?.detailed_entries, reportRows]);
   const availableRows = data?.available_stock_items || [];
   const dispatchRows = data?.dispatches_this_month || [];
 
   const totalInQty = Number(data?.total_qty_sum ?? 0);
   const totalHolding = Number(data?.total_holding_sum ?? sum(reportRows, 'holding_cost'));
   const totalProduction = Number(data?.total_payable_sum ?? sum(reportRows, 'payable_amount'));
-  const selectedClient = data?.selected_production_for || prodFor;
+  const selectedClient = data?.selected_production_for || appliedFilters.prodFor;
   const selectedLocation = data?.selected_location || 'ALL LOCATIONS';
   const billingDate = data?.billing_start_date ? new Date(`${data.billing_start_date}T00:00:00`) : new Date();
   const billingLabel = billingDate.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
   const billDate = billingDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
-  const billMonthCode = selectedMonth || data?.selected_month || billingDate.toISOString().slice(0, 7);
+  const billMonthCode = appliedFilters.selectedMonth || data?.selected_month || billingDate.toISOString().slice(0, 7);
   const billNo = selectedClient
     ? `SP-${String(selectedClient).replace(/[^a-z0-9]/gi, '').slice(0, 3).toUpperCase()}-${billMonthCode.replace('-', '')}`
     : '—';
@@ -66,6 +106,14 @@ export default function StorageCostReport({ activeRoute }) {
     ['original', '2. DETAILED ORIGINAL ENTRIES'],
     ['bill', '🧾 3. MONTHLY BILL'],
   ];
+
+  const generateReport = event => {
+    event.preventDefault();
+    const nextFilters = { prodFor, freezer, selectedMonth };
+    const unchanged = Object.keys(nextFilters).every(key => nextFilters[key] === appliedFilters[key]);
+    if (unchanged) reload();
+    else setAppliedFilters(nextFilters);
+  };
 
   const ProductCells = ({ row, details = row.details || row }) => <>
     <td className="storage-batch">{row.batch_number || '—'}</td>
@@ -88,28 +136,27 @@ export default function StorageCostReport({ activeRoute }) {
 
   const printMonthlyBill = () => {
     if (!selectedClient || !monthlyInvoiceRef.current) return;
-    document.body.classList.add('storage-monthly-print-mode');
-    const cleanup = () => document.body.classList.remove('storage-monthly-print-mode');
-    window.addEventListener('afterprint', cleanup, { once: true });
-    window.print();
-    window.setTimeout(cleanup, 1500);
+    openPrintView(monthlyInvoiceRef.current, `Monthly Bill - ${selectedClient}`, true);
+  };
+
+  const printCurrentView = () => {
+    const activePanel = document.querySelector('.storage-cost-report .storage-tab-panel.active');
+    openPrintView(activePanel, 'Advanced Stock & Storage Report', activeTab === 'bill');
   };
 
   return <div className="report-viewer-card storage-cost-report">
-    <ReportHeader
-      title="Advanced Stock & Storage Report"
-      loading={loading}
-      onReload={reload}
-      onPrint={() => window.print()}
-    />
+    <header className="storage-report-header">
+      <h2>Advanced Stock &amp; Storage Report</h2>
+      <button type="button" onClick={printCurrentView} disabled={loading}>Download PDF / Print</button>
+    </header>
 
     <div className="storage-control-panel">
-      <div className="storage-filter-fields">
+      <form className="storage-filter-fields" onSubmit={generateReport}>
         <label><span>Production For</span><select value={prodFor} onChange={event => setProdFor(event.target.value)}><option value="">-- All Clients --</option>{(data?.production_for_list || []).map(value => <option key={value} value={value}>{value}</option>)}</select></label>
         <label><span>Billing Month</span><input type="month" value={selectedMonth} onChange={event => setSelectedMonth(event.target.value)} /></label>
         <label><span>Freezer</span><select value={freezer} onChange={event => setFreezer(event.target.value)}><option value="">-- All --</option>{(data?.freezers || []).map(value => <option key={value} value={value}>{value}</option>)}</select></label>
-        <button type="button" className="storage-generate-btn" onClick={reload}>Generate</button>
-      </div>
+        <button type="submit" className="storage-generate-btn" disabled={loading}>Generate</button>
+      </form>
       <div className="storage-inline-kpis">
         <div className="storage-inline-kpi blue"><span>IN Qty (KG)</span><strong>{fmt.number(totalInQty)}</strong></div>
         <div className="storage-inline-kpi amber"><span>Holding Cost</span><strong>{fmt.currency(totalHolding)}</strong></div>

@@ -92,6 +92,177 @@ class DailyAttendance(Base, metacolumns):
     status = Column(String(20), default="OPEN")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+
+class ContractLabour(Base, metacolumns):
+    __tablename__ = "contract_labour"
+    __table_args__ = (
+        UniqueConstraint("company_id", "labour_id", name="uq_company_contract_labour_id"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    labour_id = Column(String(50), nullable=False, index=True)
+    labour_name = Column(String(120), nullable=False)
+    contractor_name = Column(String(150), nullable=True)
+    mobile = Column(String(20), nullable=True)
+    aadhar_number = Column(String(20), nullable=True)
+    gender = Column(String(20), nullable=True)
+    joining_date = Column(Date, nullable=False)
+    department = Column(String(150), nullable=True)
+    production_at = Column(String(255), nullable=True, index=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class ContractLabourAttendance(Base, metacolumns):
+    __tablename__ = "contract_labour_attendance"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "labour_id", "attendance_date",
+            name="uq_company_contract_labour_attendance_day"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    labour_id = Column(String(50), nullable=False, index=True)
+    labour_name = Column(String(120), nullable=False)
+    contractor_name = Column(String(150), nullable=True)
+    production_at = Column(String(255), nullable=True, index=True)
+    attendance_date = Column(Date, nullable=False, index=True)
+    in_time = Column(DateTime, nullable=False)
+    out_time = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False, default="INSIDE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class DailyTemporaryWorker(Base, metacolumns):
+    __tablename__ = "daily_temporary_workers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    worker_name = Column(String(120), nullable=False)
+    worker_type = Column(String(30), nullable=False, default="DAILY LABOUR")
+    purpose = Column(String(255), nullable=False)
+    work_date = Column(Date, nullable=False)
+    in_time = Column(Time, nullable=False)
+    out_time = Column(Time, nullable=True)
+    amount = Column(Float, nullable=False, default=0.0)
+    day_charge = Column(Float, nullable=False, default=0.0)
+    day_charge_locked = Column(Boolean, nullable=False, default=False)
+    approved_by_name = Column(String(120), nullable=True)
+    approved_by_email = Column(String(255), nullable=True, index=True)
+    approval_status = Column(String(20), nullable=False, default="PENDING")
+    approval_note = Column(Text, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    production_at = Column(String(255), nullable=True, index=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class VisitorEntry(Base, metacolumns):
+    __tablename__ = "visitor_entries"
+
+    id = Column(Integer, primary_key=True, index=True)
+    visitor_name = Column(String(120), nullable=False)
+    mobile = Column(String(20), nullable=True)
+    organization = Column(String(150), nullable=True)
+    purpose = Column(String(255), nullable=False)
+    person_to_meet = Column(String(120), nullable=True)
+    person_to_meet_email = Column(String(255), nullable=True, index=True)
+    approval_status = Column(String(20), nullable=False, default="PENDING")
+    approval_note = Column(Text, nullable=True)
+    approved_by = Column(String(255), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    visit_date = Column(Date, nullable=False, index=True)
+    in_time = Column(Time, nullable=False)
+    out_time = Column(Time, nullable=True)
+    production_at = Column(String(255), nullable=True, index=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="INSIDE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class EntryApprovalRequest(Base):
+    __tablename__ = "entry_approval_requests"
+    __table_args__ = (
+        UniqueConstraint("company_id", "entry_type", "entry_id", name="uq_entry_approval_request"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), nullable=False, index=True)
+    entry_type = Column(String(30), nullable=False, index=True)
+    entry_id = Column(Integer, nullable=False, index=True)
+    title = Column(String(180), nullable=False)
+    message = Column(Text, nullable=False)
+    requested_by = Column(String(255), nullable=False)
+    assigned_to_name = Column(String(120), nullable=False)
+    assigned_to_email = Column(String(255), nullable=False, index=True)
+    status = Column(String(20), nullable=False, default="PENDING", index=True)
+    decision_note = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    decided_at = Column(DateTime, nullable=True)
+
+
+class KgBasisCompanyLabour(Base, metacolumns):
+    __tablename__ = "kg_basis_company_labour"
+
+    id = Column(Integer, primary_key=True, index=True)
+    labour_name = Column(String(120), nullable=False)
+    work_date = Column(Date, nullable=False)
+    production_at = Column(String(255), nullable=True, index=True)
+    species = Column(String(255), nullable=True)
+    variety_name = Column(String(255), nullable=False)
+    work_type = Column(String(100), nullable=False)
+    count_grade = Column(String(50), nullable=True)
+    quantity_kg = Column(Float, nullable=False, default=0.0)
+    rate_per_kg = Column(Float, nullable=False, default=0.0)
+    amount = Column(Float, nullable=False, default=0.0)
+    in_time = Column(Time, nullable=True)
+    out_time = Column(Time, nullable=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class KgBasisWorker(Base, metacolumns):
+    __tablename__ = "kg_basis_workers"
+    __table_args__ = (
+        UniqueConstraint("company_id", "worker_id", name="uq_company_kg_basis_worker_id"),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    worker_id = Column(String(50), nullable=False, index=True)
+    worker_name = Column(String(120), nullable=False)
+    department = Column(String(150), nullable=True)
+    mobile = Column(String(20), nullable=True)
+    aadhar_number = Column(String(20), nullable=True)
+    gender = Column(String(20), nullable=True)
+    joining_date = Column(Date, nullable=False)
+    production_at = Column(String(255), nullable=True, index=True)
+    remarks = Column(Text, nullable=True)
+    status = Column(String(20), nullable=False, default="ACTIVE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class KgBasisWorkerAttendance(Base, metacolumns):
+    __tablename__ = "kg_basis_worker_attendance"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "worker_id", "attendance_date",
+            name="uq_company_kg_worker_attendance_day"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True, index=True)
+    worker_id = Column(String(50), nullable=False, index=True)
+    worker_name = Column(String(120), nullable=False)
+    production_at = Column(String(255), nullable=True, index=True)
+    attendance_date = Column(Date, nullable=False, index=True)
+    in_time = Column(DateTime, nullable=False)
+    out_time = Column(DateTime, nullable=True)
+    status = Column(String(20), nullable=False, default="INSIDE")
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class EmployeeIncrement(Base, metacolumns):
     __tablename__ = "employee_increment"
     id = Column(Integer, primary_key=True, index=True)

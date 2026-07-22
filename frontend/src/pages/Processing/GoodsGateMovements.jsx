@@ -33,6 +33,14 @@ const emptyItem = () => ({
   remarks: '',
 });
 
+const localTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
 async function readJson(response) {
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(payload.message || payload.error || `Request failed (${response.status})`);
@@ -66,7 +74,8 @@ export default function GoodsGateMovements() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams();
+      const today = localTodayIso();
+      const params = new URLSearchParams({ from_date: today, to_date: today });
       if (filters.movement_type) params.set('movement_type', filters.movement_type);
       if (filters.category) params.set('category', filters.category);
       if (filters.search.trim()) params.set('search', filters.search.trim());
@@ -477,7 +486,7 @@ export default function GoodsGateMovements() {
       {/* Entries Log Table Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', marginTop: '30px', flexShrink: 0 }}>
         <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-          Goods Movement Register
+          Today&apos;s Goods Movement Register
         </h3>
         <div style={{ display: 'flex', gap: '7px' }}>
           <select className="form-control" style={{ width: '130px', height: '28px', padding: '0 6px', fontSize: '10px' }} value={filters.movement_type} onChange={e => setFilters(current => ({ ...current, movement_type: e.target.value }))}>

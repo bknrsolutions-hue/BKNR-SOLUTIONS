@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import AnimatedBrandLogo from './AnimatedBrandLogo';
 
 const DEFAULT_QUICK_ACTION_IDS = [
@@ -19,7 +19,7 @@ function readQuickActions(email) {
   }
 }
 
-export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen, setActivePage, availableMenuItems = [] }) {
+export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, setSidebarOpen, setActivePage, availableMenuItems = [] }) {
   const companyName = user?.company || 'SVBK IT Solutions';
   const userName = user?.name || 'Administrator';
   
@@ -45,12 +45,34 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
   const [companies, setCompanies] = useState([]);
   const [locations, setLocations] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [lastNotificationSeen, setLastNotificationSeen] = useState(() => localStorage.getItem('last_notif_seen') || '');
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [broadcastMessage, setBroadcastMessage] = useState('');
+  const [broadcastFile, setBroadcastFile] = useState(null);
+  const [broadcastSending, setBroadcastSending] = useState(false);
+  const [broadcastStatus, setBroadcastStatus] = useState('');
 
   const [prodForFilter, setProdForFilter] = useState('');
   const [plantLocFilter, setPlantLocFilter] = useState('');
   const dropdownRef = useRef(null);
   const commandInputRef = useRef(null);
   const tenantLogoInputRef = useRef(null);
+  const broadcastFileInputRef = useRef(null);
+
+  const notificationKey = notifications.map(item => `${item.title || ''}|${item.desc || ''}`).join('::');
+  const hasUnseenNotifications = Boolean(notifications.length && notificationKey !== lastNotificationSeen);
+  const canBroadcastNotifications = ['admin', 'super admin', 'super_admin'].includes(String(user?.role || '').toLowerCase())
+    || String(user?.email || '').trim().toLowerCase() === 'bknr.solutions@gmail.com';
+
+  const loadNotifications = useCallback(async () => {
+    try {
+      const response = await fetch('/menu/notifications', { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to load notifications');
+      setNotifications(await response.json() || []);
+    } catch (error) {
+      console.warn('Error loading notifications in Header.jsx:', error);
+    }
+  }, []);
 
   // Customizer States
   const [accentColor, setAccentColor] = useState('#2563eb');
@@ -189,16 +211,52 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
       })
       .catch(err => console.error('Error fetching global dropdowns in header:', err));
 
-    fetch('/menu/notifications')
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to load notifications');
-      })
-      .then(data => {
-        setNotifications(data || []);
-      })
-      .catch(err => console.warn('Error loading notifications in Header.jsx:', err));
-  }, []);
+    void loadNotifications();
+    const notificationInterval = window.setInterval(loadNotifications, 30000);
+    return () => window.clearInterval(notificationInterval);
+  }, [loadNotifications]);
+
+  const markNotificationsRead = () => {
+    localStorage.setItem('last_notif_seen', notificationKey);
+    setLastNotificationSeen(notificationKey);
+  };
+
+  const toggleNotifications = () => {
+    const nextOpen = !notifOpen;
+    setNotifOpen(nextOpen);
+    setDropdownOpen(false);
+    setColorOpen(false);
+  };
+
+  const closeBroadcastForm = () => {
+    setBroadcastOpen(false);
+    setBroadcastMessage('');
+    setBroadcastFile(null);
+    setBroadcastStatus('');
+    if (broadcastFileInputRef.current) broadcastFileInputRef.current.value = '';
+  };
+
+  const sendNotificationBroadcast = async event => {
+    event.preventDefault();
+    if (!broadcastMessage.trim() && !broadcastFile) return;
+    setBroadcastSending(true);
+    setBroadcastStatus('');
+    const formData = new FormData();
+    if (broadcastMessage.trim()) formData.append('message', broadcastMessage.trim());
+    if (broadcastFile) formData.append('file', broadcastFile);
+    try {
+      const response = await fetch('/menu/create_company_announcement', { method: 'POST', body: formData, credentials: 'include' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Unable to send broadcast');
+      setBroadcastStatus('Sent!');
+      await loadNotifications();
+      window.setTimeout(closeBroadcastForm, 1000);
+    } catch (error) {
+      setBroadcastStatus(error.message || 'Unable to send broadcast');
+    } finally {
+      setBroadcastSending(false);
+    }
+  };
 
   // Sync filters to localstorage / session
   const handleProdForChange = (val) => {
@@ -713,6 +771,25 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
         .notif-text { display: flex; flex-direction: column; gap: 4px; text-align: left; }
         .notif-title { font-size: 12px; font-weight: 700; color: var(--text-primary); }
         .notif-time { font-size: 10px; color: var(--text-tertiary); }
+        .notification-console { width: 320px; padding: 0; right: 150px; }
+        .notif-broadcast-form { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-bottom: 1px solid var(--border-light); background: color-mix(in srgb, var(--corp-dash) 4%, transparent); }
+        .notif-broadcast-form textarea { width: 100%; padding: 8px 10px; border: 1px solid var(--border-light); border-radius: 6px; outline: 0; resize: none; background: var(--bg-app); color: var(--text-primary); font: inherit; font-size: 12px; }
+        .notif-file-preview { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 5px 8px; border: 1px solid color-mix(in srgb, var(--corp-dash) 22%, var(--border-light)); border-radius: 6px; background: color-mix(in srgb, var(--corp-dash) 10%, transparent); color: var(--corp-dash); font-size: 10px; }
+        .notif-file-preview span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .notif-file-preview button, .notif-attach-btn { border: 0; background: transparent; color: var(--text-secondary); cursor: pointer; }
+        .notif-file-preview button { color: #ef4444; }
+        .notif-broadcast-actions { display: flex; align-items: center; gap: 7px; }
+        .notif-broadcast-status { flex: 1; overflow: hidden; color: var(--text-secondary); font-size: 9px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+        .notif-broadcast-actions .admin-btn { height: 28px; padding: 0 9px; border: 1px solid var(--border-light); border-radius: 5px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 9px; font-weight: 800; cursor: pointer; }
+        .notif-broadcast-actions .admin-btn.primary { border-color: transparent; background: var(--corp-dash); color: #fff; }
+        .notif-broadcast-actions .admin-btn:disabled { opacity: .6; cursor: wait; }
+        .notif-media-file { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 6px 9px; border-radius: 6px; background: rgba(255,255,255,.03); font-size: 10px; }
+        .notif-media-file a { overflow-wrap: anywhere; color: var(--corp-dash); text-decoration: none; font-weight: 700; }
+        @media (max-width: 767px) {
+          .notification-console { position: fixed; top: calc(var(--header-h) + 8px); right: 8px; left: 8px; width: auto; max-height: calc(100dvh - var(--header-h) - 16px); }
+          .notif-list { max-height: calc(100dvh - var(--header-h) - 70px); }
+          .notification-console:has(.notif-broadcast-form) .notif-list { max-height: calc(100dvh - var(--header-h) - 220px); }
+        }
 
         /* Color Customizer console styles */
         .color-console { width: 330px; gap: 14px; padding: 16px; }
@@ -768,11 +845,21 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
           </button>
 
           <button 
+            type="button"
             className="mobile-top-menu-btn" 
-            onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); setColorOpen(false); }} 
+            onClick={() => {
+              setSidebarOpen(current => !current);
+              setDropdownOpen(false);
+              setNotifOpen(false);
+              setColorOpen(false);
+            }}
             title="Open App Menu"
+            aria-label="Open app menu"
+            aria-controls="app-sidebar"
+            aria-expanded={sidebarOpen}
           >
-            MENU
+            <i className="fa-solid fa-bars" aria-hidden="true"></i>
+            <span>MENU</span>
           </button>
 
           <button 
@@ -836,13 +923,13 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
           {/* Notifications Trigger */}
           <div
             className="icon-action-btn action-alerts"
-            onClick={() => { setNotifOpen(!notifOpen); setDropdownOpen(false); setColorOpen(false); }}
+            onClick={toggleNotifications}
             title="Notifications"
             style={{ cursor: 'pointer', position: 'relative' }}
           >
             <i className="fa-solid fa-bell"></i>
             <span className="icon-action-label">Alerts</span>
-            {notifications.length > 0 && <div className="notification-dot"></div>}
+            {hasUnseenNotifications && <div className="notification-dot"></div>}
           </div>
 
           {/* Theme switch button */}
@@ -975,13 +1062,25 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
 
           {/* ── Notifications Dropdown ── */}
           {notifOpen && (
-            <div className="dropdown-console show" style={{ width: '320px', padding: 0, right: '150px' }}>
+            <div className="dropdown-console notification-console show">
               <div className="notif-header">
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   Notifications
+                  {canBroadcastNotifications && <button type="button" className="notif-attach-btn" onClick={event => { event.stopPropagation(); setBroadcastOpen(current => !current); }} title="Create Company Broadcast" aria-label="Create company broadcast"><i className="fa-solid fa-circle-plus" style={{ color: 'var(--corp-dash)', fontSize: '14px' }}></i></button>}
                 </div>
-                <span onClick={() => setNotifications([])}>Mark all read</span>
+                <span onClick={markNotificationsRead}>Mark all read</span>
               </div>
+              {canBroadcastNotifications && broadcastOpen && <form className="notif-broadcast-form" onSubmit={sendNotificationBroadcast}>
+                <textarea autoFocus rows="2" placeholder="Type company broadcast alert..." value={broadcastMessage} onChange={event => setBroadcastMessage(event.target.value)} />
+                {broadcastFile && <div className="notif-file-preview"><span>{broadcastFile.name}</span><button type="button" onClick={() => { setBroadcastFile(null); if (broadcastFileInputRef.current) broadcastFileInputRef.current.value = ''; }} aria-label="Remove attachment"><i className="fa-solid fa-circle-xmark"></i></button></div>}
+                <div className="notif-broadcast-actions">
+                  <button type="button" className="notif-attach-btn" onClick={() => broadcastFileInputRef.current?.click()} title="Attach Photo/File"><i className="fa-solid fa-paperclip"></i></button>
+                  <input ref={broadcastFileInputRef} type="file" hidden onChange={event => setBroadcastFile(event.target.files?.[0] || null)} />
+                  <span className="notif-broadcast-status">{broadcastStatus}</span>
+                  <button type="button" className="admin-btn" onClick={closeBroadcastForm}>Cancel</button>
+                  <button type="submit" className="admin-btn primary" disabled={broadcastSending}>{broadcastSending ? <i className="fa-solid fa-spinner fa-spin"></i> : <><i className="fa-solid fa-paper-plane"></i> Send</>}</button>
+                </div>
+              </form>}
               <div className="notif-list">
                 {notifications.length === 0 ? (
                   <div style={{ padding: '25px 20px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '12px' }}>
@@ -990,16 +1089,12 @@ export default function Header({ toggleTheme, user, handleLogout, setSidebarOpen
                   </div>
                 ) : (
                   notifications.map((item, idx) => (
-                    <div key={idx} className="notif-item" style={{ alignItems: 'flex-start' }}>
+                    <div key={idx} className="notif-item" role="button" tabIndex="0" style={{ alignItems: 'flex-start' }} onClick={markNotificationsRead} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') markNotificationsRead(); }}>
                       <div className="notif-icon" style={{ background: item.bg || '#3b82f6', marginTop: '2px' }}><i className={`fa-solid ${item.icon || 'fa-info'}`}></i></div>
                       <div className="notif-text" style={{ flex: 1, minWidth: 0 }}>
                         <span className="notif-title" style={{ wordBreak: 'break-word' }}>{item.title}</span>
                         <span className="notif-time" style={{ fontWeight: 'normal', color: 'var(--text-secondary)', marginTop: '2px', wordBreak: 'break-word' }}>{item.desc}</span>
-                        {item.media_path && (
-                          <div style={{ marginTop: '6px', borderRadius: '6px', overflow: 'hidden', maxWidth: '100%', maxHeight: '120px', border: '1px solid var(--border-light)' }}>
-                            <img src={item.media_path} style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover' }} onClick={() => window.open(item.media_path, '_blank')} />
-                          </div>
-                        )}
+                        {item.media_path && /\.(jpe?g|png|gif|webp|svg)(?:\?.*)?$/i.test(item.media_path) ? <div style={{ marginTop: '6px', borderRadius: '6px', overflow: 'hidden', maxWidth: '100%', maxHeight: '120px', border: '1px solid var(--border-light)' }}><img src={item.media_path} alt="Notification attachment" style={{ width: '100%', height: 'auto', display: 'block', objectFit: 'cover', cursor: 'pointer' }} onClick={event => { event.stopPropagation(); window.open(item.media_path, '_blank'); }} /></div> : item.media_path ? <div className="notif-media-file"><i className="fa-solid fa-file-arrow-down"></i><a href={item.media_path} target="_blank" rel="noreferrer" download onClick={event => event.stopPropagation()}>{item.media_path.split('/').pop()?.replace(/^\d+_/, '') || 'Attachment'}</a></div> : null}
                         <span className="notif-time" style={{ fontSize: '9px', opacity: 0.6, marginTop: '4px' }}>{item.time}</span>
                       </div>
                     </div>

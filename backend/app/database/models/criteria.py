@@ -213,6 +213,25 @@ class peeling_rates(Base, metacolumns):
     contractor_name = Column(String(255)); rate = Column(Float); effective_from = Column(Date)
     status = Column(String(50), default="Active"); date = Column(Date); time = Column(Time)
 
+
+class kg_basis_labour_rates(Base, metacolumns):
+    __tablename__ = "kg_basis_labour_rates"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "species", "variety_name", "work_type", "count_grade", "effective_from",
+            name="uix_company_kg_labour_rate"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
+    species = Column(String(255), nullable=True)
+    variety_name = Column(String(255), nullable=False)
+    work_type = Column(String(100), nullable=False)
+    count_grade = Column(String(50), nullable=True)
+    rate = Column(Float, nullable=False, default=0.0)
+    effective_from = Column(Date, nullable=False)
+    status = Column(String(50), nullable=False, default="Active")
+
 class species(Base, metacolumns):
     __tablename__ = "species"
     id = Column(Integer, primary_key=True)

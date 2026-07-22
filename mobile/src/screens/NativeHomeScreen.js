@@ -12,6 +12,9 @@ import NativeProcessingDashboard from './NativeProcessingDashboard';
 import NativeProfile from './NativeProfile';
 import NativeStockStatus from './NativeStockStatus';
 import NativeUserConfiguration from './NativeUserConfiguration';
+import NativeWorkerManagement from './NativeWorkerManagement';
+import NativeVisitorsDayWorkers from './NativeVisitorsDayWorkers';
+import NativeApprovals, { NativeApprovalPrompt } from './NativeApprovals';
 import { useERPTheme } from '../theme/ERPThemeContext';
 import { API_URL } from '../config';
 
@@ -30,6 +33,10 @@ const appItems = [
   { key: 'report_floor_balance', tab: 'reports', icon: 'scale-balance', label: 'Floor Balance', note: 'Processing stock', color: '#dc2626', perm: 'floor_balance_report' },
   { key: 'report_stock_status', tab: 'reports', icon: 'clipboard-text-outline', label: 'Stock Status', note: 'Ledger report', color: '#0891b2', perm: 'inventory_report' },
   { key: 'hrms_daily_attendance', tab: 'home', icon: 'badge-account-horizontal-outline', label: 'Daily Attendance', note: 'HR terminal', color: '#0f766e', perm: 'daily_attendance' },
+  { key: 'hrms_contract_workers', tab: 'home', icon: 'account-hard-hat-outline', label: 'Contract Workers', note: 'Registration & punching', color: '#c2410c', perm: 'labour_management' },
+  { key: 'hrms_kg_company_staff', tab: 'home', icon: 'weight-kilogram', label: 'KG Company Staff', note: 'Registration & punching', color: '#7c3aed', perm: 'kg_basis_labour' },
+  { key: 'hrms_visitors_workers', tab: 'home', icon: 'account-arrow-right-outline', label: 'Visitors & Day Workers', note: 'Entry and register', color: '#0891b2', perm: 'visitors_day_workers' },
+  { key: 'hrms_approvals', tab: 'home', icon: 'account-check-outline', label: 'Approvals', note: 'Visitors & day workers', color: '#15803d' },
   { key: 'user_profile', tab: 'profile', icon: 'account-details-outline', label: 'My Profile', note: 'Personal & work details', color: '#2563eb' },
   { key: 'admin_my_complaints', tab: 'profile', icon: 'headset', label: 'My Complaints', note: 'Support desk', color: '#be123c' },
   { key: 'admin_user_configuration', tab: 'profile', icon: 'account-cog-outline', label: 'User Configuration', note: 'Users, roles and access', color: '#7c3aed', perm: 'add_user', adminOnly: true },
@@ -84,7 +91,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     const query = search.trim().toLowerCase();
     const allowedItems = appItems.filter(allow);
     if (query) return allowedItems.filter(item => `${item.label} ${item.note}`.toLowerCase().includes(query));
-    if (activeTab === 'home') return allowedItems.filter(item => ['dashboard_processing', 'hrms_daily_attendance'].includes(item.key));
+    if (activeTab === 'home') return allowedItems.filter(item => ['dashboard_processing', 'hrms_daily_attendance', 'hrms_contract_workers', 'hrms_kg_company_staff', 'hrms_visitors_workers', 'hrms_approvals'].includes(item.key));
     return allowedItems.filter(item => item.tab === activeTab);
   }, [activeTab, search, user?.role, grantedPermissions]);
 
@@ -137,6 +144,10 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     if (activeItem === 'report_floor_balance') activeScreen = <NativeFloorBalance filters={filters} onBack={() => setActiveItem('dashboard_processing')} />;
     if (activeItem === 'dashboard_processing') activeScreen = <NativeProcessingDashboard filters={filters} onBack={back} onOpenSource={key => setActiveItem(key === 'floor_balance_report' ? 'report_floor_balance' : `operation:${key}:dashboard_processing`)} />;
     if (activeItem === 'hrms_daily_attendance') activeScreen = <NativeDailyAttendance filters={filters} onBack={back} />;
+    if (activeItem === 'hrms_contract_workers') activeScreen = <NativeWorkerManagement kind="contract" filters={filters} onBack={back} />;
+    if (activeItem === 'hrms_kg_company_staff') activeScreen = <NativeWorkerManagement kind="kg" filters={filters} onBack={back} />;
+    if (activeItem === 'hrms_visitors_workers') activeScreen = <NativeVisitorsDayWorkers filters={filters} onBack={back} />;
+    if (activeItem === 'hrms_approvals') activeScreen = <NativeApprovals filters={filters} onBack={back} />;
     if (activeItem === 'user_profile') activeScreen = <NativeProfile user={user} filters={filters} onBack={back} onProfileUpdated={onUserUpdated} />;
     if (activeItem === 'admin_user_configuration' && ['admin', 'super_admin'].includes(user?.role) && (grantedPermissions.has('ALL') || grantedPermissions.has('add_user'))) activeScreen = <NativeUserConfiguration onBack={back} />;
   }
@@ -159,6 +170,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     <View style={styles.activePage}>{activeScreen}</View>
     <BottomNavigation theme={theme} activeTab={activeTab} onSelect={selectTab} />
     {!supportOpen ? <FloatingSupportButton theme={theme} onPress={() => setSupportOpen(true)} /> : null}
+    <NativeApprovalPrompt enabled={activeItem !== 'hrms_approvals'} />
     {supportDrawer}
   </View>;
 
@@ -215,6 +227,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
 
       <BottomNavigation theme={theme} activeTab={activeTab} onSelect={selectTab} />
       {!supportOpen ? <FloatingSupportButton theme={theme} onPress={() => setSupportOpen(true)} /> : null}
+      <NativeApprovalPrompt />
       {supportDrawer}
     </View>
   </SafeAreaView>;

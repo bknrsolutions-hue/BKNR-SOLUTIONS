@@ -8,6 +8,45 @@
   scrollbar-gutter: stable;
 }
 
+.storage-report-header {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 16px;
+  border-bottom: 2px solid var(--text-primary);
+  background: var(--surface-panel);
+  box-shadow: 0 2px 4px rgb(15 23 42 / 8%);
+}
+
+.storage-report-header h2 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 18px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.storage-report-header button {
+  min-height: 32px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 5px;
+  background: #059669;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.storage-report-header button:disabled,
+.storage-generate-btn:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
 .storage-control-panel {
   display: flex;
   align-items: center;
@@ -30,6 +69,7 @@
 
 .storage-filter-fields {
   flex: 1 1 auto;
+  margin: 0;
   overflow-x: auto;
   padding-bottom: 2px;
 }
@@ -105,7 +145,7 @@
 .storage-inline-kpi strong {
   display: block;
   color: var(--text-primary);
-  font-size: 16px;
+  font-size: 13px;
   line-height: 1.2;
   white-space: nowrap;
 }
@@ -174,8 +214,8 @@
   font-size: 11px;
 }
 
-.storage-wide-table { width: 2800px !important; min-width: 2800px !important; }
-.storage-original-table { width: 1900px !important; min-width: 1900px !important; }
+.storage-wide-table { width: 2500px !important; min-width: 2500px !important; }
+.storage-original-table { width: 2500px !important; min-width: 2500px !important; }
 
 .storage-cost-report .storage-table-wrap th {
   position: sticky;
@@ -268,6 +308,20 @@
 }
 
 @media (max-width: 650px) {
+  .storage-report-header {
+    padding: 8px;
+  }
+
+  .storage-report-header h2 {
+    font-size: 12px;
+  }
+
+  .storage-report-header button {
+    min-height: 28px;
+    padding: 0 8px;
+    font-size: 9px;
+  }
+
   .storage-control-panel { padding: 8px; }
   .storage-inline-kpis { grid-template-columns: repeat(2, minmax(125px, 1fr)); }
   .storage-tab-btn { padding: 9px 12px; }
@@ -440,4 +494,3 @@
     margin-top: 50px !important;
   }
 }
-

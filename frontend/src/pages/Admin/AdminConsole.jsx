@@ -380,7 +380,9 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
   const [tickets, setTickets] = useState([]);
   const [selected, setSelected] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [search, setSearch] = useState('');
+  const [ticketStatusFilter, setTicketStatusFilter] = useState('ALL');
   const [reply, setReply] = useState('');
   const [attachment, setAttachment] = useState(null);
   const [status, setStatus] = useState('OPEN');
@@ -447,9 +449,21 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
   }, []);
 
   const openTicket = async ticket => {
-    setSelected(ticket); setStatus(ticket.status); setAttachment(null);
-    const response = await fetch(`${isAdmin ? '/admin' : '/support'}/get_messages/${ticket.id}`, { credentials: 'include' });
-    const data = await response.json(); setMessages(data.messages || []);
+    setSelected(ticket);
+    setStatus(ticket.status);
+    setAttachment(null);
+    setMessages([]);
+    setMessagesLoading(true);
+    try {
+      const response = await fetch(`${isAdmin ? '/admin' : '/support'}/get_messages/${ticket.id}`, { credentials: 'include' });
+      if (!response.ok) throw new Error(`Unable to load conversation (HTTP ${response.status}).`);
+      const data = await response.json();
+      setMessages(data.messages || []);
+    } catch (error) {
+      setTicketError(error.message || 'Unable to load conversation.');
+    } finally {
+      setMessagesLoading(false);
+    }
   };
   const send = async () => {
     if (!selected || (!reply.trim() && !attachment)) return;
@@ -468,7 +482,11 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
     const response = await fetch('/support/create_ticket', { method: 'POST', body, credentials: 'include' });
     if (response.ok) { setNewOpen(false); setSubject(''); setDetail(''); loadTickets(); }
   };
-  const visible = tickets.filter(ticket => `${ticket.ticket_number} ${ticket.subject} ${ticket.user_email || ''}`.toLowerCase().includes(search.toLowerCase()));
+  const visible = tickets.filter(ticket => {
+    const matchesSearch = `${ticket.ticket_number} ${ticket.subject} ${ticket.user_email || ''} ${ticket.company_id || ''}`.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = ticketStatusFilter === 'ALL' || ticket.status === ticketStatusFilter;
+    return matchesSearch && matchesStatus;
+  });
   const normalizeQuestion = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const knowledgeQuery = normalizeQuestion(knowledgeSearch);
   const questionMatchScore = question => {
@@ -521,78 +539,39 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
       <div className="support-kb-search"><i className="fa-solid fa-magnifying-glass"></i><input value={knowledgeSearch} onFocus={() => setKnowledgeSuggestOpen(true)} onBlur={() => window.setTimeout(() => setKnowledgeSuggestOpen(false), 150)} onChange={event => { setKnowledgeSearch(event.target.value); setKnowledgeSuggestOpen(true); }} placeholder="Type a question…" />{knowledgeSuggestOpen && knowledgeQuery ? <div className="support-kb-suggestions">{knowledgeSuggestions.length ? knowledgeSuggestions.map(item => <button type="button" key={item.id} onMouseDown={event => event.preventDefault()} onClick={() => selectKnowledgeSuggestion(item)}><i className="fa-regular fa-circle-question"></i><span><strong>{item.question}</strong></span></button>) : <div>No related questions found.</div>}</div> : null}</div>
       <div className="support-kb-results">{!knowledgeQuery ? null : knowledgeLoading ? <div className="admin-empty">Loading complete ERP knowledge base…</div> : visibleKnowledge.length ? visibleKnowledge.map(item => <article className={`support-kb-item ${expandedAnswer === item.id ? 'open' : ''}`} key={item.id}><button type="button" onClick={() => setExpandedAnswer(current => current === item.id ? '' : item.id)}><span><strong>{item.question}</strong></span><i className={`fa-solid fa-chevron-${expandedAnswer === item.id ? 'up' : 'down'}`}></i></button>{expandedAnswer === item.id ? <div className="support-kb-answer"><p>{item.answer}</p>{item.route ? <code>{item.route}</code> : null}</div> : null}</article>) : <div className="admin-empty">No matching answer found. Raise a complaint with the page name and exact issue.</div>}</div>
     </div> : <>
-    {newOpen && <div className="admin-card"><form className="admin-form-grid" onSubmit={createTicket}><div className="admin-field"><label>Issue Summary</label><input required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field" style={{ gridColumn: 'span 2' }}><label>Detailed Message</label><textarea required value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
     {ticketError && <div className="admin-card admin-error" role="alert">{ticketError} <button className="admin-btn" type="button" onClick={loadTickets}>RETRY</button></div>}
-    
-    {!selected ? (
-      <div className="admin-card" style={{ width: '100%' }}>
-        <input className="admin-search" style={{ maxWidth: '100%', marginBottom: 12 }} placeholder="Search complaints by ticket number or subject..." value={search} onChange={event => setSearch(event.target.value)}/>
-        <div className="ticket-list" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
+    <div className={`ticket-layout support-ticket-layout ${selected ? 'chat-active' : ''}`}>
+      <section className="admin-card support-ticket-list-panel" aria-label={isAdmin ? 'Support queue' : 'My complaints'}>
+        <div className="support-ticket-search">
+          <input className="admin-search" placeholder="Search complaints..." value={search} onChange={event => setSearch(event.target.value)}/>
+          {isAdmin && <select className="admin-search" aria-label="Filter ticket status" value={ticketStatusFilter} onChange={event => setTicketStatusFilter(event.target.value)}><option value="ALL">ALL STATUS</option><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN PROGRESS</option><option value="RESOLVED">RESOLVED</option></select>}
+        </div>
+        <div className="ticket-list">
           {loadingTickets ? <div className="admin-empty">Loading complaints...</div> : visible.length ? visible.map(ticket => (
-            <div key={ticket.id} className="ticket-card" style={{ cursor: 'pointer', padding: '14px', borderRadius: '10px', border: '1px solid var(--border-light)', background: 'var(--surface-panel)' }} onClick={() => openTicket(ticket)}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: '6px' }}>
-                <strong style={{ color: 'var(--erp-accent)', fontSize: '14px' }}>{ticket.ticket_number}</strong>
-                <small style={{ color: 'var(--text-tertiary)' }}>{ticket.date}</small>
-              </div>
-              <span style={{ display: 'block', fontWeight: '700', fontSize: '14px', marginBottom: '8px', color: 'var(--text-primary)' }}>{ticket.subject}</span>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <small style={{ padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: '700', background: ticket.status === 'RESOLVED' ? 'rgba(34, 197, 94, 0.15)' : 'rgba(59, 130, 246, 0.15)', color: ticket.status === 'RESOLVED' ? '#22c55e' : '#3b82f6' }}>{ticket.status}</small>
-                {ticket.user_email && <small style={{ color: 'var(--text-tertiary)', fontSize: '11px' }}>{ticket.user_email}</small>}
-              </div>
-            </div>
-          )) : <div className="admin-empty" style={{ gridColumn: '1 / -1' }}>No complaints found.</div>}
-        </div>
-      </div>
-    ) : (
-      <div className="admin-card" style={{ width: '100%' }}>
-        <div className="admin-toolbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <button type="button" className="admin-btn" onClick={() => setSelected(null)} style={{ padding: '6px 10px', cursor: 'pointer' }} title="Back to Cards">
-              <i className="fa-solid fa-arrow-left"></i>
+            <button type="button" key={ticket.id} className={`ticket-card ${selected?.id === ticket.id ? 'active' : ''}`} onClick={() => openTicket(ticket)}>
+              <span className="support-ticket-head"><strong>{ticket.ticket_number}</strong><small>{ticket.date}</small></span>
+              <span className="support-ticket-subject">{ticket.subject}</span>
+              <span className="support-ticket-meta"><span className={`support-status status-${ticket.status}`}>{ticket.status.replace('_', ' ')}</span>{ticket.company_id && <small><i className="fa-regular fa-building"></i> {ticket.company_id}</small>}</span>
             </button>
-            <div>
-              <h2>{selected.subject}</h2>
-              <small style={{ color: 'var(--text-tertiary)' }}>{selected.ticket_number}{selected.user_email ? ` · ${selected.user_email} · ${selected.company_id}` : ''}</small>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {isAdmin ? (
-              <div className="admin-actions" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <select className="admin-search" value={status} onChange={event => setStatus(event.target.value)}>
-                  <option value="OPEN">OPEN</option>
-                  <option value="IN_PROGRESS">IN PROGRESS</option>
-                  <option value="RESOLVED">RESOLVED</option>
-                </select>
-                <button className="admin-btn primary" onClick={updateStatus}>UPDATE STATUS</button>
-              </div>
-            ) : (
-              <span className="admin-status">{selected.status}</span>
-            )}
-          </div>
+          )) : <div className="admin-empty"><i className="fa-solid fa-inbox"></i><span>No complaints found.</span></div>}
         </div>
-        <div className="chat-box" style={{ minHeight: '260px', maxHeight: '420px', overflowY: 'auto', marginBottom: '14px' }}>
-          {messages.map((message, index) => (
-            <div key={index} className={`chat-msg ${(isAdmin ? message.sender_type === 'ADMIN' : message.sender_type === 'USER') ? 'mine' : ''}`}>
-              {message.message}
-              {message.media_path && <div><a href={message.media_path} target="_blank" rel="noreferrer">Attachment</a></div>}
-              <small>{message.time}</small>
-            </div>
-          ))}
-        </div>
-        {selected.status === 'RESOLVED' && isAdmin ? (
-          <div className="admin-empty">This ticket is permanently closed.</div>
-        ) : (
-          <div className="chat-compose">
-            <label className="admin-btn" style={{ display: 'grid', placeItems: 'center' }} title="Attach file">
-              <i className="fa-solid fa-paperclip"></i>
-              <input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/>
-            </label>
-            <input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/>
-            <button className="admin-btn primary" onClick={send}>SEND</button>
+      </section>
+
+      <section className="admin-card support-chat-panel" aria-label="Complaint conversation">
+        {!selected ? <div className="support-chat-empty"><i className="fa-regular fa-comments"></i><h3>Select a ticket to view conversation</h3>{!isAdmin && <p>Or create a new complaint.</p>}</div> : <>
+          <div className="support-chat-header">
+            <button type="button" className="support-chat-back" onClick={() => setSelected(null)} aria-label="Back to complaints"><i className="fa-solid fa-arrow-left"></i></button>
+            <div><h2>{selected.subject}</h2><small>{selected.ticket_number}{selected.user_email ? ` · ${selected.user_email}` : ''}</small></div>
+            {isAdmin ? <div className="support-status-actions"><select className="admin-search" value={status} onChange={event => setStatus(event.target.value)}><option value="OPEN">OPEN</option><option value="IN_PROGRESS">IN PROGRESS</option><option value="RESOLVED">RESOLVED</option></select><button className="admin-btn primary" onClick={updateStatus}>UPDATE</button></div> : <span className={`support-status status-${selected.status}`}>{selected.status.replace('_', ' ')}</span>}
           </div>
-        )}
-      </div>
-    )}
+          <div className="chat-box">
+            {messagesLoading ? <div className="support-chat-empty"><i className="fa-solid fa-spinner fa-spin"></i><p>Loading conversation…</p></div> : messages.length ? messages.map((message, index) => <div key={index} className={`chat-msg ${(isAdmin ? message.sender_type === 'ADMIN' : message.sender_type === 'USER') ? 'mine' : ''}`}>{message.message}{message.media_path && <div><a href={message.media_path} target="_blank" rel="noreferrer"><i className="fa-solid fa-file-arrow-down"></i> Attachment</a></div>}<small>{message.time}</small></div>) : <div className="support-chat-empty"><i className="fa-regular fa-message"></i><p>No messages yet.</p></div>}
+          </div>
+          {selected.status === 'RESOLVED' && isAdmin ? <div className="support-closed-banner"><i className="fa-solid fa-lock"></i> This ticket is permanently closed.</div> : <div className="chat-compose"><label className="admin-btn" title="Attach file"><i className="fa-solid fa-paperclip"></i><input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/></label><input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/><button className="support-send-btn" onClick={send} aria-label="Send reply"><i className="fa-solid fa-paper-plane"></i></button></div>}
+        </>}
+      </section>
+    </div>
+    {newOpen && <div className="support-new-overlay" onClick={() => setNewOpen(false)}><form className="support-new-dialog" onSubmit={createTicket} onClick={event => event.stopPropagation()}><div className="support-new-head"><h2>Raise New Complaint</h2><button type="button" onClick={() => setNewOpen(false)} aria-label="Close"><i className="fa-solid fa-xmark"></i></button></div><div className="admin-field"><label>Issue Summary</label><input autoFocus required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field"><label>Detailed Message</label><textarea required rows="8" value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
     </>}
   </div>;
 }
@@ -629,7 +608,7 @@ function DataManagement({ activePage }) {
     }
     const blob = await response.blob(); const url = URL.createObjectURL(blob); const anchor = document.createElement('a');
     const disposition = response.headers.get('content-disposition') || '';
-    const filename = disposition.match(/filename=\"?([^\";]+)\"?/i)?.[1];
+    const filename = disposition.match(/filename="?([^";]+)"?/i)?.[1];
     anchor.href = url; anchor.download = filename || `SVBK_${label}_Export.xlsx`; anchor.style.display = 'none';
     document.body.appendChild(anchor); anchor.click();
     window.setTimeout(() => { anchor.remove(); URL.revokeObjectURL(url); }, 1500);

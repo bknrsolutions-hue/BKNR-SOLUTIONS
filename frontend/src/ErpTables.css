@@ -273,3 +273,91 @@
     font-weight: 700 !important;
   }
 }
+
+/* Mobile keeps registers and reports as real tables. Horizontal scrolling is
+   preferable to converting business rows into cards because column context,
+   totals and grouped rows must remain visible. */
+@media screen and (max-width: 767px) {
+  :root {
+    --erp-table-text-size: 10px;
+    --erp-table-heading-size: 9px;
+    --erp-table-header-height: 28px;
+    --erp-table-row-height: 28px;
+    --erp-table-cell-padding-x: 6px;
+  }
+
+  :is(.main-content, .embedded-app-content) :is(
+    .table-responsive,
+    .attendance-table-wrapper,
+    .attendance-table-wrap,
+    .master-table-wrap,
+    .enterprise-table-wrap,
+    .admin-table-wrap,
+    .goods-table-wrap,
+    .general-stock-table-wrap,
+    .gs-items-table-wrap,
+    .inventory-stock-table-scroll,
+    [class*="table-wrap"],
+    [class*="table-container"]
+  ) {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow-x: auto !important;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: auto;
+  }
+
+  :is(.main-content, .embedded-app-content) .master-mobile-card-list,
+  :is(.main-content, .embedded-app-content) :is(.mobile-card-list, [class*="mobile-card-list"]) {
+    display: none !important;
+  }
+
+  :is(.main-content, .embedded-app-content) table {
+    display: table !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    table-layout: auto !important;
+  }
+
+  :is(.main-content, .embedded-app-content) table > thead { display: table-header-group !important; }
+  :is(.main-content, .embedded-app-content) table > tbody { display: table-row-group !important; }
+  :is(.main-content, .embedded-app-content) table > tfoot { display: table-footer-group !important; }
+  :is(.main-content, .embedded-app-content) table > :is(thead, tbody, tfoot) > tr { display: table-row !important; }
+  :is(.main-content, .embedded-app-content) table > :is(thead, tbody, tfoot) > tr > th { display: table-cell !important; }
+  :is(.main-content, .embedded-app-content) table > :is(thead, tbody, tfoot) > tr > td { display: table-cell !important; }
+
+  :is(.main-content, .embedded-app-content) table > :is(thead, tbody, tfoot) > tr > :is(th, td) {
+    position: static;
+    width: auto !important;
+    min-width: max-content;
+    height: var(--erp-table-row-height) !important;
+    padding: 3px var(--erp-table-cell-padding-x) !important;
+    font-size: var(--erp-table-text-size) !important;
+    line-height: 1.2 !important;
+    text-align: inherit;
+    white-space: nowrap !important;
+  }
+
+  :is(.main-content, .embedded-app-content) table > thead > tr > th {
+    height: var(--erp-table-header-height) !important;
+    font-size: var(--erp-table-heading-size) !important;
+  }
+
+  :is(.main-content, .embedded-app-content) table td::before,
+  :is(.main-content, .embedded-app-content) table td::after {
+    content: none !important;
+    display: none !important;
+  }
+
+  :is(.main-content, .embedded-app-content) table :is(.erp-cell-wrap, .goods-summary, .cell-description) {
+    min-width: 180px;
+    max-width: 260px;
+    white-space: normal !important;
+  }
+}

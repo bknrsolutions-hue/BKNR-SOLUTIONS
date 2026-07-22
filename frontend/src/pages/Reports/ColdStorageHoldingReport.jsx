@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import {
-  ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
+  FilterBar, FilterBox, FilterSelect, FilterInput,
   KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
   useReport, fmt,
 } from './ReportShell';
@@ -135,6 +135,43 @@ export default function ColdStorageHoldingReport({ activeRoute }) {
     value: totals.value + Number(row.valuation || 0),
   }), { mc: 0, loose: 0, qty: 0, value: 0 });
 
+  const summaryDisplayRows = useMemo(() => {
+    const companyGroups = new Map();
+    summaryRows.forEach(row => {
+      const company = String(row.production_for || 'N/A').trim() || 'N/A';
+      const plant = String(row.production_at || 'N/A').trim() || 'N/A';
+      if (!companyGroups.has(company)) companyGroups.set(company, new Map());
+      const plants = companyGroups.get(company);
+      if (!plants.has(plant)) plants.set(plant, []);
+      plants.get(plant).push(row);
+    });
+
+    const displayRows = [];
+    let rowNumber = 1;
+    [...companyGroups.entries()].sort(([left], [right]) => left.localeCompare(right)).forEach(([company, plants]) => {
+      const companyTotals = { mc: 0, loose: 0, qty: 0, value: 0 };
+      [...plants.entries()].sort(([left], [right]) => left.localeCompare(right)).forEach(([plant, plantRows]) => {
+        const plantTotals = { mc: 0, loose: 0, qty: 0, value: 0 };
+        plantRows
+          .sort((left, right) => [left.freezer, left.packing_style, left.variety, left.glaze, left.grade].join('|').localeCompare([right.freezer, right.packing_style, right.variety, right.glaze, right.grade].join('|')))
+          .forEach(row => {
+            displayRows.push({ type: 'item', rowNumber: rowNumber++, row });
+            plantTotals.mc += Number(row.total_mc || 0);
+            plantTotals.loose += Number(row.total_loose || 0);
+            plantTotals.qty += Number(row.total_qty || 0);
+            plantTotals.value += Number(row.valuation || 0);
+          });
+        displayRows.push({ type: 'plant', company, plant, totals: plantTotals });
+        companyTotals.mc += plantTotals.mc;
+        companyTotals.loose += plantTotals.loose;
+        companyTotals.qty += plantTotals.qty;
+        companyTotals.value += plantTotals.value;
+      });
+      displayRows.push({ type: 'company', company, totals: companyTotals });
+    });
+    return displayRows;
+  }, [summaryRows]);
+
   const billBlocks = useMemo(() => {
     if (!billMonth) return [];
     const [year, month] = billMonth.split('-').map(Number);
@@ -201,14 +238,16 @@ export default function ColdStorageHoldingReport({ activeRoute }) {
   };
 
   return <div className="report-viewer-card cold-storage-report">
-    <ReportHeader title="CS Inventory Dashboard" loading={loading} onReload={reload} onPrint={view === 'bill' ? printBill : () => window.print()} />
-    <FilterBar className="cold-storage-filters">
-      <FilterBox label="From Date"><FilterInput type="date" value={fromDate} onChange={setFrom} /></FilterBox>
-      <FilterBox label="To Date"><FilterInput type="date" value={toDate} onChange={setTo} /></FilterBox>
-      <FilterBox label="Storage"><FilterSelect value={csFilter} onChange={value => { setCsFilter(value); setBillStorage(''); }}><option value="">All Storage</option>{csList.map(v => <option key={v} value={v}>{v}</option>)}</FilterSelect></FilterBox>
-      <FilterBox label="Batch"><FilterSelect value={batchFilter} onChange={setBatchFilter}><option value="">All Batches</option>{batchList.map(v => <option key={v} value={v}>{v}</option>)}</FilterSelect></FilterBox>
-      <div className="cold-storage-search"><SearchInput value={search} onChange={setSearch} placeholder="Search batch, variety, brand, freezer..." /></div>
-    </FilterBar>
+    <header className="cold-storage-native-header">
+      <h2>CS Inventory Dashboard</h2>
+      <FilterBar>
+        <FilterBox label="From"><FilterInput type="date" value={fromDate} onChange={setFrom} /></FilterBox>
+        <FilterBox label="To"><FilterInput type="date" value={toDate} onChange={setTo} /></FilterBox>
+        <FilterBox label="Storage"><FilterSelect value={csFilter} onChange={value => { setCsFilter(value); setBillStorage(''); }}><option value="">All Storage</option>{csList.map(v => <option key={v} value={v}>{v}</option>)}</FilterSelect></FilterBox>
+        <FilterBox label="Batch"><FilterSelect value={batchFilter} onChange={setBatchFilter}><option value="">All Batches</option>{batchList.map(v => <option key={v} value={v}>{v}</option>)}</FilterSelect></FilterBox>
+        <div className="cold-storage-search"><SearchInput value={search} onChange={setSearch} placeholder="Search batch, variety, brand, freezer..." /></div>
+      </FilterBar>
+    </header>
     {loading && <Loader />}{error && <ErrorBox msg={error} onRetry={reload} />}
     {!loading && !error && <>
       <div className="cold-storage-age-grid no-print">
@@ -227,7 +266,12 @@ export default function ColdStorageHoldingReport({ activeRoute }) {
       <KPIGrid className="cold-summary-strip"><KPICard label="Total Inward" value={`${fmt.number(totalIn)} MC`} accent="#2563eb" /><KPICard label="Total Outward" value={`${fmt.number(totalOut)} MC`} accent="#ef4444" /><KPICard label="Net Stock" value={`${fmt.number(totalIn - totalOut)} MC`} accent="#16a34a" /><KPICard label="Inv Value" value={fmt.currency(totalValue)} accent="#ca8a04" /></KPIGrid>
       <div className="cold-storage-tabs">{tabs.map(([key, label]) => <button key={key} type="button" className={view === key ? 'is-active' : ''} onClick={() => setView(key)}>{key === 'bill' && <span>💾 </span>}{label}</button>)}</div>
 
-      {view === 'summary' && <div className="table-responsive cold-storage-table-wrap"><table className="bknr-table cold-storage-table cold-summary-table"><thead><tr><th>#</th><th>Production For</th><th>Production At</th><th>Freezer</th><th>Pack Style</th><th>Variety</th><th>Glaze</th><th>Grade</th><th className="text-right">Total MC</th><th className="text-right">Total Loose</th><th className="text-right">Total Qty (KG)</th><th className="text-right">Valuation</th><th>Ageing (Max)</th></tr></thead><tbody>{summaryRows.length === 0 ? <EmptyRow cols={13} /> : summaryRows.map((r, i) => <tr key={i}><td>{i + 1}</td><td>{r.production_for}</td><td>{r.production_at}</td><td>{r.freezer}</td><td>{r.packing_style}</td><td>{r.variety}</td><td>{r.glaze}</td><td>{r.grade}</td><td className="text-right">{fmt.number(r.total_mc)}</td><td className="text-right">{fmt.number(r.total_loose)}</td><td className="text-right">{fmt.number(r.total_qty)}</td><td className="text-right">{fmt.currency(r.valuation)}</td><td>{r.age_days} Days</td></tr>)}</tbody><tfoot><tr style={{ fontSize: '14px', fontWeight: 900 }}><td colSpan="8" className="text-right" style={{ fontSize: '14px', fontWeight: 900 }}>Grand Totals (Stock In Hand):</td><td className="text-right" style={{ fontSize: '14px', fontWeight: 900 }}>{fmt.number(summaryTotals.mc)}</td><td className="text-right" style={{ fontSize: '14px', fontWeight: 900 }}>{fmt.number(summaryTotals.loose)}</td><td className="text-right" style={{ fontSize: '14px', fontWeight: 900 }}>{fmt.number(summaryTotals.qty)}</td><td className="text-right" style={{ fontSize: '14px', fontWeight: 900 }}>{fmt.currency(summaryTotals.value)}</td><td /></tr></tfoot></table></div>}
+      {view === 'summary' && <div className="table-responsive cold-storage-table-wrap"><table className="bknr-table cold-storage-table cold-summary-table"><thead><tr><th>#</th><th>Production For</th><th>Production At</th><th>Freezer</th><th>Pack Style</th><th>Variety</th><th>Glaze</th><th>Grade</th><th className="text-right">Total MC</th><th className="text-right">Total Loose</th><th className="text-right">Total Qty (KG)</th><th className="text-right">Valuation</th><th>Ageing (Max)</th></tr></thead><tbody>{summaryDisplayRows.length === 0 ? <EmptyRow cols={13} /> : summaryDisplayRows.map((item, index) => {
+        if (item.type === 'plant') return <tr className="cold-summary-plant-total" key={`plant-${item.company}-${item.plant}`}><td /><td>{item.company}</td><td colSpan="6" className="text-right">Sub-Total (Plant: {item.plant}):</td><td className="text-right">{fmt.number(item.totals.mc)}</td><td className="text-right">{fmt.number(item.totals.loose)}</td><td className="text-right">{fmt.number(item.totals.qty)}</td><td className="text-right">{fmt.currency(item.totals.value)}</td><td /></tr>;
+        if (item.type === 'company') return <tr className="cold-summary-company-total" key={`company-${item.company}`}><td /><td colSpan="7" className="text-right">Total (Company: {item.company}):</td><td className="text-right">{fmt.number(item.totals.mc)}</td><td className="text-right">{fmt.number(item.totals.loose)}</td><td className="text-right">{fmt.number(item.totals.qty)}</td><td className="text-right">{fmt.currency(item.totals.value)}</td><td /></tr>;
+        const row = item.row;
+        return <tr key={`item-${item.rowNumber}-${index}`}><td>{item.rowNumber}</td><td>{row.production_for}</td><td>{row.production_at}</td><td>{row.freezer}</td><td>{row.packing_style}</td><td>{row.variety}</td><td>{row.glaze}</td><td>{row.grade}</td><td className="text-right">{fmt.number(row.total_mc)}</td><td className="text-right">{fmt.number(row.total_loose)}</td><td className="text-right">{fmt.number(row.total_qty)}</td><td className="text-right">{fmt.currency(row.valuation)}</td><td className={row.age_days > 90 ? 'cold-age-danger' : row.age_days > 30 ? 'cold-age-warning' : 'cold-age-safe'}>{row.age_days} Days</td></tr>;
+      })}</tbody><tfoot><tr><td colSpan="8" className="text-right">Grand Totals (Stock In Hand):</td><td className="text-right">{fmt.number(summaryTotals.mc)}</td><td className="text-right">{fmt.number(summaryTotals.loose)}</td><td className="text-right">{fmt.number(summaryTotals.qty)}</td><td className="text-right">{fmt.currency(summaryTotals.value)}</td><td /></tr></tfoot></table></div>}
       {view === 'report' && <div className="table-responsive"><table className="bknr-table" style={{ minWidth: 1800 }}><thead><tr><th>Date</th><th>Cold Storage</th><th>Batch #</th><th>Type</th><th>Species</th><th>Variety</th><th>Brand</th><th>Grade</th><th>Freezer</th><th>Pack Style</th><th>Glaze</th><th>MC</th><th>Loose</th><th>Qty (KG)</th><th>Rate/KG</th><th>Inv Value</th><th>Status</th></tr></thead><tbody>{rows.length === 0 ? <EmptyRow cols={17} /> : rows.map((r, i) => <tr key={r.id || i}><td>{r.in_date}</td><td>{r.cold_storage_name}</td><td>{r.batch_number}</td><td>{r.cargo_movement_type}</td><td>{r.species}</td><td>{r.variety}</td><td>{r.brand}</td><td>{r.grade}</td><td>{r.freezer}</td><td>{r.packing_style}</td><td>{r.glaze}</td><td>{r.no_of_mc}</td><td>{r.loose}</td><td>{fmt.number(r.quantity)}</td><td>{fmt.currency(r.product_kg_value)}</td><td>{fmt.currency(r.inventory_value)}</td><td>{r.status}</td></tr>)}</tbody></table></div>}
       {view === 'stock' && <div className="table-responsive"><table className="bknr-table" style={{ minWidth: 1500 }}><thead><tr><th>Cold Storage</th><th>Batch #</th><th>Species</th><th>Variety</th><th>Brand</th><th>Grade</th><th>Freezer</th><th>Pack Style</th><th>Glaze</th><th>Bal MC</th><th>Bal Loose</th><th>Bal Qty (KG)</th><th>Valuation</th></tr></thead><tbody>{stockRows.length === 0 ? <EmptyRow cols={13} /> : stockRows.map((r, i) => <tr key={i}><td>{r.cold_storage_name}</td><td>{r.batch_number}</td><td>{r.species}</td><td>{r.variety}</td><td>{r.brand}</td><td>{r.grade}</td><td>{r.freezer}</td><td>{r.packing_style}</td><td>{r.glaze}</td><td>{fmt.number(r.balance_mc)}</td><td>{fmt.number(r.balance_loose)}</td><td>{fmt.number(r.balance_qty)}</td><td>{fmt.currency(r.valuation)}</td></tr>)}</tbody></table></div>}
       {view === 'bill' && <div className="card cold-bill-section">

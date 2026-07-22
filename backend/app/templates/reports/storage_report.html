@@ -277,12 +277,11 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
         </tr>
       </thead>
       <tbody>
-        {% for r in report_data %}
-          {% for m in r.this_month_ledger %}
+        {% for m in detailed_entries %}
           <tr>
             <td>{{m.date}}</td>
             <td class="{% if m.cargo_movement_type == 'IN' %}row-in{% else %}row-out{% endif %}">{{m.cargo_movement_type}}</td>
-            <td>{{r.batch_number}}</td>
+            <td>{{m.batch_number}}</td>
             <td>{{m.type_of_production}}</td>
             <td>{{m.location}}</td>
             <td>{{m.brand}}</td>
@@ -299,7 +298,6 @@ tbody td { padding: 8px; font-size: 11px; border: 1px solid #e2e8f0; text-align:
             <td>{{m.production_at}}</td>
             <td>{{m.production_for}}</td>
           </tr>
-          {% endfor %}
         {% endfor %}
       </tbody>
     </table>
