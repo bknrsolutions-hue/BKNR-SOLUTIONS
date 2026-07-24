@@ -85,10 +85,7 @@ function RawMaterialGateEntry() {
           return options.length === 1 ? options[0] : '';
         });
         
-        // Show form if no logs exist
-        if ((data.today_data || []).length === 0) {
-          setShowForm(true);
-        }
+
       } else {
         const data = await res.json().catch(() => ({}));
         setMessage({ type: 'error', text: data.error || data.message || 'Gate Entry data could not be loaded.' });
@@ -469,11 +466,6 @@ function RawMaterialGateEntry() {
         <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Today's Active Check-ins
         </h3>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Plus size={14} /> Add Gate Entry
-          </button>
-        )}
       </div>
 
       <div className="table-responsive" style={{ flexShrink: 0 }}>

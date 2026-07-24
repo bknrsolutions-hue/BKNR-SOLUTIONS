@@ -5,33 +5,32 @@ Super Admin only — manage deployment locks and view deploy logs.
 
 from fastapi import APIRouter, Depends, Request, HTTPException, Body
 from sqlalchemy.orm import Session
+from app.config import DEPLOYMENT_TOKEN
 from app.database import get_db
 from app.services.deployment import (
     acquire_lock, release_lock, get_lock_status, get_audit_log, audit
 )
-
-import os
+from app.utils.access_control import is_super_admin
 
 router = APIRouter(prefix="/admin/deploy", tags=["Admin - Deployment Management"])
 
 
 def _require_super_admin(request: Request):
     deploy_token = request.headers.get("X-Deploy-Token")
-    expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
-    if deploy_token and deploy_token == expected_token:
+    if deploy_token and deploy_token == DEPLOYMENT_TOKEN:
         return
-    # Allow bknr.solutions@gmail.com email OR super_admin role
-    if request.session.get("email") == "bknr.solutions@gmail.com" or request.session.get("role") == "super_admin":
+    # Allow configured super admins OR super_admin role
+    if is_super_admin(request.session.get("email")) or request.session.get("role") == "super_admin":
         return
     raise HTTPException(status_code=403, detail="Super Admin access required")
 
 
 def _get_actor(request: Request) -> str:
     deploy_token = request.headers.get("X-Deploy-Token")
-    expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
-    if deploy_token and deploy_token == expected_token:
+    if deploy_token and deploy_token == DEPLOYMENT_TOKEN:
         return request.headers.get("X-Deploy-Actor", "release_script")
     return request.session.get("email", "release_script")
+
 
 
 @router.get("/status")

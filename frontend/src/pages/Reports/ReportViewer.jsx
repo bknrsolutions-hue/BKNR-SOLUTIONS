@@ -986,7 +986,8 @@ export default function ReportViewer({ reportId, activeRoute }) {
       { id: 'grading_summary', chartKey: 'sec-grading-cards-wrapper', label: 'Grading Card View', icon: 'fa-layer-group' },
       { id: 'deheading', chartKey: 'sec-deh', label: 'Deheading', icon: 'fa-scissors' },
       { id: 'grading_details', chartKey: 'sec-grd', label: 'Grading Output', icon: 'fa-layer-group' },
-      { id: 'peeling', chartKey: 'sec-pel', label: 'Peeling', icon: 'fa-hands' },
+      { id: 'peeling', chartKey: 'sec-pel', label: 'Peeling', icon: 'fa-hand-dots' },
+
       { id: 'soaking', chartKey: 'sec-soak', label: 'Soaking', icon: 'fa-water' },
       { id: 'production', chartKey: 'sec-prod', label: 'Production Packing', icon: 'fa-box-open' },
       { id: 'stock_in', chartKey: 'sec-stk', label: 'Stock IN', icon: 'fa-warehouse' },
@@ -1022,7 +1023,8 @@ export default function ReportViewer({ reportId, activeRoute }) {
               )}
               <PeriodicKpi label="Deheading" primary={`${quantity(card.deh_hoso)} KG`} secondary={`HLSO: ${quantity(card.deh_hlso)} KG`} icon="fa-scissors" onClick={() => setActiveTab('deheading')} />
               <PeriodicKpi label="Grading Output" primary={`${quantity(card.grd_qty)} KG`} secondary="Graded Qty" icon="fa-layer-group" onClick={() => setActiveTab('grading_details')} />
-              <PeriodicKpi label="Peeling Input" primary={`${quantity(card.pel_hlso)} KG`} secondary={`Peeled: ${quantity(card.pel_peeled)} KG`} icon="fa-hands" onClick={() => setActiveTab('peeling')} />
+              <PeriodicKpi label="Peeling Input" primary={`${quantity(card.pel_hlso)} KG`} secondary={`Peeled: ${quantity(card.pel_peeled)} KG`} icon="fa-hand-dots" onClick={() => setActiveTab('peeling')} />
+
               <PeriodicKpi label="Soaking Input" primary={`${quantity(card.soaking_qty)} KG`} secondary={`Chem ${quantity(card.chemical_qty)} | Salt ${quantity(card.salt_qty)}`} icon="fa-water" onClick={() => setActiveTab('soaking')} />
               <PeriodicKpi label="Net Production" primary={`${quantity(card.production_qty)} KG`} secondary="Packed Output" icon="fa-box-open" onClick={() => setActiveTab('production')} />
               <PeriodicKpi label="Stock Vault Asset" primary={`${quantity(card.stock_qty)} KG`} secondary={`Out: ${quantity(card.stock_out_qty)} KG`} icon="fa-warehouse" onClick={() => setActiveTab('stock_in')} />

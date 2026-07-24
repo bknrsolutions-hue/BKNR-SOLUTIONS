@@ -1,4 +1,5 @@
-from sqlalchemy import Column, Integer, String, Date, Time, Float, Boolean, DateTime, UniqueConstraint, ForeignKey, Text
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Date, Time, Float, Boolean, DateTime, UniqueConstraint, ForeignKey, Text, Index
 from app.database import Base
 
 class GateEntry(Base):
@@ -40,6 +41,10 @@ class GateEntry(Base):
             "challan_number",
             name="uix_company_gatepass_challan"
         ),
+        Index("ix_gate_entry_company_date", "company_id", "date"),
+        Index("ix_gate_entry_company_batch", "company_id", "batch_number"),
+        Index("ix_gate_entry_company_prod_for_date", "company_id", "production_for", "date"),
+        Index("ix_gate_entry_company_status_cancel", "company_id", "status", "is_cancelled"),
     )
 
 
@@ -86,6 +91,9 @@ class GoodsGateMovement(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "movement_number", name="uix_company_goods_gate_movement"),
+        Index("ix_goods_gate_company_date_type", "company_id", "movement_date", "movement_type"),
+        Index("ix_goods_gate_company_location_date", "company_id", "plant_location", "movement_date"),
+        Index("ix_goods_gate_company_status_return", "company_id", "status", "return_status"),
     )
 
 
@@ -157,6 +165,14 @@ class RawMaterialPurchasing(Base):
     cancel_reason = Column(String, nullable=True)
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_rmp_company_date", "company_id", "date"),
+        Index("ix_rmp_company_batch", "company_id", "batch_number"),
+        Index("ix_rmp_company_supplier_date", "company_id", "supplier_name", "date"),
+        Index("ix_rmp_company_prod_for_peeling", "company_id", "production_for", "peeling_at"),
+        Index("ix_rmp_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
 # ---------------------------------------------------------
 # DE-HEADING
 # ---------------------------------------------------------
@@ -179,6 +195,7 @@ class DeHeading(Base):
     diff_percent = Column(Float)
 
     contractor = Column(String(255))
+    table_no = Column(String(50), nullable=True, index=True)
     rate_per_kg = Column(Float)
     amount = Column(Float)
     journal_id = Column(Integer, nullable=True)
@@ -190,6 +207,40 @@ class DeHeading(Base):
     cancel_reason = Column(String, nullable=True)
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_de_heading_company_date", "company_id", "date"),
+        Index("ix_de_heading_company_batch", "company_id", "batch_number"),
+        Index("ix_de_heading_company_prod_for_peeling", "company_id", "production_for", "peeling_at"),
+        Index("ix_de_heading_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
+
+# ---------------------------------------------------------
+# TABLE REGISTRATION (De-Heading & Peeling Daily Tables)
+# ---------------------------------------------------------
+class TableRegistration(Base):
+    __tablename__ = "table_registrations"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_id = Column(String(50), nullable=False, index=True)
+    date = Column(Date, nullable=False, index=True)
+    department = Column(String(50), nullable=False, index=True)  # 'De-Heading' or 'Peeling'
+    table_no = Column(String(50), nullable=False, index=True)
+    worker_type = Column(String(100), nullable=False)  # Contractor / KG Basis Company Worker / Daily Basis Company Worker
+    contractor_name = Column(String(255), nullable=True)
+    no_of_workers = Column(Integer, default=0)
+    worker_ids = Column(Text, nullable=True)  # JSON or comma-separated list of worker IDs
+    production_at = Column(String(255), nullable=True, index=True)
+    production_for = Column(String(255), nullable=True, index=True)
+
+    status = Column(String(50), default="Active")
+    created_by = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index("ix_table_reg_company_dept_date", "company_id", "department", "date"),
+        Index("ix_table_reg_company_table", "company_id", "table_no"),
+    )
 
 # ---------------------------------------------------------
 # GRADING (Matches PostgreSQL exactly)
@@ -219,6 +270,13 @@ class Grading(Base):
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
 
+    __table_args__ = (
+        Index("ix_grading_company_date", "company_id", "date"),
+        Index("ix_grading_company_batch", "company_id", "batch_number"),
+        Index("ix_grading_company_prod_for_peeling", "company_id", "production_for", "peeling_at"),
+        Index("ix_grading_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
+
 
 
 
@@ -243,6 +301,7 @@ class Peeling(Base):
     yield_percent = Column(Float)
     target_yield_percent = Column(Float)
     contractor_name = Column(String(100))      # ← MISSING FIELD (Added Now)
+    table_no = Column(String(50), nullable=True, index=True)
     rate = Column(Float)
     amount = Column(Float)
     journal_id = Column(Integer, nullable=True)
@@ -261,6 +320,13 @@ class Peeling(Base):
     cancel_reason = Column(String, nullable=True)
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_peeling_company_date", "company_id", "date"),
+        Index("ix_peeling_company_batch", "company_id", "batch_number"),
+        Index("ix_peeling_company_prod_for_peeling", "company_id", "production_for", "peeling_at"),
+        Index("ix_peeling_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
 
 
 
@@ -302,6 +368,13 @@ class Soaking(Base):
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
 
+    __table_args__ = (
+        Index("ix_soaking_company_date", "company_id", "date"),
+        Index("ix_soaking_company_batch", "company_id", "batch_number"),
+        Index("ix_soaking_company_prod_for_at", "company_id", "production_for", "production_at"),
+        Index("ix_soaking_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
+
 
 # ---------------------------------------------------------
 # PRODUCTION
@@ -340,6 +413,14 @@ class Production(Base):
     cancel_reason = Column(String, nullable=True)
     cancelled_by = Column(String(255), nullable=True)
     cancelled_at = Column(DateTime, nullable=True)
+
+    __table_args__ = (
+        Index("ix_production_company_date", "company_id", "date"),
+        Index("ix_production_company_batch", "company_id", "batch_number"),
+        Index("ix_production_company_prod_for_at", "company_id", "production_for", "production_at"),
+        Index("ix_production_company_product_dims", "company_id", "species", "variety_name", "grade", "glaze"),
+        Index("ix_production_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
 
 
 
@@ -389,3 +470,9 @@ class HlsoForGrading(Base):
     status = Column(String(50), default="Pending") # Pending / Completed (Done)
     email = Column(String(255))
     company_id = Column(String(50), index=True, nullable=False)    # -
+
+    __table_args__ = (
+        Index("ix_hlso_for_grading_company_batch", "company_id", "batch_number"),
+        Index("ix_hlso_for_grading_company_status", "company_id", "status"),
+        Index("ix_hlso_for_grading_company_prod_peeling", "company_id", "production_for", "peeling_at"),
+    )

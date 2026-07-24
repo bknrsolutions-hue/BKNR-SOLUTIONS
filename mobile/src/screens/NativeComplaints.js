@@ -10,7 +10,7 @@ import { useERPTheme } from '../theme/ERPThemeContext';
 export default function NativeComplaints({ onBack, filters = {}, panelMode = false }) {
   const { theme } = useERPTheme();
   const [tickets, setTickets] = useState([]);
-  const [supportView, setSupportView] = useState('knowledge');
+  const [supportView, setSupportView] = useState('tickets');
   const [knowledge, setKnowledge] = useState({ entries: [], categories: [], total: 0 });
   const [expandedAnswer, setExpandedAnswer] = useState('');
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);

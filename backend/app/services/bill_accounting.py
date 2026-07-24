@@ -459,7 +459,7 @@ def post_contractor_source_charge(
     gst_amount = round(taxable_amount * gst_percent / 100.0, 2)
     total_amount = round(taxable_amount + gst_amount, 2)
     if total_amount <= 0:
-        raise ValueError("Contractor source charge must be greater than zero")
+        return None
 
     existing = db.query(VoucherHeader).filter(
         VoucherHeader.company_id == company_id,

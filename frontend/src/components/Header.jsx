@@ -854,8 +854,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             className="hamburger-trigger-btn" 
             onClick={() => setSidebarOpen(true)} 
             title="Menu"
+            aria-label="Toggle navigation sidebar"
           >
-            <i className="fa-solid fa-bars-staggered"></i>
+            <i className="fa-solid fa-bars-staggered" aria-hidden="true"></i>
           </button>
 
           <button 
@@ -880,8 +881,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             className="header-home-btn" 
             onClick={() => setActivePage('dashboard_processing')} 
             title="Home Workspace Screen"
+            aria-label="Go to home processing dashboard"
           >
-            <i className="fa-solid fa-house"></i>
+            <i className="fa-solid fa-house" aria-hidden="true"></i>
           </button>
 
           <div className="header-brand-title-box">
@@ -898,14 +900,15 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
           onKeyDown={event => {
             if (event.key === 'Enter' || event.key === ' ') setCommandOpen(true);
           }}
-          aria-label="Open global search"
+          aria-label="Open global search command palette"
         >
-          <i className="fa-solid fa-magnifying-glass"></i>
+          <i className="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
           <input
             type="text"
             placeholder="Search Customer, Supplier, Batch, Invoice..."
             readOnly
             tabIndex={-1}
+            aria-label="Global search input placeholder"
           />
           <span className="cmd-k-hint">Ctrl + K</span>
         </div>
@@ -914,64 +917,77 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         <div className="header-right-actions">
           
           {/* Quick Actions Trigger */}
-          <div
+          <button
+            type="button"
             className="icon-action-btn action-quick"
             onClick={() => setQaPanelOpen(true)}
             title="Quick Actions"
+            aria-label="Open quick actions panel"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-plus"></i>
+            <i className="fa-solid fa-plus" aria-hidden="true"></i>
             <span className="icon-action-label">Quick</span>
-          </div>
+          </button>
 
-          <div
+          <button
+            type="button"
             className="icon-action-btn action-support"
             onClick={() => openSupportPage(isDefaultSuperAdmin ? 'admin_helpdesk' : 'admin_raise_ticket')}
             title="Support & Helpdesk"
+            aria-label="Open support and helpdesk panel"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-support-agent"></i>
+            <i className="fa-solid fa-support-agent" aria-hidden="true"></i>
             <span className="icon-action-label">Support</span>
-          </div>
+          </button>
 
           {/* Notifications Trigger */}
-          <div
+          <button
+            type="button"
             className="icon-action-btn action-alerts"
             onClick={toggleNotifications}
             title="Notifications"
+            aria-label="Toggle notifications panel"
             style={{ cursor: 'pointer', position: 'relative' }}
           >
-            <i className="fa-solid fa-bell"></i>
+            <i className="fa-solid fa-bell" aria-hidden="true"></i>
             <span className="icon-action-label">Alerts</span>
             {hasUnseenNotifications && <div className="notification-dot"></div>}
-          </div>
+          </button>
 
           {/* Theme switch button */}
-          <div
+          <button
+            type="button"
             className="icon-action-btn action-theme"
             onClick={toggleTheme}
             title="Switch Mode"
+            aria-label="Toggle dark/light theme mode"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-circle-half-stroke"></i>
+            <i className="fa-solid fa-circle-half-stroke" aria-hidden="true"></i>
             <span className="icon-action-label">Theme</span>
-          </div>
+          </button>
 
           {/* Customize Colors Trigger */}
-          <div
+          <button
+            type="button"
             className="icon-action-btn action-colors"
             onClick={toggleColorCustomizer}
             title="Customize Colors"
+            aria-label="Open color customizer"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-palette"></i>
+            <i className="fa-solid fa-palette" aria-hidden="true"></i>
             <span className="icon-action-label">Colors</span>
-          </div>
+          </button>
 
           {/* User profile dropdown button */}
-          <div 
+          <button
+            type="button"
             className={`corp-profile-btn ${dropdownOpen ? 'active' : ''}`} 
             onClick={() => { setDropdownOpen(!dropdownOpen); setNotifOpen(false); setColorOpen(false); }}
+            aria-label="Open profile menu"
+            aria-expanded={dropdownOpen}
           >
             {displayTenantLogoUrl
               ? <img className="corp-avatar corp-avatar-img" src={displayTenantLogoUrl} alt={`${companyName} logo`} onError={() => setTenantLogoUrl('')} />
@@ -980,8 +996,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
               <span className="corp-name">{userName}</span>
               <span className="corp-role">{user?.role || 'Role'} | {companyName}</span>
             </div>
-            <i className="fa-solid fa-chevron-down" style={{ fontSize: '10px', marginLeft: '6px', color: 'var(--text-tertiary)' }}></i>
-          </div>
+            <i className="fa-solid fa-chevron-down" style={{ fontSize: '10px', marginLeft: '6px', color: 'var(--text-tertiary)' }} aria-hidden="true"></i>
+          </button>
+
 
           {/* ── Dropdown Console Mega Menu ── */}
           {dropdownOpen && (

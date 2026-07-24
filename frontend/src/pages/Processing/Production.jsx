@@ -65,6 +65,7 @@ export default function Production() {
   const [collapsedSoakComps, setCollapsedSoakComps] = useState({});
   const [collapsedRejComps, setCollapsedRejComps] = useState({});
   const [collapsedReqPOs, setCollapsedReqPOs] = useState({});
+  const [showCompletedReqs, setShowCompletedReqs] = useState(false);
 
   const fetchBackendData = async () => {
     setLoading(true);
@@ -464,7 +465,18 @@ export default function Production() {
 
   // Grouped requirements mapping (PO Number)
   const getGroupedRequirements = () => {
-    const filtered = pendingOrders.filter(p => matchesFilters(p, 'pending'));
+    const filtered = pendingOrders.filter(p => {
+      const prodPendingMC = parseFloat(p.prod_pending_mc || 0);
+      const pendingProduction = parseFloat(p.pending_production || 0);
+      const reqHlso = parseFloat(p.req_hlso_qty || 0);
+      const reqHoso = parseFloat(p.req_hoso_qty || 0);
+      const hasPendingRequirement = prodPendingMC > 0 || reqHlso > 0 || reqHoso > 0 || pendingProduction < 0;
+      
+      if (!showCompletedReqs && !hasPendingRequirement) {
+        return false;
+      }
+      return matchesFilters(p, 'pending');
+    });
     const grouped = {};
     filtered.forEach(p => {
       const po = p.po_number || 'NO-PO';
@@ -873,7 +885,19 @@ export default function Production() {
       <div className="card" style={{ padding: '0', overflow: 'hidden', flexShrink: 0 }}>
         <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-rep)' }}>Production Requirements</span>
-          <span className="badge badge-success">{pendingOrders.length} Order Rows</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <label style={{ fontSize: '10px', fontWeight: '700', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '5px', cursor: 'pointer', margin: 0 }}>
+              <input 
+                type="checkbox" 
+                checked={showCompletedReqs} 
+                onChange={e => setShowCompletedReqs(e.target.checked)} 
+              />
+              Show Completed
+            </label>
+            <span className="badge badge-success">
+              {Object.values(reqGroups).reduce((acc, list) => acc + list.length, 0)} Active Rows
+            </span>
+          </div>
         </div>
         <div className="table-responsive">
           <table className="bknr-table" style={{ minWidth: '2200px' }}>
@@ -1351,25 +1375,25 @@ const modalOverlayStyle = {
   position: 'fixed',
   top: 0,
   left: 0,
-  right: 0,
-  bottom: 0,
-  background: 'rgba(0, 0, 0, 0.75)',
-  backdropFilter: 'blur(5px)',
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(0, 0, 0, 0.5)',
+  backdropFilter: 'blur(3px)',
   display: 'flex',
-  alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 10000,
-  padding: '20px'
+  alignItems: 'center',
+  zIndex: 1000
 };
 
 const modalContentStyle = {
-  background: 'var(--surface-panel)',
-  border: '1px solid var(--border-highlight)',
-  borderRadius: 'var(--radius-panel)',
+  background: 'var(--card-bg)',
+  border: '1px solid var(--border-light)',
+  borderRadius: '8px',
   padding: '24px',
-  width: '100%',
-  maxWidth: '850px',
-  boxShadow: 'var(--shadow-float)',
+  width: '90%',
+  maxWidth: '900px',
+  maxHeight: '90vh',
+  overflowY: 'auto',
   color: 'var(--text-primary)'
 };
 

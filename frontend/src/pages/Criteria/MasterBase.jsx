@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { sessionFetch } from '../../utils/sessionFetch';
+import { normalizeFieldValue, normalizeRecordFields, standardInputProps } from '../../utils/fieldStandards';
 import './bknr-masters.css';
 
 export default function MasterBase({
@@ -26,7 +28,7 @@ export default function MasterBase({
   useEffect(() => {
     fields.forEach(field => {
       if (field.type === 'select' && field.lookupModel) {
-        fetch(`/criteria/api/${field.lookupModel}`)
+        sessionFetch(`/criteria/api/${field.lookupModel}`)
           .then(res => res.json())
           .then(resData => {
             if (resData.status === 'success' && Array.isArray(resData.data)) {
@@ -44,13 +46,13 @@ export default function MasterBase({
   // Load master data
   const loadData = () => {
     setLoading(true);
-    fetch(`/criteria/api/${modelName}`)
+    sessionFetch(`/criteria/api/${modelName}`)
       .then(res => res.json())
       .then(resData => {
         if (resData.status === 'success' && Array.isArray(resData.data)) {
           setData(resData.data);
         } else {
-          showNotification('error', 'Failed to retrieve data log.');
+          showNotification('error', resData.error || 'Failed to retrieve data log.');
         }
       })
       .catch(err => {
@@ -78,7 +80,7 @@ export default function MasterBase({
   };
 
   const handleInputChange = (fieldId, val) => {
-    setFormData(prev => ({ ...prev, [fieldId]: val }));
+    setFormData(prev => ({ ...prev, [fieldId]: normalizeFieldValue(fieldId, val) }));
   };
 
   const clearForm = () => {
@@ -99,13 +101,13 @@ export default function MasterBase({
     }
 
     try {
-      const bodyPayload = { ...formData };
+      const bodyPayload = normalizeRecordFields(formData);
       if (user) {
         bodyPayload.email = user.email;
         bodyPayload.company_id = user.company_code;
       }
 
-      const res = await fetch(`/criteria/api/${modelName}`, {
+      const res = await sessionFetch(`/criteria/api/${modelName}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bodyPayload)
@@ -136,7 +138,7 @@ export default function MasterBase({
     if (!window.confirm('Are you sure you want to cancel this profile record?')) return;
 
     try {
-      const res = await fetch(`/criteria/api/${modelName}/delete/${selectedRow.id}`, {
+      const res = await sessionFetch(`/criteria/api/${modelName}/delete/${selectedRow.id}`, {
         method: 'POST'
       });
 
@@ -342,6 +344,7 @@ export default function MasterBase({
                     ) : type === 'textarea' ? (
                       <textarea
                         id={field.id}
+                        {...standardInputProps(field.id)}
                         placeholder={field.placeholder || `Enter ${field.label}...`}
                         value={formData[field.id] || ''}
                         required={isRequired}

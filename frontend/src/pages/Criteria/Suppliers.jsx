@@ -1,4 +1,3 @@
-import React from 'react';
 import MasterBase from './MasterBase';
 
 export default function Suppliers(props) {
@@ -10,12 +9,12 @@ export default function Suppliers(props) {
       fields={[
         { id: 'supplier_name', label: 'Supplier Name', type: 'text', required: true },
         { id: 'supplier_email', label: 'Supplier Email', type: 'email' },
-        { id: 'phone', label: 'Phone Number', type: 'text' },
+        { id: 'phone', label: 'Mobile Number', type: 'text', placeholder: '10 digit mobile number' },
         { id: 'payment_cycle', label: 'Payment Cycle', type: 'text' },
         { id: 'gst_number', label: 'GST Number', type: 'text' },
         { id: 'bank_name', label: 'Bank Name', type: 'text' },
-        { id: 'account_no', label: 'Account Number', type: 'text' },
-        { id: 'ifsc', label: 'IFSC Code', type: 'text' },
+        { id: 'account_no', label: 'Account Number', type: 'text', placeholder: '9 to 18 digit account number' },
+        { id: 'ifsc', label: 'IFSC Code', type: 'text', placeholder: 'Example: SBIN0001234' },
         { id: 'address', label: 'Address', type: 'textarea', gridSpan: 4 }
       ]}
       columns={[

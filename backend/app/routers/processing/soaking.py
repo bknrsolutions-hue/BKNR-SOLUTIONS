@@ -96,11 +96,13 @@ def update_floor_balance_row(
 # =====================================================
 @router.get("/soaking", response_class=HTMLResponse)
 def show_soaking(request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    raw_company_id = request.session.get("company_code")
     email = request.session.get("email")
 
-    if not email or not company_id:
+    if not email or raw_company_id is None:
         return RedirectResponse("/auth/login", status_code=303)
+
+    company_id = str(raw_company_id)
 
     now_ist = ist_now()
     current_date = now_ist.date()

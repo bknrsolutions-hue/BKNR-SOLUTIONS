@@ -22,6 +22,7 @@ from app.database.models.users import Company, User
 from app.database.models.criteria import (
     contractors,
     kg_basis_labour_rates,
+    daily_basis_worker_rates,
     production_at,
     purposes,
     species,
@@ -134,13 +135,8 @@ def _queue_approval(db, background_tasks, row, entry_type, approver, requested_b
         status="PENDING",
     )
     db.add(approval)
-    background_tasks.add_task(
-        send_email,
-        approver.email,
-        title,
-        _approval_email_html(title, message),
-        message,
-    )
+    # Email dispatch disabled per requirement for Visitor and Day Worker entries
+
 
 
 def _next_contract_labour_number(db, company_id):
@@ -211,6 +207,68 @@ def _lookup_values(db, model, column, company_id):
     return [value for (value,) in db.query(column).filter(model.company_id == company_id).order_by(column).all()]
 
 
+def _is_text_name(value):
+    return bool(re.fullmatch(r"[A-Za-z][A-Za-z .'-]*", _text(value)))
+
+
+def _validate_contract_member(member, row_number):
+    row_label = f"Worker {row_number}"
+    labour_name = _text(member.get("labour_name"))
+    contractor_name = _text(member.get("contractor_name"))
+    department = _text(member.get("department"))
+    production_at_value = _text(member.get("production_at"))
+    joining_date = _parse_date(member.get("joining_date"))
+    mobile = re.sub(r"\D", "", _text(member.get("mobile")))
+    aadhar_number = re.sub(r"\D", "", _text(member.get("aadhar_number")))
+    gender = _text(member.get("gender"))
+
+    if not labour_name:
+        raise ValueError(f"{row_label}: Worker Name is required")
+    if not _is_text_name(labour_name):
+        raise ValueError(f"{row_label}: Worker Name must contain text only")
+    if not contractor_name:
+        raise ValueError(f"{row_label}: Contractor is required")
+    if not department:
+        raise ValueError(f"{row_label}: Department is required")
+    if not production_at_value:
+        raise ValueError(f"{row_label}: Plant / Location is required")
+    if not joining_date:
+        raise ValueError(f"{row_label}: Joining Date is required")
+    if not re.fullmatch(r"\d{10}", mobile):
+        raise ValueError(f"{row_label}: Mobile Number must be 10 digits")
+    if not re.fullmatch(r"\d{12}", aadhar_number):
+        raise ValueError(f"{row_label}: Aadhaar Number must be 12 digits")
+    if gender not in {"Male", "Female", "Other"}:
+        raise ValueError(f"{row_label}: Gender must be Male, Female, or Other")
+
+    return {
+        "labour_name": labour_name,
+        "contractor_name": contractor_name,
+        "department": department,
+        "production_at": production_at_value,
+        "joining_date": joining_date,
+        "mobile": mobile,
+        "aadhar_number": aadhar_number,
+        "gender": gender,
+        "remarks": _text(member.get("remarks")) or None,
+    }
+
+
+def _add_audit(db, table_name, record_id, company_id, field_name, old_value, new_value, edited_by):
+    if str(old_value or "") == str(new_value or ""):
+        return
+    db.add(AuditLog(
+        table_name=table_name,
+        record_id=record_id,
+        company_id=company_id,
+        field_name=field_name,
+        old_value=str(old_value or ""),
+        new_value=str(new_value or ""),
+        edited_by=edited_by,
+        edited_at=ist_now().replace(tzinfo=None),
+    ))
+
+
 @router.get("/labour-management")
 def labour_management_data(request: Request, db: Session = Depends(get_db)):
     session = _session(request)
@@ -258,27 +316,21 @@ async def save_contract_labour(request: Request, db: Session = Depends(get_db)):
     next_number = _next_contract_labour_number(db, company_id)
     company_initial = _first_letter(request.session.get("company_name") or company_id)
     try:
-        for member in members:
-            labour_name = _text(member.get("labour_name"))
-            contractor_name = _text(member.get("contractor_name"))
-            joining_date = _parse_date(member.get("joining_date"), now.date())
-            if not labour_name:
-                raise ValueError("Worker name is required for every member")
-            if not contractor_name:
-                raise ValueError("Contractor is required for every member")
+        for index, member in enumerate(members, start=1):
+            clean_member = _validate_contract_member(member, index)
             if next_number > 99999:
                 raise ValueError("Contract worker ID sequence has reached 99999")
             row = ContractLabour(
-                labour_id=f"{company_initial}{_first_letter(contractor_name)}{next_number:05d}",
-                labour_name=labour_name,
-                contractor_name=contractor_name,
-                mobile=_text(member.get("mobile")) or None,
-                aadhar_number=_text(member.get("aadhar_number")) or None,
-                gender=_text(member.get("gender")) or None,
-                joining_date=joining_date,
-                department=_text(member.get("department")) or None,
-                production_at=_text(member.get("production_at")) or None,
-                remarks=_text(member.get("remarks")) or None,
+                labour_id=f"{company_initial}{_first_letter(clean_member['contractor_name'])}{next_number:05d}",
+                labour_name=clean_member["labour_name"],
+                contractor_name=clean_member["contractor_name"],
+                mobile=clean_member["mobile"],
+                aadhar_number=clean_member["aadhar_number"],
+                gender=clean_member["gender"],
+                joining_date=clean_member["joining_date"],
+                department=clean_member["department"],
+                production_at=clean_member["production_at"],
+                remarks=clean_member["remarks"],
                 email=email,
                 company_id=company_id,
                 date=now.date(),
@@ -734,16 +786,117 @@ def delete_labour_entry(worker_group: str, record_id: int, request: Request, db:
     session = _session(request)
     if not session:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
-    _, company_id = session
+    email, company_id = session
     model = ContractLabour if worker_group == "contract" else DailyTemporaryWorker if worker_group == "daily" else None
     if model is None:
         return JSONResponse(status_code=400, content={"error": "Invalid worker group"})
     row = db.query(model).filter(model.id == record_id, model.company_id == company_id).first()
     if not row:
         return JSONResponse(status_code=404, content={"error": "Worker entry not found"})
-    db.delete(row)
+    if worker_group == "contract":
+        old_status = row.status
+        row.status = "Cancelled"
+        _add_audit(db, "contract_labour", row.id, company_id, "status", old_status, "Cancelled", email)
+    else:
+        db.delete(row)
     db.commit()
     return {"status": "success"}
+
+
+@router.post("/labour-management/contract/update/{record_id}")
+async def update_contract_labour(record_id: int, request: Request, db: Session = Depends(get_db)):
+    session = _session(request)
+    if not session:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
+    email, company_id = session
+    row = db.query(ContractLabour).filter(
+        ContractLabour.id == record_id,
+        ContractLabour.company_id == company_id,
+    ).first()
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "Contract worker not found"})
+
+    payload = await request.json()
+    try:
+      clean = _validate_contract_member(payload, 1)
+    except ValueError as exc:
+      return JSONResponse(status_code=400, content={"error": str(exc)})
+
+    updates = {
+        "labour_name": clean["labour_name"],
+        "contractor_name": clean["contractor_name"],
+        "mobile": clean["mobile"],
+        "aadhar_number": clean["aadhar_number"],
+        "gender": clean["gender"],
+        "joining_date": clean["joining_date"],
+        "department": clean["department"],
+        "production_at": clean["production_at"],
+        "remarks": clean["remarks"],
+    }
+    for field_name, new_value in updates.items():
+        old_value = getattr(row, field_name)
+        _add_audit(db, "contract_labour", row.id, company_id, field_name, old_value, new_value, email)
+        setattr(row, field_name, new_value)
+    db.commit()
+    return {"status": "success", "message": "Contract worker updated successfully", "record": _serialize(row)}
+
+
+@router.get("/labour-management/contract/audit/{record_id}")
+def contract_labour_audit(record_id: int, request: Request, db: Session = Depends(get_db)):
+    session = _session(request)
+    if not session:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
+    _, company_id = session
+    row = db.query(ContractLabour).filter(
+        ContractLabour.id == record_id,
+        ContractLabour.company_id == company_id,
+    ).first()
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "Contract worker not found"})
+    audits = db.query(AuditLog).filter(
+        AuditLog.company_id == company_id,
+        AuditLog.table_name == "contract_labour",
+        AuditLog.record_id == record_id,
+    ).order_by(AuditLog.edited_at.desc()).all()
+    return {
+        "status": "success",
+        "worker": _serialize(row),
+        "audits": [
+            {
+                "id": audit.id,
+                "field_name": audit.field_name,
+                "old_value": audit.old_value,
+                "new_value": audit.new_value,
+                "edited_by": audit.edited_by,
+                "edited_at": audit.edited_at.isoformat() if audit.edited_at else None,
+            }
+            for audit in audits
+        ],
+    }
+
+
+def _ensure_kg_worker_schema(db: Session):
+    try:
+        daily_basis_worker_rates.__table__.create(bind=db.bind, checkfirst=True)
+    except Exception:
+        pass
+    statements = [
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS daily_salary DOUBLE PRECISION DEFAULT 0",
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS worker_category VARCHAR(50)",
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS bank_name VARCHAR(100)",
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS account_number VARCHAR(50)",
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS ifsc_code VARCHAR(20)",
+        "ALTER TABLE kg_basis_workers ADD COLUMN IF NOT EXISTS address TEXT",
+    ]
+    try:
+        with db.bind.begin() as conn:
+            for stmt in statements:
+                try:
+                    conn.execute(text(stmt))
+                except Exception:
+                    pass
+    except Exception:
+        pass
 
 
 @router.get("/kg-basis-labour")
@@ -752,6 +905,7 @@ def kg_basis_labour_data(request: Request, db: Session = Depends(get_db)):
     if not session:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
     _, company_id = session
+    _ensure_kg_worker_schema(db)
     rows = db.query(KgBasisCompanyLabour).filter(
         KgBasisCompanyLabour.company_id == company_id
     ).order_by(KgBasisCompanyLabour.work_date.desc(), KgBasisCompanyLabour.id.desc()).all()
@@ -759,6 +913,10 @@ def kg_basis_labour_data(request: Request, db: Session = Depends(get_db)):
         kg_basis_labour_rates.company_id == company_id,
         kg_basis_labour_rates.status.ilike("active"),
     ).order_by(kg_basis_labour_rates.effective_from.desc()).all()
+    daily_rates = db.query(daily_basis_worker_rates).filter(
+        daily_basis_worker_rates.company_id == company_id,
+        daily_basis_worker_rates.status.ilike("active"),
+    ).order_by(daily_basis_worker_rates.applicable_from.desc()).all()
     workers = db.query(KgBasisWorker).filter(
         KgBasisWorker.company_id == company_id
     ).order_by(KgBasisWorker.id.desc()).all()
@@ -770,6 +928,7 @@ def kg_basis_labour_data(request: Request, db: Session = Depends(get_db)):
         "status": "success",
         "records": [_serialize(row) for row in rows],
         "rates": [_serialize(row) for row in rates],
+        "daily_worker_rates": [_serialize(row) for row in daily_rates],
         "workers": [_serialize(row) for row in workers],
         "attendance": [_serialize(row) for row in attendance],
         "lookups": {
@@ -786,6 +945,7 @@ async def save_kg_workers(request: Request, db: Session = Depends(get_db)):
     if not session:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
     email, company_id = session
+    _ensure_kg_worker_schema(db)
     payload = await request.json()
     members = payload.get("members") or []
     if not isinstance(members, list) or not members:
@@ -800,17 +960,26 @@ async def save_kg_workers(request: Request, db: Session = Depends(get_db)):
             worker_name = _text(member.get("worker_name"))
             if not worker_name:
                 raise ValueError("Worker name is required for every member")
+            if not _is_text_name(worker_name):
+                raise ValueError("Worker name must contain text only")
             if next_number > 99999:
                 raise ValueError("KG worker ID sequence has reached 99999")
             row = KgBasisWorker(
                 worker_id=f"{company_initial}K{next_number:05d}",
                 worker_name=worker_name,
+                worker_type=_text(member.get("worker_type")) or "KG Basis Company Worker",
                 department=_text(member.get("department")) or None,
                 mobile=_text(member.get("mobile")) or None,
                 aadhar_number=_text(member.get("aadhar_number")) or None,
                 gender=_text(member.get("gender")) or None,
                 joining_date=_parse_date(member.get("joining_date"), now.date()),
                 production_at=_text(member.get("production_at")) or None,
+                daily_salary=_number(member.get("daily_salary")),
+                worker_category=_text(member.get("worker_category")) or None,
+                bank_name=_text(member.get("bank_name")) or None,
+                account_number=_text(member.get("account_number") or member.get("bank_account_no")) or None,
+                ifsc_code=_text(member.get("ifsc_code")) or None,
+                address=_text(member.get("address")) or None,
                 remarks=_text(member.get("remarks")) or None,
                 email=email,
                 company_id=company_id,
@@ -905,8 +1074,9 @@ async def punch_kg_workers(request: Request, db: Session = Depends(get_db)):
     }
 
 
+@router.post("/kg-basis-labour/worker/cancel/{record_id}")
 @router.post("/kg-basis-labour/worker/delete/{record_id}")
-def delete_kg_worker(record_id: int, request: Request, db: Session = Depends(get_db)):
+def cancel_kg_worker(record_id: int, request: Request, db: Session = Depends(get_db)):
     session = _session(request)
     if not session:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
@@ -917,9 +1087,52 @@ def delete_kg_worker(record_id: int, request: Request, db: Session = Depends(get
     ).first()
     if not row:
         return JSONResponse(status_code=404, content={"error": "KG worker not found"})
-    db.delete(row)
+    row.status = "Cancelled"
     db.commit()
-    return {"status": "success"}
+    return {"status": "success", "message": "Worker registration cancelled successfully"}
+
+
+@router.post("/kg-basis-labour/worker/update/{record_id}")
+async def update_kg_worker(record_id: int, request: Request, db: Session = Depends(get_db)):
+    session = _session(request)
+    if not session:
+        return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
+    _, company_id = session
+    row = db.query(KgBasisWorker).filter(
+        KgBasisWorker.id == record_id,
+        KgBasisWorker.company_id == company_id,
+    ).first()
+    if not row:
+        return JSONResponse(status_code=404, content={"error": "KG worker not found"})
+    
+    payload = await request.json()
+    worker_name = _text(payload.get("worker_name"))
+    if not worker_name:
+        return JSONResponse(status_code=400, content={"error": "Worker name is required"})
+    if not _is_text_name(worker_name):
+        return JSONResponse(status_code=400, content={"error": "Worker name must contain text only"})
+        
+    row.worker_name = worker_name
+    row.worker_type = _text(payload.get("worker_type")) or row.worker_type
+    row.department = _text(payload.get("department")) or None
+    row.mobile = _text(payload.get("mobile")) or None
+    row.aadhar_number = _text(payload.get("aadhar_number")) or None
+    row.gender = _text(payload.get("gender")) or None
+    if payload.get("joining_date"):
+        row.joining_date = _parse_date(payload.get("joining_date"), row.joining_date)
+    row.production_at = _text(payload.get("production_at")) or None
+    row.daily_salary = _number(payload.get("daily_salary"))
+    row.worker_category = _text(payload.get("worker_category")) or None
+    row.bank_name = _text(payload.get("bank_name")) or None
+    row.account_number = _text(payload.get("account_number")) or None
+    row.ifsc_code = _text(payload.get("ifsc_code")) or None
+    row.address = _text(payload.get("address")) or None
+    row.remarks = _text(payload.get("remarks")) or None
+    if payload.get("status"):
+        row.status = _text(payload.get("status"))
+
+    db.commit()
+    return {"status": "success", "message": "Worker updated successfully", "record": _serialize(row)}
 
 
 @router.post("/kg-basis-labour")

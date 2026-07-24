@@ -171,6 +171,72 @@ async def de_heading_report(
     def get_unique(field_attr):
         return sorted(list({getattr(r, field_attr) for r in rows if getattr(r, field_attr)}))
 
+    from app.database.models.processing import TableRegistration
+    import re
+    table_regs = db.query(TableRegistration).filter(
+        TableRegistration.company_id == company_id,
+        TableRegistration.department == "De-Heading"
+    ).all()
+
+    def find_table_registration(r):
+        r_date = r.date
+        if isinstance(r_date, datetime): r_date = r_date.date()
+        if isinstance(r_date, str):
+            try: r_date = dt.datetime.strptime(r_date, "%Y-%m-%d").date()
+            except: pass
+        if not r_date: return None
+
+        date_regs = [tr for tr in table_regs if tr.date == r_date]
+        if not date_regs: return None
+
+        r_tbl = (r.table_no or "").strip().lower()
+        candidate_regs = []
+
+        if r_tbl:
+            candidate_regs = [tr for tr in date_regs if (tr.table_no or "").strip().lower() == r_tbl]
+            if not candidate_regs:
+                candidate_regs = [tr for tr in date_regs if (tr.table_no or "").strip().lower().endswith(r_tbl) or r_tbl.endswith((tr.table_no or "").strip().lower())]
+            if not candidate_regs:
+                r_digits = re.findall(r'\d+', r_tbl)
+                if r_digits:
+                    r_num = r_digits[-1]
+                    for tr in date_regs:
+                        tr_digits = re.findall(r'\d+', (tr.table_no or "").strip().lower())
+                        if tr_digits and tr_digits[-1] == r_num:
+                            candidate_regs.append(tr)
+
+        if not candidate_regs:
+            c_name = getattr(r, 'contractor', None) or getattr(r, 'contractor_name', None)
+            if c_name:
+                candidate_regs = [tr for tr in date_regs if (tr.contractor_name or "").strip().lower() == c_name.strip().lower()]
+
+        if not candidate_regs: return None
+        if len(candidate_regs) == 1: return candidate_regs[0]
+
+        # Shift / Time-wise matching for multiple table registrations on same date
+        r_time = r.time
+        if isinstance(r_time, str):
+            try: r_time = dt.datetime.strptime(r_time, "%H:%M:%S").time()
+            except:
+                try: r_time = dt.datetime.strptime(r_time, "%H:%M").time()
+                except: pass
+
+        if not r_time:
+            return sorted(candidate_regs, key=lambda x: x.created_at or dt.datetime.min)[-1]
+
+        past_regs = []
+        for tr in candidate_regs:
+            tr_time = tr.created_at.time() if tr.created_at else dt.time.min
+            if tr_time <= r_time:
+                past_regs.append((tr_time, tr))
+
+        if past_regs:
+            past_regs.sort(key=lambda x: x[0])
+            return past_regs[-1][1]
+
+        candidate_regs.sort(key=lambda tr: tr.created_at or dt.datetime.min)
+        return candidate_regs[0]
+
     serialized_rows = []
     for r in rows:
         d = row_to_dict(r)
@@ -178,6 +244,19 @@ async def de_heading_report(
             d["date"] = d["date"].isoformat()
         if isinstance(d.get("time"), (dt.time, datetime)):
             d["time"] = d["time"].strftime("%H:%M")
+
+        tr = find_table_registration(r)
+        if tr:
+            d["worker_type"] = tr.worker_type
+            d["no_of_workers"] = tr.no_of_workers
+            d["worker_ids"] = tr.worker_ids
+            if not d.get("table_no") and tr.table_no:
+                d["table_no"] = tr.table_no
+        else:
+            d["worker_type"] = "Contractor" if r.contractor else None
+            d["no_of_workers"] = None
+            d["worker_ids"] = None
+
         serialized_rows.append(d)
 
     context = {
@@ -380,10 +459,41 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     if ids: 
         query = query.filter(DeHeading.id.in_([int(x) for x in ids.split(",") if x.strip()]))
         
+    from app.database.models.processing import TableRegistration
+    table_regs = db.query(TableRegistration).filter(
+        TableRegistration.company_id == company_id,
+        TableRegistration.department == "De-Heading"
+    ).all()
+    reg_map = {
+        (tr.date, (tr.table_no or '').strip().lower()): tr
+        for tr in table_regs
+    }
+
     wb = Workbook()
     ws = wb.active
-    ws.append(["Date", "Batch No", "Contractor", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount"])
-    for r in query.all(): ws.append([str(r.date), r.batch_number, r.contractor, r.species, r.hoso_count, r.hoso_qty, r.hlso_qty, r.yield_percent, r.rate_per_kg, r.amount])
+    ws.append(["Date", "Batch No", "Contractor", "Table No", "Workers / IDs", "Species", "H-Count", "HOSO Qty", "HLSO Qty", "Yield %", "Rate", "Amount"])
+    for r in query.all():
+        tr = find_table_registration(r)
+        w_details = "-"
+        tbl_display = r.table_no or (tr.table_no if tr else "-") or "-"
+        if tr:
+            count = tr.no_of_workers or 0
+            ids_str = (tr.worker_ids or "").strip()
+            if ids_str and not count:
+                count = len([x for x in ids_str.split(",") if x.strip()])
+            
+            if "contractor" in (tr.worker_type or "").lower():
+                w_details = f"{count} Workers" if count > 0 else "-"
+            else:
+                if count > 0 and ids_str:
+                    w_details = f"{count} Workers ({ids_str})"
+                elif count > 0:
+                    w_details = f"{count} Workers"
+                elif ids_str:
+                    w_details = ids_str
+                else:
+                    w_details = "-"
+        ws.append([str(r.date), r.batch_number, r.contractor, r.table_no or "-", w_details, r.species, r.hoso_count, r.hoso_qty, r.hlso_qty, r.yield_percent, r.rate_per_kg, r.amount])
     stream = BytesIO(); wb.save(stream); stream.seek(0)
     return StreamingResponse(stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=DE_HEADING.xlsx"})
 

@@ -21,9 +21,11 @@ from app.database.models.enterprise_finance import (
 from app.services.posting_engine import PostingEngineService
 from app.services.accounting_reports import AccountingReportsService
 from app.services.pdf_renderer import render_pdf_from_html
+from app.utils.access_control import is_super_admin
 from app.utils.timezone import ist_now
 
 router = APIRouter()
+
 
 
 def require_company_code(request: Request) -> str:
@@ -36,7 +38,7 @@ def require_company_code(request: Request) -> str:
 def require_finance_admin(request: Request) -> None:
     role = str(request.session.get("role") or "").strip().lower().replace(" ", "_")
     email = str(request.session.get("email") or "").strip().lower()
-    if role not in {"admin", "super_admin"} and email != "bknr.solutions@gmail.com":
+    if role not in {"admin", "super_admin"} and not is_super_admin(email):
         raise HTTPException(status_code=403, detail="Finance administrator approval is required")
 
 

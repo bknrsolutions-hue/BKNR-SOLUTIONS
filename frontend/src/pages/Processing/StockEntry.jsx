@@ -74,7 +74,7 @@ export default function StockEntry() {
       const rawPos = d.po_numbers || [];
       setPoNumbers(rawPos.includes('N/A') ? rawPos : ['N/A', ...rawPos]);
       setTableData(d.table_data || []);
-      if ((d.table_data || []).length === 0) setShowForm(true);
+
     } catch (e) {
       console.error(e);
     } finally {

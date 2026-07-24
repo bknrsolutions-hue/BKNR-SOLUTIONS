@@ -48,7 +48,9 @@
 
     .main-container { flex: 1; display: flex; overflow: hidden; margin: 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--panel-bg); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
 
-    .ticket-list-panel { width: 350px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); }
+    .ticket-list-panel { width: 100%; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); transition: width 0.3s ease; }
+    .main-container.chat-active .ticket-list-panel { width: 350px; }
+    
     .search-box { padding: 16px; border-bottom: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 10px; background: #fafafa; }
     [data-theme="dark"] .search-box { background: #0f172a; }
     .search-box input, .search-box select { width: 100%; padding: 10px 14px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--panel-bg); color: var(--primary-text); outline: none; font-size: 12px; font-weight: 500; transition: border 0.2s;}
@@ -71,11 +73,14 @@
     .status-IN_PROGRESS { background: #fef3c7; color: #d97706; border: 1px solid #fcd34d;}
     .status-RESOLVED { background: #dcfce7; color: #16a34a; border: 1px solid #86efac;}
 
-    .chat-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+    .chat-panel { flex: 1; display: none; flex-direction: column; background: var(--bg-color); position: relative; }
+    .main-container.chat-active .chat-panel { display: flex; }
+    
     .chat-header { padding: 14px 20px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; }
     .chat-header-info h3 { font-size: 15px; margin: 0; color: var(--primary-text); font-weight: 700;}
     .chat-header-meta { font-size: 11px; color: var(--secondary-text); margin-top: 6px; display: flex; gap: 12px; align-items: center; font-weight: 500;}
-    .mobile-back-btn { display: none; background: transparent; border: none; color: var(--primary-text); font-size: 16px; cursor: pointer; margin-right: 12px; }
+    .mobile-back-btn { display: flex; align-items: center; gap: 4px; background: transparent; border: none; color: var(--primary-text); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 6px; margin-right: 8px; }
+    .mobile-back-btn:hover { background: var(--bg-color); }
 
     .admin-actions { display: flex; gap: 8px; align-items: center; }
     .status-select { padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); font-size: 11px; font-weight: 700; outline: none; cursor: pointer; }
@@ -364,14 +369,11 @@ function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
     document.getElementById("emptyState").classList.add("hidden");
     const chatView = document.getElementById("chatView");
     chatView.classList.remove("hidden");
-    
-    if(window.innerWidth <= 768) {
-        document.getElementById("listPanel").classList.add("hidden-mobile");
-        document.getElementById("chatPanel").classList.add("active-mobile");
-    }
+    document.getElementById("mainContainer").classList.add("chat-active");
     
     document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
-    document.getElementById(`ticket-card-${ticketId}`).classList.add('active');
+    const card = document.getElementById(`ticket-card-${ticketId}`);
+    if (card) card.classList.add('active');
 
     document.getElementById("chatSubject").innerText = subject;
     document.getElementById("chatTicketId").innerText = ticketNum;
@@ -391,8 +393,10 @@ function openAdminChat(ticketId, ticketNum, subject, status, email, company) {
 }
 
 function closeChatMobile() {
-    document.getElementById("listPanel").classList.remove("hidden-mobile");
-    document.getElementById("chatPanel").classList.remove("active-mobile");
+    document.getElementById("mainContainer").classList.remove("chat-active");
+    document.getElementById("chatView").classList.add("hidden");
+    document.getElementById("emptyState").classList.remove("hidden");
+    document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
 }
 
 function toggleChatLock(status) {

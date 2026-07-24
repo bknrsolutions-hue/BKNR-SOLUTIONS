@@ -1,8 +1,11 @@
+import json
 import os
-import pickle
 import time
+from datetime import date, datetime
+from decimal import Decimal
 from fnmatch import fnmatch
 from typing import Any, Callable
+from uuid import UUID
 
 try:
     import redis
@@ -15,6 +18,43 @@ REDIS_URL = os.environ.get("REDIS_URL")
 
 _memory_cache: dict[str, tuple[float, bytes]] = {}
 _redis_client = None
+
+
+class CacheEncoder(json.JSONEncoder):
+    def default(self, o):
+        if isinstance(o, (datetime, date)):
+            return {"__cache_type__": "datetime", "value": o.isoformat()}
+        if isinstance(o, Decimal):
+            return {"__cache_type__": "decimal", "value": str(o)}
+        if isinstance(o, UUID):
+            return {"__cache_type__": "uuid", "value": str(o)}
+        if isinstance(o, set):
+            return {"__cache_type__": "set", "value": list(o)}
+        return super().default(o)
+
+
+def _object_hook(item):
+    if isinstance(item, dict) and item.get("__cache_type__") == "datetime":
+        raw = item["value"]
+        try:
+            return datetime.fromisoformat(raw)
+        except ValueError:
+            return date.fromisoformat(raw)
+    if isinstance(item, dict) and item.get("__cache_type__") == "decimal":
+        return Decimal(item["value"])
+    if isinstance(item, dict) and item.get("__cache_type__") == "uuid":
+        return UUID(item["value"])
+    if isinstance(item, dict) and item.get("__cache_type__") == "set":
+        return set(item["value"])
+    return item
+
+
+def _serialize(value: Any) -> bytes:
+    return json.dumps(value, cls=CacheEncoder, separators=(",", ":")).encode("utf-8")
+
+
+def _deserialize(raw: bytes) -> Any:
+    return json.loads(raw.decode("utf-8"), object_hook=_object_hook)
 
 
 def _client():
@@ -37,7 +77,7 @@ def cache_get(key: str) -> Any | None:
     if client:
         try:
             raw = client.get(key)
-            return pickle.loads(raw) if raw else None
+            return _deserialize(raw) if raw else None
         except Exception:
             return None
 
@@ -48,11 +88,11 @@ def cache_get(key: str) -> Any | None:
     if expires_at < time.time():
         _memory_cache.pop(key, None)
         return None
-    return pickle.loads(raw)
+    return _deserialize(raw)
 
 
 def cache_set(key: str, value: Any, ttl: int = DEFAULT_TTL_SECONDS) -> None:
-    raw = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+    raw = _serialize(value)
     client = _client()
     if client:
         try:

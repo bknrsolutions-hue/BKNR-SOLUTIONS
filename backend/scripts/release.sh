@@ -15,7 +15,7 @@ set -euo pipefail
 VERSION="${1:-}"
 DESCRIPTION="${2:-Release v${1:-}}"
 PRODUCTION_URL="${PRODUCTION_URL:-https://bknrerp.in}"
-DEPLOYMENT_TOKEN="${DEPLOYMENT_TOKEN:-bknr_deploy_token_2026}"
+DEPLOYMENT_TOKEN="${DEPLOYMENT_TOKEN:-}"
 TAG="v$VERSION"
 
 RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'; BLUE='\033[0;34m'; NC='\033[0m'
@@ -24,13 +24,17 @@ ok()    { echo -e "${GREEN}[✓]${NC} $*"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $*"; }
 fail()  { echo -e "${RED}[✗]${NC} $*"; exit 1; }
 
-# ── Validate version ──────────────────────────────────────────
+# ── Validate version & deploy token ───────────────────────────
 if [ -z "$VERSION" ]; then
   fail "Usage: bash scripts/release.sh <version> [description]\n  Example: bash scripts/release.sh 1.2.3 'Fix report'"
 fi
 if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
   fail "Version must be semver format: X.Y.Z (e.g. 1.2.3)"
 fi
+if [ -z "$DEPLOYMENT_TOKEN" ]; then
+  fail "DEPLOYMENT_TOKEN environment variable must be exported before running release.sh"
+fi
+
 
 echo ""
 echo "══════════════════════════════════════════════════════"

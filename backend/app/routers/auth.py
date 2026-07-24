@@ -542,10 +542,13 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     session_id = uuid.uuid4().hex
     activate_exclusive_email_session(db, user.email, session_id)
 
-    # Record login activity
     activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")
     db.add(activity)
     db.commit()
+    from app.main import is_mobile_client
+
+    is_mobile = is_mobile_client(request)
+
 
     request.session.update({
         "email": user.email,
@@ -559,9 +562,11 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "permissions": user.permissions,
         "setup_completed": True,
         "last_activity": get_ist_time().timestamp(),
-        "session_id": session_id
+        "session_id": session_id,
+        "is_mobile_app": is_mobile
     })
     return JSONResponse({"status": "success", "setup_completed": True, "next_page": "/app/#/page/dashboard_processing"})
+
 
 @router.get("/session-info")
 def session_info(request: Request, db: Session = Depends(get_db)):
@@ -577,7 +582,9 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         last_activity = float(request.session.get("last_activity") or now_ts)
     except (TypeError, ValueError):
         last_activity = now_ts
-    if now_ts - last_activity > idle_timeout:
+    from app.main import is_mobile_client
+    is_mobile = is_mobile_client(request)
+    if not is_mobile and (now_ts - last_activity > idle_timeout):
         request.session.clear()
         return JSONResponse(
             {"authenticated": False, "session_expired": True, "redirect": "/auth/login"},

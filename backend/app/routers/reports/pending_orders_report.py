@@ -242,6 +242,15 @@ def pending_orders_report_page(
                     h_yield_pct = float(nearest_y.hlso_yield_pct or 100) / 100
                     r.req_hoso_qty = round(r.req_hlso_qty / h_yield_pct, 2) if h_yield_pct > 0 else 0
 
+    # Filter rows to include ONLY items with actual pending production required
+    rows = [
+        r for r in rows 
+        if float(getattr(r, 'prod_pending_mc', 0) or 0) > 0 
+        or float(getattr(r, 'req_hlso_qty', 0) or 0) > 0 
+        or float(getattr(r, 'req_hoso_qty', 0) or 0) > 0 
+        or float(getattr(r, 'pending_production', 0) or 0) < 0
+    ]
+
     # Template Response
     context = {
             "rows": rows, 

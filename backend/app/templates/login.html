@@ -175,19 +175,13 @@
             min-height: 100vh;
             font-family: "Plus Jakarta Sans", Arial, sans-serif;
             color: var(--text-primary);
-            background:
-                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
-                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
-                linear-gradient(145deg, #090d16, #0f172a 48%, #0d121f);
+            background: #0f172a;
             overflow-x: hidden;
             transition: background 0.3s ease, color 0.3s ease;
         }
 
         [data-theme="light"] body {
-            background:
-                radial-gradient(circle at 14% 18%, rgba(37,99,235,.13), transparent 29%),
-                radial-gradient(circle at 84% 72%, rgba(13,148,136,.12), transparent 28%),
-                linear-gradient(145deg, #f7fbff, #eef7ff 48%, #f4fffd);
+            background: #f4f9ff;
         }
 
         a {
@@ -207,39 +201,9 @@
             min-height: 100vh;
         }
 
-        .site-shell::before {
-            content: "";
-            position: fixed;
-            inset: -24% -10%;
-            z-index: -2;
-            background-image:
-                linear-gradient(rgba(37,99,235,.13) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(37,99,235,.13) 1px, transparent 1px),
-                linear-gradient(rgba(13,148,136,.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(13,148,136,.06) 1px, transparent 1px);
-            background-size: 64px 64px, 64px 64px, 16px 16px, 16px 16px;
-            opacity: .72;
-            mask-image: linear-gradient(to bottom, rgba(0,0,0,.9), rgba(0,0,0,.28));
-            transform-origin: center bottom;
-            transform-style: preserve-3d;
-            animation: erpGridDepth 14s ease-in-out infinite alternate;
-        }
-
+        .site-shell::before,
         .site-shell::after {
-            content: "";
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            background:
-                radial-gradient(circle at 12% 24%, rgba(37,99,235,.65) 0 3px, transparent 4px),
-                radial-gradient(circle at 78% 18%, rgba(13,148,136,.58) 0 4px, transparent 5px),
-                radial-gradient(circle at 66% 74%, rgba(217,119,6,.42) 0 3px, transparent 4px),
-                linear-gradient(115deg, transparent 18%, rgba(37,99,235,.07) 18.4% 18.8%, transparent 19.2%),
-                linear-gradient(32deg, transparent 67%, rgba(13,148,136,.07) 67.4% 67.8%, transparent 68.2%),
-                linear-gradient(180deg, rgba(255,255,255,.54), rgba(255,255,255,.16));
-            background-size: 190px 170px, 260px 220px, 310px 270px, 150% 150%, 160% 160%, auto;
-            animation: erpSignalsFloat 11s ease-in-out infinite alternate;
+            display: none !important;
         }
 
         @keyframes erpGridDepth {
@@ -2931,7 +2895,9 @@
                         <h2>Login</h2>
                         <form id="loginForm" onsubmit="doLogin(event)">
                             <div class="form-group"><label>ERP Tenant Code</label><input id="login_company_id" type="text"
-                                    autocomplete="organization" required></div>
+                                    autocomplete="organization" inputmode="text" maxlength="20" pattern="[A-Z0-9]+"
+                                    title="Use capital letters and numbers only"
+                                    oninput="this.value = normalizeCompanyId(this.value)" required></div>
                             <div class="form-group"><label>Email</label><input id="login_email" type="email"
                                     autocomplete="email" required></div>
                             <div class="form-group">
@@ -3291,6 +3257,10 @@
             return fallbackMessage;
         }
 
+        function normalizeCompanyId(value) {
+            return String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+        }
+
         function togglePasswordVisibility() {
             const input = document.getElementById("login_pwd");
             const button = input.parentElement.querySelector(".password-toggle");
@@ -3504,11 +3474,13 @@
             btn.disabled = true;
 
             try {
+                const companyId = normalizeCompanyId(document.getElementById("login_company_id").value);
+                document.getElementById("login_company_id").value = companyId;
                 const res = await fetch(`${BASE}/login`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        company_id: document.getElementById("login_company_id").value.trim(),
+                        company_id: companyId,
                         email: document.getElementById("login_email").value.trim().toLowerCase(),
                         password: document.getElementById("login_pwd").value.substring(0, 20)
                     })
@@ -3521,7 +3493,7 @@
                 if (res.ok) {
                     if (data.status === "otp_required") {
                         loginEmail = document.getElementById("login_email").value.trim().toLowerCase();
-                        loginCompanyId = document.getElementById("login_company_id").value.trim();
+                        loginCompanyId = companyId;
                         showBox("loginOtpBox");
                     } else {
                         completeLogin(data.next_page);

@@ -47,7 +47,8 @@
     .main-container { flex: 1; display: flex; overflow: hidden; position: relative; }
 
     /* Left Sidebar: Ticket List */
-    .ticket-list-panel { width: 350px; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); transition: transform 0.3s ease; z-index: 10; }
+    .ticket-list-panel { width: 100%; border-right: 1px solid var(--border-color); display: flex; flex-direction: column; background: var(--panel-bg); transition: width 0.3s ease; z-index: 10; }
+    .main-container.chat-active .ticket-list-panel { width: 350px; }
     
     .search-box { padding: 12px; border-bottom: 1px solid var(--border-color); }
     .search-box input { width: 100%; padding: 10px 16px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-color); color: var(--primary-text); outline: none; font-size: 13px; }
@@ -68,12 +69,14 @@
     .status-RESOLVED { background: rgba(22, 163, 74, 0.1); color: #16a34a; border: 1px solid rgba(22, 163, 74, 0.2); }
 
     /* Right Sidebar: Chat Panel */
-    .chat-panel { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+    .chat-panel { flex: 1; display: none; flex-direction: column; background: var(--bg-color); position: relative; }
+    .main-container.chat-active .chat-panel { display: flex; }
     
     .chat-header { padding: 12px 16px; background: var(--panel-bg); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; gap: 12px; min-height: 60px; }
     
-    /* Mobile Back Button */
-    .btn-back { display: none; background: transparent; border: none; color: var(--primary-text); font-size: 18px; cursor: pointer; padding: 4px; }
+    /* Back Button */
+    .btn-back { display: flex; align-items: center; gap: 4px; background: transparent; border: none; color: var(--primary-text); font-size: 14px; font-weight: 700; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
+    .btn-back:hover { background: var(--bg-color); }
     
     .chat-header-info { flex: 1; overflow: hidden; }
     .chat-header-info h3 { font-size: 15px; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -209,18 +212,18 @@
 <div class="header">
     <h2><i class="fa-solid fa-headset"></i> SVBK Support</h2>
     <div class="header-actions">
-        <button class="btn-view active" id="knowledgeViewButton" onclick="showSupportView('knowledge')"><i class="fa-solid fa-book-open"></i> Help</button>
-        <button class="btn-view" id="ticketViewButton" onclick="showSupportView('tickets')"><i class="fa-solid fa-ticket"></i> Tickets</button>
+        <button class="btn-view" id="knowledgeViewButton" onclick="showSupportView('knowledge')"><i class="fa-solid fa-book-open"></i> Help</button>
+        <button class="btn-view active" id="ticketViewButton" onclick="showSupportView('tickets')"><i class="fa-solid fa-ticket"></i> Tickets</button>
         <button class="btn-new" onclick="showSupportView('tickets');openModal()"><i class="fa-solid fa-plus"></i> <span>New Complaint</span></button>
     </div>
 </div>
 
-<section class="knowledge-panel active" id="knowledgePanel">
+<section class="knowledge-panel" id="knowledgePanel">
     <div class="knowledge-search"><i class="fa-solid fa-magnifying-glass"></i><input id="knowledgeSearch" placeholder="Type a question…" onfocus="renderKnowledgeSuggestions()" onblur="setTimeout(hideKnowledgeSuggestions,150)" oninput="renderKnowledge();renderKnowledgeSuggestions()"><div class="knowledge-suggestions hidden" id="knowledgeSuggestions"></div></div>
     <div class="knowledge-results" id="knowledgeResults"></div>
 </section>
 
-<div class="main-container hidden" id="mainContainer">
+<div class="main-container" id="mainContainer">
     <div class="ticket-list-panel" id="listPanel">
         <div class="search-box">
             <input type="text" id="searchTickets" placeholder="Search complaints..." onkeyup="filterTickets()">
@@ -441,6 +444,8 @@ function filterTickets() {
 // Mobile View handling
 function closeChatMobile() {
     document.getElementById("mainContainer").classList.remove("chat-active");
+    document.getElementById("chatView").classList.add("hidden");
+    document.getElementById("emptyState").classList.remove("hidden");
     document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
 }
 
@@ -525,11 +530,7 @@ async function openChat(ticketId, ticketNum, subject, status) {
     document.getElementById("emptyState").classList.add("hidden");
     const chatView = document.getElementById("chatView");
     chatView.classList.remove("hidden");
-    
-    // Mobile slide animation
-    if(window.innerWidth <= 768) {
-        document.getElementById("mainContainer").classList.add("chat-active");
-    }
+    document.getElementById("mainContainer").classList.add("chat-active");
     
     document.querySelectorAll('.ticket-card').forEach(c => c.classList.remove('active'));
     const activeCard = document.getElementById(`ticket-card-${ticketId}`);

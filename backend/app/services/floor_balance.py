@@ -1,10 +1,74 @@
 from sqlalchemy.orm import Session
 from sqlalchemy import func, cast, String, or_, and_  # Added or_, and_ for multi-day date calculations
 from app.database.models.processing import (
-    RawMaterialPurchasing, Grading, DeHeading, Peeling, Soaking
+    GateEntry, RawMaterialPurchasing, Grading, DeHeading, Peeling, Soaking
 )
 from app.database.models.reprocess import Reprocess 
 from app.database.models.floor_balance import FloorBalance, FloorBalanceSnapshot
+
+
+def get_batch_gate_entry_map(db: Session, company_id: str) -> dict:
+    """Return {batch_number_upper: {gate_entry_date, holding_days}} for batch holding calculation."""
+    from datetime import datetime, date
+    from app.utils.timezone import ist_now
+
+    today = ist_now().date()
+
+    ge_dates = dict(
+        db.query(
+            func.trim(func.upper(GateEntry.batch_number)),
+            func.min(GateEntry.date)
+        ).filter(
+            GateEntry.company_id == company_id,
+            GateEntry.batch_number.isnot(None)
+        ).group_by(func.trim(func.upper(GateEntry.batch_number))).all()
+    )
+
+    rmp_dates = dict(
+        db.query(
+            func.trim(func.upper(RawMaterialPurchasing.batch_number)),
+            func.min(RawMaterialPurchasing.date)
+        ).filter(
+            RawMaterialPurchasing.company_id == company_id,
+            RawMaterialPurchasing.batch_number.isnot(None)
+        ).group_by(func.trim(func.upper(RawMaterialPurchasing.batch_number))).all()
+    )
+
+    fb_rows = db.query(
+        func.trim(func.upper(FloorBalance.batch_number)),
+        func.min(FloorBalance.date)
+    ).filter(
+        FloorBalance.company_id == company_id,
+        FloorBalance.batch_number.isnot(None)
+    ).group_by(func.trim(func.upper(FloorBalance.batch_number))).all()
+
+    fb_dates = {}
+    for b_name, d_val in fb_rows:
+        if d_val:
+            if isinstance(d_val, str):
+                try:
+                    fb_dates[b_name] = datetime.strptime(d_val, "%Y-%m-%d").date()
+                except Exception:
+                    pass
+            elif isinstance(d_val, date):
+                fb_dates[b_name] = d_val
+
+    all_batches = set(ge_dates.keys()) | set(rmp_dates.keys()) | set(fb_dates.keys())
+    batch_map = {}
+    for b in all_batches:
+        dt = ge_dates.get(b) or rmp_dates.get(b) or fb_dates.get(b)
+        if dt:
+            days = (today - dt).days
+            batch_map[b] = {
+                "gate_entry_date": dt.strftime("%Y-%m-%d"),
+                "holding_days": max(days, 0)
+            }
+        else:
+            batch_map[b] = {
+                "gate_entry_date": "-",
+                "holding_days": 0
+            }
+    return batch_map
 
 
 def get_live_floor_balance_rows(
@@ -58,8 +122,13 @@ def get_live_floor_balance_rows(
         FloorBalance.count,
     ).all()
 
-    return [
-        {
+    gate_entry_map = get_batch_gate_entry_map(db, company_id)
+
+    res_rows = []
+    for row in rows:
+        b_upper = str(row.batch_number or "").strip().upper()
+        ge_info = gate_entry_map.get(b_upper, {"gate_entry_date": "-", "holding_days": 0})
+        res_rows.append({
             "location": row.location or "Floor",
             "production_for": row.production_for or "General Stock",
             "batch": row.batch_number or "N/A",
@@ -68,9 +137,10 @@ def get_live_floor_balance_rows(
             "variety": row.variety or "N/A",
             "count": row.count or "N/A",
             "available_qty": round(float(row.available_qty or 0), 2),
-        }
-        for row in rows
-    ]
+            "gate_entry_date": ge_info["gate_entry_date"],
+            "holding_days": ge_info["holding_days"],
+        })
+    return res_rows
 
 
 def get_floor_balance_snapshot_rows(
@@ -127,8 +197,12 @@ def get_floor_balance_snapshot_rows(
         FloorBalanceSnapshot.count,
     ).all()
 
-    return ([
-        {
+    gate_entry_map = get_batch_gate_entry_map(db, company_id)
+    res_rows = []
+    for row in rows:
+        b_upper = str(row.batch_number or "").strip().upper()
+        ge_info = gate_entry_map.get(b_upper, {"gate_entry_date": "-", "holding_days": 0})
+        res_rows.append({
             "location": row.location or "Floor",
             "production_for": row.production_for or "General Stock",
             "batch": row.batch_number or "N/A",
@@ -137,9 +211,10 @@ def get_floor_balance_snapshot_rows(
             "variety": row.variety or "N/A",
             "count": row.count or "N/A",
             "available_qty": round(float(row.opening_qty or 0), 2),
-        }
-        for row in rows
-    ], actual_date)
+            "gate_entry_date": ge_info["gate_entry_date"],
+            "holding_days": ge_info["holding_days"],
+        })
+    return (res_rows, actual_date)
 
 # ============================================================================
 # 1. EXISTING ORIGINAL FUNCTION (TOUCH CHEYYADAM LEDU - NO CHANGES)

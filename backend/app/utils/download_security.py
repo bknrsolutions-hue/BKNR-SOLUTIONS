@@ -11,9 +11,11 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 
+from app.config import SESSION_SECRET_KEY
 
 DOWNLOAD_GRANT_TTL_SECONDS = 300
-DOWNLOAD_TOKEN_SECRET = os.getenv("SESSION_SECRET_KEY", "bknr_secret_key_2026_dev_only").encode()
+DOWNLOAD_TOKEN_SECRET = SESSION_SECRET_KEY.encode()
+
 CONSUMED_GRANTS_FILE = Path(tempfile.gettempdir()) / "svbk_download_grants_consumed.json"
 
 

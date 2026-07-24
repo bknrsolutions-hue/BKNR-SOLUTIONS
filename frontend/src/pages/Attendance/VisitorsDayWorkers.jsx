@@ -158,8 +158,57 @@ export default function VisitorsDayWorkers() {
         <datalist id="visitor-purpose-list">{lookups.purposes.map(value => <option key={value} value={value} />)}</datalist>
         <FormActions saving={saving} onClear={() => setVisitorForm(blankVisitor())} label="Save Visitor" />
       </form>
-      <EntryTable loading={loading} title="Visitor Register" columns={['Date', 'Visitor', 'Mobile', 'Organization', 'Purpose', 'Meet', 'Approval', 'Location', 'IN', 'OUT', 'Status', 'Meta User', 'Action']}>
-        {visitors.map(row => <tr key={row.id}><td>{row.visit_date}</td><td><strong>{row.visitor_name}</strong></td><td>{row.mobile || '-'}</td><td>{row.organization || '-'}</td><td>{row.purpose}</td><td>{row.person_to_meet || '-'}</td><td><ApprovalBadge status={row.approval_status} /></td><td>{row.production_at || '-'}</td><td>{row.in_time || '-'}</td><td>{row.out_time || '-'}</td><td>{row.status}</td><td>{row.email || '-'}</td><td><ExitActions type="visitor" row={row} outBusy={outBusy} markOut={markOut} remove={remove} /></td></tr>)}
+      <EntryTable loading={loading} title="Visitor Register" columns={['Sl. No', 'Date', 'Visitor', 'Mobile', 'Organization', 'Purpose', 'Meet', 'Approval', 'Location', 'IN', 'OUT', 'Status', 'Meta User', 'Action']}>
+        {(() => {
+          if (!visitors.length) return null;
+          let globalIdx = visitors.length;
+          const grouped = {};
+          visitors.forEach(row => {
+            const dateKey = row.visit_date || 'Unknown Date';
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(row);
+          });
+
+          return <>
+            {Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([dateKey, rows]) => {
+              const sortedRows = [...rows].sort((a, b) => (b.id || 0) - (a.id || 0));
+              return (
+                <React.Fragment key={dateKey}>
+                  {sortedRows.map(row => {
+                    const currentNo = globalIdx;
+                    globalIdx -= 1;
+                    return (
+                      <tr key={row.id}>
+                        <td><strong>{currentNo}</strong></td>
+                        <td>{row.visit_date}</td>
+                        <td><strong>{row.visitor_name}</strong></td>
+                        <td>{row.mobile || '-'}</td>
+                        <td>{row.organization || '-'}</td>
+                        <td>{row.purpose}</td>
+                        <td>{row.person_to_meet || '-'}</td>
+                        <td><ApprovalBadge status={row.approval_status} /></td>
+                        <td>{row.production_at || '-'}</td>
+                        <td>{row.in_time || '-'}</td>
+                        <td>{row.out_time || '-'}</td>
+                        <td>{row.status}</td>
+                        <td>{row.email || '-'}</td>
+                        <td><ExitActions type="visitor" row={row} outBusy={outBusy} markOut={markOut} remove={remove} /></td>
+                      </tr>
+                    );
+                  })}
+                  <tr style={{ background: 'rgba(255, 255, 255, 0.02)', fontWeight: '700', borderTop: '1px solid var(--border-light)' }}>
+                    <td colSpan="2">Subtotal ({dateKey}):</td>
+                    <td colSpan="12"><strong>{rows.length} Visitor{rows.length > 1 ? 's' : ''}</strong></td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+            <tr style={{ background: 'rgba(37, 99, 235, 0.08)', fontWeight: '800', borderTop: '2px solid #2563eb' }}>
+              <td colSpan="2">Grand Total:</td>
+              <td colSpan="12"><strong>{visitors.length} Visitors Total</strong></td>
+            </tr>
+          </>;
+        })()}
       </EntryTable>
     </> : <>
       <form className="labour-section visitor-entry-form" onSubmit={event => submit(event, 'day-worker')}>
@@ -176,8 +225,70 @@ export default function VisitorsDayWorkers() {
         <datalist id="worker-purpose-list">{lookups.purposes.map(value => <option key={value} value={value} />)}</datalist>
         <FormActions saving={saving} onClear={() => setWorkerForm(blankDayWorker())} label="Save Day Worker" />
       </form>
-      <EntryTable loading={loading} title="Day Worker Register" columns={['Date', 'Worker', 'Purpose', 'Approved By', 'Approval', 'Location', 'IN', 'OUT', 'Day Charge ₹', 'Status', 'Meta Date', 'Meta User', 'Action']}>
-        {dayWorkers.map(row => { const chargeLocked = Boolean(row.day_charge_locked); const chargeReadOnly = chargeLocked && !canEditLockedCharge; return <tr key={row.id}><td>{row.work_date}</td><td><strong>{row.worker_name}</strong></td><td>{row.purpose}</td><td>{row.approved_by_name || '-'}</td><td><ApprovalBadge status={row.approval_status} /></td><td>{row.production_at || '-'}</td><td>{row.in_time || '-'}</td><td>{row.out_time || '-'}</td><td><div className={`amount-editor ${chargeLocked ? 'locked' : ''}`}><input disabled={chargeReadOnly} type="number" min="0" step="0.01" value={dayCharges[row.id] ?? 0} onChange={event => setDayCharges(current => ({ ...current, [row.id]: event.target.value }))} />{chargeReadOnly ? <span className="charge-lock"><i className="fa-solid fa-lock" /> Locked</span> : <button onClick={() => saveDayCharge(row.id)}>{chargeLocked ? 'Admin Save' : 'Save & Lock'}</button>}</div></td><td>{row.status}</td><td>{row.date || '-'}</td><td>{row.email || '-'}</td><td><ExitActions type="day-worker" row={row} outBusy={outBusy} markOut={markOut} remove={remove} /></td></tr>; })}
+      <EntryTable loading={loading} title="Day Worker Register" columns={['Sl. No', 'Date', 'Worker', 'Purpose', 'Approved By', 'Approval', 'Location', 'IN', 'OUT', 'Day Charge ₹', 'Status', 'Meta Date', 'Meta User', 'Action']}>
+        {(() => {
+          if (!dayWorkers.length) return null;
+          let globalIdx = dayWorkers.length;
+          const grouped = {};
+          dayWorkers.forEach(row => {
+            const dateKey = row.work_date || 'Unknown Date';
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(row);
+          });
+          const grandTotalCharge = dayWorkers.reduce((sum, r) => sum + (parseFloat(dayCharges[r.id] ?? r.day_charge ?? 0) || 0), 0);
+
+          return <>
+            {Object.entries(grouped).sort(([a], [b]) => b.localeCompare(a)).map(([dateKey, rows]) => {
+              const sortedRows = [...rows].sort((a, b) => (b.id || 0) - (a.id || 0));
+              const dayTotalCharge = sortedRows.reduce((sum, r) => sum + (parseFloat(dayCharges[r.id] ?? r.day_charge ?? 0) || 0), 0);
+              return (
+                <React.Fragment key={dateKey}>
+                  {sortedRows.map(row => {
+                    const currentNo = globalIdx;
+                    globalIdx -= 1;
+                    const chargeLocked = Boolean(row.day_charge_locked);
+                    const chargeReadOnly = chargeLocked && !canEditLockedCharge;
+                    return (
+                      <tr key={row.id}>
+                        <td><strong>{currentNo}</strong></td>
+                        <td>{row.work_date}</td>
+                        <td><strong>{row.worker_name}</strong></td>
+                        <td>{row.purpose}</td>
+                        <td>{row.approved_by_name || '-'}</td>
+                        <td><ApprovalBadge status={row.approval_status} /></td>
+                        <td>{row.production_at || '-'}</td>
+                        <td>{row.in_time || '-'}</td>
+                        <td>{row.out_time || '-'}</td>
+                        <td>
+                          <div className={`amount-editor ${chargeLocked ? 'locked' : ''}`}>
+                            <input disabled={chargeReadOnly} type="number" min="0" step="0.01" value={dayCharges[row.id] ?? 0} onChange={event => setDayCharges(current => ({ ...current, [row.id]: event.target.value }))} />
+                            {chargeReadOnly ? <span className="charge-lock"><i className="fa-solid fa-lock" /> Locked</span> : <button onClick={() => saveDayCharge(row.id)}>{chargeLocked ? 'Admin Save' : 'Save & Lock'}</button>}
+                          </div>
+                        </td>
+                        <td>{row.status}</td>
+                        <td>{row.date || '-'}</td>
+                        <td>{row.email || '-'}</td>
+                        <td><ExitActions type="day-worker" row={row} outBusy={outBusy} markOut={markOut} remove={remove} /></td>
+                      </tr>
+                    );
+                  })}
+                  <tr style={{ background: 'rgba(255, 255, 255, 0.02)', fontWeight: '700', borderTop: '1px solid var(--border-light)' }}>
+                    <td colSpan="2">Subtotal ({dateKey}):</td>
+                    <td colSpan="7"><strong>{rows.length} Worker{rows.length > 1 ? 's' : ''}</strong></td>
+                    <td style={{ color: '#10b981', fontWeight: '800', fontSize: '12px' }}>₹ {dayTotalCharge.toFixed(2)}</td>
+                    <td colSpan="4"></td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+            <tr style={{ background: 'rgba(37, 99, 235, 0.08)', fontWeight: '800', borderTop: '2px solid #2563eb' }}>
+              <td colSpan="2">Grand Total:</td>
+              <td colSpan="7"><strong>{dayWorkers.length} Workers Total</strong></td>
+              <td style={{ color: '#10b981', fontWeight: '800', fontSize: '13px' }}>₹ {grandTotalCharge.toFixed(2)}</td>
+              <td colSpan="4"></td>
+            </tr>
+          </>;
+        })()}
       </EntryTable>
     </>}
     {auditOpen && <div className="labour-audit-backdrop" onClick={() => setAuditOpen(false)}><aside className="labour-audit-panel" onClick={event => event.stopPropagation()}><div className="labour-audit-head"><div><span>Day Worker Charges</span><h2>Audit Trail</h2></div><button type="button" onClick={() => setAuditOpen(false)}>×</button></div><div className="labour-audit-list">{auditLoading ? <div className="labour-empty">Loading audit trail...</div> : chargeAudits.length ? chargeAudits.map(audit => <article key={audit.id}><strong>{audit.worker_name} · {audit.work_date}</strong><p>₹{Number(audit.old_value || 0).toFixed(2)} → ₹{Number(audit.new_value || 0).toFixed(2)}</p><small>{audit.edited_by} · {String(audit.edited_at || '').replace('T', ' ').slice(0, 19)}</small></article>) : <div className="labour-empty">No charge changes found</div>}</div></aside></div>}

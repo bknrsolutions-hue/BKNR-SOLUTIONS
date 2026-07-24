@@ -1,7 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
+import { Chart, registerables } from 'chart.js';
 import { currentFinancialYearStart, formatFinancialYear } from '../../utils/financialYear';
 import './InventoryDashboard.css';
+
+Chart.register(...registerables);
 
 const fmt = (val, dec = 2) => {
   const n = parseFloat(val ?? 0);
@@ -50,6 +53,20 @@ export default function InventoryDashboard({ theme, setActivePage }) {
   const [varietyChartFilter, setVarietyChartFilter] = useState(null);
   const [gradeChartFilter, setGradeChartFilter] = useState(null);
   const [glazeChartFilter, setGlazeChartFilter] = useState(null);
+  const [selectedGlazes, setSelectedGlazes] = useState(new Set());
+
+  const toggleGlaze = (glaze) => {
+    const gUpper = String(glaze || '').trim().toUpperCase();
+    setSelectedGlazes(prev => {
+      const next = new Set(prev);
+      if (next.has(gUpper)) {
+        next.delete(gUpper);
+      } else {
+        next.add(gUpper);
+      }
+      return next;
+    });
+  };
 
   // Charts
   const varietyCanvasRef = useRef(null);
@@ -134,34 +151,75 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     }
   };
 
-  // Filter Table Data locally matching legacy logic
-  const getFilteredRows = () => {
+  // Base rows matching top search, age, and glaze filters (before chart clicks)
+  const getBaseRows = () => {
     if (!data?.stock_table_data) return [];
     return data.stock_table_data.filter(row => {
       const text = `${row.loc} ${row.fr} ${row.sp} ${row.vr} ${row.pk} ${row.gl} ${row.gr} ${row.production_for}`.toUpperCase();
       const matchesSearch = text.includes(searchQuery.toUpperCase());
       const age = row.ageing_days ?? 0;
       const matchesAge = ageMinFilter === null || (age >= ageMinFilter && age <= ageMaxFilter);
-      const matchesVarietyChart = !varietyChartFilter || row.vr === varietyChartFilter;
-      const matchesGradeChart = !gradeChartFilter || row.gr === gradeChartFilter;
       const selectedGlaze = String(selGlaze || 'ALL').trim().toUpperCase();
       const rowGlaze = String(row.gl || '').trim().toUpperCase();
-      const selectedChartGlaze = String(glazeChartFilter || '').trim().toUpperCase();
       const matchesGlazeDropdown = selectedGlaze === 'ALL' || rowGlaze === selectedGlaze;
-      const matchesGlazeChart = !selectedChartGlaze || rowGlaze === selectedChartGlaze;
-      
-      // Exclude zero-quantity rows matching legacy template line 797
+      const matchesCheckableGlaze = selectedGlazes.size === 0 || selectedGlazes.has(rowGlaze);
+
       const opQty = row.opening_qty || 0;
       const clQty = row.qty || 0;
       const inQty = row.in_qty || 0;
       const outQty = row.out_qty || 0;
       const isZeroRow = (opQty === 0 && clQty === 0 && inQty === 0 && outQty === 0);
-      
-      return matchesSearch && matchesAge && matchesVarietyChart && matchesGradeChart && matchesGlazeDropdown && matchesGlazeChart && !isZeroRow;
+
+      return matchesSearch && matchesAge && matchesGlazeDropdown && matchesCheckableGlaze && !isZeroRow;
+    });
+  };
+
+  const baseRows = getBaseRows();
+
+  // Filter Table Data locally matching legacy logic
+  const getFilteredRows = () => {
+    return baseRows.filter(row => {
+      const matchesVarietyChart = !varietyChartFilter || row.vr === varietyChartFilter;
+      const matchesGradeChart = !gradeChartFilter || row.gr === gradeChartFilter;
+      const selectedChartGlaze = String(glazeChartFilter || '').trim().toUpperCase();
+      const rowGlaze = String(row.gl || '').trim().toUpperCase();
+      const matchesGlazeChart = !selectedChartGlaze || rowGlaze === selectedChartGlaze;
+      return matchesVarietyChart && matchesGradeChart && matchesGlazeChart;
     });
   };
 
   const filteredRows = getFilteredRows();
+
+  const activeGlazesList = [...new Set(baseRows.map(r => r.gl || 'NW').filter(Boolean))].sort();
+
+  const getVarietyTitle = () => {
+    const filters = [];
+    if (varietyChartFilter) filters.push(`Variety: ${varietyChartFilter}`);
+    if (glazeChartFilter) {
+      filters.push(`Glaze: ${glazeChartFilter}`);
+    } else if (selectedGlazes.size > 0 && selectedGlazes.size < activeGlazesList.length) {
+      filters.push(`Glaze: ${Array.from(selectedGlazes).join(', ')}`);
+    }
+    if (filters.length > 0) {
+      return `Variety Stock Mix — Filtered (${filters.join(' | ')})`;
+    }
+    return 'Variety Stock Mix (Glaze Wise)';
+  };
+
+  const getGradeTitle = () => {
+    const filters = [];
+    if (varietyChartFilter) filters.push(`Variety: ${varietyChartFilter}`);
+    if (gradeChartFilter) filters.push(`Grade: ${gradeChartFilter}`);
+    if (glazeChartFilter) {
+      filters.push(`Glaze: ${glazeChartFilter}`);
+    } else if (selectedGlazes.size > 0 && selectedGlazes.size < activeGlazesList.length) {
+      filters.push(`Glaze: ${Array.from(selectedGlazes).join(', ')}`);
+    }
+    if (filters.length > 0) {
+      return `Grade Stock Mix — Filtered (${filters.join(' | ')})`;
+    }
+    return 'Grade Stock Mix (Variety + Glaze Wise)';
+  };
 
   // Grand Totals calculation matching legacy
   const totals = filteredRows.reduce((acc, row) => {
@@ -220,25 +278,28 @@ export default function InventoryDashboard({ theme, setActivePage }) {
 
   // Render ChartJS charts with same exact configurations as template
   useEffect(() => {
-    if (!data || !window.Chart) return;
+    if (!data) return;
 
     const isDark = (theme || document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
     const chartTextColor = isDark ? '#cbd5e1' : '#475569';
     const chartGridColor = isDark ? '#475569' : '#cbd5e1';
     const font = { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' };
 
-    // Grouping calculations based on visible (filtered) table data for dynamic charts
+    // 1. Variety Chart uses baseRows (filtered by varietyChartFilter & gradeChartFilter when active)
     const speciesMap = {};
     const varietyMap = {};
-    const gradeMap = {};
     const allGlazes = new Set();
-    const allGradeCombos = new Set();
+    const activeGrade = gradeChartFilter || (selGrade !== 'ALL' ? selGrade : null);
+    const varietyTargetRows = baseRows.filter(row => {
+      const matchesVariety = !varietyChartFilter || row.vr === varietyChartFilter;
+      const matchesGrade = !activeGrade || row.gr === activeGrade;
+      return matchesVariety && matchesGrade;
+    });
 
-    filteredRows.forEach(row => {
+    varietyTargetRows.forEach(row => {
       const species = row.sp || 'N/A';
       const variety = row.vr || 'N/A';
       const glaze = row.gl || 'NW';
-      const grade = row.gr || 'N/A';
       const opQty = row.opening_qty || 0;
       const clQty = row.qty || 0;
 
@@ -252,10 +313,27 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         if (!varietyMap[variety][glaze]) varietyMap[variety][glaze] = 0;
         varietyMap[variety][glaze] += clQty;
       }
+    });
+
+    // 2. Grade Chart uses rows filtered by active variety & grade selections
+    const gradeMap = {};
+    const allGradeCombos = new Set();
+    const activeVariety = varietyChartFilter || (selVariety !== 'ALL' ? selVariety : null);
+    const gradeTargetRows = baseRows.filter(row => {
+      const matchesVariety = !activeVariety || row.vr === activeVariety;
+      const matchesGrade = !gradeChartFilter || row.gr === gradeChartFilter;
+      return matchesVariety && matchesGrade;
+    });
+
+    gradeTargetRows.forEach(row => {
+      const variety = row.vr || 'N/A';
+      const glaze = row.gl || 'NW';
+      const grade = row.gr || 'N/A';
+      const clQty = row.qty || 0;
 
       if (clQty !== 0) {
         if (!gradeMap[grade]) gradeMap[grade] = {};
-        const gradeCombo = `${variety} / ${glaze}`;
+        const gradeCombo = activeVariety ? `Glaze: ${glaze}` : `${variety} / ${glaze}`;
         allGradeCombos.add(gradeCombo);
         if (!gradeMap[grade][gradeCombo]) gradeMap[grade][gradeCombo] = 0;
         gradeMap[grade][gradeCombo] += clQty;
@@ -275,30 +353,47 @@ export default function InventoryDashboard({ theme, setActivePage }) {
 
     if (varietyChart.current) varietyChart.current.destroy();
     if (varietyCanvasRef.current) {
-      varietyChart.current = new window.Chart(varietyCanvasRef.current, {
+      varietyChart.current = new Chart(varietyCanvasRef.current, {
         type: 'bar',
         data: { labels: vLabels, datasets: vDatasets },
         options: {
           indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', axis: 'y', intersect: false },
           onClick: (event, elements) => {
             if (!elements || !elements.length) return;
             const idx = elements[0].index;
             const label = vLabels[idx];
-            const clickedGlaze = glazesArray[elements[0].datasetIndex];
             if (label) {
               setVarietyChartFilter(prev => prev === label ? null : label);
             }
-            if (clickedGlaze) {
-              setGlazeChartFilter(prev => prev === clickedGlaze ? null : clickedGlaze);
-            }
           },
           plugins: {
-            legend: {
-              position: 'top',
-              labels: { color: chartTextColor, boxWidth: 10, font },
-              onClick: (_event, legendItem) => {
-                const glaze = String(legendItem?.text || '').trim();
-                if (glaze) setGlazeChartFilter(previous => previous === glaze ? null : glaze);
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              axis: 'y',
+              intersect: false,
+              filter: (tooltipItem) => Math.abs(Number(tooltipItem.raw || 0)) > 0.01,
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+              titleColor: isDark ? '#60a5fa' : '#2563eb',
+              titleFont: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' },
+              bodyColor: isDark ? '#cbd5e1' : '#1e293b',
+              bodyFont: { family: 'Plus Jakarta Sans', size: 10, weight: '600' },
+              footerColor: isDark ? '#34d399' : '#059669',
+              footerFont: { family: 'Plus Jakarta Sans', size: 10, weight: 'bold' },
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
+              borderWidth: 1,
+              padding: 10,
+              displayColors: true,
+              boxPadding: 4,
+              callbacks: {
+                title: (items) => items.length ? `Variety: ${items[0].label}` : '',
+                label: (context) => ` ${context.dataset.label}: ${Number(context.raw || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} KG`,
+                footer: (items) => {
+                  const total = items.reduce((sum, item) => sum + Number(item.raw || 0), 0);
+                  return `Total Variety Stock: ${total.toLocaleString('en-IN', { maximumFractionDigits: 2 })} KG`;
+                }
               }
             }
           },
@@ -313,19 +408,28 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     // 2. Grade Stock Mix (Stacked Vertical Variety+Glaze Wise)
     const gLabels = Object.keys(gradeMap).sort();
     const gradeCombosArray = Array.from(allGradeCombos).sort();
-    const gDatasets = gradeCombosArray.map((combo, index) => ({
+
+    const getGlazeColorIndex = (comboLabel) => {
+      const match = comboLabel.match(/Glaze:\s*([^\s(/]+)/i) || comboLabel.match(/\/ (.*)$/);
+      const glazeClean = (match ? match[1] : comboLabel).trim().toUpperCase();
+      const idx = activeGlazesList.findIndex(g => g.toUpperCase() === glazeClean);
+      return idx >= 0 ? idx : 0;
+    };
+
+    const gDatasets = gradeCombosArray.map((combo) => ({
       label: combo,
       data: gLabels.map(g => gradeMap[g][combo] || 0),
-      backgroundColor: CHART_COLORS[index % CHART_COLORS.length]
+      backgroundColor: CHART_COLORS[getGlazeColorIndex(combo) % CHART_COLORS.length]
     })).filter(ds => ds.data.reduce((sum, value) => sum + Math.abs(value), 0) > 0);
 
     if (gradeChart.current) gradeChart.current.destroy();
     if (gradeCanvasRef.current) {
-      gradeChart.current = new window.Chart(gradeCanvasRef.current, {
+      gradeChart.current = new Chart(gradeCanvasRef.current, {
         type: 'bar',
         data: { labels: gLabels, datasets: gDatasets },
         options: {
           responsive: true, maintainAspectRatio: false,
+          interaction: { mode: 'index', axis: 'x', intersect: false },
           onClick: (event, elements) => {
             if (!elements || !elements.length) return;
             const idx = elements[0].index;
@@ -334,7 +438,36 @@ export default function InventoryDashboard({ theme, setActivePage }) {
               setGradeChartFilter(prev => prev === label ? null : label);
             }
           },
-          plugins: { legend: { position: 'top', labels: { color: chartTextColor, boxWidth: 10, font } } },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              enabled: true,
+              mode: 'index',
+              axis: 'x',
+              intersect: false,
+              filter: (tooltipItem) => Math.abs(Number(tooltipItem.raw || 0)) > 0.01,
+              backgroundColor: isDark ? 'rgba(15, 23, 42, 0.96)' : 'rgba(255, 255, 255, 0.96)',
+              titleColor: isDark ? '#60a5fa' : '#2563eb',
+              titleFont: { family: 'Plus Jakarta Sans', size: 11, weight: 'bold' },
+              bodyColor: isDark ? '#cbd5e1' : '#1e293b',
+              bodyFont: { family: 'Plus Jakarta Sans', size: 10, weight: '600' },
+              footerColor: isDark ? '#34d399' : '#059669',
+              footerFont: { family: 'Plus Jakarta Sans', size: 10, weight: 'bold' },
+              borderColor: isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.15)',
+              borderWidth: 1,
+              padding: 10,
+              displayColors: true,
+              boxPadding: 4,
+              callbacks: {
+                title: (items) => items.length ? `Grade: ${items[0].label}` : '',
+                label: (context) => ` ${context.dataset.label}: ${Number(context.raw || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} KG`,
+                footer: (items) => {
+                  const total = items.reduce((sum, item) => sum + Number(item.raw || 0), 0);
+                  return `Total Grade Stock: ${total.toLocaleString('en-IN', { maximumFractionDigits: 2 })} KG`;
+                }
+              }
+            }
+          },
           scales: {
             x: { stacked: true, ticks: { color: chartTextColor }, grid: { display: false } },
             y: { stacked: true, ticks: { color: chartTextColor }, grid: { color: chartGridColor } }
@@ -347,7 +480,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     const spLabels = Object.keys(speciesMap).filter(sp => Math.abs(speciesMap[sp].op) > 0.01 || Math.abs(speciesMap[sp].cl) > 0.01).sort();
     if (opClChart.current) opClChart.current.destroy();
     if (opClCanvasRef.current) {
-      opClChart.current = new window.Chart(opClCanvasRef.current, {
+      opClChart.current = new Chart(opClCanvasRef.current, {
         type: 'bar',
         data: {
           labels: spLabels,
@@ -370,7 +503,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     // 4. Stock Movement Analysis (Line Chart)
     if (flowChart.current) flowChart.current.destroy();
     if (flowCanvasRef.current) {
-      flowChart.current = new window.Chart(flowCanvasRef.current, {
+      flowChart.current = new Chart(flowCanvasRef.current, {
         type: 'line',
         data: {
           labels: data.flow_labels,
@@ -399,7 +532,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     };
   // filteredRows is derived from the dependencies listed below.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [data, theme, searchQuery, ageMinFilter, ageMaxFilter, varietyChartFilter, gradeChartFilter, glazeChartFilter]);
+  }, [data, theme, searchQuery, ageMinFilter, ageMaxFilter, varietyChartFilter, gradeChartFilter, glazeChartFilter, selectedGlazes]);
 
   const openModal = (route) => {
     if (setActivePage) {
@@ -661,21 +794,83 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       {/* Interactive Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth > 992 ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
         <div style={chartBoxStyle}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
             <h3 style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>
-              {varietyChartFilter || glazeChartFilter
-                ? `Variety Stock Mix — Filtered: ${[varietyChartFilter, glazeChartFilter].filter(Boolean).join(' / ')}`
-                : 'Variety Stock Mix (Glaze Wise)'}
+              {getVarietyTitle()}
             </h3>
-            {(varietyChartFilter || glazeChartFilter) && (
+            {(varietyChartFilter || glazeChartFilter || selectedGlazes.size > 0) && (
               <button 
-                onClick={() => { setVarietyChartFilter(null); setGlazeChartFilter(null); }}
+                onClick={() => { setVarietyChartFilter(null); setGlazeChartFilter(null); setSelectedGlazes(new Set()); }}
                 style={{ border: '1px solid var(--border-light)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '9px', fontWeight: 800, padding: '3px 8px', borderRadius: '5px', cursor: 'pointer' }}
               >
                 Clear
               </button>
             )}
           </div>
+          {/* Checkable Glaze Selector Pills (Filters Both Charts — Only active stock glazes) */}
+          {activeGlazesList.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px', alignItems: 'center' }}>
+              <span style={{ fontSize: '9px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Filter Glazes:
+              </span>
+              {activeGlazesList.map((glaze, idx) => {
+                const gUpper = glaze.toUpperCase();
+                const isChecked = selectedGlazes.size === 0 || selectedGlazes.has(gUpper);
+                const colors = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#14b8a6', '#f97316', '#6366f1'];
+                const color = colors[idx % colors.length];
+                const isDark = (theme || document.documentElement.getAttribute('data-theme') || 'dark') === 'dark';
+                return (
+                  <button
+                    key={glaze}
+                    type="button"
+                    onClick={() => toggleGlaze(glaze)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: `1px solid ${isChecked ? color : 'var(--border-light)'}`,
+                      background: isChecked ? `color-mix(in srgb, ${color} 18%, var(--surface-panel))` : 'transparent',
+                      color: isChecked ? (isDark ? '#f8fafc' : '#0f172a') : 'var(--text-secondary)',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <span style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: isChecked ? color : 'var(--border-light)',
+                      display: 'inline-block'
+                    }} />
+                    {glaze}
+                    {isChecked && <i className="fa-solid fa-check" style={{ fontSize: '8px', marginLeft: '2px' }}></i>}
+                  </button>
+                );
+              })}
+              {selectedGlazes.size > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedGlazes(new Set())}
+                  style={{
+                    border: 'none',
+                    background: 'transparent',
+                    color: 'var(--ui-accent, #3b82f6)',
+                    fontSize: '9px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    textDecoration: 'underline',
+                    marginLeft: '4px'
+                  }}
+                >
+                  Reset Glazes
+                </button>
+              )}
+            </div>
+          )}
           <div style={{ flexGrow: 1, position: 'relative', width: '100%' }}>
             <canvas ref={varietyCanvasRef}></canvas>
           </div>
@@ -683,9 +878,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         <div style={chartBoxStyle}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
             <h3 style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.8px', margin: 0 }}>
-              {gradeChartFilter || glazeChartFilter
-                ? `Grade Stock Mix — Filtered: ${[gradeChartFilter, glazeChartFilter].filter(Boolean).join(' / ')}`
-                : 'Grade Stock Mix (Variety + Glaze Wise)'}
+              {getGradeTitle()}
             </h3>
             {(gradeChartFilter || glazeChartFilter) && (
               <button 

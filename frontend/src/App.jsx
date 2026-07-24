@@ -1,4 +1,4 @@
-import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { TOKEN_MAP, PAGE_ID_MAP } from './utils/pageTokens';
 import './App.css';
@@ -13,15 +13,27 @@ import ApprovalAlertPopup from './components/ApprovalAlertPopup';
 
 let initialSessionRequest;
 
+function isMobileClientEnv() {
+  if (typeof window === 'undefined') return false;
+  const ua = (navigator.userAgent || '').toLowerCase();
+  const isWebView = Boolean(window.ReactNativeWebView || window.Capacitor || window.Cordova || ua.includes('wv') || ua.includes('bknr') || ua.includes('expo') || /android.*applewebkit/i.test(ua));
+  const isMobileUrl = window.location.search.includes('mobile=true') || window.location.search.includes('is_mobile=true') || window.location.hash.includes('mobile=true');
+  return isWebView || isMobileUrl || window.isMobileApp === true;
+}
+
 function loadInitialSession() {
   if (!initialSessionRequest) {
     const controller = new AbortController();
     const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    const headers = { Accept: 'application/json' };
+    if (isMobileClientEnv()) {
+      headers['X-Mobile-App'] = 'true';
+    }
 
     initialSessionRequest = fetch('/auth/session-info', {
       credentials: 'include',
       signal: controller.signal,
-      headers: { Accept: 'application/json' },
+      headers,
     })
       .then(async response => {
         if (!response.ok) throw new Error('Unable to read session');
@@ -38,285 +50,22 @@ function loadInitialSession() {
   return initialSessionRequest;
 }
 
-const AuthContainer = lazy(() => import('./pages/Auth/AuthContainer'));
-const DashboardsConsole = lazy(() => import('./pages/Dashboards/DashboardsConsole'));
-const BackendConsole = lazy(() => import('./pages/BackendConsole'));
-const ReportViewer = lazy(() => import('./pages/Reports/ReportViewer'));
-const UserProfile = lazy(() => import('./pages/Profile/Profile'));
+import {
+  AuthContainer,
+  DashboardsConsole,
+  BackendConsole,
+  ReportViewer,
+  UserProfile,
+  AdminConsole,
+  SupportTicketDesk,
+  RequirementDocumentPage,
+  CRITERIA_COMPONENTS,
+  REPORT_COMPONENTS,
+  COMPACT_PROCESSING_FORM_PAGES,
+  COMPACT_INVENTORY_FORM_PAGES,
+  isCompactHrmsFormPage,
+} from './routes/routeRegistry';
 
-const GateEntryReport = lazy(() => import('./pages/Reports/GateEntryReport'));
-const RMPReport = lazy(() => import('./pages/Reports/RMPReport'));
-const DeHeadingReport = lazy(() => import('./pages/Reports/DeHeadingReport'));
-const GradingReport = lazy(() => import('./pages/Reports/GradingReport'));
-const PeelingReport = lazy(() => import('./pages/Reports/PeelingReport'));
-const SoakingReport = lazy(() => import('./pages/Reports/SoakingReport'));
-const ProductionReport = lazy(() => import('./pages/Reports/ProductionReport'));
-const ReprocessReport = lazy(() => import('./pages/Reports/ReprocessReport'));
-const FloorBalanceReport = lazy(() => import('./pages/Reports/FloorBalanceReport'));
-const StockReport = lazy(() => import('./pages/Reports/StockReport'));
-const PendingOrdersReport = lazy(() => import('./pages/Reports/PendingOrdersReport'));
-const SalesReport = lazy(() => import('./pages/Reports/SalesReport'));
-const GeneralStockReport = lazy(() => import('./pages/Reports/GeneralStockReport'));
-const ColdStorageHoldingReport = lazy(() => import('./pages/Reports/ColdStorageHoldingReport'));
-const StorageCostReport = lazy(() => import('./pages/Reports/StorageCostReport'));
-const FloorBalanceValue = lazy(() => import('./pages/Reports/FloorBalanceValue'));
-const InventoryCosting = lazy(() => import('./pages/Reports/InventoryCosting'));
-
-const Buyers = lazy(() => import('./pages/Criteria/Buyers'));
-const BuyerAgents = lazy(() => import('./pages/Criteria/BuyerAgents'));
-const Suppliers = lazy(() => import('./pages/Criteria/Suppliers'));
-const Vendors = lazy(() => import('./pages/Criteria/Vendors'));
-const Countries = lazy(() => import('./pages/Criteria/Countries'));
-const Brands = lazy(() => import('./pages/Criteria/Brands'));
-const PurchasingLocations = lazy(() => import('./pages/Criteria/PurchasingLocations'));
-const Species = lazy(() => import('./pages/Criteria/Species'));
-const Varieties = lazy(() => import('./pages/Criteria/Varieties'));
-const Grades = lazy(() => import('./pages/Criteria/Grades'));
-const Freezers = lazy(() => import('./pages/Criteria/Freezers'));
-const Glazes = lazy(() => import('./pages/Criteria/Glazes'));
-const PackingStyles = lazy(() => import('./pages/Criteria/PackingStyles'));
-const Contractors = lazy(() => import('./pages/Criteria/Contractors'));
-const PeelingAt = lazy(() => import('./pages/Criteria/PeelingAt'));
-const PeelingRates = lazy(() => import('./pages/Criteria/PeelingRates'));
-const KgBasisLabourRates = lazy(() => import('./pages/Criteria/KgBasisLabourRates'));
-const ProductionAt = lazy(() => import('./pages/Criteria/ProductionAt'));
-const ProductionFor = lazy(() => import('./pages/Criteria/ProductionFor'));
-const ProductionTypes = lazy(() => import('./pages/Criteria/ProductionTypes'));
-const Chemicals = lazy(() => import('./pages/Criteria/Chemicals'));
-const Purposes = lazy(() => import('./pages/Criteria/Purposes'));
-const GradeToHoso = lazy(() => import('./pages/Criteria/GradeToHoso'));
-const HosoHlso = lazy(() => import('./pages/Criteria/HosoHlso'));
-const ColdStorage = lazy(() => import('./pages/Criteria/ColdStorage'));
-const ColdstoreLocations = lazy(() => import('./pages/Criteria/ColdstoreLocations'));
-const VehicleNumbers = lazy(() => import('./pages/Criteria/VehicleNumbers'));
-const HsnCodes = lazy(() => import('./pages/Criteria/HsnCodes'));
-const ShippingVendors = lazy(() => import('./pages/Criteria/ShippingVendors'));
-
-const GateEntry = lazy(() => import('./pages/Processing/GateEntry'));
-const RawMaterialPurchasing = lazy(() => import('./pages/Processing/RawMaterialPurchasing'));
-const DeHeading = lazy(() => import('./pages/Processing/DeHeading'));
-const Grading = lazy(() => import('./pages/Processing/Grading'));
-const Peeling = lazy(() => import('./pages/Processing/Peeling'));
-const Soaking = lazy(() => import('./pages/Processing/Soaking'));
-const Production = lazy(() => import('./pages/Processing/Production'));
-const StockEntry = lazy(() => import('./pages/Processing/StockEntry'));
-const PendingOrders = lazy(() => import('./pages/Processing/PendingOrders'));
-const ColdStorageHolding = lazy(() => import('./pages/Processing/ColdStorageHolding'));
-const GeneralStoreEntry = lazy(() => import('./pages/Processing/GeneralStoreEntry'));
-const DailyAttendance = lazy(() => import('./pages/Attendance/DailyAttendance'));
-const AdminConsole = lazy(() => import('./pages/Admin/AdminConsole'));
-const SupportTicketDesk = lazy(() => import('./pages/Admin/AdminConsole').then(module => ({ default: module.TicketDesk })));
-const StaffRegistration = lazy(() => import('./pages/Attendance/StaffRegistration'));
-const IncrementDetails = lazy(() => import('./pages/Attendance/IncrementDetails'));
-const MonthlySalarySheet = lazy(() => import('./pages/Attendance/MonthlySalarySheet'));
-const StatutoryMaster = lazy(() => import('./pages/Attendance/StatutoryMaster'));
-const SalaryAdvance = lazy(() => import('./pages/Attendance/SalaryAdvance'));
-const SalaryProcessing = lazy(() => import('./pages/Attendance/SalaryProcessing'));
-const LabourManagement = lazy(() => import('./pages/Attendance/LabourManagement'));
-const KgBasisCompanyLabour = lazy(() => import('./pages/Attendance/KgBasisCompanyLabour'));
-const VisitorsDayWorkers = lazy(() => import('./pages/Attendance/VisitorsDayWorkers'));
-
-// Finance & Accounts Components
-const LedgerDirectory = lazy(() => import('./pages/FinanceAccounts/LedgerDirectory'));
-const JournalEntries = lazy(() => import('./pages/FinanceAccounts/JournalEntries'));
-const BankTransactions = lazy(() => import('./pages/FinanceAccounts/BankTransactions'));
-const PaymentReceipts = lazy(() => import('./pages/FinanceAccounts/PaymentReceipts'));
-const CustomerReceivables = lazy(() => import('./pages/FinanceAccounts/CustomerReceivables'));
-const VendorPayments = lazy(() => import('./pages/FinanceAccounts/VendorPayments'));
-const ExpenseVouchers = lazy(() => import('./pages/FinanceAccounts/ExpenseVouchers'));
-const TallyDashboard = lazy(() => import('./pages/FinanceAccounts/TallyDashboard'));
-const ProductionCostAutomation = lazy(() => import('./pages/FinanceAccounts/ProductionCostAutomation'));
-const AccountsFlowGuide = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.AccountsFlowGuide })));
-const BankMasterPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.BankMasterPage })));
-const ItemAccountingLinkPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.ItemAccountingLinkPage })));
-const ExportIncentivePage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.ExportIncentivePage })));
-const LcTrackingPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.LcTrackingPage })));
-const GstRegisterPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.GstRegisterPage })));
-const FixedAssetsPage = lazy(() => import('./pages/FinanceAccounts/NativeFinanceRegisters').then(module => ({ default: module.FixedAssetsPage })));
-const ContractorBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.ContractorBillsPage })));
-const SalaryBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.SalaryBillsPage })));
-const VendorBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.VendorBillsPage })));
-const SupplierBillsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.SupplierBillsPage })));
-const PaymentLogsPage = lazy(() => import('./pages/FinanceAccounts/OperationalPayables').then(module => ({ default: module.PaymentLogsPage })));
-
-// Commercial Bills Components
-const ElectricityBills = lazy(() => import('./pages/FinanceAccounts/ElectricityBills'));
-const DieselConsumption = lazy(() => import('./pages/FinanceAccounts/DieselConsumption'));
-const PurchasePackaging = lazy(() => import('./pages/FinanceAccounts/PurchasePackaging'));
-const LogisticsFreight = lazy(() => import('./pages/FinanceAccounts/LogisticsFreight'));
-const QaTestingCharges = lazy(() => import('./pages/FinanceAccounts/QaTestingCharges'));
-const OtherExpenses = lazy(() => import('./pages/FinanceAccounts/OtherExpenses'));
-
-// Export Documents Components
-const ProformaInvoices = lazy(() => import('./pages/ExportDocuments/ProformaInvoices'));
-const ExportShipments = lazy(() => import('./pages/ExportDocuments/ExportShipments'));
-const CommercialInvoices = lazy(() => import('./pages/ExportDocuments/CommercialInvoices'));
-const PackingLists = lazy(() => import('./pages/ExportDocuments/PackingLists'));
-const ContainerStuffing = lazy(() => import('./pages/ExportDocuments/ContainerStuffing'));
-const ShippingBills = lazy(() => import('./pages/ExportDocuments/ShippingBills'));
-const BillsOfLading = lazy(() => import('./pages/ExportDocuments/BillsOfLading'));
-const HealthCertificates = lazy(() => import('./pages/ExportDocuments/HealthCertificates'));
-const SupportingDocuments = lazy(() => import('./pages/ExportDocuments/SupportingDocuments'));
-const RequirementForms = lazy(() => import('./pages/ExportDocuments/RequirementForms'));
-const RequirementDocumentPage = lazy(() => import('./pages/ExportDocuments/RequirementDocumentPage'));
-const ExportWorkspace = lazy(() => import('./pages/ExportDocuments/ExportWorkspace'));
-const ExportApprovals = lazy(() => import('./pages/ExportDocuments/ExportApprovals'));
-const ExportRegisters = lazy(() => import('./pages/ExportDocuments/ExportRegisters'));
-const ProcessingRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.ProcessingRegisters })));
-const InventoryRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.InventoryRegisters })));
-const AccountsRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.AccountsRegisters })));
-const HRMSRegisters = lazy(() => import('./pages/Registers/ModuleRegisters').then(module => ({ default: module.HRMSRegisters })));
-const ExportDashboard = lazy(() => import('./pages/Dashboards/ExportDashboard'));
-
-const CRITERIA_COMPONENTS = {
-  criteria_buyers: Buyers,
-  criteria_buyer_agents: BuyerAgents,
-  criteria_suppliers: Suppliers,
-  criteria_vendors: Vendors,
-  criteria_countries: Countries,
-  criteria_brands: Brands,
-  criteria_purchasing_locations: PurchasingLocations,
-  criteria_species: Species,
-  criteria_varieties: Varieties,
-  criteria_grades: Grades,
-  criteria_freezers: Freezers,
-  criteria_glazes: Glazes,
-  criteria_packing_styles: PackingStyles,
-  criteria_contractors: Contractors,
-  criteria_peeling_at: PeelingAt,
-  criteria_peeling_rates: PeelingRates,
-  criteria_kg_basis_labour_rates: KgBasisLabourRates,
-  criteria_production_at: ProductionAt,
-  criteria_production_for: ProductionFor,
-  criteria_production_types: ProductionTypes,
-  criteria_chemicals: Chemicals,
-  criteria_purposes: Purposes,
-  criteria_grade_to_hoso: GradeToHoso,
-  criteria_hoso_hlso: HosoHlso,
-  criteria_cold_storage: ColdStorage,
-  criteria_coldstore_locations: ColdstoreLocations,
-  criteria_vehicle_numbers: VehicleNumbers,
-  criteria_hsn_codes: HsnCodes,
-  criteria_shipping_vendors: ShippingVendors,
-
-  // Operations
-  gate_entry: GateEntry,
-  raw_material_purchasing: RawMaterialPurchasing,
-  de_heading: DeHeading,
-  grading: Grading,
-  peeling: Peeling,
-  soaking: Soaking,
-  production: Production,
-  stock_entry: StockEntry,
-  pending_orders: PendingOrders,
-  cold_storage_holding: ColdStorageHolding,
-  general_store_entry: GeneralStoreEntry,
-  attendance_daily_attendance: DailyAttendance,
-  attendance_employee_register: StaffRegistration,
-  attendance_employee_increment: IncrementDetails,
-  attendance_salary_report: MonthlySalarySheet,
-  attendance_tax_master: StatutoryMaster,
-  attendance_salary_advance: SalaryAdvance,
-  attendance_labour_management: LabourManagement,
-  attendance_kg_basis_labour: KgBasisCompanyLabour,
-  attendance_visitors_day_workers: VisitorsDayWorkers,
-  finance_salary_processing: SalaryProcessing,
-
-  // Finance & Accounts
-  finance_ledger_master: LedgerDirectory,
-  finance_journal_entry: JournalEntries,
-  finance_bank_transaction: BankTransactions,
-  finance_payment_receipt: PaymentReceipts,
-  finance_customer_receivable: CustomerReceivables,
-  finance_vendor_payment: VendorPayments,
-  finance_expense_voucher: ExpenseVouchers,
-  finance_production_cost_allocation: ProductionCostAutomation,
-  finance_accounts_flow_guide: AccountsFlowGuide,
-  finance_bank_master: BankMasterPage,
-  finance_item_accounting_link: ItemAccountingLinkPage,
-  finance_fixed_assets: FixedAssetsPage,
-  finance_gst_register: GstRegisterPage,
-  finance_export_incentive_register: ExportIncentivePage,
-  finance_lc_tracking: LcTrackingPage,
-  finance_contractor_bills: ContractorBillsPage,
-  finance_salaries: SalaryBillsPage,
-  finance_vendor_bills: VendorBillsPage,
-  finance_supplier_bills: SupplierBillsPage,
-  finance_payment_logs: PaymentLogsPage,
-  tally_dashboard: TallyDashboard,
-
-  // Commercial Bills
-  finance_electricity_bills: ElectricityBills,
-  finance_diesel_bills: DieselConsumption,
-  finance_packaging_bills: PurchasePackaging,
-  finance_logistics_bills: LogisticsFreight,
-  finance_qa_testing: QaTestingCharges,
-  finance_other_expenses: OtherExpenses,
-
-  // Export Documents
-  export_documents_dashboard: ExportDashboard,
-  proforma_invoice: ProformaInvoices,
-  export_shipment: ExportShipments,
-  commercial_invoice: CommercialInvoices,
-  packing_list: PackingLists,
-  container_stuffing: ContainerStuffing,
-  shipping_bill: ShippingBills,
-  bill_of_lading: BillsOfLading,
-  health_certificate: HealthCertificates,
-  export_supporting_documents: SupportingDocuments,
-  export_requirement_forms: RequirementForms,
-  export_shipment_workspace: ExportWorkspace,
-  export_document_approvals: ExportApprovals,
-  export_registers: ExportRegisters,
-  processing_registers: ProcessingRegisters,
-  inventory_registers: InventoryRegisters,
-  accounts_registers: AccountsRegisters,
-  hrms_registers: HRMSRegisters,
-};
-
-const REPORT_COMPONENTS = {
-  report_gate_entry_report: GateEntryReport,
-  report_rmp_report: RMPReport,
-  report_de_heading_report: DeHeadingReport,
-  report_grading_report: GradingReport,
-  report_peeling_report: PeelingReport,
-  report_soaking_report: SoakingReport,
-  report_production_report: ProductionReport,
-  report_reprocess_report: ReprocessReport,
-  report_floor_balance_report: FloorBalanceReport,
-  report_inventory_report: StockReport,
-  report_pending_orders_report: PendingOrdersReport,
-  report_sales_report: SalesReport,
-  report_gs_report: GeneralStockReport,
-  report_cold_storage_holding_report: ColdStorageHoldingReport,
-  report_storage_cost_report: StorageCostReport,
-  report_floor_balance_value: FloorBalanceValue,
-  report_inventory_costing: InventoryCosting,
-};
-
-const COMPACT_PROCESSING_FORM_PAGES = new Set([
-  'gate_entry',
-  'raw_material_purchasing',
-  'de_heading',
-  'grading',
-  'peeling',
-  'soaking',
-  'production',
-]);
-
-const COMPACT_INVENTORY_FORM_PAGES = new Set([
-  'stock_entry',
-  'pending_orders',
-  'cold_storage_holding',
-  'general_stock_entry',
-  'general_store_entry',
-]);
-
-const isCompactHrmsFormPage = page => (
-  page.startsWith('attendance_')
-  || page === 'finance_salary_processing'
-  || page === 'admin_shifts'
-);
 
 function PageLoading() {
   return (
@@ -639,16 +388,16 @@ export default function App() {
             role: data.role,
             permissions: data.permissions
           });
-          localStorage.setItem('tenant_company_name', data.company_name || 'SVBK ERP');
+          localStorage.setItem('tenant_company_name', data.company_name || 'BKNR ERP');
+
           if (data.company_logo_url) localStorage.setItem('tenant_company_logo', data.company_logo_url);
           else localStorage.removeItem('tenant_company_logo');
           localStorage.setItem('user_email', data.email);
         } else {
           setUser(null);
         }
-        return data.authenticated
-          ? new Promise(resolve => window.setTimeout(resolve, 450))
-          : undefined;
+        return undefined;
+
       })
       .catch(() => {
         if (active) setUser(null);
@@ -970,7 +719,8 @@ export default function App() {
           >
             <div className="react-support-drawer-head" onPointerDown={startSupportDrawerDrag}>
               <div>
-                <span>SVBK ERP</span>
+                <span>BKNR ERP</span>
+
                 <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
               </div>
               <button

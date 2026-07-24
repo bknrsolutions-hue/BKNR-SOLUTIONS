@@ -82,7 +82,11 @@ def get_hoso_summary_data(db: Session, company_code: str, user_allowed_locations
         stock_pool[key] = stock_pool.get(key, 0.0) + (qty if str(s.cargo_movement_type).upper() == "IN" else -qty)
 
     # Pending Orders Base Query Layered dynamically with target filters
-    po_q = db.query(pending_orders).filter(pending_orders.company_id == company_code)
+    po_q = db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
+
     
     # 🟢 🔴 REQUIREMENT TABLE SECURITY SYNC: Global company & Allowed allocations filter lock
     if global_p_for:
@@ -409,7 +413,12 @@ def save_rmp(
     except Exception as exc:
         db.rollback()
         request.session["message"] = f"❌ Save failed: {str(exc)}"
+        if request.query_params.get("format") == "json" or "application/json" in (request.headers.get("accept") or ""):
+            return JSONResponse({"error": str(exc)}, status_code=400)
+    if request.query_params.get("format") == "json" or "application/json" in (request.headers.get("accept") or ""):
+        return JSONResponse({"status": "ok", "id": entry.id})
     return RedirectResponse("/processing/raw_material_purchasing", status_code=303)
+
 
 @router.post("/raw_material_purchasing/update/{id}")
 def update_rmp(

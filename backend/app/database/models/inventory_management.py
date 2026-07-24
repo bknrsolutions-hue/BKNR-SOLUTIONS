@@ -8,7 +8,8 @@ from sqlalchemy import (
     Text,
     DateTime,
     Boolean,
-    UniqueConstraint
+    UniqueConstraint,
+    Index
 )
 from datetime import datetime  # ✅ Idhi kachithanga undali
 from app.utils.timezone import ist_now
@@ -63,6 +64,15 @@ class stock_entry(Base, metacolumns):
     hoso_count = Column(Float, default=0.0)                # HOSO Count
     sales_reference_rate = Column(Float, default=0.0)      # Sales Benchmark Rate
 
+    __table_args__ = (
+        Index("ix_stock_entry_company_date", "company_id", "date"),
+        Index("ix_stock_entry_company_batch", "company_id", "batch_number"),
+        Index("ix_stock_entry_company_filters", "company_id", "production_for", "production_at", "batch_number"),
+        Index("ix_stock_entry_company_location_date", "company_id", "location", "date"),
+        Index("ix_stock_entry_company_product_dims", "company_id", "species", "variety", "grade", "glaze"),
+        Index("ix_stock_entry_company_status_cancel", "company_id", "status", "is_cancelled"),
+    )
+
 # --------------------------------------------------------
 # PENDING ORDERS
 # --------------------------------------------------------
@@ -95,6 +105,13 @@ class pending_orders(Base):
     sl_no = Column(Integer)
     species = Column(String(100))
     no_of_pieces = Column(Integer, default=0)
+
+    __table_args__ = (
+        Index("ix_pending_orders_company_po", "company_id", "po_number"),
+        Index("ix_pending_orders_company_shipment", "company_id", "shipment_date"),
+        Index("ix_pending_orders_company_buyer", "company_id", "buyer"),
+        Index("ix_pending_orders_company_product_dims", "company_id", "species", "variety", "grade"),
+    )
 
 # --------------------------------------------------------
 # SALES DISPATCH (SALES REPORT TABLE)
@@ -134,6 +151,13 @@ class sales_dispatch(Base):
     journal_id = Column(Integer, nullable=True)
     created_at = Column(Date, default=lambda: ist_now().date()
 )
+
+    __table_args__ = (
+        Index("ix_sales_dispatch_company_invoice", "company_id", "invoice_no"),
+        Index("ix_sales_dispatch_company_buyer", "company_id", "buyer_name"),
+        Index("ix_sales_dispatch_company_status", "company_id", "status"),
+        Index("ix_sales_dispatch_company_po", "company_id", "po_number"),
+    )
   
     
 # --------------------------------------------------------
@@ -184,6 +208,14 @@ class cold_storage_holding(Base, metacolumns):
     # Status Management
     status = Column(String(50), default="HOLDING")    # HOLDING / DISPATCHED / TRANSFERRED
     remarks = Column(Text, nullable=True)
+
+    __table_args__ = (
+        Index("ix_cold_storage_holding_company_batch", "company_id", "batch_number"),
+        Index("ix_cold_storage_holding_company_status", "company_id", "status"),
+        Index("ix_cold_storage_holding_company_storage_status", "company_id", "cold_storage_name", "status"),
+        Index("ix_cold_storage_holding_company_prod_for_at", "company_id", "production_for", "production_at"),
+        Index("ix_cold_storage_holding_company_in_date", "company_id", "in_date"),
+    )
  
   # --------------------------------------------------------
 # COLD STORAGE MASTER
@@ -265,6 +297,8 @@ class InventorySummary(Base):
             "freezer",
             name="uq_inventory_summary"
         ),
+        Index("ix_inventory_summary_company_prod_for_at", "company_id", "production_for", "production_at"),
+        Index("ix_inventory_summary_company_product_dims", "company_id", "species", "variety", "grade", "glaze"),
     )
     # --------------------------------------------------------
    # INVENTORY SUMMARY scheduler
@@ -298,3 +332,9 @@ class InventoryDailySnapshot(Base):
     inventory_value = Column(Float, default=0) 
 
     created_at = Column(DateTime)
+
+    __table_args__ = (
+        Index("ix_inventory_snapshot_company_date", "company_id", "snapshot_date"),
+        Index("ix_inventory_snapshot_company_prod_for_at", "company_id", "production_for", "production_at"),
+        Index("ix_inventory_snapshot_company_product_dims", "company_id", "species", "variety", "grade", "glaze"),
+    )

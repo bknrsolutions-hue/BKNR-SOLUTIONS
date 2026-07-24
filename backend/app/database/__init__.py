@@ -2,21 +2,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
 
-# -----------------------------------------------------
-# 🟢 Load environment variables from .env (if exists)
-# -----------------------------------------------------
-load_dotenv()
-
-# -----------------------------------------------------
-# 🟣 Database URL — PostgreSQL Connection String
-# -----------------------------------------------------
-# Format: postgresql+psycopg2://USER:PASSWORD@HOST:PORT/DB_NAME
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+psycopg2://postgres:143211Nr@localhost:5432/bknr_erp"
-)
+from app.config import DATABASE_URL
 
 database_host = (make_url(DATABASE_URL).host or "").lower()
 is_render_database = "render.com" in database_host or os.getenv("RENDER") == "true"

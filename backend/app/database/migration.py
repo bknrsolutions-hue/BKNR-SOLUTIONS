@@ -293,6 +293,9 @@ def run_migration():
         ("idx_stock_entry_location", "stock_entry", "location"),
         ("idx_stock_entry_production_for", "stock_entry", "production_for"),
         ("idx_stock_entry_production_at", "stock_entry", "production_at"),
+        ("ix_stock_entry_company_date", "stock_entry", "company_id, date"),
+        ("ix_stock_entry_company_filters", "stock_entry", "company_id, production_for, production_at, batch_number"),
+        ("ix_stock_entry_company_status_cancel", "stock_entry", "company_id, status, is_cancelled"),
         # processing tables indexes
         ("idx_gate_entry_batch_number", "gate_entry", "batch_number"),
         ("idx_raw_material_purchasing_batch_number", "raw_material_purchasing", "batch_number"),
@@ -300,7 +303,24 @@ def run_migration():
         ("idx_grading_batch_number", "grading", "batch_number"),
         ("idx_peeling_batch_number", "peeling", "batch_number"),
         ("idx_soaking_batch_number", "soaking", "batch_number"),
-        ("idx_production_batch_number", "production", "batch_number")
+        ("idx_production_batch_number", "production", "batch_number"),
+        ("ix_gate_entry_company_date", "gate_entry", "company_id, date"),
+        ("ix_gate_entry_company_status_cancel", "gate_entry", "company_id, status, is_cancelled"),
+        ("ix_rmp_company_date", "raw_material_purchasing", "company_id, date"),
+        ("ix_rmp_company_prod_for_peeling", "raw_material_purchasing", "company_id, production_for, peeling_at"),
+        ("ix_de_heading_company_date", "de_heading", "company_id, date"),
+        ("ix_de_heading_company_prod_for_peeling", "de_heading", "company_id, production_for, peeling_at"),
+        ("ix_grading_company_date", "grading", "company_id, date"),
+        ("ix_grading_company_prod_for_peeling", "grading", "company_id, production_for, peeling_at"),
+        ("ix_peeling_company_date", "peeling", "company_id, date"),
+        ("ix_peeling_company_prod_for_peeling", "peeling", "company_id, production_for, peeling_at"),
+        ("ix_soaking_company_date", "soaking", "company_id, date"),
+        ("ix_soaking_company_prod_for_at", "soaking", "company_id, production_for, production_at"),
+        ("ix_production_company_date", "production", "company_id, date"),
+        ("ix_production_company_prod_for_at", "production", "company_id, production_for, production_at"),
+        ("ix_inventory_summary_company_prod_for_at", "inventory_summary", "company_id, production_for, production_at"),
+        ("ix_voucher_headers_company_date_status", "voucher_headers", "company_id, voucher_date, status"),
+        ("ix_voucher_details_voucher_ledger", "voucher_details", "voucher_id, ledger_id"),
     ]
     for idx_name, tbl_name, col_name in indexes_to_create:
         try:

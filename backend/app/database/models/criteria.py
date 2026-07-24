@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Integer, String, Float, Date, Time,
-    UniqueConstraint, ForeignKey, DateTime
+    UniqueConstraint, ForeignKey, DateTime, Index
 )
 from datetime import date as date_type, datetime
 from sqlalchemy.types import TypeDecorator
@@ -71,7 +71,11 @@ class production_for(Base, metacolumns):
     peeling_rate_per_kg = Column(Float, nullable=False, default=0)
     deheading_rate_per_kg = Column(Float, nullable=False, default=0)
     status = Column(String(20), nullable=False, default="Active")
-    __table_args__ = (UniqueConstraint("company_id", "production_for", "apply_from", "freezer_name", "glaze_percent", name="uix_company_production_for_costing"),)
+    __table_args__ = (
+        UniqueConstraint("company_id", "production_for", "apply_from", "freezer_name", "glaze_percent", name="uix_company_production_for_costing"),
+        Index("ix_production_for_company_status", "company_id", "status"),
+        Index("ix_production_for_company_lookup", "company_id", "production_for", "freezer_name", "glaze_percent"),
+    )
 
 class glazes(Base, metacolumns):
     __tablename__ = "glazes"
@@ -232,6 +236,22 @@ class kg_basis_labour_rates(Base, metacolumns):
     effective_from = Column(Date, nullable=False)
     status = Column(String(50), nullable=False, default="Active")
 
+
+class daily_basis_worker_rates(Base, metacolumns):
+    __tablename__ = "daily_basis_worker_rates"
+    __table_args__ = (
+        UniqueConstraint(
+            "company_id", "worker_type", "applicable_from",
+            name="uix_company_daily_worker_rate"
+        ),
+    )
+
+    id = Column(Integer, primary_key=True)
+    worker_type = Column(String(100), nullable=False)  # Fresher, Medium Experience, Experienced
+    daily_salary = Column(Float, nullable=False, default=0.0)
+    applicable_from = Column(Date, nullable=False)
+    status = Column(String(50), nullable=False, default="Active")
+
 class species(Base, metacolumns):
     __tablename__ = "species"
     id = Column(Integer, primary_key=True)
@@ -281,6 +301,10 @@ class HOSO_HLSO_Yields(Base):
     hlso_yield_pct = Column(Float, nullable=False); hlso_count = Column(Integer, nullable=False)
     date = Column(String(20)); time = Column(String(20)); email = Column(String(200))
     company_id = Column(String(50), index=True)
+
+    __table_args__ = (
+        Index("ix_hoso_hlso_yields_company_species_count", "company_id", "species", "hoso_count"),
+    )
 
 class peeling_at(Base, metacolumns):
     __tablename__ = "peeling_at"

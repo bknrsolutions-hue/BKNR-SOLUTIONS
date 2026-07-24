@@ -7,6 +7,35 @@ import {
   KPIGrid, KPICard, Loader, ErrorBox, SearchInput, EmptyRow,
   FinYearSelect, useReport, fmt, ConfirmModal, AuditDrawer, RowActionMenu, InlineSearchableSelect
 } from './ReportShell';
+import { WagesTabNav, ContractorAnalysisView, DailyBasisMatrixView, KgBasisMatrixView } from './WagesReportTabs';
+
+const getWorkerDetails = (row) => {
+  const wType = String(row.worker_type || '').toLowerCase();
+  const isContractor = wType.includes('contractor') || (!wType && row.contractor);
+  
+  let count = Number(row.no_of_workers || 0);
+  let idsList = [];
+  if (row.worker_ids) {
+    idsList = String(row.worker_ids).split(',').map(s => s.trim()).filter(Boolean);
+    if (!count) count = idsList.length;
+  }
+
+  if (isContractor) {
+    if (count > 0) return `${count} Worker${count > 1 ? 's' : ''}`;
+    return '-';
+  } else {
+    if (count > 0 && row.worker_ids) {
+      return `${count} Worker${count > 1 ? 's' : ''} (${row.worker_ids})`;
+    }
+    if (count > 0) {
+      return `${count} Worker${count > 1 ? 's' : ''}`;
+    }
+    if (row.worker_ids) {
+      return `${idsList.length} Worker${idsList.length > 1 ? 's' : ''} (${row.worker_ids})`;
+    }
+    return '-';
+  }
+};
 
 export default function DeHeadingReport({ activeRoute }) {
   const [fy, setFy] = useState('');
@@ -19,6 +48,7 @@ export default function DeHeadingReport({ activeRoute }) {
   const [peeling, setPeeling] = useState('');
   const [production, setProduction] = useState('');
   const [search, setSearch] = useState('');
+  const [reportTab, setReportTab] = useState('ledger');
 
   // Editing & Dialogs state
   const [selectedRow, setSelectedRow] = useState(null);
@@ -241,6 +271,8 @@ export default function DeHeadingReport({ activeRoute }) {
         </FilterBox>
       </FilterBar>
 
+      <WagesTabNav activeTab={reportTab} onChangeTab={setReportTab} />
+
       <div className="actions" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
         <div id="rowCount" style={{ fontSize: 12, fontWeight: 700, color: 'var(--corp-rep)' }}>
           {filteredRows.length} rows found
@@ -253,231 +285,204 @@ export default function DeHeadingReport({ activeRoute }) {
 
       {!loading && !error && (
         <>
-          <KPIGrid>
-            <KPICard label="Records" value={filteredRows.length} accent="var(--corp-dash)" />
-            <KPICard label="Total HOSO (Kg)" value={fmt.number(totalHoso)} accent="var(--corp-ops)" />
-            <KPICard label="Total HLSO (Kg)" value={fmt.number(totalHlso)} accent="var(--corp-rep)" />
-            <KPICard label="Average Yield %" value={totalHoso > 0 ? fmt.pct((totalHlso / totalHoso) * 100) : '0.00%'} accent="var(--corp-dash)" />
-            <KPICard label="Total Wages" value={fmt.currency(totalAmt)} accent="var(--corp-fin)" />
-          </KPIGrid>
+          {reportTab === 'ledger' && (
+            <>
+              <KPIGrid>
+                <KPICard label="Records" value={filteredRows.length} accent="var(--corp-dash)" />
+                <KPICard label="Total HOSO (Kg)" value={fmt.number(totalHoso)} accent="var(--corp-ops)" />
+                <KPICard label="Total HLSO (Kg)" value={fmt.number(totalHlso)} accent="var(--corp-rep)" />
+                <KPICard label="Average Yield %" value={totalHoso > 0 ? fmt.pct((totalHlso / totalHoso) * 100) : '0.00%'} accent="var(--corp-dash)" />
+                <KPICard label="Total Wages" value={fmt.currency(totalAmt)} accent="var(--corp-fin)" />
+              </KPIGrid>
 
-          <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            <table className="bknr-table" style={{ minWidth: 1600, width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 40 }}>#</th>
-                  <th style={{ width: 80 }}>Date</th>
-                  <th style={{ width: 95 }}>Batch No</th>
-                  <th style={{ width: 140 }}>Contractor</th>
-                  <th style={{ width: 100 }}>Species</th>
-                  <th style={{ width: 90 }}>H-Cnt</th>
-                  <th style={{ width: 100 }}>HOSO Kg</th>
-                  <th style={{ width: 100 }}>HLSO Kg</th>
-                  <th style={{ width: 100 }}>Target %</th>
-                  <th style={{ width: 80 }}>Actual %</th>
-                  <th style={{ width: 80 }}>Diff %</th>
-                  <th style={{ width: 90 }}>Diff Kg</th>
-                  <th style={{ width: 80 }}>Rate</th>
-                  <th style={{ width: 120 }}>Amount</th>
-                  <th style={{ width: 110 }}>Peeling At</th>
-                  <th style={{ width: 110 }}>Prod For</th>
-                  <th style={{ width: 100 }}>User</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.length === 0 ? (
-                  <EmptyRow cols={17} />
-                ) : (
-                  filteredRows.map((row, index) => {
-                    const isSelected = selectedRow?.id === row.id;
-                    const slNo = filteredRows.length - index;
+              <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+                <table className="bknr-table" style={{ minWidth: 1750, width: '100%' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ width: 40 }}>#</th>
+                      <th style={{ width: 80 }}>Date</th>
+                      <th style={{ width: 95 }}>Batch No</th>
+                      <th style={{ width: 140 }}>Contractor</th>
+                      <th style={{ width: 90 }}>Table No</th>
+                      <th style={{ width: 130 }}>Workers / IDs</th>
+                      <th style={{ width: 100 }}>Species</th>
+                      <th style={{ width: 90 }}>H-Cnt</th>
+                      <th style={{ width: 100 }}>HOSO Kg</th>
+                      <th style={{ width: 100 }}>HLSO Kg</th>
+                      <th style={{ width: 100 }}>Target %</th>
+                      <th style={{ width: 80 }}>Actual %</th>
+                      <th style={{ width: 80 }}>Diff %</th>
+                      <th style={{ width: 90 }}>Diff Kg</th>
+                      <th style={{ width: 80 }}>Rate</th>
+                      <th style={{ width: 120 }}>Amount</th>
+                      <th style={{ width: 110 }}>Peeling At</th>
+                      <th style={{ width: 110 }}>Prod For</th>
+                      <th style={{ width: 100 }}>User</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRows.length === 0 ? (
+                      <EmptyRow cols={19} />
+                    ) : (
+                      filteredRows.map((row, index) => {
+                        const isSelected = selectedRow?.id === row.id;
+                        const slNo = filteredRows.length - index;
 
-                    // Compute values
-                    const hosoVal = isEditing && isSelected ? Number(editData.hoso_qty || 0) : Number(row.hoso_qty || 0);
-                    const hlsoVal = isEditing && isSelected ? Number(editData.hlso_qty || 0) : Number(row.hlso_qty || 0);
-                    const rateVal = isEditing && isSelected ? Number(editData.rate_per_kg || 0) : Number(row.rate_per_kg || 0);
-                    const targetVal = isEditing && isSelected ? Number(editData.target_yield_percent || 0) : Number(row.target_yield_percent || 0);
+                        // Compute values
+                        const hosoVal = isEditing && isSelected ? Number(editData.hoso_qty || 0) : Number(row.hoso_qty || 0);
+                        const hlsoVal = isEditing && isSelected ? Number(editData.hlso_qty || 0) : Number(row.hlso_qty || 0);
+                        const rateVal = isEditing && isSelected ? Number(editData.rate_per_kg || 0) : Number(row.rate_per_kg || 0);
+                        const targetVal = isEditing && isSelected ? Number(editData.target_yield_percent || 0) : Number(row.target_yield_percent || 0);
 
-                    const yld = hosoVal > 0 ? (hlsoVal / hosoVal) * 100 : 0;
-                    const diffPct = yld - targetVal;
-                    const diffKg = targetVal > 0 ? (hlsoVal / (targetVal / 100)) - hosoVal : 0;
-                    const amt = hlsoVal * rateVal;
+                        const yld = hosoVal > 0 ? (hlsoVal / hosoVal) * 100 : 0;
+                        const diffPct = yld - targetVal;
+                        const diffKg = targetVal > 0 ? (hlsoVal / (targetVal / 100)) - hosoVal : 0;
+                        const amt = hlsoVal * rateVal;
 
-                    return (
-                      <tr
-                        key={row.id}
-                        data-record-id={row.id}
-                        onClick={() => {
-                          if (!isEditing) {
-                            setSelectedRow(row);
-                          }
-                        }}
-                        style={{
-                          background: isSelected ? 'rgba(139,92,246,0.08)' : undefined,
-                          borderLeft: isSelected ? '3px solid var(--corp-rep)' : undefined,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <td className="text-center">{slNo}</td>
-                        <td className="text-center">{row.date}</td>
-                        <td className="text-center" style={{ fontWeight: 700 }}>
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input"
-                              value={editData.batch_number || ''}
-                              onChange={e => handleEditChange('batch_number', e.target.value)}
-                            />
-                          ) : (
-                            row.batch_number
-                          )}
-                        </td>
-                        <td>
-                          {isEditing && isSelected ? (
-                            <InlineSearchableSelect
-                              value={editData.contractor}
-                              onChange={val => handleEditChange('contractor', val)}
-                              options={data?.contractors || []}
-                            />
-                          ) : (
-                            row.contractor
-                          )}
-                        </td>
-                        <td>
-                          {isEditing && isSelected ? (
-                            <InlineSearchableSelect
-                              value={editData.species}
-                              onChange={val => handleEditChange('species', val)}
-                              options={data?.species_list || []}
-                            />
-                          ) : (
-                            row.species
-                          )}
-                        </td>
-                        <td className="text-center">
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input"
-                              value={editData.hoso_count || ''}
-                              onChange={e => handleEditChange('hoso_count', e.target.value)}
-                            />
-                          ) : (
-                            row.hoso_count
-                          )}
-                        </td>
-                        <td className="text-right">
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input text-right"
-                              type="number"
-                              value={editData.hoso_qty || ''}
-                              onChange={e => handleEditChange('hoso_qty', e.target.value)}
-                            />
-                          ) : (
-                            fmt.number(row.hoso_qty)
-                          )}
-                        </td>
-                        <td className="text-right">
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input text-right"
-                              type="number"
-                              value={editData.hlso_qty || ''}
-                              onChange={e => handleEditChange('hlso_qty', e.target.value)}
-                            />
-                          ) : (
-                            fmt.number(row.hlso_qty)
-                          )}
-                        </td>
-                        <td className="text-center">
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input text-center"
-                              type="number"
-                              value={editData.target_yield_percent || ''}
-                              onChange={e => handleEditChange('target_yield_percent', e.target.value)}
-                            />
-                          ) : (
-                            fmt.pct(row.target_yield_percent)
-                          )}
-                        </td>
-                        <td className="text-center" style={{ fontWeight: 700, color: 'var(--corp-rep)' }}>
-                          {fmt.pct(yld)}
-                        </td>
-                        <td className="text-center" style={{ fontWeight: 700, color: diffPct >= 0 ? '#10b981' : '#ef4444' }}>
-                          {fmt.pct(diffPct)}
-                        </td>
-                        <td className="text-right" style={{ fontWeight: 700, color: diffKg >= 0 ? '#10b981' : '#ef4444' }}>
-                          {fmt.number(diffKg)}
-                        </td>
-                        <td className="text-right">
-                          {isEditing && isSelected ? (
-                            <input
-                              className="edit-input text-right"
-                              type="number"
-                              value={editData.rate_per_kg || ''}
-                              onChange={e => handleEditChange('rate_per_kg', e.target.value)}
-                            />
-                          ) : (
-                            fmt.currency(row.rate_per_kg)
-                          )}
-                        </td>
-                        <td className="text-right" style={{ fontWeight: 700 }}>
-                          {fmt.currency(amt)}
-                        </td>
-                        <td>
-                          {isEditing && isSelected ? (
-                            <InlineSearchableSelect
-                              value={editData.peeling_at}
-                              onChange={val => handleEditChange('peeling_at', val)}
-                              options={data?.peeling_locations || []}
-                            />
-                          ) : (
-                            row.peeling_at
-                          )}
-                        </td>
-                        <td>
-                          {isEditing && isSelected ? (
-                            <InlineSearchableSelect
-                              value={editData.production_for}
-                              onChange={val => handleEditChange('production_for', val)}
-                              options={data?.production_for_list || []}
-                            />
-                          ) : (
-                            row.production_for
-                          )}
-                        </td>
-                        <td style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{row.email?.split('@')[0]}</td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-              <tfoot>
-                <tr style={{ fontWeight: 800 }}>
-                  <td colSpan={7} style={{ textAlign: 'right', fontWeight: 800 }}>TOTALS:</td>
-                  <td className="text-right">{fmt.number(totalHoso)}</td>
-                  <td className="text-right">{fmt.number(totalHlso)}</td>
-                  <td className="text-center" style={{ color: 'var(--corp-rep)' }}>
-                    {totalHoso > 0 ? fmt.pct((totalHlso / totalHoso) * 100) : '0.00%'}
-                  </td>
-                  <td></td>
-                  <td className="text-center" style={{ color: (diffSum / (filteredRows.length || 1)) >= 0 ? '#10b981' : '#ef4444' }}>
-                    {fmt.pct(diffSum / (filteredRows.length || 1))}
-                  </td>
-                  <td className="text-right" style={{ color: diffKgSum >= 0 ? '#10b981' : '#ef4444' }}>
-                    {fmt.number(diffKgSum)}
-                  </td>
-                  <td></td>
-                  <td className="text-right">{fmt.currency(totalAmt)}</td>
-                  <td colSpan={3}></td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                        return (
+                          <tr
+                            key={row.id}
+                            data-record-id={row.id}
+                            onClick={() => {
+                              if (!isEditing) {
+                                setSelectedRow(row);
+                              }
+                            }}
+                            style={{
+                              background: isSelected ? 'rgba(139,92,246,0.08)' : undefined,
+                              borderLeft: isSelected ? '3px solid var(--corp-rep)' : undefined,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <td className="text-center">{slNo}</td>
+                            <td className="text-center">{row.date}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{row.batch_number}</td>
+                            <td>{row.contractor}</td>
+                            <td className="text-center">T-{row.table_no}</td>
+                            <td>{getWorkerDetails(row)}</td>
+                            <td>{row.species}</td>
+                            <td className="text-center">{row.hoso_count || '-'}</td>
+
+                            <td className="text-right">
+                              {isEditing && isSelected ? (
+                                <input
+                                  type="number"
+                                  className="edit-input"
+                                  style={{ width: 70 }}
+                                  value={editData.hoso_qty || ''}
+                                  onChange={e => handleEditChange('hoso_qty', e.target.value)}
+                                />
+                              ) : (
+                                fmt.number(hosoVal)
+                              )}
+                            </td>
+
+                            <td className="text-right" style={{ fontWeight: 700 }}>
+                              {isEditing && isSelected ? (
+                                <input
+                                  type="number"
+                                  className="edit-input"
+                                  style={{ width: 70 }}
+                                  value={editData.hlso_qty || ''}
+                                  onChange={e => handleEditChange('hlso_qty', e.target.value)}
+                                />
+                              ) : (
+                                fmt.number(hlsoVal)
+                              )}
+                            </td>
+
+                            <td className="text-center">
+                              {isEditing && isSelected ? (
+                                <input
+                                  type="number"
+                                  className="edit-input"
+                                  style={{ width: 60 }}
+                                  value={editData.target_yield_percent || ''}
+                                  onChange={e => handleEditChange('target_yield_percent', e.target.value)}
+                                />
+                              ) : (
+                                fmt.pct(targetVal)
+                              )}
+                            </td>
+
+                            <td className="text-center" style={{ fontWeight: 700, color: 'var(--corp-rep)' }}>
+                              {fmt.pct(yld)}
+                            </td>
+
+                            <td className="text-center" style={{ color: diffPct >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                              {fmt.pct(diffPct)}
+                            </td>
+
+                            <td className="text-right" style={{ color: diffKg >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                              {fmt.number(diffKg)}
+                            </td>
+
+                            <td className="text-right">
+                              {isEditing && isSelected ? (
+                                <input
+                                  type="number"
+                                  className="edit-input"
+                                  style={{ width: 60 }}
+                                  value={editData.rate_per_kg || ''}
+                                  onChange={e => handleEditChange('rate_per_kg', e.target.value)}
+                                />
+                              ) : (
+                                `₹${rateVal.toFixed(2)}`
+                              )}
+                            </td>
+
+                            <td className="text-right" style={{ fontWeight: 800, color: 'var(--corp-fin)' }}>
+                              {fmt.currency(amt)}
+                            </td>
+
+                            <td>{row.peeling_at}</td>
+                            <td>{row.production_for}</td>
+                            <td style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>
+                              {row.email ? row.email.split('@')[0] : ''}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                  <tfoot>
+                    <tr style={{ fontWeight: 800 }}>
+                      <td colSpan={9} style={{ textAlign: 'right', fontWeight: 800 }}>TOTALS:</td>
+                      <td className="text-right">{fmt.number(totalHoso)}</td>
+                      <td className="text-right">{fmt.number(totalHlso)}</td>
+                      <td className="text-center" style={{ color: 'var(--corp-rep)' }}>
+                        {totalHoso > 0 ? fmt.pct((totalHlso / totalHoso) * 100) : '0.00%'}
+                      </td>
+                      <td></td>
+                      <td className="text-center" style={{ color: (diffSum / (filteredRows.length || 1)) >= 0 ? '#10b981' : '#ef4444' }}>
+                        {fmt.pct(diffSum / (filteredRows.length || 1))}
+                      </td>
+                      <td className="text-right" style={{ color: diffKgSum >= 0 ? '#10b981' : '#ef4444' }}>
+                        {fmt.number(diffKgSum)}
+                      </td>
+                      <td></td>
+                      <td className="text-right">{fmt.currency(totalAmt)}</td>
+                      <td colSpan={3}></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
+          )}
+
+          {reportTab === 'contractor' && (
+            <ContractorAnalysisView rows={filteredRows} monthFilter={month} />
+          )}
+
+          {reportTab === 'daily_basis' && (
+            <DailyBasisMatrixView rows={filteredRows} monthFilter={month} />
+          )}
+
+          {reportTab === 'kg_basis' && (
+            <KgBasisMatrixView rows={filteredRows} monthFilter={month} />
+          )}
         </>
       )}
-
-
 
       <ConfirmModal
         isOpen={confirmModalOpen && confirmAction === 'cancel'}

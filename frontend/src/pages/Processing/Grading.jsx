@@ -53,7 +53,8 @@ export default function Grading() {
         queryParams.append('peeling_at', activeLoc);
       }
 
-      const res = await fetch(`/processing/grading?${queryParams.toString()}`);
+      const res = await fetch(`/processing/grading?${queryParams.toString()}`, { credentials: 'include' });
+
       if (res.ok) {
         const data = await res.json();
         setProdForList(data.prod_for_list || []);
@@ -66,9 +67,7 @@ export default function Grading() {
         setDeheadingPending(data.deheading_pending || []);
         setDrillDownData(data.drill_down || {});
 
-        if ((data.today_data || []).length === 0) {
-          setShowForm(true);
-        }
+
       } else {
         console.error('Failed to fetch grading details');
       }
@@ -227,13 +226,16 @@ export default function Grading() {
     formData.append('quantity', String(quantity));
 
     try {
-      const res = await fetch('/processing/grading', {
+      const res = await fetch('/processing/grading?format=json', {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json'
         },
         body: formData,
       });
+
 
       if (res.ok) {
         alert('Grading Entry Saved Successfully!');
@@ -313,14 +315,23 @@ export default function Grading() {
         <h2 style={{ color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <Filter size={20} /> Grading Operations Worksheet
         </h2>
-        <button 
-          onClick={fetchBackendData} 
-          className="btn btn-secondary" 
-          style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setShowForm(true)} 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> New Entry
+          </button>
+          <button 
+            onClick={fetchBackendData} 
+            className="btn btn-secondary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Auto Fields */}
@@ -529,11 +540,6 @@ export default function Grading() {
         <h3 style={{ fontSize: '12px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>
           Recent Records (Today)
         </h3>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Plus size={14} /> Add New Grading
-          </button>
-        )}
       </div>
 
       {/* Form Modal */}
@@ -806,24 +812,24 @@ const modalOverlayStyle = {
   position: 'fixed',
   top: 0,
   left: 0,
-  right: 0,
-  bottom: 0,
-  background: 'rgba(0, 0, 0, 0.75)',
-  backdropFilter: 'blur(5px)',
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(0, 0, 0, 0.5)',
+  backdropFilter: 'blur(3px)',
   display: 'flex',
-  alignItems: 'center',
   justifyContent: 'center',
-  zIndex: 10000,
-  padding: '20px'
+  alignItems: 'center',
+  zIndex: 1000
 };
 
 const modalContentStyle = {
-  background: 'var(--surface-panel)',
-  border: '1px solid var(--border-highlight)',
-  borderRadius: 'var(--radius-panel)',
+  background: 'var(--card-bg)',
+  border: '1px solid var(--border-light)',
+  borderRadius: '8px',
   padding: '24px',
-  width: '100%',
+  width: '90%',
   maxWidth: '900px',
-  boxShadow: 'var(--shadow-float)',
+  maxHeight: '90vh',
+  overflowY: 'auto',
   color: 'var(--text-primary)'
 };

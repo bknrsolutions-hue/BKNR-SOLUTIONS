@@ -4,11 +4,13 @@ from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct, cast, String
+from sqlalchemy import func, distinct, cast, String, text
+import datetime as dt
 from datetime import datetime, date
 
 from app.database import get_db
-from app.database.models.processing import DeHeading
+from app.database.models.processing import DeHeading, TableRegistration
+from app.database.models.attendance import KgBasisWorker, KgBasisWorkerAttendance
 from app.database.models.reprocess import Reprocess
 from app.database.models.floor_balance import FloorBalance  # Live Running Stock Table
 from app.database.models.criteria import (
@@ -27,12 +29,63 @@ from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill
 router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
 
+def validate_kg_worker_table_registration(db: Session, company_code: str, worker_type: str, no_of_workers: int, worker_ids: str, production_at: str = None):
+    if worker_type.strip() == "Contractor":
+        if no_of_workers <= 0:
+            return "Number of Workers must be greater than 0."
+        return None
+
+    ids_list = list(dict.fromkeys(w.strip() for w in (worker_ids or "").split(",") if w.strip()))
+    if len(ids_list) != no_of_workers:
+        return f"Selected worker count ({len(ids_list)}) must match Number of Workers ({no_of_workers})."
+    if not ids_list:
+        return "Select at least one punched-in KG Basis worker."
+
+    query = db.query(KgBasisWorkerAttendance.worker_id).join(
+        KgBasisWorker,
+        (KgBasisWorker.company_id == KgBasisWorkerAttendance.company_id)
+        & (KgBasisWorker.worker_id == KgBasisWorkerAttendance.worker_id)
+    ).filter(
+        KgBasisWorkerAttendance.company_id == company_code,
+        KgBasisWorkerAttendance.attendance_date == ist_now().date(),
+        KgBasisWorkerAttendance.status == "INSIDE",
+        KgBasisWorker.status == "ACTIVE",
+        KgBasisWorkerAttendance.worker_id.in_(ids_list),
+    )
+    clean_location = (production_at or "").strip()
+    if clean_location:
+        query = query.filter(func.upper(func.trim(KgBasisWorkerAttendance.production_at)) == clean_location.upper())
+
+    inside_ids = {worker_id for (worker_id,) in query.all()}
+    missing_ids = [worker_id for worker_id in ids_list if worker_id not in inside_ids]
+    if missing_ids:
+        return f"Only punched-in KG Basis workers can be registered. Not currently IN: {', '.join(missing_ids)}"
+    return None
+
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
-    c_list = [c.contractor_name for c in db.query(contractors).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all()]
-    s_list = [s.species_name for s in db.query(SpeciesMaster).filter(SpeciesMaster.company_id == company_id).order_by(SpeciesMaster.species_name).all()]
-    pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    c_q = db.query(contractors)
+    if company_id:
+        c_q = c_q.filter(func.upper(func.trim(contractors.company_id)) == company_id.strip().upper())
+    c_list = [c.contractor_name for c in c_q.order_by(contractors.contractor_name).all() if c.contractor_name]
+    if not c_list:
+        c_list = [c.contractor_name for c in db.query(contractors).order_by(contractors.contractor_name).all() if c.contractor_name]
+
+    s_q = db.query(SpeciesMaster)
+    if company_id:
+        s_q = s_q.filter(func.upper(func.trim(SpeciesMaster.company_id)) == company_id.strip().upper())
+    s_list = [s.species_name for s in s_q.order_by(SpeciesMaster.species_name).all() if s.species_name]
+    if not s_list:
+        s_list = [s.species_name for s in db.query(SpeciesMaster).order_by(SpeciesMaster.species_name).all() if s.species_name]
+
+    pf_q = db.query(distinct(ProductionForMaster.production_for))
+    if company_id:
+        pf_q = pf_q.filter(func.upper(func.trim(ProductionForMaster.company_id)) == company_id.strip().upper())
+    pf_list = [p[0] for p in pf_q.all() if p[0]]
+    if not pf_list:
+        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
     if "General Stock" not in pf_list:
         pf_list.append("General Stock")
+
     return {"contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
@@ -91,9 +144,10 @@ def update_floor_balance_row(
 @router.get("/de_heading", response_class=HTMLResponse)
 def show_de_heading(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location = get_global_filters(request)
-    company_code = request.session.get("company_code")
-    if not company_code:
+    raw_company_code = request.session.get("company_code")
+    if not raw_company_code:
         return RedirectResponse("/auth/login", status_code=303)
+    company_code = str(raw_company_code)
 
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [loc.strip().upper() for loc in session_locations if loc.strip()]
@@ -172,6 +226,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
                     "hlso_qty": r.hlso_qty,
                     "yield_percent": r.yield_percent,
                     "contractor": r.contractor,
+                    "table_no": r.table_no,
                     "rate_per_kg": r.rate_per_kg,
                     "amount": r.amount,
                     "is_cancelled": r.is_cancelled,
@@ -348,85 +403,95 @@ def save_de_heading(
     hoso_count: str = Form(...), hoso_qty: float = Form(...),
     hlso_qty: float = Form(...), yield_percent: str = Form(...),
     contractor: str = Form(...), rate_per_kg: float = Form(...),
-    amount: float = Form(...)
+    amount: float = Form(...), table_no: str = Form(None)
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
-    ensure_bill_accounting_schema(db)
     
-    clean_batch = batch_number.strip()
-    clean_count = hoso_count.strip()
+    try:
+        ensure_bill_accounting_schema(db)
+        
+        clean_batch = batch_number.strip()
+        clean_count = hoso_count.strip()
 
-    fb_query = db.query(FloorBalance.source_type).filter(
-        FloorBalance.company_id == company_code,
-        func.upper(func.trim(FloorBalance.location)) == deheading_at.strip().upper(),
-        func.upper(func.trim(FloorBalance.batch_number)) == clean_batch.upper(),
-        func.upper(func.trim(FloorBalance.count)) == clean_count.upper(),
-        func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
-        FloorBalance.variety == "HOSO"
-    )
-    prod_for_clean = production_for.strip() if production_for else ""
-    if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
-        fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == "") | (func.upper(func.trim(FloorBalance.production_for)) == "GENERAL STOCK"))
-    else:
-        fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
+        fb_query = db.query(FloorBalance.source_type).filter(
+            FloorBalance.company_id == company_code,
+            func.upper(func.trim(FloorBalance.location)) == deheading_at.strip().upper(),
+            func.upper(func.trim(FloorBalance.batch_number)) == clean_batch.upper(),
+            func.upper(func.trim(FloorBalance.count)) == clean_count.upper(),
+            func.upper(func.trim(FloorBalance.species)) == species.strip().upper(),
+            FloorBalance.variety == "HOSO"
+        )
+        prod_for_clean = production_for.strip() if production_for else ""
+        if prod_for_clean in ("General Stock", "GENERAL STOCK", "N/A", ""):
+            fb_query = fb_query.filter((FloorBalance.production_for == None) | (func.trim(FloorBalance.production_for) == "") | (func.upper(func.trim(FloorBalance.production_for)) == "GENERAL STOCK"))
+        else:
+            fb_query = fb_query.filter(func.upper(func.trim(FloorBalance.production_for)) == prod_for_clean.upper())
 
-    source_row = fb_query.first()
-    avail = get_floor_balance(
-        db, company_code, deheading_at, clean_batch, clean_count, species, "HOSO",
-        production_for, source_row[0] if source_row else "RMP"
-    )
-    
-    if hoso_qty > (avail + 0.1):
-        return JSONResponse({"error": f"Insufficient HOSO live balance. Available: {round(avail, 2)}"}, status_code=400)
+        source_row = fb_query.first()
+        avail = get_floor_balance(
+            db, company_code, deheading_at, clean_batch, clean_count, species, "HOSO",
+            production_for, source_row[0] if source_row else "RMP"
+        )
+        
+        if hoso_qty > (avail + 0.1):
+            return JSONResponse({"error": f"Insufficient HOSO live balance. Available: {round(avail, 2)}"}, status_code=400)
 
-    try: clean_yield = float(str(yield_percent).replace('%', ''))
-    except: clean_yield = 0.0
+        try: clean_yield = float(str(yield_percent).replace('%', ''))
+        except: clean_yield = 0.0
 
-    current_ist = ist_now()
+        current_ist = ist_now()
 
-    new_entry = DeHeading(
-        production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
-        species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
-        contractor=contractor, rate_per_kg=rate_per_kg, amount=amount, 
-        date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
-    )
-    db.add(new_entry)
+        new_entry = DeHeading(
+            production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
+            species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
+            contractor=contractor, table_no=table_no.strip() if table_no else None, rate_per_kg=rate_per_kg, amount=amount, 
+            date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
+        )
+        db.add(new_entry)
 
-    # 🟢 ⚡ 1. Deduct HOSO from running floor balance row cleanly
-    update_floor_balance_row(
-        db, company_code, clean_batch, clean_count, species, "HOSO", 
-        deheading_at, production_for, qty_delta=-hoso_qty, email=email
-    )
+        # 🟢 ⚡ 1. Deduct HOSO from running floor balance row cleanly
+        update_floor_balance_row(
+            db, company_code, clean_batch, clean_count, species, "HOSO", 
+            deheading_at, production_for, qty_delta=-hoso_qty, email=email
+        )
 
-    # 🟢 ⚡ 2. Add newly generated HLSO stock cleanly to running balance row
-    update_floor_balance_row(
-        db, company_code, clean_batch, clean_count, species, "HLSO", 
-        deheading_at, production_for, qty_delta=hlso_qty, email=email
-    )
+        # 🟢 ⚡ 2. Add newly generated HLSO stock cleanly to running balance row
+        update_floor_balance_row(
+            db, company_code, clean_batch, clean_count, species, "HLSO", 
+            deheading_at, production_for, qty_delta=hlso_qty, email=email
+        )
 
-    # 🟢 ⚡ 3. Synchronize pool *after* successful floor balance state mutations
-    add_deheading_to_grading_pool(db, new_entry)
+        # 🟢 ⚡ 3. Synchronize pool *after* successful floor balance state mutations
+        add_deheading_to_grading_pool(db, new_entry)
 
-    db.flush()
-    voucher = post_contractor_source_charge(
-        db=db,
-        company_id=company_code,
-        voucher_date=current_ist.date(),
-        reference_no=f"DEH-{new_entry.id}",
-        contractor_name=contractor,
-        charge_type="Deheading",
-        taxable_amount=amount,
-        gst_percent=contractor_gst_percent(db, company_code, contractor),
-        created_by=email,
-        quantity=hlso_qty,
-        rate=rate_per_kg,
-    )
-    new_entry.journal_id = voucher.id
+        db.flush()
+        try:
+            voucher = post_contractor_source_charge(
+                db=db,
+                company_id=company_code,
+                voucher_date=current_ist.date(),
+                reference_no=f"DEH-{new_entry.id}",
+                contractor_name=contractor,
+                charge_type="Deheading",
+                taxable_amount=amount,
+                gst_percent=contractor_gst_percent(db, company_code, contractor),
+                created_by=email,
+                quantity=hlso_qty,
+                rate=rate_per_kg,
+            )
+            if voucher:
+                new_entry.journal_id = voucher.id
+        except Exception as ve:
+            logger.warning(f"Warning posting contractor voucher for DeHeading: {ve}")
 
-    db.commit()
-    return JSONResponse({"status": "ok"})
+        db.commit()
+        return JSONResponse({"status": "ok"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving de-heading entry: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 from app.utils.trace_lock import is_batch_used_downstream_from_deheading
@@ -485,4 +550,179 @@ def delete_de_heading(
     cancel_linked_bill_voucher(db, company_code, row.journal_id, email)
 
     db.commit()
+    return JSONResponse({"status": "ok"})
+
+
+# =====================================================
+# TABLE REGISTRATION ENDPOINTS (De-Heading)
+# =====================================================
+def ensure_table_registrations_schema(db: Session):
+    statements = [
+        """
+        CREATE TABLE IF NOT EXISTS table_registrations (
+            id SERIAL PRIMARY KEY,
+            company_id VARCHAR(50) NOT NULL,
+            date DATE NOT NULL,
+            department VARCHAR(50) NOT NULL,
+            table_no VARCHAR(50) NOT NULL,
+            worker_type VARCHAR(100) NOT NULL,
+            contractor_name VARCHAR(255),
+            no_of_workers INTEGER DEFAULT 0,
+            worker_ids TEXT,
+            production_at VARCHAR(255),
+            production_for VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'Active',
+            created_by VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+    ]
+    for stmt in statements:
+        try:
+            db.execute(text(stmt))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+
+@router.get("/de_heading/table_registrations")
+def get_de_heading_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    try:
+        target_date = datetime.strptime(date_val, "%Y-%m-%d").date() if date_val else ist_now().date()
+        rows = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == target_date,
+            TableRegistration.status == "Active"
+        ).order_by(TableRegistration.id.desc()).all()
+
+        
+        return JSONResponse({
+            "table_registrations": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat(),
+                    "department": r.department,
+                    "table_no": r.table_no,
+                    "worker_type": r.worker_type,
+                    "contractor_name": r.contractor_name,
+                    "no_of_workers": r.no_of_workers,
+                    "worker_ids": r.worker_ids,
+                    "production_at": r.production_at,
+                    "production_for": r.production_for,
+                    "created_by": r.created_by,
+                    "created_at": r.created_at.isoformat() if r.created_at else None
+                } for r in rows
+            ]
+        })
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in get_de_heading_table_registrations: {e}")
+        return JSONResponse({"table_registrations": []})
+
+@router.post("/de_heading/table_registration")
+def save_de_heading_table_registration(
+    request: Request, db: Session = Depends(get_db),
+    table_no: str = Form(...), worker_type: str = Form(...),
+    contractor_name: str = Form(None), no_of_workers: str = Form("0"),
+    worker_ids: str = Form(None), production_at: str = Form(None),
+    production_for: str = Form(None)
+):
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    try:
+        ensure_table_registrations_schema(db)
+        parsed_no_workers = int(no_of_workers or 0)
+        current_ist = ist_now()
+        today_date = current_ist.date()
+        now_naive = current_ist.replace(tzinfo=None) if hasattr(current_ist, 'tzinfo') and current_ist.tzinfo else current_ist
+        clean_peeling_at = (production_at or "").strip()
+        raw_table_no = table_no.strip()
+        
+        if not clean_peeling_at:
+            clean_table_no = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
+        elif raw_table_no.lower().startswith(clean_peeling_at.lower()):
+            after = raw_table_no[len(clean_peeling_at):].strip().lstrip("-_ ").strip()
+            if after and not after.lower().startswith("table"):
+                clean_table_no = f"{clean_peeling_at}-table {after}"
+            else:
+                clean_table_no = raw_table_no
+        else:
+            table_part = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
+            clean_table_no = f"{clean_peeling_at}-{table_part}"
+
+        # 1. Prevent rapid double submit (within 5 seconds)
+        five_sec_ago = now_naive - dt.timedelta(seconds=5)
+        recent = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == today_date,
+            TableRegistration.department == "De-Heading",
+            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
+            TableRegistration.status != 'Cancelled',
+            TableRegistration.created_at >= five_sec_ago
+        ).first()
+        if recent:
+            return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
+
+        validation_error = validate_kg_worker_table_registration(
+            db, company_code, worker_type, parsed_no_workers, worker_ids, production_at
+        )
+        if validation_error:
+            return JSONResponse({"error": validation_error}, status_code=400)
+
+        new_reg = TableRegistration(
+            company_id=company_code,
+            date=today_date,
+            department="De-Heading",
+            table_no=clean_table_no,
+            worker_type=worker_type.strip(),
+            contractor_name=contractor_name.strip() if contractor_name else None,
+            no_of_workers=parsed_no_workers,
+            worker_ids=worker_ids.strip() if worker_ids else None,
+            production_at=production_at.strip() if production_at else None,
+            production_for=production_for.strip() if production_for else None,
+            created_by=email,
+            created_at=now_naive
+        )
+        db.add(new_reg)
+        db.commit()
+        return JSONResponse({"status": "ok", "id": new_reg.id})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in save_de_heading_table_registration: {e}", exc_info=True)
+        return JSONResponse({"error": f"Error saving table registration: {str(e)}"}, status_code=500)
+
+@router.post("/de_heading/table_registration/delete/{id}")
+def delete_de_heading_table_registration(id: int, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    ensure_table_registrations_schema(db)
+    row = db.query(TableRegistration).filter(
+        TableRegistration.id == id,
+        TableRegistration.company_id == company_code
+    ).first()
+
+    if row:
+        row.status = "Cancelled"
+        db.commit()
     return JSONResponse({"status": "ok"})

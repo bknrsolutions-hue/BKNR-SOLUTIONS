@@ -194,7 +194,10 @@ def _unused_incomplete_production_page(
             pending_orders.grade == produced_sub.c.grade,
             pending_orders.packing_style == produced_sub.c.packing_style
         )
-    ).filter(pending_orders.company_id == company_code)
+    ).filter(
+        pending_orders.company_id == company_code,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
     
     # 🟢 FIX: "ALL" bypass for Pending Orders
     if g_prod_clean and g_prod_clean != "ALL":
@@ -306,7 +309,7 @@ def _unused_incomplete_production_page(
 
         r.stock_mc = int(opening_bal / mc_wt) if mc_wt > 0 else 0
         r.pending_production = round(r.existed_stock_util - r.ordered_qty, 2)
-        r.prod_pending_mc = int(float(r.no_of_mc or 0) - r.actual_produced_mc)
+        r.prod_pending_mc = int(abs(r.pending_production) / mc_wt) if mc_wt > 0 and r.pending_production < 0 else 0
         
         v_data = next((v for v in v_records if str(v.variety_name).strip().lower() == p_var), None)
         peeling_y = float(v_data.peeling_yield or 100) / 100 if v_data else 1.0
@@ -527,7 +530,10 @@ def production_page(
             pending_orders.grade == produced_sub.c.grade,
             pending_orders.packing_style == produced_sub.c.packing_style
         )
-    ).filter(pending_orders.company_id == company_code)
+    ).filter(
+        pending_orders.company_id == company_code,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
     
     # 🟢 FIX: "ALL" bypass for Pending Orders
     if g_prod_clean and g_prod_clean != "ALL":
@@ -639,7 +645,7 @@ def production_page(
 
         r.stock_mc = int(opening_bal / mc_wt) if mc_wt > 0 else 0
         r.pending_production = round(r.existed_stock_util - r.ordered_qty, 2)
-        r.prod_pending_mc = int(float(r.no_of_mc or 0) - r.actual_produced_mc)
+        r.prod_pending_mc = int(abs(r.pending_production) / mc_wt) if mc_wt > 0 and r.pending_production < 0 else 0
         
         v_data = next((v for v in v_records if str(v.variety_name).strip().lower() == p_var), None)
         peeling_y = float(v_data.peeling_yield or 100) / 100 if v_data else 1.0
@@ -818,6 +824,8 @@ def production_page(
                     "count_glaze": r.count_glaze,
                     "freezer": r.freezer,
                     "no_of_pieces": r.no_of_pieces,
+                    "selling_price": r.selling_price,
+                    "exchange_rate": r.exchange_rate,
                     "actual_produced_mc": getattr(r, 'actual_produced_mc', 0),
                     "available_stock": getattr(r, 'available_stock', 0),
                     "ordered_qty": getattr(r, 'ordered_qty', 0),

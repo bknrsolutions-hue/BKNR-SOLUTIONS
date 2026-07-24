@@ -9,7 +9,7 @@ describe('AuthContainer', () => {
   it('uses the backend login page and ignores cross-origin auth messages', async () => {
     const handleLoginSuccess = vi.fn().mockResolvedValue(undefined);
     render(<AuthContainer handleLoginSuccess={handleLoginSuccess} />);
-    const iframe = screen.getByTitle('SVBK ERP Website and Login');
+    const iframe = screen.getByTitle('BKNR ERP Website and Login');
     expect(iframe).toHaveAttribute('src', '/auth/login');
 
     fireEvent(
@@ -26,7 +26,7 @@ describe('AuthContainer', () => {
   it('accepts one same-origin login completion message from its own iframe', async () => {
     const handleLoginSuccess = vi.fn().mockResolvedValue(undefined);
     render(<AuthContainer handleLoginSuccess={handleLoginSuccess} />);
-    const iframe = screen.getByTitle('SVBK ERP Website and Login');
+    const iframe = screen.getByTitle('BKNR ERP Website and Login');
     const event = new MessageEvent('message', {
       origin: window.location.origin,
       source: iframe.contentWindow,

@@ -82,7 +82,7 @@ export default function GeneralStoreEntry() {
         ledgers: data.posting_ledgers || [],
         pos: (data.po_list || []).length ? data.po_list : ['N/A'],
       });
-      if (!preserveForm && rows.length === 0) setShowForm(true);
+
     } catch (error) {
       notify('error', error.message || 'Unable to load General Stock Entry.');
     } finally {

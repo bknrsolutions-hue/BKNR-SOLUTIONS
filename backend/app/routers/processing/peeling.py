@@ -6,10 +6,12 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from datetime import datetime, date
 from app.utils.timezone import ist_now
-from sqlalchemy import func, distinct, or_
+from sqlalchemy import func, distinct, or_, text
+import datetime as dt
 
 from app.database import get_db
-from app.database.models.processing import Peeling
+from app.database.models.processing import Peeling, TableRegistration
+from app.database.models.attendance import KgBasisWorker, KgBasisWorkerAttendance
 from app.database.models.floor_balance import FloorBalance  # Single Point of Live Truth
 from app.database.models.criteria import (
     varieties, 
@@ -30,13 +32,70 @@ from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill
 router = APIRouter(tags=["PEELING"])
 templates = Jinja2Templates(directory="app/templates")
 
+def validate_kg_worker_table_registration(db: Session, company_code: str, worker_type: str, no_of_workers: int, worker_ids: str, production_at: str = None):
+    if worker_type.strip() == "Contractor":
+        if no_of_workers <= 0:
+            return "Number of Workers must be greater than 0."
+        return None
+
+    ids_list = list(dict.fromkeys(w.strip() for w in (worker_ids or "").split(",") if w.strip()))
+    if len(ids_list) != no_of_workers:
+        return f"Selected worker count ({len(ids_list)}) must match Number of Workers ({no_of_workers})."
+    if not ids_list:
+        return "Select at least one punched-in KG Basis worker."
+
+    query = db.query(KgBasisWorkerAttendance.worker_id).join(
+        KgBasisWorker,
+        (KgBasisWorker.company_id == KgBasisWorkerAttendance.company_id)
+        & (KgBasisWorker.worker_id == KgBasisWorkerAttendance.worker_id)
+    ).filter(
+        KgBasisWorkerAttendance.company_id == company_code,
+        KgBasisWorkerAttendance.attendance_date == ist_now().date(),
+        KgBasisWorkerAttendance.status == "INSIDE",
+        KgBasisWorker.status == "ACTIVE",
+        KgBasisWorkerAttendance.worker_id.in_(ids_list),
+    )
+    clean_location = (production_at or "").strip()
+    if clean_location:
+        query = query.filter(func.upper(func.trim(KgBasisWorkerAttendance.production_at)) == clean_location.upper())
+
+    inside_ids = {worker_id for (worker_id,) in query.all()}
+    missing_ids = [worker_id for worker_id in ids_list if worker_id not in inside_ids]
+    if missing_ids:
+        return f"Only punched-in KG Basis workers can be registered. Not currently IN: {', '.join(missing_ids)}"
+    return None
+
 def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False):
-    v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).order_by(varieties.variety_name).all() if v[0]]
-    c_list = [c[0] for c in db.query(contractors.contractor_name).filter(contractors.company_id == company_id).order_by(contractors.contractor_name).all() if c[0]]
-    s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).order_by(species.species_name).all() if s[0]]
-    pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).all() if p[0]]
+    v_q = db.query(varieties.variety_name)
+    if company_id:
+        v_q = v_q.filter(func.upper(func.trim(varieties.company_id)) == company_id.strip().upper())
+    v_list = [v[0] for v in v_q.order_by(varieties.variety_name).all() if v[0]]
+    if not v_list:
+        v_list = [v[0] for v in db.query(varieties.variety_name).order_by(varieties.variety_name).all() if v[0]]
+
+    c_q = db.query(contractors.contractor_name)
+    if company_id:
+        c_q = c_q.filter(func.upper(func.trim(contractors.company_id)) == company_id.strip().upper())
+    c_list = [c[0] for c in c_q.order_by(contractors.contractor_name).all() if c[0]]
+    if not c_list:
+        c_list = [c[0] for c in db.query(contractors.contractor_name).order_by(contractors.contractor_name).all() if c[0]]
+
+    s_q = db.query(species.species_name)
+    if company_id:
+        s_q = s_q.filter(func.upper(func.trim(species.company_id)) == company_id.strip().upper())
+    s_list = [s[0] for s in s_q.order_by(species.species_name).all() if s[0]]
+    if not s_list:
+        s_list = [s[0] for s in db.query(species.species_name).order_by(species.species_name).all() if s[0]]
+
+    pf_q = db.query(distinct(ProductionForMaster.production_for))
+    if company_id:
+        pf_q = pf_q.filter(func.upper(func.trim(ProductionForMaster.company_id)) == company_id.strip().upper())
+    pf_list = [p[0] for p in pf_q.all() if p[0]]
+    if not pf_list:
+        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
     if "General Stock" not in pf_list:
         pf_list.append("General Stock")
+
     return {"varieties": v_list, "contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
 
@@ -104,11 +163,13 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     g_loc_clean = global_location.strip().upper() if global_location else None
 
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    raw_company_id = request.session.get("company_code")
 
-    if not email or not company_id:
+    if not email or raw_company_id is None:
         return RedirectResponse("/auth/login", status_code=303)
     
+    company_id = str(raw_company_id)
+
     session_locations = request.session.get("allowed_locations", [])
     if isinstance(session_locations, str):
         user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
@@ -159,7 +220,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     # =====================================================
     # 🟢 2nd TABLE: REQUIRED HLSO REQUIREMENTS SYNC LAYER (FIXED LOCATION FILTERS)
     # =====================================================
-    po_q = db.query(pending_orders).filter(pending_orders.company_id == company_id)
+    po_q = db.query(pending_orders).filter(
+        pending_orders.company_id == company_id,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
     stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_id)
 
     # Production For Filter
@@ -184,6 +248,11 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         v.variety_name.lower().strip(): v
         for v in db.query(varieties).filter(varieties.company_id == company_id).all()
     }
+    packing_style_map = {
+        p.packing_style.lower().strip(): float(p.mc_weight or 1.0)
+        for p in db.query(packing_styles).filter(packing_styles.company_id == company_id).all()
+        if p.packing_style
+    }
     
     stock_pool = {}
     for s in all_stock:
@@ -197,7 +266,8 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
         gl_match = re.search(r'(\d+)', str(s.glaze or "0"))
         gl_val = gl_match.group(1) if gl_match else "0"
-        key = f"{str(s.production_for or '').strip().upper()}|{str(s.species).strip().lower()}|{str(s.variety).strip().lower()}|{str(s.grade).strip().lower()}|{str(s.packing_style).strip().lower()}|{gl_val}"
+        s_frz = str(s.freezer or "N/A").strip().lower()
+        key = f"{str(s.production_for or '').strip().upper()}|{str(s.species).strip().lower()}|{str(s.variety).strip().lower()}|{str(s.grade).strip().lower()}|{str(s.packing_style).strip().lower()}|{gl_val}|{s_frz}"
         qty = float(s.quantity or 0)
         stock_pool[key] = stock_pool.get(key, 0.0) + (qty if str(s.cargo_movement_type).upper() == "IN" else -qty)
 
@@ -209,6 +279,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
         p_spec, p_grad = str(p.species or "").strip().lower(), str(p.grade or "").strip().lower()
         p_pack = str(p.packing_style or "").strip().lower()
+        p_frz = str(p.freezer or "N/A").strip().lower()
         p_comp = str(p.company_name or "").strip().upper()
 
         c_gl_match = re.search(r'(\d+)', str(p.count_glaze or "0"))
@@ -217,10 +288,10 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         w_gl_factor = (100 - float(w_gl_match.group(1))) / 100 if w_gl_match else 1.0
 
         gl_key_val = str(int(float(c_gl_match.group(1)) if c_gl_match else 0))
-        exact_key = f"{p_comp}|{p_spec}|{p_var}|{p_grad}|{p_pack}|{gl_key_val}"
+        exact_key = f"{p_comp}|{p_spec}|{p_var}|{p_grad}|{p_pack}|{gl_key_val}|{p_frz}"
         opening_bal = stock_pool.get(exact_key, 0.0)
 
-        mc_wt = 1.0
+        mc_wt = packing_style_map.get(p_pack, 1.0)
         ordered_qty = round(mc_wt * float(p.no_of_mc or 0), 2)
         pending_prod = opening_bal - ordered_qty
         stock_pool[exact_key] = pending_prod
@@ -238,9 +309,16 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
             req_hlso_qty = round((abs_pending * w_gl_factor) / (peeling_y * soaking_y), 2)
 
             if req_hlso_qty > 0:
-                summary_key = f"{p.species}|{p.variety}|{hl_count_calc}"
+                summary_key = f"{p_comp}|{p.species}|{p.variety}|{hl_count_calc}"
                 if summary_key not in hlso_summary:
-                    hlso_summary[summary_key] = {"species": p.species, "variety": p.variety, "count": hl_count_calc, "total_kg": 0}
+                    hlso_summary[summary_key] = {
+                        "production_for": p.company_name or "General Stock",
+                        "location": "FLOOR",
+                        "species": p.species,
+                        "variety": p.variety,
+                        "count": hl_count_calc,
+                        "total_kg": 0
+                    }
                     drill_down_data["hlso"][summary_key] = []
                 
                 hlso_summary[summary_key]["total_kg"] += req_hlso_qty
@@ -285,7 +363,12 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
     # Tab 3 : Variety Summary (Live Inventory Direct Read)
     # =====================================================
     variety_summary_q = db.query(
+        FloorBalance.production_for.label("production_for"),
+        FloorBalance.location.label("location"),
+        FloorBalance.batch_number.label("batch_number"),
+        FloorBalance.species.label("species"),
         FloorBalance.variety.label("variety_name"),
+        FloorBalance.count.label("count"),
         func.sum(FloorBalance.available_qty).label("qty")
     ).filter(
         FloorBalance.company_id == company_id,
@@ -311,14 +394,33 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
 
     variety_summary_q = (
         variety_summary_q
-        .group_by(FloorBalance.variety)
-        .order_by(FloorBalance.variety)
+        .group_by(
+            FloorBalance.production_for,
+            FloorBalance.location,
+            FloorBalance.batch_number,
+            FloorBalance.species,
+            FloorBalance.variety,
+            FloorBalance.count
+        )
+        .order_by(
+            FloorBalance.production_for,
+            FloorBalance.location,
+            FloorBalance.batch_number,
+            FloorBalance.species,
+            FloorBalance.variety,
+            FloorBalance.count
+        )
         .all()
     )
 
     variety_summary = [
         {
+            "production_for": r.production_for or "General Stock",
+            "location": r.location or "Purchased Stock",
+            "batch_number": r.batch_number or "-",
+            "species": r.species or "-",
             "variety_name": r.variety_name,
+            "count": r.count or "-",
             "total_hlso": round(r.qty or 0, 2),   
             "total_peeled": 0,
             "avg_yield": 0
@@ -350,6 +452,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                     "peeled_qty": r.peeled_qty,
                     "yield_percent": r.yield_percent,
                     "contractor_name": r.contractor_name,
+                    "table_no": r.table_no,
                     "rate": r.rate,
                     "amount": r.amount,
                     "is_cancelled": r.is_cancelled,
@@ -525,82 +628,93 @@ def save_peeling(
     request: Request, db: Session = Depends(get_db), production_for: str = Form(...), location: str = Form(...), 
     batch_number: str = Form(...), in_count: str = Form(...), species: str = Form(...), variety: str = Form(...),
     hlso_qty: float = Form(...), peeled_qty: float = Form(...), yield_percent: str = Form(...), 
-    contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...)
+    contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...),
+    table_no: str = Form(None)
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
-    ensure_bill_accounting_schema(db)
-
-    clean_batch = str(batch_number).strip()
-    clean_count = str(in_count).strip()
-    clean_loc = "FLOOR" if not location or location.strip() == "" else location.strip().upper()
-
-    live_record = db.query(FloorBalance).filter(
-        FloorBalance.company_id == company_code, 
-        or_(
-            func.upper(func.trim(FloorBalance.location)) == clean_loc,
-            func.upper(func.trim(FloorBalance.location)) == "OTHER FLOOR" if clean_loc == "FLOOR" else False
-        ),
-        FloorBalance.batch_number == clean_batch, 
-        FloorBalance.count == clean_count,
-        FloorBalance.species == species, 
-        FloorBalance.variety.ilike("%HLSO%"),
-        func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper()
-    ).with_for_update().first()
     
-    input_variety = live_record.variety if live_record else "HLSO"
-    service_location = live_record.location if live_record and live_record.location else clean_loc
-    avail = get_floor_balance(
-        db, company_code, service_location, clean_batch, clean_count, species,
-        input_variety, production_for, live_record.source_type if live_record else "RMP"
-    )
-    if hlso_qty > (avail + 0.05):
-        return JSONResponse({"error": f"Insufficient live balance. Available: {round(avail, 2)} KG"}, status_code=400)
+    try:
+        ensure_bill_accounting_schema(db)
 
-    try: clean_yield = float(str(yield_percent).replace('%', ''))
-    except: clean_yield = 0.0
+        clean_batch = str(batch_number).strip()
+        clean_count = str(in_count).strip()
+        clean_loc = "FLOOR" if not location or location.strip() == "" else location.strip().upper()
 
-    current_ist = ist_now()
+        live_record = db.query(FloorBalance).filter(
+            FloorBalance.company_id == company_code, 
+            or_(
+                func.upper(func.trim(FloorBalance.location)) == clean_loc,
+                func.upper(func.trim(FloorBalance.location)) == "OTHER FLOOR" if clean_loc == "FLOOR" else False
+            ),
+            FloorBalance.batch_number == clean_batch, 
+            FloorBalance.count == clean_count,
+            FloorBalance.species == species, 
+            FloorBalance.variety.ilike("%HLSO%"),
+            func.upper(func.trim(FloorBalance.production_for)) == production_for.strip().upper()
+        ).with_for_update().first()
+        
+        input_variety = live_record.variety if live_record else "HLSO"
+        service_location = live_record.location if live_record and live_record.location else clean_loc
+        avail = get_floor_balance(
+            db, company_code, service_location, clean_batch, clean_count, species,
+            input_variety, production_for, live_record.source_type if live_record else "RMP"
+        )
+        if hlso_qty > (avail + 0.05):
+            return JSONResponse({"error": f"Insufficient live balance. Available: {round(avail, 2)} KG"}, status_code=400)
 
-    new_entry = Peeling(
-        production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
-        species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
-        contractor_name=contractor_name, rate=rate, amount=amount, 
-        date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
-    )
-    db.add(new_entry)
-    
-    # ⚡ 1. Deduct input HLSO stock atomically
-    update_floor_balance_row(
-        db, company_code, clean_batch, clean_count, species, input_variety, 
-        location, production_for, qty_delta=-hlso_qty, email=email
-    )
+        try: clean_yield = float(str(yield_percent).replace('%', ''))
+        except: clean_yield = 0.0
 
-    # ⚡ 2. Add output peeled stock directly
-    update_floor_balance_row(
-        db, company_code, clean_batch, clean_count, species, variety, 
-        location, production_for, qty_delta=peeled_qty, email=email
-    )
+        current_ist = ist_now()
 
-    db.flush()
-    voucher = post_contractor_source_charge(
-        db=db,
-        company_id=company_code,
-        voucher_date=current_ist.date(),
-        reference_no=f"PEL-{new_entry.id}",
-        contractor_name=contractor_name,
-        charge_type="Peeling",
-        taxable_amount=amount,
-        gst_percent=contractor_gst_percent(db, company_code, contractor_name),
-        created_by=email,
-        quantity=peeled_qty,
-        rate=rate,
-    )
-    new_entry.journal_id = voucher.id
+        new_entry = Peeling(
+            production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
+            species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
+            contractor_name=contractor_name, table_no=table_no.strip() if table_no else None, rate=rate, amount=amount, 
+            date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
+        )
+        db.add(new_entry)
+        
+        # ⚡ 1. Deduct input HLSO stock atomically
+        update_floor_balance_row(
+            db, company_code, clean_batch, clean_count, species, input_variety, 
+            location, production_for, qty_delta=-hlso_qty, email=email
+        )
 
-    db.commit()
-    return JSONResponse({"message": "Saved successfully"}) 
+        # ⚡ 2. Add output peeled stock directly
+        update_floor_balance_row(
+            db, company_code, clean_batch, clean_count, species, variety, 
+            location, production_for, qty_delta=peeled_qty, email=email
+        )
+
+        db.flush()
+        try:
+            voucher = post_contractor_source_charge(
+                db=db,
+                company_id=company_code,
+                voucher_date=current_ist.date(),
+                reference_no=f"PEL-{new_entry.id}",
+                contractor_name=contractor_name,
+                charge_type="Peeling",
+                taxable_amount=amount,
+                gst_percent=contractor_gst_percent(db, company_code, contractor_name),
+                created_by=email,
+                quantity=peeled_qty,
+                rate=rate,
+            )
+            if voucher:
+                new_entry.journal_id = voucher.id
+        except Exception as ve:
+            logger.warning(f"Warning posting contractor voucher for Peeling: {ve}")
+
+        db.commit()
+        return JSONResponse({"message": "Saved successfully"})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error saving peeling entry: {e}", exc_info=True)
+        return JSONResponse({"error": str(e)}, status_code=500) 
 
 
 from app.utils.trace_lock import is_batch_used_downstream_from_peeling
@@ -671,4 +785,179 @@ def delete_peeling(
     cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
 
     db.commit()
+    return JSONResponse({"status": "ok"})
+
+
+# =====================================================
+# TABLE REGISTRATION ENDPOINTS (Peeling)
+# =====================================================
+def ensure_table_registrations_schema(db: Session):
+    statements = [
+        """
+        CREATE TABLE IF NOT EXISTS table_registrations (
+            id SERIAL PRIMARY KEY,
+            company_id VARCHAR(50) NOT NULL,
+            date DATE NOT NULL,
+            department VARCHAR(50) NOT NULL,
+            table_no VARCHAR(50) NOT NULL,
+            worker_type VARCHAR(100) NOT NULL,
+            contractor_name VARCHAR(255),
+            no_of_workers INTEGER DEFAULT 0,
+            worker_ids TEXT,
+            production_at VARCHAR(255),
+            production_for VARCHAR(255),
+            status VARCHAR(50) DEFAULT 'Active',
+            created_by VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """,
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+    ]
+    for stmt in statements:
+        try:
+            db.execute(text(stmt))
+            db.commit()
+        except Exception as e:
+            db.rollback()
+
+@router.get("/peeling/table_registrations")
+def get_peeling_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    try:
+        target_date = datetime.strptime(date_val, "%Y-%m-%d").date() if date_val else ist_now().date()
+        rows = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == target_date,
+            TableRegistration.status == "Active"
+        ).order_by(TableRegistration.id.desc()).all()
+
+        
+        return JSONResponse({
+            "table_registrations": [
+                {
+                    "id": r.id,
+                    "date": r.date.isoformat(),
+                    "department": r.department,
+                    "table_no": r.table_no,
+                    "worker_type": r.worker_type,
+                    "contractor_name": r.contractor_name,
+                    "no_of_workers": r.no_of_workers,
+                    "worker_ids": r.worker_ids,
+                    "production_at": r.production_at,
+                    "production_for": r.production_for,
+                    "created_by": r.created_by,
+                    "created_at": r.created_at.isoformat() if r.created_at else None
+                } for r in rows
+            ]
+        })
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in get_peeling_table_registrations: {e}")
+        return JSONResponse({"table_registrations": []})
+
+@router.post("/peeling/table_registration")
+def save_peeling_table_registration(
+    request: Request, db: Session = Depends(get_db),
+    table_no: str = Form(...), worker_type: str = Form(...),
+    contractor_name: str = Form(None), no_of_workers: str = Form("0"),
+    worker_ids: str = Form(None), production_at: str = Form(None),
+    production_for: str = Form(None)
+):
+    company_code = request.session.get("company_code")
+    email = request.session.get("email")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+        
+    try:
+        ensure_table_registrations_schema(db)
+        parsed_no_workers = int(no_of_workers or 0)
+        current_ist = ist_now()
+        today_date = current_ist.date()
+        now_naive = current_ist.replace(tzinfo=None) if hasattr(current_ist, 'tzinfo') and current_ist.tzinfo else current_ist
+        clean_peeling_at = (production_at or "").strip()
+        raw_table_no = table_no.strip()
+        
+        if not clean_peeling_at:
+            clean_table_no = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
+        elif raw_table_no.lower().startswith(clean_peeling_at.lower()):
+            after = raw_table_no[len(clean_peeling_at):].strip().lstrip("-_ ").strip()
+            if after and not after.lower().startswith("table"):
+                clean_table_no = f"{clean_peeling_at}-table {after}"
+            else:
+                clean_table_no = raw_table_no
+        else:
+            table_part = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
+            clean_table_no = f"{clean_peeling_at}-{table_part}"
+
+        # 1. Prevent rapid double submit (within 5 seconds)
+        five_sec_ago = now_naive - dt.timedelta(seconds=5)
+        recent = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == today_date,
+            TableRegistration.department == "Peeling",
+            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
+            TableRegistration.status != 'Cancelled',
+            TableRegistration.created_at >= five_sec_ago
+        ).first()
+        if recent:
+            return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
+
+        validation_error = validate_kg_worker_table_registration(
+            db, company_code, worker_type, parsed_no_workers, worker_ids, production_at
+        )
+        if validation_error:
+            return JSONResponse({"error": validation_error}, status_code=400)
+
+        new_reg = TableRegistration(
+            company_id=company_code,
+            date=today_date,
+            department="Peeling",
+            table_no=clean_table_no,
+            worker_type=worker_type.strip(),
+            contractor_name=contractor_name.strip() if contractor_name else None,
+            no_of_workers=parsed_no_workers,
+            worker_ids=worker_ids.strip() if worker_ids else None,
+            production_at=production_at.strip() if production_at else None,
+            production_for=production_for.strip() if production_for else None,
+            created_by=email,
+            created_at=now_naive
+        )
+        db.add(new_reg)
+        db.commit()
+        return JSONResponse({"status": "ok", "id": new_reg.id})
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Error in save_peeling_table_registration: {e}", exc_info=True)
+        return JSONResponse({"error": f"Error saving table registration: {str(e)}"}, status_code=500)
+
+@router.post("/peeling/table_registration/delete/{id}")
+def delete_peeling_table_registration(id: int, request: Request, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code")
+    if not company_code:
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
+    
+    ensure_table_registrations_schema(db)
+    row = db.query(TableRegistration).filter(
+        TableRegistration.id == id,
+        TableRegistration.company_id == company_code
+    ).first()
+
+    if row:
+        row.status = "Cancelled"
+        db.commit()
     return JSONResponse({"status": "ok"})

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ArrowRight, CheckCircle2, RefreshCw, Save, Trash2, Upload, X } from 'lucide-react';
+import { normalizeFieldValue, standardInputProps } from '../../utils/fieldStandards';
 import '../Attendance/Attendance.css';
 import './NativeFinanceRegisters.css';
 
@@ -94,6 +95,7 @@ const MODULES = {
 
 const initialForm = config => Object.fromEntries(config.fields.map(([name, , , value = '']) => [name, value]));
 const displayValue = value => typeof value === 'number' ? value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : (value ?? '—');
+const standardizeFinanceValue = (name, type, value) => type === 'number' ? (value === '' ? null : Number(value)) : normalizeFieldValue(name, value);
 
 function FinanceRegister({ moduleKey }) {
   const config = MODULES[moduleKey];
@@ -131,7 +133,7 @@ function FinanceRegister({ moduleKey }) {
     try {
       const requestBody = Object.fromEntries(config.fields.map(([name, , type]) => [
         name,
-        type === 'date' && !form[name] ? null : form[name],
+        type === 'date' && !form[name] ? null : normalizeFieldValue(name, form[name]),
       ]));
       const response = await fetch(config.save, {
         method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody),
@@ -203,9 +205,9 @@ function FinanceRegister({ moduleKey }) {
               <span>{label}{required ? ' *' : ''}</span>
               {type === 'select' && <select className="attendance-select" value={form[name]} required={required} onChange={event => setForm(current => ({ ...current, [name]: event.target.value }))}><option value="">Select</option>{options.map(option => <option key={option} value={option}>{option.replaceAll('_', ' ')}</option>)}</select>}
               {type === 'ledger' && <select className="attendance-select" value={form[name]} onChange={event => setForm(current => ({ ...current, [name]: event.target.value ? Number(event.target.value) : null }))}><option value="">Select ledger</option>{ledgerOptions.map(option => <option key={option.id} value={option.id}>{option.name}</option>)}</select>}
-              {type === 'textarea' && <textarea className="attendance-input" rows="2" value={form[name] || ''} onChange={event => setForm(current => ({ ...current, [name]: event.target.value }))} />}
+              {type === 'textarea' && <textarea className="attendance-input" rows="2" value={form[name] || ''} onChange={event => setForm(current => ({ ...current, [name]: normalizeFieldValue(name, event.target.value) }))} />}
               {type === 'checkbox' && <input className="native-finance-checkbox" type="checkbox" checked={Boolean(form[name])} onChange={event => setForm(current => ({ ...current, [name]: event.target.checked }))} />}
-              {!['select', 'ledger', 'textarea', 'checkbox'].includes(type) && <input className="attendance-input" type={type} step={type === 'number' ? '0.01' : undefined} required={required} value={form[name] ?? ''} onChange={event => setForm(current => ({ ...current, [name]: type === 'number' ? (event.target.value === '' ? null : Number(event.target.value)) : event.target.value }))} />}
+              {!['select', 'ledger', 'textarea', 'checkbox'].includes(type) && <input className="attendance-input" {...standardInputProps(name)} type={type} step={type === 'number' ? '0.01' : undefined} required={required} value={form[name] ?? ''} onChange={event => setForm(current => ({ ...current, [name]: standardizeFinanceValue(name, type, event.target.value) }))} />}
             </label>
           ))}
         </div>

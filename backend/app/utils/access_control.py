@@ -1,6 +1,8 @@
 """Canonical account permission helpers shared by middleware and admin flows."""
 
-SUPER_ADMIN_EMAIL = "bknr.solutions@gmail.com"
+import os
+
+from app.config import SUPER_ADMIN_EMAILS
 
 PERMISSION_ALIASES = {
     "bank_transactions": "bank_transaction",
@@ -12,6 +14,10 @@ PERMISSION_ALIASES = {
     "export_shipments": "export_shipment",
     "container_logs": "logistics_bills",
 }
+
+
+def is_super_admin(email) -> bool:
+    return str(email or "").strip().lower() in SUPER_ADMIN_EMAILS
 
 
 def normalize_permission(value):
@@ -29,7 +35,7 @@ def permission_set(value):
 
 def has_permission(session, required):
     email = str(session.get("email") or "").strip().lower()
-    if email == SUPER_ADMIN_EMAIL:
+    if is_super_admin(email):
         return True
     granted = permission_set(session.get("permissions"))
     if "ALL" in granted:
@@ -113,6 +119,7 @@ ROUTE_PERMISSION_RULES = (
     ("/criteria/api/production_at", "production_at"),
     ("/criteria/api/peeling_rates", "peeling_rates"),
     ("/criteria/api/kg_basis_labour_rates", "kg_basis_labour_rates"),
+    ("/criteria/api/daily_basis_worker_rates", "daily_basis_worker_rates"),
     ("/criteria/api/packing_styles", "packing_styles"),
     ("/criteria/api/vehicle_numbers", "vehicle_numbers"),
     ("/criteria/api/cold_storage", "cold_storage"),

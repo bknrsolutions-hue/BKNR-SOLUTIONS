@@ -1,9 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { sessionFetch } from '../../utils/sessionFetch';
+import { normalizeFieldValue, normalizeRecordFields, standardInputProps } from '../../utils/fieldStandards';
 import './LabourManagement.css';
 
 const today = () => new Date().toISOString().slice(0, 10);
-const blankWorker = () => ({ worker_name: '', department: '', mobile: '', aadhar_number: '', gender: '', joining_date: today(), production_at: '', remarks: '' });
+const cleanNameText = value => value.replace(/[^A-Za-z .'-]/g, '');
+const blankWorker = () => ({ worker_name: '', worker_type: 'KG Basis Company Worker', department: '', mobile: '', aadhar_number: '', gender: '', joining_date: today(), production_at: '', daily_salary: '', worker_category: '', bank_name: '', account_number: '', ifsc_code: '', address: '', remarks: '' });
 
 export default function KgBasisCompanyLabour() {
   const [activeTab, setActiveTab] = useState('registration');
@@ -12,6 +14,10 @@ export default function KgBasisCompanyLabour() {
   const [attendance, setAttendance] = useState([]);
   const [members, setMembers] = useState([blankWorker()]);
   const [locations, setLocations] = useState([]);
+  const [dailyWorkerRates, setDailyWorkerRates] = useState([]);
+  const [editingWorker, setEditingWorker] = useState(null);
+  const [selectedWorker, setSelectedWorker] = useState(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [punchMode, setPunchMode] = useState('IN');
   const [punchId, setPunchId] = useState('');
   const [punchQueue, setPunchQueue] = useState([]);
@@ -19,6 +25,18 @@ export default function KgBasisCompanyLabour() {
   const [saving, setSaving] = useState(false);
   const [punching, setPunching] = useState(false);
   const [notice, setNotice] = useState(null);
+
+  const dotsRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dotsRef.current && !dotsRef.current.contains(e.target)) {
+        setMenuOpen(false);
+      }
+    };
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
 
   const notify = (message, type = 'success') => {
     setNotice({ message, type });
@@ -34,6 +52,7 @@ export default function KgBasisCompanyLabour() {
       setWorkers(data.workers || []);
       setAttendance(data.attendance || []);
       setLocations(data.lookups?.locations || []);
+      setDailyWorkerRates(data.daily_worker_rates || []);
     } catch (error) {
       notify(error.message, 'error');
     } finally {
@@ -44,15 +63,30 @@ export default function KgBasisCompanyLabour() {
   useEffect(() => { loadData(); }, []);
 
   const updateMember = (index, key, value) => {
-    setMembers(current => current.map((member, rowIndex) => rowIndex === index ? { ...member, [key]: value } : member));
+    setMembers(current => current.map((member, rowIndex) => {
+      if (rowIndex !== index) return member;
+      const updated = { ...member, [key]: normalizeFieldValue(key, value) };
+      if (key === 'worker_category' && value && dailyWorkerRates.length) {
+        const matchedRate = dailyWorkerRates.find(r => r.worker_type === value && r.status !== 'Inactive');
+        if (matchedRate && matchedRate.daily_salary) {
+          updated.daily_salary = matchedRate.daily_salary;
+        }
+      }
+      return updated;
+    }));
   };
 
   const saveWorkers = async event => {
     event.preventDefault();
+    const invalidRow = members.findIndex(member => !/^[A-Za-z][A-Za-z .'-]*$/.test(String(member.worker_name || '').trim()));
+    if (invalidRow >= 0) {
+      notify(`Worker ${invalidRow + 1}: Worker Name must contain text only`, 'error');
+      return;
+    }
     setSaving(true);
     try {
       const response = await sessionFetch('/attendance/kg-basis-labour/registration/bulk', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members: members.map(normalizeRecordFields) })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to save KG workers');
@@ -60,6 +94,29 @@ export default function KgBasisCompanyLabour() {
       notify(`Saved ${data.records?.length || members.length} workers. IDs: ${ids}`);
       setMembers([blankWorker()]);
       setRegistrationOpen(false);
+      await loadData();
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const saveEditWorker = async event => {
+    event.preventDefault();
+    if (!editingWorker) return;
+    setSaving(true);
+    try {
+      const response = await sessionFetch(`/attendance/kg-basis-labour/worker/update/${editingWorker.id}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(normalizeRecordFields(editingWorker))
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Unable to update worker');
+      notify('Worker details updated successfully!');
+      setEditingWorker(null);
+      setSelectedWorker(data.record || editingWorker);
       await loadData();
     } catch (error) {
       notify(error.message, 'error');
@@ -111,17 +168,18 @@ export default function KgBasisCompanyLabour() {
     }
   };
 
-  const deleteWorker = async id => {
-    if (!window.confirm('Delete this KG worker?')) return;
-    const response = await sessionFetch(`/attendance/kg-basis-labour/worker/delete/${id}`, { method: 'POST' });
+  const cancelWorker = async id => {
+    if (!window.confirm('Cancel this KG worker registration?')) return;
+    const response = await sessionFetch(`/attendance/kg-basis-labour/worker/cancel/${id}`, { method: 'POST' });
     const data = await response.json();
-    if (!response.ok) return notify(data.error || 'Unable to delete worker', 'error');
-    notify('Worker deleted');
+    if (!response.ok) return notify(data.error || 'Unable to cancel worker', 'error');
+    notify('Worker registration cancelled');
+    setSelectedWorker(null);
     loadData();
   };
 
   const summary = useMemo(() => ({
-    registered: workers.filter(worker => worker.status === 'ACTIVE').length,
+    registered: workers.filter(worker => worker.status === 'ACTIVE' || worker.status === 'Active').length,
     inside: attendance.filter(row => row.status === 'INSIDE').length,
   }), [workers, attendance]);
 
@@ -141,27 +199,256 @@ export default function KgBasisCompanyLabour() {
         <div className="member-form-list">{members.map((member, index) => <section className="member-form-section" key={index}>
           <div className="member-form-title"><span className="member-row-number">{index + 1}</span><strong>Worker {index + 1}</strong><button type="button" className="labour-icon-btn" title="Remove worker" disabled={members.length === 1} onClick={() => setMembers(rows => rows.filter((_, rowIndex) => rowIndex !== index))}><i className="fa-solid fa-trash-can" /></button></div>
           <div className="member-form-grid">
-            <Field label="Worker Name *"><input required placeholder="Enter full name" value={member.worker_name} onChange={event => updateMember(index, 'worker_name', event.target.value)} /></Field>
+            <Field label="Worker Name *"><input required pattern="[A-Za-z .'-]+" title="Use letters only" placeholder="Enter full name" value={member.worker_name} onChange={event => updateMember(index, 'worker_name', cleanNameText(event.target.value))} /></Field>
+            <Field label="Worker Type *">
+              <select value={member.worker_type || 'KG Basis Company Worker'} onChange={event => updateMember(index, 'worker_type', event.target.value)}>
+                <option value="KG Basis Company Worker">KG Basis Company Worker</option>
+                <option value="Daily Basis Company Worker">Daily Basis Company Worker</option>
+                <option value="Contractor">Contractor</option>
+              </select>
+            </Field>
             <Field label="Department"><input list="kg-worker-departments" placeholder="Select or enter department" value={member.department} onChange={event => updateMember(index, 'department', event.target.value)} /></Field>
             <Field label="Plant / Location"><select value={member.production_at} onChange={event => updateMember(index, 'production_at', event.target.value)}><option value="">Select Location</option>{locations.map(value => <option key={value}>{value}</option>)}</select></Field>
             <Field label="Joining Date *"><input type="date" required value={member.joining_date} onChange={event => updateMember(index, 'joining_date', event.target.value)} /></Field>
-            <Field label="Mobile Number"><input inputMode="tel" maxLength="15" placeholder="Enter mobile" value={member.mobile} onChange={event => updateMember(index, 'mobile', event.target.value)} /></Field>
+            {member.worker_type === 'Daily Basis Company Worker' && (
+              <Field label="Worker Category">
+                <select value={member.worker_category || ''} onChange={event => updateMember(index, 'worker_category', event.target.value)}>
+                  <option value="">Select Category</option>
+                  <option value="Fresher">Fresher</option>
+                  <option value="Medium Experience">Medium Experience</option>
+                  <option value="Experienced">Experienced</option>
+                </select>
+              </Field>
+            )}
+            <Field label="Mobile Number"><input {...standardInputProps('mobile')} placeholder="10 digit mobile" value={member.mobile} onChange={event => updateMember(index, 'mobile', event.target.value)} /></Field>
             <Field label="Aadhaar Number"><input inputMode="numeric" maxLength="12" placeholder="12 digit Aadhaar" value={member.aadhar_number} onChange={event => updateMember(index, 'aadhar_number', event.target.value.replace(/\D/g, ''))} /></Field>
             <Field label="Gender"><select value={member.gender} onChange={event => updateMember(index, 'gender', event.target.value)}><option value="">Select Gender</option><option>Male</option><option>Female</option><option>Other</option></select></Field>
+            <Field label="Bank Name"><input placeholder="Bank name e.g. SBI" value={member.bank_name} onChange={event => updateMember(index, 'bank_name', event.target.value)} /></Field>
+            <Field label="Account Number"><input {...standardInputProps('account_number')} placeholder="9 to 18 digit account number" value={member.account_number} onChange={event => updateMember(index, 'account_number', event.target.value)} /></Field>
+            <Field label="IFSC Code"><input {...standardInputProps('ifsc_code')} placeholder="IFSC e.g. SBIN0001234" value={member.ifsc_code} onChange={event => updateMember(index, 'ifsc_code', event.target.value)} /></Field>
+            <Field label="Address"><input placeholder="Full address" value={member.address} onChange={event => updateMember(index, 'address', event.target.value)} /></Field>
             <Field label="Remarks"><input placeholder="Optional remarks" value={member.remarks} onChange={event => updateMember(index, 'remarks', event.target.value)} /></Field>
           </div>
         </section>)}</div>
-        <datalist id="kg-worker-departments"><option value="Peeling" /><option value="Deheading" /></datalist>
+        <datalist id="kg-worker-departments">
+          <option value="ALL" />
+          <option value="Peeling" />
+          <option value="Deheading" />
+          <option value="Grading" />
+          <option value="Packing" />
+        </datalist>
         <div className="registration-form-footer"><button type="button" className="labour-btn secondary" onClick={() => setMembers([blankWorker()])}><i className="fa-solid fa-rotate-left" /> Clear</button><button type="button" className="labour-btn secondary" onClick={() => setRegistrationOpen(false)}>Cancel</button><button className="labour-btn primary save-members-btn" disabled={saving}><i className="fa-solid fa-floppy-disk" /> {saving ? 'Saving...' : `Save ${members.length} Worker${members.length > 1 ? 's' : ''}`}</button></div>
       </form>}
-      <div className="labour-section"><div className="labour-section-title"><div><h2>KG Basis Worker Register</h2><p>{workers.length} registered workers</p></div></div><div className="labour-table-scroll"><table className="labour-table"><thead><tr><th>Worker ID</th><th>Name</th><th>Department</th><th>Mobile</th><th>Location</th><th>Joining</th><th>Status</th><th>Meta Date</th><th>Meta User</th><th>Action</th></tr></thead><tbody>{loading ? <tr><td colSpan="10" className="labour-empty">Loading register...</td></tr> : workers.length ? workers.map(worker => <tr key={worker.id}><td><strong>{worker.worker_id}</strong></td><td>{worker.worker_name}</td><td>{worker.department || '-'}</td><td>{worker.mobile || '-'}</td><td>{worker.production_at || '-'}</td><td>{worker.joining_date}</td><td>{worker.status}</td><td>{worker.date || '-'}</td><td>{worker.email || '-'}</td><td><button className="labour-link danger" onClick={() => deleteWorker(worker.id)}>Delete</button></td></tr>) : <tr><td colSpan="10" className="labour-empty">No workers registered</td></tr>}</tbody></table></div></div>
+      <div className="labour-section">
+        <div className="labour-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', position: 'relative' }}>
+          <div>
+            <h2>KG Basis Worker Register</h2>
+            <p>{workers.length} registered workers {selectedWorker ? `· Selected: ${selectedWorker.worker_name} (${selectedWorker.worker_id})` : '· Click a row to select actions'}</p>
+          </div>
+          {selectedWorker && (
+            <div className="master-menu-container" ref={dotsRef} style={{ position: 'relative' }}>
+              <button
+                type="button"
+                className="master-dots-trigger"
+                title="Worker Actions"
+                onClick={(e) => { e.stopPropagation(); setMenuOpen(!menuOpen); }}
+                style={{ background: 'var(--header-bg, #334155)', border: '1px solid var(--border, #475569)', color: 'var(--text, #fff)', width: '36px', height: '36px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '16px' }}
+              >
+                <i className="fa-solid fa-ellipsis-vertical" />
+              </button>
+              {menuOpen && (
+                <div className="master-dropdown-menu" style={{ position: 'absolute', right: 0, top: '42px', background: 'var(--card-bg, #1e293b)', border: '1px solid var(--border, #334155)', borderRadius: '8px', padding: '6px', minWidth: '170px', boxShadow: 'var(--shadow, 0 10px 15px -3px rgba(0,0,0,0.3))', zIndex: 100 }}>
+                  {selectedWorker.status !== 'Cancelled' && (
+                    <div
+                      className="master-menu-item"
+                      style={{ padding: '8px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', color: 'var(--text, #f8fafc)' }}
+                      onClick={() => { setEditingWorker({ ...selectedWorker }); setMenuOpen(false); }}
+                    >
+                      <i className="fa-solid fa-pen-to-square" style={{ color: 'var(--accent, #60a5fa)' }} /> Edit Worker
+                    </div>
+                  )}
+                  {selectedWorker.status !== 'Cancelled' && (
+                    <div
+                      className="master-menu-item danger"
+                      style={{ padding: '8px 12px', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '4px', color: 'var(--danger, #ef4444)' }}
+                      onClick={() => { cancelWorker(selectedWorker.id); setMenuOpen(false); }}
+                    >
+                      <i className="fa-solid fa-ban" /> Cancel Registration
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="labour-table-scroll">
+          <table className="labour-table">
+            <thead>
+              <tr>
+                <th>Sl. No</th>
+                <th>Date</th>
+                <th>Worker ID</th>
+                <th>Name</th>
+                <th>Worker Type</th>
+                <th>Category</th>
+                <th>Department</th>
+                <th>Bank Account Details</th>
+                <th>Address</th>
+                <th>Mobile</th>
+                <th>Location</th>
+                <th>Joining</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr><td colSpan="13" className="labour-empty">Loading register...</td></tr>
+              ) : workers.length ? (
+                workers.map((worker, index) => {
+                  const isSelected = selectedWorker?.id === worker.id;
+                  return (
+                    <tr
+                      key={worker.id}
+                      style={{ cursor: 'pointer', background: isSelected ? 'color-mix(in srgb, var(--accent) 15%, var(--card-bg))' : undefined }}
+                      onClick={() => setSelectedWorker(isSelected ? null : worker)}
+                    >
+                      <td><strong>{workers.length - index}</strong></td>
+                      <td>{worker.date || '-'}</td>
+                      <td><strong>{worker.worker_id}</strong></td>
+                      <td>{worker.worker_name}</td>
+                      <td>{worker.worker_type || 'KG Basis Company Worker'}</td>
+                      <td>{worker.worker_category || '-'}</td>
+                      <td>{worker.department || '-'}</td>
+                      <td>{worker.account_number ? `${worker.account_number}${worker.bank_name ? ` (${worker.bank_name})` : ''}` : '-'}</td>
+                      <td>{worker.address || '-'}</td>
+                      <td>{worker.mobile || '-'}</td>
+                      <td>{worker.production_at || '-'}</td>
+                      <td>{worker.joining_date}</td>
+                      <td>{worker.status}</td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr><td colSpan="14" className="labour-empty">No workers registered</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </> : <div className="labour-section contract-terminal">
       <div className="labour-section-title"><div><h2>KG Basis Worker Punching</h2><p>Select IN or OUT, scan multiple Worker IDs, then punch all at once.</p></div><div className="terminal-status"><span>{summary.inside} Inside</span><span>{attendance.filter(row => row.status === 'CLOSED').length} Completed</span></div></div>
       <div className="punch-mode-row"><button type="button" className={`punch-mode in ${punchMode === 'IN' ? 'active' : ''}`} onClick={() => setPunchMode('IN')}><i className="fa-solid fa-right-to-bracket" /> IN</button><button type="button" className={`punch-mode out ${punchMode === 'OUT' ? 'active' : ''}`} onClick={() => setPunchMode('OUT')}><i className="fa-solid fa-right-from-bracket" /> OUT</button></div>
       <div className="contract-punch-row bulk"><label className="contract-id-input"><span>Worker Number or Full ID</span><input autoFocus value={punchId} placeholder="1, 999 or BK00001" onChange={event => setPunchId(event.target.value.toUpperCase())} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addPunchIds(); } }} /></label><button type="button" className="labour-btn secondary queue-add" onClick={addPunchIds}>Add ID</button><button type="button" className={`punch-btn ${punchMode.toLowerCase()}`} disabled={punching || !punchQueue.length} onClick={punchWorkers}>{punching ? 'Saving...' : `Punch ${punchQueue.length} ${punchMode}`}</button></div>
       <div className="punch-queue">{punchQueue.length ? punchQueue.map(item => <button type="button" key={item.fullId} onClick={() => setPunchQueue(queue => queue.filter(value => value.fullId !== item.fullId))}><strong>{item.fullId}</strong> · {item.name} <span>×</span></button>) : <span>Example: enter 1 for 00001, or 999 for 00999. Added Worker ID and name appear here.</span>}</div>
-      <div className="labour-table-scroll"><table className="labour-table punch-table"><thead><tr><th>Worker ID</th><th>Name</th><th>Location</th><th>IN</th><th>OUT</th><th>Status</th></tr></thead><tbody>{loading ? <tr><td colSpan="6" className="labour-empty">Loading punches...</td></tr> : attendance.length ? attendance.map(row => <tr key={row.id}><td><strong>{row.worker_id}</strong></td><td>{row.worker_name}</td><td>{row.production_at || '-'}</td><td>{formatPunchTime(row.in_time)}</td><td>{formatPunchTime(row.out_time)}</td><td><span className={`punch-status ${row.status === 'INSIDE' ? 'inside' : 'closed'}`}>{row.status === 'INSIDE' ? 'INSIDE' : 'OUT'}</span></td></tr>) : <tr><td colSpan="6" className="labour-empty">No KG worker punches today</td></tr>}</tbody></table></div>
+      <div className="labour-table-scroll"><table className="labour-table punch-table"><thead><tr><th>Sl. No</th><th>Worker ID</th><th>Name</th><th>Location</th><th>IN</th><th>OUT</th><th>Status</th></tr></thead><tbody>{loading ? <tr><td colSpan="7" className="labour-empty">Loading punches...</td></tr> : attendance.length ? attendance.map((row, index) => <tr key={row.id}><td><strong>{attendance.length - index}</strong></td><td><strong>{row.worker_id}</strong></td><td>{row.worker_name}</td><td>{row.production_at || '-'}</td><td>{formatPunchTime(row.in_time)}</td><td>{formatPunchTime(row.out_time)}</td><td><span className={`punch-status ${row.status === 'INSIDE' ? 'inside' : 'closed'}`}>{row.status === 'INSIDE' ? 'INSIDE' : 'OUT'}</span></td></tr>) : <tr><td colSpan="7" className="labour-empty">No KG worker punches today</td></tr>}</tbody></table></div>
     </div>}
+
+    {editingWorker && (
+      <div className="labour-modal-overlay" onClick={() => setEditingWorker(null)}>
+        <div className="labour-modal-content" onClick={e => e.stopPropagation()}>
+          <div className="labour-modal-header">
+            <div>
+              <h2>Edit KG Worker: {editingWorker.worker_name}</h2>
+              <p>ID: <strong>{editingWorker.worker_id}</strong></p>
+            </div>
+            <button type="button" className="labour-modal-close-btn" onClick={() => setEditingWorker(null)}>
+              <i className="fa-solid fa-xmark" />
+            </button>
+          </div>
+
+          <form onSubmit={saveEditWorker} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+            <div className="labour-modal-body">
+              <div className="member-form-grid">
+                <Field label="Worker Name *">
+                  <input required pattern="[A-Za-z .'-]+" title="Use letters only" value={editingWorker.worker_name || ''} onChange={e => setEditingWorker(w => ({ ...w, worker_name: normalizeFieldValue('worker_name', cleanNameText(e.target.value)) }))} />
+                </Field>
+                <Field label="Worker Type *">
+                  <select value={editingWorker.worker_type || 'KG Basis Company Worker'} onChange={e => setEditingWorker(w => ({ ...w, worker_type: e.target.value }))}>
+                    <option value="KG Basis Company Worker">KG Basis Company Worker</option>
+                    <option value="Daily Basis Company Worker">Daily Basis Company Worker</option>
+                    <option value="Contractor">Contractor</option>
+                  </select>
+                </Field>
+                {editingWorker.worker_type === 'Daily Basis Company Worker' && (
+                  <Field label="Worker Category">
+                    <select value={editingWorker.worker_category || ''} onChange={e => {
+                      const val = e.target.value;
+                      const matchedRate = dailyWorkerRates.find(r => r.worker_type === val && r.status !== 'Inactive');
+                      setEditingWorker(w => ({
+                        ...w,
+                        worker_category: val,
+                        daily_salary: matchedRate?.daily_salary || w.daily_salary
+                      }));
+                    }}>
+                      <option value="">Select Category</option>
+                      <option value="Fresher">Fresher</option>
+                      <option value="Medium Experience">Medium Experience</option>
+                      <option value="Experienced">Experienced</option>
+                    </select>
+                  </Field>
+                )}
+                <Field label="Department">
+                  <input list="kg-worker-departments" value={editingWorker.department || ''} onChange={e => setEditingWorker(w => ({ ...w, department: normalizeFieldValue('department', e.target.value) }))} />
+                </Field>
+                <Field label="Plant / Location">
+                  <select value={editingWorker.production_at || ''} onChange={e => setEditingWorker(w => ({ ...w, production_at: e.target.value }))}>
+                    <option value="">Select Location</option>
+                    {locations.map(loc => <option key={loc}>{loc}</option>)}
+                  </select>
+                </Field>
+                <Field label="Joining Date *">
+                  <input type="date" required value={editingWorker.joining_date || ''} onChange={e => setEditingWorker(w => ({ ...w, joining_date: e.target.value }))} />
+                </Field>
+                <Field label="Mobile Number">
+                  <input {...standardInputProps('mobile')} value={editingWorker.mobile || ''} onChange={e => setEditingWorker(w => ({ ...w, mobile: normalizeFieldValue('mobile', e.target.value) }))} />
+                </Field>
+                <Field label="Aadhaar Number">
+                  <input value={editingWorker.aadhar_number || ''} onChange={e => setEditingWorker(w => ({ ...w, aadhar_number: e.target.value.replace(/\D/g, '') }))} />
+                </Field>
+                <Field label="Gender">
+                  <select value={editingWorker.gender || ''} onChange={e => setEditingWorker(w => ({ ...w, gender: e.target.value }))}>
+                    <option value="">Select Gender</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                    <option>Other</option>
+                  </select>
+                </Field>
+                <Field label="Bank Name">
+                  <input value={editingWorker.bank_name || ''} onChange={e => setEditingWorker(w => ({ ...w, bank_name: normalizeFieldValue('bank_name', e.target.value) }))} />
+                </Field>
+                <Field label="Account Number">
+                  <input {...standardInputProps('account_number')} value={editingWorker.account_number || ''} onChange={e => setEditingWorker(w => ({ ...w, account_number: normalizeFieldValue('account_number', e.target.value) }))} />
+                </Field>
+                <Field label="IFSC Code">
+                  <input {...standardInputProps('ifsc_code')} value={editingWorker.ifsc_code || ''} onChange={e => setEditingWorker(w => ({ ...w, ifsc_code: normalizeFieldValue('ifsc_code', e.target.value) }))} />
+                </Field>
+                <Field label="Address">
+                  <input value={editingWorker.address || ''} onChange={e => setEditingWorker(w => ({ ...w, address: normalizeFieldValue('address', e.target.value) }))} />
+                </Field>
+                <Field label="Status">
+                  <select value={editingWorker.status || 'ACTIVE'} onChange={e => setEditingWorker(w => ({ ...w, status: e.target.value }))}>
+                    <option value="ACTIVE">ACTIVE</option>
+                    <option value="Inactive">Inactive</option>
+                    <option value="Cancelled">Cancelled</option>
+                  </select>
+                </Field>
+                <Field label="Remarks">
+                  <input value={editingWorker.remarks || ''} onChange={e => setEditingWorker(w => ({ ...w, remarks: e.target.value }))} />
+                </Field>
+              </div>
+            </div>
+
+            <div className="labour-modal-footer">
+              <button type="button" className="labour-btn secondary" onClick={() => setEditingWorker(null)}>Cancel</button>
+              <button className="labour-btn primary" disabled={saving}>
+                <i className="fa-solid fa-floppy-disk" /> {saving ? 'Saving...' : 'Save Changes'}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
   </div>;
 }
 

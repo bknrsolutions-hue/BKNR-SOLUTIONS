@@ -68,7 +68,8 @@ export default function RawMaterialPurchasing() {
         queryParams.append('peeling_at', activeLoc);
       }
 
-      const res = await fetch(`/processing/raw_material_purchasing?${queryParams.toString()}`);
+      const res = await fetch(`/processing/raw_material_purchasing?${queryParams.toString()}`, { credentials: 'include' });
+
       if (res.ok) {
         const data = await res.json();
         setEntries(data.today_data || []);
@@ -84,9 +85,7 @@ export default function RawMaterialPurchasing() {
         setProdBatchMap(data.prod_batch_map || {});
         setBatchSupplierMap(data.batch_supplier_map || {});
 
-        if ((data.today_data || []).length === 0) {
-          setShowForm(true);
-        }
+
       } else {
         console.error('Failed to fetch purchasing data');
       }
@@ -244,18 +243,22 @@ export default function RawMaterialPurchasing() {
     formData.append('rate_per_kg', parseFloat(rate) || 0);
     formData.append('remarks', remarks);
 
-    const url = editId 
+    const baseUrl = editId 
       ? `/processing/raw_material_purchasing/update/${editId}`
       : '/processing/raw_material_purchasing';
+    const url = `${baseUrl}?format=json`;
 
     try {
       const res = await fetch(url, {
         method: 'POST',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          'Accept': 'application/json',
         },
         body: formData,
       });
+
 
       if (res.ok) {
         alert(editId ? 'Purchase Updated Successfully!' : 'Lot Purchase Saved Successfully!');
@@ -320,14 +323,23 @@ export default function RawMaterialPurchasing() {
         <h2 style={{ color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
           <ShoppingBag /> Raw Material Purchasing
         </h2>
-        <button 
-          onClick={fetchBackendData} 
-          className="btn btn-clear" 
-          style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
-          disabled={loading}
-        >
-          <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
-        </button>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <button 
+            onClick={() => setShowForm(true)} 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> New Entry
+          </button>
+          <button 
+            onClick={fetchBackendData} 
+            className="btn btn-clear" 
+            style={{ minWidth: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}
+            disabled={loading}
+          >
+            <RefreshCw size={14} className={loading ? 'spin-animation' : ''} /> Refresh
+          </button>
+        </div>
       </div>
 
       {/* Auto Fields */}
@@ -629,11 +641,6 @@ export default function RawMaterialPurchasing() {
         <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Today's Lot Purchases
         </h3>
-        {!showForm && (
-          <button onClick={() => setShowForm(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Plus size={14} /> Add New Entry
-          </button>
-        )}
       </div>
 
       <div className="table-responsive" style={{ flexShrink: 0 }}>

@@ -14,7 +14,7 @@ paths out of browser URLs and server logs.
 """
 from fastapi import APIRouter, Request, Query, HTTPException
 from fastapi.responses import JSONResponse
-from app.utils.access_control import has_permission, SUPER_ADMIN_EMAIL
+from app.utils.access_control import has_permission, is_super_admin
 
 router = APIRouter(prefix="/nav", tags=["Navigation"])
 
@@ -161,6 +161,7 @@ ROUTE_TOKENS: dict[str, dict] = {
     "mst_pat":      {"page_id": "criteria_peeling_at",              "backend": "/criteria/peeling_at",                        "permission": "peeling_at"},
     "mst_prt":      {"page_id": "criteria_peeling_rates",           "backend": "/criteria/peeling_rates",                     "permission": "peeling_rates"},
     "mst_kgl":      {"page_id": "criteria_kg_basis_labour_rates",   "backend": "/criteria/api/kg_basis_labour_rates",          "permission": "kg_basis_labour_rates"},
+    "mst_dwr":      {"page_id": "criteria_daily_basis_worker_rates","backend": "/criteria/api/daily_basis_worker_rates",       "permission": "daily_basis_worker_rates"},
     "mst_pra":      {"page_id": "criteria_production_at",           "backend": "/criteria/production_at",                     "permission": "production_at"},
     "pf_8Kx92LmQ":  {"page_id": "criteria_production_for",          "backend": "/criteria/production_for",                    "permission": "production_for"},
     "mst_prt2":     {"page_id": "criteria_production_types",        "backend": "/criteria/production_types",                  "permission": "production_types"},
@@ -227,7 +228,7 @@ async def resolve_page_token(
 
     required_perm = entry.get("permission")
     if required_perm:
-        is_super = str(email).strip().lower() == SUPER_ADMIN_EMAIL
+        is_super = is_super_admin(email)
         if not is_super and not has_permission(request.session, required_perm):
             raise HTTPException(status_code=403, detail="Permission denied")
 

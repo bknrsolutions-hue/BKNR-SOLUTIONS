@@ -371,7 +371,7 @@ function StandardAdminPage({ activePage, activeRoute }) {
 
 export function TicketDesk({ activePage, activeRoute, compact = false, onClose, setActivePage }) {
   const isAdmin = activePage === 'admin_helpdesk';
-  const [supportView, setSupportView] = useState(isAdmin ? 'tickets' : 'knowledge');
+  const [supportView, setSupportView] = useState('tickets');
   const [knowledge, setKnowledge] = useState({ entries: [], categories: [], total: 0 });
   const [knowledgeSearch, setKnowledgeSearch] = useState('');
   const [expandedAnswer, setExpandedAnswer] = useState('');

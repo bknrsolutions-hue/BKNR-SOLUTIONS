@@ -55,11 +55,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
     g_loc_clean = global_location.strip().upper() if global_location else None
 
-    company_code = request.session.get("company_code")
+    raw_company_code = request.session.get("company_code")
     email = request.session.get("email")
 
-    if not company_code or not email:
+    if not raw_company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
+
+    company_code = str(raw_company_code)
 
     # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION MULTIPLE CHECK
     session_locations = request.session.get("allowed_locations", [])
@@ -102,7 +104,11 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     today_data = today_q.order_by(Grading.id.desc()).all()
 
     # 3. 🟢 REQUIREMENT LOGIC - CRITICAL FIXED FILTER ENGINE 🟢
-    p_orders_q = db.query(pending_orders).filter(pending_orders.company_id == company_code)
+    p_orders_q = db.query(pending_orders).filter(
+        pending_orders.company_id == company_code,
+        (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
+    )
+
     stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
     
     # Production For Filter (Bypass "ALL")
@@ -112,11 +118,12 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
     # Location / Production At Filter (Bypass "ALL")
     if g_loc_clean and g_loc_clean != "ALL":
-        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.production_at)) == g_loc_clean)
+        p_orders_q = p_orders_q.filter((pending_orders.production_at == None) | (func.trim(pending_orders.production_at) == "") | (func.upper(func.trim(pending_orders.production_at)) == g_loc_clean))
         stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)) == g_loc_clean)
     elif user_allowed_locations:
-        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.production_at)).in_(user_allowed_locations))
+        p_orders_q = p_orders_q.filter((pending_orders.production_at == None) | (func.trim(pending_orders.production_at) == "") | (func.upper(func.trim(pending_orders.production_at)).in_(user_allowed_locations)))
         stock_q = stock_q.filter(func.upper(func.trim(stock_entry.production_at)).in_(user_allowed_locations))
+
         
     p_orders = p_orders_q.all()
     all_stock = stock_q.all()
@@ -420,7 +427,10 @@ def save_grading(
     db.refresh(grading)
     refresh_floor_balance(db, company_code, batch_number=batch_number)
     request.session["message"] = "✔ Grading Saved Successfully!"
+    if request.query_params.get("format") == "json" or "application/json" in (request.headers.get("accept") or ""):
+        return JSONResponse({"status": "ok", "id": grading.id})
     return RedirectResponse("/processing/grading", status_code=303)
+
 
 # -----------------------------------------------------
 # POST: UPDATE GRADING

@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
 import { useState, useEffect } from 'react';
+import { sessionFetch } from '../../utils/sessionFetch';
 import { 
   BarChart2, FolderTree, Receipt, FileText, ShieldCheck,
   RefreshCw, Settings, Plus, X, Lock, Unlock, Landmark,
@@ -73,7 +74,7 @@ export default function TallyDashboard() {
 
   const loadDashboardData = async () => {
     try {
-      const res = await fetch('/finance_accounts/dashboard/summary');
+      const res = await sessionFetch('/finance_accounts/dashboard/summary');
       const data = await res.json();
       if (data.success) {
         setKpis({
@@ -97,7 +98,7 @@ export default function TallyDashboard() {
 
   const loadCoaTree = async () => {
     try {
-      const res = await fetch('/finance_accounts/groups');
+      const res = await sessionFetch('/finance_accounts/groups');
       const data = await res.json();
       if (data.success) {
         setCoaTree(data.tree || []);
@@ -110,8 +111,8 @@ export default function TallyDashboard() {
   const loadLedgersAndVoucherTypes = async () => {
     try {
       const [ledgersRes, typesRes] = await Promise.all([
-        fetch('/finance_accounts/ledgers'),
-        fetch('/finance_accounts/voucher-types')
+        sessionFetch('/finance_accounts/ledgers'),
+        sessionFetch('/finance_accounts/voucher-types')
       ]);
       const ledgersData = await ledgersRes.json();
       const typesData = await typesRes.json();
@@ -133,9 +134,9 @@ export default function TallyDashboard() {
   const loadControlCenter = async () => {
     try {
       const [auditRes, yearsRes, vouchersRes] = await Promise.all([
-        fetch('/finance_accounts/controls/audit'),
-        fetch('/finance_accounts/financial-years'),
-        fetch('/finance_accounts/reports/voucher-register?all_time=true'),
+        sessionFetch('/finance_accounts/controls/audit'),
+        sessionFetch('/finance_accounts/financial-years'),
+        sessionFetch('/finance_accounts/reports/voucher-register?all_time=true'),
       ]);
       const [audit, years, vouchers] = await Promise.all([auditRes.json(), yearsRes.json(), vouchersRes.json()]);
       if (audit.success) setControlAudit(audit.data);
@@ -145,6 +146,7 @@ export default function TallyDashboard() {
       showNotification('Unable to load accounting controls.', 'danger');
     }
   };
+
 
   useEffect(() => {
     loadDashboardData();

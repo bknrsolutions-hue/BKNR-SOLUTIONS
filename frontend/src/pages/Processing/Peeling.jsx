@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Layers, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
+import { sessionFetch } from '../../utils/sessionFetch';
 
 export default function Peeling() {
   const [date, setDate] = useState('');
@@ -47,7 +48,88 @@ export default function Peeling() {
   // Collapse states for tree
   const [collapsedComps, setCollapsedComps] = useState({});
   const [collapsedLocs, setCollapsedLocs] = useState({});
+  const [collapsedOtherComps, setCollapsedOtherComps] = useState({});
+  const [collapsedOtherLocs, setCollapsedOtherLocs] = useState({});
+  const [collapsedDailyComps, setCollapsedDailyComps] = useState({});
+  const [collapsedDailyLocs, setCollapsedDailyLocs] = useState({});
+  const [collapsedContractorComps, setCollapsedContractorComps] = useState({});
+  const [collapsedContractorLocs, setCollapsedContractorLocs] = useState({});
+  const [collapsedContractors, setCollapsedContractors] = useState({});
+  const [collapsedReqComps, setCollapsedReqComps] = useState({});
+  const [collapsedReqLocs, setCollapsedReqLocs] = useState({});
   const [expandedReqCount, setExpandedReqCount] = useState(null); // 'species|variety|count' string
+
+  // Table Registration state
+  const [tableNo, setTableNo] = useState('');
+  const [subTab, setSubTab] = useState('operations'); // 'operations' | 'tableRegistration'
+
+  const [regTableNo, setRegTableNo] = useState('');
+  const [regWorkerType, setRegWorkerType] = useState('Contractor');
+  const [regContractor, setRegContractor] = useState('');
+  const [regNoOfWorkers, setRegNoOfWorkers] = useState('');
+  const [regWorkerIds, setRegWorkerIds] = useState('');
+  const [regPeelingAt, setRegPeelingAt] = useState('');
+  const [registeredTables, setRegisteredTables] = useState([]);
+  const [registeredWorkersList, setRegisteredWorkersList] = useState([]);
+  const [workerSearchTerm, setWorkerSearchTerm] = useState('');
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState([]);
+
+  useEffect(() => {
+    const fetchRegisteredWorkers = async () => {
+      try {
+        const res = await fetch('/attendance/kg-basis-labour', { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const insideIds = new Set((data.attendance || [])
+            .filter(row => row.status === 'INSIDE')
+            .map(row => String(row.worker_id || '').trim())
+            .filter(Boolean));
+          setRegisteredWorkersList((data.workers || []).filter(worker => insideIds.has(String(worker.worker_id || '').trim())));
+        }
+      } catch (err) {
+        console.error('Error fetching registered workers:', err);
+      }
+    };
+    fetchRegisteredWorkers();
+  }, []);
+
+  const toggleWorkerSelection = (wId) => {
+    let next;
+    if (selectedWorkerIds.includes(wId)) {
+      next = selectedWorkerIds.filter(id => id !== wId);
+    } else {
+      next = [...selectedWorkerIds, wId];
+    }
+    setSelectedWorkerIds(next);
+    setRegWorkerIds(next.join(', '));
+    if (regWorkerType !== 'Contractor') {
+      setRegNoOfWorkers(String(next.length));
+    }
+  };
+
+  const formattedPreviewTableNo = React.useMemo(() => {
+    if (!regTableNo.trim()) return '';
+    const cleanLoc = (regPeelingAt || filterLocation || locationVal || '').trim();
+    const raw = regTableNo.trim();
+    if (!cleanLoc) {
+      return raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
+    }
+    if (raw.toLowerCase().startsWith(cleanLoc.toLowerCase())) {
+      const after = raw.slice(cleanLoc.length).trim().replace(/^[-_\s]+/, '').trim();
+      if (after && !after.toLowerCase().startsWith('table')) {
+        return `${cleanLoc}-table ${after}`;
+      }
+      return raw;
+    }
+    const tablePart = raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
+    return `${cleanLoc}-${tablePart}`;
+  }, [regTableNo, regPeelingAt, filterLocation, locationVal]);
+
+  const isTableAlreadyRegistered = React.useMemo(() => {
+    if (!formattedPreviewTableNo) return false;
+    const cleanCheck = formattedPreviewTableNo.toLowerCase();
+    return registeredTables.some(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
+  }, [formattedPreviewTableNo, registeredTables]);
 
   const fetchBackendData = async () => {
     setLoading(true);
@@ -62,13 +144,27 @@ export default function Peeling() {
         queryParams.append('peeling_at', activeLoc);
       }
 
-      const res = await fetch(`/processing/peeling?${queryParams.toString()}`);
+      const res = await fetch(`/processing/peeling?${queryParams.toString()}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
         setProdForList(data.prod_for_list || []);
         setPeelingLocations(data.peeling_locations || []);
         setVarietiesList(data.varieties || []);
-        setContractorsList(data.contractors || []);
+
+        let cList = data.contractors || [];
+        if (!cList.length) {
+          try {
+            const apiRes = await fetch('/api/contractors', { credentials: 'include' });
+            if (apiRes.ok) {
+              const apiData = await apiRes.json();
+              cList = (apiData.data || []).map(row => row.contractor_name).filter(Boolean);
+            }
+          } catch (e) {
+            console.error('Error fetching contractors fallback:', e);
+          }
+        }
+        const defaultContractors = ['KG BASIS', 'DAILY BASIS'];
+        setContractorsList(Array.from(new Set([...defaultContractors, ...cList])));
         setHlsoFloorBalance(data.hlso_floor_balance || []);
         setHlsoSummary(data.hlso_summary || []);
         setVarietySummary(data.variety_summary || []);
@@ -76,13 +172,18 @@ export default function Peeling() {
         setTodayEntries(data.today_data || []);
 
         if (data.selected_production_for) setFilterCompany(data.selected_production_for);
-        if (data.selected_location) setFilterLocation(data.selected_location);
-
-        if ((data.today_data || []).length === 0) {
-          setShowModal(true);
+        if (data.selected_location) {
+          setFilterLocation(data.selected_location);
+          setRegPeelingAt(data.selected_location);
         }
       } else {
         console.error('Failed to fetch Peeling data');
+      }
+
+      const regRes = await fetch(`/processing/peeling/table_registrations`, { credentials: 'include' });
+      if (regRes.ok) {
+        const regData = await regRes.json();
+        setRegisteredTables(regData.table_registrations || []);
       }
     } catch (err) {
       console.error('Error fetching Peeling data:', err);
@@ -155,7 +256,7 @@ export default function Peeling() {
           species_name: match.species || '',
           variety_name: match.variety || 'HLSO',
         });
-        fetch(`/processing/peeling/get_available_qty?${params.toString()}`)
+        sessionFetch(`/processing/peeling/get_available_qty?${params.toString()}`)
           .then(res => res.ok ? res.json() : Promise.reject(new Error(`HTTP ${res.status}`)))
           .then(data => { if (active) setFloorAvail(parseFloat(data.available_qty) || 0); })
           .catch(err => {
@@ -182,7 +283,7 @@ export default function Peeling() {
       }
       try {
         const params = new URLSearchParams({ contractor, variety });
-        const res = await fetch(`/processing/peeling/get_rate?${params.toString()}`);
+        const res = await sessionFetch(`/processing/peeling/get_rate?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setRate(data.rate || 0);
@@ -226,12 +327,13 @@ export default function Peeling() {
     formData.append('variety', variety);
     formData.append('peeled_qty', String(peeledQty));
     formData.append('contractor_name', contractor);
+    formData.append('table_no', tableNo);
     formData.append('rate', String(rate));
     formData.append('yield_percent', yieldPercent + '%');
     formData.append('amount', String(amount));
 
     try {
-      const res = await fetch('/processing/peeling', {
+      const res = await sessionFetch('/processing/peeling', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -249,6 +351,7 @@ export default function Peeling() {
         setHlsoQty('');
         setPeeledQty('');
         setContractor('');
+        setTableNo('');
         setRate(0);
         setFloorAvail(0);
         await fetchBackendData();
@@ -258,6 +361,91 @@ export default function Peeling() {
       }
     } catch (err) {
       alert('Connection error saving peeling lot');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveTableRegistration = async (e) => {
+    e.preventDefault();
+    if (!regTableNo.trim()) {
+      alert('Table Number is required!');
+      return;
+    }
+
+    const cleanLocation = regPeelingAt || filterLocation || locationVal || '';
+    const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
+
+    const cleanCheck = formattedTableNo.toLowerCase();
+    const isDuplicate = registeredTables.some(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
+    if (isDuplicate) {
+      alert(`Table Number '${formattedTableNo}' is already registered for today!`);
+      return;
+    }
+
+    if (regWorkerType !== 'Contractor') {
+      const targetCount = parseInt(regNoOfWorkers || 0, 10);
+      if (targetCount <= 0) {
+        alert('Please enter a valid Number of Workers (> 0)!');
+        return;
+      }
+      if (selectedWorkerIds.length !== targetCount) {
+        alert(`Please select exactly ${targetCount} workers matching 'Number of Workers'! (Currently selected: ${selectedWorkerIds.length})`);
+        return;
+      }
+    }
+
+    setLoading(true);
+    const formData = new URLSearchParams();
+    formData.append('table_no', formattedTableNo);
+    formData.append('worker_type', regWorkerType);
+    if (regWorkerType === 'Contractor') {
+      formData.append('contractor_name', regContractor);
+      formData.append('no_of_workers', String(regNoOfWorkers || 0));
+    } else {
+      formData.append('no_of_workers', String(regNoOfWorkers || 0));
+      formData.append('worker_ids', selectedWorkerIds.join(', '));
+    }
+    formData.append('production_at', cleanLocation);
+    formData.append('production_for', productionFor);
+
+    try {
+      const res = await sessionFetch('/processing/peeling/table_registration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData
+      });
+      if (res.ok) {
+        alert('Table Registered Successfully!');
+        setRegTableNo('');
+        setRegContractor('');
+        setRegNoOfWorkers('');
+        setRegWorkerIds('');
+        setSelectedWorkerIds([]);
+        await fetchBackendData();
+      } else {
+        const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
+        alert(data.error || data.detail || data.message || 'Registration failed');
+      }
+    } catch (err) {
+      console.error(err);
+      alert(err?.message || 'Error saving table registration');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteTableRegistration = async (id) => {
+    if (!window.confirm('Are you sure you want to cancel this table registration?')) return;
+    setLoading(true);
+    try {
+      const res = await sessionFetch(`/processing/peeling/table_registration/delete/${id}`, { method: 'POST' });
+      if (res.ok) {
+        alert('Table registration cancelled');
+        await fetchBackendData();
+      }
+    } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
@@ -275,7 +463,7 @@ export default function Peeling() {
     try {
       const formData = new URLSearchParams();
       formData.append('cancel_reason', reason.trim());
-      const res = await fetch(`/processing/peeling/delete/${id}`, {
+      const res = await sessionFetch(`/processing/peeling/delete/${id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
@@ -351,34 +539,113 @@ export default function Peeling() {
       return matchComp && matchLoc;
     });
 
-    // Calculate contractor summaries based on filtered logs
-    let contractorMap = {};
-    let dailySumMap = {};
+    // Calculate contractor & daily sum hierarchies based on filtered logs
+    let contractorHierarchy = {};
+    let dailySumHierarchy = {};
 
     logs.forEach(r => {
       if (r.is_cancelled) return;
-      const cont = r.contractor_name || 'Unknown';
+      const comp = r.production_for || 'General Company';
+      const loc = r.peeling_at || 'General Location';
+      const variety = r.variety_name || 'General Variety';
+      const batch = r.batch_number || '-';
+      const species = r.species || '-';
+      const count = r.in_count || '-';
       const qty = parseFloat(r.peeled_qty) || 0;
       const amt = parseFloat(r.amount) || 0;
-      const key = `${r.production_for} > ${r.peeling_at} > ${r.variety_name}`;
+      const cont = r.contractor_name || 'Direct / Company';
 
-      if (!contractorMap[cont]) contractorMap[cont] = { qty: 0, amt: 0 };
-      contractorMap[cont].qty += qty;
-      contractorMap[cont].amt += amt;
+      // Daily Sum hierarchy
+      if (!dailySumHierarchy[comp]) dailySumHierarchy[comp] = { total: 0, locations: {} };
+      if (!dailySumHierarchy[comp].locations[loc]) dailySumHierarchy[comp].locations[loc] = { total: 0, items: [] };
 
-      dailySumMap[key] = (dailySumMap[key] || 0) + qty;
+      dailySumHierarchy[comp].total += qty;
+      dailySumHierarchy[comp].locations[loc].total += qty;
+      dailySumHierarchy[comp].locations[loc].items.push({
+        batch,
+        species,
+        variety,
+        count,
+        qty
+      });
+
+      // Contractor hierarchy (Company -> Location -> Contractor)
+      if (!contractorHierarchy[comp]) contractorHierarchy[comp] = { totalQty: 0, totalAmt: 0, locations: {} };
+      if (!contractorHierarchy[comp].locations[loc]) contractorHierarchy[comp].locations[loc] = { totalQty: 0, totalAmt: 0, contractors: {} };
+      if (!contractorHierarchy[comp].locations[loc].contractors[cont]) contractorHierarchy[comp].locations[loc].contractors[cont] = { totalQty: 0, totalAmt: 0, items: [] };
+
+      contractorHierarchy[comp].totalQty += qty;
+      contractorHierarchy[comp].totalAmt += amt;
+      contractorHierarchy[comp].locations[loc].totalQty += qty;
+      contractorHierarchy[comp].locations[loc].totalAmt += amt;
+      contractorHierarchy[comp].locations[loc].contractors[cont].totalQty += qty;
+      contractorHierarchy[comp].locations[loc].contractors[cont].totalAmt += amt;
+      contractorHierarchy[comp].locations[loc].contractors[cont].items.push({
+        table_no: r.table_no,
+        batch_number: r.batch_number,
+        variety_name: r.variety_name,
+        peeled_qty: qty,
+        amount: amt
+      });
+    });
+
+    // Build Other Floor hierarchy Company -> Location -> Items & Variety Sums per Level
+    let otherFloorHierarchy = {};
+    let varietySumMap = {};
+
+    varietySummary.forEach(item => {
+      const comp = item.production_for || 'General Stock';
+      const loc = item.location || 'Purchased Stock';
+      const vName = item.variety_name || 'Unknown';
+      const qty = parseFloat(item.total_hlso) || 0;
+
+      if (!otherFloorHierarchy[comp]) otherFloorHierarchy[comp] = { total: 0, locations: {}, varietySum: {} };
+      if (!otherFloorHierarchy[comp].locations[loc]) otherFloorHierarchy[comp].locations[loc] = { total: 0, items: [], varietySum: {} };
+
+      otherFloorHierarchy[comp].total += qty;
+      otherFloorHierarchy[comp].locations[loc].total += qty;
+      otherFloorHierarchy[comp].locations[loc].items.push(item);
+
+      // Company level variety sum
+      otherFloorHierarchy[comp].varietySum[vName] = (otherFloorHierarchy[comp].varietySum[vName] || 0) + qty;
+
+      // Location level variety sum
+      otherFloorHierarchy[comp].locations[loc].varietySum[vName] = (otherFloorHierarchy[comp].locations[loc].varietySum[vName] || 0) + qty;
+
+      // Global variety sum
+      varietySumMap[vName] = (varietySumMap[vName] || 0) + qty;
+    });
+
+    const otherFloorVarietySum = Object.entries(varietySumMap).sort((a, b) => b[1] - a[1]);
+
+    // Build Peeling Required Hierarchy (Company -> Location -> Items)
+    let reqHierarchy = {};
+    hlsoSummary.forEach(item => {
+      const comp = item.production_for || 'General Stock';
+      const loc = item.location || 'FLOOR';
+      const qty = parseFloat(item.total_kg) || 0;
+
+      if (!reqHierarchy[comp]) reqHierarchy[comp] = { total: 0, locations: {} };
+      if (!reqHierarchy[comp].locations[loc]) reqHierarchy[comp].locations[loc] = { total: 0, items: [] };
+
+      reqHierarchy[comp].total += qty;
+      reqHierarchy[comp].locations[loc].total += qty;
+      reqHierarchy[comp].locations[loc].items.push(item);
     });
 
     return {
       hierarchy,
+      otherFloorHierarchy,
+      otherFloorVarietySum,
+      dailySumHierarchy,
+      contractorHierarchy,
+      reqHierarchy,
       grandTotal: grandTotalVal,
-      filteredLogs: logs,
-      contractorSummary: Object.entries(contractorMap).sort((a,b)=>a[0].localeCompare(b[0])),
-      dailySummary: Object.entries(dailySumMap).sort((a,b)=>a[0].localeCompare(b[0]))
+      filteredLogs: logs
     };
   };
 
-  const { hierarchy, grandTotal, filteredLogs, contractorSummary, dailySummary } = getFilteredData();
+  const { hierarchy, otherFloorHierarchy, otherFloorVarietySum, dailySumHierarchy, contractorHierarchy, reqHierarchy, grandTotal, filteredLogs } = getFilteredData();
 
   const resetFilters = () => {
     setFilterCompany('');
@@ -389,12 +656,20 @@ export default function Peeling() {
     <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: '16px', padding: '16px 16px 80px 16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexShrink: 0 }}>
         <h2 style={{ color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-          <Layers /> Peeling Operations Dashboard
+          <i className="fa-solid fa-hand-dots"></i> Peeling Operations Dashboard
         </h2>
+
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <div className="grand-total" style={{ background: 'var(--corp-dash)', color: '#fff', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '800' }}>
             TOTAL FLOOR: {grandTotal.toFixed(2)} KG
           </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> New Entry
+          </button>
           <button 
             onClick={fetchBackendData} 
             className="btn btn-clear" 
@@ -406,8 +681,312 @@ export default function Peeling() {
         </div>
       </div>
 
-      {/* Filter Bar */}
-      <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '15px', flexShrink: 0 }} className="card">
+      {/* Sub Tabs Navigation */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px', marginBottom: '16px', flexShrink: 0 }}>
+        <button 
+          type="button"
+          onClick={() => setSubTab('operations')} 
+          className={`btn ${subTab === 'operations' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '6px 16px', fontSize: '11px' }}
+        >
+          Daily Operations & Floor Balance
+        </button>
+        <button 
+          type="button"
+          onClick={() => setSubTab('tableRegistration')} 
+          className={`btn ${subTab === 'tableRegistration' ? 'btn-primary' : 'btn-secondary'}`}
+          style={{ padding: '6px 16px', fontSize: '11px' }}
+        >
+          Daily Table Registration
+        </button>
+      </div>
+
+      {subTab === 'tableRegistration' ? (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* Table Registration Form Card */}
+          <div className="card" style={{ padding: '20px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '800', color: 'var(--corp-dash)', textTransform: 'uppercase' }}>
+              Register Peeling Table Number
+            </h3>
+            <form onSubmit={handleSaveTableRegistration}>
+              <div className="form-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <div className="form-group">
+                  <label>1. Peeling At / Location *</label>
+                  <select 
+                    className="form-control" 
+                    value={regPeelingAt} 
+                    onChange={e => setRegPeelingAt(e.target.value)}
+                    required
+                  >
+                    <option value="">Select Location</option>
+                    {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
+                  </select>
+                </div>
+
+                <div className="form-group">
+                  <label>2. Table No *</label>
+                  <input 
+                    type="text" 
+                    className="form-control" 
+                    placeholder="e.g. 1, 2, 3 (saves as PeelingAt-TableNo)" 
+                    value={regTableNo} 
+                    onChange={e => setRegTableNo(e.target.value)} 
+                    required 
+                  />
+                  {regPeelingAt && regTableNo && (
+                    <small style={{ color: '#2563eb', fontWeight: '700', marginTop: '4px', display: 'block' }}>
+                      Will save as: {formattedPreviewTableNo}
+                    </small>
+                  )}
+
+                  {isTableAlreadyRegistered && (
+                    <div style={{
+                      background: '#fef08a', // Yellow background
+                      border: '1.5px solid #eab308', // Amber border
+                      color: '#854d0e', // Dark yellow/brown text
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: '800',
+                      marginTop: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      boxShadow: '0 2px 4px rgba(234, 179, 8, 0.2)'
+                    }}>
+                      ⚠️ Table Number '{formattedPreviewTableNo}' is already registered for today!
+                    </div>
+                  )}
+                </div>
+
+
+                <div className="form-group">
+                  <label>3. Worker Type *</label>
+                  <select 
+                    className="form-control" 
+                    value={regWorkerType} 
+                    onChange={e => {
+                      setRegWorkerType(e.target.value);
+                      setRegNoOfWorkers('');
+                      setRegWorkerIds('');
+                      setSelectedWorkerIds([]);
+                    }}
+                    required
+                  >
+                    <option value="Contractor">Contractor</option>
+                    <option value="KG Basis Company Worker">KG Basis Company Worker</option>
+                    <option value="Daily Basis Company Worker">Daily Basis Company Worker</option>
+                  </select>
+                </div>
+
+                {regWorkerType === 'Contractor' ? (
+                  <>
+                    <div className="form-group">
+                      <label>Contractor Name *</label>
+                      <select 
+                        className="form-control" 
+                        value={regContractor} 
+                        onChange={e => setRegContractor(e.target.value)}
+                        required
+                      >
+                        <option value="">Select Contractor</option>
+                        <option value="KG BASIS">KG BASIS</option>
+                        <option value="DAILY BASIS">DAILY BASIS</option>
+                        {contractorsList.filter(c => c !== 'KG BASIS' && c !== 'DAILY BASIS').map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Number of Workers *</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        placeholder="Count e.g. 10" 
+                        value={regNoOfWorkers} 
+                        onChange={e => setRegNoOfWorkers(e.target.value)} 
+                        required 
+                        min="1"
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="form-group">
+                      <label>Number of Workers *</label>
+                      <input 
+                        type="number" 
+                        className="form-control" 
+                        placeholder="Auto from selected workers" 
+                        value={regNoOfWorkers} 
+                        onChange={e => setRegNoOfWorkers(e.target.value)} 
+                        required 
+                        min="1"
+                        readOnly
+                      />
+                    </div>
+
+                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <label style={{ margin: 0, fontWeight: '700' }}>Worker Checkbox Selection (Must select exactly {regNoOfWorkers || 0}) *</label>
+                        <span className={`badge ${selectedWorkerIds.length === parseInt(regNoOfWorkers || 0, 10) && selectedWorkerIds.length > 0 ? 'bg-success' : 'bg-warning'}`} style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '12px' }}>
+                          Selected: {selectedWorkerIds.length} / {regNoOfWorkers || 0} Workers
+                        </span>
+                      </div>
+
+                      <input 
+                        type="text" 
+                        className="form-control" 
+                        placeholder="🔍 Search registered workers by ID, Name or Department..." 
+                        value={workerSearchTerm} 
+                        onChange={e => setWorkerSearchTerm(e.target.value)}
+                        style={{ marginBottom: '10px', fontSize: '12px' }}
+                      />
+
+                      <div style={{
+                        maxHeight: '220px',
+                        overflowY: 'auto',
+                        border: '1px solid var(--border-light)',
+                        borderRadius: '8px',
+                        padding: '10px',
+                        background: 'var(--bg-card)',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+                        gap: '8px'
+                      }}>
+                        {registeredWorkersList
+                          .filter(w => {
+                            if (!workerSearchTerm.trim()) return true;
+                            const q = workerSearchTerm.toLowerCase();
+                            return (w.worker_id && w.worker_id.toLowerCase().includes(q)) ||
+                                   (w.worker_name && w.worker_name.toLowerCase().includes(q)) ||
+                                   (w.department && w.department.toLowerCase().includes(q));
+                          })
+                          .map(w => {
+                            const isChecked = selectedWorkerIds.includes(w.worker_id);
+                            return (
+                              <label 
+                                key={w.worker_id || w.id} 
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  padding: '8px 10px',
+                                  borderRadius: '6px',
+                                  background: isChecked ? 'rgba(37, 99, 235, 0.12)' : 'var(--bg-primary, #f8fafc)',
+                                  border: isChecked ? '1px solid #2563eb' : '1px solid var(--border-light, #e2e8f0)',
+                                  cursor: 'pointer',
+                                  fontSize: '12px',
+                                  userSelect: 'none'
+                                }}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked} 
+                                  onChange={() => toggleWorkerSelection(w.worker_id)} 
+                                  style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#2563eb' }}
+                                />
+                                <span style={{ lineHeight: '1.3' }}>
+                                  <strong style={{ color: 'var(--corp-dash, #1e293b)' }}>{w.worker_id}</strong> — {w.worker_name}
+                                  <br/>
+                                  <small style={{ color: 'var(--text-secondary, #64748b)', fontSize: '10px' }}>{w.department || 'General Department'}</small>
+                                </span>
+                              </label>
+                            );
+                          })}
+                        {registeredWorkersList.length === 0 && (
+                          <div style={{ gridColumn: '1 / -1', padding: '16px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '12px' }}>
+                            No punched-in KG Basis workers found for today. Punch IN workers under <strong>HRMS → KG Basis Workers</strong> first.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '16px' }}>
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  Save Table Registration
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* Registered Tables List */}
+          <div className="card" style={{ padding: '20px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
+              Registered Tables (Today)
+            </h3>
+            <div className="table-responsive">
+              <table className="bknr-table">
+                <thead>
+                  <tr>
+                    <th className="text-center" style={{ width: '60px' }}>Sl. No</th>
+                    <th className="text-center">Date</th>
+                    <th className="text-left">Peeling At / Location</th>
+                    <th className="text-center">Table No</th>
+                    <th className="text-left">Worker Type</th>
+                    <th className="text-left">Contractor / Details</th>
+                    <th className="text-center">No of Workers</th>
+                    <th className="text-left">Worker IDs</th>
+                    <th className="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {registeredTables.length === 0 ? (
+                    <tr>
+                      <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                        No tables registered for today yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    registeredTables.map((reg, idx) => {
+                      const isMatch = formattedPreviewTableNo && reg.table_no && reg.table_no.trim().toLowerCase() === formattedPreviewTableNo.toLowerCase();
+                      return (
+                        <tr key={reg.id} style={{ background: isMatch ? 'rgba(254, 240, 138, 0.4)' : 'transparent' }}>
+                          <td className="text-center" style={{ fontWeight: '700' }}>{registeredTables.length - idx}</td>
+                          <td className="text-center">{reg.date}</td>
+                          <td className="text-left" style={{ fontWeight: '600' }}>{reg.production_at || '-'}</td>
+                          <td className="text-center">
+                            <span style={{ 
+                              background: '#fef08a', // Yellow background
+                              color: '#854d0e', // Dark yellow/brown text
+                              padding: '3px 8px', 
+                              borderRadius: '6px', 
+                              border: '1px solid #eab308', 
+                              fontWeight: '800',
+                              fontSize: '12px',
+                              display: 'inline-block'
+                            }}>
+                              {reg.table_no}
+                            </span>
+                          </td>
+                          <td className="text-left">{reg.worker_type}</td>
+                          <td className="text-left">{reg.contractor_name || '-'}</td>
+                          <td className="text-center" style={{ fontWeight: '700' }}>{reg.no_of_workers}</td>
+                          <td className="text-left">{reg.worker_ids || '-'}</td>
+                          <td className="text-center">
+                            <button 
+                              type="button"
+                              onClick={() => handleDeleteTableRegistration(reg.id)}
+                              style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
+                              title="Cancel Table Registration"
+                            >
+                              <Ban size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Filter Bar */}
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginBottom: '15px', flexShrink: 0 }} className="card">
         <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)' }}>FILTERS:</div>
         <select 
           className="form-control" 
@@ -527,67 +1106,238 @@ export default function Peeling() {
 
             <div style={{ flex: 1, overflowY: 'auto', maxHeight: '280px', padding: '10px' }}>
               {activeTab === 'otherFloor' && (
-                <table className="bknr-table" style={{ fontSize: '11px' }}>
-                  <thead>
-                    <tr><th>Variety</th><th className="text-right">Available Qty</th></tr>
-                  </thead>
-                  <tbody>
-                    {varietySummary.length === 0 ? (
-                      <tr><td colSpan="2" className="text-center" style={{ color: 'var(--text-secondary)' }}>No variety summaries</td></tr>
-                    ) : (
-                      varietySummary.map((v, idx) => (
-                        <tr key={idx}>
-                          <td className="text-left"><strong>{v.variety_name}</strong></td>
-                          <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{v.total_hlso.toFixed(2)} KG</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div>
+                  {Object.keys(otherFloorHierarchy).length === 0 ? (
+                    <div style={{ padding: '16px', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>No other floor stock found.</div>
+                  ) : (
+                    Object.keys(otherFloorHierarchy).sort().map(comp => {
+                      const isCompCollapsed = collapsedOtherComps[comp];
+                      return (
+                        <div key={comp} style={{ marginBottom: '8px' }}>
+                          <div 
+                            onClick={() => setCollapsedOtherComps(prev => ({ ...prev, [comp]: !prev[comp] }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '750', fontSize: '12px', color: 'var(--corp-dash)', padding: '4px' }}
+                          >
+                            {isCompCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            <span>{comp}</span>
+                            <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)' }}>{otherFloorHierarchy[comp].total.toFixed(2)} KG</span>
+                          </div>
+
+                          {!isCompCollapsed && (
+                            <div style={{ paddingLeft: '12px' }}>
+                              {/* Company Level Variety Wise Badges */}
+                              {Object.keys(otherFloorHierarchy[comp].varietySum || {}).length > 0 && (
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                                  {Object.entries(otherFloorHierarchy[comp].varietySum).map(([vName, vQty]) => (
+                                    <span key={vName} style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '2px 6px', borderRadius: '3px', fontSize: '9px' }}>
+                                      <strong style={{ color: 'var(--text-primary)' }}>{vName}:</strong> <span style={{ color: 'var(--corp-dash)', fontWeight: '750' }}>{vQty.toFixed(2)} KG</span>
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+
+                              {Object.keys(otherFloorHierarchy[comp].locations).sort().map(loc => {
+                                const isLocCollapsed = collapsedOtherLocs[`${comp}|${loc}`];
+                                return (
+                                  <div key={loc} style={{ marginTop: '4px' }}>
+                                    <div 
+                                      onClick={() => setCollapsedOtherLocs(prev => ({ ...prev, [`${comp}|${loc}`]: !prev[`${comp}|${loc}`] }))}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '11px', color: 'var(--text-primary)', padding: '3px' }}
+                                    >
+                                      {isLocCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                                      <span>{loc}</span>
+                                      <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-secondary)' }}>{otherFloorHierarchy[comp].locations[loc].total.toFixed(2)} KG</span>
+                                    </div>
+
+                                    {!isLocCollapsed && (
+                                      <div style={{ paddingLeft: '16px', marginTop: '2px' }}>
+                                        {/* Location Level Variety Wise Badges */}
+                                        {Object.keys(otherFloorHierarchy[comp].locations[loc].varietySum || {}).length > 0 && (
+                                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                                            {Object.entries(otherFloorHierarchy[comp].locations[loc].varietySum).map(([vName, vQty]) => (
+                                              <span key={vName} style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '2px 6px', borderRadius: '3px', fontSize: '9px' }}>
+                                                <strong style={{ color: 'var(--text-primary)' }}>{vName}:</strong> <span style={{ color: '#10b981', fontWeight: '750' }}>{vQty.toFixed(2)} KG</span>
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                                          <tbody>
+                                            {otherFloorHierarchy[comp].locations[loc].items.map((v, idx) => (
+                                              <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>B: {v.batch_number} ({v.species})</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'center' }}>{v.variety_name}</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'center' }}>{v.count}</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: '750', color: 'var(--corp-dash)' }}>{v.total_hlso.toFixed(2)} KG</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               )}
 
               {activeTab === 'dailySum' && (
-                <table className="bknr-table" style={{ fontSize: '11px' }}>
-                  <thead>
-                    <tr><th>Company &gt; Loc &gt; Variety</th><th className="text-right">Qty (KG)</th></tr>
-                  </thead>
-                  <tbody>
-                    {dailySummary.length === 0 ? (
-                      <tr><td colSpan="2" className="text-center" style={{ color: 'var(--text-secondary)' }}>No data logged today</td></tr>
-                    ) : (
-                      dailySummary.map(([key, val]) => (
-                        <tr key={key}>
-                          <td className="text-left"><strong>{key}</strong></td>
-                          <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{val.toFixed(2)} KG</td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div>
+                  {Object.keys(dailySumHierarchy).length === 0 ? (
+                    <div style={{ padding: '16px', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>No peeling data logged today.</div>
+                  ) : (
+                    Object.keys(dailySumHierarchy).sort().map(comp => {
+                      const isCompCollapsed = collapsedDailyComps[comp];
+                      return (
+                        <div key={comp} style={{ marginBottom: '8px' }}>
+                          <div 
+                            onClick={() => setCollapsedDailyComps(prev => ({ ...prev, [comp]: !prev[comp] }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '750', fontSize: '12px', color: 'var(--corp-dash)', padding: '4px' }}
+                          >
+                            {isCompCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            <span>{comp}</span>
+                            <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)' }}>{dailySumHierarchy[comp].total.toFixed(2)} KG</span>
+                          </div>
+
+                          {!isCompCollapsed && (
+                            <div style={{ paddingLeft: '12px' }}>
+                              {Object.keys(dailySumHierarchy[comp].locations).sort().map(loc => {
+                                const isLocCollapsed = collapsedDailyLocs[`${comp}|${loc}`];
+                                return (
+                                  <div key={loc} style={{ marginTop: '4px' }}>
+                                    <div 
+                                      onClick={() => setCollapsedDailyLocs(prev => ({ ...prev, [`${comp}|${loc}`]: !prev[`${comp}|${loc}`] }))}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '11px', color: 'var(--text-primary)', padding: '3px' }}
+                                    >
+                                      {isLocCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                                      <span>{loc}</span>
+                                      <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-secondary)' }}>{dailySumHierarchy[comp].locations[loc].total.toFixed(2)} KG</span>
+                                    </div>
+
+                                    {!isLocCollapsed && (
+                                      <div style={{ paddingLeft: '16px', marginTop: '2px' }}>
+                                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                                          <tbody>
+                                            {dailySumHierarchy[comp].locations[loc].items.map((v, idx) => (
+                                              <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>B: {v.batch} ({v.species})</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'center' }}>{v.variety}</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'center' }}>{v.count}</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: '750', color: 'var(--corp-dash)' }}>{v.qty.toFixed(2)} KG</td>
+                                              </tr>
+                                            ))}
+                                          </tbody>
+                                        </table>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               )}
 
               {activeTab === 'contractorSum' && (
-                <table className="bknr-table" style={{ fontSize: '10px' }}>
-                  <thead>
-                    <tr><th>Contractor</th><th>Payroll Details</th><th className="text-right">Total Qty / Amt</th></tr>
-                  </thead>
-                  <tbody>
-                    {contractorSummary.length === 0 ? (
-                      <tr><td colSpan="3" className="text-center" style={{ color: 'var(--text-secondary)' }}>No contractor payroll sessions</td></tr>
-                    ) : (
-                      contractorSummary.map(([cont, data]) => (
-                        <tr key={cont}>
-                          <td className="text-left"><strong>{cont}</strong></td>
-                          <td className="text-left" style={{ color: 'var(--text-secondary)', fontSize: '9px' }}>Total Peeled<br />Total Wages</td>
-                          <td className="text-right" style={{ fontWeight: '800' }}>
-                            <span style={{ color: 'var(--corp-dash)' }}>{data.qty.toFixed(2)} KG</span><br />
-                            <span>₹{data.amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                <div>
+                  {Object.keys(contractorHierarchy).length === 0 ? (
+                    <div style={{ padding: '16px', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>No contractor payroll sessions logged today.</div>
+                  ) : (
+                    Object.keys(contractorHierarchy).sort().map(comp => {
+                      const isCompCollapsed = collapsedContractorComps[comp];
+                      const compData = contractorHierarchy[comp];
+                      return (
+                        <div key={comp} style={{ marginBottom: '8px' }}>
+                          <div 
+                            onClick={() => setCollapsedContractorComps(prev => ({ ...prev, [comp]: !prev[comp] }))}
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '750', fontSize: '12px', color: 'var(--corp-dash)', padding: '4px' }}
+                          >
+                            {isCompCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                            <span>{comp}</span>
+                            <div style={{ marginLeft: 'auto', textAlign: 'right', fontSize: '11px' }}>
+                              <span style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{compData.totalQty.toFixed(2)} KG</span>
+                            </div>
+                          </div>
+
+                          {!isCompCollapsed && (
+                            <div style={{ paddingLeft: '12px' }}>
+                              {Object.keys(compData.locations).sort().map(loc => {
+                                const isLocCollapsed = collapsedContractorLocs[`${comp}|${loc}`];
+                                const locData = compData.locations[loc];
+                                return (
+                                  <div key={loc} style={{ marginTop: '4px' }}>
+                                    <div 
+                                      onClick={() => setCollapsedContractorLocs(prev => ({ ...prev, [`${comp}|${loc}`]: !prev[`${comp}|${loc}`] }))}
+                                      style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '11px', color: 'var(--text-primary)', padding: '3px' }}
+                                    >
+                                      {isLocCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                                      <span>{loc}</span>
+                                      <div style={{ marginLeft: 'auto', textAlign: 'right', fontSize: '10px' }}>
+                                        <span style={{ color: 'var(--corp-dash)', fontWeight: '750' }}>{locData.totalQty.toFixed(2)} KG</span>
+                                      </div>
+                                    </div>
+
+                                    {!isLocCollapsed && (
+                                      <div style={{ paddingLeft: '14px', marginTop: '2px' }}>
+                                        {Object.keys(locData.contractors).sort().map(cont => {
+                                          const isContCollapsed = collapsedContractors[`${comp}|${loc}|${cont}`];
+                                          const cData = locData.contractors[cont];
+                                          return (
+                                            <div key={cont} style={{ marginTop: '3px', marginBottom: '4px' }}>
+                                              <div 
+                                                onClick={() => setCollapsedContractors(prev => ({ ...prev, [`${comp}|${loc}|${cont}`]: !prev[`${comp}|${loc}|${cont}`] }))}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '10px', color: 'var(--corp-dash)', padding: '2px' }}
+                                              >
+                                                {isContCollapsed ? <ChevronRight size={10} /> : <ChevronDown size={10} />}
+                                                <span>{cont}</span>
+                                                <div style={{ marginLeft: 'auto', fontSize: '10px' }}>
+                                                  <span style={{ color: 'var(--corp-dash)', fontWeight: '750' }}>{cData.totalQty.toFixed(2)} KG</span>
+                                                </div>
+                                              </div>
+
+                                              {!isContCollapsed && (
+                                                <div style={{ paddingLeft: '12px', marginTop: '2px' }}>
+                                                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                                                    <tbody>
+                                                      {cData.items.map((item, idx) => (
+                                                        <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                          <td style={{ padding: '2px 0', color: 'var(--text-secondary)' }}>
+                                                            <strong>{item.table_no || 'T-?'}</strong> ({item.batch_number})
+                                                          </td>
+                                                          <td style={{ padding: '2px 0', textAlign: 'center' }}>{item.variety_name}</td>
+                                                          <td style={{ padding: '2px 0', textAlign: 'right', fontWeight: '700', color: 'var(--corp-dash)' }}>{item.peeled_qty.toFixed(2)} KG</td>
+                                                        </tr>
+                                                      ))}
+                                                    </tbody>
+                                                  </table>
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -598,64 +1348,97 @@ export default function Peeling() {
               Peeling Required KG
             </div>
             <div style={{ overflowY: 'auto', maxHeight: '300px', padding: '8px' }}>
-              <table className="bknr-table" style={{ fontSize: '11px' }}>
-                <thead>
-                  <tr>
-                    <th>Species | Variety</th>
-                    <th className="text-center">Count</th>
-                    <th className="text-right">Required KG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {hlsoSummary.length === 0 ? (
-                    <tr><td colSpan="3" className="text-center" style={{ color: 'var(--text-secondary)', padding: '12px' }}>No pending requirements</td></tr>
-                  ) : (
-                    hlsoSummary.map((item, idx) => {
-                      const itemKey = `${item.species}|${item.variety}|${item.count}`;
-                      const isExpanded = expandedReqCount === itemKey;
-                      const drillDownRows = (drillDownData[itemKey]) ? drillDownData[itemKey] : [];
+              {Object.keys(reqHierarchy).length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', fontSize: '11px', color: 'var(--text-secondary)' }}>No pending requirements found.</div>
+              ) : (
+                Object.keys(reqHierarchy).sort().map(comp => {
+                  const isCompCollapsed = collapsedReqComps[comp];
+                  return (
+                    <div key={comp} style={{ marginBottom: '8px' }}>
+                      <div 
+                        onClick={() => setCollapsedReqComps(prev => ({ ...prev, [comp]: !prev[comp] }))}
+                        style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '750', fontSize: '12px', color: 'var(--corp-dash)', padding: '4px' }}
+                      >
+                        {isCompCollapsed ? <ChevronRight size={14} /> : <ChevronDown size={14} />}
+                        <span>{comp}</span>
+                        <span style={{ marginLeft: 'auto', fontSize: '11px', color: 'var(--text-secondary)' }}>{reqHierarchy[comp].total.toFixed(2)} KG</span>
+                      </div>
 
-                      return (
-                        <React.Fragment key={idx}>
-                          <tr>
-                            <td className="text-left">{item.species} | {item.variety}</td>
-                            <td className="text-center">
-                              <button 
-                                type="button" 
-                                onClick={() => setExpandedReqCount(isExpanded ? null : itemKey)} 
-                                style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'var(--corp-dash)', cursor: 'pointer', fontWeight: '800' }}
-                              >
-                                {item.count}
-                              </button>
-                            </td>
-                            <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{item.total_kg.toFixed(2)}</td>
-                          </tr>
-                          {isExpanded && (
-                            <tr>
-                              <td colSpan="3" style={{ background: 'rgba(255,255,255,0.01)', padding: '8px' }}>
-                                <table className="bknr-table" style={{ fontSize: '10px' }}>
-                                  <thead>
-                                    <tr><th>PO#</th><th>Buyer</th><th className="text-right">Qty</th></tr>
-                                  </thead>
-                                  <tbody>
-                                    {drillDownRows.map((d, dIdx) => (
-                                      <tr key={dIdx}>
-                                        <td className="text-center">{d.po_no}</td>
-                                        <td className="text-left">{d.buyer}</td>
-                                        <td className="text-right">{d.qty.toFixed(2)} KG</td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </td>
-                            </tr>
-                          )}
-                        </React.Fragment>
-                      );
-                    })
-                  )}
-                </tbody>
-              </table>
+                      {!isCompCollapsed && (
+                        <div style={{ paddingLeft: '12px' }}>
+                          {Object.keys(reqHierarchy[comp].locations).sort().map(loc => {
+                            const isLocCollapsed = collapsedReqLocs[`${comp}|${loc}`];
+                            return (
+                              <div key={loc} style={{ marginTop: '4px' }}>
+                                <div 
+                                  onClick={() => setCollapsedReqLocs(prev => ({ ...prev, [`${comp}|${loc}`]: !prev[`${comp}|${loc}`] }))}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '11px', color: 'var(--text-primary)', padding: '3px' }}
+                                >
+                                  {isLocCollapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+                                  <span>{loc}</span>
+                                  <span style={{ marginLeft: 'auto', fontSize: '10px', color: 'var(--text-secondary)' }}>{reqHierarchy[comp].locations[loc].total.toFixed(2)} KG</span>
+                                </div>
+
+                                {!isLocCollapsed && (
+                                  <div style={{ paddingLeft: '16px', marginTop: '2px' }}>
+                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                                      <tbody>
+                                        {reqHierarchy[comp].locations[loc].items.map((item, idx) => {
+                                          const itemKey = `${comp}|${item.species}|${item.variety}|${item.count}`;
+                                          const isExpanded = expandedReqCount === itemKey;
+                                          const drillDownRows = (drillDownData[itemKey] || drillDownData[`${item.species}|${item.variety}|${item.count}`]) ? (drillDownData[itemKey] || drillDownData[`${item.species}|${item.variety}|${item.count}`]) : [];
+
+                                          return (
+                                            <React.Fragment key={idx}>
+                                              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
+                                                <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>{item.species} | {item.variety}</td>
+                                                <td style={{ padding: '3px 0', textAlign: 'center' }}>
+                                                  <button 
+                                                    type="button" 
+                                                    onClick={() => setExpandedReqCount(isExpanded ? null : itemKey)} 
+                                                    style={{ background: 'none', border: 'none', textDecoration: 'underline', color: 'var(--corp-dash)', cursor: 'pointer', fontWeight: '800' }}
+                                                  >
+                                                    {item.count}
+                                                  </button>
+                                                </td>
+                                                <td style={{ padding: '3px 0', textAlign: 'right', color: 'var(--corp-dash)', fontWeight: '750' }}>{item.total_kg.toFixed(2)} KG</td>
+                                              </tr>
+                                              {isExpanded && (
+                                                <tr>
+                                                  <td colSpan="3" style={{ background: 'rgba(255,255,255,0.01)', padding: '6px' }}>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9px' }}>
+                                                      <thead>
+                                                        <tr style={{ color: 'var(--text-secondary)' }}><th>PO#</th><th>Buyer</th><th className="text-right">Qty</th></tr>
+                                                      </thead>
+                                                      <tbody>
+                                                        {drillDownRows.map((d, dIdx) => (
+                                                          <tr key={dIdx}>
+                                                            <td style={{ textAlign: 'center' }}>{d.po_no}</td>
+                                                            <td style={{ textAlign: 'left' }}>{d.buyer}</td>
+                                                            <td style={{ textAlign: 'right', fontWeight: '700' }}>{d.qty.toFixed(2)} KG</td>
+                                                          </tr>
+                                                        ))}
+                                                      </tbody>
+                                                    </table>
+                                                  </td>
+                                                </tr>
+                                              )}
+                                            </React.Fragment>
+                                          );
+                                        })}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })
+              )}
             </div>
           </div>
         </div>
@@ -666,9 +1449,6 @@ export default function Peeling() {
         <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Recent Peeling Logs
         </h3>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Plus size={14} /> New Peeling Entry
-        </button>
       </div>
 
       {/* Table Logs */}
@@ -676,6 +1456,8 @@ export default function Peeling() {
         <table className="bknr-table" style={{ minWidth: '1385px' }}>
           <thead>
             <tr>
+              <th className="text-center" style={{ width: '60px' }}>Sl. No</th>
+              <th className="text-center" style={{ width: '100px' }}>Table No</th>
               <th className="text-center" style={{ width: '120px' }}>Batch</th>
               <th className="text-left" style={{ width: '140px' }}>Company</th>
               <th className="text-left" style={{ width: '130px' }}>Species</th>
@@ -686,19 +1468,18 @@ export default function Peeling() {
               <th className="text-center" style={{ width: '95px' }}>Yield %</th>
               <th className="text-left" style={{ width: '140px' }}>Location</th>
               <th className="text-left" style={{ width: '150px' }}>Contractor</th>
-              <th className="text-right" style={{ width: '120px' }}>Amount</th>
               <th className="text-center" style={{ width: '90px' }}>Action</th>
             </tr>
           </thead>
           <tbody>
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan="12" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                <td colSpan="13" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
                   No peeling entries recorded today.
                 </td>
               </tr>
             ) : (
-              filteredLogs.map(row => (
+              filteredLogs.map((row, idx) => (
                 <tr 
                   key={row.id} 
                   className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled-row' : ''}`}
@@ -716,6 +1497,8 @@ export default function Peeling() {
                     color: row.is_cancelled ? 'var(--cancelled-text)' : 'inherit'
                   }}
                 >
+                  <td className="text-center" style={{ fontWeight: '700' }}>{filteredLogs.length - idx}</td>
+                  <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.table_no || '-'}</td>
                   <td className="text-center" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.batch_number}</td>
                   <td className="text-left">{row.production_for}</td>
                   <td className="text-left">{row.species}</td>
@@ -726,7 +1509,6 @@ export default function Peeling() {
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>
-                  <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>₹{(row.is_cancelled ? 0 : (Number(row.amount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                   <td className="text-center">
                     {!row.is_cancelled && (
                       <button 
@@ -747,6 +1529,8 @@ export default function Peeling() {
           </tbody>
         </table>
       </div>
+        </>
+      )}
 
       {/* Entry Modal Panel */}
       {showModal && (
@@ -796,6 +1580,35 @@ export default function Peeling() {
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
+
+                <div className="form-group">
+                  <label>Table No</label>
+                  <select 
+                    className="form-control" 
+                    value={tableNo} 
+                    onChange={e => {
+                      const sel = e.target.value;
+                      setTableNo(sel);
+                      const reg = registeredTables.find(r => r.table_no === sel);
+                      if (reg && reg.contractor_name) {
+                        setContractor(reg.contractor_name);
+                      }
+                    }}
+                  >
+                    <option value="">Select Table No</option>
+                    {registeredTables.length === 0 ? (
+                      <option value="" disabled>No tables created for today yet</option>
+                    ) : (
+                      registeredTables.map(r => (
+                        <option key={r.id} value={r.table_no}>
+                          {r.table_no} ({r.worker_type}{r.contractor_name ? ` - ${r.contractor_name}` : ''})
+                        </option>
+                      ))
+                    )}
+                  </select>
+                </div>
+
+
 
                 <div className="form-group">
                   <label>Batch *</label>
@@ -883,23 +1696,15 @@ export default function Peeling() {
                     required
                   >
                     <option value="">Select Contractor</option>
-                    {contractorsList.map(c => <option key={c} value={c}>{c}</option>)}
+                    <option value="KG BASIS">KG BASIS</option>
+                    <option value="DAILY BASIS">DAILY BASIS</option>
+                    {contractorsList.filter(c => c !== 'KG BASIS' && c !== 'DAILY BASIS').map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                </div>
-
-                <div className="form-group">
-                  <label>Rate / Kg</label>
-                  <input type="number" className="form-control" value={rate} readOnly placeholder="0.00" style={{ background: 'rgba(255,255,255,0.02)' }} />
                 </div>
 
                 <div className="form-group">
                   <label>Yield %</label>
                   <input type="text" className="form-control" value={yieldPercent + '%'} readOnly placeholder="0.00%" style={{ background: 'rgba(255,255,255,0.02)' }} />
-                </div>
-
-                <div className="form-group">
-                  <label>Total Amount (₹)</label>
-                  <input type="text" className="form-control" value={amount} readOnly style={{ background: 'rgba(255,255,255,0.02)', color: 'var(--corp-dash)', fontWeight: '800' }} />
                 </div>
               </div>
 

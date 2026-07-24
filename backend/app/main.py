@@ -18,6 +18,13 @@ import threading
 from apscheduler.schedulers.background import BackgroundScheduler
 from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
 from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+from app.config import (
+    CORS_ORIGINS,
+    DEPLOYMENT_TOKEN,
+    ENVIRONMENT,
+    RUN_LEGACY_STARTUP_MIGRATION,
+    SESSION_SECRET_KEY,
+)
 from app.utils.access_control import has_permission, required_permission_for_path
 from sqlalchemy import func
 
@@ -25,7 +32,6 @@ os.environ["TZ"] = "Asia/Kolkata"
 # =====================================================
 # 🚀 1. APP INIT - HOT RELOAD TRIGGER 12
 # =====================================================
-ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
 application = FastAPI(
     title="BKNR ERP",
     version="1.0.0",
@@ -39,12 +45,42 @@ application = FastAPI(
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("BKNR_ERP")
 # Keep the signed cookie lifetime and server-side idle policy configurable
-# independently for each deployment.
-SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(8 * 60 * 60)))
+# independently for each deployment. Default cookie lifetime set to 30 days for mobile & web.
+SESSION_MAX_AGE_SECONDS = int(os.getenv("SESSION_MAX_AGE_SECONDS", str(30 * 24 * 60 * 60)))
 SESSION_IDLE_TIMEOUT_SECONDS = int(
     os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60))
 )
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
+
+
+def is_mobile_client(request: Request) -> bool:
+    """
+    Checks if a request comes from the Mobile Native App or Mobile WebView wrapper.
+    Mobile client requests bypass the 30-minute idle session auto-logout.
+    """
+    if request.session.get("is_mobile_app") is True or request.session.get("is_mobile") is True:
+        return True
+
+    headers = request.headers
+    if headers.get("x-mobile-app", "").lower() in ("true", "1", "yes"):
+        request.session["is_mobile_app"] = True
+        return True
+    if headers.get("x-client-platform", "").lower() in ("mobile", "android", "ios", "react-native", "expo"):
+        request.session["is_mobile_app"] = True
+        return True
+
+    qp = request.query_params
+    if qp.get("is_mobile_app") == "true" or qp.get("mobile") == "true" or qp.get("x-mobile-app") == "true":
+        request.session["is_mobile_app"] = True
+        return True
+
+    ua = headers.get("user-agent", "").lower()
+    if any(token in ua for token in ["bknr", "expo", "okhttp", "reactnative", "cordova", "capacitor", "wv", "mobile_native"]):
+        request.session["is_mobile_app"] = True
+        return True
+
+    return False
+
 
 
 def get_screen_popup_config(db):
@@ -190,7 +226,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
 
         # Check deployment token header bypass
         deploy_token = request.headers.get("X-Deploy-Token")
-        expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
+        expected_token = DEPLOYMENT_TOKEN
         is_deploy_call = bool(
             deploy_token and deploy_token == expected_token
             and (path.startswith("/admin/deploy") or path == "/admin/version/record" or path.startswith("/admin/maintenance"))
@@ -244,7 +280,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
         except (TypeError, ValueError):
             last_activity_ts = now_ts
 
-        if now_ts - last_activity_ts > SESSION_IDLE_TIMEOUT_SECONDS:
+        # Mobile native app sessions NEVER auto-logout on idle timeout
+        is_mobile = is_mobile_client(request)
+
+        if not is_mobile and (now_ts - last_activity_ts > SESSION_IDLE_TIMEOUT_SECONDS):
             request.session.clear()
             if wants_json:
                 return JSONResponse(
@@ -254,6 +293,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return RedirectResponse("/auth/login", status_code=303)
 
         request.session["last_activity"] = now_ts
+
 
         # MAINTENANCE MODE CHECK (for logged-in users on protected routes)
         try:
@@ -391,7 +431,7 @@ application.add_middleware(AuthMiddleware)
 # Middle: Runs SECOND on request (Creates session context)
 application.add_middleware(
     SessionMiddleware,
-    secret_key=os.getenv("SESSION_SECRET_KEY", "bknr_secret_key_2026_dev_only"),
+    secret_key=SESSION_SECRET_KEY,
     session_cookie="bknr_session",
     max_age=SESSION_MAX_AGE_SECONDS,
 )
@@ -399,10 +439,7 @@ application.add_middleware(
 # Outermost: Runs FIRST on request (Handles Preflight CORS)
 application.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:8081",
-        "http://10.215.174.77:8081"
-    ],
+    allow_origins=CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -419,28 +456,30 @@ def on_startup():
         return
     start_snapshot_scheduler()
 
-    # Do not block Render's public port while PostgreSQL is waking up or
-    # recovering. Existing schema remains usable and migration retries in the
-    # background with a fresh SQLAlchemy connection each time.
-    def migrate_with_retry():
-        from app.database.migration import run_migration
+    if RUN_LEGACY_STARTUP_MIGRATION:
+        # Legacy ALTER TABLE migration kept for existing deployments only.
+        # Prefer Alembic (`alembic upgrade head`) for schema changes.
+        def migrate_with_retry():
+            from app.database.migration import run_migration
 
-        for attempt in range(1, 4):
-            try:
-                run_migration()
-                logger.info("Database migration completed on attempt %s", attempt)
-                return
-            except Exception as exc:
-                engine.dispose()
-                logger.error("Database migration attempt %s/3 failed: %s", attempt, exc)
-                if attempt < 3:
-                    time.sleep(attempt * 5)
+            for attempt in range(1, 4):
+                try:
+                    run_migration()
+                    logger.info("Legacy startup migration completed on attempt %s", attempt)
+                    return
+                except Exception as exc:
+                    engine.dispose()
+                    logger.error("Legacy startup migration attempt %s/3 failed: %s", attempt, exc)
+                    if attempt < 3:
+                        time.sleep(attempt * 5)
 
-    threading.Thread(
-        target=migrate_with_retry,
-        name="database-migration",
-        daemon=True,
-    ).start()
+        threading.Thread(
+            target=migrate_with_retry,
+            name="database-migration",
+            daemon=True,
+        ).start()
+    else:
+        logger.info("Legacy startup migration disabled; use Alembic for schema changes")
 
 
 @application.on_event("shutdown")
@@ -791,8 +830,9 @@ def record_version(request: Request, payload: dict = Body(default={})):
     Requires admin role.
     """
     deploy_token = request.headers.get("X-Deploy-Token")
-    expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
+    expected_token = DEPLOYMENT_TOKEN
     is_deploy_call = bool(deploy_token and deploy_token == expected_token)
+
 
     if not is_deploy_call and request.session.get("role") not in ("admin", "super_admin"):
         from fastapi import HTTPException

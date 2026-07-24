@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Numeric, CheckConstraint
+from sqlalchemy import Column, Integer, String, Date, Float, Text, DateTime, ForeignKey, Boolean, UniqueConstraint, Numeric, CheckConstraint, Index
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -29,6 +29,11 @@ class FinancialYearMaster(Base):
     end_date = Column(Date, nullable=False)
     is_locked = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        UniqueConstraint('company_id', 'year_name', name='uix_company_financial_year_name'),
+        Index('ix_financial_year_company_dates', 'company_id', 'start_date', 'end_date'),
+    )
 
 
 class CurrencyMaster(Base):
@@ -199,6 +204,9 @@ class VoucherHeader(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'voucher_no', name='uix_company_voucher_no'),
+        Index('ix_voucher_headers_company_date_status', 'company_id', 'voucher_date', 'status'),
+        Index('ix_voucher_headers_company_type_date', 'company_id', 'voucher_type_id', 'voucher_date'),
+        Index('ix_voucher_headers_company_reference', 'company_id', 'reference_no'),
         CheckConstraint(
             "status IN ('DRAFT','SUBMITTED','APPROVED','REJECTED','POSTED','CANCELLED')",
             name='ck_voucher_header_status',
@@ -222,6 +230,9 @@ class VoucherDetail(Base):
     cost_center = relationship("CostCenter")
 
     __table_args__ = (
+        Index('ix_voucher_details_voucher_ledger', 'voucher_id', 'ledger_id'),
+        Index('ix_voucher_details_ledger', 'ledger_id'),
+        Index('ix_voucher_details_cost_center', 'cost_center_id'),
         CheckConstraint('debit_amount >= 0', name='ck_voucher_detail_debit_nonnegative'),
         CheckConstraint('credit_amount >= 0', name='ck_voucher_detail_credit_nonnegative'),
         CheckConstraint(
@@ -250,6 +261,11 @@ class BankReconciliation(Base):
     bank_ledger = relationship("LedgerMaster")
     voucher_detail = relationship("VoucherDetail")
 
+    __table_args__ = (
+        Index('ix_bank_reconciliation_company_bank_date', 'company_id', 'bank_ledger_id', 'statement_date'),
+        Index('ix_bank_reconciliation_company_matched', 'company_id', 'is_matched'),
+    )
+
 
 class BillAllocation(Base):
     """Invoice/bill-wise settlement link for receipts and payments."""
@@ -269,6 +285,8 @@ class BillAllocation(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "payment_receipt_id", "source_type", "source_id", name="uix_bill_allocation_source"),
+        Index("ix_bill_allocations_company_document", "company_id", "document_no"),
+        Index("ix_bill_allocations_company_reversed", "company_id", "is_reversed"),
         CheckConstraint("allocated_amount > 0", name="ck_bill_allocation_positive"),
     )
 
@@ -295,6 +313,7 @@ class ForexRevaluation(Base):
 
     __table_args__ = (
         UniqueConstraint("company_id", "receivable_id", "as_of_date", name="uix_forex_revaluation_period"),
+        Index("ix_forex_revaluation_company_date", "company_id", "as_of_date"),
     )
 
 
@@ -310,6 +329,11 @@ class FinanceAuditTrail(Base):
     new_value = Column(Text, nullable=True)
     user_email = Column(String(100), nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
+
+    __table_args__ = (
+        Index('ix_finance_audit_company_table_record', 'company_id', 'table_name', 'record_id'),
+        Index('ix_finance_audit_company_timestamp', 'company_id', 'timestamp'),
+    )
 
 
 # =========================================================
@@ -526,6 +550,8 @@ class LCTracking(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'lc_number', name='uix_company_lc_number'),
+        Index('ix_lc_tracking_company_status_expiry', 'company_id', 'status', 'expiry_date'),
+        Index('ix_lc_tracking_company_buyer', 'company_id', 'buyer_name'),
     )
 
 
@@ -614,6 +640,8 @@ class SalaryProcessing(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'employee_id', 'month_year', name='uix_salary_emp_month'),
+        Index('ix_salary_processing_company_month_status', 'company_id', 'month_year', 'status'),
+        Index('ix_salary_processing_company_payment_status', 'company_id', 'payment_status'),
     )
 
 
@@ -678,4 +706,6 @@ class ProductionCostAllocation(Base):
 
     __table_args__ = (
         UniqueConstraint('company_id', 'batch_number', name='uix_company_batch_cost'),
+        Index('ix_production_cost_company_date_status', 'company_id', 'production_date', 'status'),
+        Index('ix_production_cost_company_batch_status', 'company_id', 'batch_number', 'status'),
     )

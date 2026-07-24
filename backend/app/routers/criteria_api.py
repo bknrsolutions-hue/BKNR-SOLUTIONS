@@ -27,6 +27,7 @@ model_mapping = {
     "suppliers": criteria.suppliers,
     "peeling_rates": criteria.peeling_rates,
     "kg_basis_labour_rates": criteria.kg_basis_labour_rates,
+    "daily_basis_worker_rates": criteria.daily_basis_worker_rates,
     "species": criteria.species,
     "purchasing_locations": criteria.purchasing_locations,
     "vehicle_numbers": criteria.vehicle_numbers,
@@ -41,10 +42,15 @@ model_mapping = {
     "cold_storage": cold_storage,
 }
 
-def get_model_or_404(model_name: str):
+def get_model_or_404(model_name: str, db: Session = None):
     model = model_mapping.get(model_name.lower())
     if not model:
         raise HTTPException(status_code=404, detail=f"Criteria model '{model_name}' not found")
+    if db and hasattr(model, "__table__"):
+        try:
+            model.__table__.create(bind=db.bind, checkfirst=True)
+        except Exception:
+            pass
     return model
 
 def cast_value(column, val):
@@ -96,7 +102,7 @@ def get_all(request: Request, model_name: str, db: Session = Depends(get_db)):
     if not session_email or not company_code:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
 
-    model = get_model_or_404(model_name)
+    model = get_model_or_404(model_name, db)
     
     # Query filters: check company_id matching user session
     query = db.query(model)
@@ -144,7 +150,7 @@ async def save_record(request: Request, model_name: str, db: Session = Depends(g
     if not session_email or not company_code:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
 
-    model = get_model_or_404(model_name)
+    model = get_model_or_404(model_name, db)
     
     # Read payload (accepts JSON)
     try:
@@ -229,7 +235,7 @@ def delete_record(request: Request, model_name: str, id: int, db: Session = Depe
     if not company_code:
         return JSONResponse(status_code=401, content={"error": "Unauthorized session"})
 
-    model = get_model_or_404(model_name)
+    model = get_model_or_404(model_name, db)
 
     query = db.query(model).filter(model.id == id)
     if hasattr(model, "company_id"):

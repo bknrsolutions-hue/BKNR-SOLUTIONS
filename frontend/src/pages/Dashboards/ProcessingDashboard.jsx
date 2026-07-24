@@ -34,10 +34,17 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   const [statsReloadTrigger, setStatsReloadTrigger] = useState(0);
 
   // Dashboard Data State
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('proc_dash_cache');
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [loading, setLoading] = useState(!data);
   const [error, setError] = useState('');
-  const [liveFloorKpi, setLiveFloorKpi] = useState('0.00');
+  const [liveFloorKpi, setLiveFloorKpi] = useState(() => data?.floor_total ?? '0.00');
 
   // Chart Canvas Refs
   const dhCanvasRef = useRef(null);
@@ -86,7 +93,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
     const loadingTimer = window.setTimeout(() => {
       setLoading(true);
       setError('');
-    }, 0);
+    }, 200);
     let url = `/dashboard/processing_dashboard?format=json&from_date=${selectedDate}&to_date=${selectedDate}&hour_date=${selectedDate}`;
     if (selectedCompany) url += `&production_for=${encodeURIComponent(selectedCompany)}`;
     if (selectedLocation) url += `&location=${encodeURIComponent(selectedLocation)}`;
@@ -111,11 +118,17 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
         if (resData.status !== 'success') throw new Error(resData.message || 'Unable to load Processing Dashboard.');
         setData(resData);
         setLiveFloorKpi(resData.floor_total ?? '0.00');
+        try {
+          sessionStorage.setItem('proc_dash_cache', JSON.stringify(resData));
+        } catch {
+          // Ignore storage quota errors
+        }
       })
       .catch((err) => {
         if (err.name !== 'AbortError') setError(err.message);
       })
       .finally(() => {
+        window.clearTimeout(loadingTimer);
         if (!controller.signal.aborted) setLoading(false);
       });
 
@@ -124,6 +137,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       controller.abort();
     };
   }, [selectedDate, selectedCompany, selectedLocation, statsReloadTrigger]);
+
 
   // Re-instantiate ChartJS instances whenever data or theme shifts
   useEffect(() => {

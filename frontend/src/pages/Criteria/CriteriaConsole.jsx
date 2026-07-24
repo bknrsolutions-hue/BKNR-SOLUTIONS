@@ -29,6 +29,8 @@ const CRITERIA_ROUTE_MAP = {
   criteria_production_for:      '/criteria/production_for',
   criteria_peeling_at:          '/criteria/peeling_at',
   criteria_peeling_rates:       '/criteria/peeling_rates',
+  criteria_kg_basis_labour_rates: '/criteria/api/kg_basis_labour_rates',
+  criteria_daily_basis_worker_rates: '/criteria/api/daily_basis_worker_rates',
   criteria_purposes:            '/criteria/purposes',
 
   // ── Chemicals & Cold Storage ───────────────────────────────────

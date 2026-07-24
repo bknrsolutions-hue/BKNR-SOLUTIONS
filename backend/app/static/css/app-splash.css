@@ -4,10 +4,7 @@
 ========================================================== */
 
 :root {
-    --splash-bg:
-        radial-gradient(circle at 20% 18%, rgba(37, 99, 235, 0.28), transparent 30%),
-        radial-gradient(circle at 78% 74%, rgba(20, 184, 166, 0.18), transparent 28%),
-        linear-gradient(135deg, #061223 0%, #0f172a 48%, #111827 100%);
+    --splash-bg: #0f172a;
     --splash-card: rgba(15, 23, 42, 0.76);
     --splash-border: rgba(255, 255, 255, 0.14);
     --splash-text: #f8fafc;

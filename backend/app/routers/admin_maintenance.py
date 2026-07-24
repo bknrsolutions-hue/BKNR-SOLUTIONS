@@ -7,27 +7,26 @@ HARD mode  → requires role: super_admin only
 
 from fastapi import APIRouter, Depends, Request, HTTPException, Body
 from sqlalchemy.orm import Session
+from app.config import DEPLOYMENT_TOKEN
 from app.database import get_db
 from app.services.maintenance import (
     MAINTENANCE_OFF, MAINTENANCE_SOFT, MAINTENANCE_HARD,
     get_maintenance_level, get_maintenance_message, is_maintenance_active,
     set_maintenance
 )
-
-import os
+from app.utils.access_control import is_super_admin
 
 router = APIRouter(prefix="/admin/maintenance", tags=["Admin - Maintenance Mode"])
 
 
 def _role(request: Request) -> str:
     deploy_token = request.headers.get("X-Deploy-Token")
-    expected_token = os.getenv("DEPLOYMENT_TOKEN", "bknr_deploy_token_2026")
-    if deploy_token and deploy_token == expected_token:
+    if deploy_token and deploy_token == DEPLOYMENT_TOKEN:
         return "super_admin"
-    # Allow owner email to bypass and act as super_admin
-    if request.session.get("email") == "bknr.solutions@gmail.com":
+    if is_super_admin(request.session.get("email")):
         return "super_admin"
     return request.session.get("role", "")
+
 
 
 def _require_min_admin(request: Request):

@@ -33,37 +33,41 @@ async def activities_page(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/dashboard", status_code=302)
 
     try:
-        #   ‌    100 ‌
-        latest_messages = db.query(TicketMessage).order_by(TicketMessage.sent_at.desc()).limit(100).all()
+        latest_messages = db.query(TicketMessage).order_by(TicketMessage.sent_at.desc()).limit(50).all()
 
         today = ist_now().date()
-        yesterday = today - timedelta(days=1)  # Midnight rollover protection
-        first_day_this_month = today.replace(day=1)
+        yesterday = today - timedelta(days=1)
+        start_yesterday = datetime.combine(yesterday, datetime.min.time())
+        first_day_this_month = datetime.combine(today.replace(day=1), datetime.min.time())
 
         # KPI 1: Total Registrations
         total_registrations = db.query(Company).count()
 
-        # 🛠️ FIX:    ‌
-        today_active = db.query(UserLoginActivity.company_id).filter(
+        # KPI 2 & 3: Active Companies (unique company_id) & Active Users (unique email)
+        active_activities = db.query(UserLoginActivity.company_id, UserLoginActivity.user_id).filter(
             or_(
-                cast(UserLoginActivity.login_at, Date) == today,
-                cast(UserLoginActivity.login_at, Date) == yesterday,
+                UserLoginActivity.login_at >= start_yesterday,
                 UserLoginActivity.session_hours == "Active Now"
             )
-        ).distinct().count()
+        ).all()
 
-        # 🛠️ FIX:       ()
-        active_users = db.query(UserLoginActivity.user_id).filter(
-            or_(
-                cast(UserLoginActivity.login_at, Date) == today,
-                cast(UserLoginActivity.login_at, Date) == yesterday,
-                UserLoginActivity.session_hours == "Active Now"
+        today_active_company_ids = set(act.company_id for act in active_activities if act.company_id)
+        user_ids = list(set(act.user_id for act in active_activities if act.user_id))
+
+        active_user_emails = set()
+        if user_ids:
+            active_user_emails = set(
+                email.strip().lower()
+                for (email,) in db.query(User.email).filter(User.id.in_(user_ids)).all()
+                if email
             )
-        ).distinct().count()
+
+        today_active = len(today_active_company_ids)
+        active_users = len(active_user_emails)
 
         # KPI 4: New This Month
         new_this_month = db.query(Company).filter(
-            cast(Company.created_at, Date) >= first_day_this_month
+            Company.created_at >= first_day_this_month
         ).count()
 
         # KPI 5: Open Tickets
@@ -102,29 +106,37 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
 
     today = ist_now().date()
     yesterday = today - timedelta(days=1)
-    first_day_this_month = today.replace(day=1)
+    start_yesterday = datetime.combine(yesterday, datetime.min.time())
+    first_day_this_month = datetime.combine(today.replace(day=1), datetime.min.time())
     response_payload = []
 
     try:
-        # 🟢 FIXED: ACTIVE TODAY & USERS TO SHOW EVERY LOG/OUT TRANSACTION MATCHING THE COUNT
-        if kpi_type == "active" or kpi_type == "active_users":
-
-            # 🛠️ FIX:
+        if kpi_type in {"active", "active_users"}:
             activities = db.query(UserLoginActivity).filter(
                 or_(
-                    cast(UserLoginActivity.login_at, Date) == today,
-                    cast(UserLoginActivity.login_at, Date) == yesterday,
+                    UserLoginActivity.login_at >= start_yesterday,
                     UserLoginActivity.session_hours == "Active Now"
                 )
-            ).order_by(UserLoginActivity.login_at.desc()).all()
+            ).order_by(UserLoginActivity.login_at.desc()).limit(300).all()
 
-            print("TOTAL ACTIVITIES IN JET STREAM =", len(activities))
+            # Batch fetch related companies and users to avoid N+1 queries
+            comp_codes = {act.company_id for act in activities if act.company_id}
+            user_ids = {act.user_id for act in activities if act.user_id}
 
+            companies_map = {c.company_code: c for c in db.query(Company).filter(Company.company_code.in_(comp_codes)).all()} if comp_codes else {}
+            users_map = {u.id: u for u in db.query(User).filter(User.id.in_(user_ids)).all()} if user_ids else {}
+
+            seen_keys = set()
             for act in activities:
-                comp = db.query(Company).filter(Company.company_code == act.company_id).first()
-                user = db.query(User).filter(User.id == act.user_id).first()
-
+                comp = companies_map.get(act.company_id)
+                user = users_map.get(act.user_id)
                 if comp and user:
+                    # Deduplicate by unique company_id for Active Companies, and by unique email for Active Users
+                    dedup_key = comp.company_code if kpi_type == "active" else user.email.strip().lower()
+                    if dedup_key in seen_keys:
+                        continue
+                    seen_keys.add(dedup_key)
+
                     response_payload.append({
                         "company_id": comp.company_code,
                         "company_name": comp.company_name,
@@ -137,11 +149,13 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                         "status": "Online" if act.session_hours == "Active Now" else "Offline"
                     })
 
-        # CASE B: TOTAL REGISTRATIONS
+
         elif kpi_type == "registrations":
-            companies = db.query(Company).order_by(Company.created_at.desc()).all()
+            companies = db.query(Company).order_by(Company.created_at.desc()).limit(200).all()
+            comp_ids = [c.id for c in companies]
+            admin_users = {u.company_id: u for u in db.query(User).filter(User.company_id.in_(comp_ids), User.role == "admin").all()} if comp_ids else {}
             for c in companies:
-                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
+                admin_user = admin_users.get(c.id)
                 response_payload.append({
                     "company_id": c.company_code,
                     "mpeda_registration_code": c.mpeda_registration_code or "--",
@@ -155,14 +169,14 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "status": "Active" if c.is_active else "Inactive"
                 })
 
-        # CASE C: NEW THIS MONTH
         elif kpi_type == "new_month":
             new_companies = db.query(Company).filter(
-                cast(Company.created_at, Date) >= first_day_this_month
-            ).order_by(Company.created_at.desc()).all()
-
+                Company.created_at >= first_day_this_month
+            ).order_by(Company.created_at.desc()).limit(200).all()
+            comp_ids = [c.id for c in new_companies]
+            admin_users = {u.company_id: u for u in db.query(User).filter(User.company_id.in_(comp_ids), User.role == "admin").all()} if comp_ids else {}
             for c in new_companies:
-                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
+                admin_user = admin_users.get(c.id)
                 response_payload.append({
                     "company_id": c.company_code,
                     "mpeda_registration_code": c.mpeda_registration_code or "--",
@@ -176,21 +190,18 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "status": "New"
                 })
 
-        # CASE D: OPEN TICKETS
         elif kpi_type == "tickets":
             open_tkts = db.query(SupportTicket).filter(
                 SupportTicket.status == "OPEN"
-            ).order_by(SupportTicket.created_at.desc()).all()
+            ).order_by(SupportTicket.created_at.desc()).limit(200).all()
+            user_emails = {t.user_email for t in open_tkts if t.user_email}
+            users_by_email = {u.email: u for u in db.query(User).filter(User.email.in_(user_emails)).all()} if user_emails else {}
+            comp_codes = {t.company_id for t in open_tkts if t.company_id}
+            companies_map = {c.company_code: c for c in db.query(Company).filter(Company.company_code.in_(comp_codes)).all()} if comp_codes else {}
 
             for t in open_tkts:
-                comp = db.query(Company).filter(Company.company_code == t.company_id).first()
-                if not comp:
-                    try:
-                        comp = db.query(Company).filter(Company.id == int(t.company_id)).first()
-                    except:
-                        comp = None
-
-                admin_user = db.query(User).filter(User.email == t.user_email).first()
+                comp = companies_map.get(t.company_id)
+                admin_user = users_by_email.get(t.user_email)
                 response_payload.append({
                     "company_id": comp.company_code if comp else f"ID: {t.company_id}",
                     "company_name": comp.company_name if comp else "Unknown Entity",
@@ -203,11 +214,12 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
                     "status": t.status
                 })
 
-        # CASE E: PENDING APPROVALS
         elif kpi_type == "pending_approvals":
-            pending = db.query(Company).filter(Company.is_active == False).order_by(Company.created_at.desc()).all()
+            pending = db.query(Company).filter(Company.is_active == False).order_by(Company.created_at.desc()).limit(200).all()
+            comp_ids = [c.id for c in pending]
+            admin_users = {u.company_id: u for u in db.query(User).filter(User.company_id.in_(comp_ids), User.role == "admin").all()} if comp_ids else {}
             for c in pending:
-                admin_user = db.query(User).filter(User.company_id == c.id, User.role == "admin").first()
+                admin_user = admin_users.get(c.id)
                 response_payload.append({
                     "company_id": c.company_code,
                     "mpeda_registration_code": c.mpeda_registration_code or "--",
@@ -226,6 +238,7 @@ async def get_kpi_detailed_data(kpi_type: str, request: Request, db: Session = D
     except Exception as e:
         logger.error(f"KPI Data JSON API Exception: {str(e)}")
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
 
 
 @router.post("/approve_company/{company_code}")

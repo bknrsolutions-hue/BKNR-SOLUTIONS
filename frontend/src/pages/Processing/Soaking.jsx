@@ -81,9 +81,7 @@ export default function Soaking() {
         if (data.selected_production_for) setFilterCompany(data.selected_production_for);
         if (data.selected_location) setProductionAt(data.selected_location);
 
-        if ((data.today_data || []).length === 0) {
-          setShowModal(true);
-        }
+
       } else {
         console.error('Failed to fetch Soaking details');
       }
@@ -330,19 +328,26 @@ export default function Soaking() {
       }
     });
 
-    // Build hierarchy Company -> Location -> Rows
+    // Build hierarchy Company -> Location -> Rows & Variety Sums per Level
     let hierarchy = {};
     filteredFloor.forEach(row => {
       const comp = row.production_for || 'General Stock';
       const loc = row.location || 'Purchased Stock';
+      const vName = row.variety || 'Unknown';
       const qty = parseFloat(row.available_qty) || 0;
 
-      if (!hierarchy[comp]) hierarchy[comp] = { total: 0, locations: {} };
-      if (!hierarchy[comp].locations[loc]) hierarchy[comp].locations[loc] = { total: 0, items: [] };
+      if (!hierarchy[comp]) hierarchy[comp] = { total: 0, locations: {}, varietySum: {} };
+      if (!hierarchy[comp].locations[loc]) hierarchy[comp].locations[loc] = { total: 0, items: [], varietySum: {} };
 
       hierarchy[comp].total += qty;
       hierarchy[comp].locations[loc].total += qty;
       hierarchy[comp].locations[loc].items.push(row);
+
+      // Company level variety sum
+      hierarchy[comp].varietySum[vName] = (hierarchy[comp].varietySum[vName] || 0) + qty;
+
+      // Location level variety sum
+      hierarchy[comp].locations[loc].varietySum[vName] = (hierarchy[comp].locations[loc].varietySum[vName] || 0) + qty;
     });
 
     // Today Soaking Summary aggregates
@@ -397,6 +402,13 @@ export default function Soaking() {
           <div className="grand-total" style={{ background: 'var(--corp-dash)', color: '#fff', padding: '6px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: '800' }}>
             FLOOR BALANCE: {grandTotal.toFixed(2)} KG
           </div>
+          <button 
+            onClick={() => setShowModal(true)} 
+            className="btn btn-primary" 
+            style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={14} /> New Entry
+          </button>
           <button 
             onClick={fetchBackendData} 
             className="btn btn-clear" 
@@ -482,6 +494,17 @@ export default function Soaking() {
 
                       {!isCompCollapsed && (
                         <div style={{ paddingLeft: '12px' }}>
+                          {/* Company Level Variety Wise Badges */}
+                          {Object.keys(hierarchy[comp].varietySum || {}).length > 0 && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                              {Object.entries(hierarchy[comp].varietySum).map(([vName, vQty]) => (
+                                <span key={vName} style={{ background: 'rgba(59, 130, 246, 0.08)', border: '1px solid rgba(59, 130, 246, 0.2)', padding: '2px 6px', borderRadius: '3px', fontSize: '9px' }}>
+                                  <strong style={{ color: 'var(--text-primary)' }}>{vName}:</strong> <span style={{ color: 'var(--corp-dash)', fontWeight: '750' }}>{vQty.toFixed(2)} KG</span>
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
                           {Object.keys(hierarchy[comp].locations).sort().map(loc => {
                             const isLocCollapsed = collapsedLocs[`${comp}|${loc}`];
                             return (
@@ -497,11 +520,22 @@ export default function Soaking() {
 
                                 {!isLocCollapsed && (
                                   <div style={{ paddingLeft: '16px', marginTop: '2px' }}>
+                                    {/* Location Level Variety Wise Badges */}
+                                    {Object.keys(hierarchy[comp].locations[loc].varietySum || {}).length > 0 && (
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '6px' }}>
+                                        {Object.entries(hierarchy[comp].locations[loc].varietySum).map(([vName, vQty]) => (
+                                          <span key={vName} style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '2px 6px', borderRadius: '3px', fontSize: '9px' }}>
+                                            <strong style={{ color: 'var(--text-primary)' }}>{vName}:</strong> <span style={{ color: '#10b981', fontWeight: '750' }}>{vQty.toFixed(2)} KG</span>
+                                          </span>
+                                        ))}
+                                      </div>
+                                    )}
+
                                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
                                       <tbody>
                                         {hierarchy[comp].locations[loc].items.map((i, idx) => (
                                           <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }}>
-                                            <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>{i.batch} | {i.species}</td>
+                                            <td style={{ padding: '3px 0', color: 'var(--text-secondary)' }}>B: {i.batch} ({i.species})</td>
                                             <td style={{ padding: '3px 0', textAlign: 'center' }}>{i.variety}</td>
                                             <td style={{ padding: '3px 0', textAlign: 'center' }}>{i.count}</td>
                                             <td style={{ padding: '3px 0', textAlign: 'right', fontWeight: '750', color: 'var(--corp-dash)' }}>{i.available_qty.toFixed(2)} KG</td>
@@ -581,14 +615,11 @@ export default function Soaking() {
         </div>
       )}
 
-      {/* Table Header and Add new Entry */}
+      {/* Table Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexShrink: 0 }}>
         <h3 style={{ fontSize: '13px', fontWeight: '800', margin: 0, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
           Recent Soaking Logs
         </h3>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <Plus size={14} /> New Soaking Entry
-        </button>
       </div>
 
       {/* Table Logs */}

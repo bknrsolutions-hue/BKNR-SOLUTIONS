@@ -41,10 +41,33 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
   // Grand total
   const grandTotalQty = filteredRows.reduce((s, r) => s + Number(r.available_qty || 0), 0);
 
+  const getHoldingBadgeStyle = (days) => {
+    const d = Number(days || 0);
+    if (d >= 4) {
+      return {
+        background: 'rgba(239, 68, 68, 0.15)',
+        color: '#ef4444',
+        border: '1px solid rgba(239, 68, 68, 0.35)'
+      };
+    }
+    if (d === 3) {
+      return {
+        background: 'rgba(234, 179, 8, 0.18)',
+        color: '#eab308',
+        border: '1px solid rgba(234, 179, 8, 0.4)'
+      };
+    }
+    return {
+      background: 'rgba(16, 185, 129, 0.12)',
+      color: '#10b981',
+      border: '1px solid rgba(16, 185, 129, 0.3)'
+    };
+  };
+
   // Grouping logic for rendering
   const renderGroupedRows = () => {
     if (filteredRows.length === 0) {
-      return <EmptyRow cols={9} />;
+      return <EmptyRow cols={11} />;
     }
 
     const groups = {}; // location -> batch -> rows
@@ -63,7 +86,7 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
     sortedLocs.forEach(loc => {
       trs.push(
         <tr key={`loc-${loc}`} className="row-location" style={{ background: 'rgba(71,85,105,0.08)', fontWeight: 800 }}>
-          <td colSpan={9} style={{ textAlign: 'left', fontWeight: 800, paddingLeft: '12px', textTransform: 'uppercase' }}>
+          <td colSpan={11} style={{ textAlign: 'left', fontWeight: 800, paddingLeft: '12px', textTransform: 'uppercase' }}>
             📍 {loc}
           </td>
         </tr>
@@ -73,6 +96,8 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
       sortedBatches.forEach(batch => {
         const batchRows = groups[loc][batch];
         let subtotal = 0;
+        const batchHoldingDays = batchRows[0]?.holding_days ?? 0;
+        const batchGateEntryDate = batchRows[0]?.gate_entry_date || '-';
 
         batchRows.forEach((row, idx) => {
           subtotal += Number(row.available_qty || 0);
@@ -82,6 +107,18 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
               <td className="text-left">{loc}</td>
               <td className="text-left">{row.production_for}</td>
               <td className="text-left" style={{ color: 'var(--accent)', fontWeight: 700 }}>{batch}</td>
+              <td className="text-center" style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>{row.gate_entry_date || '-'}</td>
+              <td className="text-center">
+                <span className="badge" style={{
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  fontSize: '9px',
+                  fontWeight: 800,
+                  ...getHoldingBadgeStyle(row.holding_days)
+                }}>
+                  {row.holding_days ?? 0} Days
+                </span>
+              </td>
               <td className="text-center">
                 <span className="badge" style={{
                   padding: '2px 5px',
@@ -102,8 +139,8 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
 
         trs.push(
           <tr key={`sub-${loc}-${batch}`} className="row-batch-total" style={{ background: 'rgba(148,163,184,0.04)', fontWeight: 700 }}>
-            <td colSpan={8} className="subtotal-label" style={{ textAlign: 'right', paddingRight: '12px', color: 'var(--text-secondary)' }}>
-              Batch [{batch}] Total:
+            <td colSpan={10} className="subtotal-label" style={{ textAlign: 'right', paddingRight: '12px', color: 'var(--text-secondary)' }}>
+              Batch [{batch}] (Entry: {batchGateEntryDate} | {batchHoldingDays} Days Holding) Total:
             </td>
             <td className="qty-bold text-right" style={{ fontWeight: 800, color: 'var(--text-main)' }}>
               {fmt.number(subtotal)}
@@ -168,41 +205,53 @@ export default function FloorBalanceReport({ activeRoute, params = {}, hideSnaps
         </div>
       </div>
 
-      {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
-      {!loading && !error && (
-        <>
-          <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            <table className="bknr-table" style={{ width: '100%' }}>
-              <thead>
-                <tr>
-                  <th style={{ width: 45 }}>#</th>
-                  <th style={{ width: 130 }}>Location</th>
-                  <th style={{ width: 150 }}>Production For</th>
-                  <th style={{ width: 120 }}>Batch</th>
-                  <th style={{ width: 100 }}>Src</th>
-                  <th style={{ width: 100 }}>Spec</th>
-                  <th>Variety Description</th>
-                  <th style={{ width: 100 }}>Count</th>
-                  <th style={{ width: 120 }} className="text-right">Avail (KG)</th>
-                </tr>
-              </thead>
-              <tbody>
-                {renderGroupedRows()}
-              </tbody>
+      {!error && (
+        <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
+          <table className="bknr-table" style={{ width: '100%' }}>
+            <thead>
+              <tr>
+                <th style={{ width: 40 }}>#</th>
+                <th style={{ width: 110 }}>Location</th>
+                <th style={{ width: 130 }}>Production For</th>
+                <th style={{ width: 110 }}>Batch</th>
+                <th style={{ width: 105 }}>Gate Entry Date</th>
+                <th style={{ width: 100 }}>Holding Days</th>
+                <th style={{ width: 80 }}>Src</th>
+                <th style={{ width: 90 }}>Spec</th>
+                <th>Variety Description</th>
+                <th style={{ width: 85 }}>Count</th>
+                <th style={{ width: 110 }} className="text-right">Avail (KG)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 5 }, (_, i) => (
+                  <tr key={`skel-${i}`}>
+                    <td colSpan={11} style={{ padding: '12px', background: 'rgba(148, 163, 184, 0.05)' }}>
+                      <span className="processing-skeleton-block" style={{ display: 'block', height: '14px', borderRadius: '4px' }} />
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                renderGroupedRows()
+              )}
+            </tbody>
+            {!loading && (
               <tfoot>
                 <tr style={{ fontWeight: 800 }}>
-                  <td colSpan={8} style={{ textAlign: 'right', paddingRight: '12px' }}>GRAND NET BALANCE:</td>
+                  <td colSpan={10} style={{ textAlign: 'right', paddingRight: '12px' }}>GRAND NET BALANCE:</td>
                   <td className="text-right" style={{ color: 'var(--accent)', fontWeight: 800 }}>
                     {fmt.number(grandTotalQty)} KG
                   </td>
                 </tr>
               </tfoot>
-            </table>
-          </div>
-        </>
+            )}
+          </table>
+        </div>
       )}
+
     </div>
   );
 }

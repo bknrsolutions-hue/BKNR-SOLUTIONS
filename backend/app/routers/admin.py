@@ -15,7 +15,7 @@ from app.database import get_db
 from app.database.models.users import User, Company, OTPTable
 from app.security.password_handler import hash_password
 from app.routers.auth import get_ist_time, professional_email_html, send_email, send_security_email
-from app.utils.access_control import has_permission, normalize_permission
+from app.utils.access_control import has_permission, is_super_admin, normalize_permission
 
 # ==========================================================
 # CONFIG & INITIALIZATION PARAMETERS
@@ -25,7 +25,6 @@ templates = Jinja2Templates(directory="app/templates")
 
 SESSION_EXPIRY_MIN = 30  # ⏱️ 30 min session timeout trace limit
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
-SUPER_ADMIN_EMAIL = "bknr.solutions@gmail.com"
 USER_OTP_EXPIRY_MIN = 10
 DEFAULT_USER_PASSWORD = "12345678"
 
@@ -128,6 +127,7 @@ SCREEN_POPUP_FORMS = [
     {"group": "Masters", "label": "Peeling At", "route": "/criteria/peeling_at"},
     {"group": "Masters", "label": "Peeling Rates", "route": "/criteria/peeling_rates"},
     {"group": "Masters", "label": "KG Basis Worker Rates", "route": "/criteria/api/kg_basis_labour_rates"},
+    {"group": "Masters", "label": "Day Basis Worker Salary Rates", "route": "/criteria/api/daily_basis_worker_rates"},
     {"group": "Masters", "label": "Production At", "route": "/criteria/production_at"},
     {"group": "Masters", "label": "Production For", "route": "/criteria/production_for"},
     {"group": "Masters", "label": "Production Types", "route": "/criteria/production_types"},
