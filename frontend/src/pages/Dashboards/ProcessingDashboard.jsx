@@ -33,6 +33,23 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   const [modalLoading, setModalLoading] = useState(false);
   const [statsReloadTrigger, setStatsReloadTrigger] = useState(0);
 
+  // Present Workers List Modal State
+  const [workerModal, setWorkerModal] = useState({ open: false, title: '', category: '' });
+
+  const openWorkerModal = (category, title) => {
+    setWorkerModal({ open: true, title, category });
+  };
+
+  const getFilteredWorkers = () => {
+    const list = data?.present_workers_list || [];
+    const cat = workerModal.category;
+    if (!cat || cat === 'ALL') return list;
+    if (cat === 'ATT_INSIDE') return list.filter(w => w.status === 'OPEN');
+    if (cat === 'ATT_AWAY') return list.filter(w => w.status === 'AWAY');
+    if (cat === 'ATT_DOUBLE_OT') return list.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
+    return list.filter(w => w.category === cat);
+  };
+
   // Dashboard Data State
   const [data, setData] = useState(() => {
     try {
@@ -226,6 +243,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
     else if (id === 'soaking') title = 'Soaking Monitoring Room';
     else if (id === 'production') title = 'Final Production Suite';
     else if (id === 'finance_production_cost_allocation') title = 'Production Cost Allocation';
+    else if (id === 'attendance_daily_attendance' || id === 'day_basis_workers') title = 'Daily Attendance Workspace';
+    else if (id === 'attendance_kg_basis_labour' || id === 'kg_basis_workers') title = 'KG Basis Company Workers';
+    else if (id === 'attendance_visitors_day_workers' || id === 'temp_workers') title = 'Visitors & Day Workers';
+    else if (id === 'attendance_labour_management' || id === 'contract_workers') title = 'Contract Workers Management';
     else if (id.startsWith('report_')) {
       if (id === 'report_gate_entry_report') title = 'Gate Entry Report';
       else if (id === 'report_rmp_report') title = 'RM Purchase Report';
@@ -252,6 +273,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       '/processing/soaking': 'soaking',
       '/processing/production': 'production',
       '/finance_accounts/production_cost_allocation/entry': 'finance_production_cost_allocation',
+      '/attendance/daily': 'attendance_daily_attendance',
+      '/attendance/visitors-day-workers': 'attendance_visitors_day_workers',
+      '/attendance/kg-basis-labour': 'attendance_kg_basis_labour',
+      '/attendance/labour-management': 'attendance_labour_management',
       '/reports/gate_entry': 'report_gate_entry_report',
       '/reports/raw_material_purchasing': 'report_rmp_report',
       '/reports/de_heading': 'report_de_heading_report',
@@ -286,6 +311,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       '/processing/peeling': 'peeling',
       '/processing/soaking': 'soaking',
       '/processing/production': 'production',
+      '/attendance/daily': 'attendance_daily_attendance',
+      '/attendance/visitors-day-workers': 'attendance_visitors_day_workers',
+      '/attendance/kg-basis-labour': 'attendance_kg_basis_labour',
+      '/attendance/labour-management': 'attendance_labour_management',
       '/reports/gate_entry': 'report_gate_entry_report',
       '/reports/raw_material_purchasing': 'report_rmp_report',
       '/reports/de_heading': 'report_de_heading_report',
@@ -423,10 +452,11 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           {/* Header Row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <i className="fa-solid fa-industry" style={{ color: '#3b82f6' }}></i>
                 Processing Dashboard
-              </h2>
+              </h1>
+
             </div>
             <div style={{ display: 'flex', gap: '6px' }}>
               <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
@@ -492,7 +522,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           <div className="kpi-grid">
             <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Gate Entry" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('gate_entry', '/processing/gate_entry'); }} onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
               <div className="kpi-header">
-                <h4>Gate Entries</h4>
+                <h3>Gate Entries</h3>
                 <div className="kpi-icon"><i className="fa-solid fa-door-open"></i></div>
               </div>
               <div>
@@ -500,9 +530,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
               </div>
             </div>
 
+
           <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open RM Purchasing" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing'); }} onClick={() => handleKpiClick('raw_material_purchasing', '/processing/raw_material_purchasing')}>
             <div className="kpi-header">
-              <h4>Raw Material</h4>
+              <h3>Raw Material</h3>
               <div className="kpi-icon"><i className="fa-solid fa-truck-ramp-box"></i></div>
             </div>
             <div>
@@ -514,7 +545,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open De-Heading" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('de_heading', '/processing/de_heading'); }} onClick={() => handleKpiClick('de_heading', '/processing/de_heading')}>
             <div className="kpi-header">
-              <h4>De-heading</h4>
+              <h3>De-heading</h3>
               <div className="kpi-icon"><i className="fa-solid fa-scissors"></i></div>
             </div>
             <div>
@@ -526,7 +557,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Grading" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('grading', '/processing/grading'); }} onClick={() => handleKpiClick('grading', '/processing/grading')}>
             <div className="kpi-header">
-              <h4>Grading</h4>
+              <h3>Grading</h3>
               <div className="kpi-icon"><i className="fa-solid fa-filter"></i></div>
             </div>
             <div>
@@ -538,7 +569,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-green" role="button" tabIndex="0" title="Open Peeling" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('peeling', '/processing/peeling'); }} onClick={() => handleKpiClick('peeling', '/processing/peeling')}>
             <div className="kpi-header">
-              <h4>Peeling</h4>
+              <h3>Peeling</h3>
               <div className="kpi-icon"><i className="fa-solid fa-hand-dots"></i></div>
             </div>
             <div>
@@ -550,7 +581,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Soaking" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('soaking', '/processing/soaking'); }} onClick={() => handleKpiClick('soaking', '/processing/soaking')}>
             <div className="kpi-header">
-              <h4>Soaking</h4>
+              <h3>Soaking</h3>
               <div className="kpi-icon"><i className="fa-solid fa-droplet"></i></div>
             </div>
             <div>
@@ -562,7 +593,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-green" role="button" tabIndex="0" title="Open Production" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('production', '/processing/production'); }} onClick={() => handleKpiClick('production', '/processing/production')}>
             <div className="kpi-header">
-              <h4>Production</h4>
+              <h3>Production</h3>
               <div className="kpi-icon"><i className="fa-solid fa-industry"></i></div>
             </div>
             <div>
@@ -574,7 +605,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
           <div className="kpi-card kpi-gray" role="button" tabIndex="0" title="Open Floor Balance Report" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report'); }} onClick={() => handleKpiClick('report_floor_balance_report', '/reports/floor_balance_report')}>
             <div className="kpi-header">
-              <h4>Floor Balance</h4>
+              <h3>Floor Balance</h3>
               <div className="kpi-icon"><i className="fa-solid fa-snowflake"></i></div>
             </div>
             <div>
@@ -595,7 +626,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
         </div>
         <div style={attendanceViewportStyle}>
           <div style={attendanceStatsContainerStyle}>
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-gray">
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-gray"
+              role="button"
+              tabIndex="0"
+              title="View Total Staff Present List"
+              onClick={() => openWorkerModal('ALL', 'Total Registered & Active Workforce List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('ALL', 'Total Registered & Active Workforce List'); }}
+            >
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Total Staff</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.total ?? 0}</div>
@@ -605,7 +644,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-green">
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-green"
+              role="button"
+              tabIndex="0"
+              title="View On Duty Workers List"
+              onClick={() => openWorkerModal('ATT_INSIDE', 'On Duty Workers List (Inside Floor)')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('ATT_INSIDE', 'On Duty Workers List (Inside Floor)'); }}
+            >
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>On Duty</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.inside ?? 0}</div>
@@ -615,7 +662,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-orange">
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-orange"
+              role="button"
+              tabIndex="0"
+              title="View On Break Workers List"
+              onClick={() => openWorkerModal('ATT_AWAY', 'On Break Workers List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('ATT_AWAY', 'On Break Workers List'); }}
+            >
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>On Break</div>
                 <div style={kpiValueStyle}>{data?.att_stats?.away ?? 0}</div>
@@ -625,7 +680,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
               </div>
             </div>
 
-            <div style={attendanceCardStyle} className="card erp-inline-kpi-card kpi-red">
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-red"
+              role="button"
+              tabIndex="0"
+              title="View Double Duties & OT List"
+              onClick={() => openWorkerModal('ATT_DOUBLE_OT', 'Double Duties & OT Workers List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('ATT_DOUBLE_OT', 'Double Duties & OT Workers List'); }}
+            >
               <div style={kpiMetaStyle}>
                 <div style={kpiLabelStyle}>Double Duties & OT</div>
                 <div style={kpiValueStyle}>{data?.double_ot_val ?? 0}</div>
@@ -652,6 +715,91 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Workforce Category Breakdown (Standard Interactive KPI Card Design) */}
+        <div style={{ ...attendanceViewportStyle, marginTop: '14px', marginBottom: '20px' }}>
+          <div style={attendanceStatsContainerStyle}>
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-green"
+              role="button"
+              tabIndex="0"
+              title="View Day Basis Workers Present List"
+              onClick={() => openWorkerModal('DAY_BASIS', 'Day Basis Workers Present List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('DAY_BASIS', 'Day Basis Workers Present List'); }}
+            >
+              <div style={kpiMetaStyle}>
+                <div style={kpiLabelStyle}>Day Basis Workers</div>
+                <div style={kpiValueStyle}>
+                  {data?.workforce_present?.DAY_BASIS ?? 0} <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>/ {data?.workforce_registered?.DAY_BASIS ?? 0}</span>
+                </div>
+              </div>
+              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>
+                <i className="fa-solid fa-user-gear"></i>
+              </div>
+            </div>
+
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-orange"
+              role="button"
+              tabIndex="0"
+              title="View KG Basis Workers Present List"
+              onClick={() => openWorkerModal('KG_BASIS', 'KG Basis Workers Present List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('KG_BASIS', 'KG Basis Workers Present List'); }}
+            >
+              <div style={kpiMetaStyle}>
+                <div style={kpiLabelStyle}>KG Basis Workers</div>
+                <div style={kpiValueStyle}>
+                  {data?.workforce_present?.KG_BASIS ?? 0} <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>/ {data?.workforce_registered?.KG_BASIS ?? 0}</span>
+                </div>
+              </div>
+              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>
+                <i className="fa-solid fa-weight-scale"></i>
+              </div>
+            </div>
+
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-purple"
+              role="button"
+              tabIndex="0"
+              title="View Daily Temp Workers Present List"
+              onClick={() => openWorkerModal('TEMP_WORKERS', 'Daily Temp Workers Present List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('TEMP_WORKERS', 'Daily Temp Workers Present List'); }}
+            >
+              <div style={kpiMetaStyle}>
+                <div style={kpiLabelStyle}>Daily Temp Workers</div>
+                <div style={kpiValueStyle}>
+                  {data?.workforce_present?.TEMP_WORKERS ?? 0} <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>/ {data?.workforce_registered?.TEMP_WORKERS ?? 0}</span>
+                </div>
+              </div>
+              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>
+                <i className="fa-solid fa-user-clock"></i>
+              </div>
+            </div>
+
+            <div
+              style={{ ...attendanceCardStyle, cursor: 'pointer' }}
+              className="card erp-inline-kpi-card kpi-blue"
+              role="button"
+              tabIndex="0"
+              title="View Contractor Workers Present List"
+              onClick={() => openWorkerModal('CONTRACT', 'Contractor Workers Present List')}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal('CONTRACT', 'Contractor Workers Present List'); }}
+            >
+              <div style={kpiMetaStyle}>
+                <div style={kpiLabelStyle}>Contractor Workers</div>
+                <div style={kpiValueStyle}>
+                  {data?.workforce_present?.CONTRACT ?? 0} <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: '700' }}>/ {data?.workforce_registered?.CONTRACT ?? 0}</span>
+                </div>
+              </div>
+              <div style={{ ...kpiIconWrapperStyle, background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb' }}>
+                <i className="fa-solid fa-people-group"></i>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -754,6 +902,48 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           </div>
         </div>
 
+        {/* Peeling Labour & Contractor Summary */}
+        <div style={sectionHeaderStyle}>
+          <span>Peeling Labour & Contractor Performance</span>
+          <div style={sectionHeaderLineStyle}></div>
+        </div>
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: '20px' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table className="bknr-table" style={{ margin: 0, minWidth: '600px' }}>
+              <thead>
+                <tr>
+                  <th className="text-left" style={tableHeaderStyle}>Contractor / Labour Group</th>
+                  <th className="text-right" style={tableHeaderStyle}>Batches Logged</th>
+                  <th className="text-right" style={tableHeaderStyle}>Total Peeled (KG)</th>
+                  <th className="text-right" style={tableHeaderStyle}>Labour Cost (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data?.peeling_labour_summary && data.peeling_labour_summary.length > 0 ? (
+                  data.peeling_labour_summary.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="text-left" style={{ ...tableTdStyle, fontWeight: '800' }}>{item.contractor}</td>
+                      <td className="text-right" style={tableTdStyle}>{item.batches}</td>
+                      <td className="text-right" style={{ ...tableTdStyle, color: '#10b981', fontWeight: '800' }}>
+                        {item.total_kg.toFixed(2)} kg
+                      </td>
+                      <td className="text-right" style={{ ...tableTdStyle, color: '#2563eb', fontWeight: '800' }}>
+                        ₹{item.total_cost.toFixed(2)}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: 'center', padding: '16px', color: 'var(--text-tertiary)' }}>
+                      No peeling labour records logged for the selected date.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         {/* Hourly Analytics Charts */}
         <div style={sectionHeaderStyle}>
           <span>Hourly Production Output</span>
@@ -788,8 +978,78 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
             hideSnapshotStatus
           />
         </div>
+      </div>
+    </main>
+
+      {/* Present Workers List Modal */}
+      {workerModal.open && (
+        <div className="modal-overlay" onClick={() => setWorkerModal({ open: false, title: '', category: '' })}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '900px', width: '92%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', borderRadius: '12px', padding: '20px', background: 'var(--card-bg, #fff)' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid var(--border-color, #e2e8f0)', paddingBottom: '12px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-primary)' }}>
+                <i className="fa-solid fa-users-viewfinder" style={{ color: '#2563eb' }}></i>
+                {workerModal.title}
+                <span style={{ fontSize: '11px', fontWeight: '700', background: 'rgba(37, 99, 235, 0.1)', color: '#2563eb', padding: '3px 8px', borderRadius: '12px', marginLeft: '6px' }}>
+                  {getFilteredWorkers().length} Workers
+                </span>
+              </h3>
+              <button type="button" className="close-btn" onClick={() => setWorkerModal({ open: false, title: '', category: '' })} style={{ background: 'transparent', border: 0, fontSize: '18px', cursor: 'pointer', color: 'var(--text-tertiary)' }}>
+                <i className="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+
+            {/* Filtered Workers List Table */}
+            <div style={{ overflowY: 'auto', flex: 1, border: '1px solid var(--border-color, #e2e8f0)', borderRadius: '8px' }}>
+              <table className="bknr-table" style={{ width: '100%', margin: 0, fontSize: '12px' }}>
+                <thead>
+                  <tr>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Emp ID</th>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Name</th>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Category</th>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Dept</th>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Designation</th>
+                    <th className="text-left" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Contractor</th>
+                    <th className="text-center" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Status</th>
+                    <th className="text-center" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>In Time</th>
+                    <th className="text-center" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Out Time</th>
+                    <th className="text-right" style={{ padding: '10px 12px', background: 'var(--table-header-bg, #f8fafc)' }}>Hours</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {getFilteredWorkers().length > 0 ? (
+                    getFilteredWorkers().map((w, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-color, #f1f5f9)' }}>
+                        <td className="text-left" style={{ padding: '8px 12px', fontWeight: '800' }}>{w.employee_id}</td>
+                        <td className="text-left" style={{ padding: '8px 12px', fontWeight: '700' }}>{w.name}</td>
+                        <td className="text-left" style={{ padding: '8px 12px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', background: 'rgba(59,130,246,0.1)', color: '#2563eb' }}>{w.category}</span>
+                        </td>
+                        <td className="text-left" style={{ padding: '8px 12px' }}>{w.department}</td>
+                        <td className="text-left" style={{ padding: '8px 12px' }}>{w.designation}</td>
+                        <td className="text-left" style={{ padding: '8px 12px' }}>{w.contractor}</td>
+                        <td className="text-center" style={{ padding: '8px 12px' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', padding: '2px 6px', borderRadius: '4px', background: w.status === 'OPEN' ? 'rgba(16,185,129,0.15)' : w.status === 'AWAY' ? 'rgba(245,158,11,0.15)' : 'rgba(100,116,139,0.15)', color: w.status === 'OPEN' ? '#10b981' : w.status === 'AWAY' ? '#f59e0b' : '#64748b' }}>
+                            {w.status === 'OPEN' ? 'ON DUTY' : w.status === 'AWAY' ? 'ON BREAK' : w.is_present ? 'PRESENT' : 'ABSENT'}
+                          </span>
+                        </td>
+                        <td className="text-center" style={{ padding: '8px 12px' }}>{w.first_in}</td>
+                        <td className="text-center" style={{ padding: '8px 12px' }}>{w.last_out}</td>
+                        <td className="text-right" style={{ padding: '8px 12px', fontWeight: '700' }}>{w.hours ? `${w.hours.toFixed(1)}h` : '-'}</td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="10" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-tertiary)' }}>
+                        No worker records compiled for this category on the selected date.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-      </main>
+      )}
 
       {modalUrl && (
         <div className="modal-overlay" onClick={closeModal}>

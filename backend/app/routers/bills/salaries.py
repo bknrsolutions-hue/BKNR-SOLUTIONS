@@ -378,7 +378,7 @@ def _sync_monthly_sheet_salary(db: Session, company_id: str, month: str, emp: Em
     return salary
 
 
-def salary_rows(db: Session, company_id: str, month: str, request: Request):
+def sync_monthly_sheet_salaries(db: Session, company_id: str, month: str) -> int:
     ensure_salary_payment_log_schema(db)
     report_rows = monthly_salary_sheet_rows(db, company_id, month)
 
@@ -387,14 +387,19 @@ def salary_rows(db: Session, company_id: str, month: str, request: Request):
         for emp in db.query(EmployeeRegistration).filter(EmployeeRegistration.company_id == company_id).all()
     }
 
-    synced_ids = []
+    synced_count = 0
     for sheet_row in report_rows:
         emp = employees.get(sheet_row.get("id"))
         if not emp or is_contract_type(emp.employee_type):
             continue
-        salary = _sync_monthly_sheet_salary(db, company_id, month, emp, sheet_row)
-        synced_ids.append(salary.id)
+        _sync_monthly_sheet_salary(db, company_id, month, emp, sheet_row)
+        synced_count += 1
     db.commit()
+    return synced_count
+
+
+def salary_rows(db: Session, company_id: str, month: str):
+    ensure_salary_payment_log_schema(db)
 
     salary_voucher = aliased(VoucherHeader)
     payment_voucher = aliased(VoucherHeader)
@@ -424,7 +429,6 @@ def salary_rows(db: Session, company_id: str, month: str, request: Request):
             SalaryProcessing.company_id == company_id,
             SalaryProcessing.month_year == month,
             SalaryProcessing.is_cancelled != True,
-            SalaryProcessing.id.in_(synced_ids or [0]),
         )
         .order_by(SalaryProcessing.employee_name)
         .all()
@@ -466,12 +470,6 @@ def salary_rows(db: Session, company_id: str, month: str, request: Request):
             previous_paid = sum(float(item["amount"] or 0.0) for item in previous_history)
             previous_outstanding = max(round(float(previous_salary.net_payable or 0.0) - previous_paid, 2), 0.0)
         payment_status = "PAID" if outstanding <= 0.01 and net_payable > 0 else ("PARTIAL" if paid_amount > 0 else "UNPAID")
-        if paid_amount != round(float(salary.paid_amount or 0.0), 2) or salary.payment_status != payment_status:
-            salary.paid_amount = paid_amount
-            salary.payment_status = payment_status
-            salary.payment_mode = latest_payment.get("mode") or salary.payment_mode
-            salary.payment_date = date.fromisoformat(latest_payment["date"]) if latest_payment.get("date") else salary.payment_date
-            salary.utr_reference = latest_payment.get("utr") or salary.utr_reference
         if posted:
             accounts_label = salary_voucher_no
         elif status == "DRAFT":
@@ -506,7 +504,6 @@ def salary_rows(db: Session, company_id: str, month: str, request: Request):
                 "accounts_label": accounts_label,
             }
         )
-    db.commit()
     return result
 
 
@@ -537,11 +534,24 @@ def salaries_data(request: Request, month: str = Query(...), db: Session = Depen
     if not company_id:
         return JSONResponse({"success": False, "message": "Session expired"}, status_code=401)
     try:
-        rows = salary_rows(db, company_id, month, request)
+        rows = salary_rows(db, company_id, month)
         return {"success": True, "rows": rows}
     except Exception as exc:
         db.rollback()
         return JSONResponse({"success": False, "message": f"Unable to load salaries: {str(exc)}"}, status_code=400)
+
+
+@router.post("/sync-monthly-sheet")
+def sync_monthly_sheet(request: Request, month: str = Query(...), db: Session = Depends(get_db)):
+    company_id = request.session.get("company_code")
+    if not company_id:
+        return JSONResponse({"success": False, "message": "Session expired"}, status_code=401)
+    try:
+        synced_count = sync_monthly_sheet_salaries(db, company_id, month)
+        return {"success": True, "message": f"Salary sheet synced for {synced_count} employees", "synced_count": synced_count}
+    except Exception as exc:
+        db.rollback()
+        return JSONResponse({"success": False, "message": f"Salary sync failed: {str(exc)}"}, status_code=400)
 
 
 @router.post("/payment/{salary_id}")

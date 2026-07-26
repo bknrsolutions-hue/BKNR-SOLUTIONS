@@ -718,9 +718,9 @@ export default function Peeling() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
-                    <option value="">Select Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -1558,9 +1558,9 @@ export default function Peeling() {
                     }} 
                     required
                   >
-                    <option value="">Select Company</option>
                     {prodForList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -1576,9 +1576,9 @@ export default function Peeling() {
                     }} 
                     required
                   >
-                    <option value="">Select Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">

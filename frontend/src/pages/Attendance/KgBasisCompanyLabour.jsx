@@ -125,14 +125,32 @@ export default function KgBasisCompanyLabour() {
     }
   };
 
+  const matchedWorkerPreview = useMemo(() => {
+    const val = punchId.trim().toUpperCase();
+    if (!val) return null;
+    const firstVal = val.split(/[\s,]+/)[0];
+    if (!firstVal) return null;
+
+    const isNum = /^\d+$/.test(firstVal);
+    const suffix = isNum ? String(Number(firstVal)).padStart(5, '0') : '';
+
+    return (
+      (suffix && workers.find(row => (row.worker_id || '').toUpperCase().endsWith(suffix))) ||
+      workers.find(row => (row.worker_id || '').toUpperCase() === firstVal) ||
+      workers.find(row => (row.worker_id || '').toUpperCase().endsWith(firstVal)) ||
+      workers.find(row => (row.worker_name || '').toUpperCase().includes(firstVal))
+    );
+  }, [punchId, workers]);
+
   const addPunchIds = () => {
     const incoming = punchId.split(/[\s,]+/).map(value => value.trim().toUpperCase()).filter(Boolean);
     if (!incoming.length) return;
     const resolved = incoming.map(value => {
-      const suffix = /^\d+$/.test(value) ? String(Number(value)).padStart(5, '0') : '';
-      const worker = suffix
-        ? workers.find(row => /^[A-Z]K\d{5}$/.test(row.worker_id || '') && row.worker_id.endsWith(suffix))
-        : workers.find(row => row.worker_id === value);
+      const isNum = /^\d+$/.test(value);
+      const suffix = isNum ? String(Number(value)).padStart(5, '0') : '';
+      const worker = (suffix && workers.find(row => (row.worker_id || '').toUpperCase().endsWith(suffix))) ||
+        workers.find(row => (row.worker_id || '').toUpperCase() === value) ||
+        workers.find(row => (row.worker_id || '').toUpperCase().endsWith(value));
       return worker ? { fullId: worker.worker_id, name: worker.worker_name } : null;
     }).filter(Boolean);
     if (!resolved.length) return notify('Worker ID not found', 'error');
@@ -144,6 +162,7 @@ export default function KgBasisCompanyLabour() {
     if (resolved.length < incoming.length) notify(`${incoming.length - resolved.length} Worker ID(s) not found`, 'error');
     setPunchId('');
   };
+
 
   const punchWorkers = async () => {
     const workerIds = punchQueue.map(item => item.fullId);
@@ -208,7 +227,8 @@ export default function KgBasisCompanyLabour() {
               </select>
             </Field>
             <Field label="Department"><input list="kg-worker-departments" placeholder="Select or enter department" value={member.department} onChange={event => updateMember(index, 'department', event.target.value)} /></Field>
-            <Field label="Plant / Location"><select value={member.production_at} onChange={event => updateMember(index, 'production_at', event.target.value)}><option value="">Select Location</option>{locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+            <Field label="Plant / Location"><select value={member.production_at} onChange={event => updateMember(index, 'production_at', event.target.value)}>{locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+
             <Field label="Joining Date *"><input type="date" required value={member.joining_date} onChange={event => updateMember(index, 'joining_date', event.target.value)} /></Field>
             {member.worker_type === 'Daily Basis Company Worker' && (
               <Field label="Worker Category">
@@ -339,6 +359,48 @@ export default function KgBasisCompanyLabour() {
       <div className="labour-section-title"><div><h2>KG Basis Worker Punching</h2><p>Select IN or OUT, scan multiple Worker IDs, then punch all at once.</p></div><div className="terminal-status"><span>{summary.inside} Inside</span><span>{attendance.filter(row => row.status === 'CLOSED').length} Completed</span></div></div>
       <div className="punch-mode-row"><button type="button" className={`punch-mode in ${punchMode === 'IN' ? 'active' : ''}`} onClick={() => setPunchMode('IN')}><i className="fa-solid fa-right-to-bracket" /> IN</button><button type="button" className={`punch-mode out ${punchMode === 'OUT' ? 'active' : ''}`} onClick={() => setPunchMode('OUT')}><i className="fa-solid fa-right-from-bracket" /> OUT</button></div>
       <div className="contract-punch-row bulk"><label className="contract-id-input"><span>Worker Number or Full ID</span><input autoFocus value={punchId} placeholder="1, 999 or BK00001" onChange={event => setPunchId(event.target.value.toUpperCase())} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); addPunchIds(); } }} /></label><button type="button" className="labour-btn secondary queue-add" onClick={addPunchIds}>Add ID</button><button type="button" className={`punch-btn ${punchMode.toLowerCase()}`} disabled={punching || !punchQueue.length} onClick={punchWorkers}>{punching ? 'Saving...' : `Punch ${punchQueue.length} ${punchMode}`}</button></div>
+
+      {matchedWorkerPreview && (
+        <div
+          onClick={addPunchIds}
+          style={{
+            margin: '8px 0 14px 0',
+            padding: '12px 16px',
+            background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(16,185,129,0.15))',
+            border: '1.5px solid rgba(59,130,246,0.4)',
+            borderRadius: '10px',
+            display: 'flex',
+            alignItems: 'center',
+            justify: 'space-between',
+            cursor: 'pointer',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '16px' }}>
+              👤
+            </div>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: '900', color: 'var(--att-heading, #f8fafc)' }}>
+                {matchedWorkerPreview.worker_name}
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--att-muted, #94a3b8)', fontWeight: '700', marginTop: '2px' }}>
+                Full Worker ID: <span style={{ color: '#10b981', fontWeight: '900', fontSize: '13px' }}>{matchedWorkerPreview.worker_id}</span>
+                {matchedWorkerPreview.department ? ` | Dept: ${matchedWorkerPreview.department}` : ''}
+                {matchedWorkerPreview.production_at ? ` | Location: ${matchedWorkerPreview.production_at}` : ''}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            className="labour-btn primary"
+            style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', background: '#10b981', color: '#fff', border: 'none', fontWeight: '800' }}
+          >
+            + Add Full ID ({matchedWorkerPreview.worker_id})
+          </button>
+        </div>
+      )}
+
       <div className="punch-queue">{punchQueue.length ? punchQueue.map(item => <button type="button" key={item.fullId} onClick={() => setPunchQueue(queue => queue.filter(value => value.fullId !== item.fullId))}><strong>{item.fullId}</strong> · {item.name} <span>×</span></button>) : <span>Example: enter 1 for 00001, or 999 for 00999. Added Worker ID and name appear here.</span>}</div>
       <div className="labour-table-scroll"><table className="labour-table punch-table"><thead><tr><th>Sl. No</th><th>Worker ID</th><th>Name</th><th>Location</th><th>IN</th><th>OUT</th><th>Status</th></tr></thead><tbody>{loading ? <tr><td colSpan="7" className="labour-empty">Loading punches...</td></tr> : attendance.length ? attendance.map((row, index) => <tr key={row.id}><td><strong>{attendance.length - index}</strong></td><td><strong>{row.worker_id}</strong></td><td>{row.worker_name}</td><td>{row.production_at || '-'}</td><td>{formatPunchTime(row.in_time)}</td><td>{formatPunchTime(row.out_time)}</td><td><span className={`punch-status ${row.status === 'INSIDE' ? 'inside' : 'closed'}`}>{row.status === 'INSIDE' ? 'INSIDE' : 'OUT'}</span></td></tr>) : <tr><td colSpan="7" className="labour-empty">No KG worker punches today</td></tr>}</tbody></table></div>
     </div>}
@@ -392,9 +454,9 @@ export default function KgBasisCompanyLabour() {
                 </Field>
                 <Field label="Plant / Location">
                   <select value={editingWorker.production_at || ''} onChange={e => setEditingWorker(w => ({ ...w, production_at: e.target.value }))}>
-                    <option value="">Select Location</option>
                     {locations.map(loc => <option key={loc}>{loc}</option>)}
                   </select>
+
                 </Field>
                 <Field label="Joining Date *">
                   <input type="date" required value={editingWorker.joining_date || ''} onChange={e => setEditingWorker(w => ({ ...w, joining_date: e.target.value }))} />

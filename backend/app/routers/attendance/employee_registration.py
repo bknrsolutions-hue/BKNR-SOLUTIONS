@@ -117,14 +117,7 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, format:
             "edit_data": serialize_employee(edit_row) if edit_row else None
         })
 
-    return templates.TemplateResponse(
-        request=request, name="attendance/employees.html", 
-        context={
-            "company": ctx["company_info"], "contractors": contractor_list, "sites": site_list,
-            "next_employee_id": next_employee_id, "employees": all_employees, "edit_data": edit_row,
-            "email": ctx["email"], "message": request.session.pop("message", None)
-        }
-    )
+    return RedirectResponse("/app/#/p/hr_er", status_code=303)
 
 # =========================================================
 # 2. SAVE & UPDATE LOGIC (POST) WITH STRICT VALIDATION

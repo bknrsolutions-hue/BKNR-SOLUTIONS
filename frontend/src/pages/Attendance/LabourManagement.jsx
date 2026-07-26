@@ -113,14 +113,32 @@ export default function LabourManagement() {
     }
   };
 
+  const matchedLabourPreview = useMemo(() => {
+    const val = punchId.trim().toUpperCase();
+    if (!val) return null;
+    const firstVal = val.split(/[\s,]+/)[0];
+    if (!firstVal) return null;
+
+    const isNum = /^\d+$/.test(firstVal);
+    const suffix = isNum ? String(Number(firstVal)).padStart(5, '0') : '';
+
+    return (
+      (suffix && contractRows.find(row => (row.labour_id || '').toUpperCase().endsWith(suffix))) ||
+      contractRows.find(row => (row.labour_id || '').toUpperCase() === firstVal) ||
+      contractRows.find(row => (row.labour_id || '').toUpperCase().endsWith(firstVal)) ||
+      contractRows.find(row => (row.labour_name || '').toUpperCase().includes(firstVal))
+    );
+  }, [punchId, contractRows]);
+
   const addPunchIds = () => {
     const incoming = punchId.split(/[\s,]+/).map(value => value.trim().toUpperCase()).filter(Boolean);
     if (!incoming.length) return;
     const resolved = incoming.map(value => {
-      const suffix = /^\d+$/.test(value) ? String(Number(value)).padStart(5, '0') : '';
-      const worker = suffix
-        ? contractRows.find(row => /^[A-Z]{2}\d{5}$/.test(row.labour_id || '') && row.labour_id.endsWith(suffix))
-        : contractRows.find(row => row.labour_id === value);
+      const isNum = /^\d+$/.test(value);
+      const suffix = isNum ? String(Number(value)).padStart(5, '0') : '';
+      const worker = (suffix && contractRows.find(row => (row.labour_id || '').toUpperCase().endsWith(suffix))) ||
+        contractRows.find(row => (row.labour_id || '').toUpperCase() === value) ||
+        contractRows.find(row => (row.labour_id || '').toUpperCase().endsWith(value));
       return worker ? { fullId: worker.labour_id, name: worker.labour_name } : null;
     }).filter(Boolean);
     if (!resolved.length) return notify('Worker ID not found', 'error');
@@ -132,6 +150,7 @@ export default function LabourManagement() {
     if (resolved.length < incoming.length) notify(`${incoming.length - resolved.length} Worker ID(s) not found`, 'error');
     setPunchId('');
   };
+
 
   const punchContractLabour = async () => {
     const labourIds = punchQueue.map(item => item.fullId);
@@ -257,7 +276,8 @@ export default function LabourManagement() {
                   <Field label="Worker Name *"><input required pattern="[A-Za-z .'-]+" title="Use letters only" placeholder="Enter full name" value={member.labour_name} onChange={e => updateMember(index, 'labour_name', cleanNameText(e.target.value))} /></Field>
                   <Field label="Contractor *"><select required value={member.contractor_name} onChange={e => updateMember(index, 'contractor_name', e.target.value)}><option value="">Select Contractor</option>{lookups.contractors.map(value => <option key={value}>{value}</option>)}</select></Field>
                   <Field label="Department *"><input required list="contract-worker-departments" placeholder="Select or enter department" value={member.department} onChange={e => updateMember(index, 'department', e.target.value)} /></Field>
-                  <Field label="Plant / Location *"><select required value={member.production_at} onChange={e => updateMember(index, 'production_at', e.target.value)}><option value="">Select Location</option>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+                  <Field label="Plant / Location *"><select required value={member.production_at} onChange={e => updateMember(index, 'production_at', e.target.value)}>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+
                   <Field label="Joining Date *"><input type="date" required value={member.joining_date} onChange={e => updateMember(index, 'joining_date', e.target.value)} /></Field>
                   <Field label="Mobile Number *"><input required inputMode="numeric" maxLength="10" placeholder="10 digit mobile" value={member.mobile} onChange={e => updateMember(index, 'mobile', e.target.value.replace(/\D/g, '').slice(0, 10))} /></Field>
                   <Field label="Aadhaar Number *"><input required inputMode="numeric" maxLength="12" placeholder="12 digit Aadhaar" value={member.aadhar_number} onChange={e => updateMember(index, 'aadhar_number', e.target.value.replace(/\D/g, '').slice(0, 12))} /></Field>
@@ -295,6 +315,48 @@ export default function LabourManagement() {
             <button type="button" className="labour-btn secondary queue-add" onClick={addPunchIds}>Add ID</button>
             <button type="button" className={`punch-btn ${punchMode.toLowerCase()}`} disabled={punching || !punchQueue.length} onClick={punchContractLabour}>{punching ? 'Saving...' : `Punch ${punchQueue.length} ${punchMode}`}</button>
           </div>
+
+          {matchedLabourPreview && (
+            <div
+              onClick={addPunchIds}
+              style={{
+                margin: '8px 0 14px 0',
+                padding: '12px 16px',
+                background: 'linear-gradient(135deg, rgba(37,99,235,0.15), rgba(16,185,129,0.15))',
+                border: '1.5px solid rgba(59,130,246,0.4)',
+                borderRadius: '10px',
+                display: 'flex',
+                alignItems: 'center',
+                justify: 'space-between',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: '900', fontSize: '16px' }}>
+                  👤
+                </div>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: '900', color: 'var(--att-heading, #f8fafc)' }}>
+                    {matchedLabourPreview.labour_name}
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--att-muted, #94a3b8)', fontWeight: '700', marginTop: '2px' }}>
+                    Full Worker ID: <span style={{ color: '#10b981', fontWeight: '900', fontSize: '13px' }}>{matchedLabourPreview.labour_id}</span>
+                    {matchedLabourPreview.department ? ` | Dept: ${matchedLabourPreview.department}` : ''}
+                    {matchedLabourPreview.contractor_name ? ` | Contractor: ${matchedLabourPreview.contractor_name}` : ''}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="labour-btn primary"
+                style={{ fontSize: '12px', padding: '6px 14px', borderRadius: '6px', cursor: 'pointer', background: '#10b981', color: '#fff', border: 'none', fontWeight: '800' }}
+              >
+                + Add Full ID ({matchedLabourPreview.labour_id})
+              </button>
+            </div>
+          )}
+
           <div className="punch-queue" aria-label="Queued worker IDs">
             {punchQueue.length ? punchQueue.map(item => <button type="button" key={item.fullId} onClick={() => setPunchQueue(queue => queue.filter(value => value.fullId !== item.fullId))}><strong>{item.fullId}</strong> · {item.name} <span>×</span></button>) : <span>Example: enter 1 for 00001, or 999 for 00999. Added Worker ID and name appear here.</span>}
           </div>
@@ -325,7 +387,8 @@ export default function LabourManagement() {
                   <Field label="Worker Name *"><input required pattern="[A-Za-z .'-]+" title="Use letters only" value={editingContract.labour_name || ''} onChange={e => setEditingContract(row => ({ ...row, labour_name: cleanNameText(e.target.value) }))} /></Field>
                   <Field label="Contractor *"><select required value={editingContract.contractor_name || ''} onChange={e => setEditingContract(row => ({ ...row, contractor_name: e.target.value }))}><option value="">Select Contractor</option>{lookups.contractors.map(value => <option key={value}>{value}</option>)}</select></Field>
                   <Field label="Department *"><input required list="contract-worker-departments" value={editingContract.department || 'ALL'} onChange={e => setEditingContract(row => ({ ...row, department: e.target.value }))} /></Field>
-                  <Field label="Plant / Location *"><select required value={editingContract.production_at || ''} onChange={e => setEditingContract(row => ({ ...row, production_at: e.target.value }))}><option value="">Select Location</option>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+                  <Field label="Plant / Location *"><select required value={editingContract.production_at || ''} onChange={e => setEditingContract(row => ({ ...row, production_at: e.target.value }))}>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+
                   <Field label="Joining Date *"><input type="date" required value={editingContract.joining_date || ''} onChange={e => setEditingContract(row => ({ ...row, joining_date: e.target.value }))} /></Field>
                   <Field label="Mobile Number *"><input required inputMode="numeric" maxLength="10" value={editingContract.mobile || ''} onChange={e => setEditingContract(row => ({ ...row, mobile: e.target.value.replace(/\D/g, '').slice(0, 10) }))} /></Field>
                   <Field label="Aadhaar Number *"><input required inputMode="numeric" maxLength="12" value={editingContract.aadhar_number || ''} onChange={e => setEditingContract(row => ({ ...row, aadhar_number: e.target.value.replace(/\D/g, '').slice(0, 12) }))} /></Field>

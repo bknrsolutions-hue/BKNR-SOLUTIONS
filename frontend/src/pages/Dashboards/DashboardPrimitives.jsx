@@ -37,7 +37,7 @@ export function MetricCard({ label, value, note, icon = 'fa-chart-line', color =
   return <div className={`enterprise-kpi ${onClick ? 'clickable' : ''}`} style={{ '--kpi-accent': color }} onClick={onClick} onKeyDown={event => { if (onClick && (event.key === 'Enter' || event.key === ' ')) onClick(); }} role={onClick ? 'button' : undefined} tabIndex={onClick ? 0 : undefined}><div className="enterprise-kpi-top"><span>{label}</span><span className="enterprise-kpi-icon"><i className={`fa-solid ${icon}`}></i></span></div><strong>{value}</strong>{note && <small>{note}</small>}</div>;
 }
 
-export function Panel({ title, meta, full = false, children }) { return <section className={`enterprise-panel ${full ? 'full' : ''}`}><div className="enterprise-panel-head"><h2>{title}</h2>{meta && <span>{meta}</span>}</div>{children}</section>; }
+export function Panel({ title, meta, full = false, children }) { return <section className={`enterprise-panel ${full ? 'full' : ''}`}>{(title || meta) && <div className="enterprise-panel-head"><h2>{title}</h2>{meta && <span>{meta}</span>}</div>}{children}</section>; }
 
 export function Bars({ labels = [], primary = [], secondary = [], showValues = false, valueLabels = [], valueSuffix = '' }) {
   const max = Math.max(1, ...primary.map(Number), ...secondary.map(Number));
@@ -57,4 +57,19 @@ export function ProgressList({ rows = [], labelKey, valueKey, format = number, c
   return <div className="enterprise-progress-list">{rows.map((row, index) => <div className="enterprise-progress-row" key={`${row[labelKey]}-${index}`}><span>{row[labelKey] || 'N/A'}</span><div className="enterprise-progress-track"><div className="enterprise-progress-fill" style={{ width: `${Number(row[valueKey] || 0) / max * 100}%`, '--progress-color': color }}></div></div><strong className="enterprise-progress-value">{format(row[valueKey])}</strong></div>)}</div>;
 }
 
-export function DashboardState({ loading, error, children }) { if (loading) return <div className="enterprise-state"><i className="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading dashboard…</div>; if (error) return <div className="enterprise-state error">{error}</div>; return children; }
+export function DashboardState({ loading, error, onRetry, children }) {
+  if (loading) return <div className="enterprise-state"><i className="fa-solid fa-spinner fa-spin"></i>&nbsp; Loading dashboard…</div>;
+  if (error) return (
+    <div className="enterprise-state error" style={{ padding: '24px', textAlign: 'center', background: 'rgba(239,68,68,0.08)', borderRadius: '12px', border: '1px solid rgba(239,68,68,0.3)', margin: '20px 0' }}>
+      <div style={{ fontSize: '14px', fontWeight: '700', color: '#ef4444', marginBottom: '12px' }}>
+        <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: '8px' }}></i> {error}
+      </div>
+      {onRetry && (
+        <button type="button" onClick={onRetry} style={{ padding: '8px 16px', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '6px', fontWeight: '700', fontSize: '12px', cursor: 'pointer' }}>
+          <i className="fa-solid fa-rotate-right" style={{ marginRight: '6px' }}></i> Retry Loading
+        </button>
+      )}
+    </div>
+  );
+  return children;
+}

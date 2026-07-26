@@ -237,16 +237,7 @@ def daily_attendance_page(
             ],
         })
 
-    return templates.TemplateResponse(
-        request=request,
-        name="attendance/daily_attendance.html",
-        context={
-            "email": email,
-            "company_id": company_code,
-            "shifts": plant_shifts,
-            "actual_location": actual_location  
-        }
-    )
+    return RedirectResponse("/app/#/p/hr_da", status_code=303)
 
 
 # ============================================================

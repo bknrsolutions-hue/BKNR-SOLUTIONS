@@ -1,10 +1,11 @@
 import json
 import re
+import logging
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.responses import RedirectResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct, cast, String, text
+from sqlalchemy import func, distinct, cast, String, text, or_, and_
 import datetime as dt
 from datetime import datetime, date
 
@@ -24,10 +25,12 @@ from app.utils.global_filters import get_global_filters
 from app.utils.timezone import ist_now
 from app.services.floor_balance import get_floor_balance
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
-from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
+from app.services.bill_accounting import ensure_bill_accounting_schema, post_contractor_source_charge
+from app.services.operational_vouchers import deactivate_operational_charge
 
 router = APIRouter(tags=["DE-HEADING"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 def validate_kg_worker_table_registration(db: Session, company_code: str, worker_type: str, no_of_workers: int, worker_ids: str, production_at: str = None):
     if worker_type.strip() == "Contractor":
@@ -326,12 +329,55 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
     return {"counts": sorted(counts)}
 
 @router.get("/get_rate/{contractor}")
-def get_contractor_rate(contractor: str, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
-    row = db.query(peeling_rates).filter(
-        peeling_rates.contractor_name == contractor, peeling_rates.variety_name == "HOSO", peeling_rates.company_id == company_code
-    ).order_by(peeling_rates.effective_from.desc()).first()
-    return {"rate": float(row.rate) if row else 0}
+def get_contractor_rate(contractor: str, count: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
+    company_code = request.session.get("company_code") if request else None
+    c_clean = contractor.strip()
+    query = db.query(peeling_rates).filter(
+        or_(
+            peeling_rates.company_id == company_code,
+            peeling_rates.company_id == None,
+            peeling_rates.company_id == ''
+        ),
+        or_(
+            peeling_rates.contractor_name == c_clean,
+            func.lower(func.trim(peeling_rates.contractor_name)) == c_clean.lower(),
+            and_(
+                c_clean.upper() in ["KG BASIS", "KG BASIS COMPANY WORKER", "DAILY BASIS"],
+                func.lower(peeling_rates.contractor_name).contains("kg")
+            )
+        ),
+        func.lower(func.trim(peeling_rates.variety_name)) == "hoso"
+    )
+    if count:
+        cnt_clean = count.strip()
+        cnt_row = query.filter(peeling_rates.hlso_count == cnt_clean).order_by(peeling_rates.effective_from.desc()).first()
+        if cnt_row:
+            return {"rate": float(cnt_row.rate) if cnt_row.rate else 0.0}
+
+    row = query.order_by(peeling_rates.effective_from.desc()).first()
+    return {"rate": float(row.rate) if row and row.rate else 0.0}
+
+
+def approved_deheading_rate(db: Session, company_id: str, contractor: str, count: str | None) -> float:
+    clean_contractor = (contractor or "").strip()
+    query = db.query(peeling_rates).filter(
+        or_(peeling_rates.company_id == company_id, peeling_rates.company_id == None, peeling_rates.company_id == ''),
+        or_(
+            peeling_rates.contractor_name == clean_contractor,
+            func.lower(func.trim(peeling_rates.contractor_name)) == clean_contractor.lower(),
+            and_(
+                clean_contractor.upper() in ["KG BASIS", "KG BASIS COMPANY WORKER", "DAILY BASIS"],
+                func.lower(peeling_rates.contractor_name).contains("kg"),
+            ),
+        ),
+        func.lower(func.trim(peeling_rates.variety_name)) == "hoso",
+    )
+    if count:
+        row = query.filter(peeling_rates.hlso_count == count.strip()).order_by(peeling_rates.effective_from.desc()).first()
+        if row:
+            return float(row.rate or 0.0)
+    row = query.order_by(peeling_rates.effective_from.desc()).first()
+    return float(row.rate or 0.0) if row else 0.0
 
 
 def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -> float:
@@ -435,18 +481,23 @@ def save_de_heading(
             production_for, source_row[0] if source_row else "RMP"
         )
         
+        if hoso_qty <= 0 or hlso_qty <= 0:
+            return JSONResponse({"error": "HOSO and HLSO quantities must be greater than zero"}, status_code=400)
         if hoso_qty > (avail + 0.1):
             return JSONResponse({"error": f"Insufficient HOSO live balance. Available: {round(avail, 2)}"}, status_code=400)
 
-        try: clean_yield = float(str(yield_percent).replace('%', ''))
-        except: clean_yield = 0.0
+        approved_rate = approved_deheading_rate(db, company_code, contractor, clean_count)
+        if approved_rate <= 0:
+            return JSONResponse({"error": "No approved De-Heading rate found for this contractor and count"}, status_code=400)
+        clean_yield = round((float(hlso_qty) / float(hoso_qty)) * 100, 2)
+        calculated_amount = round(float(hlso_qty) * approved_rate, 2)
 
         current_ist = ist_now()
 
         new_entry = DeHeading(
             production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
             species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
-            contractor=contractor, table_no=table_no.strip() if table_no else None, rate_per_kg=rate_per_kg, amount=amount, 
+            contractor=contractor, table_no=table_no.strip() if table_no else None, rate_per_kg=approved_rate, amount=calculated_amount,
             date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
         )
         db.add(new_entry)
@@ -467,27 +518,27 @@ def save_de_heading(
         add_deheading_to_grading_pool(db, new_entry)
 
         db.flush()
-        try:
-            voucher = post_contractor_source_charge(
-                db=db,
-                company_id=company_code,
-                voucher_date=current_ist.date(),
-                reference_no=f"DEH-{new_entry.id}",
-                contractor_name=contractor,
-                charge_type="Deheading",
-                taxable_amount=amount,
-                gst_percent=contractor_gst_percent(db, company_code, contractor),
-                created_by=email,
-                quantity=hlso_qty,
-                rate=rate_per_kg,
-            )
-            if voucher:
-                new_entry.journal_id = voucher.id
-        except Exception as ve:
-            logger.warning(f"Warning posting contractor voucher for DeHeading: {ve}")
+        voucher = post_contractor_source_charge(
+            db=db,
+            company_id=company_code,
+            voucher_date=current_ist.date(),
+            reference_no=f"DEH-{new_entry.id}",
+            contractor_name=contractor,
+            charge_type="Deheading",
+            taxable_amount=calculated_amount,
+            gst_percent=contractor_gst_percent(db, company_code, contractor),
+            created_by=email,
+            quantity=hlso_qty,
+            rate=approved_rate,
+        )
+        if voucher:
+            new_entry.journal_id = voucher.id
 
         db.commit()
         return JSONResponse({"status": "ok"})
+    except HTTPException as exc:
+        db.rollback()
+        return JSONResponse({"error": str(exc.detail)}, status_code=exc.status_code)
     except Exception as e:
         db.rollback()
         logger.error(f"Error saving de-heading entry: {e}", exc_info=True)
@@ -547,7 +598,10 @@ def delete_de_heading(
     row.cancel_reason = cancel_reason.strip() if cancel_reason else "Cancelled by user"
     row.cancelled_by = email
     row.cancelled_at = ist_now()
-    cancel_linked_bill_voucher(db, company_code, row.journal_id, email)
+    deactivate_operational_charge(
+        db, company_id=company_code, source_type="DEHEADING", source_table="deheading",
+        source_record_id=row.id, changed_by=email,
+    )
 
     db.commit()
     return JSONResponse({"status": "ok"})

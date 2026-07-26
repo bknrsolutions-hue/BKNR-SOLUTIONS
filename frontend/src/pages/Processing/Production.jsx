@@ -1171,9 +1171,9 @@ export default function Production() {
                     required
                     disabled={Boolean(globalProductionFor && globalProductionFor !== 'ALL')}
                   >
-                    <option value="">Select Company</option>
                     {prodForList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -1185,9 +1185,9 @@ export default function Production() {
                     required
                     disabled={Boolean(globalLocation && globalLocation !== 'ALL')}
                   >
-                    <option value="">Select Location</option>
                     {prodAtList.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">

@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react';
+import AnimatedBrandLogo from './AnimatedBrandLogo';
+
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
+const assetUrl = path => (!path || /^https?:\/\//i.test(path) || path.startsWith('data:') || path.startsWith('blob:'))
+  ? path
+  : `${API_BASE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
 export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, setSidebarOpen, onMenuItemsReady }) {
   // Enforce permission checks matching menu.html allow() function
@@ -34,6 +40,17 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
     'Admin': false
   });
   const [openPillars, setOpenPillars] = useState({});
+  const [tenantLogoUrl, setTenantLogoUrl] = useState(user?.company_logo_url || '');
+
+  useEffect(() => {
+    setTenantLogoUrl(user?.company_logo_url || '');
+  }, [user?.company_logo_url]);
+
+  useEffect(() => {
+    const updateTenantLogo = event => setTenantLogoUrl(event.detail?.company_logo_url || '');
+    window.addEventListener('tenant_logo_changed', updateTenantLogo);
+    return () => window.removeEventListener('tenant_logo_changed', updateTenantLogo);
+  }, []);
 
   const toggleSection = (sectionName) => {
     setOpenSections(prev => {
@@ -67,7 +84,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'dashboard_inventory', token: 'dash_inv', perm: 'inventory_dashboard', route: '/dashboard/inventory_dashboard', icon: 'fa-warehouse', label: 'Inventory' },
         { id: 'dashboard_hr', token: 'dash_hr', perm: 'hr_command_center', route: '/dashboard/hr_command_center', icon: 'fa-user-tie', label: 'HR & Staff' },
         { id: 'dashboard_costing', token: 'dash_cost', perm: 'costing_dashboard', route: '/dashboard/costing_dashboard', icon: 'fa-file-invoice-dollar', label: 'Costing & Fin' },
-        { id: 'dashboard_finance', token: 'dash_fin', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard' },
+        { id: 'dashboard_finance', token: 'dash_fin', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'CEO Dashboard' },
         { id: 'tally_dashboard', token: 'dash_tally', perm: 'tally_dashboard', route: '/finance_accounts/tally_dashboard', icon: 'fa-chart-pie', label: 'Tally Dashboard' }
       ]
     },
@@ -207,7 +224,7 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
         { id: 'attendance_employee_increment', token: 'hr_ei', perm: 'employee_increment', route: '/attendance/employee-increment', icon: 'fa-arrow-trend-up', label: 'Increment Details', badge: 'HR' },
         { id: 'attendance_daily_attendance', token: 'hr_da', perm: 'daily_attendance', route: '/attendance/daily', icon: 'fa-fingerprint', label: 'Daily Attendance', badge: 'HR' },
         { id: 'attendance_labour_management', token: 'hr_lm', perm: 'labour_management', route: '/attendance/labour-management', icon: 'fa-people-group', label: 'Contract Workers', badge: 'HR' },
-        { id: 'attendance_kg_basis_labour', token: 'hr_kgl', perm: 'kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'KG Basis Company Workers', badge: 'HR' },
+        { id: 'attendance_kg_basis_labour', token: 'hr_kgl', perm: 'kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'Company Workers', badge: 'HR' },
         { id: 'criteria_daily_basis_worker_rates', token: 'mst_dwr', perm: 'daily_basis_worker_rates', route: '/criteria/api/daily_basis_worker_rates', icon: 'fa-money-bill-wave', label: 'Day Basis Worker Rates', badge: 'Mstr' },
         { id: 'attendance_visitors_day_workers', token: 'hr_vdw', perm: 'visitors_day_workers', route: '/attendance/visitors-day-workers', icon: 'fa-person-walking-arrow-right', label: 'Visitors & Day Workers', badge: 'HR' },
         { id: 'attendance_salary_report', token: 'hr_ss', perm: 'salary_report', route: '/attendance/salary/monthly-sheet', icon: 'fa-money-check-dollar', label: 'Monthly Salary Sheet', badge: 'HR' },
@@ -314,15 +331,14 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
       <div className="sidebar-brand">
         <div className="brand-wrapper">
           <div className="brand-title">
-            <i className="fa-solid fa-layer-group"></i>
+            {tenantLogoUrl
+              ? <img className="sidebar-tenant-logo" src={assetUrl(tenantLogoUrl)} alt="Company logo" onError={() => setTenantLogoUrl('')} />
+              : <AnimatedBrandLogo size={30} className="sidebar-tenant-logo" label="Company logo" />}
             <span title={user?.company || user?.company_name || 'BKNR ERP'}>{user?.company || user?.company_name || 'BKNR ERP'}</span>
 
           </div>
           <div className="brand-subtitle">WORKSPACE</div>
         </div>
-        <button className="close-sidebar-btn" onClick={() => setSidebarOpen(false)}>
-          <i className="fa-solid fa-xmark"></i>
-        </button>
       </div>
 
       {/* Sidebar Navigation Scroll Box */}

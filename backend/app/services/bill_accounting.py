@@ -454,6 +454,40 @@ def post_contractor_source_charge(
     quantity: float = 0.0,
     rate: float = 0.0,
 ) -> VoucherHeader:
+    # Operational contractor costs are accumulated into one editable monthly
+    # voucher. The daily source row remains separately auditable.
+    import re
+    from app.services.operational_vouchers import upsert_operational_charge
+
+    source_match = re.match(r"^([A-Z-]+)-(\d+)$", str(reference_no or "").strip())
+    if source_match:
+        prefix, source_id = source_match.groups()
+        source_type_map = {
+            "DEH": "DEHEADING",
+            "PEL": "PEELING",
+            "ATT": "DAILY_CONTRACT_LABOUR",
+            "ATT-ADJ": "DAILY_CONTRACT_LABOUR",
+            "KG": "KG_BASIS_LABOUR",
+            "DAY": "DAY_BASIS_LABOUR",
+            "COLD": "COLD_STORAGE",
+        }
+        source_type = source_type_map.get(prefix, charge_type or "CONTRACTOR")
+        return upsert_operational_charge(
+            db,
+            company_id=company_id,
+            source_type=source_type,
+            source_table=source_type.lower(),
+            source_record_id=int(source_id),
+            source_date=voucher_date,
+            contractor_name=contractor_name,
+            taxable_amount=taxable_amount,
+            gst_percent=gst_percent,
+            created_by=created_by,
+            quantity=quantity,
+            rate=rate,
+            payload={"reference_no": reference_no, "charge_type": charge_type},
+        )
+
     taxable_amount = round(float(taxable_amount or 0.0), 2)
     gst_percent = round(float(gst_percent or 0.0), 2)
     gst_amount = round(taxable_amount * gst_percent / 100.0, 2)

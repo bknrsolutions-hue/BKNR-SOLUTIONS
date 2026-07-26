@@ -96,14 +96,22 @@ def report_page(
     role = request.session.get("role")
     if not comp_code:
         return RedirectResponse("/auth/login", status_code=302)
-    is_json = request.query_params.get("format") == "json"
     if fy is None:
         today = ist_now().date()
-        fy = "" if is_json else str(today.year if today.month >= 4 else today.year - 1)
+        # The report must open on the current financial year for both the HTML
+        # and React/JSON clients. An explicit FY continues to override this.
+        fy = str(today.year if today.month >= 4 else today.year - 1)
+    is_json = request.query_params.get("format") == "json"
 
     def build_report_context():
-        # --- DYNAMIC FINANCIAL YEARS GENERATION FROM GATE ENTRY DATES ---
-        all_dates = db.query(GateEntry.date).filter(GateEntry.company_id == comp_code, GateEntry.date != None).all()
+        # The RMP register is the source of truth for its own FY. Do not join
+        # Gate Entry here: batches can have more than one gate record, which
+        # duplicates RMP rows and inflates quantity/amount totals.
+        all_dates = db.query(RawMaterialPurchasing.date).filter(
+            func.lower(func.trim(RawMaterialPurchasing.company_id)) == comp_code.lower(),
+            RawMaterialPurchasing.date.isnot(None),
+            or_(RawMaterialPurchasing.is_cancelled == False, RawMaterialPurchasing.is_cancelled == None),
+        ).all()
         fy_set = set()
         for d_tuple in all_dates:
             d = d_tuple[0]
@@ -112,13 +120,9 @@ def report_page(
             fy_set.add(fy_str)
         financial_years = sorted(list(fy_set), reverse=True)
 
-        query = (
-            db.query(RawMaterialPurchasing)
-            .join(GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number)
-            .filter(
-                RawMaterialPurchasing.company_id == comp_code,
-                GateEntry.company_id == comp_code
-            )
+        query = db.query(RawMaterialPurchasing).filter(
+            func.lower(func.trim(RawMaterialPurchasing.company_id)) == comp_code.lower(),
+            or_(RawMaterialPurchasing.is_cancelled == False, RawMaterialPurchasing.is_cancelled == None),
         )
 
         if fy:
@@ -126,15 +130,15 @@ def report_page(
             start_date = dt.date(selected_fy, 4, 1)
             end_date = dt.date(selected_fy + 1, 3, 31)
             query = query.filter(
-                GateEntry.date >= start_date,
-                GateEntry.date <= end_date
+                RawMaterialPurchasing.date >= start_date,
+                RawMaterialPurchasing.date <= end_date,
             )
 
         if production_for:
-            query = query.filter(RawMaterialPurchasing.production_for == production_for)
+            query = query.filter(func.lower(func.trim(RawMaterialPurchasing.production_for)) == str(production_for).strip().lower())
 
         if location:
-            query = query.filter(RawMaterialPurchasing.peeling_at == location)
+            query = query.filter(func.lower(func.trim(RawMaterialPurchasing.peeling_at)) == str(location).strip().lower())
 
         rows = [row_to_dict(row) for row in query.order_by(RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.time.desc()).all()]
 
@@ -314,7 +318,7 @@ def export_rmp_excel(
     # 🟢 FIX: Avoid parameter collision with explicit global_ prefixes
     global_production_for, global_location = get_global_filters(request)
     
-    query = db.query(RawMaterialPurchasing).join(
+    query = db.query(RawMaterialPurchasing).outerjoin(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
     ).filter(
         RawMaterialPurchasing.company_id == comp_code,
@@ -379,7 +383,7 @@ def print_table_view(
     # 🟢 FIX: In-memory evaluation tracking via global contextual scopes
     global_production_for, global_location = get_global_filters(request)
 
-    q = db.query(RawMaterialPurchasing).join(
+    q = db.query(RawMaterialPurchasing).outerjoin(
         GateEntry, RawMaterialPurchasing.batch_number == GateEntry.batch_number
     ).filter(
         RawMaterialPurchasing.company_id == comp_code,

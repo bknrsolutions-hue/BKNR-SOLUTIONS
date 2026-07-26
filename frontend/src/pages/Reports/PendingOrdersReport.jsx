@@ -28,8 +28,9 @@ export default function PendingOrdersReport({ activeRoute }) {
 
   const rawRows = data?.rows || [];
 
-  // Filter rows
+  // Filter rows (User directive: hide rows where company_name is empty/null/blank)
   const rows = rawRows.filter(r => {
+    if (!r.company_name || String(r.company_name).trim() === '' || String(r.company_name).trim().toLowerCase() === 'none') return false;
     if (poFilter && r.po_number !== poFilter) return false;
     if (search) {
       const q = search.toLowerCase();

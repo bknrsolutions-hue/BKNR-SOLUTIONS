@@ -21,10 +21,10 @@ from app.database import get_db
 from app.database.models.processing import Peeling, AuditLog
 from app.database.models.criteria import contractors, varieties as Varieties
 from app.services.bill_accounting import (
-    cancel_linked_bill_voucher,
     ensure_bill_accounting_schema,
     post_contractor_source_charge,
 )
+from app.services.operational_vouchers import deactivate_operational_charge
 
 router = APIRouter(
     prefix="/peeling_report",
@@ -48,10 +48,11 @@ def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -
 
 
 def repost_peeling_accounts(db: Session, row: Peeling, company_id: str, email: str):
-    if row.journal_id:
-        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
-        row.journal_id = None
     if row.is_cancelled or float(row.amount or 0) <= 0:
+        deactivate_operational_charge(
+            db, company_id=company_id, source_type="PEELING", source_table="peeling",
+            source_record_id=row.id, changed_by=email,
+        )
         return
     voucher = post_contractor_source_charge(
         db=db,
@@ -667,7 +668,10 @@ async def delete_peeling(
         row.is_cancelled = True
         row.status = "Cancelled"
         user_email = request.session.get("email")
-        cancel_linked_bill_voucher(db, comp_code, row.journal_id, user_email)
+        deactivate_operational_charge(
+            db, company_id=comp_code, source_type="PEELING", source_table="peeling",
+            source_record_id=row.id, changed_by=user_email,
+        )
         db.commit()
         refresh_floor_balance(db, comp_code)
         return {"status": "success"}

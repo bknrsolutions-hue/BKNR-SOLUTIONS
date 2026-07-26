@@ -990,8 +990,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             aria-expanded={dropdownOpen}
           >
             {displayTenantLogoUrl
-              ? <img className="corp-avatar corp-avatar-img" src={displayTenantLogoUrl} alt={`${companyName} logo`} onError={() => setTenantLogoUrl('')} />
+              ? <img className="corp-avatar corp-avatar-img" src={displayTenantLogoUrl} alt={`${companyName} logo`} width="34" height="34" loading="lazy" decoding="async" fetchPriority="high" onError={() => setTenantLogoUrl('')} />
               : <AnimatedBrandLogo size={34} className="corp-avatar" />}
+
             <div className="corp-info">
               <span className="corp-name">{userName}</span>
               <span className="corp-role">{user?.role || 'Role'} | {companyName}</span>

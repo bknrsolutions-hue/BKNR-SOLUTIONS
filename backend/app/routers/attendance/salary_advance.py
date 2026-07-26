@@ -64,16 +64,7 @@ def salary_advance_page(request: Request, format: str = Query(default="html"), d
             "records": [serialize_salary_advance(r) for r in records]
         })
 
-    # ✅ FIX: TemplateResponse arguments updated
-    return templates.TemplateResponse(
-        request=request,
-        name="attendance/salary_advance.html",
-        context={
-            "records": records,
-            "email": email,
-            "company_id": company_id
-        }
-    )
+    return RedirectResponse("/app/#/p/hr_sa", status_code=303)
 
 
 # ==================================================

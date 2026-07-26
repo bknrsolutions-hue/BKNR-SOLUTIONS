@@ -6,7 +6,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.gzip import GZipMiddleware
-from app.database import SessionLocal
+from app.database import SessionLocal, engine
 from app.services.cache import cache_get_or_set, invalidate_live_company_caches
 import logging
 import json
@@ -15,9 +15,17 @@ import time
 import uuid
 from pathlib import Path
 import threading
-from apscheduler.schedulers.background import BackgroundScheduler
-from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
-from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+try:
+    from apscheduler.schedulers.background import BackgroundScheduler
+except ImportError:
+    BackgroundScheduler = None
+
+try:
+    from app.services.inventory_snapshot_scheduler import create_inventory_snapshot
+    from app.services.floor_balance_snapshot_scheduler import create_floor_balance_snapshot
+except Exception:
+    create_inventory_snapshot = None
+    create_floor_balance_snapshot = None
 from app.config import (
     CORS_ORIGINS,
     DEPLOYMENT_TOKEN,
@@ -456,6 +464,16 @@ def on_startup():
         return
     start_snapshot_scheduler()
 
+    def maintain_database_performance():
+        from app.services.database_performance import apply_database_performance_maintenance
+        apply_database_performance_maintenance(engine)
+
+    threading.Thread(
+        target=maintain_database_performance,
+        name="database-performance-maintenance",
+        daemon=True,
+    ).start()
+
     if RUN_LEGACY_STARTUP_MIGRATION:
         # Legacy ALTER TABLE migration kept for existing deployments only.
         # Prefer Alembic (`alembic upgrade head`) for schema changes.
@@ -493,8 +511,12 @@ def on_shutdown():
 # =====================================================
 # 📂 4. STATIC + TEMPLATES SETUP
 # =====================================================
-application.mount("/static", StaticFiles(directory="app/static"), name="static")
-templates = Jinja2Templates(directory="app/templates")
+static_path = os.path.join(os.path.dirname(__file__), "static")
+templates_path = os.path.join(os.path.dirname(__file__), "templates")
+os.makedirs(static_path, exist_ok=True)
+os.makedirs(templates_path, exist_ok=True)
+application.mount("/static", StaticFiles(directory=static_path), name="static")
+templates = Jinja2Templates(directory=templates_path)
 
 # ✅ VERY IMPORTANT:  ‌  ,
 application.state.templates = templates

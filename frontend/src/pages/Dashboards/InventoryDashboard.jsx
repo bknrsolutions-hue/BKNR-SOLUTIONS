@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Chart, registerables } from 'chart.js';
 import { currentFinancialYearStart, formatFinancialYear } from '../../utils/financialYear';
+import { sessionFetch } from '../../utils/sessionFetch';
 import './InventoryDashboard.css';
 
 Chart.register(...registerables);
@@ -113,8 +114,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
     if (selectedLocation) url += `&location=${encodeURIComponent(selectedLocation)}`;
 
     try {
-      const response = await fetch(url, {
-        credentials: 'include',
+      const response = await sessionFetch(url, {
         headers: { Accept: 'application/json' },
       });
       if (response.redirected || response.url.includes('/auth/login')) {
@@ -673,10 +673,11 @@ export default function InventoryDashboard({ theme, setActivePage }) {
           {/* Header Row */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
             <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <i className="fa-solid fa-boxes-stacked" style={{ color: '#3b82f6' }}></i>
                 Inventory Dashboard
-              </h2>
+              </h1>
+
             </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
@@ -697,7 +698,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 1. Opening */}
         <div className="kpi-card kpi-blue" title="View opening stock source" onClick={() => openStockTableTab('opening')}>
           <div className="kpi-header">
-            <h4>Opening</h4>
+            <h3>Opening</h3>
             <div className="kpi-icon"><i className="fa-solid fa-box-open"></i></div>
           </div>
           <div>
@@ -709,7 +710,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 2. Closing */}
         <div className="kpi-card kpi-green" title="View closing stock source" onClick={() => openStockTableTab('closing')}>
           <div className="kpi-header">
-            <h4>Closing</h4>
+            <h3>Closing</h3>
             <div className="kpi-icon"><i className="fa-solid fa-boxes-stacked"></i></div>
           </div>
           <div>
@@ -721,7 +722,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 3. Sales */}
         <div className="kpi-card kpi-blue" title="Open Sales Report source" onClick={() => openModal(kpiSourceRoute('/inventory/sales_report'))}>
           <div className="kpi-header">
-            <h4>Sales</h4>
+            <h3>Sales</h3>
             <div className="kpi-icon"><i className="fa-solid fa-truck-ramp-box"></i></div>
           </div>
           <div>
@@ -733,7 +734,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 4. Reprocess */}
         <div className="kpi-card kpi-blue" title="Open Reprocess Report source" onClick={() => openModal(kpiSourceRoute('/reports/re-process'))}>
           <div className="kpi-header">
-            <h4>Reprocess</h4>
+            <h3>Reprocess</h3>
             <div className="kpi-icon"><i className="fa-solid fa-arrows-rotate"></i></div>
           </div>
           <div>
@@ -745,7 +746,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 5. Fresh Stock */}
         <div className="kpi-card kpi-blue" title="Open Stock Status Report source" onClick={() => openModal(kpiSourceRoute('/inventory/stock_report'))}>
           <div className="kpi-header">
-            <h4>Fresh Stock</h4>
+            <h3>Fresh Stock</h3>
             <div className="kpi-icon"><i className="fa-solid fa-seedling"></i></div>
           </div>
           <div>
@@ -757,7 +758,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 6. Reglaze Prod */}
         <div className="kpi-card kpi-cyan" style={{ cursor: 'default' }}>
           <div className="kpi-header">
-            <h4>Reglaze Prod.</h4>
+            <h3>Reglaze Prod.</h3>
             <div className="kpi-icon"><i className="fa-solid fa-snowflake"></i></div>
           </div>
           <div>
@@ -769,7 +770,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 7. Dead Stock */}
         <div className="kpi-card kpi-gray" style={{ cursor: 'default' }}>
           <div className="kpi-header">
-            <h4>Dead Stock</h4>
+            <h3>Dead Stock</h3>
             <div className="kpi-icon"><i className="fa-solid fa-skull-crossbones"></i></div>
           </div>
           <div>
@@ -781,7 +782,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         {/* 8. Total MC */}
         <div className="kpi-card kpi-teal" style={{ cursor: 'default' }}>
           <div className="kpi-header">
-            <h4>Total MC</h4>
+            <h3>Total MC</h3>
             <div className="kpi-icon"><i className="fa-solid fa-cubes"></i></div>
           </div>
           <div>
@@ -790,6 +791,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
           </div>
         </div>
       </div>
+
 
       {/* Interactive Charts Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: window.innerWidth > 992 ? '1fr 1fr' : '1fr', gap: '16px', marginBottom: '16px' }}>
@@ -915,23 +917,24 @@ export default function InventoryDashboard({ theme, setActivePage }) {
       <div style={{ marginBottom: '16px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '16px' }}>
           <div style={ageCardStyle(activeAgeCard === 1, '#10b981')} onClick={() => handleAgeFilterClick(0, 30, 1)}>
-            <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>0-30 Days</h4>
-            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_30)}</h2>
+            <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px', margin: 0 }}>0-30 Days</h3>
+            <div style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_30)}</div>
           </div>
           <div style={ageCardStyle(activeAgeCard === 2, '#f59e0b')} onClick={() => handleAgeFilterClick(31, 90, 2)}>
-            <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>31-90 Days</h4>
-            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_90)}</h2>
+            <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px', margin: 0 }}>31-90 Days</h3>
+            <div style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_90)}</div>
           </div>
           <div style={ageCardStyle(activeAgeCard === 3, '#ea580c')} onClick={() => handleAgeFilterClick(91, 700, 3)}>
-            <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>91-700 Days</h4>
-            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_700)}</h2>
+            <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px', margin: 0 }}>91-700 Days</h3>
+            <div style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.age_700)}</div>
           </div>
           <div style={ageCardStyle(activeAgeCard === 4, '#ef4444')} onClick={() => handleAgeFilterClick(701, 99999, 4)}>
-            <h4 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px' }}>700+ Days (Dead)</h4>
-            <h2 style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.dead_stock_qty)}</h2>
+            <h3 style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 800, letterSpacing: '0.6px', margin: 0 }}>700+ Days (Dead)</h3>
+            <div style={{ fontSize: '16px', marginTop: '8px', fontWeight: 800 }}>{fmt(data?.dead_stock_qty)}</div>
           </div>
         </div>
       </div>
+
 
       {/* Filters Toolbar */}
       <div className="erp-horizontal-filter-row" style={filterBar}>

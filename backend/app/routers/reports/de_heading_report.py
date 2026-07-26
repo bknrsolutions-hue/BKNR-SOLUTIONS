@@ -23,10 +23,10 @@ from app.database.models.processing import DeHeading, AuditLog
 from app.database.models.criteria import HOSO_HLSO_Yields, contractors
 from app.database.models.users import Company
 from app.services.bill_accounting import (
-    cancel_linked_bill_voucher,
     ensure_bill_accounting_schema,
     post_contractor_source_charge,
 )
+from app.services.operational_vouchers import deactivate_operational_charge
 
 router = APIRouter(
     prefix="/de_heading",
@@ -50,10 +50,11 @@ def contractor_gst_percent(db: Session, company_id: str, contractor_name: str) -
 
 
 def repost_deheading_accounts(db: Session, row: DeHeading, company_id: str, email: str):
-    if row.journal_id:
-        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
-        row.journal_id = None
     if row.is_cancelled or float(row.amount or 0) <= 0:
+        deactivate_operational_charge(
+            db, company_id=company_id, source_type="DEHEADING", source_table="deheading",
+            source_record_id=row.id, changed_by=email,
+        )
         return
     voucher = post_contractor_source_charge(
         db=db,
@@ -509,7 +510,10 @@ async def delete_row(request: Request, payload: dict = Body(...), db: Session = 
         db.add(AuditLog(table_name="de_heading", record_id=row.id, company_id=company_id, field_name="is_cancelled", old_value="False", new_value="True", edited_by=email, edited_at=dt.datetime.now(dt.timezone.utc)))
         row.is_cancelled = True
         row.status = "Cancelled"
-        cancel_linked_bill_voucher(db, company_id, row.journal_id, email)
+        deactivate_operational_charge(
+            db, company_id=company_id, source_type="DEHEADING", source_table="deheading",
+            source_record_id=row.id, changed_by=email,
+        )
         db.commit()
         refresh_floor_balance(db, company_id)
         return {"status": "success"}

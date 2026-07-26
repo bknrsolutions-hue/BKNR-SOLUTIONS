@@ -152,7 +152,8 @@ export default function VisitorsDayWorkers() {
           <Field label="Person To Meet *"><UserSelect required users={lookups.users} value={visitorForm.person_to_meet_email} onChange={user => setVisitorForm({ ...visitorForm, person_to_meet: user?.name || '', person_to_meet_email: user?.email || '' })} /></Field>
           <Field label="Visit Date *"><input type="date" required value={visitorForm.visit_date} onChange={event => setVisitorForm({ ...visitorForm, visit_date: event.target.value })} /></Field>
           <Field label="IN Time *"><input type="time" required value={visitorForm.in_time} onChange={event => setVisitorForm({ ...visitorForm, in_time: event.target.value })} /></Field>
-          <Field label="Plant / Location"><select value={visitorForm.production_at} onChange={event => setVisitorForm({ ...visitorForm, production_at: event.target.value })}><option value="">Select Location</option>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+          <Field label="Plant / Location"><select value={visitorForm.production_at} onChange={event => setVisitorForm({ ...visitorForm, production_at: event.target.value })}>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+
           <Field label="Remarks"><input value={visitorForm.remarks} onChange={event => setVisitorForm({ ...visitorForm, remarks: event.target.value })} /></Field>
         </div>
         <datalist id="visitor-purpose-list">{lookups.purposes.map(value => <option key={value} value={value} />)}</datalist>
@@ -219,7 +220,8 @@ export default function VisitorsDayWorkers() {
           <Field label="Approved By *"><UserSelect required users={lookups.users} value={workerForm.approved_by_email} onChange={user => setWorkerForm({ ...workerForm, approved_by_name: user?.name || '', approved_by_email: user?.email || '' })} /></Field>
           <Field label="Work Date *"><input type="date" required value={workerForm.work_date} onChange={event => setWorkerForm({ ...workerForm, work_date: event.target.value })} /></Field>
           <Field label="IN Time *"><input type="time" required value={workerForm.in_time} onChange={event => setWorkerForm({ ...workerForm, in_time: event.target.value })} /></Field>
-          <Field label="Plant / Location"><select value={workerForm.production_at} onChange={event => setWorkerForm({ ...workerForm, production_at: event.target.value })}><option value="">Select Location</option>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+          <Field label="Plant / Location"><select value={workerForm.production_at} onChange={event => setWorkerForm({ ...workerForm, production_at: event.target.value })}>{lookups.locations.map(value => <option key={value}>{value}</option>)}</select></Field>
+
           <Field label="Remarks"><input value={workerForm.remarks} onChange={event => setWorkerForm({ ...workerForm, remarks: event.target.value })} /></Field>
         </div>
         <datalist id="worker-purpose-list">{lookups.purposes.map(value => <option key={value} value={value} />)}</datalist>

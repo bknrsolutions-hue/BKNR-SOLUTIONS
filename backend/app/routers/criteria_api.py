@@ -137,7 +137,33 @@ def get_all(request: Request, model_name: str, db: Session = Depends(get_db)):
                 row_dict[column.name] = val
         serialized.append(row_dict)
 
+    # 🔥 Append 'KG BASIS' option to Contractors lookup list
+    if model_name.lower() == "contractors":
+        existing_names = set(str(r.get("contractor_name", "")).strip().upper() for r in serialized if r.get("contractor_name"))
+        if "KG BASIS" not in existing_names:
+            serialized.append({
+                "id": "kg_basis_opt",
+                "contractor_name": "KG BASIS",
+                "company_id": company_code
+            })
+
     return {"status": "success", "data": serialized}
+
+import re
+
+def parse_count_range(val_str):
+    if not val_str:
+        return []
+    s = str(val_str).strip()
+    # Match ONLY explicit range connectors ('to' or '-') like '10 to 20', '10 TO 20', '10-20'
+    # Do NOT auto-expand grade ratio slash notations like '10/20', '20/30'
+    m = re.match(r'^(\d+)\s*(?:-|\bto\b)\s*(\d+)$', s, re.IGNORECASE)
+    if m:
+        start_val = int(m.group(1))
+        end_val = int(m.group(2))
+        if start_val < end_val and (end_val - start_val) <= 500:
+            return [str(i) for i in range(start_val, end_val + 1)]
+    return []
 
 # ---------------------------------------------------------
 # SAVE OR UPDATE RECORD FOR A MODEL
@@ -167,23 +193,70 @@ async def save_record(request: Request, model_name: str, db: Session = Depends(g
     meta_date = now.strftime("%Y-%m-%d")
     meta_time = now.strftime("%H:%M:%S")
 
-    # Fetch existing or instantiate new row
+    # 🔥 RANGE EXPANSION FOR RECORDS (e.g. "10 to 20", "10 TO 40", "10-20")
+    count_fields = ["hlso_count", "count_grade", "count_range", "count", "hoso_count"]
+    range_field = None
+    expanded_counts = []
+    for cf in count_fields:
+        if cf in body and body[cf]:
+            parsed = parse_count_range(body[cf])
+            if len(parsed) > 1:
+                range_field = cf
+                expanded_counts = parsed
+                break
+
+    if range_field and expanded_counts:
+        rows_to_add = []
+        for c_val in expanded_counts:
+            r = model()
+            if hasattr(model, "company_id"):
+                r.company_id = company_code
+            if hasattr(model, "email"):
+                r.email = session_email
+            elif hasattr(model, "created_by_email"):
+                r.created_by_email = session_email
+
+            for column in model.__table__.columns:
+                if column.name in ["id", "company_id", "email", "created_by_email", "created_at"]:
+                    continue
+                if column.name == range_field:
+                    setattr(r, column.name, cast_value(column, c_val))
+                elif column.name in body:
+                    setattr(r, column.name, cast_value(column, body[column.name]))
+                elif column.name == "date" and not getattr(r, "date", None):
+                    setattr(r, "date", cast_value(column, meta_date))
+                elif column.name == "time" and not getattr(r, "time", None):
+                    setattr(r, "time", cast_value(column, meta_time))
+            rows_to_add.append(r)
+
+        db.add_all(rows_to_add)
+        try:
+            db.commit()
+            if model_name.lower() in ["grades", "varieties", "glazes", "species", "hoso_hlso", "grade_to_hoso"]:
+                from app.services.grade_to_hoso_sync import sync_grade_to_hoso
+                try:
+                    sync_grade_to_hoso(db, company_code, session_email or "system@bknr.com")
+                except Exception as e:
+                    print("sync_grade_to_hoso trigger warning:", e)
+            return {"status": "success", "message": f"Successfully created {len(rows_to_add)} count records ({expanded_counts[0]} to {expanded_counts[-1]})"}
+        except Exception as e:
+            db.rollback()
+            return JSONResponse(status_code=400, content={"error": f"Database range save failed: {str(e)}"})
+
+    # Single Record Save / Update (with missing ID fallback to new creation)
+    row = None
     if record_id:
         try:
             record_id_int = int(record_id)
+            query = db.query(model)
+            if hasattr(model, "company_id"):
+                query = query.filter(model.company_id == company_code)
+            row = query.filter(model.id == record_id_int).first()
         except ValueError:
-            return JSONResponse(status_code=400, content={"error": "Invalid ID format"})
+            pass
 
-        row = db.query(model)
-        if hasattr(model, "company_id"):
-            row = row.filter(model.company_id == company_code)
-        row = row.filter(model.id == record_id_int).first()
-
-        if not row:
-            return JSONResponse(status_code=404, content={"error": "Record not found"})
-    else:
+    if not row:
         row = model()
-        # Set metadata defaults for new record
         if hasattr(model, "company_id"):
             row.company_id = company_code
         if hasattr(model, "email"):
@@ -191,21 +264,18 @@ async def save_record(request: Request, model_name: str, db: Session = Depends(g
         elif hasattr(model, "created_by_email"):
             row.created_by_email = session_email
 
-    # Map form/JSON inputs dynamically to database columns
     for column in model.__table__.columns:
         if column.name in ["id", "company_id", "email", "created_by_email", "created_at"]:
             continue
         
-        # Check if the field is provided in the body
         if column.name in body:
             setattr(row, column.name, cast_value(column, body[column.name]))
-        # Defaults for date/time if not provided and present in model
         elif column.name == "date" and not getattr(row, "date", None):
             setattr(row, "date", cast_value(column, meta_date))
         elif column.name == "time" and not getattr(row, "time", None):
             setattr(row, "time", cast_value(column, meta_time))
 
-    if not record_id:
+    if not getattr(row, "id", None):
         db.add(row)
 
     try:

@@ -893,7 +893,7 @@ body {
 .brand-wrapper { display: flex; flex-direction: column; gap: 2px; }
 .brand-title { font-weight: 800; font-size: 17px; letter-spacing: -0.5px; color: var(--text-primary); display: flex; align-items: center; gap: 10px; }
 .brand-title span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.brand-title i { color: var(--corp-dash); font-size: 30px; line-height: 1; transform: scale(1.08); transform-origin: center; }
+.sidebar-tenant-logo { width: 30px; height: 30px; display: block; flex: 0 0 auto; object-fit: contain; border-radius: 7px; }
 .brand-subtitle { font-size: 8px; font-weight: 800; color: var(--text-tertiary); letter-spacing: 3px; text-transform: uppercase; margin-left: 40px; }
 
 .close-sidebar-btn {
@@ -2144,6 +2144,19 @@ body {
   overflow: hidden !important;
 }
 
+.main-content > .attendance-container.page-scrollable {
+  height: auto !important;
+  max-height: none !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}
+
+.main-content > .attendance-container.page-scrollable :is(.staff-workers-payroll-container, .kg-workers-payroll-container, .day-workers-payroll-container, .temp-workers-payroll-container, .attendance-table-container) {
+  overflow: visible !important;
+  height: auto !important;
+}
+
 .main-content > .attendance-container > .attendance-table-container {
   width: 100% !important;
   min-height: 180px !important;
@@ -2466,7 +2479,7 @@ body {
   padding: 12px !important;
   border: 1px solid var(--erp-kpi-border) !important;
   border-radius: 14px !important;
-  background: var(--erp-kpi-surface) !important;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--erp-kpi-accent) 13%, var(--erp-kpi-surface)) 0%, var(--erp-kpi-surface) 72%) !important;
   color: var(--erp-kpi-value) !important;
   box-shadow: var(--erp-kpi-shadow) !important;
   position: relative;
@@ -2501,6 +2514,15 @@ body {
 .main-content :is(.kpi-cyan, .kpi-teal, .tally-kpi-cyan) { --erp-kpi-accent: #0891b2; }
 .main-content .kpi-pink { --erp-kpi-accent: #a855f7; }
 .main-content .kpi-gray { --erp-kpi-accent: var(--erp-kpi-neutral); }
+
+/* Dashboard KPI cards can also render inside the embedded dashboard shell. */
+.kpi-card.kpi-blue { background: linear-gradient(135deg, #eaf3ff 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-green { background: linear-gradient(135deg, #e9f9f0 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-orange, .kpi-card.kpi-yellow { background: linear-gradient(135deg, #fff5e5 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-cyan, .kpi-card.kpi-teal { background: linear-gradient(135deg, #e7f9fa 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-purple, .kpi-card.kpi-pink { background: linear-gradient(135deg, #f4efff 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-red { background: linear-gradient(135deg, #fff0f1 0%, var(--surface-panel) 76%) !important; }
+.kpi-card.kpi-gray { background: linear-gradient(135deg, #f0f4f8 0%, var(--surface-panel) 76%) !important; }
 
 .main-content .kpi-header,
 .erp-kpi-heading {

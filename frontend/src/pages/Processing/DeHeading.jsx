@@ -271,7 +271,9 @@ export default function DeHeading() {
         return;
       }
       try {
-        const res = await sessionFetch(`/processing/get_rate/${encodeURIComponent(contractor)}`);
+        const params = new URLSearchParams();
+        if (hosoCount) params.append('count', hosoCount);
+        const res = await sessionFetch(`/processing/get_rate/${encodeURIComponent(contractor)}?${params.toString()}`);
         if (res.ok) {
           const data = await res.json();
           setRatePerKg(data.rate || 0);
@@ -281,7 +283,7 @@ export default function DeHeading() {
       }
     };
     getRate();
-  }, [contractor]);
+  }, [contractor, hosoCount]);
 
   // Auto Calculations
   useEffect(() => {
@@ -759,9 +761,9 @@ export default function DeHeading() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
-                    <option value="">Select Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -1286,9 +1288,9 @@ export default function DeHeading() {
                     }} 
                     required
                   >
-                    <option value="">Select Company</option>
                     {prodForList.map(p => <option key={p} value={p}>{p}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -1303,9 +1305,9 @@ export default function DeHeading() {
                     }} 
                     required
                   >
-                    <option value="">Select Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">

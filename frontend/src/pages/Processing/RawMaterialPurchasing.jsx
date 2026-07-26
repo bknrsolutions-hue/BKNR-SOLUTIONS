@@ -495,9 +495,9 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handleProductionForChange(e.target.value)}
                 required 
               >
-                <option value="">Select Company</option>
                 {optionList(prodForList, productionFor).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
+
             </div>
 
             <div className="form-group">
@@ -508,9 +508,9 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handlePeelingAtChange(e.target.value)}
                 required 
               >
-                <option value="">Select Location</option>
                 {optionList(peelingLocations, peelingAt).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
+
             </div>
 
             <div className="form-group">

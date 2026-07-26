@@ -5,6 +5,7 @@ import './NativeFinanceRegisters.css';
 
 const currentMonth = new Date().toISOString().slice(0, 7);
 const today = new Date().toISOString().slice(0, 10);
+const currentFinancialYear = Number(currentMonth.slice(5, 7)) >= 4 ? Number(currentMonth.slice(0, 4)) : Number(currentMonth.slice(0, 4)) - 1;
 
 const CONFIG = {
   contractor: {
@@ -43,6 +44,7 @@ export default function OperationalPayables({ type }) {
   const [detailsRow, setDetailsRow] = useState(null);
   const [detailRows, setDetailRows] = useState([]);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [syncingSalary, setSyncingSalary] = useState(false);
   const [toast, setToast] = useState(null);
   const [payment, setPayment] = useState({ amount: 0, payment_mode: 'BANK', payment_date: today, utr_reference: '', bank_cash_ledger_id: '', payment_purpose: 'AGAINST_OUTSTANDING', against_details: '' });
 
@@ -93,6 +95,26 @@ export default function OperationalPayables({ type }) {
     } catch (error) { notify(error.message, 'error'); }
   };
 
+  const syncSalarySheet = async () => {
+    if (!month || month === 'ALL') {
+      notify('Choose one month before syncing the salary sheet.', 'error');
+      return;
+    }
+    if (!window.confirm(`Sync Monthly Salary Sheet for ${month}? Existing unposted payroll values will be refreshed.`)) return;
+    setSyncingSalary(true);
+    try {
+      const response = await fetch(`/api/salaries/sync-monthly-sheet?month=${encodeURIComponent(month)}`, { method: 'POST', credentials: 'include' });
+      const payload = await response.json();
+      if (!response.ok || !payload.success) throw new Error(payload.message || 'Salary sync failed.');
+      notify(payload.message || 'Salary sheet synced.');
+      await load();
+    } catch (error) {
+      notify(error.message, 'error');
+    } finally {
+      setSyncingSalary(false);
+    }
+  };
+
   const cancelLog = async row => {
     if (!window.confirm(`Cancel payment voucher ${row.voucher_no || ''}?`)) return;
     try {
@@ -112,8 +134,16 @@ export default function OperationalPayables({ type }) {
     earlier: totals.earlier + Number(row.previous_outstanding || 0),
     due: totals.due + Number(row.total_outstanding || 0),
   }), { grand: 0, paid: 0, month: 0, earlier: 0, due: 0 }), [rows]);
-  const financialYear = month ? (Number(month.slice(5, 7)) >= 4 ? Number(month.slice(0, 4)) : Number(month.slice(0, 4)) - 1) : new Date().getFullYear();
-  const setFinancialYear = year => setMonth(`${year}-04`);
+  const financialYear = month && month !== 'ALL' ? (Number(month.slice(5, 7)) >= 4 ? Number(month.slice(0, 4)) : Number(month.slice(0, 4)) - 1) : currentFinancialYear;
+  const setFinancialYear = year => {
+    if (month && month !== 'ALL') {
+      const selectedMonth = Number(month.slice(5, 7));
+      const selectedYear = selectedMonth >= 4 ? year : year + 1;
+      setMonth(`${selectedYear}-${String(selectedMonth).padStart(2, '0')}`);
+      return;
+    }
+    setMonth(`${year}-04`);
+  };
   const openContractorBill = (billType, row) => window.open(`/api/contractor_bills/bill/${billType}?month=${encodeURIComponent(month)}&contractor=${encodeURIComponent(row.contractor_name)}`, '_blank', 'noopener,noreferrer');
   const resetContractorFilters = () => { setMonth(currentMonth); setContractorTab('outstanding'); };
   const isBillsTemplate = ['contractor', 'salary', 'vendor', 'supplier'].includes(type);
@@ -158,10 +188,10 @@ export default function OperationalPayables({ type }) {
     </div>}
     <div className="attendance-filters-bar">
       {isBillsTemplate && <div className="attendance-filter-group"><label>Financial Year</label><select className="attendance-select" value={financialYear} onChange={event => setFinancialYear(Number(event.target.value))}>{[2024, 2025, 2026, 2027, 2028].map(year => <option key={year} value={year}>FY {year}-{year + 1}</option>)}</select></div>}
-      <div className="attendance-filter-group"><label>Month</label><input className="attendance-input" type="month" value={month} min={isBillsTemplate ? `${financialYear}-04` : undefined} max={isBillsTemplate ? `${financialYear + 1}-03` : undefined} onChange={event => setMonth(event.target.value)} /></div>
-      {isBillsTemplate && <><button className="attendance-btn attendance-btn-primary" type="button" onClick={load}><RefreshCw size={13} /> Filter</button><button className="attendance-btn attendance-btn-secondary" type="button" onClick={resetContractorFilters}><RotateCcw size={13} /> Reset</button></>}
+      <div className="attendance-filter-group"><label>Month</label><input className="attendance-input" type="month" value={month === 'ALL' ? '' : month} min={isBillsTemplate ? `${financialYear}-04` : undefined} max={isBillsTemplate ? `${financialYear + 1}-03` : undefined} onChange={event => setMonth(event.target.value)} /></div>
+      {isBillsTemplate && <><button className="attendance-btn attendance-btn-primary" type="button" onClick={load}><RefreshCw size={13} /> Filter</button>{type === 'salary' && <button className="attendance-btn attendance-btn-secondary" type="button" disabled={syncingSalary || !month || month === 'ALL'} onClick={syncSalarySheet}><RefreshCw size={13} /> {syncingSalary ? 'Syncing' : 'Sync Salary Sheet'}</button>}<button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setMonth('ALL')}>All Months</button><button className="attendance-btn attendance-btn-secondary" type="button" onClick={resetContractorFilters}><RotateCcw size={13} /> Reset</button></>}
     </div>
-    {isBillsTemplate && <div className="contractor-list-meta"><strong>{visibleRows.length} {type === 'contractor' ? 'Contractors Found' : type === 'salary' ? 'Salary Records' : 'Records'}</strong><span>{month}</span></div>}
+    {isBillsTemplate && <div className="contractor-list-meta"><strong>{visibleRows.length} {type === 'contractor' ? 'Contractors Found' : type === 'salary' ? 'Salary Records' : 'Records'}</strong><span>{month === 'ALL' ? 'All Months' : month}</span></div>}
     {isBillsTemplate && <div className="contractor-tabs"><button type="button" className={contractorTab === 'outstanding' ? 'active' : ''} onClick={() => setContractorTab('outstanding')}>Outstanding</button><button type="button" className={contractorTab === 'all' ? 'active' : ''} onClick={() => setContractorTab('all')}>All Records</button></div>}
     <div className={`attendance-table-container${isBillsTemplate ? ' contractor-table-container' : ''}`}><div className="native-finance-table-title"><strong>{config.title}</strong><span>{isBillsTemplate ? visibleRows.length : rows.length} records</span></div><div className="attendance-table-wrapper">
       {type === 'contractor' ? <table className="attendance-table contractor-bills-table"><thead><tr><th>Contractor Name</th><th>Deheading Bill</th><th>Peeling Bill</th><th>Processing Bill</th><th>Grand Total</th><th>Paid Amount</th><th>Current Month Outstanding</th><th>Earlier Months Outstanding</th><th>Total Outstanding</th><th>Accounts</th></tr></thead><tbody>
@@ -202,7 +232,7 @@ export default function OperationalPayables({ type }) {
       <label className="native-finance-wide"><span>UTR / Reference</span><input className="attendance-input" value={payment.utr_reference} onChange={event => setPayment(current => ({ ...current, utr_reference: event.target.value }))} /></label>
     </div><div className="native-finance-form-actions">{type === 'salary' && <button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => openSalaryPrint(selected)}><FileText size={14} /> Print</button>}<button className="attendance-btn attendance-btn-primary" type="submit"><CreditCard size={14} /> Post Payment</button><button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => setSelected(null)}>Close</button></div></form></div>}
     {historyRow && <div className="attendance-modal-overlay"><div className="attendance-modal native-payment-modal"><div className="attendance-modal-header"><div><h3>{historyRow.contractor_name || historyRow.employee_name || historyRow.party_name || 'Payment History'}</h3><p>Payment History • {historyRow.bill_no || month}</p></div><button type="button" onClick={() => setHistoryRow(null)}><X size={17} /></button></div><div className="attendance-table-wrapper"><table className="attendance-table contractor-history-table"><thead><tr><th>Date</th>{(type === 'vendor' || type === 'supplier') && <><th>Purpose</th><th>Against</th></>}<th>Amount</th><th>Mode</th><th>Account</th><th>UTR / Ref</th>{type !== 'vendor' && type !== 'supplier' && <th>Voucher</th>}<th>Status</th></tr></thead><tbody>{(historyRow.payment_history || []).map((item, index) => <tr key={`${item.voucher_no || item.date}-${index}`}><td>{item.date || '—'}</td>{(type === 'vendor' || type === 'supplier') && <><td>{item.purpose || '—'}</td><td>{item.against || '—'}</td></>}<td>₹ {amount(item.amount)}</td><td>{item.mode || '—'}</td><td>{item.account || '—'}</td><td>{item.utr || '—'}</td>{type !== 'vendor' && type !== 'supplier' && <td>{item.voucher_no || '—'}</td>}<td><span className={`contractor-status ${String(item.status || '').toLowerCase()}`}>{item.status || '—'}</span></td></tr>)}</tbody></table></div></div></div>}
-    {detailsRow && <div className="attendance-modal-overlay"><div className="attendance-modal native-payment-modal payable-details-modal"><div className="attendance-modal-header"><div><h3>{detailsRow.party_name} — Bill Wise Records</h3><p>{detailsRow.bill_no} • Outstanding ₹ {amount(detailsRow.outstanding)}</p></div><button type="button" onClick={() => setDetailsRow(null)}><X size={17} /></button></div><div className="attendance-table-wrapper"><table className="attendance-table contractor-history-table payable-details-table"><thead><tr><th>Date</th><th>Bill / Batch</th><th>Invoice</th><th>Description</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead><tbody>{detailRows.map((item, index) => <tr key={`${item.bill_no}-${index}`}><td>{item.date || '—'}</td><td>{item.bill_no || '—'}</td><td>{item.invoice_no || '—'}</td><td>{item.description || '—'}</td><td>{amount(item.qty)}</td><td>₹ {amount(item.rate)}</td><td>₹ {amount(item.amount)}</td></tr>)}{!detailsLoading && !detailRows.length && <tr><td className="attendance-empty" colSpan="7">No bill records found.</td></tr>}{detailsLoading && <tr><td className="attendance-empty" colSpan="7">Loading bill records...</td></tr>}</tbody></table></div><div className="native-finance-form-actions"><button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => printPayableBill(detailsRow)}><FileText size={14} /> Print</button>{(type === 'supplier' || Number(detailsRow.outstanding || 0) > .01) && <button className="attendance-btn attendance-btn-primary" type="button" onClick={() => { setDetailsRow(null); beginPayment(detailsRow); }}><CreditCard size={14} /> Pay Payment</button>}</div></div></div>}
+    {detailsRow && <div className="attendance-modal-overlay"><div className="attendance-modal native-payment-modal payable-details-modal"><div className="attendance-modal-header"><div><h3>{detailsRow.party_name} — Bill Wise Records</h3><p>{detailsRow.bill_no} • Total Outstanding ₹ {amount(detailsRow.outstanding)}</p></div><button type="button" onClick={() => setDetailsRow(null)}><X size={17} /></button></div><div className="attendance-table-wrapper"><table className="attendance-table contractor-history-table payable-details-table"><thead><tr><th>Date</th><th>Due Date</th><th>Bill / Batch</th><th>Invoice</th><th>Description</th><th>Qty</th><th>Rate</th><th>Total Amount</th><th>Paid</th><th>Balance</th><th>Overdue Status</th></tr></thead><tbody>{detailRows.map((item, index) => { const bal = Number(item.balance ?? item.amount ?? 0); const paid = Number(item.paid_amount ?? 0); const isUnpaid = bal > 0.01; return <tr key={`${item.bill_no}-${index}`}><td>{item.date || '—'}</td><td><small style={{ color: '#475569' }}>{item.due_date || '—'}</small></td><td>{item.bill_no || '—'}</td><td>{item.invoice_no || '—'}</td><td>{item.description || '—'}</td><td>{amount(item.qty)}</td><td>₹ {amount(item.rate)}</td><td>₹ {amount(item.amount)}</td><td>₹ {amount(paid)}</td><td style={{ fontWeight: '700', color: isUnpaid ? '#dc2626' : '#16a34a' }}>₹ {amount(bal)}</td><td><span className={`contractor-status ${isUnpaid ? 'unpaid' : 'paid'}`}>{item.overdue_label || item.status || (isUnpaid ? 'UNPAID' : 'PAID')}</span></td></tr>; })}{!detailsLoading && !detailRows.length && <tr><td className="attendance-empty" colSpan="11">No bill records found.</td></tr>}{detailsLoading && <tr><td className="attendance-empty" colSpan="11">Loading bill records...</td></tr>}</tbody></table></div><div className="native-finance-form-actions"><button className="attendance-btn attendance-btn-secondary" type="button" onClick={() => printPayableBill(detailsRow)}><FileText size={14} /> Print</button>{(type === 'supplier' || Number(detailsRow.outstanding || 0) > .01) && <button className="attendance-btn attendance-btn-primary" type="button" onClick={() => { setDetailsRow(null); beginPayment(detailsRow); }}><CreditCard size={14} /> Pay Payment</button>}</div></div></div>}
   </div>;
 }
 

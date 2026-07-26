@@ -338,9 +338,9 @@ export default function GoodsGateMovements() {
               onChange={e => updateForm('production_for', e.target.value)}
               required
             >
-              <option value="">Select Company</option>
               {withCurrent(masters.productionFor, form.production_for).map(p => <option key={p} value={p}>{p}</option>)}
             </select>
+
           </Field>
           <Field label="Plant Location *">
             <select

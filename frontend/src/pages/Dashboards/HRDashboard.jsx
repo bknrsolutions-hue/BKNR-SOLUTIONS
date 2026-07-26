@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sessionFetch } from '../../utils/sessionFetch';
 import { Bars, DashboardHeader, DashboardState, MetricCard, ModuleRail, money, number, Panel, ProgressList, useDashboardData } from './DashboardPrimitives';
 import './HRDashboard.css';
@@ -9,7 +9,7 @@ const HR_RAIL = [{ label: 'Forms', items: [
   { id: 'attendance_employee_increment', route: '/attendance/employee-increment', icon: 'fa-arrow-trend-up', label: 'Increment Details' },
   { id: 'attendance_daily_attendance', route: '/attendance/daily', icon: 'fa-fingerprint', label: 'Daily Attendance' },
   { id: 'attendance_labour_management', route: '/attendance/labour-management', icon: 'fa-people-group', label: 'Contract Workers' },
-  { id: 'attendance_kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'KG Basis Company Workers' },
+  { id: 'attendance_kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'Company Workers' },
   { id: 'attendance_visitors_day_workers', route: '/attendance/visitors-day-workers', icon: 'fa-person-walking-arrow-right', label: 'Visitors & Day Workers' },
   { id: 'attendance_tax_master', route: '/attendance/tax-master', icon: 'fa-file-shield', label: 'Payroll Master' },
   { id: 'attendance_salary_advance', route: '/attendance/salary-advance', icon: 'fa-hand-holding-dollar', label: 'Salary Advance' },
@@ -34,7 +34,18 @@ const TableEmpty = ({ columns, text = 'No records available.' }) => <tr><td colS
 const Pill = ({ children, tone = 'blue' }) => <span className={`hr-pill ${tone}`}>{children}</span>;
 
 export default function HRDashboard({ setActivePage }) {
-  const [tab, setTab] = useState('operations');
+  const [tab, setTab] = useState(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    return tabParam && ['operations', 'cost', 'compliance', 'approvals', 'directory', 'analytics'].includes(tabParam) ? tabParam : 'operations';
+  });
+
+  useEffect(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam && ['operations', 'cost', 'compliance', 'approvals', 'directory', 'analytics'].includes(tabParam)) {
+      setTab(tabParam);
+    }
+  }, []);
+
   const [deptFilter, setDeptFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
@@ -107,18 +118,19 @@ export default function HRDashboard({ setActivePage }) {
         <div className="enterprise-kpis hr-kpis">
           <MetricCard label="Total Manpower" value={number(data?.total_employees)} note="All registered staff" icon="fa-users" onClick={() => openKpiDetails('TOTAL_STAFF', 'Total Manpower')} />
           <MetricCard label="Active Force" value={number(data?.active_employees)} note="Currently active" icon="fa-user-check" color="#16a34a" onClick={() => openKpiDetails('ACTIVE_STAFF', 'Active Force')} />
-          <MetricCard label="Present Today" value={`${number(data?.present_pct)}%`} note={Number(data?.present_pct) >= 85 ? 'Good turnout' : 'Below target'} icon="fa-clipboard-user" onClick={() => openKpiDetails('PRESENT', 'Present Today')} />
+          <MetricCard label="Present Today" value={`${number(data?.present_pct)}%`} note={`${number(data?.present_today)} present today`} icon="fa-clipboard-user" onClick={() => openKpiDetails('PRESENT', 'Present Today')} />
           <MetricCard label="Absent Today" value={number(data?.absent_today)} note="Unaccounted" icon="fa-user-xmark" color="#f59e0b" onClick={() => openKpiDetails('ABSENT', 'Absent Today')} />
+          <MetricCard label="Est. Monthly Budget" value={money(data?.total_monthly_payroll_est)} note="Active monthly salaries" icon="fa-calculator" color="#8b5cf6" onClick={() => setTab('cost')} />
+          <MetricCard label="Est. Today Labor Cost" value={money(data?.labor_cost_today)} note="Today's estimate" icon="fa-indian-rupee-sign" onClick={() => setTab('cost')} />
           <MetricCard label="Labour Cost/KG" value={money(data?.cost_per_kg)} note="Per kg processed" icon="fa-scale-unbalanced" onClick={() => setTab('cost')} />
-          <MetricCard label="Est. Labour Cost" value={money(data?.labor_cost_today)} note="Today’s estimate" icon="fa-indian-rupee-sign" onClick={() => setTab('cost')} />
-          <MetricCard label="OT Hours Logged" value={`${number(data?.ot_hours_today)} Hrs`} note="Pending approval" icon="fa-clock" color="#f59e0b" onClick={() => openKpiDetails('OT_TODAY', 'OT Hours Logged')} />
-          <MetricCard label="Productivity" value={`${number(data?.employee_productivity)}%`} note="Efficiency index" icon="fa-chart-line" color="#16a34a" onClick={() => setTab('analytics')} />
+          <MetricCard label="OT Hours Logged" value={`${number(data?.ot_hours_today)} Hrs`} note="Today OT total" icon="fa-clock" color="#f59e0b" onClick={() => openKpiDetails('OT_TODAY', 'OT Hours Logged')} />
+          <MetricCard label="Productivity Index" value={`${number(data?.employee_productivity)}%`} note="Efficiency index" icon="fa-chart-line" color="#16a34a" onClick={() => setTab('analytics')} />
           <MetricCard label="Permanent Labor" value={`${number(data?.perm_pct)}%`} icon="fa-building-user" onClick={() => openKpiDetails('PERMANENT', 'Permanent Labor')} />
           <MetricCard label="Contract Labor" value={`${number(data?.contract_pct)}%`} icon="fa-helmet-safety" color="#64748b" onClick={() => openKpiDetails('CONTRACT', 'Contract Labor')} />
           <MetricCard label="Avg Net Salary" value={money(data?.avg_salary)} note="Per employee" icon="fa-money-check-dollar" color="#64748b" onClick={() => setTab('cost')} />
           <MetricCard label="Attrition (YTD)" value={`${number(data?.attrition_rate)}%`} note={Number(data?.attrition_rate) <= 5 ? 'Under control' : 'Needs attention'} icon="fa-person-walking-arrow-right" color="#f59e0b" onClick={() => setTab('analytics')} />
-          <MetricCard label="Pending OT" value={number(data?.pending_ot_count)} note="Awaiting approval" icon="fa-stopwatch" color="#f59e0b" onClick={() => setTab('approvals')} />
-          <MetricCard label="Pending Duty" value={number(data?.pending_duty_count)} note="Awaiting approval" icon="fa-clipboard-check" color="#f59e0b" onClick={() => setTab('approvals')} />
+          <MetricCard label="Pending OT Queue" value={number(data?.pending_ot_count)} note="Awaiting approval" icon="fa-stopwatch" color="#f59e0b" onClick={() => setTab('approvals')} />
+          <MetricCard label="Pending Duty Queue" value={number(data?.pending_duty_count)} note="Awaiting approval" icon="fa-clipboard-check" color="#f59e0b" onClick={() => setTab('approvals')} />
         </div>
 
         <div className="hr-tabs">
@@ -170,6 +182,26 @@ function CostTab({ data }) {
   const ot = data?.ot_center || {};
   const processedOt = Number(ot.APPROVED || 0) + Number(ot.REJECTED || 0);
   return <div className="enterprise-grid hr-grid">
+    {/* WORKFORCE TIER SUMMARY */}
+    <div style={{ gridColumn: '1 / -1', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '10px', marginBottom: '8px' }}>
+      <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px 14px', borderRadius: '8px' }}>
+        <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Regular Staff</span>
+        <strong style={{ display: 'block', fontSize: '18px', color: '#2563eb', marginTop: '2px' }}>{number(data?.staff_count)} Staff</strong>
+      </div>
+      <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px 14px', borderRadius: '8px' }}>
+        <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Day Basis Workers</span>
+        <strong style={{ display: 'block', fontSize: '18px', color: '#10b981', marginTop: '2px' }}>{number(data?.day_basis_count)} Staff</strong>
+      </div>
+      <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px 14px', borderRadius: '8px' }}>
+        <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>KG Basis Workers</span>
+        <strong style={{ display: 'block', fontSize: '18px', color: '#f59e0b', marginTop: '2px' }}>{number(data?.kg_basis_count)} Staff</strong>
+      </div>
+      <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '12px 14px', borderRadius: '8px' }}>
+        <span style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase' }}>Daily Temp Workers</span>
+        <strong style={{ display: 'block', fontSize: '18px', color: '#8b5cf6', marginTop: '2px' }}>{number(data?.temp_basis_count)} Staff</strong>
+      </div>
+    </div>
+
     <Panel title="Department Cost Center" full>
       <div className="enterprise-table-wrap"><table className="enterprise-table"><thead><tr><th>Department</th><th className="num">Employees</th><th className="num">Salary Cost</th><th className="num">Avg Salary</th><th className="num">% Total</th></tr></thead><tbody>{(data?.dept_cost_center || []).length ? data.dept_cost_center.map(row => <tr key={row.dept}><td><strong>{row.dept}</strong></td><td className="num">{number(row.emps)}</td><td className="num">{money(row.total_sal)}</td><td className="num">{money(row.avg_sal)}</td><td className="num"><Pill>{number(row.cost_pct)}%</Pill></td></tr>) : <TableEmpty columns={5} />}</tbody></table></div>
     </Panel>

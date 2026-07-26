@@ -47,14 +47,41 @@ async def get_inventory_dashboard(
     production_for: str | None = Query(None),       
     db: Session = Depends(get_db)
 ):
-    comp_code = request.session.get("company_code")
+    def clean_str_param(val, default="ALL"):
+        if val is None or not isinstance(val, str):
+            return default
+        v = str(val).strip()
+        if not v or v.startswith("annotation="):
+            return default
+        return v
+
+    format = clean_str_param(format, "html")
+    sel_species = clean_str_param(sel_species, "ALL")
+    sel_variety = clean_str_param(sel_variety, "ALL")
+    sel_grade = clean_str_param(sel_grade, "ALL")
+    sel_glaze = clean_str_param(sel_glaze, "ALL")
+    sel_prod_at = clean_str_param(sel_prod_at, "ALL")
+    sel_prod_for = clean_str_param(sel_prod_for, "ALL")
+    sel_fy = clean_str_param(sel_fy, "ALL")
+
+    comp_code = request.session.get("company_code") or request.session.get("company_id") or "BKNR"
     if not comp_code:
+        if format == "json":
+            return JSONResponse({"status": "error", "message": "Session expired. Please log in again."}, status_code=401)
         return RedirectResponse("/auth/login")
 
     cookie_prod, cookie_loc = get_global_filters(request)
-    
-    global_production_for = production_for if production_for is not None else cookie_prod
-    global_location = location if location is not None else cookie_loc
+
+    def clean_filter_value(val):
+        if not val or not isinstance(val, str):
+            return None
+        v = str(val).strip()
+        if not v or v.upper() == "ALL" or v.startswith("annotation="):
+            return None
+        return v
+
+    global_production_for = clean_filter_value(production_for) or clean_filter_value(cookie_prod)
+    global_location = clean_filter_value(location) or clean_filter_value(cookie_loc)
 
     today = ist_now().date()
     current_year = today.year
@@ -80,8 +107,8 @@ async def get_inventory_dashboard(
     else:
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    g_loc_clean = global_location.strip().upper() if global_location else None
-    g_prod_clean = global_production_for.strip().upper() if global_production_for else None
+    g_loc_clean = global_location.upper() if global_location else None
+    g_prod_clean = global_production_for.upper() if global_production_for else None
     sel_glaze_clean = str(sel_glaze or "ALL").strip().upper()
     cache_key = (
         "bknr:inventory_dashboard:"
@@ -577,7 +604,8 @@ async def get_inventory_dashboard(
         "sel_prod_for": sel_prod_for, 
         "sel_fy": sel_fy, 
         "selected_fy": str(start_year),
-        "current_fy_name": current_fy_string
+        "current_fy_name": current_fy_string,
+        "status": "success"
     }
 
     cache_context = dict(context)

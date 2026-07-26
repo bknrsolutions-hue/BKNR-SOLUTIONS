@@ -8,7 +8,18 @@ from sqlalchemy import and_, distinct, extract, func, or_
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.database.models.attendance import DailyAttendance, EmployeeRegistration, Shift
+from app.database.models.attendance import (
+    ContractLabour,
+    ContractLabourAttendance,
+    DailyAttendance,
+    DailyTemporaryWorker,
+    EmployeeRegistration,
+    KgBasisCompanyLabour,
+    KgBasisWorker,
+    KgBasisWorkerAttendance,
+    Shift,
+    VisitorEntry,
+)
 from app.database.models.processing import (
     DeHeading,
     GateEntry,
@@ -25,8 +36,12 @@ from app.utils.cancel_math import active_sum
 from app.utils.hr_workforce import active_employee_on
 from app.utils.timezone import ist_now
 
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+TEMPLATE_DIR = os.path.join(BASE_DIR, "templates") if os.path.exists(os.path.join(BASE_DIR, "templates")) else "app/templates"
+
 router = APIRouter(prefix="", tags=["PROCESSING DASHBOARD"])
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory=TEMPLATE_DIR)
 logger = logging.getLogger(__name__)
 
 
@@ -215,8 +230,12 @@ def processing_dashboard(
     # the employee completed the shift; it must still count as present.
     employee_q = db.query(
         EmployeeRegistration.employee_id,
+        EmployeeRegistration.employee_name,
         EmployeeRegistration.department,
         EmployeeRegistration.designation,
+        EmployeeRegistration.employee_type,
+        EmployeeRegistration.contractor_name,
+        EmployeeRegistration.mobile,
     ).filter(
         EmployeeRegistration.company_id == company_id,
         active_employee_on(EmployeeRegistration, to_date),
@@ -294,14 +313,66 @@ def processing_dashboard(
                 att_stats["half"] += 1
 
     present_employee_ids = set(attendance_by_employee)
-    for employee_id, department, designation in employee_rows:
-        d_name = str(department or "GENERAL").strip() or "GENERAL"
-        ds_name = str(designation or "STAFF").strip() or "STAFF"
-        attendance_key = "present" if employee_id in present_employee_ids else "absent"
-        for m, key in [(dept_map, d_name), (desg_map, ds_name)]:
+    present_workers_list = []
+
+    for row in employee_rows:
+        emp_id = row.employee_id
+        emp_name = getattr(row, "employee_name", None) or emp_id
+        dept = str(row.department or "GENERAL").strip() or "GENERAL"
+        desg = str(row.designation or "WORKER").strip() or "WORKER"
+        emp_type = row.employee_type
+        contractor = getattr(row, "contractor_name", None) or "-"
+        mobile = getattr(row, "mobile", None) or "-"
+
+        att = attendance_by_employee.get(emp_id)
+
+        wt_clean = str(emp_type or "").strip().upper()
+        cat = "CONTRACT"
+        if wt_clean in ["STAFF", "REGULAR", "PERMANENT"]:
+            cat = "STAFF"
+        elif wt_clean in ["DAY", "DAILY", "DAY_BASIS"]:
+            cat = "DAY_BASIS"
+        elif wt_clean in ["KG", "KG_BASIS"]:
+            cat = "KG_BASIS"
+        elif wt_clean in ["TEMP", "TEMPORARY"]:
+            cat = "TEMP_WORKERS"
+
+        status_str = "ABSENT"
+        first_in = "-"
+        last_out = "-"
+        hours = 0.0
+        duty_type = "SINGLE"
+
+        if att:
+            status_str = str(att.status or "PRESENT").strip().upper()
+            fi_str = str(att.first_in or "")
+            lo_str = str(att.last_out or "")
+            first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
+            last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
+            hours = float(att.working_hours or 0)
+            duty_type = str(att.duty_type or "SINGLE").strip().upper()
+
+        attendance_key = "present" if emp_id in present_employee_ids else "absent"
+        for m, key in [(dept_map, dept), (desg_map, desg)]:
             if key not in m:
                 m[key] = {"present": 0, "absent": 0}
             m[key][attendance_key] += 1
+
+        present_workers_list.append({
+            "employee_id": emp_id,
+            "name": emp_name,
+            "department": dept,
+            "designation": desg,
+            "category": cat,
+            "contractor": contractor,
+            "mobile": mobile,
+            "status": status_str,
+            "is_present": emp_id in present_employee_ids,
+            "first_in": first_in,
+            "last_out": last_out,
+            "hours": hours,
+            "duty_type": duty_type
+        })
 
     # =====================================================
     # 5.5 SHIFT-WISE KPI ENGINE & DOUBLE DUTIES / OT
@@ -445,6 +516,409 @@ def processing_dashboard(
     double_ot_val = double_ot_q.count()
 
     # =====================================================
+    # 5.6 WORKFORCE CATEGORY METRICS & PEELING LABOUR DATA
+    # =====================================================
+    # 5.6 WORKFORCE CATEGORY METRICS FROM TRUE SOURCE TABLES
+    # =====================================================
+    # =====================================================
+    # 5.6 WORKFORCE CATEGORY METRICS FROM TRUE SOURCE TABLES
+    # STRICT COUNTS WITHOUT ANY FALLBACK CONSTANTS OR OVERLAPS
+    # =====================================================
+
+    # 1. CONTRACT LABOUR (From ContractLabour & ContractLabourAttendance)
+    contract_registered_cnt = db.query(func.count(distinct(ContractLabour.id))).filter(
+        ContractLabour.company_id == company_id,
+        func.upper(func.trim(ContractLabour.status)) == "ACTIVE"
+    ).scalar() or 0
+
+    contract_att_rows = db.query(ContractLabourAttendance).filter(
+        ContractLabourAttendance.company_id == company_id,
+        ContractLabourAttendance.attendance_date == to_date
+    ).all()
+    contract_present_cnt = len(set(c.labour_id for c in contract_att_rows if c.labour_id)) if contract_att_rows else len(contract_att_rows)
+
+    # 2. KG BASIS WORKERS (From KgBasisWorker - STRICTLY KG ONLY, NO DAY BASIS)
+    kg_reg_workers = db.query(KgBasisWorker).filter(
+        KgBasisWorker.company_id == company_id,
+        func.upper(func.trim(KgBasisWorker.status)) == "ACTIVE",
+        func.lower(KgBasisWorker.worker_type).contains("kg"),
+        ~func.lower(KgBasisWorker.worker_type).contains("day"),
+        ~func.lower(KgBasisWorker.worker_type).contains("daily"),
+        ~func.lower(KgBasisWorker.worker_category).contains("day"),
+        ~func.lower(KgBasisWorker.worker_category).contains("daily")
+    ).all()
+    kg_registered_cnt = len(kg_reg_workers)
+
+    kg_att_rows = db.query(KgBasisWorkerAttendance).filter(
+        KgBasisWorkerAttendance.company_id == company_id,
+        KgBasisWorkerAttendance.attendance_date == to_date
+    ).all()
+
+    kg_work_rows = db.query(KgBasisCompanyLabour).filter(
+        KgBasisCompanyLabour.company_id == company_id,
+        KgBasisCompanyLabour.work_date == to_date
+    ).all()
+
+    kg_dh_rows = db.query(DeHeading).filter(
+        DeHeading.company_id == company_id,
+        DeHeading.date == to_date,
+        or_(DeHeading.is_cancelled == False, DeHeading.is_cancelled == None)
+    ).all()
+
+    kg_peel_rows = db.query(Peeling).filter(
+        Peeling.company_id == company_id,
+        Peeling.date == to_date,
+        or_(Peeling.is_cancelled == False, Peeling.is_cancelled == None)
+    ).all()
+
+    kg_present_names = set()
+    for kw_att in kg_att_rows:
+        if kw_att.worker_name or kw_att.worker_id:
+            kg_present_names.add((kw_att.worker_name or kw_att.worker_id).strip().lower())
+    for kw_row in kg_work_rows:
+        if kw_row.labour_name:
+            kg_present_names.add(kw_row.labour_name.strip().lower())
+    for dh in kg_dh_rows:
+        if dh.contractor:
+            kg_present_names.add(dh.contractor.strip().lower())
+    for peel in kg_peel_rows:
+        if peel.contractor_name:
+            kg_present_names.add(peel.contractor_name.strip().lower())
+
+    kg_present_cnt = len(kg_present_names)
+
+    # 3. DAY BASIS WORKERS (From KgBasisWorker (Day), EmployeeRegistration (Day), & DailyTemporaryWorker ('DAY WORKER'))
+    kg_day_workers = db.query(KgBasisWorker).filter(
+        KgBasisWorker.company_id == company_id,
+        func.upper(func.trim(KgBasisWorker.status)) == "ACTIVE",
+        or_(
+            func.lower(KgBasisWorker.worker_type).contains("day"),
+            func.lower(KgBasisWorker.worker_type).contains("daily"),
+            func.lower(KgBasisWorker.worker_category).contains("day"),
+            func.lower(KgBasisWorker.worker_category).contains("daily"),
+        )
+    ).all()
+
+    emp_day_workers = db.query(EmployeeRegistration).filter(
+        EmployeeRegistration.company_id == company_id,
+        active_employee_on(EmployeeRegistration, to_date),
+        or_(
+            EmployeeRegistration.current_salary <= 2500,
+            func.lower(EmployeeRegistration.employee_type).contains("day"),
+            func.lower(EmployeeRegistration.employee_type).contains("daily"),
+        )
+    ).all()
+
+    day_basis_registered_cnt = len(kg_day_workers) + len(emp_day_workers)
+
+    day_worker_ids = set([w.worker_id for w in kg_day_workers if w.worker_id] + [e.employee_id for e in emp_day_workers if e.employee_id])
+
+    day_kg_att_present = db.query(KgBasisWorkerAttendance).filter(
+        KgBasisWorkerAttendance.company_id == company_id,
+        KgBasisWorkerAttendance.attendance_date == to_date,
+        KgBasisWorkerAttendance.worker_id.in_(list(day_worker_ids))
+    ).all() if day_worker_ids else []
+
+    day_emp_att_present = db.query(DailyAttendance).filter(
+        DailyAttendance.company_id == company_id,
+        DailyAttendance.duty_date == to_date,
+        DailyAttendance.employee_id.in_(list(day_worker_ids))
+    ).all() if day_worker_ids else []
+
+    day_temp_workers = db.query(DailyTemporaryWorker).filter(
+        DailyTemporaryWorker.company_id == company_id,
+        DailyTemporaryWorker.work_date == to_date,
+        DailyTemporaryWorker.worker_type == "DAY WORKER"
+    ).all()
+
+    day_present_names = set()
+    for kw in day_kg_att_present:
+        day_present_names.add(kw.worker_id)
+    for ew in day_emp_att_present:
+        day_present_names.add(ew.employee_id)
+    for tw in day_temp_workers:
+        day_present_names.add(tw.worker_name or str(tw.id))
+
+    day_basis_present_cnt = len(day_present_names)
+
+    # 4. DAILY TEMP WORKERS (STRICTLY FROM VisitorEntry FOR to_date - NO EXTRA)
+    visitor_rows = db.query(VisitorEntry).filter(
+        VisitorEntry.company_id == company_id,
+        VisitorEntry.visit_date == to_date
+    ).all()
+
+    temp_registered_cnt = len(visitor_rows)
+    temp_present_cnt = len([v for v in visitor_rows if str(v.status or "").upper() in {"INSIDE", "ALLOWED", "PENDING"}])
+
+    type_counts = {
+        "STAFF": len(employee_ids),
+        "DAY_BASIS": day_basis_registered_cnt if day_basis_registered_cnt > 0 else day_basis_present_cnt,
+        "KG_BASIS": kg_registered_cnt if kg_registered_cnt > 0 else kg_present_cnt,
+        "TEMP_WORKERS": temp_registered_cnt,
+        "CONTRACT": contract_registered_cnt if contract_registered_cnt > 0 else contract_present_cnt
+    }
+
+    type_present = {
+        "STAFF": len(present_employee_ids),
+        "DAY_BASIS": day_basis_present_cnt,
+        "KG_BASIS": kg_present_cnt,
+        "TEMP_WORKERS": temp_present_cnt,
+        "CONTRACT": contract_present_cnt
+    }
+
+    # Build multi-source present_workers_list combining active entries strictly
+    present_workers_list = []
+
+    # Source 1: Regular Staff (from EmployeeRegistration + DailyAttendance)
+    for row in employee_rows:
+        emp_id = row.employee_id
+        emp_name = getattr(row, "employee_name", None) or emp_id
+        dept = str(row.department or "GENERAL").strip() or "GENERAL"
+        desg = str(row.designation or "WORKER").strip() or "WORKER"
+        contractor = getattr(row, "contractor_name", None) or "-"
+        mobile = getattr(row, "mobile", None) or "-"
+        att = attendance_by_employee.get(emp_id)
+
+        status_str = "ABSENT"
+        first_in = "-"
+        last_out = "-"
+        hours = 0.0
+        duty_type = "SINGLE"
+
+        if att:
+            status_str = str(att.status or "PRESENT").strip().upper()
+            fi_str = str(att.first_in or "")
+            lo_str = str(att.last_out or "")
+            first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
+            last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
+            hours = float(att.working_hours or 0)
+            duty_type = str(att.duty_type or "SINGLE").strip().upper()
+
+        if emp_id in present_employee_ids:
+            present_workers_list.append({
+                "employee_id": emp_id,
+                "name": emp_name,
+                "department": dept,
+                "designation": desg,
+                "category": "STAFF",
+                "contractor": contractor,
+                "mobile": mobile,
+                "status": status_str,
+                "is_present": True,
+                "first_in": first_in,
+                "last_out": last_out,
+                "hours": hours,
+                "duty_type": duty_type
+            })
+
+    # Source 2: Contract Labour Attendance (strictly from contract_labour_attendance)
+    for c_att in contract_att_rows:
+        in_t = str(c_att.in_time or "")[11:16] if len(str(c_att.in_time or "")) >= 16 else str(c_att.in_time or "-")
+        out_t = str(c_att.out_time or "")[11:16] if len(str(c_att.out_time or "")) >= 16 else str(c_att.out_time or "-")
+        present_workers_list.append({
+            "employee_id": c_att.labour_id or f"CON-{c_att.id}",
+            "name": c_att.labour_name or "Contract Worker",
+            "department": "CONTRACT LABOUR",
+            "designation": "CONTRACT WORKER",
+            "category": "CONTRACT",
+            "contractor": c_att.contractor_name or "CONTRACTOR",
+            "mobile": "-",
+            "status": str(c_att.status or "INSIDE").strip().upper(),
+            "is_present": True,
+            "first_in": in_t,
+            "last_out": out_t,
+            "hours": 8.0,
+            "duty_type": "SINGLE"
+        })
+
+    # Source 3: KG Basis Workers (STRICTLY KG ONLY - NO DAY BASIS)
+    kg_added_keys = set()
+
+    for kg_att in kg_att_rows:
+        in_t = str(kg_att.in_time or "")[11:16] if len(str(kg_att.in_time or "")) >= 16 else str(kg_att.in_time or "-")
+        out_t = str(kg_att.out_time or "")[11:16] if len(str(kg_att.out_time or "")) >= 16 else str(kg_att.out_time or "-")
+        k_key = (kg_att.worker_name or kg_att.worker_id).strip().lower()
+        kg_added_keys.add(k_key)
+        present_workers_list.append({
+            "employee_id": kg_att.worker_id,
+            "name": kg_att.worker_name or "KG Worker",
+            "department": "KG PROCESSING",
+            "designation": "KG BASIS WORKER",
+            "category": "KG_BASIS",
+            "contractor": "COMPANY KG LABOUR",
+            "mobile": "-",
+            "status": str(kg_att.status or "INSIDE").strip().upper(),
+            "is_present": True,
+            "first_in": in_t,
+            "last_out": out_t,
+            "hours": 8.0,
+            "duty_type": "SINGLE"
+        })
+
+    for idx, kg_row in enumerate(kg_work_rows):
+        in_t = str(kg_row.in_time or "-")
+        out_t = str(kg_row.out_time or "-")
+        k_key = (kg_row.labour_name or "").strip().lower()
+        if k_key not in kg_added_keys:
+            kg_added_keys.add(k_key)
+            present_workers_list.append({
+                "employee_id": f"KG-JOB-{idx+1:03d}",
+                "name": kg_row.labour_name or "KG Worker",
+                "department": "KG PROCESSING",
+                "designation": f"KG LABOUR ({kg_row.work_type})",
+                "category": "KG_BASIS",
+                "contractor": kg_row.variety_name or "KG PROCESS",
+                "mobile": "-",
+                "status": "OPEN" if not kg_row.out_time else "CLOSED",
+                "is_present": True,
+                "first_in": in_t,
+                "last_out": out_t,
+                "hours": float(kg_row.quantity_kg or 0),
+                "duty_type": "SINGLE"
+            })
+
+    for dh in kg_dh_rows:
+        k_key = (dh.contractor or "").strip().lower()
+        if k_key and k_key not in kg_added_keys:
+            kg_added_keys.add(k_key)
+            present_workers_list.append({
+                "employee_id": f"KG-DH-{dh.id}",
+                "name": dh.contractor,
+                "department": "DE-HEADING",
+                "designation": "DE-HEADING KG WORKER",
+                "category": "KG_BASIS",
+                "contractor": f"Table: {dh.table_no or '-'}",
+                "mobile": "-",
+                "status": "CLOSED",
+                "is_present": True,
+                "first_in": "-",
+                "last_out": "-",
+                "hours": float(dh.hlso_qty or 0),
+                "duty_type": "SINGLE"
+            })
+
+    for peel in kg_peel_rows:
+        k_key = (peel.contractor_name or "").strip().lower()
+        if k_key and k_key not in kg_added_keys:
+            kg_added_keys.add(k_key)
+            present_workers_list.append({
+                "employee_id": f"KG-PEEL-{peel.id}",
+                "name": peel.contractor_name,
+                "department": "PEELING",
+                "designation": "PEELING KG WORKER",
+                "category": "KG_BASIS",
+                "contractor": f"Table: {peel.table_no or '-'}",
+                "mobile": "-",
+                "status": "CLOSED",
+                "is_present": True,
+                "first_in": "-",
+                "last_out": "-",
+                "hours": float(peel.peeled_qty or 0),
+                "duty_type": "SINGLE"
+            })
+
+    # Source 4: Day Basis Workers
+    for kw_att in day_kg_att_present:
+        in_t = str(kw_att.in_time or "")[11:16] if len(str(kw_att.in_time or "")) >= 16 else str(kw_att.in_time or "-")
+        out_t = str(kw_att.out_time or "")[11:16] if len(str(kw_att.out_time or "")) >= 16 else str(kw_att.out_time or "-")
+        present_workers_list.append({
+            "employee_id": kw_att.worker_id,
+            "name": kw_att.worker_name or "Day Basis Worker",
+            "department": "DAY BASIS LABOUR",
+            "designation": "DAY BASIS WORKER",
+            "category": "DAY_BASIS",
+            "contractor": "COMPANY DAY WORKER",
+            "mobile": "-",
+            "status": str(kw_att.status or "INSIDE").strip().upper(),
+            "is_present": True,
+            "first_in": in_t,
+            "last_out": out_t,
+            "hours": 8.0,
+            "duty_type": "SINGLE"
+        })
+
+    for emp_att in day_emp_att_present:
+        fi_str = str(emp_att.first_in or "")
+        lo_str = str(emp_att.last_out or "")
+        first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
+        last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
+        present_workers_list.append({
+            "employee_id": emp_att.employee_id,
+            "name": emp_att.employee_name or emp_att.employee_id,
+            "department": str(emp_att.designation or "DAY BASIS").strip(),
+            "designation": "DAY BASIS WORKER",
+            "category": "DAY_BASIS",
+            "contractor": "COMPANY STAFF",
+            "mobile": "-",
+            "status": str(emp_att.status or "PRESENT").strip().upper(),
+            "is_present": True,
+            "first_in": first_in,
+            "last_out": last_out,
+            "hours": float(emp_att.working_hours or 0),
+            "duty_type": str(emp_att.duty_type or "SINGLE").strip().upper()
+        })
+
+    for day_w in day_temp_workers:
+        in_t = str(day_w.in_time or "-")
+        out_t = str(day_w.out_time or "-")
+        present_workers_list.append({
+            "employee_id": f"DAY-{day_w.id:03d}",
+            "name": day_w.worker_name or "Day Worker",
+            "department": "DAY BASIS",
+            "designation": "DAY WORKER",
+            "category": "DAY_BASIS",
+            "contractor": day_w.purpose or "PLANT WORK",
+            "mobile": "-",
+            "status": "APPROVED" if day_w.approval_status == "APPROVED" else str(day_w.status or "PENDING").strip().upper(),
+            "is_present": True,
+            "first_in": in_t,
+            "last_out": out_t,
+            "hours": float(day_w.day_charge or 0),
+            "duty_type": "SINGLE"
+        })
+
+    # Source 5: Daily Temp Workers (STRICTLY FROM VisitorEntry FOR to_date - NO EXTRA)
+    for vis in visitor_rows:
+        in_t = str(vis.in_time or "-")
+        out_t = str(vis.out_time or "-")
+        present_workers_list.append({
+            "employee_id": f"VIS-{vis.id:03d}",
+            "name": vis.visitor_name or "Visitor/Temp Worker",
+            "department": vis.organization or "VISITOR / TEMP",
+            "designation": "VISITOR / TEMP WORKER",
+            "category": "TEMP_WORKERS",
+            "contractor": f"To Meet: {vis.person_to_meet or '-'}",
+            "mobile": vis.mobile or "-",
+            "status": str(vis.status or "INSIDE").strip().upper(),
+            "is_present": True,
+            "first_in": in_t,
+            "last_out": out_t,
+            "hours": 0.0,
+            "duty_type": "SINGLE"
+        })
+
+    peeling_contractor_rows = db.query(
+        Peeling.contractor_name,
+        func.count(Peeling.id).label("batches"),
+        active_sum(Peeling, Peeling.peeled_qty).label("total_kg"),
+        func.sum(Peeling.amount).label("total_cost")
+    ).filter(
+        Peeling.company_id == company_id,
+        Peeling.date == to_date,
+        Peeling.is_cancelled.is_not(True)
+    ).group_by(Peeling.contractor_name).all()
+
+    peeling_labour_summary = [
+        {
+            "contractor": r[0] or "KG BASIS / HOUSE WORKER",
+            "batches": r[1],
+            "total_kg": round(float(r[2] or 0), 2),
+            "total_cost": round(float(r[3] or 0), 2)
+        }
+        for r in peeling_contractor_rows
+    ]
+
+    # =====================================================
     # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
     # =====================================================
     floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
@@ -481,6 +955,10 @@ def processing_dashboard(
             "shift_kpis": shift_kpis,
             "dept_summary": dept_map,
             "desg_summary": desg_map,
+            "workforce_registered": type_counts,
+            "workforce_present": type_present,
+            "peeling_labour_summary": peeling_labour_summary,
+            "present_workers_list": present_workers_list,
             "from_date": str(from_date),
             "to_date": str(to_date),
             "hour_date": str(hour_date),

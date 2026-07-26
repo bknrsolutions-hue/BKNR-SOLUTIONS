@@ -84,16 +84,7 @@ def increment_page(request: Request, format: str = Query(default="html"), db: Se
             ]
         })
 
-    return templates.TemplateResponse(
-        request=request,
-        name="attendance/employee_increments.html",
-        context={
-            "email": email,
-            "company_id": company_code,
-            "message": system_message,
-            "records": increment_records
-        }
-    )
+    return RedirectResponse("/app/#/p/hr_ei", status_code=303)
 
 
 # ==================================================

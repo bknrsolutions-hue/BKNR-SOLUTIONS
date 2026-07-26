@@ -2,11 +2,13 @@
  * StockReport.jsx – Stock Status Report (Inventory)
  */
 import { useState } from 'react';
+import { Printer } from 'lucide-react';
 import {
   ReportHeader, FilterBar, FilterBox, FilterSelect, FilterInput,
   Loader, ErrorBox, SearchInput, EmptyRow,
   FinYearSelect, useReport, fmt, AuditDrawer, RowActionMenu, InlineSearchableSelect
 } from './ReportShell';
+
 
 const AGE_RANGES = [
   { key: '30', label: '0 - 30 Days', min: 0, max: 30, color: '#16a34a' },
@@ -45,7 +47,8 @@ export default function StockReport({ activeRoute, user }) {
   const [fy, setFy]                     = useState('');
   const [fromDate, setFrom]             = useState('');
   const [toDate, setTo]                 = useState('');
-  const [movFilter, setMov]             = useState('');
+  const initialMov = new URLSearchParams(activeRoute?.includes('?') ? activeRoute.split('?')[1] : window.location.search).get('type') || '';
+  const [movFilter, setMov]             = useState(initialMov);
   const [batchFilter, setBatchFilter]   = useState('');
   const [brandFilter, setBrandFilter]   = useState('');
   const [speciesFilter, setSpeciesFilter] = useState('');
@@ -60,6 +63,8 @@ export default function StockReport({ activeRoute, user }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({});
   const [auditOpen, setAuditOpen] = useState(false);
+  const [modalData, setModalData] = useState(null);
+
 
   const params = {};
   if (fy) params.fy = fy;
@@ -195,6 +200,187 @@ export default function StockReport({ activeRoute, user }) {
       });
     });
   });
+
+  const handleCellClick = (summaryRow, grade = null) => {
+    let matched = uniqueRows;
+    if (summaryRow && summaryRow.type !== 'grand_total') {
+      matched = uniqueRows.filter(r => {
+        const cComp = r.production_for || 'N/A';
+        const cUnit = r.production_at || 'N/A';
+        const cFreezer = r.freezer || 'N/A';
+        const cCombo = [r.variety || 'N/A', r.glaze || 'N/A', r.packing_style || 'N/A'].join('\u001f');
+
+        if (summaryRow.type === 'company' && summaryRow.key !== `company-${cComp}`) return false;
+        if (summaryRow.type === 'unit' && summaryRow.key !== `unit-${cComp}-${cUnit}`) return false;
+        if (summaryRow.type === 'freezer' && summaryRow.key !== `freezer-${cComp}-${cUnit}-${cFreezer}`) return false;
+        if (summaryRow.type === 'item' && summaryRow.key !== `item-${cComp}-${cUnit}-${cFreezer}-${cCombo}`) return false;
+        return true;
+      });
+    }
+
+    if (grade) {
+      matched = matched.filter(r => (r.grade || 'N/A') === grade);
+    }
+
+    if (matched.length === 0) return;
+
+    const labelStr = summaryRow?.label || 'All Stock';
+    const gradeStr = grade ? ` | Grade: ${grade}` : '';
+    setModalData({
+      title: 'Location Wise Stock Breakdown',
+      subtitle: `${labelStr}${gradeStr}`,
+      rows: matched
+    });
+  };
+
+  const handlePrintModal = () => {
+    if (!modalData) return;
+    const printWin = window.open('', '_blank', 'width=1100,height=800');
+    if (!printWin) return;
+
+    const companyName = data?.company_name || 'BKNR ERP Solutions';
+    const totalQty = fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.quantity || 0), 0));
+    const totalMc = fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.no_of_mc || 0), 0));
+    const totalLoose = fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.loose || 0), 0));
+
+    const locationGrouped = Object.entries(
+      modalData.rows.reduce((acc, r) => {
+        const locKey = `${r.production_at || 'Unit-N/A'} — ${r.location || 'Coldstore-N/A'}`;
+        acc[locKey] = (acc[locKey] || 0) + Number(r.quantity || 0);
+        return acc;
+      }, {})
+    );
+
+    const rowsHtml = modalData.rows.map((row, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="text-align: center;">${row.date || '-'}</td>
+        <td>${row.production_for || '-'}</td>
+        <td style="font-weight: 700; color: #1e40af;">${row.production_at || '-'}</td>
+        <td style="font-weight: 700; color: #15803d;">${row.location || '-'}</td>
+        <td>${row.freezer || '-'}</td>
+        <td style="text-align: center; font-weight: 700;">${row.batch_number || '-'}</td>
+        <td>${row.variety || '-'}</td>
+        <td style="text-align: center;">${row.glaze || '-'}</td>
+        <td style="text-align: center; font-weight: 700;">${row.grade || '-'}</td>
+        <td>${row.packing_style || '-'}</td>
+        <td style="text-align: right;">${fmt.number(row.no_of_mc)}</td>
+        <td style="text-align: right;">${fmt.number(row.loose)}</td>
+        <td style="text-align: right; font-weight: 800; color: #1e40af;">${fmt.number(row.quantity)} KG</td>
+      </tr>
+    `).join('');
+
+    const locationPillsHtml = locationGrouped.map(([loc, qty]) => `
+      <div style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 4px 10px; border-radius: 4px; font-size: 11px; display: inline-block; margin-right: 8px; margin-bottom: 6px;">
+        <strong>${loc}:</strong> <span style="color: #1e40af; font-weight: 800;">${fmt.number(qty)} KG</span>
+      </div>
+    `).join('');
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${modalData.title} - ${modalData.subtitle}</title>
+        <style>
+          body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; padding: 20px; color: #0f172a; background: #fff; }
+          .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #2563eb; padding-bottom: 12px; margin-bottom: 16px; }
+          .header h1 { margin: 0; font-size: 18px; color: #1e3a8a; text-transform: uppercase; }
+          .header .subtitle { font-size: 13px; color: #475569; margin-top: 4px; font-weight: 600; }
+          .meta-info { font-size: 11px; color: #64748b; text-align: right; }
+          .kpi-row { display: flex; gap: 12px; margin-bottom: 16px; }
+          .kpi-box { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; padding: 10px 14px; border-radius: 6px; }
+          .kpi-title { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 800; }
+          .kpi-value { font-size: 16px; font-weight: 800; color: #1e3a8a; margin-top: 2px; }
+          .pills-container { margin-bottom: 16px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 10px; }
+          th { background: #1e293b; color: #fff; padding: 8px 6px; font-weight: 700; text-transform: uppercase; font-size: 10px; }
+          td { border: 1px solid #cbd5e1; padding: 6px; }
+          tr:nth-child(even) { background: #f8fafc; }
+          tfoot tr td { background: #e2e8f0; font-weight: 800; border-top: 2px solid #475569; }
+          @media print {
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div>
+            <h1>📍 ${modalData.title}</h1>
+            <div class="subtitle">${companyName} | ${modalData.subtitle}</div>
+          </div>
+          <div class="meta-info">
+            <strong>Printed Date:</strong> ${new Date().toLocaleString()}<br/>
+            <strong>Total Records:</strong> ${modalData.rows.length}
+          </div>
+        </div>
+
+        <div class="kpi-row">
+          <div class="kpi-box">
+            <div class="kpi-title">Total Stock Qty</div>
+            <div class="kpi-value" style="color: #2563eb;">${totalQty} KG</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Total Master Cartons</div>
+            <div class="kpi-value" style="color: #16a34a;">${totalMc} MC</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Loose Slabs Qty</div>
+            <div class="kpi-value" style="color: #d97706;">${totalLoose}</div>
+          </div>
+          <div class="kpi-box">
+            <div class="kpi-title">Total Locations/Batches</div>
+            <div class="kpi-value" style="color: #7c3aed;">${modalData.rows.length}</div>
+          </div>
+        </div>
+
+        <div class="pills-container">
+          ${locationPillsHtml}
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 30px;">#</th>
+              <th style="width: 75px;">Date</th>
+              <th>Company</th>
+              <th>Plant / Unit</th>
+              <th>Coldstore Location</th>
+              <th>Freezer</th>
+              <th style="width: 80px;">Batch #</th>
+              <th>Variety</th>
+              <th>Glaze</th>
+              <th>Grade</th>
+              <th>Pack Style</th>
+              <th style="text-align: right;">MC</th>
+              <th style="text-align: right;">Loose</th>
+              <th style="text-align: right;">Qty (KG)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+          <tfoot>
+            <tr>
+              <td colspan="11" style="text-align: right;">TOTAL:</td>
+              <td style="text-align: right;">${totalMc}</td>
+              <td style="text-align: right;">${totalLoose}</td>
+              <td style="text-align: right; color: #1e3a8a; font-size: 12px;">${totalQty} KG</td>
+            </tr>
+          </tfoot>
+        </table>
+      </body>
+      </html>
+    `;
+
+    printWin.document.open();
+    printWin.document.write(htmlContent);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => {
+      printWin.print();
+    }, 250);
+  };
+
 
   const getExportUrl = (type) => {
     let url = `${routeBase}/export_${type}?from_date=${fromDate}&to_date=${toDate}&type=${movFilter}&batch=${encodeURIComponent(batchFilter)}&brand=${encodeURIComponent(brandFilter)}&species=${encodeURIComponent(speciesFilter)}&variety=${encodeURIComponent(varietyFilter)}&location=${encodeURIComponent(locationFilter)}`;
@@ -390,22 +576,94 @@ export default function StockReport({ activeRoute, user }) {
 
           {activeTab === 'summary' && (
             <div className="table-responsive" style={{ maxHeight: 600, overflowY: 'auto' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ background: 'rgba(37, 99, 235, 0.1)', color: 'var(--corp-dash)', padding: '2px 6px', borderRadius: '3px', fontWeight: '800' }}>TIP</span>
+                <span>Click on any cell value or description to view location-wise stock breakdown popup.</span>
+              </div>
               <table className="bknr-table stock-summary-matrix" style={{ minWidth: Math.max(360, 280 + gradeColumns.length * 76), width: '100%' }}>
-                <thead><tr><th style={{ width: 45 }}>#</th><th style={{ minWidth: 210 }}>Product Description</th>{gradeColumns.map(grade => <th className="text-right" key={grade}>{grade}</th>)}<th className="text-right">Total Qty (KG)</th></tr></thead>
+                <thead>
+                  <tr>
+                    <th style={{ width: 45 }}>#</th>
+                    <th style={{ minWidth: 210 }}>Product Description</th>
+                    {gradeColumns.map(grade => <th className="text-right" key={grade}>{grade}</th>)}
+                    <th className="text-right">Total Qty (KG)</th>
+                  </tr>
+                </thead>
                 <tbody>
                   {summaryRows.length === 0 ? <EmptyRow cols={gradeColumns.length + 3} /> : summaryRows.map(row => (
                     <tr key={row.key} className={`stock-summary-${row.type}`}>
                       <td className="text-center">{row.type === 'item' ? row.index : ''}</td>
-                      <td>{row.label} {row.type !== 'item' && <strong>({fmt.number(row.node.totalQty)} KG)</strong>}</td>
-                      {gradeColumns.map(grade => <td className="text-right" key={grade}>{Math.abs(Number(row.node.gradeQty[grade] || 0)) > 0.001 ? fmt.number(row.node.gradeQty[grade]) : ''}</td>)}
-                      <td className="text-right" style={{ fontWeight: 900, color: 'var(--corp-rep)' }}>{fmt.number(row.node.totalQty)}</td>
+                      <td 
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => handleCellClick(row, null)}
+                        title={`Click to view location breakdown for ${row.label}`}
+                      >
+                        <span style={{ textDecoration: 'underline', textDecorationStyle: 'dotted' }}>{row.label}</span>
+                        {row.type !== 'item' && <strong style={{ marginLeft: '6px' }}>({fmt.number(row.node.totalQty)} KG)</strong>}
+                      </td>
+                      {gradeColumns.map(grade => {
+                        const val = Number(row.node.gradeQty[grade] || 0);
+                        const hasVal = Math.abs(val) > 0.001;
+                        return (
+                          <td 
+                            className="text-right" 
+                            key={grade}
+                            onClick={() => hasVal && handleCellClick(row, grade)}
+                            style={{ 
+                              cursor: hasVal ? 'pointer' : 'default',
+                              color: hasVal ? 'var(--corp-dash)' : undefined,
+                              fontWeight: hasVal ? 700 : 400,
+                              background: hasVal ? 'rgba(37, 99, 235, 0.03)' : undefined,
+                            }}
+                            title={hasVal ? `Click to view location breakdown for ${row.label} (${grade})` : undefined}
+                          >
+                            {hasVal ? fmt.number(val) : ''}
+                          </td>
+                        );
+                      })}
+                      <td 
+                        className="text-right" 
+                        onClick={() => Math.abs(row.node.totalQty) > 0.001 && handleCellClick(row, null)}
+                        style={{ fontWeight: 900, color: 'var(--corp-rep)', cursor: Math.abs(row.node.totalQty) > 0.001 ? 'pointer' : 'default' }}
+                        title="Click to view location breakdown"
+                      >
+                        {fmt.number(row.node.totalQty)}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot><tr><td colSpan={2} className="text-right">GRAND TOTALS (STOCK IN HAND):</td>{gradeColumns.map(grade => <td className="text-right" key={grade}>{fmt.number([...summaryTree.values()].reduce((sum, node) => sum + Number(node.gradeQty[grade] || 0), 0))}</td>)}<td className="text-right">{fmt.number(netStock)}</td></tr></tfoot>
+                <tfoot>
+                  <tr>
+                    <td colSpan={2} className="text-right">GRAND TOTALS (STOCK IN HAND):</td>
+                    {gradeColumns.map(grade => {
+                      const totalGradeQty = [...summaryTree.values()].reduce((sum, node) => sum + Number(node.gradeQty[grade] || 0), 0);
+                      const hasVal = Math.abs(totalGradeQty) > 0.001;
+                      return (
+                        <td 
+                          className="text-right" 
+                          key={grade}
+                          onClick={() => hasVal && handleCellClick({ type: 'grand_total', label: 'Grand Total Stock' }, grade)}
+                          style={{ cursor: hasVal ? 'pointer' : 'default', fontWeight: 800, color: hasVal ? 'var(--corp-dash)' : undefined }}
+                          title={hasVal ? `Click to view location breakdown for Grade ${grade}` : undefined}
+                        >
+                          {fmt.number(totalGradeQty)}
+                        </td>
+                      );
+                    })}
+                    <td 
+                      className="text-right" 
+                      onClick={() => Math.abs(netStock) > 0.001 && handleCellClick({ type: 'grand_total', label: 'Grand Total Stock' }, null)}
+                      style={{ fontWeight: 900, cursor: Math.abs(netStock) > 0.001 ? 'pointer' : 'default' }}
+                      title="Click to view all location breakdown"
+                    >
+                      {fmt.number(netStock)}
+                    </td>
+                  </tr>
+                </tfoot>
               </table>
             </div>
           )}
+
 
           {activeTab === 'unique' && (
             <div className="table-responsive" style={{ maxHeight: 600, overflowY: 'auto' }}>
@@ -777,6 +1035,180 @@ export default function StockReport({ activeRoute, user }) {
         auditUrl={`${routeBase}/audit_all`}
       />
 
+      {/* Location Wise Breakdown Modal */}
+      {modalData && (
+        <div style={modalOverlayStyle} onClick={() => setModalData(null)}>
+          <div style={modalContentStyle} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, textTransform: 'uppercase', fontSize: '14px', fontWeight: '800', color: 'var(--corp-dash)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  📍 {modalData.title}
+                </h3>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px', fontWeight: '700' }}>
+                  {modalData.subtitle}
+                </div>
+              </div>
+              <button 
+                onClick={() => setModalData(null)} 
+                style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--text-secondary)', lineHeight: 1, padding: '0 4px' }}
+              >
+                &times;
+              </button>
+            </div>
+
+
+
+            {/* KPI Badges Summary for Popup */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px', marginBottom: '16px' }}>
+              <div style={{ background: 'rgba(37, 99, 235, 0.06)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '10px', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '800' }}>Total Stock Qty</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--corp-dash)', marginTop: '2px' }}>
+                  {fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.quantity || 0), 0))} KG
+                </div>
+              </div>
+              <div style={{ background: 'rgba(16, 185, 129, 0.06)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '10px', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '800' }}>Total Master Cartons</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#10b981', marginTop: '2px' }}>
+                  {fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.no_of_mc || 0), 0))} MC
+                </div>
+              </div>
+              <div style={{ background: 'rgba(245, 158, 11, 0.06)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '10px', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '800' }}>Loose Slabs Qty</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#f59e0b', marginTop: '2px' }}>
+                  {fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.loose || 0), 0))}
+                </div>
+              </div>
+              <div style={{ background: 'rgba(139, 92, 246, 0.06)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '10px', borderRadius: '6px' }}>
+                <div style={{ fontSize: '10px', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: '800' }}>Total Locations/Batches</div>
+                <div style={{ fontSize: '16px', fontWeight: '800', color: '#8b5cf6', marginTop: '2px' }}>
+                  {modalData.rows.length} Items
+                </div>
+              </div>
+            </div>
+
+            {/* Location Grouped Summary Pills */}
+            <div style={{ marginBottom: '16px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {Object.entries(
+                modalData.rows.reduce((acc, r) => {
+                  const locKey = `${r.production_at || 'Unit-N/A'} — ${r.location || 'Coldstore-N/A'}`;
+                  acc[locKey] = (acc[locKey] || 0) + Number(r.quantity || 0);
+                  return acc;
+                }, {})
+              ).map(([locName, locQty]) => (
+                <div key={locName} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid var(--border-light)', padding: '4px 10px', borderRadius: '4px', fontSize: '11px' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>{locName}:</strong> <span style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{fmt.number(locQty)} KG</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Location Breakdown Table */}
+            <div className="table-responsive" style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid var(--border-light)', borderRadius: '6px' }}>
+              <table className="bknr-table" style={{ width: '100%', minWidth: '1200px', fontSize: '11px' }}>
+                <thead>
+                  <tr>
+                    <th className="text-center" style={{ width: '40px' }}>#</th>
+                    <th className="text-center" style={{ width: '90px' }}>Date</th>
+                    <th className="text-left" style={{ width: '130px' }}>Company</th>
+                    <th className="text-left" style={{ width: '130px' }}>Plant / Unit</th>
+                    <th className="text-left" style={{ width: '140px' }}>Coldstore Location</th>
+                    <th className="text-left" style={{ width: '100px' }}>Freezer</th>
+                    <th className="text-center" style={{ width: '110px' }}>Batch #</th>
+                    <th className="text-left" style={{ width: '120px' }}>Variety</th>
+                    <th className="text-center" style={{ width: '80px' }}>Glaze</th>
+                    <th className="text-center" style={{ width: '80px' }}>Grade</th>
+                    <th className="text-left" style={{ width: '120px' }}>Pack Style</th>
+                    <th className="text-right" style={{ width: '80px' }}>MC</th>
+                    <th className="text-right" style={{ width: '80px' }}>Loose</th>
+                    <th className="text-right" style={{ width: '110px' }}>Qty (KG)</th>
+                    <th className="text-left" style={{ width: '100px' }}>User</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modalData.rows.map((row, idx) => (
+                    <tr key={idx} style={{ background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)' }}>
+                      <td className="text-center">{idx + 1}</td>
+                      <td className="text-center" style={{ color: 'var(--text-secondary)' }}>{row.date || '-'}</td>
+                      <td className="text-left" style={{ fontWeight: '700' }}>{row.production_for || '-'}</td>
+                      <td className="text-left" style={{ color: 'var(--corp-dash)', fontWeight: '700' }}>{row.production_at || '-'}</td>
+                      <td className="text-left" style={{ color: '#10b981', fontWeight: '800' }}>{row.location || '-'}</td>
+                      <td className="text-left">{row.freezer || '-'}</td>
+                      <td className="text-center" style={{ fontWeight: '700' }}>{row.batch_number || '-'}</td>
+                      <td className="text-left">{row.variety || '-'}</td>
+                      <td className="text-center">{row.glaze || '-'}</td>
+                      <td className="text-center" style={{ fontWeight: '800' }}>{row.grade || '-'}</td>
+                      <td className="text-left">{row.packing_style || '-'}</td>
+                      <td className="text-right">{fmt.number(row.no_of_mc)}</td>
+                      <td className="text-right">{fmt.number(row.loose)}</td>
+                      <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{fmt.number(row.quantity)} KG</td>
+                      <td className="text-left" style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>{row.email ? row.email.split('@')[0] : ''}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr style={{ background: 'rgba(255,255,255,0.03)', fontWeight: '800' }}>
+                    <td colSpan="11" className="text-right">TOTAL:</td>
+                    <td className="text-right">{fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.no_of_mc || 0), 0))}</td>
+                    <td className="text-right">{fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.loose || 0), 0))}</td>
+                    <td className="text-right" style={{ color: 'var(--corp-dash)', fontWeight: '900' }}>
+                      {fmt.number(modalData.rows.reduce((sum, r) => sum + Number(r.quantity || 0), 0))} KG
+                    </td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid var(--border-light)' }}>
+              <button 
+                type="button"
+                className="btn btn-primary" 
+                onClick={handlePrintModal}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+              >
+                <Printer size={14} /> Print
+              </button>
+
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setModalData(null)}
+                style={{ minWidth: '100px' }}
+              >
+                Close
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
+
+const modalOverlayStyle = {
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  width: '100vw',
+  height: '100vh',
+  background: 'rgba(0, 0, 0, 0.65)',
+  backdropFilter: 'blur(4px)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  zIndex: 10000,
+};
+
+const modalContentStyle = {
+  background: 'var(--card-bg, #111827)',
+  border: '1px solid var(--border-light, #374151)',
+  borderRadius: '10px',
+  padding: '20px',
+  width: '92%',
+  maxWidth: '1100px',
+  maxHeight: '88vh',
+  overflowY: 'auto',
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+  color: 'var(--text-primary, #f9fafb)',
+};
+

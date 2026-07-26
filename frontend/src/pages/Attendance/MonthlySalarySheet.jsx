@@ -40,6 +40,22 @@ function indianAmountInWords(value) {
 }
 
 export default function MonthlySalarySheet({ theme }) {
+  const [activeTab, setActiveTab] = useState('staff'); // 'staff' | 'day_workers' | 'kg_workers'
+  const [dayWorkersData, setDayWorkersData] = useState({ workers: [], pending_ot_list: [] });
+  const [dayWorkersLoading, setDayWorkersLoading] = useState(false);
+
+  const [kgWorkersData, setKgWorkersData] = useState({ workers: [] });
+  const [kgWorkersLoading, setKgWorkersLoading] = useState(false);
+
+  // Worker Adjustment Modal
+  const [isAdjModalOpen, setIsAdjModalOpen] = useState(false);
+  const [adjModalWorker, setAdjModalWorker] = useState(null);
+  const [adjModalAmount, setAdjModalAmount] = useState('');
+  const [adjModalReason, setAdjModalReason] = useState('');
+
+  // KG Daily Production Details Modal
+  const [kgDetailModal, setKgDetailModal] = useState({ isOpen: false, worker: null, day: null, details: null });
+
   const [month, setMonth] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('ALL');
   const [selectedDept, setSelectedDept] = useState('ALL');
@@ -100,6 +116,131 @@ export default function MonthlySalarySheet({ theme }) {
     }
   };
 
+  const loadDayWorkersSheet = async (targetMonth = month, targetLoc = selectedLocation, targetDept = selectedDept) => {
+    if (!targetMonth) return;
+    setDayWorkersLoading(true);
+    try {
+      const res = await sessionFetch(`/api/salary/get-day-basis-report?month=${targetMonth}&dept=${targetDept}&location=${targetLoc}`);
+      const data = await res.json();
+      setDayWorkersData({
+        workers: data.workers || [],
+        pending_ot_list: data.pending_ot_list || []
+      });
+    } catch (e) {
+      showNotification('❌ Failed to fetch Day Basis Workers Report!', 'danger');
+    } finally {
+      setDayWorkersLoading(false);
+    }
+  };
+
+  const [tempWorkersData, setTempWorkersData] = useState({ workers: [], pending_ot_list: [] });
+  const [tempWorkersLoading, setTempWorkersLoading] = useState(false);
+
+  const loadTempWorkersSheet = async (targetMonth = month, targetLoc = selectedLocation, targetDept = selectedDept) => {
+    if (!targetMonth) return;
+    setTempWorkersLoading(true);
+    try {
+      const res = await sessionFetch(`/api/salary/get-temp-day-workers-report?month=${targetMonth}&dept=${targetDept}&location=${targetLoc}`);
+      const data = await res.json();
+      setTempWorkersData({
+        workers: data.workers || [],
+        pending_ot_list: data.pending_ot_list || []
+      });
+    } catch (e) {
+      showNotification('❌ Failed to fetch Daily Temporary Workers Report!', 'danger');
+    } finally {
+      setTempWorkersLoading(false);
+    }
+  };
+
+  const loadKgWorkersSheet = async (targetMonth = month, targetLoc = selectedLocation, targetDept = selectedDept) => {
+    if (!targetMonth) return;
+    setKgWorkersLoading(true);
+    try {
+      const res = await sessionFetch(`/api/salary/get-kg-basis-report?month=${targetMonth}&dept=${targetDept}&location=${targetLoc}`);
+      const data = await res.json();
+      setKgWorkersData({
+        workers: data.workers || []
+      });
+    } catch (e) {
+      showNotification('❌ Failed to fetch KG Basis Workers Report!', 'danger');
+    } finally {
+      setKgWorkersLoading(false);
+    }
+  };
+  const openAdjustmentModal = (worker) => {
+    const currentDay = new Date().getDate();
+    const isAdjustmentActive = currentDay >= 1 && currentDay <= 10;
+    if (!isAdjustmentActive) {
+      showNotification(`🔒 Adjustments locked! Salary adjustments are allowed only between the 1st and 10th of the month. (Today is Day ${currentDay})`, 'danger');
+      return;
+    }
+    setAdjModalWorker(worker);
+    setAdjModalAmount(worker.salary_adjustment || 0);
+    setAdjModalReason(worker.salary_adjustment_reason || '');
+    setIsAdjModalOpen(true);
+  };
+
+  const handleSaveAdjustment = async () => {
+    if (!adjModalWorker) return;
+    const currentDay = new Date().getDate();
+    const isAdjustmentActive = currentDay >= 1 && currentDay <= 10;
+    if (!isAdjustmentActive) {
+      showNotification(`🔒 Adjustments locked! Salary adjustments are allowed only between the 1st and 10th of the month. (Today is Day ${currentDay})`, 'danger');
+      return;
+    }
+
+    try {
+      const res = await sessionFetch('/api/salary/save-worker-adjustment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          worker_id: adjModalWorker.id,
+          worker_name: adjModalWorker.name,
+          month: month,
+          adjustment_amount: parseFloat(adjModalAmount || 0),
+          reason: adjModalReason
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        showNotification(data.message, 'success');
+        setIsAdjModalOpen(false);
+        if (activeTab === 'day_workers') loadDayWorkersSheet(month, selectedLocation, selectedDept);
+        if (activeTab === 'kg_workers') loadKgWorkersSheet(month, selectedLocation, selectedDept);
+        if (activeTab === 'temp_day_workers') loadTempWorkersSheet(month, selectedLocation, selectedDept);
+      } else {
+        throw new Error(data.message || 'Failed to save adjustment');
+      }
+    } catch (e) {
+      showNotification(`❌ ${e.message}`, 'danger');
+    }
+  };
+
+  const handleOtApproval = async (attId, action, approvedOtHours = null) => {
+    try {
+      const res = await sessionFetch('/api/salary/approve-day-basis-ot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          att_id: attId,
+          action: action,
+          approved_ot_hours: approvedOtHours
+        })
+      });
+      const data = await res.json();
+      if (res.ok && data.status === 'success') {
+        showNotification(data.message, 'success');
+        loadDayWorkersSheet(month, selectedLocation, selectedDept);
+        generateSheet(month, selectedLocation, selectedDept);
+      } else {
+        throw new Error(data.message || 'Action failed!');
+      }
+    } catch (e) {
+      showNotification(`❌ ${e.message}`, 'danger');
+    }
+  };
+
   const generateSheet = async (targetMonth = month, targetLoc = selectedLocation, targetDept = selectedDept) => {
     if (!targetMonth) return;
     try {
@@ -146,22 +287,35 @@ export default function MonthlySalarySheet({ theme }) {
     setMonth(currentMonth);
     loadFilters();
     generateSheet(currentMonth, 'ALL', 'ALL');
+    loadDayWorkersSheet(currentMonth, 'ALL', 'ALL');
+    loadKgWorkersSheet(currentMonth, 'ALL', 'ALL');
+    loadTempWorkersSheet(currentMonth, 'ALL', 'ALL');
   }, []);
 
   const handleMonthChange = (e) => {
     setMonth(e.target.value);
     generateSheet(e.target.value, selectedLocation, selectedDept);
+    loadDayWorkersSheet(e.target.value, selectedLocation, selectedDept);
+    loadKgWorkersSheet(e.target.value, selectedLocation, selectedDept);
+    loadTempWorkersSheet(e.target.value, selectedLocation, selectedDept);
   };
 
   const handleLocationChange = (e) => {
     setSelectedLocation(e.target.value);
     generateSheet(month, e.target.value, selectedDept);
+    loadDayWorkersSheet(month, e.target.value, selectedDept);
+    loadKgWorkersSheet(month, e.target.value, selectedDept);
+    loadTempWorkersSheet(month, e.target.value, selectedDept);
   };
 
   const handleDeptChange = (e) => {
     setSelectedDept(e.target.value);
     generateSheet(month, selectedLocation, e.target.value);
+    loadDayWorkersSheet(month, selectedLocation, e.target.value);
+    loadKgWorkersSheet(month, selectedLocation, e.target.value);
+    loadTempWorkersSheet(month, selectedLocation, e.target.value);
   };
+
 
   const printFullLedger = () => {
     document.body.classList.remove('print-single-mode');
@@ -312,7 +466,7 @@ export default function MonthlySalarySheet({ theme }) {
   }
 
   return (
-    <div className="attendance-container">
+    <div className="attendance-container page-scrollable" style={{ paddingBottom: '80px' }}>
       {notification && (
         <div className={`attendance-toast ${notification.type === 'success' ? 'success' : 'error'}`} style={{ top: '80px' }}>
           {notification.msg}
@@ -342,7 +496,54 @@ export default function MonthlySalarySheet({ theme }) {
         </div>
       </div>
 
+      {/* TAB NAVIGATION BAR */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', borderBottom: '2px solid var(--att-border)', paddingBottom: '10px', flexWrap: 'wrap' }}>
+        <button
+          className={`attendance-btn ${activeTab === 'staff' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`}
+          onClick={() => setActiveTab('staff')}
+          style={{ padding: '8px 18px', fontWeight: '800', fontSize: '13px', borderRadius: '6px' }}
+        >
+          👥 Regular Staff Payroll
+        </button>
+        <button
+          className={`attendance-btn ${activeTab === 'day_workers' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`}
+          onClick={() => {
+            setActiveTab('day_workers');
+            loadDayWorkersSheet();
+          }}
+          style={{ padding: '8px 18px', fontWeight: '800', fontSize: '13px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          📅 Day Basis Staff Payroll
+          {dayWorkersData.pending_ot_list?.length > 0 && (
+            <span style={{ background: '#f59e0b', color: '#fff', padding: '2px 8px', borderRadius: '12px', fontSize: '10px', fontWeight: '900' }}>
+              {dayWorkersData.pending_ot_list.length} OT Waiting
+            </span>
+          )}
+        </button>
+        <button
+          className={`attendance-btn ${activeTab === 'kg_workers' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`}
+          onClick={() => {
+            setActiveTab('kg_workers');
+            loadKgWorkersSheet();
+          }}
+          style={{ padding: '8px 18px', fontWeight: '800', fontSize: '13px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          ⚖️ KG Basis Workers Salary Sheet
+        </button>
+        <button
+          className={`attendance-btn ${activeTab === 'temp_day_workers' ? 'attendance-btn-primary' : 'attendance-btn-secondary'}`}
+          onClick={() => {
+            setActiveTab('temp_day_workers');
+            loadTempWorkersSheet();
+          }}
+          style={{ padding: '8px 18px', fontWeight: '800', fontSize: '13px', borderRadius: '6px', display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+        >
+          ⚡ Daily Temporary Workers
+        </button>
+      </div>
+
       {/* FILTER BAR */}
+
       <div className="attendance-filters-bar">
         <div className="attendance-filter-group">
           <label htmlFor="payroll-month">Payroll Month</label>
@@ -385,30 +586,486 @@ export default function MonthlySalarySheet({ theme }) {
       </div>
 
       {/* CORPORATE LEDGER TABLE */}
-      <div className="attendance-table-container">
-        <div className="attendance-table-wrapper">
-          <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 1700}px` }}>
-            <thead>
-              <tr>
-                <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
-                  Employee & ID
-                </th>
-                <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Attendance</th>
-                <th colSpan="8" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty Summary</th>
-                <th colSpan="2" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Overtime</th>
-                <th colSpan="5" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Financials (₹)</th>
-                <th colSpan="6" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Deductions (₹)</th>
-                <th rowSpan="2" className="payout-col" style={{ borderBottom: '2px solid var(--att-border)', minWidth: '120px' }}>Net Payout</th>
-              </tr>
-              <tr>
-                {dayHeaders}
-                <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>2.5P</th><th>3P</th><th>Duty Credit</th><th>Worked Days</th>
-                <th>OT Hrs</th><th>OT Pay</th>
-                <th>Gross</th><th>Bonus</th><th>Adj</th><th>Adjustment Reason</th><th>Earned</th>
-                <th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th>
-              </tr>
-            </thead>
-            <tbody>
+      {activeTab === 'kg_workers' ? (
+
+        <div className="kg-workers-payroll-container">
+          {/* KPI CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total KG Workers</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', marginTop: '4px' }}>
+                {kgWorkersData.workers.length} Staff
+              </div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Worked Duty Days</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px' }}>
+                {kgWorkersData.workers.reduce((s, w) => s + Number(w.worked_duties || 0), 0)} Days
+              </div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total KG Production</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b', marginTop: '4px' }}>
+                ⚖️ {fmt(kgWorkersData.workers.reduce((s, w) => s + Number(w.total_kg || 0), 0))} KG
+              </div>
+            </div>
+            <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total KG Basis Payout</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#8b5cf6', marginTop: '4px' }}>
+                ₹{fmt(kgWorkersData.workers.reduce((s, w) => s + Number(w.net_pay || 0), 0))}
+              </div>
+            </div>
+          </div>
+
+          {/* KG BASIS WORKERS SALARY TABLE */}
+          <div className="attendance-table-container">
+            <div className="attendance-table-wrapper">
+              <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 750}px` }}>
+                <thead>
+                  <tr>
+                    <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
+                      KG Worker Name & ID
+                    </th>
+                    <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Production Pay (₹) (Click Cell for KG Breakup)</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty & Earnings</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Payout (₹)</th>
+                  </tr>
+                  <tr>
+                    {dayHeaders}
+                    <th>Duty Days</th><th>Total KG</th><th>Base Pay (₹)</th>
+                    <th>± Adjustment (₹)</th><th>Advance (₹)</th><th className="payout-col">Net Payout (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kgWorkersData.workers.map((worker, index) => (
+                    <tr key={worker.id || index}>
+                      <td className="sticky-col" style={{ zIndex: 10, background: 'var(--att-card)', borderRight: '2px solid var(--att-border)', textAlign: 'left' }}>
+                        <div style={{ fontWeight: '800', color: 'var(--att-heading)' }}>{index + 1}. {worker.name}</div>
+                        <div style={{ fontSize: '9px', color: 'var(--att-muted)', fontWeight: '700' }}>ID: {worker.id} | {worker.contractor}</div>
+                      </td>
+
+                      {/* Daily Amount Cells (Click to view KG Details) */}
+                      {Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        const cellVal = worker.att_map?.[day] || '-';
+                        const dt = worker.att_details?.[day] || { day, total_kg: 0, deheading_kg: 0, peeling_kg: 0, amount: 0 };
+                        const hasVal = cellVal !== '-';
+
+                        return (
+                          <td
+                            key={day}
+                            className={hasVal ? 'attendance-cell-active' : 'attendance-cell-empty'}
+                            onClick={() => {
+                              setKgDetailModal({
+                                isOpen: true,
+                                worker: worker,
+                                day: day,
+                                details: dt
+                              });
+                            }}
+                            title={`Click to view Day ${day} KG Production Details`}
+                            style={{ cursor: 'pointer', fontWeight: hasVal ? '800' : 'normal', fontSize: '11px', userSelect: 'none' }}
+                          >
+                            {cellVal}
+                          </td>
+                        );
+                      })}
+
+                      {/* Summary Columns */}
+                      <td style={{ fontWeight: '800', color: 'var(--att-success)' }}>{worker.worked_duties}</td>
+                      <td style={{ fontWeight: '800', color: '#f59e0b' }}>{fmt(worker.total_kg)}</td>
+                      <td style={{ fontWeight: '800' }}>₹{fmt(worker.base_earnings)}</td>
+
+                      <td style={{ fontWeight: '800' }}>
+                        <span style={{ color: worker.salary_adjustment > 0 ? '#10b981' : (worker.salary_adjustment < 0 ? '#ef4444' : 'inherit') }}>
+                          ₹{fmt(worker.salary_adjustment)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openAdjustmentModal(worker)}
+                          style={{ marginLeft: '6px', background: 'transparent', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '800' }}
+                        >
+                          ✏️
+                        </button>
+                      </td>
+                      <td style={{ color: 'var(--att-muted)' }}>₹{fmt(worker.salary_advance)}</td>
+                      <td className="payout-col" style={{ fontWeight: '900', color: 'var(--att-success)' }}>₹{fmt(worker.net_pay)}</td>
+                    </tr>
+                  ))}
+
+                  {!kgWorkersData.workers.length && (
+                    <tr>
+                      <td colSpan={daysInMonth + 7} className="attendance-empty">
+                        No KG Basis Workers records found for this selection.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'day_workers' ? (
+        <div className="day-workers-payroll-container">
+          {/* KPI CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Day Workers</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', marginTop: '4px' }}>
+                {dayWorkersData.workers.length} Staff
+              </div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Worked Duty Days</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px' }}>
+                {dayWorkersData.workers.reduce((s, w) => s + Number(w.worked_duties || 0), 0)} Days
+              </div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Approved OT Hours</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b', marginTop: '4px' }}>
+                ⚡ {dayWorkersData.workers.reduce((s, w) => s + Number(w.approved_ot_hours || 0), 0)} Hrs
+              </div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>OT Approval Pending</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b', marginTop: '4px' }}>
+                ⏳ {dayWorkersData.pending_ot_list.length} Requests
+              </div>
+            </div>
+            <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Day Basis Payout</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#8b5cf6', marginTop: '4px' }}>
+                ₹{fmt(dayWorkersData.workers.reduce((s, w) => s + Number(w.net_pay || 0), 0))}
+              </div>
+            </div>
+          </div>
+
+          {/* PENDING OT & DOUBLE DUTY APPROVAL WAITING LIST */}
+          {dayWorkersData.pending_ot_list.length > 0 && (
+            <div style={{ background: 'var(--att-card)', border: '2px solid rgba(245, 158, 11, 0.4)', borderRadius: '10px', padding: '16px', marginBottom: '24px', boxShadow: '0 4px 12px rgba(245,158,11,0.1)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    ⚠️ OT & Double Duty Approval Waiting List ({dayWorkersData.pending_ot_list.length} Pending)
+                  </h3>
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: 'var(--att-muted)' }}>
+                    Working hours &ge; 9 hrs require manager approval. Accept saves requested OT hours. Reject saves 8h Duty (P) only.
+                  </p>
+                </div>
+              </div>
+
+              <div className="attendance-table-wrapper" style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                <table className="attendance-table" style={{ fontSize: '12px' }}>
+                  <thead>
+                    <tr>
+                      <th style={{ textAlign: 'center', width: '40px' }}>#</th>
+                      <th style={{ textAlign: 'left' }}>Date</th>
+                      <th style={{ textAlign: 'left' }}>Worker Name & ID</th>
+                      <th style={{ textAlign: 'left' }}>Department / Contractor</th>
+                      <th style={{ textAlign: 'center' }}>Total Working Hours</th>
+                      <th style={{ textAlign: 'center' }}>Standard Duty</th>
+                      <th style={{ textAlign: 'center' }}>Requested OT Hours</th>
+                      <th style={{ textAlign: 'center', width: '220px' }}>Approval Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dayWorkersData.pending_ot_list.map((item, idx) => (
+                      <tr key={item.att_id || idx}>
+                        <td style={{ textAlign: 'center', fontWeight: '700' }}>{idx + 1}</td>
+                        <td style={{ fontWeight: '700' }}>{item.duty_date}</td>
+                        <td style={{ fontWeight: '800', color: 'var(--att-heading)' }}>
+                          {item.worker_name} <span style={{ fontSize: '10px', color: 'var(--att-muted)' }}>({item.worker_id})</span>
+                        </td>
+                        <td>{item.department}</td>
+                        <td style={{ textAlign: 'center', fontWeight: '900', color: '#f59e0b' }}>
+                          {item.working_hours} hrs {item.is_double_duty ? '(Double Duty)' : ''}
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: '800', color: 'var(--att-success)' }}>
+                          8.0 hrs (P)
+                        </td>
+                        <td style={{ textAlign: 'center', fontWeight: '900', color: '#f59e0b' }}>
+                          ⚡ {item.requested_ot_hours} hrs
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                            <button
+                              type="button"
+                              className="attendance-btn"
+                              onClick={() => handleOtApproval(item.att_id, 'APPROVE', item.requested_ot_hours)}
+                              style={{ background: '#10b981', color: '#fff', border: 'none', padding: '4px 10px', fontSize: '11px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              ✓ Accept & Save
+                            </button>
+                            <button
+                              type="button"
+                              className="attendance-btn"
+                              onClick={() => handleOtApproval(item.att_id, 'REJECT')}
+                              style={{ background: '#475569', color: '#fff', border: 'none', padding: '4px 10px', fontSize: '11px', fontWeight: '800', borderRadius: '4px', cursor: 'pointer' }}
+                            >
+                              ✕ Reject (8h P Only)
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* DAY BASIS WORKERS SALARY TABLE */}
+          <div className="attendance-table-container">
+            <div className="attendance-table-wrapper">
+              <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 950}px` }}>
+                <thead>
+                  <tr>
+                    <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
+                      Day Worker Name & ID
+                    </th>
+                    <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Attendance (P / HP / OT)</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty & Earnings</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Overtime (OT) Pay</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Payout (₹)</th>
+                  </tr>
+                  <tr>
+                    {dayHeaders}
+                    <th>Duty Days</th><th>Per Day Rate (₹)</th><th>Base Pay (₹)</th>
+                    <th>OT Hrs</th><th>OT Rate (₹/h)</th><th>OT Pay (₹)</th>
+                    <th>± Adjustment (₹)</th><th>Advance (₹)</th><th className="payout-col">Net Payout (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dayWorkersData.workers.map((worker, index) => (
+                    <tr key={worker.id || index}>
+                      <td className="sticky-col" style={{ zIndex: 10, background: 'var(--att-card)', borderRight: '2px solid var(--att-border)', textAlign: 'left' }}>
+                        <div style={{ fontWeight: '800', color: 'var(--att-heading)' }}>{index + 1}. {worker.name}</div>
+                        <div style={{ fontSize: '9px', color: 'var(--att-muted)', fontWeight: '700' }}>ID: {worker.id} | {worker.contractor}</div>
+                      </td>
+
+                      {/* Attendance Cells */}
+                      {Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        const st = worker.att_map?.[day] || 'A';
+                        let cls = 'attendance-cell-empty';
+                        if (st === 'HP') cls = 'attendance-cell-half';
+                        else if (st.startsWith('P')) cls = 'attendance-cell-active';
+                        if (st.includes('+')) cls = 'attendance-cell-ot';
+
+                        return (
+                          <td key={day} className={cls}>
+                            {st}
+                          </td>
+                        );
+                      })}
+
+                      {/* Summary Columns */}
+                      <td style={{ fontWeight: '800', color: 'var(--att-success)' }}>{worker.worked_duties}</td>
+                      <td>₹{fmt(worker.per_day_rate)}</td>
+                      <td style={{ fontWeight: '800' }}>₹{fmt(worker.base_earnings)}</td>
+
+                      <td style={{ fontWeight: '800', color: 'var(--att-warning)' }}>{worker.approved_ot_hours}</td>
+                      <td>₹{fmt(worker.ot_hourly_rate)}</td>
+                      <td style={{ fontWeight: '800', color: 'var(--att-warning)' }}>₹{fmt(worker.ot_pay)}</td>
+
+                      <td style={{ fontWeight: '800' }}>
+                        <span style={{ color: worker.salary_adjustment > 0 ? '#10b981' : (worker.salary_adjustment < 0 ? '#ef4444' : 'inherit') }}>
+                          ₹{fmt(worker.salary_adjustment)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openAdjustmentModal(worker)}
+                          style={{ marginLeft: '6px', background: 'transparent', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '800' }}
+                        >
+                          ✏️
+                        </button>
+                      </td>
+                      <td style={{ color: 'var(--att-muted)' }}>₹{fmt(worker.salary_advance)}</td>
+                      <td className="payout-col" style={{ fontWeight: '900', color: 'var(--att-success)' }}>₹{fmt(worker.net_pay)}</td>
+                    </tr>
+                  ))}
+
+                  {!dayWorkersData.workers.length && (
+                    <tr>
+                      <td colSpan={daysInMonth + 11} className="attendance-empty">
+                        No Day Basis Workers records found for this selection.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : activeTab === 'temp_day_workers' ? (
+        <div className="temp-workers-payroll-container">
+          {/* KPI CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Daily Temp Workers</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', marginTop: '4px' }}>
+                {tempWorkersData.workers.length} Staff
+              </div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Worked Duty Days</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px' }}>
+                {tempWorkersData.workers.reduce((s, w) => s + Number(w.worked_duties || 0), 0)} Days
+              </div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Approved OT Hours</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b', marginTop: '4px' }}>
+                ⚡ {tempWorkersData.workers.reduce((s, w) => s + Number(w.approved_ot_hours || 0), 0)} Hrs
+              </div>
+            </div>
+            <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Temp Basis Payout</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#8b5cf6', marginTop: '4px' }}>
+                ₹{fmt(tempWorkersData.workers.reduce((s, w) => s + Number(w.net_pay || 0), 0))}
+              </div>
+            </div>
+          </div>
+
+          {/* TEMPORARY WORKERS SALARY TABLE */}
+          <div className="attendance-table-container">
+            <div className="attendance-table-wrapper">
+              <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 950}px` }}>
+                <thead>
+                  <tr>
+                    <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
+                      Temp Worker Name & ID
+                    </th>
+                    <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Attendance (P / HP / OT)</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty & Earnings</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Overtime (OT) Pay</th>
+                    <th colSpan="3" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Payout (₹)</th>
+                  </tr>
+                  <tr>
+                    {dayHeaders}
+                    <th>Duty Days</th><th>Per Day Rate (₹)</th><th>Base Pay (₹)</th>
+                    <th>OT Hrs</th><th>OT Rate (₹/h)</th><th>OT Pay (₹)</th>
+                    <th>± Adjustment (₹)</th><th>Advance (₹)</th><th className="payout-col">Net Payout (₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tempWorkersData.workers.map((worker, index) => (
+                    <tr key={worker.id || index}>
+                      <td className="sticky-col" style={{ zIndex: 10, background: 'var(--att-card)', borderRight: '2px solid var(--att-border)', textAlign: 'left' }}>
+                        <div style={{ fontWeight: '800', color: 'var(--att-heading)' }}>{index + 1}. {worker.name}</div>
+                        <div style={{ fontSize: '9px', color: 'var(--att-muted)', fontWeight: '700' }}>ID: {worker.id} | {worker.contractor}</div>
+                      </td>
+
+                      {/* Attendance Cells */}
+                      {Array.from({ length: daysInMonth }, (_, i) => {
+                        const day = i + 1;
+                        const st = worker.att_map?.[day] || 'A';
+                        let cls = 'attendance-cell-empty';
+                        if (st === 'HP') cls = 'attendance-cell-half';
+                        else if (st.startsWith('P')) cls = 'attendance-cell-active';
+                        if (st.includes('+')) cls = 'attendance-cell-ot';
+
+                        return (
+                          <td key={day} className={cls}>
+                            {st}
+                          </td>
+                        );
+                      })}
+
+                      {/* Summary Columns */}
+                      <td style={{ fontWeight: '800', color: 'var(--att-success)' }}>{worker.worked_duties}</td>
+                      <td>₹{fmt(worker.per_day_rate)}</td>
+                      <td style={{ fontWeight: '800' }}>₹{fmt(worker.base_earnings)}</td>
+
+                      <td style={{ fontWeight: '800', color: 'var(--att-warning)' }}>{worker.approved_ot_hours}</td>
+                      <td>₹{fmt(worker.ot_hourly_rate)}</td>
+                      <td style={{ fontWeight: '800', color: 'var(--att-warning)' }}>₹{fmt(worker.ot_pay)}</td>
+
+                      <td style={{ fontWeight: '800' }}>
+                        <span style={{ color: worker.salary_adjustment > 0 ? '#10b981' : (worker.salary_adjustment < 0 ? '#ef4444' : 'inherit') }}>
+                          ₹{fmt(worker.salary_adjustment)}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => openAdjustmentModal(worker)}
+                          style={{ marginLeft: '6px', background: 'transparent', border: 'none', color: '#2563eb', cursor: 'pointer', fontSize: '11px', fontWeight: '800' }}
+                        >
+                          ✏️
+                        </button>
+                      </td>
+                      <td style={{ color: 'var(--att-muted)' }}>₹{fmt(worker.salary_advance)}</td>
+                      <td className="payout-col" style={{ fontWeight: '900', color: 'var(--att-success)' }}>₹{fmt(worker.net_pay)}</td>
+                    </tr>
+                  ))}
+
+                  {!tempWorkersData.workers.length && (
+                    <tr>
+                      <td colSpan={daysInMonth + 11} className="attendance-empty">
+                        No Daily Temporary Workers records found for this selection.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="staff-workers-payroll-container">
+          {/* KPI CARDS */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ background: 'rgba(37, 99, 235, 0.08)', border: '1px solid rgba(37, 99, 235, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Regular Staff</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#2563eb', marginTop: '4px' }}>
+                {employees.length} Staff
+              </div>
+            </div>
+            <div style={{ background: 'rgba(16, 185, 129, 0.08)', border: '1px solid rgba(16, 185, 129, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Worked Duty Days</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#10b981', marginTop: '4px' }}>
+                {totals.worked_days} Days
+              </div>
+            </div>
+            <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Earned Gross Pay</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#f59e0b', marginTop: '4px' }}>
+                ₹{fmt(totals.earned_gross)}
+              </div>
+            </div>
+            <div style={{ background: 'rgba(139, 92, 246, 0.08)', border: '1px solid rgba(139, 92, 246, 0.2)', padding: '12px', borderRadius: '8px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--att-muted)' }}>Total Net Payout</div>
+              <div style={{ fontSize: '20px', fontWeight: '900', color: '#8b5cf6', marginTop: '4px' }}>
+                ₹{fmt(totals.net_pay)}
+              </div>
+            </div>
+          </div>
+
+          <div className="attendance-table-container">
+            <div className="attendance-table-wrapper">
+            <table className="attendance-table payroll-sheet-table" style={{ minWidth: `${300 + daysInMonth * 40 + 1700}px` }}>
+              <thead>
+                <tr>
+                  <th rowSpan="2" className="sticky-col" style={{ zIndex: 30, background: 'var(--att-table-header-bg)', borderRight: '2px solid var(--att-border)', minWidth: '180px' }}>
+                    Employee & ID
+                  </th>
+                  <th colSpan={daysInMonth} style={{ borderBottom: '1px solid var(--att-border)' }}>Daily Attendance</th>
+                  <th colSpan="8" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Duty Summary</th>
+                  <th colSpan="2" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Overtime</th>
+                  <th colSpan="5" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Financials (₹)</th>
+                  <th colSpan="6" style={{ borderBottom: '1px solid var(--att-border)', background: 'rgba(0,0,0,0.1)' }}>Deductions (₹)</th>
+                  <th rowSpan="2" className="payout-col" style={{ borderBottom: '2px solid var(--att-border)', minWidth: '120px' }}>Net Payout</th>
+                </tr>
+                <tr>
+                  {dayHeaders}
+                  <th>HP</th><th>1P</th><th>1.5P</th><th>2P</th><th>2.5P</th><th>3P</th><th>Duty Credit</th><th>Worked Days</th>
+                  <th>OT Hrs</th><th>OT Pay</th>
+                  <th>Gross</th><th>Bonus</th><th>Adj</th><th>Adjustment Reason</th><th>Earned</th>
+                  <th>Adv.</th><th>PF</th><th>ESI</th><th>PT</th><th>LWF</th><th>TDS</th>
+                </tr>
+              </thead>
+              <tbody>
+
               {employees.map((emp, index) => (
                 <tr 
                   key={emp.id} 
@@ -560,13 +1217,19 @@ export default function MonthlySalarySheet({ theme }) {
                 <td>₹{fmt(totals.esi)}</td>
                 <td>₹{fmt(totals.pt)}</td>
                 <td>₹{fmt(totals.lwf)}</td>
-                <td>₹{fmt(totals.tds)}</td>
                 <td className="payout-col" style={{ color: 'var(--att-success)', fontWeight: '900', fontSize: '12px' }}>₹{fmt(totals.net_pay)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
       </div>
+    </div>
+  )}
+
+
+
+
+
 
       {/* RAW GATE TELEMETRY LOGS MODAL */}
       {isModalOpen && (
@@ -671,6 +1334,111 @@ export default function MonthlySalarySheet({ theme }) {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* SALARY ADJUSTMENT MODAL FOR DAY & KG WORKERS */}
+      {isAdjModalOpen && adjModalWorker && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--att-card)', border: '1px solid var(--att-border)', borderRadius: '12px', width: '100%', maxWidth: '420px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '16px', fontWeight: '800', color: 'var(--att-heading)' }}>
+              ✏️ Edit Salary Adjustment - {adjModalWorker.name}
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--att-muted)' }}>
+              Worker ID: {adjModalWorker.id} | Month: {month}
+            </p>
+
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', marginBottom: '6px', color: 'var(--att-muted)' }}>
+                Adjustment Amount (₹) (+ for bonus, - for deduction)
+              </label>
+              <input
+                type="number"
+                step="any"
+                className="attendance-input"
+                style={{ width: '100%', fontSize: '14px', fontWeight: '800' }}
+                placeholder="e.g. 500 or -200"
+                value={adjModalAmount}
+                onChange={(e) => setAdjModalAmount(e.target.value)}
+              />
+            </div>
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', marginBottom: '6px', color: 'var(--att-muted)' }}>
+                Adjustment Reason / Remarks
+              </label>
+              <input
+                type="text"
+                className="attendance-input"
+                style={{ width: '100%', fontSize: '13px' }}
+                placeholder="e.g. Incentive / Special Allowance"
+                value={adjModalReason}
+                onChange={(e) => setAdjModalReason(e.target.value)}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="attendance-btn attendance-btn-secondary"
+                onClick={() => setIsAdjModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="attendance-btn attendance-btn-primary"
+                onClick={handleSaveAdjustment}
+                style={{ fontWeight: '800' }}
+              >
+                Save Adjustment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KG PRODUCTION DETAILS POPUP MODAL */}
+      {kgDetailModal.isOpen && kgDetailModal.worker && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ background: 'var(--att-card)', border: '1px solid var(--att-border)', borderRadius: '12px', width: '100%', maxWidth: '400px', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '16px', fontWeight: '800', color: 'var(--att-heading)' }}>
+              ⚖️ Daily KG Production Details
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '12px', color: 'var(--att-muted)' }}>
+              Worker: <strong>{kgDetailModal.worker.name}</strong> ({kgDetailModal.worker.id})<br />
+              Date: <strong>Day {kgDetailModal.day} ({month})</strong>
+            </p>
+
+            <div style={{ background: 'var(--att-table-header-bg)', borderRadius: '8px', padding: '14px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                <span style={{ fontWeight: '700', color: 'var(--att-muted)' }}>✂️ De-heading Production:</span>
+                <strong style={{ color: '#2563eb' }}>{kgDetailModal.details?.deheading_kg || 0} KG</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '13px' }}>
+                <span style={{ fontWeight: '700', color: 'var(--att-muted)' }}>🦐 Peeling Production:</span>
+                <strong style={{ color: '#10b981' }}>{kgDetailModal.details?.peeling_kg || 0} KG</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px dashed var(--att-border)', fontSize: '14px' }}>
+                <span style={{ fontWeight: '800' }}>⚖️ Total Daily KG:</span>
+                <strong style={{ color: '#f59e0b', fontSize: '15px' }}>{kgDetailModal.details?.total_kg || 0} KG</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px dashed var(--att-border)', fontSize: '14px', marginTop: '6px' }}>
+                <span style={{ fontWeight: '800' }}>💰 Daily Amount Earned:</span>
+                <strong style={{ color: '#8b5cf6', fontSize: '16px' }}>₹{kgDetailModal.details?.amount || 0}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                className="attendance-btn attendance-btn-primary"
+                onClick={() => setKgDetailModal({ isOpen: false, worker: null, day: null, details: null })}
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>

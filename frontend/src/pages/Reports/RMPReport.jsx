@@ -9,9 +9,41 @@ import {
 } from './ReportShell';
 
 export default function RMPReport({ activeRoute }) {
-  const [fy, setFy] = useState('');
-  const [fromDate, setFromDate] = useState('');
-  const [toDate, setToDate] = useState('');
+  const [fy, setFy] = useState(() => {
+    const requestedFy = new URLSearchParams(window.location.search).get('fy');
+    if (requestedFy) return requestedFy;
+    const today = new Date();
+    return String(today.getMonth() >= 3 ? today.getFullYear() : today.getFullYear() - 1);
+  });
+  const [fromDate, setFromDate] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fd = params.get('from_date');
+    if (fd) return fd;
+    const tm = params.get('trend_month');
+    const m = { apr:'2026-04-01', may:'2026-05-01', jun:'2026-06-01', jul:'2026-07-01' };
+    return tm ? (m[tm.toLowerCase()] || '') : '';
+  });
+  const [toDate, setToDate] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const td = params.get('to_date');
+    if (td) return td;
+    const tm = params.get('trend_month');
+    const m = { apr:'2026-04-30', may:'2026-05-31', jun:'2026-06-30', jul:'2026-07-31' };
+    return tm ? (m[tm.toLowerCase()] || '') : '';
+  });
+
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fd = params.get('from_date');
+    const td = params.get('to_date');
+    const tm = params.get('trend_month');
+    const mStart = { apr:'2026-04-01', may:'2026-05-01', jun:'2026-06-01', jul:'2026-07-01' };
+    const mEnd = { apr:'2026-04-30', may:'2026-05-31', jun:'2026-06-30', jul:'2026-07-31' };
+    if (fd) setFromDate(fd);
+    else if (tm && mStart[tm.toLowerCase()]) setFromDate(mStart[tm.toLowerCase()]);
+    if (td) setToDate(td);
+    else if (tm && mEnd[tm.toLowerCase()]) setToDate(mEnd[tm.toLowerCase()]);
+  }, []);
   const [batch, setBatch] = useState('');
   const [supplier, setSupplier] = useState('');
   const [variety, setVariety] = useState('');
@@ -60,17 +92,18 @@ export default function RMPReport({ activeRoute }) {
 
   // Grouping by Batch
   const groups = {};
-  let netG1 = 0, netG2 = 0, netDC = 0, netRec = 0, netAmt = 0;
+  let netG1 = 0, netG2 = 0, netDC = 0, netRec = 0, netBillable = 0, netAmt = 0;
 
   filteredRows.forEach(r => {
     const b = r.batch_number || 'UNKNOWN';
     if (!groups[b]) {
-      groups[b] = { g1: 0, g2: 0, dc: 0, rec: 0, amt: 0, items: [] };
+      groups[b] = { g1: 0, g2: 0, dc: 0, rec: 0, billable: 0, amt: 0, items: [] };
     }
     groups[b].g1 += Number(r.g1_qty || 0);
     groups[b].g2 += Number(r.g2_qty || 0);
     groups[b].dc += Number(r.dc_qty || 0);
     groups[b].rec += Number(r.received_qty || 0);
+    groups[b].billable += Number(r.g1_qty || 0) + (Number(r.g2_qty || 0) / 2);
     groups[b].amt += Number(r.amount || 0);
     groups[b].items.push(r);
 
@@ -78,6 +111,7 @@ export default function RMPReport({ activeRoute }) {
     netG2 += Number(r.g2_qty || 0);
     netDC += Number(r.dc_qty || 0);
     netRec += Number(r.received_qty || 0);
+    netBillable += Number(r.g1_qty || 0) + (Number(r.g2_qty || 0) / 2);
     netAmt += Number(r.amount || 0);
   });
 
@@ -256,7 +290,9 @@ export default function RMPReport({ activeRoute }) {
           <KPIGrid>
             <KPICard label="Total Entries" value={filteredRows.length} accent="var(--corp-dash)" />
             <KPICard label="Total Received (Kg)" value={fmt.number(netRec)} accent="var(--corp-ops)" />
-            <KPICard label="Average Net Rate" value={netRec > 0 ? fmt.currency(netAmt / netRec) : '₹ 0.00'} accent="var(--corp-rep)" />
+            <KPICard label="Billable Qty (Kg)" value={fmt.number(netBillable)} accent="var(--corp-rep)" />
+            <KPICard label="Weighted Purchase Rate" value={netBillable > 0 ? fmt.currency(netAmt / netBillable) : '₹ 0.00'} accent="var(--corp-rep)" />
+            <KPICard label="Effective Inventory Rate" value={netRec > 0 ? fmt.currency(netAmt / netRec) : '₹ 0.00'} accent="var(--corp-rep)" />
             <KPICard label="Total Amount" value={fmt.currency(netAmt)} accent="var(--corp-fin)" />
           </KPIGrid>
 
@@ -279,7 +315,7 @@ export default function RMPReport({ activeRoute }) {
                   <th style={{ width: 65 }}>G2</th>
                   <th style={{ width: 65 }}>DC</th>
                   <th style={{ width: 65 }}>Rec Qty</th>
-                  <th style={{ width: 65 }}>Rate</th>
+                  <th style={{ width: 85 }}>Purchase Rate</th>
                   <th style={{ width: 90 }}>Amount</th>
                   <th style={{ width: 120 }}>Remarks</th>
                   <th style={{ width: 120 }}>Email</th>
@@ -454,7 +490,7 @@ export default function RMPReport({ activeRoute }) {
                           <td className="text-right" style={{ fontWeight: 800 }}>{fmt.number(g.dc)}</td>
                           <td className="text-right" style={{ fontWeight: 800 }}>{fmt.number(g.rec)}</td>
                           <td className="text-right" style={{ fontWeight: 800, color: 'var(--corp-rep)' }}>
-                            {g.rec > 0 ? fmt.currency(g.amt / g.rec) : '₹ 0.00'}
+                            {g.billable > 0 ? fmt.currency(g.amt / g.billable) : '₹ 0.00'}
                           </td>
                           <td className="text-right" style={{ fontWeight: 800 }}>{fmt.currency(g.amt)}</td>
                           <td colSpan={2}></td>
@@ -472,7 +508,7 @@ export default function RMPReport({ activeRoute }) {
                   <td className="text-right">{fmt.number(netG2)}</td>
                   <td className="text-right">{fmt.number(netDC)}</td>
                   <td className="text-right">{fmt.number(netRec)}</td>
-                  <td className="text-right" style={{ color: 'blue' }}>{netRec > 0 ? fmt.currency(netAmt / netRec) : '₹ 0.00'}</td>
+                  <td className="text-right" style={{ color: 'blue' }}>{netBillable > 0 ? fmt.currency(netAmt / netBillable) : '₹ 0.00'}</td>
                   <td className="text-right">{fmt.currency(netAmt)}</td>
                   <td colSpan={2}></td>
                 </tr>

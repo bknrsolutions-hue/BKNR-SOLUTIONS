@@ -6,7 +6,7 @@ from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.templating import Jinja2Templates
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 from datetime import datetime
 from typing import Optional
@@ -64,9 +64,13 @@ def pending_orders_report_page(
             context=cached_context,
         )
 
-    # 2. Pending Orders Base Query
+    # 2. Pending Orders Base Query (Aligned with Form data query)
     q = db.query(pending_orders).filter(
-        pending_orders.company_id == comp_code,
+        or_(
+            func.lower(pending_orders.company_id) == comp_code.lower(),
+            pending_orders.company_id == '',
+            pending_orders.company_id.is_(None)
+        ),
         (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
     )
     
@@ -92,6 +96,8 @@ def pending_orders_report_page(
             pass
 
     rows = q.order_by(pending_orders.sl_no.asc()).all()
+    # User Directive: Hide rows where company_name is empty, null, or blank
+    rows = [r for r in rows if r.company_name and str(r.company_name).strip() and str(r.company_name).strip().lower() != 'none']
     
     # 3. Load Master Data for Calculations
     all_stock = db.query(stock_entry).filter(stock_entry.company_id == comp_code).all()
@@ -242,14 +248,8 @@ def pending_orders_report_page(
                     h_yield_pct = float(nearest_y.hlso_yield_pct or 100) / 100
                     r.req_hoso_qty = round(r.req_hlso_qty / h_yield_pct, 2) if h_yield_pct > 0 else 0
 
-    # Filter rows to include ONLY items with actual pending production required
-    rows = [
-        r for r in rows 
-        if float(getattr(r, 'prod_pending_mc', 0) or 0) > 0 
-        or float(getattr(r, 'req_hlso_qty', 0) or 0) > 0 
-        or float(getattr(r, 'req_hoso_qty', 0) or 0) > 0 
-        or float(getattr(r, 'pending_production', 0) or 0) < 0
-    ]
+    # 100% Data Consistency with Pending Orders Form: Include all active pending orders
+    # rows are preserved so report matches the entry form exactly
 
     # Template Response
     context = {

@@ -51,10 +51,62 @@ from app.services.production_cost_automation import (
     build_monthly_production_cost_preview,
     build_production_cost_comparison,
 )
+from app.services.operational_vouchers import assert_month_open, ensure_operational_voucher_schema
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 logger = logging.getLogger(__name__)
+
+
+@router.get("/api/operational-monthly-vouchers")
+def operational_monthly_vouchers(
+    request: Request,
+    month: str | None = Query(None, pattern=r"^\d{4}-\d{2}$"),
+    db: Session = Depends(get_db),
+):
+    """Accounts audit view for monthly deheading/peeling/contract labour vouchers."""
+    company_id = request.session.get("company_code") or request.session.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    ensure_operational_voucher_schema(db)
+    params = {"company_id": company_id}
+    where = "WHERE r.company_id=:company_id"
+    if month:
+        where += " AND r.period_month=CAST(:period_month AS date)"
+        params["period_month"] = f"{month}-01"
+    rows = db.execute(text(f"""
+        SELECT r.id, r.source_type, r.contractor_name, r.period_month, r.status,
+               r.locked_at, r.voucher_id, v.voucher_no,
+               COUNT(s.id) FILTER (WHERE s.is_active) AS active_entries,
+               COALESCE(SUM(s.taxable_amount) FILTER (WHERE s.is_active), 0) AS taxable_amount,
+               COALESCE(SUM(s.taxable_amount * s.gst_percent / 100) FILTER (WHERE s.is_active), 0) AS gst_amount
+        FROM operational_monthly_vouchers r
+        LEFT JOIN operational_voucher_sources s ON s.operational_voucher_id=r.id
+        LEFT JOIN voucher_headers v ON v.id=r.voucher_id
+        {where}
+        GROUP BY r.id, v.voucher_no
+        ORDER BY r.period_month DESC, r.source_type, r.contractor_name
+    """), params).mappings().all()
+    db.commit()
+    return {"items": [{**dict(row), "taxable_amount": float(row["taxable_amount"] or 0), "gst_amount": float(row["gst_amount"] or 0)} for row in rows]}
+
+
+@router.get("/api/operational-monthly-vouchers/{voucher_id}/audit")
+def operational_monthly_voucher_audit(voucher_id: int, request: Request, db: Session = Depends(get_db)):
+    company_id = request.session.get("company_code") or request.session.get("company_id")
+    if not company_id:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    ensure_operational_voucher_schema(db)
+    rows = db.execute(text("""
+        SELECT a.id, a.action, a.old_value, a.new_value, a.user_email, a.created_at,
+               s.source_table, s.source_record_id, s.source_date
+        FROM operational_voucher_audits a
+        LEFT JOIN operational_voucher_sources s ON s.id=a.source_id
+        WHERE a.company_id=:company_id AND a.operational_voucher_id=:voucher_id
+        ORDER BY a.created_at DESC, a.id DESC
+    """), {"company_id": company_id, "voucher_id": voucher_id}).mappings().all()
+    db.commit()
+    return {"items": [dict(row) for row in rows]}
 
 
 def cancel_salary_payment_vouchers(db: Session, comp_code: str, entry: SalaryProcessing, email: str) -> None:
@@ -2096,6 +2148,11 @@ def salary_processing_save(request: Request, payload: SalaryProcessingSchema, db
     ensure_bill_accounting_schema(db)
     if not re.fullmatch(r"\d{4}-(0[1-9]|1[0-2])", payload.month_year):
         return JSONResponse({"success": False, "message": "Invalid salary month"}, status_code=400)
+    salary_year, salary_month = map(int, payload.month_year.split("-"))
+    try:
+        assert_month_open(db, date(salary_year, salary_month, 1), "Salary inputs")
+    except ValueError as exc:
+        return JSONResponse({"success": False, "message": str(exc)}, status_code=403)
     employee = db.query(EmployeeRegistration).filter(
         EmployeeRegistration.company_id == comp_code,
         EmployeeRegistration.employee_id == payload.employee_id,
@@ -2258,6 +2315,11 @@ def salary_processing_delete(log_id: int, request: Request, db: Session = Depend
     email = request.session.get("email")
     entry = db.query(SalaryProcessing).filter(SalaryProcessing.id == log_id, SalaryProcessing.company_id == comp_code).first()
     if entry:
+        salary_year, salary_month = map(int, entry.month_year.split("-"))
+        try:
+            assert_month_open(db, date(salary_year, salary_month, 1), "Salary inputs")
+        except ValueError as exc:
+            return JSONResponse({"success": False, "message": str(exc)}, status_code=403)
         write_audit(db, "salary_processing", entry.id, comp_code, "is_cancelled", "False", "True", email)
         sync_monthly_advance_recovery(
             db,

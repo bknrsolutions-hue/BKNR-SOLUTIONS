@@ -79,8 +79,11 @@ export default function MasterBase({
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const handleInputChange = (fieldId, val) => {
-    setFormData(prev => ({ ...prev, [fieldId]: normalizeFieldValue(fieldId, val) }));
+  const handleInputChange = (fieldId, val, isSelect = false) => {
+    setFormData(prev => ({ 
+      ...prev, 
+      [fieldId]: isSelect ? val : normalizeFieldValue(fieldId, val) 
+    }));
   };
 
   const clearForm = () => {
@@ -101,7 +104,12 @@ export default function MasterBase({
     }
 
     try {
-      const bodyPayload = normalizeRecordFields(formData);
+      const bodyPayload = { ...formData };
+      fields.forEach(f => {
+        if (f.type !== 'select' && bodyPayload[f.id] !== undefined) {
+          bodyPayload[f.id] = normalizeFieldValue(f.id, bodyPayload[f.id]);
+        }
+      });
       if (user) {
         bodyPayload.email = user.email;
         bodyPayload.company_id = user.company_code;
@@ -309,7 +317,7 @@ export default function MasterBase({
                         id={field.id}
                         value={formData[field.id] || ''}
                         required={isRequired}
-                        onChange={(e) => handleInputChange(field.id, e.target.value)}
+                        onChange={(e) => handleInputChange(field.id, e.target.value, true)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') {
                             const allRequiredFilled = fields.every(f => {
@@ -334,7 +342,7 @@ export default function MasterBase({
                             // Dynamically identify lookup field display value
                             const displayVal = typeof item === 'string' 
                               ? item 
-                              : (item[field.lookupLabelKey] || item[field.lookupValueKey] || item.glaze_name || item.freezer_name || item.grade_name || item.packing_style || item.supplier_name || item.vendor_name || item.buyer_name || item.agent_name || item[`${field.lookupModel}_name`] || item.name || item.brand_name || item.species_name || item.variety_name || item.contractor_name || item.storage_name || item.location_name || item.peeling_at || item.production_at || item.production_for);
+                              : (item[field.lookupLabelKey] || item[field.lookupValueKey] || item.variety_name || item.contractor_name || item.species_name || item.grade_name || item.glaze_name || item.freezer_name || item.packing_style || item.supplier_name || item.vendor_name || item.buyer_name || item.agent_name || item[`${field.lookupModel}_name`] || item.name || item.brand_name || item.storage_name || item.location_name || item.peeling_at || item.production_at || item.production_for);
                             return (
                               <option key={item.id || displayVal} value={displayVal}>{displayVal}</option>
                             );
@@ -412,7 +420,7 @@ export default function MasterBase({
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {!formOpen && (
                 <div className="master-top-actions">
-                  <button className="master-btn master-btn-primary" onClick={() => setFormOpen(true)}>
+                  <button className="master-btn master-btn-primary" onClick={() => { clearForm(); setFormOpen(true); }}>
                     <i className="fa-solid fa-plus"></i> Add Profile
                   </button>
                 </div>

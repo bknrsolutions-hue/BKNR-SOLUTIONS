@@ -77,7 +77,7 @@ function TopNavbarContent({ activePage, setActivePage, user }) {
         { id: 'dashboard_inventory', token: 'dash_inv', perm: 'inventory_dashboard', route: '/dashboard/inventory_dashboard', icon: 'fa-warehouse', label: 'Inventory Dashboard' },
         { id: 'dashboard_hr', token: 'dash_hr', perm: 'hr_command_center', route: '/dashboard/hr_command_center', icon: 'fa-user-tie', label: 'HR & Staff Dashboard' },
         { id: 'dashboard_costing', token: 'dash_cost', perm: 'costing_dashboard', route: '/dashboard/costing_dashboard', icon: 'fa-file-invoice-dollar', label: 'Costing & Fin Dashboard' },
-        { id: 'dashboard_finance', token: 'dash_fin', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'Finance Dashboard' },
+        { id: 'dashboard_finance', token: 'dash_fin', perm: 'finance_dashboard', route: '/dashboard/finance_dashboard', icon: 'fa-wallet', label: 'CEO Dashboard' },
         { id: 'tally_dashboard', token: 'dash_tally', perm: 'tally_dashboard', route: '/finance_accounts/tally_dashboard', icon: 'fa-chart-pie', label: 'Tally Dashboard' }
       ]
     },
@@ -247,7 +247,7 @@ function TopNavbarContent({ activePage, setActivePage, user }) {
         { id: 'attendance_employee_increment', token: 'hr_ei', perm: 'employee_increment', route: '/attendance/employee-increment', icon: 'fa-arrow-trend-up', label: 'Increment Details' },
         { id: 'attendance_daily_attendance', token: 'hr_da', perm: 'daily_attendance', route: '/attendance/daily', icon: 'fa-fingerprint', label: 'Daily Attendance' },
         { id: 'attendance_labour_management', token: 'hr_lm', perm: 'labour_management', route: '/attendance/labour-management', icon: 'fa-people-group', label: 'Contract Workers' },
-        { id: 'attendance_kg_basis_labour', token: 'hr_kgl', perm: 'kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'KG Basis Company Workers' },
+        { id: 'attendance_kg_basis_labour', token: 'hr_kgl', perm: 'kg_basis_labour', route: '/attendance/kg-basis-labour', icon: 'fa-weight-scale', label: 'Company Workers' },
         { id: 'attendance_visitors_day_workers', token: 'hr_vdw', perm: 'visitors_day_workers', route: '/attendance/visitors-day-workers', icon: 'fa-person-walking-arrow-right', label: 'Visitors & Day Workers' },
         { id: 'attendance_salary_report', token: 'hr_ss', perm: 'salary_report', route: '/attendance/salary/monthly-sheet', icon: 'fa-money-check-dollar', label: 'Monthly Salary Sheet' },
         { id: 'attendance_tax_master', token: 'hr_tm', perm: 'tax_master', route: '/attendance/tax-master', icon: 'fa-file-shield', label: 'Payroll Master' },

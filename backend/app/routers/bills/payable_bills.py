@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timedelta
 import re
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -618,7 +618,7 @@ def supplier_rows(db: Session, company_id: str, month: str):
         RawMaterialPurchasing.company_id == company_id,
         RawMaterialPurchasing.is_cancelled != True,
     )
-    if month:
+    if month and month != "ALL":
         query = query.filter(func.to_char(RawMaterialPurchasing.date, "YYYY-MM") == month)
     grouped = query.group_by(RawMaterialPurchasing.supplier_name).order_by(func.min(RawMaterialPurchasing.date).desc()).all()
 
@@ -812,21 +812,108 @@ def supplier_print_batches(db: Session, company_id: str, bill_key: str, batch_nu
     }
 
 
+def get_vendor_payment_cycle_days(db: Session, company_id: str, vendor_name: str):
+    try:
+        from app.database.models.criteria import vendors as VendorCriteria, suppliers as SupplierCriteria
+        v = db.query(VendorCriteria).filter(
+            func.lower(VendorCriteria.name) == str(vendor_name).strip().lower(),
+            VendorCriteria.company_id == company_id
+        ).first()
+        if not v or not getattr(v, 'payment_cycle', None):
+            v = db.query(VendorCriteria).filter(
+                func.lower(VendorCriteria.name) == str(vendor_name).strip().lower()
+            ).first()
+        if not v or not getattr(v, 'payment_cycle', None):
+            v = db.query(SupplierCriteria).filter(
+                func.lower(SupplierCriteria.supplier_name) == str(vendor_name).strip().lower()
+            ).first()
+
+        cycle_str = str(getattr(v, 'payment_cycle', '') or '').strip()
+        if not cycle_str:
+            return ("15 Days", 15)
+        if 'week' in cycle_str.lower():
+            return (cycle_str, 7)
+        import re
+        m = re.search(r'\d+', cycle_str)
+        if m:
+            return (cycle_str, int(m.group(0)))
+        return (cycle_str, 15)
+    except Exception:
+        return ("15 Days", 15)
+
+
 def vendor_bill_detail_rows(db: Session, company_id: str, bill_key: str):
     if (bill_key or "").startswith("VENDOR|"):
         vendor, period = parse_vendor_bill_key(bill_key)
         rows = vendor_source_records(db, company_id, period or "ALL", vendor_name=vendor)
     else:
         rows = vendor_source_records(db, company_id, "ALL", bill_no=bill_key)
-    return [{
-        "date": row["bill_date"].isoformat() if row.get("bill_date") else "",
-        "bill_no": row["bill_no"],
-        "invoice_no": row.get("vendor_invoice_no") or row.get("bill_no") or "",
-        "description": row.get("vendor_type") or row.get("source") or "Vendor Bill",
-        "qty": 1,
-        "rate": round(float(row.get("total_amount") or 0.0), 2),
-        "amount": round(float(row.get("total_amount") or 0.0), 2),
-    } for row in rows]
+    
+    today = date.today()
+    result = []
+    for row in rows:
+        b_date = row.get("bill_date")
+        d_date = row.get("due_date")
+        v_name = row.get("vendor_name") or row.get("party_name") or ""
+        cycle_str, cycle_days = get_vendor_payment_cycle_days(db, company_id, v_name)
+
+        tot = round(float(row.get("total_amount") or 0.0), 2)
+        paid = round(float(row.get("paid_amount") or 0.0), 2)
+        bal = round(float(row.get("balance") if row.get("balance") is not None else (tot - paid)), 2)
+        status_str = row.get("status") or ("PAID" if bal <= 0 else "UNPAID")
+
+        if isinstance(b_date, str):
+            try:
+                b_date_obj = datetime.strptime(b_date, "%Y-%m-%d").date()
+            except Exception:
+                b_date_obj = None
+        else:
+            b_date_obj = b_date
+
+        # Calculate Due Date using Vendor Payment Cycle Days
+        if b_date_obj:
+            calc_due_date = b_date_obj + timedelta(days=cycle_days)
+        else:
+            calc_due_date = None
+
+        d_date_final = calc_due_date or d_date
+
+        if isinstance(d_date_final, str):
+            try:
+                d_date_obj = datetime.strptime(d_date_final, "%Y-%m-%d").date()
+            except Exception:
+                d_date_obj = None
+        else:
+            d_date_obj = d_date_final
+
+        days_to_due = (d_date_obj - today).days if isinstance(d_date_obj, date) else 0
+        overdue_days = abs(days_to_due) if bal > 0 and days_to_due < 0 else 0
+
+        if bal <= 0:
+            overdue_label = "Paid"
+        elif days_to_due < 0:
+            overdue_label = f"{abs(days_to_due)} Days Overdue"
+        elif days_to_due <= 3:
+            overdue_label = f"Due in {days_to_due} Days (3-Day Alert)"
+        else:
+            overdue_label = f"Due in {days_to_due} Days (Credit Period: {cycle_str})"
+
+        result.append({
+            "date": b_date_obj.isoformat() if hasattr(b_date_obj, "isoformat") else str(b_date or "—"),
+            "due_date": d_date_obj.isoformat() if hasattr(d_date_obj, "isoformat") else str(d_date_final or "—"),
+            "bill_no": row["bill_no"],
+            "invoice_no": row.get("vendor_invoice_no") or row.get("bill_no") or "—",
+            "description": row.get("vendor_type") or row.get("source") or "Vendor Bill",
+            "qty": 1,
+            "rate": tot,
+            "amount": tot,
+            "paid_amount": paid,
+            "balance": bal,
+            "status": status_str,
+            "overdue_days": overdue_days,
+            "overdue_label": overdue_label
+        })
+    return result
 
 
 def vendor_print_data(db: Session, company_id: str, bill_key: str, vendor_bill_no: str | None = None):

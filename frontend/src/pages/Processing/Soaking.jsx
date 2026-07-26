@@ -744,9 +744,9 @@ export default function Soaking() {
                     }} 
                     required
                   >
-                    <option value="">Select Company</option>
                     {prodForList.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">
@@ -762,9 +762,9 @@ export default function Soaking() {
                     }} 
                     required
                   >
-                    <option value="">Select Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
+
                 </div>
 
                 <div className="form-group">

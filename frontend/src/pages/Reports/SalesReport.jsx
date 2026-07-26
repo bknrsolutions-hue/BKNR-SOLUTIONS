@@ -193,6 +193,22 @@ export default function SalesReport({ activeRoute, setActivePage }) {
       if (rowFY !== null && rowFY !== targetYear) return false;
     }
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const tm = urlParams.get('trend_month');
+    const fd = urlParams.get('from_date');
+    const td = urlParams.get('to_date');
+
+    if (fd && s.invoice_date && s.invoice_date.substring(0, 10) < fd) return false;
+    if (td && s.invoice_date && s.invoice_date.substring(0, 10) > td) return false;
+    if (tm) {
+      const mStart = { apr:'2026-04-01', may:'2026-05-01', jun:'2026-06-01', jul:'2026-07-01' };
+      const mEnd = { apr:'2026-04-30', may:'2026-05-31', jun:'2026-06-30', jul:'2026-07-31' };
+      const start = mStart[tm.toLowerCase()];
+      const end = mEnd[tm.toLowerCase()];
+      if (start && s.invoice_date && s.invoice_date.substring(0, 10) < start) return false;
+      if (end && s.invoice_date && s.invoice_date.substring(0, 10) > end) return false;
+    }
+
     if (searchQuery) {
       const q = searchQuery.toLowerCase();
       const txt = `${s.invoice_no || ''} ${s.po_number || ''} ${s.buyer_name || ''} ${s.country || ''} ${s.brand || ''} ${s.variety || ''} ${s.grade || ''} ${s.container_no || ''} ${s.shipping_bill || ''}`.toLowerCase();

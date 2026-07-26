@@ -106,17 +106,7 @@ def tax_master_page(request: Request, format: str = Query(default="html"), db: S
             "edit_data": None
         })
 
-    # ✅ FIX: TemplateResponse arguments updated
-    return templates.TemplateResponse(
-        request=request,
-        name="attendance/tax_master.html",
-        context={
-            "records": records,
-            "edit_data": None,
-            "email": email,
-            "company_id": company_code
-        }
-    )
+    return RedirectResponse("/app/#/p/hr_tm", status_code=303)
 
 # ==================================================
 # 💾 3. SAVE NEW CONFIG

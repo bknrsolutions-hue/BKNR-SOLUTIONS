@@ -339,9 +339,9 @@ function RawMaterialGateEntry() {
                 onChange={e => handleCompanyChange(e.target.value)}
                 required
               >
-                <option value="">Select Company</option>
                 {Array.from(new Set([productionFor, ...prodForList].filter(Boolean))).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
+
             </div>
 
             <div className="form-group">
@@ -352,7 +352,6 @@ function RawMaterialGateEntry() {
                 onChange={e => handleFactoryChange(e.target.value)}
                 required
               >
-                <option value="">Select Peeling At</option>
                 {Array.from(new Set([receivingCenter, ...peelingAts].filter(Boolean))).map(f => <option key={f} value={f}>{f}</option>)}
               </select>
             </div>
@@ -391,10 +390,10 @@ function RawMaterialGateEntry() {
                 onChange={e => setPurchasingLocation(e.target.value)}
                 required
               >
-                <option value="">Select Location</option>
                 {Array.from(new Set([purchasingLocation, ...locations].filter(Boolean))).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
+
 
             <div className="form-group">
               <label>Vehicle Number *</label>
