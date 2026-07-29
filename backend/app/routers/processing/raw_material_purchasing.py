@@ -182,9 +182,13 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             if allowed_clean:
                 gate_q = gate_q.filter(func.upper(func.trim(GateEntry.receiving_center)).in_(allowed_clean))
         if global_loc:
-            gate_q = gate_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_loc))
+            gate_q = gate_q.filter(
+                func.upper(func.trim(GateEntry.receiving_center)) == str(global_loc).strip().upper()
+            )
         if global_p_for:
-            gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(global_p_for))
+            gate_q = gate_q.filter(
+                func.upper(func.trim(GateEntry.production_for)) == str(global_p_for).strip().upper()
+            )
 
         gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
         prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
@@ -200,9 +204,10 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
                     "receiving_center": g.receiving_center if g.receiving_center else ""
                 }
             if g.production_for:
-                prod_batch_map.setdefault(g.production_for, [])
-                if g.batch_number and g.batch_number not in prod_batch_map[g.production_for]:
-                    prod_batch_map[g.production_for].append(g.batch_number)
+                production_key = g.production_for.strip().upper()
+                prod_batch_map.setdefault(production_key, [])
+                if g.batch_number and g.batch_number not in prod_batch_map[production_key]:
+                    prod_batch_map[production_key].append(g.batch_number)
 
         peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
         if user_allowed_locations:
@@ -210,7 +215,9 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             if allowed_clean:
                 peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
         if global_loc:
-            peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
+            peeling_q = peeling_q.filter(
+                func.upper(func.trim(peeling_at.peeling_at)) == str(global_loc).strip().upper()
+            )
 
         hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
         return {

@@ -72,12 +72,16 @@ export default function RawMaterialPurchasing() {
 
       if (res.ok) {
         const data = await res.json();
+        const nextProdForList = data.prod_for_list || [];
+        const nextPeelingLocations = data.peeling_locations || [];
         setEntries(data.today_data || []);
         setSuppliers(data.supplier_list || []);
         setVarieties(data.variety_list || []);
         setSpeciesList(data.species_list || []);
-        setPeelingLocations(data.peeling_locations || []);
-        setProdForList(data.prod_for_list || []);
+        setPeelingLocations(nextPeelingLocations);
+        setProdForList(nextProdForList);
+        setProductionFor(current => current || activeComp || (nextProdForList.length === 1 ? nextProdForList[0] : ''));
+        setPeelingAt(current => current || activeLoc || (nextPeelingLocations.length === 1 ? nextPeelingLocations[0] : ''));
         setHsnList(data.hsn_list || []);
         setHsnMap(data.hsn_map || {});
         setHosoSummary(data.hoso_summary || []);
@@ -149,7 +153,7 @@ export default function RawMaterialPurchasing() {
     const compVal = productionFor.trim().toUpperCase();
     const locVal = peelingAt.trim().toUpperCase();
     
-    const candidates = prodBatchMap[compVal] || [];
+    const candidates = prodBatchMap[compVal] || prodBatchMap[productionFor] || [];
     return candidates.filter(b => {
       const meta = batchSupplierMap[b];
       if (meta && meta.prod_for && meta.receiving_center) {
@@ -495,6 +499,7 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handleProductionForChange(e.target.value)}
                 required 
               >
+                <option value="">Select Production For</option>
                 {optionList(prodForList, productionFor).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
 
@@ -508,6 +513,7 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handlePeelingAtChange(e.target.value)}
                 required 
               >
+                <option value="">Select Receiving Location</option>
                 {optionList(peelingLocations, peelingAt).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
 
