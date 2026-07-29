@@ -157,23 +157,11 @@ export default function DeHeading() {
         setTodayEntries(data.today_data || []);
         setHosoFloorBalance(data.hoso_floor_balance || []);
 
-        setProductionFor(current => {
-          if (current && pList.includes(current)) return current;
-          if (activeComp && pList.includes(activeComp)) return activeComp;
-          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
-          return pList.length > 0 ? pList[0] : '';
-        });
-
-        setDeheadingAt(current => {
-          if (current && locList.includes(current)) return current;
-          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
-          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
-          return locList.length > 0 ? locList[0] : '';
-        });
-
-        if (data.selected_location) {
-          setRegPeelingAt(data.selected_location);
-        }
+        setFilterCompany(activeComp || data.selected_production_for || '');
+        setFilterLocation(activeLoc || data.selected_location || '');
+        setProductionFor(activeComp || data.selected_production_for || '');
+        setDeheadingAt(activeLoc || data.selected_location || '');
+        setRegPeelingAt(activeLoc || data.selected_location || '');
       } else {
         console.error('Failed to fetch De-heading data');
       }
@@ -1004,12 +992,12 @@ export default function DeHeading() {
                       const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
                       return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
                     };
-                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, deheadingAt));
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, filterLocation));
                     if (displayedTables.length === 0) {
                       return (
                         <tr>
                           <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
-                            No tables registered for today in {deheadingAt || 'selected location'}.
+                            No tables registered for today in {filterLocation || 'selected location'}.
                           </td>
                         </tr>
                       );

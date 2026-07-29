@@ -146,20 +146,11 @@ export default function Peeling() {
         setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
 
-        const nextComp = pList.includes(productionFor) ? productionFor :
-          (activeComp && pList.includes(activeComp) ? activeComp :
-          (data.selected_production_for && pList.includes(data.selected_production_for) ? data.selected_production_for :
-          (pList.length > 0 ? pList[0] : '')));
-
-        setProductionFor(nextComp);
-
-        setLocationVal(current => {
-          if (current && locList.includes(current) && (current !== nextComp || locList.length === 1)) return current;
-          if (activeLoc && locList.includes(activeLoc) && (activeLoc !== nextComp || locList.length === 1)) return activeLoc;
-          if (data.selected_location && locList.includes(data.selected_location) && (data.selected_location !== nextComp || locList.length === 1)) return data.selected_location;
-          const distinctLoc = locList.find(l => l !== nextComp);
-          return distinctLoc || (locList.length > 0 ? locList[0] : '');
-        });
+        setFilterCompany(activeComp || data.selected_production_for || '');
+        setFilterLocation(activeLoc || data.selected_location || '');
+        setProductionFor(activeComp || data.selected_production_for || '');
+        setLocationVal(activeLoc || data.selected_location || '');
+        setRegPeelingAt(activeLoc || data.selected_location || '');
 
         let cList = data.contractors || [];
         if (!cList.length) {
@@ -180,12 +171,6 @@ export default function Peeling() {
         setVarietySummary(data.variety_summary || []);
         setDrillDownData(data.drill_down_json || {});
         setTodayEntries(data.today_data || []);
-
-        if (data.selected_production_for) setFilterCompany(data.selected_production_for);
-        if (data.selected_location) {
-          setFilterLocation(data.selected_location);
-          setRegPeelingAt(data.selected_location);
-        }
       } else {
         console.error('Failed to fetch Peeling data');
       }
@@ -958,19 +943,19 @@ export default function Peeling() {
                 </thead>
                 <tbody>
                   {(() => {
-                    const curLoc = regPeelingAt || filterLocation || locationVal || '';
                     const isLocMatch = (tableLoc, targetLoc) => {
-                      if (!targetLoc || !tableLoc) return true;
+                      if (!targetLoc || !targetLoc.trim()) return true;
+                      if (!tableLoc) return true;
                       const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
                       const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
                       return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
                     };
-                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, curLoc));
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, filterLocation));
                     if (displayedTables.length === 0) {
                       return (
                         <tr>
                           <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
-                            No tables registered for today in {curLoc || 'selected location'}.
+                            No tables registered for today in {filterLocation || 'selected location'}.
                           </td>
                         </tr>
                       );
