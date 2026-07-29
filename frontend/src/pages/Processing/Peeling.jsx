@@ -153,18 +153,19 @@ export default function Peeling() {
         setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
 
-        setProductionFor(current => {
-          if (current && pList.includes(current)) return current;
-          if (activeComp && pList.includes(activeComp)) return activeComp;
-          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
-          return pList.length > 0 ? pList[0] : '';
-        });
+        const nextComp = pList.includes(productionFor) ? productionFor :
+          (activeComp && pList.includes(activeComp) ? activeComp :
+          (data.selected_production_for && pList.includes(data.selected_production_for) ? data.selected_production_for :
+          (pList.length > 0 ? pList[0] : '')));
+
+        setProductionFor(nextComp);
 
         setLocationVal(current => {
-          if (current && locList.includes(current)) return current;
-          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
-          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
-          return locList.length > 0 ? locList[0] : '';
+          if (current && locList.includes(current) && (current !== nextComp || locList.length === 1)) return current;
+          if (activeLoc && locList.includes(activeLoc) && (activeLoc !== nextComp || locList.length === 1)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location) && (data.selected_location !== nextComp || locList.length === 1)) return data.selected_location;
+          const distinctLoc = locList.find(l => l !== nextComp);
+          return distinctLoc || (locList.length > 0 ? locList[0] : '');
         });
 
         let cList = data.contractors || [];

@@ -82,18 +82,19 @@ export default function Soaking() {
 
         if (data.selected_production_for) setFilterCompany(data.selected_production_for);
 
-        setProductionFor(current => {
-          if (current && pList.includes(current)) return current;
-          if (activeComp && pList.includes(activeComp)) return activeComp;
-          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
-          return pList.length > 0 ? pList[0] : '';
-        });
+        const nextComp = pList.includes(productionFor) ? productionFor :
+          (activeComp && pList.includes(activeComp) ? activeComp :
+          (data.selected_production_for && pList.includes(data.selected_production_for) ? data.selected_production_for :
+          (pList.length > 0 ? pList[0] : '')));
+
+        setProductionFor(nextComp);
 
         setProductionAt(current => {
-          if (current && locList.includes(current)) return current;
-          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
-          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
-          return locList.length > 0 ? locList[0] : '';
+          if (current && locList.includes(current) && (current !== nextComp || locList.length === 1)) return current;
+          if (activeLoc && locList.includes(activeLoc) && (activeLoc !== nextComp || locList.length === 1)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location) && (data.selected_location !== nextComp || locList.length === 1)) return data.selected_location;
+          const distinctLoc = locList.find(l => l !== nextComp);
+          return distinctLoc || (locList.length > 0 ? locList[0] : '');
         });
 
       } else {
@@ -111,11 +112,15 @@ export default function Soaking() {
     if (showModal) {
       const activeComp = localStorage.getItem('production_for_filter') || '';
       const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      const currentComp = productionFor || (prodForList.includes(activeComp) ? activeComp : prodForList[0]) || '';
       if (!productionFor && prodForList.length > 0) {
-        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+        setProductionFor(currentComp);
       }
       if (!productionAt && peelingLocations.length > 0) {
-        setProductionAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+        const preferredLoc = (activeLoc && peelingLocations.includes(activeLoc) && (activeLoc !== currentComp || peelingLocations.length === 1))
+          ? activeLoc
+          : (peelingLocations.find(l => l !== currentComp) || peelingLocations[0]);
+        setProductionAt(preferredLoc);
       }
     }
   }, [showModal, prodForList, peelingLocations, productionFor, productionAt]);
