@@ -120,19 +120,19 @@ def production_report_page(
     all_data = q.all()
 
     # ============================================================
-    # 1. SUMMARY TABLE LOGIC (Grouped by: At, For, Batch, Variety, Grade)
+    # 1. SUMMARY TABLE LOGIC (Grouped by: At, For, Batch, Species, Variety)
     # ============================================================
     summary_rows = sorted(all_data, key=lambda x: (
         x.production_at or "", 
         x.production_for or "", 
         x.batch_number or "", 
-        x.variety_name or "", 
-        x.grade or ""
+        x.species or "",
+        x.variety_name or ""
     ))
 
     summary_subtotals = {}
     for r in summary_rows:
-        key = (r.production_at, r.production_for, r.batch_number, r.variety_name, r.grade)
+        key = (r.production_at, r.production_for, r.batch_number, r.species, r.variety_name)
         
         if key not in summary_subtotals:
             var_data = db.query(varieties).filter(

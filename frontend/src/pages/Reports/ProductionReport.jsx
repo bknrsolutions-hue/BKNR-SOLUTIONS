@@ -254,7 +254,7 @@ export default function ProductionReport({ activeRoute }) {
     };
 
     summaryRows.forEach((r, idx) => {
-      const currentKey = `${r.production_at || ''}|${r.production_for || ''}|${r.batch_number || ''}|${r.variety_name || ''}|${r.grade || ''}`;
+      const currentKey = `${r.production_at || ''}|${r.production_for || ''}|${r.batch_number || ''}|${r.species || ''}|${r.variety_name || ''}`;
 
       if (lastKey && lastKey !== currentKey) {
         appendSubtotalRow(lastKey, currentGroupRows, idx);
