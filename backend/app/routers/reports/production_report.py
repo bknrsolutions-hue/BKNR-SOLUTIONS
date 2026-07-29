@@ -333,15 +333,27 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
     if has_changes:
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
-            packing_styles.packing_style == row.packing_style
+            func.lower(func.trim(packing_styles.packing_style)) == func.lower(func.trim(row.packing_style))
         ).first()
         
-        if pack:
-            mc_w = float(pack.mc_weight or 0)
-            sl_w = float(pack.slab_weight or 0)
-            base_qty = (float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w)
-        else:
-            base_qty = 0.0
+        mc_w = float(pack.mc_weight or 0) if pack else 0.0
+        sl_w = float(pack.slab_weight or 0) if pack else 0.0
+
+        if mc_w <= 0 or sl_w <= 0:
+            import re
+            style_str = str(row.packing_style or "").strip()
+            match = re.search(r'(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)', style_str)
+            if match:
+                count = float(match.group(1))
+                per_slab = float(match.group(2))
+                if sl_w <= 0: sl_w = per_slab
+                if mc_w <= 0: mc_w = count * per_slab
+            else:
+                single_match = re.search(r'(\d+\.?\d*)', style_str)
+                if single_match and mc_w <= 0:
+                    mc_w = float(single_match.group(1))
+
+        base_qty = (float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w)
 
         final_production_qty = base_qty
         glaze_text = str(row.glaze or "").strip().upper()
