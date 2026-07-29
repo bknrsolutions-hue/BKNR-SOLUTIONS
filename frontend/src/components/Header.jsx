@@ -327,6 +327,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         { id: 'criteria_contractors',      token: 'mst_con',      perm: 'contractors',      icon: 'fa-hard-hat',         label: 'Contractors',       route: '/criteria/contractors' },
         { id: 'criteria_peeling_at',       token: 'mst_pat',      perm: 'peeling_at',       icon: 'fa-map-pin',          label: 'Peeling At',        route: '/criteria/peeling_at' },
         { id: 'criteria_peeling_rates',    token: 'mst_prt',      perm: 'peeling_rates',    icon: 'fa-money-bill',       label: 'Peeling Rates',     route: '/criteria/peeling_rates' },
+        { id: 'criteria_purchasing_locations', token: 'mst_plc',   perm: 'purchasing_locations', icon: 'fa-location-dot',   label: 'Purchasing Locations', route: '/criteria/purchasing_locations' },
         { id: 'criteria_production_at',    token: 'mst_pra',      perm: 'production_at',    icon: 'fa-industry',         label: 'Production At',     route: '/criteria/production_at' },
         { id: 'criteria_production_for',   token: 'pf_8Kx92LmQ',  perm: 'production_for',   icon: 'fa-building-flag',    label: 'Production For',    route: '/criteria/production_for' },
         { id: 'criteria_production_types', token: 'mst_prt2',     perm: 'production_types', icon: 'fa-tags',             label: 'Production Types',  route: '/criteria/production_types' },
