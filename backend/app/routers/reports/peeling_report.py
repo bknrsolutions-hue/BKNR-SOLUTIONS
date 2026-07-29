@@ -182,7 +182,11 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
         if r_tbl:
             candidate_regs = [tr for tr in date_regs if (tr.table_no or "").strip().lower() == r_tbl]
             if not candidate_regs:
-                candidate_regs = [tr for tr in date_regs if (tr.table_no or "").strip().lower().endswith(r_tbl) or r_tbl.endswith((tr.table_no or "").strip().lower())]
+                clean_r_tbl = r_tbl.replace("t-", "table ").replace("t ", "table ")
+                for tr in date_regs:
+                    tr_tbl = (tr.table_no or "").strip().lower()
+                    if tr_tbl.endswith(r_tbl) or r_tbl.endswith(tr_tbl) or tr_tbl.endswith(clean_r_tbl) or clean_r_tbl.endswith(tr_tbl):
+                        candidate_regs.append(tr)
             if not candidate_regs:
                 r_digits = re.findall(r'\d+', r_tbl)
                 if r_digits:
@@ -193,15 +197,20 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
                             candidate_regs.append(tr)
 
         if not candidate_regs:
-            c_name = getattr(r, 'contractor', None) or getattr(r, 'contractor_name', None)
-            if c_name:
-                candidate_regs = [tr for tr in date_regs if (tr.contractor_name or "").strip().lower() == c_name.strip().lower()]
+            c_name = (getattr(r, 'contractor', None) or getattr(r, 'contractor_name', None) or "").strip().lower()
+            if c_name in ["kg basis", "kg basis company worker", "daily basis", "daily basis company worker"]:
+                candidate_regs = [
+                    tr for tr in date_regs
+                    if (tr.worker_type or "").strip().lower() in [c_name, "kg basis", "kg basis company worker", "daily basis", "daily basis company worker"]
+                       or (tr.contractor_name or "").strip().lower() == c_name
+                ]
+            elif c_name:
+                candidate_regs = [tr for tr in date_regs if (tr.contractor_name or "").strip().lower() == c_name]
 
         if not candidate_regs: return None
         if len(candidate_regs) == 1: return candidate_regs[0]
 
-        # Shift / Time-wise matching for multiple table registrations on same date
-        r_time = r.time
+        r_time = getattr(r, 'time', None)
         if isinstance(r_time, str):
             try: r_time = dt.datetime.strptime(r_time, "%H:%M:%S").time()
             except:
@@ -233,14 +242,15 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
             d["time"] = d["time"].strftime("%H:%M")
 
         tr = find_table_registration(r)
+        c_name = (getattr(r, 'contractor', None) or getattr(r, 'contractor_name', None) or "").strip()
         if tr:
-            d["worker_type"] = tr.worker_type
+            d["worker_type"] = tr.worker_type or c_name
             d["no_of_workers"] = tr.no_of_workers
             d["worker_ids"] = tr.worker_ids
             if not d.get("table_no") and tr.table_no:
                 d["table_no"] = tr.table_no
         else:
-            d["worker_type"] = "Contractor" if r.contractor_name else None
+            d["worker_type"] = c_name if c_name else "Contractor"
             d["no_of_workers"] = None
             d["worker_ids"] = None
 
