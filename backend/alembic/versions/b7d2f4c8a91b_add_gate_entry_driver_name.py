@@ -1,4 +1,4 @@
-\"""Add gate entry driver name."""
+"""Add gate entry driver name."""
 
 from alembic import op
 import sqlalchemy as sa
