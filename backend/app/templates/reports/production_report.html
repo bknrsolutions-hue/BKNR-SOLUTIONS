@@ -497,12 +497,11 @@ function parseAndColorize(){
  document.querySelectorAll(".color-track").forEach(td => {
   const text = td.innerText.trim();
   if(!text || text === "-") return;
-  if(text.includes("-") || parseFloat(text) < 0) {
-   td.classList.remove("val-pos"); td.classList.add("val-neg");
-  } else if(text.includes("+") || parseFloat(text) > 0 || (text.includes("%") && !text.includes("-0") && parseFloat(text.split('(')[1] || text) !== 0)) {
+  const numVal = parseFloat(text.split('(')[1] || text);
+  if(text.includes("-") || numVal < 0) {
    td.classList.remove("val-pos"); td.classList.add("val-neg");
   } else {
-   td.classList.remove("val-pos", "val-neg");
+   td.classList.remove("val-neg"); td.classList.add("val-pos");
   }
  });
 }
