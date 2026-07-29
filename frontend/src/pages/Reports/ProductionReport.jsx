@@ -204,11 +204,12 @@ export default function ProductionReport({ activeRoute }) {
     const soakingIn = Number(rawSub.soaking_in || 0);
     const targetYield = Number(rawSub.target_yield || 0);
 
-    let actualYield = Number(rawSub.actual_yield || 0);
-    let diffYieldPerc = Number(rawSub.diff_yield_perc || 0);
-    let diffQty = Number(rawSub.diff_qty || 0);
+    let hasSoaking = soakingIn > 0;
+    let actualYield = 0;
+    let diffYieldPerc = 0;
+    let diffQty = 0;
 
-    if (soakingIn > 0) {
+    if (hasSoaking) {
       actualYield = Number(((totalProdQty / soakingIn) * 100).toFixed(2));
       diffYieldPerc = Number((actualYield - targetYield).toFixed(2));
       const expectedQty = (soakingIn * targetYield) / 100;
@@ -221,6 +222,7 @@ export default function ProductionReport({ activeRoute }) {
       prod_qty: totalProdQty,
       soaking_in: soakingIn,
       target_yield: targetYield,
+      has_soaking: hasSoaking,
       actual_yield: actualYield,
       diff_yield_perc: diffYieldPerc,
       diff_qty: diffQty,
@@ -234,17 +236,49 @@ export default function ProductionReport({ activeRoute }) {
 
     const appendSubtotalRow = (key, rows, keyIdx) => {
       const s = getSummarySubtotal(key, rows);
+      const isPos = s.diff_yield_perc >= 0;
+      const posBadgeStyle = {
+        background: 'rgba(16, 185, 129, 0.12)',
+        color: '#059669',
+        border: '1px solid rgba(16, 185, 129, 0.3)',
+        padding: '3px 8px',
+        borderRadius: '4px',
+        fontWeight: '800',
+        display: 'inline-block'
+      };
+      const negBadgeStyle = {
+        background: 'rgba(239, 68, 68, 0.12)',
+        color: '#dc2626',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        padding: '3px 8px',
+        borderRadius: '4px',
+        fontWeight: '800',
+        display: 'inline-block'
+      };
+
       result.push(
         <tr key={`sub-${key}-${keyIdx}`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
           <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
           <td className="text-right">{s.mc}</td>
           <td className="text-right">{s.loose}</td>
-          <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
-          <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981', fontWeight: 800 }}>
-            {s.actual_yield}% ({s.diff_yield_perc >= 0 ? '+' : ''}{s.diff_yield_perc}%)
+          <td className="text-right" style={{ color: 'var(--corp-rep)', fontWeight: 800 }}>{fmt.number(s.prod_qty)}</td>
+          <td className="text-center">
+            {s.has_soaking ? (
+              <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                {s.actual_yield}% ({isPos ? '+' : ''}{s.diff_yield_perc}%)
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>-</span>
+            )}
           </td>
-          <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981', fontWeight: 800 }}>
-            {s.diff_qty > 0 ? `+${s.diff_qty}` : s.diff_qty}
+          <td className="text-right">
+            {s.has_soaking ? (
+              <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                {s.diff_qty > 0 ? `+${s.diff_qty}` : s.diff_qty}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>-</span>
+            )}
           </td>
           <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
             In: {s.soaking_in} | Trg: {s.target_yield}%
