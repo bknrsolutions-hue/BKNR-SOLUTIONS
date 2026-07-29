@@ -15,7 +15,9 @@ export default function DeHeading() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Form states
+  // Form states (isolated from page filters)
+  const [modalProductionFor, setModalProductionFor] = useState('');
+  const [modalLocation, setModalLocation] = useState('');
   const [productionFor, setProductionFor] = useState('');
   const [deheadingAt, setDeheadingAt] = useState('');
   const [species, setSpecies] = useState('');
@@ -191,16 +193,12 @@ export default function DeHeading() {
   // Sync state defaults when modal opens or option lists update
   useEffect(() => {
     if (showModal) {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      if (!productionFor && prodForList.length > 0) {
-        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
-      }
-      if (!deheadingAt && peelingLocations.length > 0) {
-        setDeheadingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
-      }
+      const activeComp = localStorage.getItem('production_for_filter') || filterCompany || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || filterLocation || '';
+      setModalProductionFor(activeComp || (prodForList.length > 0 ? prodForList[0] : ''));
+      setModalLocation(activeLoc || (peelingLocations.length > 0 ? peelingLocations[0] : ''));
     }
-  }, [showModal, prodForList, peelingLocations, productionFor, deheadingAt]);
+  }, [showModal, prodForList, peelingLocations, filterCompany, filterLocation]);
 
   useEffect(() => {
     const now = new Date();
@@ -216,15 +214,15 @@ export default function DeHeading() {
     return () => window.removeEventListener('filter_change', handleGlobalFilterChange);
   }, []);
 
-  // Cascading lists load
+  // Cascading lists load for Entry Modal
   useEffect(() => {
     const loadBatches = async () => {
-      if (!productionFor || !deheadingAt) {
+      if (!modalProductionFor || !modalLocation) {
         setBatchesList([]);
         return;
       }
       try {
-        const res = await sessionFetch(`/processing/get_valid_batches/${encodeURIComponent(productionFor)}/${encodeURIComponent(deheadingAt)}`);
+        const res = await sessionFetch(`/processing/get_valid_batches/${encodeURIComponent(modalProductionFor)}/${encodeURIComponent(modalLocation)}`);
         if (res.ok) {
           const data = await res.json();
           setBatchesList(uniqueValues(data.batches).sort());
@@ -234,16 +232,16 @@ export default function DeHeading() {
       }
     };
     loadBatches();
-  }, [productionFor, deheadingAt]);
+  }, [modalProductionFor, modalLocation]);
 
   useEffect(() => {
     const loadCounts = async () => {
-      if (!productionFor || !deheadingAt || !batchNumber) {
+      if (!modalProductionFor || !modalLocation || !batchNumber) {
         setCountsList([]);
         return;
       }
       try {
-        const res = await sessionFetch(`/processing/get_hoso/${encodeURIComponent(productionFor)}/${encodeURIComponent(deheadingAt)}/${encodeURIComponent(batchNumber)}`);
+        const res = await sessionFetch(`/processing/get_hoso/${encodeURIComponent(modalProductionFor)}/${encodeURIComponent(modalLocation)}/${encodeURIComponent(batchNumber)}`);
         if (res.ok) {
           const data = await res.json();
           setCountsList(uniqueValues(data.counts).sort());
@@ -253,19 +251,19 @@ export default function DeHeading() {
       }
     };
     loadCounts();
-  }, [productionFor, deheadingAt, batchNumber]);
+  }, [modalProductionFor, modalLocation, batchNumber]);
 
   // Check Floor Quantity
   useEffect(() => {
     const checkFloor = async () => {
-      if (!deheadingAt || !batchNumber || !hosoCount || !species) {
+      if (!modalLocation || !batchNumber || !hosoCount || !species) {
         setFloorAvail(0);
         return;
       }
       try {
         const params = new URLSearchParams({ 
-          location: deheadingAt, 
-          production_for: productionFor,
+          location: modalLocation, 
+          production_for: modalProductionFor,
           batch: batchNumber, 
           count: hosoCount, 
           species_name: species 
@@ -280,7 +278,7 @@ export default function DeHeading() {
       }
     };
     checkFloor();
-  }, [productionFor, deheadingAt, batchNumber, hosoCount, species]);
+  }, [modalProductionFor, modalLocation, batchNumber, hosoCount, species]);
 
   // Fetch Contractor Rate
   useEffect(() => {
@@ -329,8 +327,8 @@ export default function DeHeading() {
 
     setLoading(true);
     const formData = new URLSearchParams();
-    formData.append('production_for', productionFor);
-    formData.append('deheading_at', deheadingAt);
+    formData.append('production_for', modalProductionFor);
+    formData.append('deheading_at', modalLocation);
     formData.append('batch_number', batchNumber);
     formData.append('hoso_count', hosoCount);
     formData.append('species', species);
@@ -1314,9 +1312,9 @@ export default function DeHeading() {
                   <label>Production For *</label>
                   <select 
                     className="form-control" 
-                    value={productionFor} 
+                    value={modalProductionFor} 
                     onChange={e => {
-                      setProductionFor(e.target.value);
+                      setModalProductionFor(e.target.value);
                       setBatchNumber('');
                       setHosoCount('');
                     }} 
@@ -1331,9 +1329,9 @@ export default function DeHeading() {
                   <label>Location *</label>
                   <select 
                     className="form-control" 
-                    value={deheadingAt} 
+                    value={modalLocation} 
                     onChange={e => {
-                      setDeheadingAt(e.target.value);
+                      setModalLocation(e.target.value);
                       setBatchNumber('');
                       setHosoCount('');
                     }} 
@@ -1373,9 +1371,9 @@ export default function DeHeading() {
                         const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
                         return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
                       };
-                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, deheadingAt));
+                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, modalLocation));
                       if (locFiltered.length === 0) {
-                        return <option value="" disabled>No tables created for today in {deheadingAt || 'selected location'}</option>;
+                        return <option value="" disabled>No tables created for today in {modalLocation || 'selected location'}</option>;
                       }
                       return locFiltered.map(r => (
                         <option key={r.id} value={r.table_no}>

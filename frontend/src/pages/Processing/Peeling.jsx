@@ -9,7 +9,9 @@ export default function Peeling() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Form inputs
+  // Form inputs (isolated from page filters)
+  const [modalProductionFor, setModalProductionFor] = useState('');
+  const [modalLocation, setModalLocation] = useState('');
   const [productionFor, setProductionFor] = useState('');
   const [locationVal, setLocationVal] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
@@ -203,16 +205,12 @@ export default function Peeling() {
   // Auto-set state defaults when modal opens or option lists update
   useEffect(() => {
     if (showModal) {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      if (!productionFor && prodForList.length > 0) {
-        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
-      }
-      if (!locationVal && peelingLocations.length > 0) {
-        setLocationVal(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
-      }
+      const activeComp = localStorage.getItem('production_for_filter') || filterCompany || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || filterLocation || '';
+      setModalProductionFor(activeComp || (prodForList.length > 0 ? prodForList[0] : ''));
+      setModalLocation(activeLoc || (peelingLocations.length > 0 ? peelingLocations[0] : ''));
     }
-  }, [showModal, prodForList, peelingLocations, productionFor, locationVal]);
+  }, [showModal, prodForList, peelingLocations, filterCompany, filterLocation]);
 
   useEffect(() => {
     const now = new Date();
@@ -230,9 +228,9 @@ export default function Peeling() {
 
   // Form cascading lookups
   const getFilteredBatches = () => {
-    if (!productionFor || !locationVal) return [];
-    const compVal = productionFor.toUpperCase().trim();
-    const locVal = locationVal.toUpperCase().trim();
+    if (!modalProductionFor || !modalLocation) return [];
+    const compVal = modalProductionFor.toUpperCase().trim();
+    const locVal = modalLocation.toUpperCase().trim();
 
     const matches = hlsoFloorBalance.filter(row => 
       (row.production_for || '').toUpperCase().trim() === compVal &&
@@ -242,9 +240,9 @@ export default function Peeling() {
   };
 
   const getFilteredCounts = () => {
-    if (!productionFor || !locationVal || !batchNumber) return [];
-    const compVal = productionFor.toUpperCase().trim();
-    const locVal = locationVal.toUpperCase().trim();
+    if (!modalProductionFor || !modalLocation || !batchNumber) return [];
+    const compVal = modalProductionFor.toUpperCase().trim();
+    const locVal = modalLocation.toUpperCase().trim();
 
     const matches = hlsoFloorBalance.filter(row => 
       row.batch === batchNumber &&
@@ -258,9 +256,9 @@ export default function Peeling() {
   // backend formula instead of relying only on the page-load snapshot.
   useEffect(() => {
     let active = true;
-    if (productionFor && locationVal && batchNumber && inCount) {
-      const compVal = productionFor.toUpperCase().trim();
-      const locVal = locationVal.toUpperCase().trim();
+    if (modalProductionFor && modalLocation && batchNumber && inCount) {
+      const compVal = modalProductionFor.toUpperCase().trim();
+      const locVal = modalLocation.toUpperCase().trim();
 
       const match = hlsoFloorBalance.find(row => 
         row.batch === batchNumber &&
@@ -271,8 +269,8 @@ export default function Peeling() {
       if (match) {
         setSpecies(match.species || '');
         const params = new URLSearchParams({
-          production_for: productionFor,
-          location: locationVal,
+          production_for: modalProductionFor,
+          location: modalLocation,
           batch: batchNumber,
           count: inCount,
           species_name: match.species || '',
@@ -294,7 +292,7 @@ export default function Peeling() {
       setFloorAvail(0);
     }
     return () => { active = false; };
-  }, [productionFor, locationVal, batchNumber, inCount, hlsoFloorBalance]);
+  }, [modalProductionFor, modalLocation, batchNumber, inCount, hlsoFloorBalance]);
 
   // Load Peeling Rate
   useEffect(() => {
@@ -340,8 +338,8 @@ export default function Peeling() {
 
     setLoading(true);
     const formData = new URLSearchParams();
-    formData.append('production_for', productionFor);
-    formData.append('location', locationVal);
+    formData.append('production_for', modalProductionFor);
+    formData.append('location', modalLocation);
     formData.append('batch_number', batchNumber);
     formData.append('in_count', inCount);
     formData.append('species', species);
@@ -1587,9 +1585,9 @@ export default function Peeling() {
                   <label>Company *</label>
                   <select 
                     className="form-control" 
-                    value={productionFor} 
+                    value={modalProductionFor} 
                     onChange={e => {
-                      setProductionFor(e.target.value);
+                      setModalProductionFor(e.target.value);
                       setBatchNumber('');
                       setInCount('');
                       setSpecies('');
@@ -1605,9 +1603,9 @@ export default function Peeling() {
                   <label>Location (Processing At) *</label>
                   <select 
                     className="form-control" 
-                    value={locationVal} 
+                    value={modalLocation} 
                     onChange={e => {
-                      setLocationVal(e.target.value);
+                      setModalLocation(e.target.value);
                       setBatchNumber('');
                       setInCount('');
                       setSpecies('');
