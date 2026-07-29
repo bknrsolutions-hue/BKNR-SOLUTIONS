@@ -1343,8 +1343,15 @@ export default function DeHeading() {
                       const sel = e.target.value;
                       setTableNo(sel);
                       const reg = registeredTables.find(r => r.table_no === sel);
-                      if (reg && reg.contractor_name) {
-                        setContractor(reg.contractor_name);
+                      if (reg) {
+                        const wType = (reg.worker_type || '').toUpperCase();
+                        if (wType.includes('KG')) {
+                          setContractor('KG BASIS');
+                        } else if (wType.includes('DAILY')) {
+                          setContractor('DAILY BASIS');
+                        } else if (reg.contractor_name) {
+                          setContractor(reg.contractor_name);
+                        }
                       }
                     }}
                   >
