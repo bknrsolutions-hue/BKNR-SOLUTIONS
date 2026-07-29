@@ -36,6 +36,8 @@ import app.database.models.assets
 import app.database.models.advanced_seafood_erp
 import app.database.models.feature_flags
 import app.database.models.system_settings
+import app.database.models.floor_balance
+import app.database.models.reprocess
 
 target_metadata = Base.metadata
 

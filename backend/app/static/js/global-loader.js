@@ -395,7 +395,9 @@
             sessionProbeActive = false;
         }
     }
-    if (window.top === window.self) {
+    // The React application owns session polling on /app. Keep this legacy
+    // probe only for standalone server-rendered pages to avoid duplicate calls.
+    if (window.top === window.self && !window.location.pathname.startsWith("/app")) {
         window.setInterval(probeActiveSession, 15000);
         window.addEventListener("focus", probeActiveSession);
         document.addEventListener("visibilitychange", () => {
