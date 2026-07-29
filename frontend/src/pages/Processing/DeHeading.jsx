@@ -999,18 +999,22 @@ export default function DeHeading() {
                   </tr>
                 </thead>
                 <tbody>
-                  {registeredTables.length === 0 ? (
-                    <tr>
-                      <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
-                        No tables registered for today yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    registeredTables.map((reg, idx) => {
+                  {(() => {
+                    const displayedTables = registeredTables.filter(reg => !deheadingAt || !reg.production_at || reg.production_at.trim().toLowerCase() === deheadingAt.trim().toLowerCase());
+                    if (displayedTables.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                            No tables registered for today in {deheadingAt || 'selected location'}.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return displayedTables.map((reg, idx) => {
                       const isMatch = formattedPreviewTableNo && reg.table_no && reg.table_no.trim().toLowerCase() === formattedPreviewTableNo.toLowerCase();
                       return (
                         <tr key={reg.id} style={{ background: isMatch ? 'rgba(254, 240, 138, 0.4)' : 'transparent' }}>
-                          <td className="text-center" style={{ fontWeight: '700' }}>{registeredTables.length - idx}</td>
+                          <td className="text-center" style={{ fontWeight: '700' }}>{displayedTables.length - idx}</td>
                           <td className="text-center">{reg.date}</td>
                           <td className="text-left" style={{ fontWeight: '600' }}>{reg.production_at || '-'}</td>
                           <td className="text-center">
@@ -1043,8 +1047,8 @@ export default function DeHeading() {
                           </td>
                         </tr>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1356,15 +1360,17 @@ export default function DeHeading() {
                     }}
                   >
                     <option value="">Select Table No</option>
-                    {registeredTables.length === 0 ? (
-                      <option value="" disabled>No tables created for today yet</option>
-                    ) : (
-                      registeredTables.map(r => (
+                    {(() => {
+                      const locFiltered = registeredTables.filter(r => !deheadingAt || !r.production_at || r.production_at.trim().toLowerCase() === deheadingAt.trim().toLowerCase());
+                      if (locFiltered.length === 0) {
+                        return <option value="" disabled>No tables created for today in {deheadingAt || 'selected location'}</option>;
+                      }
+                      return locFiltered.map(r => (
                         <option key={r.id} value={r.table_no}>
                           {r.table_no} ({r.worker_type}{r.contractor_name ? ` - ${r.contractor_name}` : ''})
                         </option>
-                      ))
-                    )}
+                      ));
+                    })()}
                   </select>
                 </div>
 
