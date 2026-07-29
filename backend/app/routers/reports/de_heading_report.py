@@ -176,7 +176,7 @@ async def de_heading_report(
     import re
     table_regs = db.query(TableRegistration).filter(
         TableRegistration.company_id == company_id,
-        TableRegistration.department == "De-Heading"
+        TableRegistration.department.in_(["De-Heading", "Peeling"])
     ).all()
 
     def find_table_registration(r):
@@ -484,7 +484,7 @@ def de_heading_export_excel(request: Request, ids: str = Query(None), db: Sessio
     from app.database.models.processing import TableRegistration
     table_regs = db.query(TableRegistration).filter(
         TableRegistration.company_id == company_id,
-        TableRegistration.department == "De-Heading"
+        TableRegistration.department.in_(["De-Heading", "Peeling"])
     ).all()
     reg_map = {
         (tr.date, (tr.table_no or '').strip().lower()): tr

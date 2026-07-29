@@ -662,7 +662,7 @@ def get_de_heading_table_registrations(request: Request, date_val: str = Query(N
         rows = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == target_date,
-            TableRegistration.department == "De-Heading",
+            TableRegistration.department.in_(["De-Heading", "Peeling"]),
             TableRegistration.status == "Active"
         ).order_by(TableRegistration.id.desc()).all()
 

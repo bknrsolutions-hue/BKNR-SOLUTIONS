@@ -900,7 +900,7 @@ def get_peeling_table_registrations(request: Request, date_val: str = Query(None
         rows = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == target_date,
-            TableRegistration.department == "Peeling",
+            TableRegistration.department.in_(["De-Heading", "Peeling"]),
             TableRegistration.status == "Active"
         ).order_by(TableRegistration.id.desc()).all()
 

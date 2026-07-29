@@ -162,7 +162,7 @@ async def peeling_report(request: Request, db: Session = Depends(get_db)):
     import re
     table_regs = db.query(TableRegistration).filter(
         TableRegistration.company_id == comp_code,
-        TableRegistration.department == "Peeling"
+        TableRegistration.department.in_(["De-Heading", "Peeling"])
     ).all()
 
     def find_table_registration(r):
@@ -466,7 +466,7 @@ def peeling_export_excel(
     from app.database.models.processing import TableRegistration
     table_regs = db.query(TableRegistration).filter(
         TableRegistration.company_id == comp_code,
-        TableRegistration.department == "Peeling"
+        TableRegistration.department.in_(["De-Heading", "Peeling"])
     ).all()
     reg_map = {
         (tr.date, (tr.table_no or '').strip().lower()): tr
