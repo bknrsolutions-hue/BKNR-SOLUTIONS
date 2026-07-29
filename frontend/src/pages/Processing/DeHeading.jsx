@@ -1000,7 +1000,13 @@ export default function DeHeading() {
                 </thead>
                 <tbody>
                   {(() => {
-                    const displayedTables = registeredTables.filter(reg => !deheadingAt || !reg.production_at || reg.production_at.trim().toLowerCase() === deheadingAt.trim().toLowerCase());
+                    const isLocMatch = (tableLoc, targetLoc) => {
+                      if (!targetLoc || !tableLoc) return true;
+                      const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                    };
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, deheadingAt));
                     if (displayedTables.length === 0) {
                       return (
                         <tr>
@@ -1361,7 +1367,13 @@ export default function DeHeading() {
                   >
                     <option value="">Select Table No</option>
                     {(() => {
-                      const locFiltered = registeredTables.filter(r => !deheadingAt || !r.production_at || r.production_at.trim().toLowerCase() === deheadingAt.trim().toLowerCase());
+                      const isLocMatch = (tableLoc, targetLoc) => {
+                        if (!targetLoc || !tableLoc) return true;
+                        const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                      };
+                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, deheadingAt));
                       if (locFiltered.length === 0) {
                         return <option value="" disabled>No tables created for today in {deheadingAt || 'selected location'}</option>;
                       }

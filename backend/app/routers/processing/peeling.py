@@ -890,26 +890,19 @@ def ensure_table_registrations_schema(db: Session):
             db.rollback()
 
 @router.get("/peeling/table_registrations")
-def get_peeling_table_registrations(request: Request, date_val: str = Query(None), location: str = Query(None), db: Session = Depends(get_db)):
+def get_peeling_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
     company_code = request.session.get("company_code")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
     try:
-        production_for, global_location = get_global_filters(request)
-        loc_filter = (location or global_location or "").strip()
-
         target_date = datetime.strptime(date_val, "%Y-%m-%d").date() if date_val else ist_now().date()
-        query = db.query(TableRegistration).filter(
+        rows = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == target_date,
             TableRegistration.department.in_(["De-Heading", "Peeling"]),
             TableRegistration.status == "Active"
-        )
-        if loc_filter:
-            query = query.filter(func.lower(func.trim(TableRegistration.production_at)) == loc_filter.lower())
-
-        rows = query.order_by(TableRegistration.id.desc()).all()
+        ).order_by(TableRegistration.id.desc()).all()
 
         
         return JSONResponse({

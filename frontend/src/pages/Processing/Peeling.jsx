@@ -961,7 +961,13 @@ export default function Peeling() {
                 <tbody>
                   {(() => {
                     const curLoc = regPeelingAt || filterLocation || locationVal || '';
-                    const displayedTables = registeredTables.filter(reg => !curLoc || !reg.production_at || reg.production_at.trim().toLowerCase() === curLoc.trim().toLowerCase());
+                    const isLocMatch = (tableLoc, targetLoc) => {
+                      if (!targetLoc || !tableLoc) return true;
+                      const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                    };
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, curLoc));
                     if (displayedTables.length === 0) {
                       return (
                         <tr>
@@ -1637,7 +1643,13 @@ export default function Peeling() {
                     <option value="">Select Table No</option>
                     {(() => {
                       const curLoc = filterLocation || locationVal || '';
-                      const locFiltered = registeredTables.filter(r => !curLoc || !r.production_at || r.production_at.trim().toLowerCase() === curLoc.trim().toLowerCase());
+                      const isLocMatch = (tableLoc, targetLoc) => {
+                        if (!targetLoc || !tableLoc) return true;
+                        const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                      };
+                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, curLoc));
                       if (locFiltered.length === 0) {
                         return <option value="" disabled>No tables created for today in {curLoc || 'selected location'}</option>;
                       }
