@@ -79,6 +79,53 @@ export default function ProductionReport({ activeRoute }) {
   const totalMC = summaryRows.reduce((s, r) => s + Number(r.no_of_mc || 0), 0);
   const totalQty = summaryRows.reduce((s, r) => s + Number(r.production_qty || 0), 0);
 
+  const calcEditQty = (editObj) => {
+    if (!editObj) return 0;
+    const mcVal = parseFloat(editObj.no_of_mc) || 0;
+    const looseVal = parseFloat(editObj.loose) || 0;
+    const pStyle = (editObj.packing_style || '').trim().toLowerCase();
+    
+    let mcW = 0;
+    let slW = 0;
+    
+    const packingStylesList = data?.packing_styles_list || [];
+    const pMatch = packingStylesList.find(p => 
+      typeof p === 'object' 
+        ? (p.packing_style || '').trim().toLowerCase() === pStyle 
+        : (p || '').trim().toLowerCase() === pStyle
+    );
+
+    if (pMatch && typeof pMatch === 'object') {
+      mcW = parseFloat(pMatch.mc_weight) || 0;
+      slW = parseFloat(pMatch.slab_weight) || 0;
+    }
+
+    if (mcW <= 0 || slW <= 0) {
+      const match = pStyle.match(/(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)/);
+      if (match) {
+        const count = parseFloat(match[1]) || 0;
+        const perSlab = parseFloat(match[2]) || 0;
+        if (slW <= 0) slW = perSlab;
+        if (mcW <= 0) mcW = count * perSlab;
+      } else {
+        const singleMatch = pStyle.match(/(\d+\.?\d*)/);
+        if (singleMatch && mcW <= 0) mcW = parseFloat(singleMatch[1]) || 0;
+      }
+    }
+
+    const gross = (mcVal * mcW) + (looseVal * slW);
+
+    let glazePercent = 0;
+    const glazeText = (editObj.glaze || '').toUpperCase().trim();
+    if (glazeText && !glazeText.includes('NWNC')) {
+      const match = glazeText.match(/(\d+\.?\d*)/);
+      if (match) glazePercent = parseFloat(match[1]) || 0;
+    }
+
+    const net = glazePercent > 0 ? gross * ((100 - glazePercent) / 100) : gross;
+    return net;
+  };
+
   const getExportUrl = (type) => {
     const pf = localStorage.getItem('production_for_filter') || '';
     const loc = localStorage.getItem('plant_location_filter') || '';
@@ -338,7 +385,7 @@ export default function ProductionReport({ activeRoute }) {
             )}
           </td>
           <td className="text-right calc-cell" style={{ background: 'var(--input-bg)', fontWeight: 700 }}>
-            {fmt.number(r.production_qty)}
+            {isEditing && isSelected ? fmt.number(calcEditQty(editData)) : fmt.number(r.production_qty)}
           </td>
           <td className="text-center">-</td>
           <td className="text-center">-</td>
@@ -555,7 +602,7 @@ export default function ProductionReport({ activeRoute }) {
             )}
           </td>
           <td className="text-right calc-cell" style={{ background: 'var(--input-bg)', fontWeight: 700 }}>
-            {fmt.number(r.production_qty)}
+            {isEditing && isSelected ? fmt.number(calcEditQty(editData)) : fmt.number(r.production_qty)}
           </td>
           <td style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{r.email?.split('@')[0]}</td>
         </tr>
