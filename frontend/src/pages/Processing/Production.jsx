@@ -228,7 +228,7 @@ export default function Production() {
     if (matchedVarieties.length > 0) setFormVariety(matchedVarieties[0]);
   }, [formBatch, formCompany, formLocation]);
 
-  // Auto calculate production weight in KG
+  // Auto calculate production weight in KG (Gross & Net after Glaze %)
   useEffect(() => {
     const mcVal = parseFloat(formNoOfMc) || 0;
     const looseVal = parseFloat(formLoose) || 0;
@@ -261,9 +261,20 @@ export default function Production() {
       }
     }
 
-    const totalQty = (mcVal * mcWeight) + (looseVal * slabWeight);
-    setFormProductionQty(totalQty.toFixed(2));
-  }, [formNoOfMc, formLoose, formPackingStyle, packingStyles]);
+    // Gross Packed Weight (MCs + Loose Slabs)
+    const grossQty = (mcVal * mcWeight) + (looseVal * slabWeight);
+
+    // Glaze Deduction (e.g. 20% Glaze -> Net Weight = Gross * 0.80)
+    let glazePercent = 0;
+    const glazeText = (formGlaze || '').toUpperCase().trim();
+    if (glazeText && !glazeText.includes('NWNC')) {
+      const match = glazeText.match(/(\d+\.?\d*)/);
+      if (match) glazePercent = parseFloat(match[1]) || 0;
+    }
+
+    const netQty = glazePercent > 0 ? grossQty * ((100 - glazePercent) / 100) : grossQty;
+    setFormProductionQty(netQty.toFixed(2));
+  }, [formNoOfMc, formLoose, formPackingStyle, formGlaze, packingStyles]);
 
   // Form submission handler
   const handleSubmit = async (e) => {
