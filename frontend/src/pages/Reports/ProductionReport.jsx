@@ -195,6 +195,38 @@ export default function ProductionReport({ activeRoute }) {
     { label: 'Cancel Selected Row', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
+  const getSummarySubtotal = (key, rowsForGroup) => {
+    const rawSub = summarySubtotals[key] || {};
+    const totalMc = rowsForGroup.reduce((s, r) => s + (Number(r.no_of_mc) || 0), 0);
+    const totalLoose = rowsForGroup.reduce((s, r) => s + (Number(r.loose) || 0), 0);
+    const totalProdQty = rowsForGroup.reduce((s, r) => s + (Number(r.production_qty) || 0), 0);
+
+    const soakingIn = Number(rawSub.soaking_in || 0);
+    const targetYield = Number(rawSub.target_yield || 0);
+
+    let actualYield = Number(rawSub.actual_yield || 0);
+    let diffYieldPerc = Number(rawSub.diff_yield_perc || 0);
+    let diffQty = Number(rawSub.diff_qty || 0);
+
+    if (soakingIn > 0) {
+      actualYield = Number(((totalProdQty / soakingIn) * 100).toFixed(2));
+      diffYieldPerc = Number((actualYield - targetYield).toFixed(2));
+      const expectedQty = (soakingIn * targetYield) / 100;
+      diffQty = Number((totalProdQty - expectedQty).toFixed(2));
+    }
+
+    return {
+      mc: totalMc,
+      loose: totalLoose,
+      prod_qty: totalProdQty,
+      soaking_in: soakingIn,
+      target_yield: targetYield,
+      actual_yield: actualYield,
+      diff_yield_perc: diffYieldPerc,
+      diff_qty: diffQty,
+    };
+  };
+
   const renderSummaryRows = () => {
     const result = [];
     let lastKey = null;
