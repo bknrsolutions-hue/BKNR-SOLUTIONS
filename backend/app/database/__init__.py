@@ -5,6 +5,14 @@ from sqlalchemy.orm import sessionmaker, declarative_base
 
 from app.config import DATABASE_URL
 
+
+def normalize_batch_number(value):
+    """Return the canonical batch identifier used by persistence layers."""
+    if value is None:
+        return None
+    return str(value).strip().upper()
+
+
 database_host = (make_url(DATABASE_URL).host or "").lower()
 is_render_database = "render.com" in database_host or os.getenv("RENDER") == "true"
 
