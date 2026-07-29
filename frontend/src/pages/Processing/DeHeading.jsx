@@ -98,21 +98,12 @@ export default function DeHeading() {
 
   const formattedPreviewTableNo = React.useMemo(() => {
     if (!regTableNo.trim()) return '';
-    const cleanLoc = (regPeelingAt || deheadingAt || '').trim();
     const raw = regTableNo.trim();
-    if (!cleanLoc) {
-      return raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
+    if (/^\d+$/.test(raw)) {
+      return `Table ${raw}`;
     }
-    if (raw.toLowerCase().startsWith(cleanLoc.toLowerCase())) {
-      const after = raw.slice(cleanLoc.length).trim().replace(/^[-_\s]+/, '').trim();
-      if (after && !after.toLowerCase().startsWith('table')) {
-        return `${cleanLoc}-table ${after}`;
-      }
-      return raw;
-    }
-    const tablePart = raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
-    return `${cleanLoc}-${tablePart}`;
-  }, [regTableNo, regPeelingAt, deheadingAt]);
+    return raw;
+  }, [regTableNo]);
 
   const isTableAlreadyRegistered = React.useMemo(() => {
     if (!formattedPreviewTableNo) return false;

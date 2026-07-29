@@ -713,18 +713,10 @@ def save_de_heading_table_registration(
         if not clean_peeling_at:
             return JSONResponse({"error": "Peeling At / Location is required"}, status_code=400)
         raw_table_no = table_no.strip()
-        
-        if not clean_peeling_at:
-            clean_table_no = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
-        elif raw_table_no.lower().startswith(clean_peeling_at.lower()):
-            after = raw_table_no[len(clean_peeling_at):].strip().lstrip("-_ ").strip()
-            if after and not after.lower().startswith("table"):
-                clean_table_no = f"{clean_peeling_at}-table {after}"
-            else:
-                clean_table_no = raw_table_no
+        if raw_table_no.isdigit():
+            clean_table_no = f"Table {raw_table_no}"
         else:
-            table_part = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
-            clean_table_no = f"{clean_peeling_at}-{table_part}"
+            clean_table_no = raw_table_no
 
         # 1. Prevent rapid double submit (within 5 seconds)
         five_sec_ago = now_naive - dt.timedelta(seconds=5)
