@@ -119,8 +119,8 @@ export default function GoodsGateMovements() {
       setMasters(nextMasters);
       setForm(current => ({
         ...current,
-        production_for: current.production_for || (nextMasters.productionFor.length === 1 ? nextMasters.productionFor[0] : ''),
-        plant_location: current.plant_location || (nextMasters.plants.length === 1 ? nextMasters.plants[0] : ''),
+        production_for: current.production_for || (nextMasters.productionFor.length > 0 ? nextMasters.productionFor[0] : ''),
+        plant_location: current.plant_location || (nextMasters.plants.length > 0 ? nextMasters.plants[0] : ''),
       }));
     } catch (error) {
       setMessage({ type: 'error', text: `Dropdown data could not be loaded: ${error.message}` });

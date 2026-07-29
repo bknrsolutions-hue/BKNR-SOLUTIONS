@@ -184,6 +184,9 @@ scheduler = None
 
 def start_snapshot_scheduler():
     global scheduler
+    if not BackgroundScheduler:
+        logger.warning("APScheduler is not installed or available. Snapshot scheduler skipped.")
+        return
     if scheduler and scheduler.running:
         return
 

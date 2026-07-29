@@ -139,15 +139,17 @@ export default function Production() {
     if (showEntryModal) {
       if (globalProductionFor && globalProductionFor !== 'ALL') {
         setFormCompany(globalProductionFor);
-      } else {
-        // Pre-populate with first company having active soaking entries
+      } else if (!formCompany) {
+        // Pre-populate with first company having active soaking entries or from master list
         const activeComps = Array.from(new Set(soakingData.map(s => s.production_for))).filter(Boolean);
         if (activeComps.length > 0) {
           setFormCompany(activeComps[0]);
+        } else if (prodForList.length > 0) {
+          setFormCompany(prodForList[0]);
         }
       }
     }
-  }, [showEntryModal, globalProductionFor, soakingData]);
+  }, [showEntryModal, globalProductionFor, soakingData, prodForList, formCompany]);
 
   // Handle cascading form company selection
   useEffect(() => {
@@ -158,7 +160,7 @@ export default function Production() {
 
     if (globalLocation && globalLocation !== 'ALL') {
       setFormLocation(globalLocation);
-    } else {
+    } else if (!formLocation) {
       const matchedLocations = Array.from(
         new Set(
           soakingData
@@ -169,11 +171,13 @@ export default function Production() {
 
       if (matchedLocations.length > 0) {
         setFormLocation(matchedLocations[0]);
+      } else if (prodAtList.length > 0) {
+        setFormLocation(prodAtList[0]);
       } else {
         setFormLocation('');
       }
     }
-  }, [formCompany, globalLocation, soakingData]);
+  }, [formCompany, formLocation, globalLocation, soakingData, prodAtList]);
 
   // Handle cascading form location selection to populate batches
   const getFilteredBatches = () => {

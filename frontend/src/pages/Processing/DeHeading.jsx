@@ -156,15 +156,29 @@ export default function DeHeading() {
         }
         const defaultContractors = ['KG BASIS', 'DAILY BASIS'];
         setContractorsList(Array.from(new Set([...defaultContractors, ...cList])));
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
         setSpeciesList(data.species || []);
-        setPeelingLocations(data.peeling_locations || []);
-        setProdForList(data.prod_for_list || []);
+        setPeelingLocations(locList);
+        setProdForList(pList);
         setTodayEntries(data.today_data || []);
         setHosoFloorBalance(data.hoso_floor_balance || []);
 
-        if (data.selected_production_for) setProductionFor(data.selected_production_for);
+        setProductionFor(current => {
+          if (current && pList.includes(current)) return current;
+          if (activeComp && pList.includes(activeComp)) return activeComp;
+          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
+          return pList.length > 0 ? pList[0] : '';
+        });
+
+        setDeheadingAt(current => {
+          if (current && locList.includes(current)) return current;
+          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
+          return locList.length > 0 ? locList[0] : '';
+        });
+
         if (data.selected_location) {
-          setDeheadingAt(data.selected_location);
           setRegPeelingAt(data.selected_location);
         }
       } else {
@@ -182,6 +196,20 @@ export default function DeHeading() {
       setLoading(false);
     }
   };
+
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!deheadingAt && peelingLocations.length > 0) {
+        setDeheadingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showModal, prodForList, peelingLocations, productionFor, deheadingAt]);
 
   useEffect(() => {
     const now = new Date();
@@ -365,6 +393,10 @@ export default function DeHeading() {
     }
 
     const cleanLocation = regPeelingAt || deheadingAt || '';
+    if (!cleanLocation.trim()) {
+      alert('Peeling At / Location is required!');
+      return;
+    }
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
     const cleanCheck = formattedTableNo.toLowerCase();
@@ -761,6 +793,7 @@ export default function DeHeading() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
+                    <option value="">Select Peeling At / Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 

@@ -147,9 +147,25 @@ export default function Peeling() {
       const res = await fetch(`/processing/peeling?${queryParams.toString()}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
+        setProdForList(pList);
+        setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
+
+        setProductionFor(current => {
+          if (current && pList.includes(current)) return current;
+          if (activeComp && pList.includes(activeComp)) return activeComp;
+          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
+          return pList.length > 0 ? pList[0] : '';
+        });
+
+        setLocationVal(current => {
+          if (current && locList.includes(current)) return current;
+          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
+          return locList.length > 0 ? locList[0] : '';
+        });
 
         let cList = data.contractors || [];
         if (!cList.length) {
@@ -191,6 +207,20 @@ export default function Peeling() {
       setLoading(false);
     }
   };
+
+  // Auto-set state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!locationVal && peelingLocations.length > 0) {
+        setLocationVal(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showModal, prodForList, peelingLocations, productionFor, locationVal]);
 
   useEffect(() => {
     const now = new Date();
@@ -375,6 +405,10 @@ export default function Peeling() {
     }
 
     const cleanLocation = regPeelingAt || filterLocation || locationVal || '';
+    if (!cleanLocation.trim()) {
+      alert('Peeling At / Location is required!');
+      return;
+    }
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
     const cleanCheck = formattedTableNo.toLowerCase();
@@ -718,6 +752,7 @@ export default function Peeling() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
+                    <option value="">Select Peeling At / Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 

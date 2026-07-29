@@ -57,8 +57,10 @@ export default function Grading() {
 
       if (res.ok) {
         const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
+        setProdForList(pList);
+        setPeelingLocations(locList);
         setSpeciesList(data.species_list || []);
         setVarietyList(data.variety_list || []);
         setTodayEntries(data.today_data || []);
@@ -67,6 +69,19 @@ export default function Grading() {
         setDeheadingPending(data.deheading_pending || []);
         setDrillDownData(data.drill_down || {});
 
+        setProductionFor(current => {
+          if (current && pList.includes(current)) return current;
+          if (activeComp && pList.includes(activeComp)) return activeComp;
+          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
+          return pList.length > 0 ? pList[0] : '';
+        });
+
+        setPeelingAt(current => {
+          if (current && locList.includes(current)) return current;
+          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
+          return locList.length > 0 ? locList[0] : '';
+        });
 
       } else {
         console.error('Failed to fetch grading details');
@@ -77,6 +92,20 @@ export default function Grading() {
       setLoading(false);
     }
   };
+
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!peelingAt && peelingLocations.length > 0) {
+        setPeelingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showForm, prodForList, peelingLocations, productionFor, peelingAt]);
 
   useEffect(() => {
     const now = new Date();

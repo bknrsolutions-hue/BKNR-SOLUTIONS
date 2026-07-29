@@ -83,6 +83,19 @@ export default function StockEntry() {
   };
 
   useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!prodFor && prodForList.length > 0) {
+        setProdFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!prodAt && productionPlaces.length > 0) {
+        setProdAt(productionPlaces.includes(activeLoc) ? activeLoc : productionPlaces[0]);
+      }
+    }
+  }, [showForm, prodForList, productionPlaces, prodFor, prodAt]);
+
+  useEffect(() => {
     fetchData();
     const h = () => fetchData();
     window.addEventListener('filter_change', h);

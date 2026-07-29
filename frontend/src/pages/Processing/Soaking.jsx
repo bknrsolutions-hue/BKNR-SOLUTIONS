@@ -70,8 +70,10 @@ export default function Soaking() {
       const res = await fetch(`/processing/soaking?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
+        setProdForList(pList);
+        setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
         setChemicalsList(data.chemicals || []);
         setSpeciesList(data.species || []);
@@ -79,8 +81,20 @@ export default function Soaking() {
         setTodayEntries(data.today_data || []);
 
         if (data.selected_production_for) setFilterCompany(data.selected_production_for);
-        if (data.selected_location) setProductionAt(data.selected_location);
 
+        setProductionFor(current => {
+          if (current && pList.includes(current)) return current;
+          if (activeComp && pList.includes(activeComp)) return activeComp;
+          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
+          return pList.length > 0 ? pList[0] : '';
+        });
+
+        setProductionAt(current => {
+          if (current && locList.includes(current)) return current;
+          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
+          return locList.length > 0 ? locList[0] : '';
+        });
 
       } else {
         console.error('Failed to fetch Soaking details');
@@ -91,6 +105,20 @@ export default function Soaking() {
       setLoading(false);
     }
   };
+
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!productionAt && peelingLocations.length > 0) {
+        setProductionAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showModal, prodForList, peelingLocations, productionFor, productionAt]);
 
   useEffect(() => {
     const now = new Date();

@@ -182,6 +182,12 @@ export default function ColdStorageHolding() {
     () => [...new Set(productionForList.map(item => item.production_for).filter(Boolean))],
     [productionForList],
   );
+
+  useEffect(() => {
+    if (showForm && !form.productionFor && productionForOptions.length > 0) {
+      updateForm('productionFor', productionForOptions[0]);
+    }
+  }, [showForm, form.productionFor, productionForOptions]);
   const todayEntries = useMemo(
     () => entries.filter(entry => String(entry.in_date || '').slice(0, 10) === todayDate),
     [entries, todayDate],

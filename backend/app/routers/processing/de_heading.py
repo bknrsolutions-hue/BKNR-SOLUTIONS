@@ -662,6 +662,7 @@ def get_de_heading_table_registrations(request: Request, date_val: str = Query(N
         rows = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == target_date,
+            TableRegistration.department == "De-Heading",
             TableRegistration.status == "Active"
         ).order_by(TableRegistration.id.desc()).all()
 
@@ -694,7 +695,7 @@ def save_de_heading_table_registration(
     request: Request, db: Session = Depends(get_db),
     table_no: str = Form(...), worker_type: str = Form(...),
     contractor_name: str = Form(None), no_of_workers: str = Form("0"),
-    worker_ids: str = Form(None), production_at: str = Form(None),
+    worker_ids: str = Form(None), production_at: str = Form(...),
     production_for: str = Form(None)
 ):
     company_code = request.session.get("company_code")
@@ -709,6 +710,8 @@ def save_de_heading_table_registration(
         today_date = current_ist.date()
         now_naive = current_ist.replace(tzinfo=None) if hasattr(current_ist, 'tzinfo') and current_ist.tzinfo else current_ist
         clean_peeling_at = (production_at or "").strip()
+        if not clean_peeling_at:
+            return JSONResponse({"error": "Peeling At / Location is required"}, status_code=400)
         raw_table_no = table_no.strip()
         
         if not clean_peeling_at:
@@ -737,7 +740,7 @@ def save_de_heading_table_registration(
             return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
 
         validation_error = validate_kg_worker_table_registration(
-            db, company_code, worker_type, parsed_no_workers, worker_ids, production_at
+            db, company_code, worker_type, parsed_no_workers, worker_ids, clean_peeling_at
         )
         if validation_error:
             return JSONResponse({"error": validation_error}, status_code=400)
@@ -751,7 +754,7 @@ def save_de_heading_table_registration(
             contractor_name=contractor_name.strip() if contractor_name else None,
             no_of_workers=parsed_no_workers,
             worker_ids=worker_ids.strip() if worker_ids else None,
-            production_at=production_at.strip() if production_at else None,
+            production_at=clean_peeling_at,
             production_for=production_for.strip() if production_for else None,
             created_by=email,
             created_at=now_naive

@@ -80,8 +80,16 @@ export default function RawMaterialPurchasing() {
         setSpeciesList(data.species_list || []);
         setPeelingLocations(nextPeelingLocations);
         setProdForList(nextProdForList);
-        setProductionFor(current => current || activeComp || (nextProdForList.length === 1 ? nextProdForList[0] : ''));
-        setPeelingAt(current => current || activeLoc || (nextPeelingLocations.length === 1 ? nextPeelingLocations[0] : ''));
+        setProductionFor(current => {
+          if (current && nextProdForList.includes(current)) return current;
+          if (activeComp && nextProdForList.includes(activeComp)) return activeComp;
+          return nextProdForList.length > 0 ? nextProdForList[0] : '';
+        });
+        setPeelingAt(current => {
+          if (current && nextPeelingLocations.includes(current)) return current;
+          if (activeLoc && nextPeelingLocations.includes(activeLoc)) return activeLoc;
+          return nextPeelingLocations.length > 0 ? nextPeelingLocations[0] : '';
+        });
         setHsnList(data.hsn_list || []);
         setHsnMap(data.hsn_map || {});
         setHosoSummary(data.hoso_summary || []);
@@ -99,6 +107,19 @@ export default function RawMaterialPurchasing() {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!peelingAt && peelingLocations.length > 0) {
+        setPeelingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showForm, prodForList, peelingLocations, productionFor, peelingAt]);
 
   useEffect(() => {
     const now = new Date();
