@@ -141,11 +141,15 @@ def production_report_page(
             ).first()
             target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
 
-            soaking_in = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
+            soaking_q = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
                 Soaking.company_id == comp_code,
-                Soaking.batch_number == r.batch_number,
-                Soaking.variety_name == r.variety_name
-            ).scalar() or 0.0
+                func.upper(func.trim(Soaking.batch_number)) == func.upper(func.trim(r.batch_number or "")),
+                func.upper(func.trim(Soaking.variety_name)) == func.upper(func.trim(r.variety_name or "")),
+                func.upper(func.trim(Soaking.species)) == func.upper(func.trim(r.species or "")),
+                func.upper(func.trim(Soaking.production_at)) == func.upper(func.trim(r.production_at or "")),
+                func.upper(func.trim(Soaking.production_for)) == func.upper(func.trim(r.production_for or ""))
+            )
+            soaking_in = soaking_q.scalar() or 0.0
 
             summary_subtotals[key] = {
                 "mc": 0, "loose": 0, "prod_qty": 0.0,
