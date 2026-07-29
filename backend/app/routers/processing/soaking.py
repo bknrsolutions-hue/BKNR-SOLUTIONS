@@ -12,7 +12,7 @@ from app.database.models.processing import Soaking
 from app.database.models.reprocess import Reprocess
 from app.database.models.floor_balance import FloorBalance  # Live Running Stock Table
 from app.database.models.criteria import (
-    varieties, species, chemicals, production_at, production_for as ProductionForMaster
+    varieties, species, chemicals, production_at, peeling_at, production_for as ProductionForMaster
 )
 
 from app.utils.timezone import ist_now 
@@ -110,11 +110,33 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location, user_allowed_locations = resolve_session_scope(request)
 
     masters = get_cached_masters(db, company_id)
-    
+    company_names = set(masters["prod_for_list"])
+
+    raw_locs = []
+
     pl_q = db.query(production_at.production_at).filter(production_at.company_id == company_id)
     if user_allowed_locations:
         pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
-    prod_locs = [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]]
+    for p in pl_q.order_by(production_at.production_at).all():
+        if p[0] and p[0] not in raw_locs:
+            raw_locs.append(p[0])
+
+    pa_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id)
+    if user_allowed_locations:
+        pa_q = pa_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+    for p in pa_q.order_by(peeling_at.peeling_at).all():
+        if p[0] and p[0] not in raw_locs:
+            raw_locs.append(p[0])
+
+    fb_q = db.query(distinct(FloorBalance.location)).filter(FloorBalance.company_id == company_id)
+    if user_allowed_locations:
+        fb_q = fb_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
+    for f in fb_q.all():
+        if f[0] and f[0] not in raw_locs:
+            raw_locs.append(f[0])
+
+    non_company_locs = [l for l in raw_locs if l and l.strip() and l.strip() not in company_names]
+    prod_locs = non_company_locs if non_company_locs else raw_locs
 
     # Recent Log Table limited to 100 rows
     today_q = db.query(Soaking).filter(Soaking.company_id == company_id, Soaking.date == current_date)

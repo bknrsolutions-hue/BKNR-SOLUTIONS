@@ -795,7 +795,10 @@ export default function Soaking() {
                     }} 
                     required
                   >
-                    {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
+                    {(peelingLocations.filter(l => !prodForList.includes(l)).length
+                      ? peelingLocations.filter(l => !prodForList.includes(l))
+                      : peelingLocations
+                    ).map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 
                 </div>
