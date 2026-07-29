@@ -247,7 +247,7 @@ def production_report_page(
         # Convert dictionary keys of summary_subtotals to strings
         subtotals_json = {}
         for key, val in summary_subtotals.items():
-            str_key = "__".join(str(k or "") for k in key)
+            str_key = "|".join(str(k or "") for k in key)
             subtotals_json[str_key] = val
         context_json["summary_subtotals"] = subtotals_json
 

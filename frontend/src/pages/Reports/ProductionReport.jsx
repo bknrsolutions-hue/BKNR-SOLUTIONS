@@ -198,28 +198,38 @@ export default function ProductionReport({ activeRoute }) {
   const renderSummaryRows = () => {
     const result = [];
     let lastKey = null;
+    let currentGroupRows = [];
+
+    const appendSubtotalRow = (key, rows, keyIdx) => {
+      const s = getSummarySubtotal(key, rows);
+      result.push(
+        <tr key={`sub-${key}-${keyIdx}`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
+          <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
+          <td className="text-right">{s.mc}</td>
+          <td className="text-right">{s.loose}</td>
+          <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
+          <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981', fontWeight: 800 }}>
+            {s.actual_yield}% ({s.diff_yield_perc >= 0 ? '+' : ''}{s.diff_yield_perc}%)
+          </td>
+          <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981', fontWeight: 800 }}>
+            {s.diff_qty > 0 ? `+${s.diff_qty}` : s.diff_qty}
+          </td>
+          <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
+            In: {s.soaking_in} | Trg: {s.target_yield}%
+          </td>
+        </tr>
+      );
+    };
 
     summaryRows.forEach((r, idx) => {
       const currentKey = `${r.production_at || ''}|${r.production_for || ''}|${r.batch_number || ''}|${r.variety_name || ''}|${r.grade || ''}`;
 
       if (lastKey && lastKey !== currentKey) {
-        const s = summarySubtotals[lastKey];
-        if (s) {
-          result.push(
-            <tr key={`sub-${lastKey}-${idx}`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
-              <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
-              <td className="text-right">{s.mc}</td>
-              <td className="text-right">{s.loose}</td>
-              <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
-              <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981' }}>{s.actual_yield}% ({s.diff_yield_perc}%)</td>
-              <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981' }}>{s.diff_qty}</td>
-              <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
-                In: {s.soaking_in} | Trg: {s.target_yield}%
-              </td>
-            </tr>
-          );
-        }
+        appendSubtotalRow(lastKey, currentGroupRows, idx);
+        currentGroupRows = [];
       }
+
+      currentGroupRows.push(r);
 
       const isSelected = selectedRow?.id === r.id;
       const slNo = summaryRows.length - idx;
@@ -396,22 +406,7 @@ export default function ProductionReport({ activeRoute }) {
       lastKey = currentKey;
 
       if (idx === summaryRows.length - 1) {
-        const s = summarySubtotals[currentKey];
-        if (s) {
-          result.push(
-            <tr key={`sub-last`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
-              <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
-              <td className="text-right">{s.mc}</td>
-              <td className="text-right">{s.loose}</td>
-              <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
-              <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981' }}>{s.actual_yield}% ({s.diff_yield_perc}%)</td>
-              <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981' }}>{s.diff_qty}</td>
-              <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
-                In: {s.soaking_in} | Trg: {s.target_yield}%
-              </td>
-            </tr>
-          );
-        }
+        appendSubtotalRow(currentKey, currentGroupRows, 'last');
       }
     });
 
