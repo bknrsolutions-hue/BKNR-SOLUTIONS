@@ -38,13 +38,34 @@ logger = logging.getLogger("BKNR_ERP.auth")
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
-TENANT_LOGO_DIR = Path("app/static/uploads/company_logos")
+APP_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_LOGO_URL = "/static/images/svbk-it-solutions-logo-3d-transparent.png"
+TENANT_LOGO_DIR = APP_DIR / "static" / "uploads" / "company_logos"
 TENANT_LOGO_MAX_BYTES = 2 * 1024 * 1024
 TENANT_LOGO_TYPES = {
     "image/png": ("png", b"\x89PNG\r\n\x1a\n"),
     "image/jpeg": ("jpg", b"\xff\xd8\xff"),
     "image/webp": ("webp", b"RIFF"),
 }
+
+
+def get_company_logo_url(company) -> str:
+    """Return a browser-safe tenant logo URL, falling back if its file vanished."""
+    logo_url = str(getattr(company, "logo_path", "") or "").strip()
+    if not logo_url:
+        return DEFAULT_LOGO_URL
+
+    static_prefix = "/static/"
+    if not logo_url.startswith(static_prefix):
+        return DEFAULT_LOGO_URL
+
+    relative_path = Path(logo_url.removeprefix(static_prefix))
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        return DEFAULT_LOGO_URL
+
+    logo_file = APP_DIR / "static" / relative_path
+    return logo_url if logo_file.is_file() else DEFAULT_LOGO_URL
+
 
 def activate_exclusive_email_session(db: Session, email: str, session_id: str) -> None:
     normalized_email = str(email or "").strip().lower()
@@ -555,7 +576,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "company_id": company.id,
         "company_code": company.company_code,
         "company_name": company.company_name,
-        "company_logo_url": company.logo_path,
+        "company_logo_url": get_company_logo_url(company),
         "mpeda_registration_code": company.mpeda_registration_code,
         "name": user.name,
         "role": user.role,
@@ -622,7 +643,7 @@ def session_info(request: Request, db: Session = Depends(get_db)):
             mpeda_code = company.mpeda_registration_code if company else None
         if mpeda_code:
             request.session["mpeda_registration_code"] = mpeda_code
-        request.session["company_logo_url"] = company.logo_path if company else None
+        request.session["company_logo_url"] = get_company_logo_url(company)
     return {
         "authenticated": True,
         "email": request.session.get("email"),
@@ -630,7 +651,7 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         "company_name": request.session.get("company_name"),
         "company_code": request.session.get("company_code"),
         "mpeda_registration_code": mpeda_code,
-        "company_logo_url": company.logo_path if company else None,
+        "company_logo_url": get_company_logo_url(company),
         "role": request.session.get("role"),
         "permissions": request.session.get("permissions") or [],
     }
@@ -680,7 +701,7 @@ def _profile_payload(request: Request, db: Session, company: Company, user: User
         "address": (employee.present_address if employee else "") or (employee.permanent_address if employee else "") or user.address or "",
         "company_name": company.company_name,
         "company_code": company.company_code,
-        "company_logo_url": company.logo_path,
+        "company_logo_url": get_company_logo_url(company),
         "role": user.role or "",
     }
 
@@ -695,7 +716,7 @@ def _require_tenant_logo_admin(request: Request, db: Session):
 @router.get("/tenant-logo")
 def tenant_logo(request: Request, db: Session = Depends(get_db)):
     company, _ = _current_profile(request, db)
-    return {"status": "success", "company_logo_url": company.logo_path}
+    return {"status": "success", "company_logo_url": get_company_logo_url(company)}
 
 @router.post("/tenant-logo")
 async def update_tenant_logo(
@@ -727,15 +748,15 @@ async def update_tenant_logo(
     old_logo = company.logo_path
     company.logo_path = f"/static/uploads/company_logos/{filename}"
     db.commit()
-    request.session["company_logo_url"] = company.logo_path
+    request.session["company_logo_url"] = get_company_logo_url(company)
     if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
-        old_path = Path("app") / old_logo.lstrip("/")
+        old_path = APP_DIR / "static" / old_logo.removeprefix("/static/")
         try:
             if old_path.is_file() and old_path != destination:
                 old_path.unlink()
         except OSError:
             logger.warning("Unable to remove previous tenant logo: %s", old_path)
-    return {"status": "success", "company_logo_url": company.logo_path}
+    return {"status": "success", "company_logo_url": get_company_logo_url(company)}
 
 @router.delete("/tenant-logo")
 def remove_tenant_logo(request: Request, db: Session = Depends(get_db)):
@@ -743,15 +764,15 @@ def remove_tenant_logo(request: Request, db: Session = Depends(get_db)):
     old_logo = company.logo_path
     company.logo_path = None
     db.commit()
-    request.session["company_logo_url"] = None
+    request.session["company_logo_url"] = DEFAULT_LOGO_URL
     if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
-        old_path = Path("app") / old_logo.lstrip("/")
+        old_path = APP_DIR / "static" / old_logo.removeprefix("/static/")
         try:
             if old_path.is_file():
                 old_path.unlink()
         except OSError:
             logger.warning("Unable to remove tenant logo: %s", old_path)
-    return {"status": "success", "company_logo_url": None}
+    return {"status": "success", "company_logo_url": DEFAULT_LOGO_URL}
 
 @router.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request, format: str = "html", db: Session = Depends(get_db)):

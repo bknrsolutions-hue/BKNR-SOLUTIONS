@@ -1,4 +1,6 @@
 import io
+import importlib
+from types import SimpleNamespace
 
 import pytest
 
@@ -69,6 +71,27 @@ def test_tenant_logo_rejects_mismatched_file_signature(client, tenants, login_as
         headers={"Accept": "application/json"},
     )
     assert response.status_code in {400, 415, 422}
+
+
+def test_tenant_logo_url_falls_back_when_uploaded_file_is_missing(monkeypatch, tmp_path):
+    auth = importlib.import_module("app.routers.auth")
+
+    monkeypatch.setattr(auth, "APP_DIR", tmp_path)
+    company = SimpleNamespace(logo_path="/static/uploads/company_logos/missing.png")
+
+    assert auth.get_company_logo_url(company) == auth.DEFAULT_LOGO_URL
+
+
+def test_tenant_logo_url_returns_existing_static_upload(monkeypatch, tmp_path):
+    auth = importlib.import_module("app.routers.auth")
+
+    monkeypatch.setattr(auth, "APP_DIR", tmp_path)
+    logo_file = tmp_path / "static" / "uploads" / "company_logos" / "tenant.png"
+    logo_file.parent.mkdir(parents=True)
+    logo_file.write_bytes(b"\x89PNG\r\n\x1a\n")
+    company = SimpleNamespace(logo_path="/static/uploads/company_logos/tenant.png")
+
+    assert auth.get_company_logo_url(company) == company.logo_path
 
 
 def test_openapi_does_not_publish_secret_values(client):
