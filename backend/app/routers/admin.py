@@ -128,6 +128,7 @@ SCREEN_POPUP_FORMS = [
     {"group": "Masters", "label": "Peeling Rates", "route": "/criteria/peeling_rates"},
     {"group": "Masters", "label": "KG Basis Worker Rates", "route": "/criteria/api/kg_basis_labour_rates"},
     {"group": "Masters", "label": "Day Basis Worker Salary Rates", "route": "/criteria/api/daily_basis_worker_rates"},
+    {"group": "Masters", "label": "Purchasing Locations", "route": "/criteria/purchasing_locations"},
     {"group": "Masters", "label": "Production At", "route": "/criteria/production_at"},
     {"group": "Masters", "label": "Production For", "route": "/criteria/production_for"},
     {"group": "Masters", "label": "Production Types", "route": "/criteria/production_types"},
