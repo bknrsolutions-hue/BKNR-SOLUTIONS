@@ -232,15 +232,35 @@ export default function Production() {
   useEffect(() => {
     const mcVal = parseFloat(formNoOfMc) || 0;
     const looseVal = parseFloat(formLoose) || 0;
-    const selectedStyle = packingStyles.find(p => p.packing_style === formPackingStyle);
 
-    if (!selectedStyle) {
+    if (!formPackingStyle) {
       setFormProductionQty('0.00');
       return;
     }
 
-    const mcWeight = parseFloat(selectedStyle.mc_weight) || 0;
-    const slabWeight = parseFloat(selectedStyle.slab_weight) || 0;
+    const selectedStyle = packingStyles.find(
+      p => (p.packing_style || '').trim().toLowerCase() === (formPackingStyle || '').trim().toLowerCase()
+    );
+
+    let mcWeight = selectedStyle ? (parseFloat(selectedStyle.mc_weight) || 0) : 0;
+    let slabWeight = selectedStyle ? (parseFloat(selectedStyle.slab_weight) || 0) : 0;
+
+    // Fallback: If mc_weight or slab_weight is missing or 0 in database, parse numeric values from packing style name (e.g. "10 x 2 KG" or "6 x 1.8 KG")
+    if (mcWeight <= 0 || slabWeight <= 0) {
+      const match = (formPackingStyle || '').match(/(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)/);
+      if (match) {
+        const count = parseFloat(match[1]) || 0;
+        const perSlab = parseFloat(match[2]) || 0;
+        if (slabWeight <= 0) slabWeight = perSlab;
+        if (mcWeight <= 0) mcWeight = count * perSlab;
+      } else {
+        const singleMatch = (formPackingStyle || '').match(/(\d+\.?\d*)/);
+        if (singleMatch && mcWeight <= 0) {
+          mcWeight = parseFloat(singleMatch[1]) || 0;
+        }
+      }
+    }
+
     const totalQty = (mcVal * mcWeight) + (looseVal * slabWeight);
     setFormProductionQty(totalQty.toFixed(2));
   }, [formNoOfMc, formLoose, formPackingStyle, packingStyles]);

@@ -947,13 +947,7 @@ def save_production(
         if not company_code or not email:
             return RedirectResponse("/auth/login", status_code=302)
 
-        final_production_qty = float(production_qty or 0)
-        glaze_text = str(glaze or "").strip().upper()
-
-        if "NWNC" not in glaze_text:
-            glaze_percent = extract_number(glaze_text, 0)
-            if glaze_percent > 0:
-                final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
+        final_production_qty = round(float(production_qty or 0), 3)
 
         current_ist = ist_now()
         obj = Production(
@@ -1008,13 +1002,7 @@ def update_production(
             if is_edit_locked(request, entry.date):
                 request.session["message"] = f"❌ {edit_lock_message()}"
                 return RedirectResponse("/processing/production", status_code=303)
-            final_production_qty = float(production_qty or 0)
-            glaze_text = str(glaze or "").strip().upper()
-
-            if "NWNC" not in glaze_text:
-                glaze_percent = extract_number(glaze_text, 0)
-                if glaze_percent > 0:
-                    final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
+            final_production_qty = round(float(production_qty or 0), 3)
 
             entry.batch_number = batch_number
             entry.brand = brand
