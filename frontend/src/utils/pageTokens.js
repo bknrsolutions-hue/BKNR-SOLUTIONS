@@ -154,6 +154,7 @@ export const TOKEN_MAP = {
   mst_prt:      { page_id: 'criteria_peeling_rates',           backend: '/criteria/peeling_rates' },
   mst_kgl:      { page_id: 'criteria_kg_basis_labour_rates',   backend: '/criteria/api/kg_basis_labour_rates' },
   mst_dwr:      { page_id: 'criteria_daily_basis_worker_rates',backend: '/criteria/api/daily_basis_worker_rates' },
+  mst_plc:      { page_id: 'criteria_purchasing_locations',    backend: '/criteria/purchasing_locations' },
   mst_pra:      { page_id: 'criteria_production_at',           backend: '/criteria/production_at' },
   'pf_8Kx92LmQ':{ page_id: 'criteria_production_for',          backend: '/criteria/production_for' },
   mst_prt2:     { page_id: 'criteria_production_types',        backend: '/criteria/production_types' },
