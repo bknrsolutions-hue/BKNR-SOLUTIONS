@@ -212,12 +212,12 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
 
 # -----------------------------------------------------
-# 🟢 🔴 NEW: DYNAMIC COLDSTORE LOOKUP BY PLANT (PRODUCTION AT) ONLY
+# 🟢 🔴 NEW: DYNAMIC COLDSTORE LOOKUP BY PLANT (PRODUCTION AT) WITH FALLBACK
 # -----------------------------------------------------
 @router.get("/get_matched_coldstores")
 def get_matched_coldstores(
     request: Request, 
-    production_at: str = Query(...),
+    production_at: str = Query(""),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -225,27 +225,28 @@ def get_matched_coldstores(
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     selected_production_at = (production_at or "").strip()
-    if not selected_production_at:
-        return JSONResponse({"locations": []})
 
-    # Multi-permission applies to plant/production_at, not coldstore location names.
-    session_locations = request.session.get("allowed_locations", [])
-    if isinstance(session_locations, str):
-        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
-    else:
-        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    loc_list = []
+    if selected_production_at:
+        query = db.query(coldstore_locations.coldstore_location).filter(
+            coldstore_locations.company_id == company_code,
+            func.upper(func.trim(coldstore_locations.production_at)) == selected_production_at.upper()
+        )
+        matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
+        loc_list = sorted({r.coldstore_location for r in matched_rows if r.coldstore_location})
 
-    if user_allowed_locations and selected_production_at.upper() not in user_allowed_locations:
-        return JSONResponse({"locations": []})
+    if not loc_list:
+        all_query = db.query(coldstore_locations.coldstore_location).filter(
+            coldstore_locations.company_id == company_code
+        )
+        loc_list = sorted({r.coldstore_location for r in all_query.all() if r.coldstore_location})
 
-    # Coldstore names are looked up only by the selected plant / production_at.
-    query = db.query(coldstore_locations.coldstore_location).filter(
-        coldstore_locations.company_id == company_code,
-        func.upper(func.trim(coldstore_locations.production_at)) == selected_production_at.upper()
-    )
-
-    matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
-    loc_list = sorted({r.coldstore_location for r in matched_rows if r.coldstore_location})
+    if not loc_list:
+        from app.database.models.inventory_management import cold_storage_holding
+        holding_query = db.query(cold_storage_holding.cold_storage_name).filter(
+            cold_storage_holding.company_id == company_code
+        )
+        loc_list = sorted({r.cold_storage_name for r in holding_query.all() if r.cold_storage_name})
 
     return JSONResponse({"locations": loc_list})
 # -----------------------------------------------------

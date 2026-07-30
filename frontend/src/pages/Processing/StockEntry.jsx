@@ -102,12 +102,18 @@ export default function StockEntry() {
     return () => window.removeEventListener('filter_change', h);
   }, []);
 
-  // Fetch coldstores when prodAt changes
+  // Fetch coldstores when prodAt changes or on initial mount
   useEffect(() => {
-    if (!prodAt) { setLocations([]); return; }
-    fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(prodAt)}`, { credentials: 'include' })
+    fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(prodAt || '')}`, { credentials: 'include' })
       .then(r => r.json())
-      .then(d => setLocations(d.locations || []));
+      .then(d => {
+        const locs = d.locations || [];
+        setLocations(locs);
+        if (locs.length > 0 && (!location || !locs.includes(location))) {
+          setLocation(locs[0]);
+        }
+      })
+      .catch(err => console.error('Failed to load coldstore locations:', err));
   }, [prodAt]);
 
   const handleStockIn = async (e) => {
