@@ -211,16 +211,26 @@ def _is_text_name(value):
     return bool(re.fullmatch(r"[A-Za-z][A-Za-z .'-]*", _text(value)))
 
 
-def _validate_contract_member(member, row_number):
+def _validate_contract_member(member, row_number, db=None, company_id=None):
     row_label = f"Worker {row_number}"
     labour_name = _text(member.get("labour_name"))
     contractor_name = _text(member.get("contractor_name"))
-    department = _text(member.get("department"))
+    department = _text(member.get("department")) or "ALL"
     production_at_value = _text(member.get("production_at"))
-    joining_date = _parse_date(member.get("joining_date"))
+    joining_date = _parse_date(member.get("joining_date")) or ist_now().date()
     mobile = re.sub(r"\D", "", _text(member.get("mobile")))
     aadhar_number = re.sub(r"\D", "", _text(member.get("aadhar_number")))
-    gender = _text(member.get("gender"))
+    gender = _text(member.get("gender")) or "Male"
+
+    if not contractor_name and db and company_id:
+        c_list = _lookup_values(db, contractors, contractors.contractor_name, company_id)
+        if c_list:
+            contractor_name = c_list[0]
+
+    if not production_at_value and db and company_id:
+        p_list = _lookup_values(db, production_at, production_at.production_at, company_id)
+        if p_list:
+            production_at_value = p_list[0]
 
     if not labour_name:
         raise ValueError(f"{row_label}: Worker Name is required")
@@ -229,17 +239,15 @@ def _validate_contract_member(member, row_number):
     if not contractor_name:
         raise ValueError(f"{row_label}: Contractor is required")
     if not department:
-        raise ValueError(f"{row_label}: Department is required")
+        department = "ALL"
     if not production_at_value:
         raise ValueError(f"{row_label}: Plant / Location is required")
     if not joining_date:
-        raise ValueError(f"{row_label}: Joining Date is required")
+        joining_date = ist_now().date()
     if not re.fullmatch(r"\d{10}", mobile):
         raise ValueError(f"{row_label}: Mobile Number must be 10 digits")
     if not re.fullmatch(r"\d{12}", aadhar_number):
         raise ValueError(f"{row_label}: Aadhaar Number must be 12 digits")
-    if gender not in {"Male", "Female", "Other"}:
-        raise ValueError(f"{row_label}: Gender must be Male, Female, or Other")
 
     return {
         "labour_name": labour_name,
@@ -317,7 +325,7 @@ async def save_contract_labour(request: Request, db: Session = Depends(get_db)):
     company_initial = _first_letter(request.session.get("company_name") or company_id)
     try:
         for index, member in enumerate(members, start=1):
-            clean_member = _validate_contract_member(member, index)
+            clean_member = _validate_contract_member(member, index, db, company_id)
             if next_number > 99999:
                 raise ValueError("Contract worker ID sequence has reached 99999")
             row = ContractLabour(

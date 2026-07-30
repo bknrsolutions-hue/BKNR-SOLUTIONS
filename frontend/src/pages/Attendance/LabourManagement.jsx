@@ -5,9 +5,16 @@ import './LabourManagement.css';
 const today = () => new Date().toISOString().slice(0, 10);
 const cleanNameText = value => value.replace(/[^A-Za-z .'-]/g, '');
 
-const blankMember = () => ({
-  labour_name: '', contractor_name: '', mobile: '', aadhar_number: '', gender: '',
-  joining_date: today(), department: 'ALL', production_at: '', remarks: ''
+const blankMember = (l = { contractors: [], locations: [] }) => ({
+  labour_name: '',
+  contractor_name: (l.contractors && l.contractors.length > 0) ? l.contractors[0] : '',
+  mobile: '',
+  aadhar_number: '',
+  gender: 'Male',
+  joining_date: today(),
+  department: 'ALL',
+  production_at: (l.locations && l.locations.length > 0) ? l.locations[0] : '',
+  remarks: ''
 });
 
 export default function LabourManagement() {
@@ -42,7 +49,15 @@ export default function LabourManagement() {
       if (!response.ok || data.status !== 'success') throw new Error(data.error || 'Unable to load worker register');
       setContractRows(data.contract_labour || []);
       setContractAttendance(data.contract_attendance || []);
-      setLookups(data.lookups || { contractors: [], purposes: [], locations: [] });
+      const l = data.lookups || { contractors: [], purposes: [], locations: [] };
+      setLookups(l);
+      setMembers(current => current.map(m => ({
+        ...m,
+        contractor_name: m.contractor_name || (l.contractors?.length ? l.contractors[0] : ''),
+        production_at: m.production_at || (l.locations?.length ? l.locations[0] : ''),
+        gender: m.gender || 'Male',
+        department: m.department || 'ALL',
+      })));
     } catch (error) {
       notify(error.message, 'error');
     } finally {
@@ -56,8 +71,8 @@ export default function LabourManagement() {
     setMembers(current => current.map((member, rowIndex) => rowIndex === index ? { ...member, [key]: value } : member));
   };
 
-  const validateContractMembers = () => {
-    for (const [index, member] of members.entries()) {
+  const validateContractMembers = (membersList = members) => {
+    for (const [index, member] of membersList.entries()) {
       const rowLabel = `Worker ${index + 1}`;
       if (!member.labour_name.trim()) return `${rowLabel}: Worker Name is required`;
       if (!/^[A-Za-z][A-Za-z .'-]*$/.test(member.labour_name.trim())) return `${rowLabel}: Worker Name must contain text only`;
@@ -89,7 +104,15 @@ export default function LabourManagement() {
 
   const saveContractMembers = async event => {
     event.preventDefault();
-    const validationError = validateContractMembers();
+    const preparedMembers = members.map(member => ({
+      ...member,
+      contractor_name: (member.contractor_name || '').trim() || (lookups.contractors?.length ? lookups.contractors[0] : ''),
+      production_at: (member.production_at || '').trim() || (lookups.locations?.length ? lookups.locations[0] : ''),
+      gender: member.gender || 'Male',
+      department: member.department || 'ALL',
+      joining_date: member.joining_date || today(),
+    }));
+    const validationError = validateContractMembers(preparedMembers);
     if (validationError) {
       notify(validationError, 'error');
       return;
@@ -97,13 +120,13 @@ export default function LabourManagement() {
     setSaving(true);
     try {
       const response = await sessionFetch('/attendance/labour-management/contract/bulk', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members: preparedMembers })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to save members');
       const ids = (data.records || []).map(row => row.labour_id).join(', ');
       notify(`Saved ${data.records?.length || members.length} members. IDs: ${ids}`);
-      setMembers([blankMember()]);
+      setMembers([blankMember(lookups)]);
       setRegistrationOpen(false);
       await loadData();
     } catch (error) {
@@ -266,7 +289,7 @@ export default function LabourManagement() {
               <div className="registration-form-icon"><i className="fa-solid fa-users" /></div>
               <div className="registration-form-copy"><h2>Bulk Worker Registration</h2><p>Fill one section per worker. IDs are generated automatically after saving.</p></div>
               <div className="registration-form-badge">{members.length} Member{members.length > 1 ? 's' : ''}</div>
-              <button type="button" className="labour-btn add-member-btn" onClick={() => setMembers(rows => [...rows, blankMember()])}><i className="fa-solid fa-plus" /> Add Member</button>
+              <button type="button" className="labour-btn add-member-btn" onClick={() => setMembers(rows => [...rows, blankMember(lookups)])}><i className="fa-solid fa-plus" /> Add Member</button>
             </div>
             <div className="registration-help"><span><i className="fa-solid fa-circle-info" /> Name, contractor and joining date are required.</span><span>ID format: Company + Contractor + 5 digits</span></div>
             <div className="member-form-list">
