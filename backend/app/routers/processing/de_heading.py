@@ -696,7 +696,7 @@ def save_de_heading_table_registration(
     table_no: str = Form(...), worker_type: str = Form(...),
     contractor_name: str = Form(None), no_of_workers: str = Form("0"),
     worker_ids: str = Form(None), production_at: str = Form(...),
-    production_for: str = Form(None)
+    production_for: str = Form(None), overwrite: str = Form("false")
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -718,6 +718,47 @@ def save_de_heading_table_registration(
         else:
             clean_table_no = raw_table_no
 
+        validation_error = validate_kg_worker_table_registration(
+            db, company_code, worker_type, parsed_no_workers, worker_ids, clean_peeling_at
+        )
+        if validation_error:
+            return JSONResponse({"error": validation_error}, status_code=400)
+
+        # Check existing active table registration for today
+        existing = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == today_date,
+            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
+            TableRegistration.status == 'Active'
+        ).first()
+
+        is_overwrite_bool = str(overwrite).lower() in ['true', '1', 'yes']
+
+        if existing:
+            if not is_overwrite_bool:
+                existing_info = f"Table '{clean_table_no}' is already registered today"
+                if existing.contractor_name:
+                    existing_info += f" for contractor '{existing.contractor_name}'"
+                else:
+                    existing_info += f" ({existing.worker_type})"
+                return JSONResponse({
+                    "already_exists": True,
+                    "error": f"{existing_info}. Do you want to update/overwrite it for the new shift?"
+                }, status_code=409)
+
+            # Update existing registration for new shift
+            existing.department = "De-Heading"
+            existing.worker_type = worker_type.strip()
+            existing.contractor_name = contractor_name.strip() if contractor_name else None
+            existing.no_of_workers = parsed_no_workers
+            existing.worker_ids = worker_ids.strip() if worker_ids else None
+            existing.production_at = clean_peeling_at
+            existing.production_for = production_for.strip() if production_for else None
+            existing.created_by = email
+            existing.created_at = now_naive
+            db.commit()
+            return JSONResponse({"status": "ok", "updated": True, "id": existing.id})
+
         # 1. Prevent rapid double submit (within 5 seconds)
         five_sec_ago = now_naive - dt.timedelta(seconds=5)
         recent = db.query(TableRegistration).filter(
@@ -730,12 +771,6 @@ def save_de_heading_table_registration(
         ).first()
         if recent:
             return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
-
-        validation_error = validate_kg_worker_table_registration(
-            db, company_code, worker_type, parsed_no_workers, worker_ids, clean_peeling_at
-        )
-        if validation_error:
-            return JSONResponse({"error": validation_error}, status_code=400)
 
         new_reg = TableRegistration(
             company_id=company_code,

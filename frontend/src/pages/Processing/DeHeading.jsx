@@ -377,10 +377,15 @@ export default function DeHeading() {
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
     const cleanCheck = formattedTableNo.toLowerCase();
-    const isDuplicate = registeredTables.some(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
-    if (isDuplicate) {
-      alert(`Table Number '${formattedTableNo}' is already registered for today!`);
-      return;
+    const existing = registeredTables.find(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
+    let shouldOverwrite = false;
+    if (existing) {
+      const details = existing.contractor_name ? `Contractor (${existing.contractor_name})` : existing.worker_type;
+      const confirmUpdate = window.confirm(
+        `Table Number '${formattedTableNo}' is already registered today under ${details}.\n\nDo you want to update/overwrite this table for the new shift?`
+      );
+      if (!confirmUpdate) return;
+      shouldOverwrite = true;
     }
 
     if (regWorkerType !== 'Contractor') {
@@ -396,27 +401,43 @@ export default function DeHeading() {
     }
 
     setLoading(true);
-    const formData = new URLSearchParams();
-    formData.append('table_no', formattedTableNo);
-    formData.append('worker_type', regWorkerType);
-    if (regWorkerType === 'Contractor') {
-      formData.append('contractor_name', regContractor);
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-    } else {
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-      formData.append('worker_ids', selectedWorkerIds.join(', '));
-    }
-    formData.append('production_at', cleanLocation);
-    formData.append('production_for', productionFor);
+    const postData = async (overwriteFlag = false) => {
+      const formData = new URLSearchParams();
+      formData.append('table_no', formattedTableNo);
+      formData.append('worker_type', regWorkerType);
+      if (regWorkerType === 'Contractor') {
+        formData.append('contractor_name', regContractor);
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+      } else {
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+        formData.append('worker_ids', selectedWorkerIds.join(', '));
+      }
+      formData.append('production_at', cleanLocation);
+      formData.append('production_for', productionFor);
+      if (overwriteFlag) formData.append('overwrite', 'true');
 
-    try {
       const res = await sessionFetch('/processing/de_heading/table_registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       });
+
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        if (data.already_exists) {
+          if (window.confirm(data.error || 'Table already registered today. Overwrite for new shift?')) {
+            await postData(true);
+            return;
+          } else {
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       if (res.ok) {
-        alert('Table Registered Successfully!');
+        const resJson = await res.json().catch(() => ({}));
+        alert(resJson.updated ? 'Table Registration Updated Successfully for New Shift!' : 'Table Registered Successfully!');
         setRegTableNo('');
         setRegContractor('');
         setRegNoOfWorkers('');
@@ -427,6 +448,10 @@ export default function DeHeading() {
         const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
         alert(data.error || data.detail || data.message || 'Registration failed');
       }
+    };
+
+    try {
+      await postData(shouldOverwrite);
     } catch (err) {
       console.error(err);
       alert(err?.message || 'Error saving table registration');
