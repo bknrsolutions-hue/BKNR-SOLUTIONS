@@ -321,6 +321,9 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
                     "g1_qty": r.g1_qty,
                     "g2_qty": r.g2_qty,
                     "dc_qty": r.dc_qty,
+                    "g1_expr": r.g1_expr,
+                    "g2_expr": r.g2_expr,
+                    "dc_expr": r.dc_expr,
                     "received_qty": r.received_qty,
                     "rate_per_kg": r.rate_per_kg,
                     "amount": r.amount,
@@ -389,6 +392,7 @@ def save_rmp(
     peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
     hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
     g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
@@ -403,7 +407,8 @@ def save_rmp(
         production_for=production_for, 
         peeling_at=peeling_at, variety_name=variety_name,
         species=species, hsn_code=hsn_code, count=count, g1_qty=g1_qty, g2_qty=g2_qty,
-        dc_qty=dc_qty, received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
+        dc_qty=dc_qty, g1_expr=g1_expr or None, g2_expr=g2_expr or None, dc_expr=dc_expr or None,
+        received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
         material_boxes=material_boxes, remarks=remarks, email=user_email,
         date=now.date(), time=now.time(), company_id=comp_code
     )
@@ -434,6 +439,7 @@ def update_rmp(
     peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
     hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
     g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
@@ -458,6 +464,7 @@ def update_rmp(
         entry.peeling_at = peeling_at
         entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
         entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
+        entry.g1_expr, entry.g2_expr, entry.dc_expr = g1_expr or None, g2_expr or None, dc_expr or None
         entry.received_qty = g1_qty + g2_qty + dc_qty
         entry.amount = round(total_billable_qty * rate_per_kg, 2)
         entry.rate_per_kg = rate_per_kg

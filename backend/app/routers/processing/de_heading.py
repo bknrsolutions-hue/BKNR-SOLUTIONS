@@ -227,6 +227,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
                     "hoso_count": r.hoso_count,
                     "hoso_qty": r.hoso_qty,
                     "hlso_qty": r.hlso_qty,
+                    "hlso_qty_expr": r.hlso_qty_expr,
                     "yield_percent": r.yield_percent,
                     "contractor": r.contractor,
                     "table_no": r.table_no,
@@ -449,7 +450,8 @@ def save_de_heading(
     hoso_count: str = Form(...), hoso_qty: float = Form(...),
     hlso_qty: float = Form(...), yield_percent: str = Form(...),
     contractor: str = Form(...), rate_per_kg: float = Form(...),
-    amount: float = Form(...), table_no: str = Form(None)
+    amount: float = Form(...), table_no: str = Form(None),
+    hlso_qty_expr: str = Form(None)
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -496,7 +498,8 @@ def save_de_heading(
 
         new_entry = DeHeading(
             production_for=production_for, peeling_at=deheading_at, batch_number=clean_batch, hoso_count=clean_count,
-            species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, yield_percent=clean_yield,
+            species=species, hoso_qty=hoso_qty, hlso_qty=hlso_qty, hlso_qty_expr=hlso_qty_expr or None,
+            yield_percent=clean_yield,
             contractor=contractor, table_no=table_no.strip() if table_no else None, rate_per_kg=approved_rate, amount=calculated_amount,
             date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
         )

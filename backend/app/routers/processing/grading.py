@@ -245,6 +245,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                     "variety_name": r.variety_name,
                     "graded_count": r.graded_count,
                     "quantity": r.quantity,
+                    "quantity_expr": r.quantity_expr,
                     "species": r.species,
                     "peeling_at": r.peeling_at,
                     "production_for": r.production_for,
@@ -381,6 +382,7 @@ def save_grading(
     request: Request, batch_number: str = Form(...), hoso_count: str = Form(...),
     variety_name: str = Form(...), graded_count: str = Form(...), quantity: float = Form(...),
     species_val: str = Form(...), peeling_at: str = Form(...), production_for: str = Form(...),
+    quantity_expr: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -415,7 +417,7 @@ def save_grading(
 
     grading = Grading(
         batch_number=batch_number, hoso_count=hoso_count, variety_name=variety_name,
-        graded_count=graded_count, quantity=quantity, species=species_val,
+        graded_count=graded_count, quantity=quantity, quantity_expr=quantity_expr or None, species=species_val,
         peeling_at=peeling_at, production_for=production_for,
         date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
     )

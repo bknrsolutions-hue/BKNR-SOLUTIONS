@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
@@ -24,6 +25,9 @@ export default function RawMaterialPurchasing() {
   const [g1, setG1] = useState('0');
   const [g2, setG2] = useState('0');
   const [dc, setDc] = useState('0');
+  const [g1Expr, setG1Expr] = useState('');
+  const [g2Expr, setG2Expr] = useState('');
+  const [dcExpr, setDcExpr] = useState('');
   const [rate, setRate] = useState('0');
   const [remarks, setRemarks] = useState('');
 
@@ -239,6 +243,9 @@ export default function RawMaterialPurchasing() {
     setG1('0');
     setG2('0');
     setDc('0');
+    setG1Expr('');
+    setG2Expr('');
+    setDcExpr('');
     setRate('0');
     setRemarks('');
     setSelectedId(null);
@@ -266,6 +273,9 @@ export default function RawMaterialPurchasing() {
     formData.append('g1_qty', parseFloat(g1) || 0);
     formData.append('g2_qty', parseFloat(g2) || 0);
     formData.append('dc_qty', parseFloat(dc) || 0);
+    if (g1Expr) formData.append('g1_expr', g1Expr);
+    if (g2Expr) formData.append('g2_expr', g2Expr);
+    if (dcExpr) formData.append('dc_expr', dcExpr);
     formData.append('rate_per_kg', parseFloat(rate) || 0);
     formData.append('remarks', remarks);
 
@@ -625,7 +635,8 @@ export default function RawMaterialPurchasing() {
               <ExpressionWeightInput
                 value={g1}
                 onChange={setG1}
-                placeholder="0.00 or 25+30+45"
+                onExprChange={setG1Expr}
+                placeholder="0.00 or 25+30-5"
               />
             </div>
             <div className="form-group">
@@ -633,7 +644,8 @@ export default function RawMaterialPurchasing() {
               <ExpressionWeightInput
                 value={g2}
                 onChange={setG2}
-                placeholder="0.00 or 25+30+45"
+                onExprChange={setG2Expr}
+                placeholder="0.00 or 25+30-5"
               />
             </div>
             <div className="form-group">
@@ -641,7 +653,8 @@ export default function RawMaterialPurchasing() {
               <ExpressionWeightInput
                 value={dc}
                 onChange={setDc}
-                placeholder="0.00 or 25+30+45"
+                onExprChange={setDcExpr}
+                placeholder="0.00 or 25+30-5"
               />
             </div>
             <div className="form-group">
@@ -748,9 +761,15 @@ export default function RawMaterialPurchasing() {
                   <td className="text-left">{row.species}</td>
                   <td className="text-center">{row.count}</td>
                   <td className="text-right">{(row.material_boxes || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.g1_qty || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.g2_qty || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.dc_qty || 0).toFixed(2)}</td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.g1_qty || 0} expr={row.g1_expr} />
+                  </td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.g2_qty || 0} expr={row.g2_expr} />
+                  </td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.dc_qty || 0} expr={row.dc_expr} />
+                  </td>
                   <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : row.received_qty).toFixed(2)}</td>
                   <td className="text-right">₹{row.rate_per_kg.toFixed(2)}</td>
                   <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{(row.is_cancelled ? 0 : (Number(row.amount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 
 export default function Grading() {
   const [date, setDate] = useState('');
@@ -18,6 +19,7 @@ export default function Grading() {
   const [varietyName, setVarietyName] = useState('');
   const [gradedCount, setGradedCount] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [quantityExpr, setQuantityExpr] = useState('');  // raw expression
 
   // Dropdown options & raw data sets
   const [prodForList, setProdForList] = useState([]);
@@ -254,6 +256,7 @@ export default function Grading() {
     formData.append('variety_name', varietyName);
     formData.append('graded_count', gradedCount.toUpperCase().trim());
     formData.append('quantity', String(quantity));
+    if (quantityExpr) formData.append('quantity_expr', quantityExpr);
 
     try {
       const res = await fetch('/processing/grading?format=json', {
@@ -326,6 +329,7 @@ export default function Grading() {
     setVarietyName('');
     setGradedCount('');
     setQuantity('');
+    setQuantityExpr('');
     setSelectedId(null);
     setShowForm(false);
   };
@@ -697,7 +701,8 @@ export default function Grading() {
               <ExpressionWeightInput
                 value={quantity}
                 onChange={setQuantity}
-                placeholder="0.00 or 25+30+45"
+                onExprChange={setQuantityExpr}
+                placeholder="0.00 or 25+30-5*2"
                 required
               />
             </div>
@@ -763,7 +768,9 @@ export default function Grading() {
                   <td className="text-center">{row.hoso_count}</td>
                   <td className="text-center" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{row.graded_count}</td>
                   <td className="text-left">{row.species} | {row.variety_name}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>{(row.is_cancelled ? 0 : (Number(row.quantity) || 0)).toFixed(2)} KG</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>
+                    <WeightBreakdownCell value={row.is_cancelled ? 0 : (Number(row.quantity) || 0)} expr={row.is_cancelled ? null : row.quantity_expr} />
+                  </td>
                   <td className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{row.time}</td>
                   <td className="text-center">
                     {!row.is_cancelled && (

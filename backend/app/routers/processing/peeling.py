@@ -453,6 +453,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                     "variety_name": r.variety_name,
                     "hlso_qty": r.hlso_qty,
                     "peeled_qty": r.peeled_qty,
+                    "peeled_qty_expr": r.peeled_qty_expr,
                     "yield_percent": r.yield_percent,
                     "contractor_name": r.contractor_name,
                     "table_no": r.table_no,
@@ -678,7 +679,7 @@ def save_peeling(
     batch_number: str = Form(...), in_count: str = Form(...), species: str = Form(...), variety: str = Form(...),
     hlso_qty: float = Form(...), peeled_qty: float = Form(...), yield_percent: str = Form(...), 
     contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...),
-    table_no: str = Form(None)
+    table_no: str = Form(None), peeled_qty_expr: str = Form(None)
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -724,8 +725,9 @@ def save_peeling(
         current_ist = ist_now()
 
         new_entry = Peeling(
-            production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
-            species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
+            peeling_at=location, production_for=production_for, batch_number=batch_number.strip(), hlso_count=in_count.strip(),
+            species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, peeled_qty_expr=peeled_qty_expr or None,
+            yield_percent=clean_yield,
             contractor_name=contractor_name, table_no=table_no.strip() if table_no else None, rate=approved_rate, amount=calculated_amount,
             date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
         )

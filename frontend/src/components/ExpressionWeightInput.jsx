@@ -1,49 +1,83 @@
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
+ * Helper to parse addition/subtraction expressions into individual signed parts.
+ * e.g. "25+30-5+10" -> [{ val: 25, sign: '+' }, { val: 30, sign: '+' }, { val: 5, sign: '-' }, { val: 10, sign: '+' }]
+ */
+export function parsePartsList(expr) {
+  const cleaned = String(expr || '').replace(/\s+/g, '');
+  if (!cleaned) return [];
+  
+  // Replace minus with +-, then split by +
+  const tokens = cleaned.replace(/-/g, '+-').split('+').filter(Boolean);
+  const parts = [];
+  
+  for (const tok of tokens) {
+    const num = parseFloat(tok);
+    if (!isNaN(num)) {
+      parts.push({
+        val: Math.abs(num),
+        sign: num < 0 ? '-' : '+',
+        rawNum: num
+      });
+    }
+  }
+  return parts;
+}
+
+/**
  * ExpressionWeightInput
- * - Type "25+30+45" → shows live "= 100.00" preview
- * - Press Enter or blur → locks the field, saves numeric sum via onChange
- * - Click the locked sum chip → shows breakdown tooltip
- * - Once locked, field is readonly; click the ✕ chip to unlock
+ * - Supports full math (+, -, *, /)
+ * - Live preview while typing
+ * - Press Enter or blur -> locks and saves numeric result
+ * - Click locked chip -> shows breakdown list of parts (+, -)
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
   onChange,        // (numericString) => void
-  placeholder = '0.00 or 25+30+45',
-  label = '',
+  onExprChange,    // (rawExpr) => void - optional, to store expression in DB
+  placeholder = '0.00 or 25+30-5',
   required = false,
   className = 'form-control',
   style = {},
 }) {
-  const [raw, setRaw] = useState('');       // raw expression while typing
-  const [locked, setLocked] = useState(false); // locked after Enter/blur
+  const [raw, setRaw] = useState('');
+  const [locked, setLocked] = useState(false);
   const [showBreakdown, setShowBreakdown] = useState(false);
+  const [error, setError] = useState('');
   const inputRef = useRef(null);
   const popupRef = useRef(null);
 
-  // Parse expression: only digits, dots, spaces, + signs
-  const parseExpr = (expr) => {
-    const clean = String(expr || '').replace(/[^0-9.+]/g, '');
-    if (!clean) return { parts: [], sum: 0, valid: false };
-    const parts = clean.split('+').map(p => parseFloat(p) || 0);
-    const sum = parts.reduce((a, b) => a + b, 0);
-    return { parts, sum, valid: parts.length > 0 };
+  const safeEval = (expr) => {
+    const cleaned = String(expr || '').trim();
+    if (!cleaned) return null;
+    if (!/^[0-9+\-*/().\s]+$/.test(cleaned)) return null;
+    try {
+      // eslint-disable-next-line no-new-func
+      const result = Function('"use strict"; return (' + cleaned + ')')();
+      if (typeof result === 'number' && isFinite(result) && result >= 0) {
+        return result;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   };
 
-  const { parts, sum: liveSum, valid } = parseExpr(raw);
-  const isExpression = raw.includes('+');
+  const isExpr = (str) => /[+\-*/()]/.test(str);
+  const liveResult = safeEval(raw);
+  const hasLiveResult = liveResult !== null && isExpr(raw);
 
-  // Sync from parent value when it changes externally (e.g. form clear)
   useEffect(() => {
     if (!value || value === '0' || value === '') {
       setRaw('');
       setLocked(false);
       setShowBreakdown(false);
+      setError('');
+      if (onExprChange) onExprChange('');
     }
   }, [value]);
 
-  // Close breakdown on outside click
   useEffect(() => {
     if (!showBreakdown) return;
     const handleOutside = (e) => {
@@ -57,10 +91,26 @@ export default function ExpressionWeightInput({
 
   const commitValue = () => {
     if (!raw.trim()) return;
-    const { sum } = parseExpr(raw);
-    const numStr = sum.toFixed(2);
-    onChange(numStr);
-    setLocked(true);
+    if (isExpr(raw)) {
+      const result = safeEval(raw);
+      if (result === null) {
+        setError('Invalid expression');
+        return;
+      }
+      const numStr = result.toFixed(2);
+      onChange(numStr);
+      if (onExprChange) onExprChange(raw.trim());
+      setError('');
+      setLocked(true);
+    } else {
+      const num = parseFloat(raw);
+      if (!isNaN(num) && num >= 0) {
+        onChange(num.toFixed(2));
+        if (onExprChange) onExprChange('');
+        setError('');
+        setLocked(true);
+      }
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -68,18 +118,26 @@ export default function ExpressionWeightInput({
       e.preventDefault();
       commitValue();
     }
+    if (e.key === 'Escape') {
+      setRaw('');
+      setError('');
+    }
   };
 
   const handleUnlock = () => {
     setLocked(false);
     setShowBreakdown(false);
-    setRaw(value && value !== '0' ? value : '');
+    setError('');
+    if (!raw && value && value !== '0') {
+      setRaw(value);
+    }
     setTimeout(() => inputRef.current?.focus(), 50);
   };
 
-  // ---- LOCKED STATE: show chip with sum, click = breakdown ----
   if (locked && value && parseFloat(value) > 0) {
-    const breakdownParts = raw.includes('+') ? parts : [parseFloat(value)];
+    const hasExpr = isExpr(raw);
+    const partsList = hasExpr ? parsePartsList(raw) : [];
+
     return (
       <div style={{ position: 'relative' }}>
         <div
@@ -88,51 +146,49 @@ export default function ExpressionWeightInput({
             alignItems: 'center',
             gap: '6px',
             padding: '6px 10px',
-            background: 'rgba(37,99,235,0.1)',
-            border: '1px solid rgba(37,99,235,0.4)',
+            background: 'rgba(37,99,235,0.08)',
+            border: '1px solid rgba(37,99,235,0.35)',
             borderRadius: '6px',
-            cursor: 'pointer',
+            cursor: hasExpr ? 'pointer' : 'default',
             userSelect: 'none',
           }}
-          onClick={() => setShowBreakdown(v => !v)}
+          onClick={() => hasExpr && setShowBreakdown(v => !v)}
         >
           <span style={{ fontWeight: '800', color: 'var(--corp-dash)', fontSize: '14px' }}>
             {parseFloat(value).toFixed(2)}
           </span>
           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>KG</span>
-          {raw.includes('+') && (
+          {hasExpr && (
             <span style={{
               fontSize: '10px',
-              background: 'rgba(37,99,235,0.2)',
-              padding: '1px 6px',
+              background: 'rgba(37,99,235,0.18)',
+              padding: '1px 7px',
               borderRadius: '10px',
               color: 'var(--corp-dash)',
               fontWeight: '700',
             }}>
-              {breakdownParts.length} parts
+              {partsList.length > 0 ? `${partsList.length} parts` : '= expression'}
             </span>
           )}
           <button
             type="button"
             onClick={(e) => { e.stopPropagation(); handleUnlock(); }}
-            title="Edit weight"
+            title="Edit"
             style={{
               marginLeft: 'auto',
               background: 'none',
               border: 'none',
               cursor: 'pointer',
               color: 'var(--text-secondary)',
-              fontSize: '14px',
+              fontSize: '13px',
               lineHeight: 1,
               padding: '0 2px',
             }}
-          >
-            ✕
-          </button>
+          >✕</button>
         </div>
 
-        {/* Breakdown Tooltip */}
-        {showBreakdown && raw.includes('+') && (
+        {/* Breakdown popup */}
+        {showBreakdown && hasExpr && (
           <div
             ref={popupRef}
             style={{
@@ -140,33 +196,44 @@ export default function ExpressionWeightInput({
               top: '110%',
               left: 0,
               zIndex: 9999,
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border-light)',
+              background: 'var(--bg-card, #1e2433)',
+              border: '1px solid var(--border-light, rgba(255,255,255,0.1))',
               borderRadius: '8px',
-              padding: '10px 14px',
-              minWidth: '160px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+              padding: '12px 16px',
+              minWidth: '220px',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}
           >
-            <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase' }}>
-              Weight Breakdown
+            <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--corp-dash)', marginBottom: '8px', textTransform: 'uppercase' }}>
+              Weight Breakdown Parts
             </div>
-            {breakdownParts.map((p, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', fontSize: '12px', padding: '2px 0' }}>
-                <span style={{ color: 'var(--text-secondary)' }}>Part {i + 1}</span>
-                <span style={{ fontWeight: '700', color: 'var(--text-primary)' }}>{p.toFixed(2)} KG</span>
+            
+            {partsList.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+                {partsList.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '3px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
+                    <span style={{ color: 'var(--text-secondary)' }}>Part {idx + 1}</span>
+                    <span style={{ fontWeight: '700', color: item.sign === '-' ? '#ef4444' : '#16a34a' }}>
+                      {item.sign} {item.val.toFixed(2)} KG
+                    </span>
+                  </div>
+                ))}
               </div>
-            ))}
+            ) : (
+              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: 'var(--text-primary)', marginBottom: '6px', wordBreak: 'break-all' }}>
+                {raw}
+              </div>
+            )}
+
             <div style={{
-              borderTop: '1px solid var(--border-light)',
-              marginTop: '6px',
+              borderTop: '1px solid var(--border-light, rgba(255,255,255,0.1))',
               paddingTop: '6px',
               display: 'flex',
               justifyContent: 'space-between',
-              fontSize: '12px',
+              fontSize: '13px',
               fontWeight: '800',
             }}>
-              <span style={{ color: 'var(--corp-dash)' }}>Total</span>
+              <span style={{ color: 'var(--corp-dash)' }}>Total Sum</span>
               <span style={{ color: 'var(--corp-dash)' }}>{parseFloat(value).toFixed(2)} KG</span>
             </div>
           </div>
@@ -175,48 +242,42 @@ export default function ExpressionWeightInput({
     );
   }
 
-  // ---- EDITING STATE ----
   return (
     <div style={{ position: 'relative' }}>
       <input
         ref={inputRef}
         type="text"
         className={className}
-        style={style}
+        style={{ ...style, borderColor: error ? '#ef4444' : undefined }}
         placeholder={placeholder}
         value={raw}
         required={required}
         onChange={e => {
-          // allow digits, dots, +, spaces only
-          const cleaned = e.target.value.replace(/[^0-9.+\s]/g, '');
+          const cleaned = e.target.value.replace(/[^0-9+\-*/().\s]/g, '');
           setRaw(cleaned);
-          if (!cleaned.includes('+')) {
-            // Direct number — pass to parent immediately
-            onChange(cleaned);
+          setError('');
+          if (!isExpr(cleaned)) {
+            const n = parseFloat(cleaned);
+            if (!isNaN(n)) onChange(n.toFixed(2));
           }
         }}
         onKeyDown={handleKeyDown}
-        onBlur={() => {
-          if (raw.includes('+') && valid) {
-            commitValue();
-          }
-        }}
+        onBlur={() => { if (raw.trim()) commitValue(); }}
       />
-      {/* Live preview for expression */}
-      {isExpression && valid && (
-        <div style={{
-          fontSize: '11px',
-          marginTop: '3px',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-        }}>
+
+      {hasLiveResult && (
+        <div style={{ fontSize: '11px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>=</span>
-          <span style={{ fontWeight: '800', color: '#16a34a' }}>{liveSum.toFixed(2)} KG</span>
+          <span style={{ fontWeight: '800', color: '#16a34a', fontSize: '13px' }}>
+            {liveResult.toFixed(2)} KG
+          </span>
           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-            ({parts.length} parts — press Enter to confirm)
+            (press Enter to confirm)
           </span>
         </div>
+      )}
+      {error && (
+        <div style={{ fontSize: '10px', color: '#ef4444', marginTop: '3px' }}>{error}</div>
       )}
     </div>
   );

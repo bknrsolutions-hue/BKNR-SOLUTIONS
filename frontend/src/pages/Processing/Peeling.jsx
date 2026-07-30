@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Layers, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { sessionFetch } from '../../utils/sessionFetch';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 
 export default function Peeling() {
   const [date, setDate] = useState('');
@@ -21,6 +22,7 @@ export default function Peeling() {
   const [hlsoQty, setHlsoQty] = useState('');
   const [variety, setVariety] = useState('');
   const [peeledQty, setPeeledQty] = useState('');
+  const [peeledQtyExpr, setPeeledQtyExpr] = useState('');  // raw expression
   const [contractor, setContractor] = useState('');
   const [rate, setRate] = useState(0);
   const [yieldPercent, setYieldPercent] = useState('0.00');
@@ -332,6 +334,7 @@ export default function Peeling() {
     formData.append('hlso_qty', String(hlsoQty));
     formData.append('variety', variety);
     formData.append('peeled_qty', String(peeledQty));
+    if (peeledQtyExpr) formData.append('peeled_qty_expr', peeledQtyExpr);
     formData.append('contractor_name', contractor);
     formData.append('table_no', tableNo);
     formData.append('rate', String(rate));
@@ -356,6 +359,7 @@ export default function Peeling() {
         setSpecies('');
         setHlsoQty('');
         setPeeledQty('');
+        setPeeledQtyExpr('');
         setContractor('');
         setTableNo('');
         setRate(0);
@@ -1566,7 +1570,9 @@ export default function Peeling() {
                   <td className="text-left" style={{ color: 'var(--corp-dash)' }}>{row.variety_name}</td>
                   <td className="text-center">{row.hlso_count}</td>
                   <td className="text-right">{(row.is_cancelled ? 0 : row.hlso_qty).toFixed(2)}</td>
-                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{(row.is_cancelled ? 0 : row.peeled_qty).toFixed(2)}</td>
+                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>
+                    <WeightBreakdownCell value={row.is_cancelled ? 0 : row.peeled_qty} expr={row.is_cancelled ? null : row.peeled_qty_expr} />
+                  </td>
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>

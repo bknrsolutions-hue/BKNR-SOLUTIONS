@@ -3,6 +3,7 @@ import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, Che
 import { Chart, registerables } from 'chart.js';
 import { sessionFetch } from '../../utils/sessionFetch';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 Chart.register(...registerables);
 
 const uniqueValues = values => Array.from(
@@ -26,6 +27,7 @@ export default function DeHeading() {
   const [hosoCount, setHosoCount] = useState('');
   const [hosoQty, setHosoQty] = useState('');
   const [hlsoQty, setHlsoQty] = useState('');
+  const [hlsoQtyExpr, setHlsoQtyExpr] = useState('');  // raw expression e.g. '25+30*2'
   const [yieldPercent, setYieldPercent] = useState('0.00');
   const [contractor, setContractor] = useState('');
   const [ratePerKg, setRatePerKg] = useState(0);
@@ -323,6 +325,7 @@ export default function DeHeading() {
     formData.append('species', species);
     formData.append('hoso_qty', String(hosoQty));
     formData.append('hlso_qty', String(hlsoQty));
+    if (hlsoQtyExpr) formData.append('hlso_qty_expr', hlsoQtyExpr);
     formData.append('yield_percent', yieldPercent + '%');
     formData.append('contractor', contractor);
     formData.append('table_no', tableNo);
@@ -346,6 +349,7 @@ export default function DeHeading() {
         setHosoCount('');
         setHosoQty('');
         setHlsoQty('');
+        setHlsoQtyExpr('');
         setContractor('');
         setTableNo('');
         setRatePerKg(0);
@@ -1285,7 +1289,9 @@ export default function DeHeading() {
                         <td className="text-center">{row.batch_number} / {row.hoso_count}</td>
                         <td className="text-left">{row.species}</td>
                         <td className="text-right" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.hoso_qty}</td>
-                        <td className="text-right" style={{ fontWeight: '700' }}>{row.hlso_qty}</td>
+                        <td className="text-right" style={{ fontWeight: '700' }}>
+                          <WeightBreakdownCell value={row.hlso_qty} expr={row.hlso_qty_expr} />
+                        </td>
                         <td className="text-center">{row.yield_percent}%</td>
                         <td className="text-left">{row.contractor}</td>
                         <td className="text-center">
@@ -1505,7 +1511,8 @@ export default function DeHeading() {
                   <ExpressionWeightInput
                     value={hlsoQty}
                     onChange={setHlsoQty}
-                    placeholder="0.00 or 25+30+45"
+                    onExprChange={setHlsoQtyExpr}
+                    placeholder="0.00 or 25+30-5*2"
                     required
                   />
                 </div>
