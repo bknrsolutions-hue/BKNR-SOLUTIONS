@@ -386,16 +386,29 @@ export default function Peeling() {
     }
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
-    const cleanCheck = formattedTableNo.toLowerCase();
-    const existing = registeredTables.find(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
-    let shouldOverwrite = false;
-    if (existing) {
-      const details = existing.contractor_name ? `Contractor (${existing.contractor_name})` : existing.worker_type;
-      const confirmUpdate = window.confirm(
-        `Table Number '${formattedTableNo}' is already registered today under ${details}.\n\nDo you want to update/overwrite this table for the new shift?`
+    const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+    const baseInput = getBaseName(formattedTableNo);
+    const existingMatches = registeredTables.filter(r => 
+      r.table_no && getBaseName(r.table_no).toLowerCase() === baseInput.toLowerCase()
+    );
+
+    let isConfirmedShift = false;
+    if (existingMatches.length > 0) {
+      const getOrdinal = (n) => {
+        if (11 <= (n % 100) && (n % 100) <= 13) return n + 'th';
+        return n + ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th');
+      };
+      const nextShift = existingMatches.length + 1;
+      const baseCleanName = baseInput.match(/^\d+$/) ? `Table ${baseInput}` : baseInput;
+      const nextTableNo = `${baseCleanName} (${getOrdinal(nextShift)})`;
+      const lastReg = existingMatches[existingMatches.length - 1];
+      const lastInfo = lastReg.contractor_name ? `Contractor (${lastReg.contractor_name})` : lastReg.worker_type;
+
+      const confirmShift = window.confirm(
+        `Table '${baseCleanName}' is already registered today (${existingMatches.length} time(s), last under ${lastInfo}).\n\nDo you want to register Shift ${nextShift} as '${nextTableNo}'?`
       );
-      if (!confirmUpdate) return;
-      shouldOverwrite = true;
+      if (!confirmShift) return;
+      isConfirmedShift = true;
     }
 
     if (regWorkerType !== 'Contractor') {
@@ -411,7 +424,7 @@ export default function Peeling() {
     }
 
     setLoading(true);
-    const postData = async (overwriteFlag = false) => {
+    const postData = async (confirmFlag = false) => {
       const formData = new URLSearchParams();
       formData.append('table_no', formattedTableNo);
       formData.append('worker_type', regWorkerType);
@@ -424,7 +437,7 @@ export default function Peeling() {
       }
       formData.append('production_at', cleanLocation);
       formData.append('production_for', productionFor);
-      if (overwriteFlag) formData.append('overwrite', 'true');
+      if (confirmFlag) formData.append('confirm_shift', 'true');
 
       const res = await sessionFetch('/processing/peeling/table_registration', {
         method: 'POST',
@@ -435,7 +448,7 @@ export default function Peeling() {
       if (res.status === 409) {
         const data = await res.json().catch(() => ({}));
         if (data.already_exists) {
-          if (window.confirm(data.error || 'Table already registered today. Overwrite for new shift?')) {
+          if (window.confirm(data.error || 'Table already registered today. Register for new shift?')) {
             await postData(true);
             return;
           } else {
@@ -447,7 +460,8 @@ export default function Peeling() {
 
       if (res.ok) {
         const resJson = await res.json().catch(() => ({}));
-        alert(resJson.updated ? 'Table Registration Updated Successfully for New Shift!' : 'Table Registered Successfully!');
+        const registeredName = resJson.table_no || formattedTableNo;
+        alert(`Table '${registeredName}' Registered Successfully!`);
         setRegTableNo('');
         setRegContractor('');
         setRegNoOfWorkers('');
@@ -461,7 +475,7 @@ export default function Peeling() {
     };
 
     try {
-      await postData(shouldOverwrite);
+      await postData(isConfirmedShift);
     } catch (err) {
       console.error(err);
       alert(err?.message || 'Error saving table registration');

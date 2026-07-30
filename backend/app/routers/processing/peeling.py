@@ -928,13 +928,25 @@ def get_peeling_table_registrations(request: Request, date_val: str = Query(None
         logger.error(f"Error in get_peeling_table_registrations: {e}")
         return JSONResponse({"table_registrations": []})
 
+def get_ordinal_suffix(n: int) -> str:
+    if 11 <= (n % 100) <= 13:
+        return f"{n}th"
+    return f"{n}" + {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+
+def get_base_table_name(raw_name: str) -> str:
+    cleaned = re.sub(r'\s*\(\d+(st|nd|rd|th)\)\s*$', '', (raw_name or '').strip(), flags=re.IGNORECASE)
+    if cleaned.isdigit():
+        return f"Table {cleaned}"
+    return cleaned
+
 @router.post("/peeling/table_registration")
 def save_peeling_table_registration(
     request: Request, db: Session = Depends(get_db),
     table_no: str = Form(...), worker_type: str = Form(...),
     contractor_name: str = Form(None), no_of_workers: str = Form("0"),
     worker_ids: str = Form(None), production_at: str = Form(...),
-    production_for: str = Form(None), overwrite: str = Form("false")
+    production_for: str = Form(None), overwrite: str = Form("false"),
+    confirm_shift: str = Form("false")
 ):
     company_code = request.session.get("company_code")
     email = request.session.get("email")
@@ -950,11 +962,8 @@ def save_peeling_table_registration(
         clean_peeling_at = (production_at or "").strip()
         if not clean_peeling_at:
             return JSONResponse({"error": "Peeling At / Location is required"}, status_code=400)
-        raw_table_no = table_no.strip()
-        if raw_table_no.isdigit():
-            clean_table_no = f"Table {raw_table_no}"
-        else:
-            clean_table_no = raw_table_no
+        
+        base_name = get_base_table_name(table_no)
 
         validation_error = validate_kg_worker_table_registration(
             db, company_code, worker_type, parsed_no_workers, worker_ids, clean_peeling_at
@@ -962,53 +971,37 @@ def save_peeling_table_registration(
         if validation_error:
             return JSONResponse({"error": validation_error}, status_code=400)
 
-        # Check existing active table registration for today
-        existing = db.query(TableRegistration).filter(
+        # Query all existing active table registrations today for this base table name
+        today_regs = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == today_date,
-            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
             TableRegistration.status == 'Active'
-        ).first()
+        ).all()
 
-        is_overwrite_bool = str(overwrite).lower() in ['true', '1', 'yes']
+        matching_regs = [r for r in today_regs if get_base_table_name(r.table_no).lower() == base_name.lower()]
+        existing_count = len(matching_regs)
 
-        if existing:
-            if not is_overwrite_bool:
-                existing_info = f"Table '{clean_table_no}' is already registered today"
-                if existing.contractor_name:
-                    existing_info += f" for contractor '{existing.contractor_name}'"
-                else:
-                    existing_info += f" ({existing.worker_type})"
-                return JSONResponse({
-                    "already_exists": True,
-                    "error": f"{existing_info}. Do you want to update/overwrite it for the new shift?"
-                }, status_code=409)
+        is_confirmed = str(confirm_shift).lower() in ['true', '1', 'yes'] or str(overwrite).lower() in ['true', '1', 'yes']
 
-            # Update existing registration for new shift
-            existing.department = "Peeling"
-            existing.worker_type = worker_type.strip()
-            existing.contractor_name = contractor_name.strip() if contractor_name else None
-            existing.no_of_workers = parsed_no_workers
-            existing.worker_ids = worker_ids.strip() if worker_ids else None
-            existing.production_at = clean_peeling_at
-            existing.production_for = production_for.strip() if production_for else None
-            existing.created_by = email
-            existing.created_at = now_naive
-            db.commit()
-            return JSONResponse({"status": "ok", "updated": True, "id": existing.id})
+        if existing_count > 0 and not is_confirmed:
+            next_shift = existing_count + 1
+            next_table_name = f"{base_name} ({get_ordinal_suffix(next_shift)})"
+            last_reg = matching_regs[-1]
+            last_info = f"contractor '{last_reg.contractor_name}'" if last_reg.contractor_name else f"'{last_reg.worker_type}'"
+            return JSONResponse({
+                "already_exists": True,
+                "existing_count": existing_count,
+                "next_table_name": next_table_name,
+                "error": f"'{base_name}' is already registered today ({existing_count} time(s), last registered under {last_info}). Do you want to register Shift {next_shift} as '{next_table_name}'?"
+            }, status_code=409)
 
-        # 1. Prevent rapid double submit (within 5 seconds)
-        five_sec_ago = now_naive - dt.timedelta(seconds=5)
-        recent = db.query(TableRegistration).filter(
-            func.trim(TableRegistration.company_id) == company_code,
-            TableRegistration.date == today_date,
-            TableRegistration.department == "Peeling",
-            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
-            TableRegistration.status != 'Cancelled',
-            TableRegistration.created_at >= five_sec_ago
-        ).first()
-        if recent:
-            return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
+        # Determine exact table name to register
+        if "(" in table_no and ")" in table_no:
+            clean_table_no = table_no.strip()
+        elif existing_count > 0:
+            clean_table_no = f"{base_name} ({get_ordinal_suffix(existing_count + 1)})"
+        else:
+            clean_table_no = base_name
 
         new_reg = TableRegistration(
             company_id=company_code,
@@ -1026,7 +1019,7 @@ def save_peeling_table_registration(
         )
         db.add(new_reg)
         db.commit()
-        return JSONResponse({"status": "ok", "id": new_reg.id})
+        return JSONResponse({"status": "ok", "table_no": clean_table_no, "id": new_reg.id})
     except Exception as e:
         db.rollback()
         logger.error(f"Error in save_peeling_table_registration: {e}", exc_info=True)
