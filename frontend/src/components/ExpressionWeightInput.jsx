@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import ReactDOM from 'react-dom';
 
 export function parsePartsList(expr) {
   const cleaned = String(expr || '').replace(/\s+/g, '');
@@ -21,13 +22,209 @@ export function parsePartsList(expr) {
 }
 
 /**
+ * BreakdownModal
+ * Rendered using ReactDOM.portal so it appears perfectly centered on screen without clipping issues.
+ */
+function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title = "Weight Expression Breakdown", unit = "KG" }) {
+  const modalRef = useRef(null);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  if (!isOpen) return null;
+
+  const filteredParts = partsList.filter((item, idx) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    const strVal = `${item.sign}${item.val}`;
+    const idxStr = `${idx + 1}`;
+    return strVal.includes(term) || idxStr.includes(term);
+  });
+
+  const modalContent = (
+    <div
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 999999,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(5px)',
+        padding: '16px',
+      }}
+      onClick={onClose}
+    >
+      <div
+        ref={modalRef}
+        style={{
+          background: 'var(--bg-card, #1e2433)',
+          border: '1px solid var(--border-light, rgba(255,255,255,0.18))',
+          borderRadius: '14px',
+          width: '100%',
+          maxWidth: partsList.length > 10 ? '540px' : '400px',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          overflow: 'hidden',
+          animation: 'modalFadeIn 0.2s ease-out',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div style={{
+          padding: '16px 20px',
+          borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.12))',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          background: 'rgba(255,255,255,0.02)',
+        }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--corp-dash, #3b82f6)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              {title}
+            </h3>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', marginTop: '2px' }}>
+              {partsList.length} Total Parts Breakdown Entry List
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: 'rgba(255,255,255,0.08)',
+              border: 'none',
+              borderRadius: '50%',
+              width: '32px',
+              height: '32px',
+              cursor: 'pointer',
+              color: 'var(--text-primary, #fff)',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Filter Search (for 15+ entries) */}
+        {partsList.length > 15 && (
+          <div style={{ padding: '10px 20px 0 20px' }}>
+            <input
+              type="text"
+              className="form-control"
+              placeholder="Search part value or #..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ fontSize: '12px', height: '34px', background: 'rgba(0,0,0,0.2)' }}
+            />
+          </div>
+        )}
+
+        {/* Modal Body - Multi Column Grid */}
+        <div style={{
+          padding: '16px 20px',
+          overflowY: 'auto',
+          flex: 1,
+        }}>
+          {partsList.length > 0 ? (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: partsList.length > 10 ? 'repeat(2, 1fr)' : '1fr',
+              gap: '6px 12px',
+            }}>
+              {filteredParts.map((item, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    background: item.sign === '-' ? 'rgba(239,68,68,0.08)' : 'rgba(22,163,74,0.08)',
+                    border: `1px solid ${item.sign === '-' ? 'rgba(239,68,68,0.25)' : 'rgba(22,163,74,0.25)'}`,
+                  }}
+                >
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', fontWeight: '600' }}>
+                    Part #{idx + 1}
+                  </span>
+                  <span style={{
+                    fontSize: '13px',
+                    fontWeight: '800',
+                    fontFamily: 'monospace',
+                    color: item.sign === '-' ? '#ef4444' : '#16a34a',
+                  }}>
+                    {item.sign} {item.val.toFixed(2)} {unit}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div style={{
+              fontFamily: 'monospace',
+              fontSize: '14px',
+              color: 'var(--text-primary)',
+              padding: '16px',
+              background: 'rgba(0,0,0,0.2)',
+              borderRadius: '8px',
+              wordBreak: 'break-all'
+            }}>
+              {rawExpr}
+            </div>
+          )}
+        </div>
+
+        {/* Modal Footer */}
+        <div style={{
+          padding: '14px 20px',
+          borderTop: '1px solid var(--border-light, rgba(255,255,255,0.12))',
+          background: 'rgba(37,99,235,0.08)',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <div>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Formula</span>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary, #fff)', fontWeight: '700' }}>
+              {rawExpr}
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Total Calculated Sum</span>
+            <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash, #3b82f6)' }}>
+              {totalSum} {unit}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return ReactDOM.createPortal(modalContent, document.body);
+}
+
+/**
  * ExpressionWeightInput
- * Multi-column grid breakdown card showing 25-30+ rows visible at once, with smooth scroll for 100+ rows.
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
   onChange,        // (numericString) => void
-  onExprChange,    // (rawExpr) => void - optional, to store expression in DB
+  onExprChange,    // (rawExpr) => void - optional
   placeholder = '0.00 or 25+30-5',
   required = false,
   className = 'form-control',
@@ -35,10 +232,9 @@ export default function ExpressionWeightInput({
 }) {
   const [raw, setRaw] = useState('');
   const [locked, setLocked] = useState(false);
-  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [error, setError] = useState('');
   const inputRef = useRef(null);
-  const popupRef = useRef(null);
 
   const safeEval = (expr) => {
     const cleaned = String(expr || '').trim();
@@ -64,22 +260,11 @@ export default function ExpressionWeightInput({
     if (!value || value === '0' || value === '') {
       setRaw('');
       setLocked(false);
-      setShowBreakdown(false);
+      setShowModal(false);
       setError('');
       if (onExprChange) onExprChange('');
     }
   }, [value]);
-
-  useEffect(() => {
-    if (!showBreakdown) return;
-    const handleOutside = (e) => {
-      if (popupRef.current && !popupRef.current.contains(e.target)) {
-        setShowBreakdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
-  }, [showBreakdown]);
 
   const commitValue = () => {
     if (!raw.trim()) return;
@@ -118,7 +303,7 @@ export default function ExpressionWeightInput({
 
   const handleUnlock = () => {
     setLocked(false);
-    setShowBreakdown(false);
+    setShowModal(false);
     setError('');
     if (!raw && value && value !== '0') {
       setRaw(value);
@@ -144,7 +329,7 @@ export default function ExpressionWeightInput({
             cursor: hasExpr ? 'pointer' : 'default',
             userSelect: 'none',
           }}
-          onClick={() => hasExpr && setShowBreakdown(v => !v)}
+          onClick={() => hasExpr && setShowModal(true)}
         >
           <span style={{ fontWeight: '800', color: 'var(--corp-dash)', fontSize: '13px' }}>
             {parseFloat(value).toFixed(2)}
@@ -179,94 +364,15 @@ export default function ExpressionWeightInput({
           >✕</button>
         </div>
 
-        {/* Multi-Column Grid Breakdown Popup */}
-        {showBreakdown && hasExpr && (
-          <div
-            ref={popupRef}
-            style={{
-              position: 'absolute',
-              top: '110%',
-              left: 0,
-              zIndex: 9999,
-              background: 'var(--bg-card, #1e2433)',
-              border: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-              borderRadius: '10px',
-              padding: '10px 14px',
-              width: partsList.length > 15 ? '380px' : '260px',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-            }}
-          >
-            {/* Header */}
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '11px',
-              fontWeight: '800',
-              color: 'var(--corp-dash)',
-              borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.1))',
-              paddingBottom: '6px',
-              marginBottom: '8px',
-              textTransform: 'uppercase',
-            }}>
-              <span>Parts List Breakdown</span>
-              <span style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{partsList.length} total entries</span>
-            </div>
-            
-            {/* 2-Column / 3-Column Grid for high visibility */}
-            {partsList.length > 0 ? (
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: partsList.length > 15 ? 'repeat(2, 1fr)' : '1fr',
-                gap: '4px 10px',
-                maxHeight: '340px',
-                overflowY: 'auto',
-                paddingRight: '4px',
-              }}>
-                {partsList.map((item, idx) => (
-                  <div key={idx} style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    fontSize: '11px',
-                    padding: '3px 6px',
-                    borderRadius: '4px',
-                    background: 'rgba(255,255,255,0.03)',
-                    border: '1px solid rgba(255,255,255,0.05)',
-                  }}>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '10px', fontWeight: '600' }}>#{idx + 1}</span>
-                    <span style={{
-                      fontWeight: '700',
-                      fontFamily: 'monospace',
-                      color: item.sign === '-' ? '#ef4444' : '#16a34a',
-                    }}>
-                      {item.sign}{item.val.toFixed(2)} KG
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary)', marginBottom: '6px', wordBreak: 'break-all' }}>
-                {raw}
-              </div>
-            )}
-
-            {/* Total Footer */}
-            <div style={{
-              borderTop: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-              marginTop: '8px',
-              paddingTop: '6px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              fontSize: '12px',
-              fontWeight: '800',
-            }}>
-              <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>Total Calculated Sum</span>
-              <span style={{ color: 'var(--corp-dash)', fontSize: '13px' }}>{parseFloat(value).toFixed(2)} KG</span>
-            </div>
-          </div>
-        )}
+        {/* Full Center Modal Popup */}
+        <BreakdownModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          partsList={partsList}
+          rawExpr={raw}
+          totalSum={parseFloat(value).toFixed(2)}
+          unit="KG"
+        />
       </div>
     );
   }
