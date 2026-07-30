@@ -506,14 +506,51 @@ export default function GeneralStoreEntry() {
           Today's General Store Entries
         </h3>
         <div className="table-responsive">
-          <table className="bknr-table" style={{ minWidth: 1850 }}>
+          <table className="bknr-table" style={{ minWidth: 2100 }}>
+            <colgroup>
+              <col style={{ width: 52 }} />   {/* ID */}
+              <col style={{ width: 88 }} />   {/* Date */}
+              <col style={{ width: 60 }} />   {/* Time */}
+              <col style={{ width: 72 }} />   {/* Movement */}
+              <col style={{ width: 130 }} />  {/* GRN Number */}
+              <col style={{ width: 130 }} />  {/* Invoice Number */}
+              <col style={{ width: 140 }} />  {/* Location */}
+              <col style={{ width: 150 }} />  {/* Vendor */}
+              <col style={{ width: 90 }} />   {/* PO Number */}
+              <col style={{ width: 220 }} />  {/* Item Name */}
+              <col style={{ width: 72 }} />   {/* HSN */}
+              <col style={{ width: 72 }} />   {/* Unit */}
+              <col style={{ width: 72 }} />   {/* Qty */}
+              <col style={{ width: 84 }} />   {/* Rate */}
+              <col style={{ width: 100 }} />  {/* Taxable Value */}
+              <col style={{ width: 72 }} />   {/* GST % */}
+              <col style={{ width: 100 }} />  {/* Grand Total */}
+              <col style={{ width: 84 }} />   {/* Opening */}
+              <col style={{ width: 84 }} />   {/* Available */}
+              <col style={{ width: 84 }} />   {/* Min Level */}
+            </colgroup>
             <thead>
               <tr>
-                <th>ID</th><th>Date</th><th>Time</th><th>Movement</th><th>GRN Number</th><th>Invoice Number</th>
-                <th>Location</th><th>Vendor</th><th>PO Number</th><th>Product Nomenclature / Description</th><th>HSN</th>
-                <th>Unit</th><th className="text-right">Qty</th><th className="text-right">Rate</th>
-                <th className="text-right">Taxable Value</th><th className="text-right">GST</th><th className="text-right">Grand Total</th>
-                <th className="text-right">Opening</th><th className="text-right">Available</th><th className="text-right">Min Level</th>
+                <th className="text-center">ID</th>
+                <th className="text-center">Date</th>
+                <th className="text-center">Time</th>
+                <th className="text-center">Movement</th>
+                <th>GRN Number</th>
+                <th>Invoice No.</th>
+                <th>Location</th>
+                <th>Vendor</th>
+                <th>PO No.</th>
+                <th>Item Name / Description</th>
+                <th className="text-center">HSN</th>
+                <th className="text-center">Unit</th>
+                <th className="text-right">Qty</th>
+                <th className="text-right">Rate</th>
+                <th className="text-right">Taxable Val.</th>
+                <th className="text-right">GST %</th>
+                <th className="text-right">Grand Total</th>
+                <th className="text-right">Opening</th>
+                <th className="text-right">Available</th>
+                <th className="text-right">Min Level</th>
               </tr>
             </thead>
             <tbody>
@@ -523,9 +560,13 @@ export default function GeneralStoreEntry() {
                 entries.map((row) => (
                   <tr
                     key={row.id}
-                    style={{ opacity: row.is_cancelled ? 0.5 : 1, textDecoration: row.is_cancelled ? 'line-through' : 'none', cursor: 'pointer' }}
-                    className={selectedId === row.id ? 'selected' : ''}
-                    onClick={() => setSelectedId(row.id)}
+                    style={{
+                      opacity: row.is_cancelled ? 0.5 : 1,
+                      textDecoration: row.is_cancelled ? 'line-through' : 'none',
+                      cursor: 'pointer',
+                      background: selectedId === row.id ? 'var(--row-selected, rgba(59,130,246,0.18))' : undefined,
+                    }}
+                    onClick={() => setSelectedId(selectedId === row.id ? null : row.id)}
                   >
                     <td className="text-center">
                       {row.id}
@@ -540,8 +581,8 @@ export default function GeneralStoreEntry() {
                     <td>{row.vendor_name || '—'}</td>
                     <td>{row.po_number || 'N/A'}</td>
                     <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{row.item_name}</td>
-                    <td>{row.hsn_code || '—'}</td>
-                    <td>{row.unit_name}</td>
+                    <td className="text-center">{row.hsn_code || '—'}</td>
+                    <td className="text-center">{row.unit_name}</td>
                     <td className="text-right" style={{ fontWeight: 700 }}>{fixed(row.quantity)}</td>
                     <td className="text-right">{fixed(row.rate)}</td>
                     <td className="text-right">{fixed(row.amount)}</td>
