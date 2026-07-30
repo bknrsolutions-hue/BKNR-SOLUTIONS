@@ -68,7 +68,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     # 2. Today's entries layered with global filters scope controls
     table_q = db.query(stock_entry).filter(
         stock_entry.company_id == company_code,
-        stock_entry.date == date.today()
+        stock_entry.date == ist_now().date()
     )
     if global_production_for:
         table_q = table_q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
@@ -265,16 +265,7 @@ def save_stock_in(
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
-        return RedirectResponse("/auth/login", status_code=302)
-
-    coldstore_exists = db.query(coldstore_locations.id).filter(
-        coldstore_locations.company_id == company_code,
-        func.upper(func.trim(coldstore_locations.coldstore_location)) == location.strip().upper(),
-        func.upper(func.trim(coldstore_locations.production_at)) == production_at.strip().upper(),
-    ).first()
-    if not coldstore_exists:
-        request.session["success_msg"] = "Invalid coldstore location for selected Production At."
-        return RedirectResponse("/inventory/stock_entry", status_code=303)
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     pack = db.query(packing_styles).filter(
         packing_styles.company_id == company_code,
@@ -285,13 +276,16 @@ def save_stock_in(
     slab_weight = pack.slab_weight if pack else 0
     quantity = (no_of_mc * mc_weight) + (loose * slab_weight)
 
+    today_date = ist_now().date()
+    current_time = ist_now().time()
+
     entry = stock_entry(
         batch_number=batch_number, type_of_production=type_of_production, cargo_movement_type="IN",
         location=location, brand=brand, freezer=freezer, packing_style=packing_style, glaze=glaze,
         species=species, variety=variety, grade=grade, no_of_mc=no_of_mc, loose=loose, quantity=quantity,
         purpose=purpose or None, po_number=po_number or None, production_at=production_at,
         production_for=production_for or None, email=email, company_id=company_code,
-        date=date.today(), time=ist_now().time()
+        date=today_date, time=current_time
     )
     db.add(entry)
     db.commit()
@@ -301,6 +295,9 @@ def save_stock_in(
     invalidate_company_cache(company_code, "inventory_report")
     invalidate_company_cache(company_code, "inventory_dashboard")
     invalidate_company_cache(company_code, "costing_dashboard")
+
+    if request.headers.get("accept") == "application/json" or request.query_params.get("format") == "json":
+        return JSONResponse({"status": "success", "message": f"Stock In Entry for Batch {batch_number} Saved Successfully!"})
 
     request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
