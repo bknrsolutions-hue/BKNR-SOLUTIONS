@@ -2,13 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 
 /**
  * Helper to parse addition/subtraction expressions into individual signed parts.
- * e.g. "25+30-5+10" -> [{ val: 25, sign: '+' }, { val: 30, sign: '+' }, { val: 5, sign: '-' }, { val: 10, sign: '+' }]
+ * Supports up to 100+ parts smoothly.
  */
 export function parsePartsList(expr) {
   const cleaned = String(expr || '').replace(/\s+/g, '');
   if (!cleaned) return [];
   
-  // Replace minus with +-, then split by +
   const tokens = cleaned.replace(/-/g, '+-').split('+').filter(Boolean);
   const parts = [];
   
@@ -27,10 +26,7 @@ export function parsePartsList(expr) {
 
 /**
  * ExpressionWeightInput
- * - Supports full math (+, -, *, /)
- * - Live preview while typing
- * - Press Enter or blur -> locks and saves numeric result
- * - Click locked chip -> shows breakdown list of parts (+, -)
+ * Compact & scrollable breakdown card supporting up to 100+ rows.
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
@@ -145,7 +141,7 @@ export default function ExpressionWeightInput({
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            padding: '6px 10px',
+            padding: '5px 8px',
             background: 'rgba(37,99,235,0.08)',
             border: '1px solid rgba(37,99,235,0.35)',
             borderRadius: '6px',
@@ -154,7 +150,7 @@ export default function ExpressionWeightInput({
           }}
           onClick={() => hasExpr && setShowBreakdown(v => !v)}
         >
-          <span style={{ fontWeight: '800', color: 'var(--corp-dash)', fontSize: '14px' }}>
+          <span style={{ fontWeight: '800', color: 'var(--corp-dash)', fontSize: '13px' }}>
             {parseFloat(value).toFixed(2)}
           </span>
           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>KG</span>
@@ -162,12 +158,12 @@ export default function ExpressionWeightInput({
             <span style={{
               fontSize: '10px',
               background: 'rgba(37,99,235,0.18)',
-              padding: '1px 7px',
+              padding: '1px 6px',
               borderRadius: '10px',
               color: 'var(--corp-dash)',
               fontWeight: '700',
             }}>
-              {partsList.length > 0 ? `${partsList.length} parts` : '= expression'}
+              {partsList.length > 0 ? `${partsList.length} parts` : '= expr'}
             </span>
           )}
           <button
@@ -180,14 +176,14 @@ export default function ExpressionWeightInput({
               border: 'none',
               cursor: 'pointer',
               color: 'var(--text-secondary)',
-              fontSize: '13px',
+              fontSize: '12px',
               lineHeight: 1,
               padding: '0 2px',
             }}
           >✕</button>
         </div>
 
-        {/* Breakdown popup */}
+        {/* Compact Scrollable Breakdown Popup */}
         {showBreakdown && hasExpr && (
           <div
             ref={popupRef}
@@ -197,43 +193,79 @@ export default function ExpressionWeightInput({
               left: 0,
               zIndex: 9999,
               background: 'var(--bg-card, #1e2433)',
-              border: '1px solid var(--border-light, rgba(255,255,255,0.1))',
+              border: '1px solid var(--border-light, rgba(255,255,255,0.15))',
               borderRadius: '8px',
-              padding: '12px 16px',
-              minWidth: '220px',
-              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+              padding: '8px 12px',
+              width: '230px',
+              boxShadow: '0 10px 28px rgba(0,0,0,0.5)',
             }}
           >
-            <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--corp-dash)', marginBottom: '8px', textTransform: 'uppercase' }}>
-              Weight Breakdown Parts
+            {/* Header */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              fontSize: '10px',
+              fontWeight: '800',
+              color: 'var(--corp-dash)',
+              borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.1))',
+              paddingBottom: '4px',
+              marginBottom: '6px',
+              textTransform: 'uppercase',
+            }}>
+              <span>Parts List</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{partsList.length} rows</span>
             </div>
             
+            {/* Scrollable Parts List (fits up to 100 rows) */}
             {partsList.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px', maxHeight: '180px', overflowY: 'auto' }}>
+              <div style={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '2px',
+                maxHeight: '220px',
+                overflowY: 'auto',
+                paddingRight: '4px',
+              }}>
                 {partsList.map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '3px 0', borderBottom: '1px dashed rgba(255,255,255,0.05)' }}>
-                    <span style={{ color: 'var(--text-secondary)' }}>Part {idx + 1}</span>
-                    <span style={{ fontWeight: '700', color: item.sign === '-' ? '#ef4444' : '#16a34a' }}>
-                      {item.sign} {item.val.toFixed(2)} KG
+                  <div key={idx} style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    padding: '2px 4px',
+                    borderRadius: '3px',
+                    background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  }}>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>#{idx + 1}</span>
+                    <span style={{
+                      fontWeight: '700',
+                      fontFamily: 'monospace',
+                      color: item.sign === '-' ? '#ef4444' : '#16a34a',
+                    }}>
+                      {item.sign}{item.val.toFixed(2)} KG
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ fontFamily: 'monospace', fontSize: '13px', color: 'var(--text-primary)', marginBottom: '6px', wordBreak: 'break-all' }}>
+              <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary)', marginBottom: '6px', wordBreak: 'break-all' }}>
                 {raw}
               </div>
             )}
 
+            {/* Sticky Total Footer */}
             <div style={{
-              borderTop: '1px solid var(--border-light, rgba(255,255,255,0.1))',
-              paddingTop: '6px',
+              borderTop: '1px solid var(--border-light, rgba(255,255,255,0.15))',
+              marginTop: '6px',
+              paddingTop: '5px',
               display: 'flex',
               justifyContent: 'space-between',
-              fontSize: '13px',
+              alignItems: 'center',
+              fontSize: '12px',
               fontWeight: '800',
             }}>
-              <span style={{ color: 'var(--corp-dash)' }}>Total Sum</span>
+              <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>Total Sum</span>
               <span style={{ color: 'var(--corp-dash)' }}>{parseFloat(value).toFixed(2)} KG</span>
             </div>
           </div>
@@ -268,11 +300,11 @@ export default function ExpressionWeightInput({
       {hasLiveResult && (
         <div style={{ fontSize: '11px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
           <span style={{ color: 'var(--text-secondary)' }}>=</span>
-          <span style={{ fontWeight: '800', color: '#16a34a', fontSize: '13px' }}>
+          <span style={{ fontWeight: '800', color: '#16a34a', fontSize: '12px' }}>
             {liveResult.toFixed(2)} KG
           </span>
           <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
-            (press Enter to confirm)
+            (Enter to confirm)
           </span>
         </div>
       )}
