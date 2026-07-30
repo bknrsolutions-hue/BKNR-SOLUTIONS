@@ -272,8 +272,8 @@ def save_stock_in(
         packing_styles.packing_style == packing_style
     ).first()
 
-    mc_weight = pack.mc_weight if pack else 0
-    slab_weight = pack.slab_weight if pack else 0
+    mc_weight = float(pack.mc_weight) if (pack and pack.mc_weight is not None) else 0.0
+    slab_weight = float(pack.slab_weight) if (pack and pack.slab_weight is not None) else 0.0
     quantity = (no_of_mc * mc_weight) + (loose * slab_weight)
 
     today_date = ist_now().date()
@@ -372,8 +372,8 @@ def stock_out_save(
         packing_styles.packing_style == packing_style
     ).first()
     
-    mc_weight = pack.mc_weight if pack else 0
-    slab_weight = pack.slab_weight if pack else 0
+    mc_weight = float(pack.mc_weight) if (pack and pack.mc_weight is not None) else 0.0
+    slab_weight = float(pack.slab_weight) if (pack and pack.slab_weight is not None) else 0.0
     now = ist_now()
 
     for i in range(len(out_batch)):
@@ -391,7 +391,7 @@ def stock_out_save(
             variety=variety, grade=grade, no_of_mc=mc_val, loose=ls_val, quantity=calculated_qty,
             production_at=production_at, production_for=production_for or None, purpose=purpose or None,
             po_number=po_number or None, email=email, company_id=company_code,
-            date=date.today(), time=now.time()
+            date=now.date(), time=now.time()
         )
         db.add(entry)
 
