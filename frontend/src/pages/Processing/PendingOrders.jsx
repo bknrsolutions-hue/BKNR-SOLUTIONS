@@ -246,69 +246,167 @@ export default function PendingOrders() {
       )}
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="card" style={{ flexShrink: 0 }}>
-          <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 14, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-            New Purchase Order (PO)
+        <form onSubmit={handleSubmit} className="section" style={{ display: 'block', margin: '0 0 14px 0', background: 'var(--card-bg)', padding: 16, borderRadius: 8, border: '1px solid var(--border)', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', flexShrink: 0 }}>
+          <h3 style={{ fontSize: 12, fontWeight: 800, marginBottom: 14, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            NEW PURCHASE ORDER (PO) ENTRY
           </h3>
-          <div className="form-grid" style={{ marginBottom: 16 }}>
-            <div className="form-group">
-              <label>Serial Number</label>
-              <input type="number" className="form-control" value={slNo} readOnly style={{ background: 'var(--input-bg-disabled)' }} />
+          <div className="form-row-linear" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, alignItems: 'flex-end' }}>
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sl No</label>
+              <input type="number" value={slNo} readOnly style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--header-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
             </div>
-            <Sel label="Company Name *" value={companyName} onChange={setCompanyName} options={uniqueCompanies} required />
-            <div className="form-group">
-              <label>PO Number *</label>
-              <input type="text" className="form-control" value={poNumber} onChange={e => setPoNumber(e.target.value)} required />
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Shipment Schedule</label>
+              <input type="date" value={shipmentDate} onChange={e => setShipmentDate(e.target.value)} required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
             </div>
-            <Sel label="Buyer Name *" value={buyer} onChange={setBuyer} options={buyers} required />
-            <Sel label="Buyer Agent *" value={agent} onChange={setAgent} options={agents} required />
-            <Sel label="Target Country *" value={country} onChange={setCountry} options={countries} required />
-            <div className="form-group">
-              <label>Est Shipment Date *</label>
-              <input type="date" className="form-control" value={shipmentDate} onChange={e => setShipmentDate(e.target.value)} required />
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Company Context</label>
+              <select value={companyName} onChange={e => setCompanyName(e.target.value)} required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }}>
+                <option value="">Select Company</option>
+                {uniqueCompanies.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
-            <Sel label="Production At *" value={productionAt} onChange={setProductionAt} options={productionLocations} required />
-            <div className="form-group">
-              <label>Exchange Rate (₹/$) *</label>
-              <input type="number" step="0.01" className="form-control" value={exchangeRate} onChange={e => setExchangeRate(parseFloat(e.target.value) || 0)} required />
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>PO Number Reference</label>
+              <input type="text" value={poNumber} onChange={e => setPoNumber(e.target.value)} placeholder="PO Reference" required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
+            </div>
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Location (Processing At)</label>
+              <select value={productionAt} onChange={e => setProductionAt(e.target.value)} required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }}>
+                <option value="">Select Location</option>
+                {productionLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </select>
+            </div>
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Exchange Rate (₹)</label>
+              <input type="number" step="0.01" value={exchangeRate} onChange={e => setExchangeRate(parseFloat(e.target.value) || 0)} placeholder="83.50" required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }} />
+            </div>
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Buyer Profile</label>
+              <select value={buyer} onChange={e => setBuyer(e.target.value)} required style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }}>
+                <option value="">Select Buyer</option>
+                {buyers.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </div>
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Agent Link</label>
+              <select value={agent} onChange={e => setAgent(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }}>
+                <option value="">Select Agent</option>
+                {agents.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </div>
+
+            <div className="field" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Target Country</label>
+              <select value={country} onChange={e => setCountry(e.target.value)} style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' }}>
+                <option value="">Select Country</option>
+                {countries.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
             </div>
           </div>
 
-          <h4 style={{ fontSize: 12, fontWeight: 700, margin: '12px 0 8px', color: 'var(--text-secondary)' }}>ORDER ITEM SPECIFICATIONS</h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {items.map((it, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', borderBottom: '1px solid var(--border-light)', paddingBottom: 10 }}>
-                <Sel label="Brand" value={it.brand} onChange={v => handleRowChange(idx, 'brand', v)} options={brands} required />
-                <Sel label="Pack Style" value={it.packing_style} onChange={v => handleRowChange(idx, 'packing_style', v)} options={packing.map(p => p.packing_style)} required />
-                <Sel label="Freezer" value={it.freezer} onChange={v => handleRowChange(idx, 'freezer', v)} options={freezers} required />
-                <Sel label="Count Glaze" value={it.count_glaze} onChange={v => handleRowChange(idx, 'count_glaze', v)} options={glazes} required />
-                <Sel label="Weight Glaze" value={it.weight_glaze} onChange={v => handleRowChange(idx, 'weight_glaze', v)} options={glazes} required />
-                <Sel label="Species" value={it.species} onChange={v => handleRowChange(idx, 'species', v)} options={species} required />
-                <Sel label="Variety" value={it.variety} onChange={v => handleRowChange(idx, 'variety', v)} options={varieties} required />
-                <Sel label="Grade" value={it.grade} onChange={v => handleRowChange(idx, 'grade', v)} options={grades} required />
-                <div className="form-group" style={{ minWidth: 80 }}>
-                  <label>Pcs/Lb</label>
-                  <input type="text" className="form-control" value={it.no_of_pieces} onChange={e => handleRowChange(idx, 'no_of_pieces', e.target.value)} />
-                </div>
-                <div className="form-group" style={{ minWidth: 80 }}>
-                  <label>Order MC *</label>
-                  <input type="number" className="form-control" value={it.no_of_mc} onChange={e => handleRowChange(idx, 'no_of_mc', parseInt(e.target.value) || 0)} required />
-                </div>
-                <div className="form-group" style={{ minWidth: 90 }}>
-                  <label>Price/Kg ($) *</label>
-                  <input type="number" step="0.01" className="form-control" value={it.selling_price} onChange={e => handleRowChange(idx, 'selling_price', parseFloat(e.target.value) || 0)} required />
-                </div>
-                {items.length > 1 && (
-                  <button type="button" className="btn btn-clear" style={{ height: 36, padding: '0 8px', color: '#ef4444' }} onClick={() => handleRemoveRow(idx)}>✕</button>
-                )}
-              </div>
-            ))}
+          <div className="items-table-wrap" style={{ overflowX: 'auto', marginTop: 14, borderRadius: 8, border: '1px solid var(--border)' }}>
+            <table className="items-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1400, textAlign: 'center' }}>
+              <thead>
+                <tr style={{ background: 'var(--header-bg)', color: 'var(--text-main)', fontWeight: 800, fontSize: 9.5, textTransform: 'uppercase' }}>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Brand</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Packing Style</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Freezer</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>C.Glaze</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>W.Glaze</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Species</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Variety</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)' }}>Grade</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)', width: 80 }}>Pieces</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)', width: 90 }}>M.C Box</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)', width: 100 }}>Price</th>
+                  <th style={{ padding: 6, border: '1px solid var(--border)', width: 45 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it, idx) => (
+                  <tr key={idx}>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.brand} onChange={e => handleRowChange(idx, 'brand', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.packing_style} onChange={e => handleRowChange(idx, 'packing_style', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {packing.map(p => <option key={p.packing_style} value={p.packing_style}>{p.packing_style}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.freezer} onChange={e => handleRowChange(idx, 'freezer', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {freezers.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.count_glaze} onChange={e => handleRowChange(idx, 'count_glaze', e.target.value)} style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {glazes.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.weight_glaze} onChange={e => handleRowChange(idx, 'weight_glaze', e.target.value)} style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {glazes.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.species} onChange={e => handleRowChange(idx, 'species', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {species.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.variety} onChange={e => handleRowChange(idx, 'variety', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {varieties.map(v => <option key={v} value={v}>{v}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <select value={it.grade} onChange={e => handleRowChange(idx, 'grade', e.target.value)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                        <option value="">Select</option>
+                        {grades.map(g => <option key={g} value={g}>{g}</option>)}
+                      </select>
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <input type="number" value={it.no_of_pieces} onChange={e => handleRowChange(idx, 'no_of_pieces', e.target.value)} style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)', textAlign: 'center' }} />
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <input type="number" value={it.no_of_mc} onChange={e => handleRowChange(idx, 'no_of_mc', parseInt(e.target.value) || 0)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)', textAlign: 'center' }} />
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <input type="number" step="0.01" value={it.selling_price} onChange={e => handleRowChange(idx, 'selling_price', parseFloat(e.target.value) || 0)} required style={{ width: '100%', fontSize: 11, fontWeight: 700, padding: '4px 8px', border: '1px solid var(--border)', borderRadius: 6, height: 28, color: 'var(--text-main)', background: 'var(--card-bg)', textAlign: 'center' }} />
+                    </td>
+                    <td style={{ padding: 6, border: '1px solid var(--border)' }}>
+                      <button type="button" onClick={() => handleRemoveRow(idx)} style={{ background: 'transparent', color: '#ef4444', border: 'none', cursor: 'pointer', fontSize: 13 }}>✕</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
 
-          <div style={{ display: 'flex', gap: 12, marginTop: 14 }}>
-            <button type="button" className="btn btn-secondary" onClick={handleAddRow}>+ Add Item</button>
-            <button type="submit" className="btn btn-primary">Save</button>
-            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+          <div style={{ marginTop: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button type="button" onClick={handleAddRow} style={{ padding: '6px 14px', background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 6, fontWeight: 700, fontSize: 11, height: 32, cursor: 'pointer', color: 'var(--text-main)', textTransform: 'uppercase' }}>
+              + Add Entry Line
+            </button>
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button type="button" onClick={() => setShowForm(false)} className="btn btn-clear">Cancel</button>
+              <button type="submit" className="btn btn-primary">Save Purchase Order</button>
+            </div>
           </div>
         </form>
       )}
