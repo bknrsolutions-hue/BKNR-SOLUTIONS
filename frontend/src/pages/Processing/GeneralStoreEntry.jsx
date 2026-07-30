@@ -308,15 +308,17 @@ export default function GeneralStoreEntry() {
         <h2><Store size={20} /> General Stock Management</h2>
       </div>
 
-      <div className="general-stock-toolbar">
-        <h3>Stock Ledger Logs</h3>
-        <div className="general-stock-actions">
-          <button type="button" className="btn btn-primary" onClick={() => openForm('IN')}>
+      <div className="general-stock-toolbar" style={{ background: 'var(--card-bg)', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--corp-ops)' }}>Stock Ledger Logs</h3>
+        <div className="general-stock-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <button type="button" className="btn btn-primary" onClick={() => openForm('IN')} style={{ textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
             <Plus size={13} /> Stock IN
           </button>
-          <button type="button" className="btn general-stock-out" onClick={() => openForm('OUT')}>Stock OUT</button>
+          <button type="button" className="btn" onClick={() => openForm('OUT')} style={{ background: '#f97316', borderColor: '#f97316', color: '#fff', textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
+            Stock OUT
+          </button>
           {selectedId && (
-            <button type="button" className="btn general-stock-cancel" onClick={cancelSelected} disabled={loading}>
+            <button type="button" className="btn" onClick={cancelSelected} disabled={loading} style={{ background: '#ef4444', borderColor: '#ef4444', color: '#fff', textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
               <Ban size={13} /> Cancel Selected
             </button>
           )}
@@ -498,11 +500,11 @@ export default function GeneralStoreEntry() {
               >
                 <td>{row.id}{row.is_cancelled ? <span className="cancelled-pill">C</span> : null}</td>
                 <td>{row.grn_number}</td><td>{row.invoice_number || '—'}</td><td>{row.production_at || '—'}</td>
-                <td>{row.vendor_name || '—'}</td><td>{row.po_number || 'N/A'}</td><td>{row.item_name}</td>
+                <td>{row.vendor_name || '—'}</td><td>{row.po_number || 'N/A'}</td><td style={{ textAlign: 'left', fontWeight: 600, color: 'var(--corp-ops)' }}>{row.item_name}</td>
                 <td>{row.hsn_code || '—'}</td><td>{row.unit_name}</td>
                 <td><span className={`movement-pill ${row.movement_type === 'IN' ? 'in' : 'out'}`}>{row.movement_type}</span></td>
-                <td>{fixed(row.quantity)}</td><td>{money(row.rate)}</td><td>{money(row.amount)}</td>
-                <td>{money(row.tax_amount)}</td><td>{money(row.total_amount || row.amount)}</td>
+                <td>{fixed(row.quantity)}</td><td>{fixed(row.rate)}</td><td>{fixed(row.amount)}</td>
+                <td>{fixed(row.tax_amount)}</td><td>{fixed(row.total_amount || row.amount)}</td>
                 <td>{fixed(row.opening_stock)}</td><td>{fixed(row.available_stock)}</td><td>{fixed(row.minimum_level)}</td>
                 <td>{row.date || '—'}</td><td>{row.time ? String(row.time).slice(0, 5) : '—'}</td>
               </tr>
