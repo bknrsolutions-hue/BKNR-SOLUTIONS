@@ -639,6 +639,8 @@ def save_stock_entry(
         if voucher:
             new_row.journal_id = voucher.id
     db.commit()
+    if request.headers.get("accept") == "application/json" or request.headers.get("x-requested-with") == "XMLHttpRequest" or request.query_params.get("format") == "json":
+        return JSONResponse({"success": True, "message": "Stock entry saved and accounts posting updated."})
     return RedirectResponse("/general_stock/entry", status_code=303)
 
 # =============================================================

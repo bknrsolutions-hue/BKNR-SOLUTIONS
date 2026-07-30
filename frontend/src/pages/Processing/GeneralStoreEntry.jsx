@@ -396,9 +396,21 @@ export default function GeneralStoreEntry() {
             </Field>
 
             <Field label="Product Nomenclature / Description">
-              <select className="form-control" value={form.itemName} onChange={(e) => setField('itemName', e.target.value)} required>
+              <select
+                className="form-control"
+                value={form.itemName}
+                onChange={(e) => {
+                  if (e.target.value === '__add__') {
+                    setShowQuickAdd(true);
+                  } else {
+                    setField('itemName', e.target.value);
+                  }
+                }}
+                required
+              >
                 <option value="">Select Item</option>
                 {masters.items.map((item) => <option key={item} value={item}>{item}</option>)}
+                <option value="__add__" style={{ fontWeight: 800, color: 'var(--corp-ops)' }}>➕ Add New Item</option>
               </select>
             </Field>
 
