@@ -977,7 +977,7 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
         return JSONResponse({"status": "success", "companies": [], "locations": []})
 
     from app.database.models.criteria import peeling_at, production_at, production_for
-    from app.database.models.inventory_management import cold_storage
+    from app.database.models.inventory_management import cold_storage_holding
     from sqlalchemy import func
     from app.services.cache import cache_get_or_set
 
@@ -1001,9 +1001,8 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
         }
         locations.update(
             str(value).strip()
-            for (value,) in db.query(cold_storage.storage_name).filter(
-                cold_storage.company_id == company_code,
-                func.lower(cold_storage.is_active) == "active",
+            for (value,) in db.query(cold_storage_holding.cold_storage_name).filter(
+                cold_storage_holding.company_id == company_code,
             ).distinct().all()
             if value and str(value).strip()
         )
@@ -1011,7 +1010,7 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
 
     try:
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v2",
+            f"bknr:menu:{company_code}:universal_filters:v3",
             build_menu_filters,
             ttl=300,
         )
