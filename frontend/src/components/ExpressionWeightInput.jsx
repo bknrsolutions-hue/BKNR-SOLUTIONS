@@ -23,10 +23,8 @@ export function parsePartsList(expr) {
 
 /**
  * BreakdownModal
- * Rendered using ReactDOM.portal so it appears perfectly centered on screen without clipping issues.
  */
 function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title = "Weight Expression Breakdown", unit = "KG" }) {
-  const modalRef = useRef(null);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
@@ -67,7 +65,6 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
       onClick={onClose}
     >
       <div
-        ref={modalRef}
         style={{
           background: 'var(--bg-card, #1e2433)',
           border: '1px solid var(--border-light, rgba(255,255,255,0.18))',
@@ -121,7 +118,6 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           </button>
         </div>
 
-        {/* Filter Search (for 15+ entries) */}
         {partsList.length > 15 && (
           <div style={{ padding: '10px 20px 0 20px' }}>
             <input
@@ -135,7 +131,6 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           </div>
         )}
 
-        {/* Modal Body - Multi Column Grid */}
         <div style={{
           padding: '16px 20px',
           overflowY: 'auto',
@@ -189,7 +184,6 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           )}
         </div>
 
-        {/* Modal Footer */}
         <div style={{
           padding: '14px 20px',
           borderTop: '1px solid var(--border-light, rgba(255,255,255,0.12))',
@@ -220,6 +214,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
 
 /**
  * ExpressionWeightInput
+ * Enforces single operator rules: consecutive operators like `++`, `+-`, `+*`, `//` are auto-replaced with the newest symbol!
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
@@ -364,7 +359,6 @@ export default function ExpressionWeightInput({
           >✕</button>
         </div>
 
-        {/* Full Center Modal Popup */}
         <BreakdownModal
           isOpen={showModal}
           onClose={() => setShowModal(false)}
@@ -388,7 +382,12 @@ export default function ExpressionWeightInput({
         value={raw}
         required={required}
         onChange={e => {
-          const cleaned = e.target.value.replace(/[^0-9+\-*/().\s]/g, '');
+          // Allow valid characters only
+          let cleaned = e.target.value.replace(/[^0-9+\-*/().\s]/g, '');
+
+          // Replace consecutive operators with the latest entered operator (e.g. "25++" -> "25+", "25+-" -> "25-")
+          cleaned = cleaned.replace(/([+\-*/])\s*([+\-*/])/g, '$2');
+
           setRaw(cleaned);
           setError('');
           if (!isExpr(cleaned)) {
