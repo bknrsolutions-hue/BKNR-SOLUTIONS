@@ -493,9 +493,6 @@ export default function GeneralStoreEntry() {
             <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setForm(emptyForm); }}>
               Cancel
             </button>
-            <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(true)}>
-              + Add New Item
-            </button>
           </div>
         </form>
       )}

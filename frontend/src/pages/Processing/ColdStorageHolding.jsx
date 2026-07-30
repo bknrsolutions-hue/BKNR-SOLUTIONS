@@ -205,7 +205,7 @@ export default function ColdStorageHolding() {
           className={`btn btn-primary cold-holding-add${showForm ? ' is-open' : ''}`}
           onClick={() => setShowForm(current => !current)}
         >
-          {showForm ? <X size={14} /> : <><Plus size={14} /> Add</>}
+          {showForm ? <X size={14} /> : <><Plus size={14} /> Add New Entry</>}
         </button>
       </header>
 
@@ -248,26 +248,26 @@ export default function ColdStorageHolding() {
                 {productionForOptions.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
             </Field>
-            <DatalistField label="Batch Number" value={form.batchNumber} onChange={value => updateForm('batchNumber', value)} options={batches} listId="holding-batches" placeholder="Select/Enter Batch" required />
+            <LookupField label="Batch Number" value={form.batchNumber} onChange={value => updateForm('batchNumber', value)} options={batches} placeholder="Search or Select Batch" required />
             <Field label="Movement Type">
               <select value={form.cargoMovementType} onChange={event => updateForm('cargoMovementType', event.target.value)} required>
                 <option value="IN">📥 STOCK IN</option>
                 <option value="OUT">📤 STOCK OUT</option>
               </select>
             </Field>
-            <DatalistField label="Species" value={form.species} onChange={value => updateForm('species', value)} options={masters.species} listId="holding-species" placeholder="Select/Type Species" required />
-            <DatalistField label="Variety" value={form.variety} onChange={value => updateForm('variety', value)} options={masters.varieties} listId="holding-varieties" placeholder="Select/Type Variety" required />
-            <DatalistField label="Grade" value={form.grade} onChange={value => updateForm('grade', value)} options={masters.grades} listId="holding-grades" placeholder="Select/Type Grade" required />
-            <DatalistField label="Brand" value={form.brand} onChange={value => updateForm('brand', value)} options={masters.brands} listId="holding-brands" placeholder="Select/Type Brand" required />
-            <DatalistField label="Packing Style" value={form.packingStyle} onChange={value => updateForm('packingStyle', value)} options={masters.packingStyles.map(item => item.packing_style)} listId="holding-packing" placeholder="Select Style" required />
-            <DatalistField label="Glaze" value={form.glaze} onChange={value => updateForm('glaze', value)} options={masters.glazes} listId="holding-glazes" placeholder="Select/Type Glaze" />
+            <LookupField label="Species" value={form.species} onChange={value => updateForm('species', value)} options={masters.species} placeholder="Search or Select Species" required />
+            <LookupField label="Variety" value={form.variety} onChange={value => updateForm('variety', value)} options={masters.varieties} placeholder="Search or Select Variety" required />
+            <LookupField label="Grade" value={form.grade} onChange={value => updateForm('grade', value)} options={masters.grades} placeholder="Search or Select Grade" required />
+            <LookupField label="Brand" value={form.brand} onChange={value => updateForm('brand', value)} options={masters.brands} placeholder="Search or Select Brand" required />
+            <LookupField label="Packing Style" value={form.packingStyle} onChange={value => updateForm('packingStyle', value)} options={masters.packingStyles.map(item => item.packing_style)} placeholder="Search or Select Style" required />
+            <LookupField label="Glaze" value={form.glaze} onChange={value => updateForm('glaze', value)} options={masters.glazes} placeholder="Search or Select Glaze" />
             <Field label="Freezer">
               <select value={form.freezer} onChange={event => updateForm('freezer', event.target.value)}>
                 <option value="">N/A</option>
                 {masters.freezers.map(option => <option key={option} value={option}>{option}</option>)}
               </select>
             </Field>
-            <DatalistField label="PO Number" value={form.poNumber} onChange={value => updateForm('poNumber', value)} options={['N/A', ...masters.pendingOrders]} listId="holding-pos" placeholder="Default N/A" />
+            <LookupField label="PO Number" value={form.poNumber} onChange={value => updateForm('poNumber', value)} options={['N/A', ...masters.pendingOrders]} placeholder="Search or Select PO" />
             <Field label="Purpose">
               <select value={form.purpose} onChange={event => updateForm('purpose', event.target.value)}>
                 <option value="Storing">Storing</option>
@@ -348,13 +348,63 @@ function Field({ label, children, wide = false, accent = false }) {
   );
 }
 
-function DatalistField({ label, value, onChange, options, listId, placeholder, required = false }) {
+function LookupField({ label, value, onChange, options, placeholder, required = false }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState(value || '');
+  const containerRef = useRef(null);
+
+  useEffect(() => setSearch(value || ''), [value]);
+
+  useEffect(() => {
+    const close = event => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) setIsOpen(false);
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, []);
+
+  const lookupOptions = [...new Set(options.filter(Boolean))];
+  const filteredOptions = lookupOptions.filter(option => (
+    String(option).toLowerCase().includes(search.toLowerCase())
+  ));
+
   return (
     <Field label={label}>
-      <input list={listId} value={value} onChange={event => onChange(event.target.value)} placeholder={placeholder} required={required} />
-      <datalist id={listId}>
-        {[...new Set(options.filter(Boolean))].map(option => <option key={option} value={option} />)}
-      </datalist>
+      <div className="cold-holding-lookup" ref={containerRef}>
+        <input
+          value={search}
+          onFocus={() => setIsOpen(true)}
+          onChange={event => {
+            const nextValue = event.target.value;
+            setSearch(nextValue);
+            setIsOpen(true);
+            onChange(nextValue);
+          }}
+          placeholder={placeholder}
+          required={required}
+          autoComplete="off"
+        />
+        <button type="button" className="cold-holding-lookup-trigger" onClick={() => setIsOpen(current => !current)} aria-label={`Show ${label} options`}>⌄</button>
+        {isOpen && (
+          <div className="cold-holding-lookup-menu">
+            {filteredOptions.length ? filteredOptions.map(option => (
+              <button
+                type="button"
+                key={option}
+                className={option === value ? 'is-selected' : ''}
+                onMouseDown={event => {
+                  event.preventDefault();
+                  onChange(option);
+                  setSearch(option);
+                  setIsOpen(false);
+                }}
+              >
+                {option}
+              </button>
+            )) : <span>No matching records</span>}
+          </div>
+        )}
+      </div>
     </Field>
   );
 }

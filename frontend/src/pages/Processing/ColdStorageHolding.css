@@ -142,6 +142,66 @@
   font-weight: 800;
 }
 
+/* Searchable master-data dropdowns, consistent with Stock Entry lookups. */
+.cold-holding-lookup {
+  position: relative;
+}
+
+.cold-holding-lookup input {
+  padding-right: 30px;
+}
+
+.cold-holding-lookup-trigger {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30px;
+  height: 38px;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary, var(--text-muted));
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.cold-holding-lookup-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 100;
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface-panel, var(--card-bg));
+  box-shadow: 0 10px 25px rgba(0, 0, 0, .2);
+}
+
+.cold-holding-lookup-menu button,
+.cold-holding-lookup-menu span {
+  display: block;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-primary, var(--text));
+  font: inherit;
+  font-size: 12px;
+  text-align: left;
+}
+
+.cold-holding-lookup-menu button { cursor: pointer; }
+.cold-holding-lookup-menu button:hover,
+.cold-holding-lookup-menu button.is-selected {
+  background: var(--row-hover);
+  color: var(--corp-ops, var(--accent));
+  font-weight: 700;
+}
+.cold-holding-lookup-menu span { color: var(--text-secondary, var(--text-muted)); }
+
 .cold-holding-actions {
   display: flex;
   justify-content: flex-end;

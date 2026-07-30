@@ -346,7 +346,7 @@ def processing_dashboard(
         if att:
             status_str = str(att.status or "PRESENT").strip().upper()
             fi_str = str(att.first_in or "")
-            lo_str = str(att.last_out or "")
+            lo_str = str(att.exit_time or "")
             first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
             last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
             hours = float(att.working_hours or 0)
@@ -688,7 +688,7 @@ def processing_dashboard(
         if att:
             status_str = str(att.status or "PRESENT").strip().upper()
             fi_str = str(att.first_in or "")
-            lo_str = str(att.last_out or "")
+            lo_str = str(att.exit_time or "")
             first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
             last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
             hours = float(att.working_hours or 0)
@@ -839,7 +839,7 @@ def processing_dashboard(
 
     for emp_att in day_emp_att_present:
         fi_str = str(emp_att.first_in or "")
-        lo_str = str(emp_att.last_out or "")
+        lo_str = str(emp_att.exit_time or "")
         first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
         last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
         present_workers_list.append({

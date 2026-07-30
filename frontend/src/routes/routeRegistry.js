@@ -178,6 +178,8 @@ export const CRITERIA_COMPONENTS = {
   stock_entry: StockEntry,
   pending_orders: PendingOrders,
   cold_storage_holding: ColdStorageHolding,
+  // `inv_gse` resolves to this page id; retain the legacy alias below too.
+  general_stock_entry: GeneralStoreEntry,
   general_store_entry: GeneralStoreEntry,
   attendance_daily_attendance: DailyAttendance,
   attendance_employee_register: StaffRegistration,
