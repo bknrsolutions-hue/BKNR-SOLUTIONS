@@ -303,7 +303,7 @@ export default function GoodsGateMovements() {
             onClick={() => setShowForm(!showForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
           >
-            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : '+ New Goods Movement'}
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : 'Add New Entry'}
           </button>
           <button 
             type="button" 

@@ -636,7 +636,7 @@ export default function Production() {
             className="btn btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> NEW ENTRY
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -1100,10 +1100,10 @@ export default function Production() {
             <thead>
               <tr>
                 <th className="text-center" style={{ width: '60px' }}>ID</th>
-                <th className="text-left" style={{ width: '130px' }}>Company</th>
+                <th className="text-left" style={{ width: '130px' }}>Production For</th>
                 <th className="text-center" style={{ width: '100px' }}>Batch</th>
                 <th className="text-center" style={{ width: '90px' }}>Type</th>
-                <th className="text-left" style={{ width: '110px' }}>Loc</th>
+                <th className="text-left" style={{ width: '110px' }}>Production At</th>
                 <th className="text-center" style={{ width: '80px' }}>Sps</th>
                 <th className="text-left" style={{ width: '110px' }}>Brand</th>
                 <th className="text-left" style={{ width: '120px' }}>Variety</th>

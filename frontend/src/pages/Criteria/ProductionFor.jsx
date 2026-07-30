@@ -534,7 +534,7 @@ export default function ProductionFor({ user }) {
               {!formOpen && (
                 <div className="master-top-actions">
                   <button className="master-btn master-btn-primary" onClick={() => setFormOpen(true)}>
-                    <i className="fa-solid fa-plus"></i> Add Costing
+                    <i className="fa-solid fa-plus"></i> Add New Entry
                   </button>
                 </div>
               )}

@@ -421,7 +421,7 @@ export default function MasterBase({
               {!formOpen && (
                 <div className="master-top-actions">
                   <button className="master-btn master-btn-primary" onClick={() => { clearForm(); setFormOpen(true); }}>
-                    <i className="fa-solid fa-plus"></i> Add Profile
+                    <i className="fa-solid fa-plus"></i> Add New Entry
                   </button>
                 </div>
               )}

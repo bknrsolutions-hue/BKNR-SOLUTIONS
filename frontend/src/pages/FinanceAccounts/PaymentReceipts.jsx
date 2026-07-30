@@ -251,7 +251,7 @@ export default function PaymentReceipts({ theme }) {
         </div>
         <div className="attendance-page-header-actions">
           <button className="attendance-btn attendance-btn-primary" onClick={openForm}>
-            <Plus size={16} /> NEW RECEIPT
+            <Plus size={16} /> Add New Entry
           </button>
         </div>
       </div>

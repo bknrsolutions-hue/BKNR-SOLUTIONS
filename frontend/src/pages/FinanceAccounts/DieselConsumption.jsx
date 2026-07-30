@@ -502,7 +502,7 @@ export default function DieselConsumption({ theme }) {
             </div>
           )}
           <button className="attendance-btn" onClick={() => openForm('IN')} style={{ background: 'var(--att-success)', color: 'white' }}>
-            <Plus size={16} /> STOCK IN (GRN)
+            <Plus size={16} /> Add New Entry
           </button>
           <button className="attendance-btn" onClick={() => openForm('OUT')} style={{ background: '#f59e0b', color: 'white' }}>
             <Fuel size={16} /> STOCK OUT

@@ -257,7 +257,7 @@ export default function LabourManagement() {
           <div className="labour-section registration-toggle">
             <div className="labour-section-title">
               <div><h2>Contract Worker Registration</h2><p>Open the form only when new workers need to be registered.</p></div>
-              <button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : '+ New Registration'}</button>
+              <button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : 'Add New Entry'}</button>
             </div>
           </div>
 

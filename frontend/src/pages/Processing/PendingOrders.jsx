@@ -232,7 +232,7 @@ export default function PendingOrders() {
           </button>
           {!showForm && (
             <button className="btn btn-primary" onClick={() => setShowForm(true)}>
-              <Plus size={13} /> New Order (PO)
+              <Plus size={13} /> Add New Entry
             </button>
           )}
         </div>

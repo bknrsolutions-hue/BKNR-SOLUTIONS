@@ -211,7 +211,7 @@ export default function KgBasisCompanyLabour() {
     </div>
 
     {activeTab === 'registration' ? <>
-      <div className="labour-section registration-toggle"><div className="labour-section-title"><div><h2>KG Basis Worker Registration</h2><p>Open the form only when new workers need to be registered.</p></div><button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : '+ New Registration'}</button></div></div>
+      <div className="labour-section registration-toggle"><div className="labour-section-title"><div><h2>KG Basis Worker Registration</h2><p>Open the form only when new workers need to be registered.</p></div><button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : 'Add New Entry'}</button></div></div>
       {registrationOpen && <form className="labour-section registration-form" onSubmit={saveWorkers}>
         <div className="registration-form-head"><div className="registration-form-icon"><i className="fa-solid fa-users" /></div><div className="registration-form-copy"><h2>Bulk KG Worker Registration</h2><p>Fill one section per worker. IDs are generated automatically.</p></div><div className="registration-form-badge">{members.length} Worker{members.length > 1 ? 's' : ''}</div><button type="button" className="labour-btn add-member-btn" onClick={() => setMembers(rows => [...rows, blankWorker()])}><i className="fa-solid fa-plus" /> Add Worker</button></div>
         <div className="registration-help"><span><i className="fa-solid fa-circle-info" /> Worker name and joining date are required.</span><span>ID format: Company + K + 5 digits</span></div>

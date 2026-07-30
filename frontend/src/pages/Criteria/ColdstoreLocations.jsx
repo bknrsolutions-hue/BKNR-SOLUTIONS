@@ -325,7 +325,7 @@ export default function ColdstoreLocations({ user }) {
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {!formOpen && (
                 <button className="master-btn master-btn-primary" onClick={() => setFormOpen(true)}>
-                  <i className="fa-solid fa-plus"></i> Add
+                  <i className="fa-solid fa-plus"></i> Add New Entry
                 </button>
               )}
 
