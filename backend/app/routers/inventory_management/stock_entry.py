@@ -16,7 +16,7 @@ from app.database.models.processing import GateEntry
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     brands, glazes, varieties, grades, packing_styles, freezers,
-    production_types, purposes, production_at, production_for,
+    production_types, purposes, production_at, peeling_at, production_for,
     coldstore_locations, species as species_model
 )
 
@@ -121,11 +121,19 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
     # "Production At" (Second Column Dropdown) layout control synced with Global Location
     pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
     if global_location:
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)) == global_location.strip().upper())
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)) == global_location.strip().upper())
     elif user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
-    production_places_list = [p.production_at for p in pa_q.order_by(production_at.production_at).all()]
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+
+    raw_places = (
+        [p[0] for p in pa_q.order_by(production_at.production_at).all() if p[0]] +
+        [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+    )
+    production_places_list = list(dict.fromkeys(raw_places))
 
     # Initial Coldstore Locations dropdown loading by selected/global Production At.
     cl_q = db.query(coldstore_locations.coldstore_location).filter(coldstore_locations.company_id == company_code)
