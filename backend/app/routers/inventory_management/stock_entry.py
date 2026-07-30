@@ -403,6 +403,9 @@ def stock_out_save(
     invalidate_company_cache(company_code, "inventory_dashboard")
     invalidate_company_cache(company_code, "costing_dashboard")
     
+    if request.headers.get("accept") == "application/json" or request.query_params.get("format") == "json":
+        return JSONResponse({"status": "success", "message": "Stock Out Entry Saved Successfully!"})
+
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 

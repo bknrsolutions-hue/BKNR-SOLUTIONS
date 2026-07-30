@@ -155,42 +155,63 @@ export default function StockEntry() {
   };
 
   const fetchAvailableStock = async () => {
-    const q = new URLSearchParams();
-    if (outFilters.brand) q.set('brand', outFilters.brand);
-    if (outFilters.species) q.set('species', outFilters.species);
-    if (outFilters.variety) q.set('variety', outFilters.variety);
-    if (outFilters.grade) q.set('grade', outFilters.grade);
-    if (outFilters.prodAt) q.set('production_at', outFilters.prodAt);
-    if (outFilters.prodFor) q.set('production_for', outFilters.prodFor);
-    const res = await fetch(`/inventory/stock_out_report?${q}`, { credentials: 'include' });
-    const d = await res.json();
-    setAvailableStock(d);
-    setOutRows(d.map(r => ({ ...r, out_mc: 0, out_loose: 0 })));
+    setLoading(true);
+    try {
+      const q = new URLSearchParams();
+      if (outFilters.prodFor) q.set('production_for', outFilters.prodFor);
+      if (outFilters.prodAt) q.set('production_at', outFilters.prodAt);
+      if (outFilters.brand) q.set('brand', outFilters.brand);
+      if (outFilters.freezer) q.set('freezer', outFilters.freezer);
+      if (outFilters.packStyle) q.set('packing_style', outFilters.packStyle);
+      if (outFilters.glaze) q.set('glaze', outFilters.glaze);
+      if (outFilters.species) q.set('species', outFilters.species);
+      if (outFilters.variety) q.set('variety', outFilters.variety);
+      if (outFilters.grade) q.set('grade', outFilters.grade);
+      if (outFilters.purpose) q.set('purpose', outFilters.purpose);
+      if (outFilters.poNumber) q.set('po_number', outFilters.poNumber);
+
+      const res = await fetch(`/inventory/stock_out_report?${q}`, { credentials: 'include' });
+      if (res.ok) {
+        const d = await res.json();
+        setAvailableStock(d || []);
+        setOutRows((d || []).map(r => ({ ...r, out_mc: 0, out_loose: 0 })));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStockOut = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const validRows = outRows.filter(r => r.out_mc > 0 || r.out_loose > 0);
-    if (!validRows.length) { setMsg('❌ Please enter MC or Loose quantity to move OUT'); setLoading(false); return; }
+    const validRows = outRows.filter(r => (parseInt(r.out_mc) || 0) > 0 || (parseInt(r.out_loose) || 0) > 0);
+    if (!validRows.length) {
+      setMsg('❌ Please enter OUT MC or OUT Loose for at least one batch row.');
+      setLoading(false);
+      return;
+    }
     const fd = new URLSearchParams();
-    fd.append('production_for', outFilters.prodFor);
-    fd.append('brand', outFilters.brand);
-    fd.append('production_at', outFilters.prodAt);
-    fd.append('freezer', freezer);
-    fd.append('packing_style', packStyle);
-    fd.append('glaze', glaze);
-    fd.append('species', outFilters.species || specie);
-    fd.append('variety', outFilters.variety || variety);
-    fd.append('grade', outFilters.grade || grade);
-    fd.append('purpose', purpose);
-    fd.append('po_number', poNumber);
+    fd.append('production_for', outFilters.prodFor || '');
+    fd.append('production_at', outFilters.prodAt || '');
+    fd.append('brand', outFilters.brand || '');
+    fd.append('freezer', outFilters.freezer || '');
+    fd.append('packing_style', outFilters.packStyle || '');
+    fd.append('glaze', outFilters.glaze || '');
+    fd.append('species', outFilters.species || '');
+    fd.append('variety', outFilters.variety || '');
+    fd.append('grade', outFilters.grade || '');
+    fd.append('purpose', outFilters.purpose || '');
+    fd.append('po_number', outFilters.poNumber || '');
+
     validRows.forEach(r => {
       fd.append('out_batch', r.batch);
       fd.append('out_location', r.location);
-      fd.append('out_mc', r.out_mc || 0);
-      fd.append('out_loose', r.out_loose || 0);
+      fd.append('out_mc', parseInt(r.out_mc) || 0);
+      fd.append('out_loose', parseInt(r.out_loose) || 0);
     });
+
     try {
       await fetch('/inventory/stock_out_save', {
         method: 'POST',
