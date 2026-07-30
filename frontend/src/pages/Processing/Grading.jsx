@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 
 export default function Grading() {
   const [date, setDate] = useState('');
@@ -693,15 +694,11 @@ export default function Grading() {
 
             <div className="form-group">
               <label>Quantity (Kg) *</label>
-              <input 
-                type="number" 
-                step="0.01" 
-                min="0" 
-                className="form-control" 
-                placeholder="0.00" 
-                value={quantity} 
-                onChange={e => setQuantity(e.target.value)} 
-                required 
+              <ExpressionWeightInput
+                value={quantity}
+                onChange={setQuantity}
+                placeholder="0.00 or 25+30+45"
+                required
               />
             </div>
           </div>

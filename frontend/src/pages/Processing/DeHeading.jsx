@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { Chart, registerables } from 'chart.js';
 import { sessionFetch } from '../../utils/sessionFetch';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 Chart.register(...registerables);
 
 const uniqueValues = values => Array.from(
@@ -1501,14 +1502,11 @@ export default function DeHeading() {
 
                 <div className="form-group">
                   <label>HLSO Qty (Out) *</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    className="form-control" 
-                    value={hlsoQty} 
-                    onChange={e => setHlsoQty(e.target.value)} 
-                    placeholder="0.00" 
-                    required 
+                  <ExpressionWeightInput
+                    value={hlsoQty}
+                    onChange={setHlsoQty}
+                    placeholder="0.00 or 25+30+45"
+                    required
                   />
                 </div>
 

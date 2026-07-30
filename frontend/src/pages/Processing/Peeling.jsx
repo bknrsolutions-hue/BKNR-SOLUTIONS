@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layers, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { sessionFetch } from '../../utils/sessionFetch';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 
 export default function Peeling() {
   const [date, setDate] = useState('');
@@ -1780,14 +1781,11 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Peeled Out (Qty) *</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    className="form-control" 
-                    value={peeledQty} 
-                    onChange={e => setPeeledQty(e.target.value)} 
-                    placeholder="0.00" 
-                    required 
+                  <ExpressionWeightInput
+                    value={peeledQty}
+                    onChange={setPeeledQty}
+                    placeholder="0.00 or 25+30+45"
+                    required
                   />
                 </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
@@ -621,15 +622,27 @@ export default function RawMaterialPurchasing() {
           <div className="form-grid">
             <div className="form-group">
               <label>G1 Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={g1} onChange={e => setG1(e.target.value)} />
+              <ExpressionWeightInput
+                value={g1}
+                onChange={setG1}
+                placeholder="0.00 or 25+30+45"
+              />
             </div>
             <div className="form-group">
               <label>G2 Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={g2} onChange={e => setG2(e.target.value)} />
+              <ExpressionWeightInput
+                value={g2}
+                onChange={setG2}
+                placeholder="0.00 or 25+30+45"
+              />
             </div>
             <div className="form-group">
               <label>DC Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={dc} onChange={e => setDc(e.target.value)} />
+              <ExpressionWeightInput
+                value={dc}
+                onChange={setDc}
+                placeholder="0.00 or 25+30+45"
+              />
             </div>
             <div className="form-group">
               <label>Total Received Qty</label>
