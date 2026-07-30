@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Ban, Plus, Store } from 'lucide-react';
+import { Store, Plus, Ban, RefreshCw, ArrowDownToLine, ArrowUpFromLine, X } from 'lucide-react';
 
 const emptyForm = {
   id: '',
@@ -23,16 +23,6 @@ const emptyForm = {
 
 const number = (value) => Number(value || 0);
 const fixed = (value) => number(value).toFixed(2);
-const money = (value) => `₹${fixed(value)}`;
-
-function Field({ label, children }) {
-  return (
-    <div className="form-group">
-      <label>{label}</label>
-      {children}
-    </div>
-  );
-}
 
 export default function GeneralStoreEntry() {
   const [initialLoading, setInitialLoading] = useState(true);
@@ -65,7 +55,7 @@ export default function GeneralStoreEntry() {
 
   const notify = (type, text) => setMessage({ type, text });
 
-  const fetchData = async ({ preserveForm = false } = {}) => {
+  const fetchData = async () => {
     setLoading(true);
     try {
       const response = await fetch('/general_stock/entry?format=json', { credentials: 'include' });
@@ -82,7 +72,6 @@ export default function GeneralStoreEntry() {
         ledgers: data.posting_ledgers || [],
         pos: (data.po_list || []).length ? data.po_list : ['N/A'],
       });
-
     } catch (error) {
       notify('error', error.message || 'Unable to load General Stock Entry.');
     } finally {
@@ -152,58 +141,28 @@ export default function GeneralStoreEntry() {
         }));
       })
       .catch((error) => notify('error', error.message));
-  }, [mode, form.itemName, form.grnNumber, form.unitId]);
+  }, [form.itemName, form.grnNumber, form.unitId, mode]);
 
-  const openForm = (nextMode) => {
-    setMode(nextMode);
-    setForm(emptyForm);
-    setOutGrns([]);
-    setSelectedId(null);
-    setMessage(null);
+  const openForm = (targetMode) => {
+    setMode(targetMode);
     setShowForm(true);
-  };
-
-  const switchMode = (nextMode) => {
-    if (nextMode === mode) return;
-    setMode(nextMode);
-    setForm((current) => ({
-      ...current,
-      grnNumber: '', invoiceDate: '', invoiceNumber: '', vendorId: 0,
-      accountingLedgerId: 0, hsnCode: '', gstPercent: 0, quantity: 0,
-      rate: 0, openingStock: 0, grnAvailableStock: 0,
-    }));
-  };
-
-  const validate = () => {
-    if (!form.unitId) return 'Production At is required.';
-    if (!form.itemName) return 'Item Name is required.';
-    if (!form.grnNumber.trim()) return 'GRN Number is required.';
-    if (!form.unitName) return 'Item unit is not available in master.';
-    if (form.quantity <= 0) return 'Quantity must be greater than zero.';
-    if (mode === 'IN' && !form.vendorId) return 'Vendor is required for Stock IN.';
-    if (mode === 'IN' && form.rate <= 0) return 'Base Price must be greater than zero for Stock IN.';
-    if (mode === 'OUT' && form.quantity > form.openingStock) return `Available item quantity is only ${fixed(form.openingStock)}.`;
-    if (mode === 'OUT' && form.quantity > form.grnAvailableStock) return `Selected GRN available quantity is only ${fixed(form.grnAvailableStock)}.`;
-    return '';
+    setForm(emptyForm);
   };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const validationError = validate();
-    if (validationError) {
-      notify('error', validationError);
-      return;
-    }
+    setLoading(true);
+    setMessage(null);
 
     const body = new URLSearchParams({
-      id: form.id,
+      id: form.id || '',
       grn_number: form.grnNumber,
       invoice_date: form.invoiceDate,
       unit_id: String(form.unitId),
       invoice_number: form.invoiceNumber,
       vendor_id: String(form.vendorId),
       accounting_ledger_id: String(form.accountingLedgerId),
-      po_number: form.poNumber || 'N/A',
+      po_number: form.poNumber,
       hsn_code: form.hsnCode,
       gst_percent: String(form.gstPercent),
       item_name: form.itemName,
@@ -214,53 +173,54 @@ export default function GeneralStoreEntry() {
       minimum_level: String(form.minimumLevel),
     });
 
-    setLoading(true);
     try {
       const response = await fetch('/general_stock/entry', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json',
         },
         credentials: 'include',
         body,
       });
+
+      let data = {};
+      try { data = await response.json(); } catch (e) {}
+
       if (!response.ok) {
-        let detail = 'Unable to save stock entry.';
-        try {
-          const data = await response.json();
-          detail = data.message || data.detail || detail;
-        } catch (_) {}
-        throw new Error(detail);
+        throw new Error(data.message || data.error || 'Failed to save general stock entry');
       }
 
-      notify('success', 'Stock entry saved and accounts posting updated.');
-      setForm(emptyForm);
+      notify('success', `✅ Stock ${mode} entry saved successfully!`);
       setShowForm(false);
-      await fetchData({ preserveForm: true });
+      setForm(emptyForm);
+      await fetchData();
     } catch (error) {
-      notify('error', error.message || 'Unable to save stock entry.');
+      notify('error', `❌ ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   const cancelSelected = async () => {
-    const row = entries.find((entry) => entry.id === selectedId);
-    if (!row || row.is_cancelled) return;
-    if (!window.confirm('Do you want to cancel this stock log?')) return;
-
+    if (!selectedId) return;
+    if (!window.confirm(`Cancel selected stock entry record #${selectedId}?`)) return;
     setLoading(true);
+
     try {
-      const response = await fetch(`/general_stock/entry/delete/${row.id}`, {
-        method: 'POST', credentials: 'include',
+      const response = await fetch(`/general_stock/entry/delete/${selectedId}`, {
+        method: 'POST',
+        credentials: 'include',
       });
-      if (!response.ok) throw new Error('Cancellation failed.');
-      notify('success', 'Stock entry cancelled successfully.');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || data.message || 'Unable to cancel record');
+      }
+      notify('success', '✅ Record cancelled successfully.');
       setSelectedId(null);
-      await fetchData({ preserveForm: true });
+      await fetchData();
     } catch (error) {
-      notify('error', error.message);
+      notify('error', `❌ ${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -269,83 +229,111 @@ export default function GeneralStoreEntry() {
   const handleQuickAdd = async (event) => {
     event.preventDefault();
     setLoading(true);
+    const body = new URLSearchParams({
+      item_name: newItem.itemName,
+      unit_name: newItem.unitName,
+      minimum_level: String(newItem.minimumLevel),
+    });
+
     try {
       const response = await fetch('/general_stock/items/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         credentials: 'include',
-        body: new URLSearchParams({
-          item_name: newItem.itemName,
-          unit_name: newItem.unitName,
-          minimum_level: String(newItem.minimumLevel),
-        }),
+        body,
       });
-      if (!response.ok) throw new Error('Failed to add master item.');
-      notify('success', 'Item registered in General Store master.');
+
+      if (!response.ok) throw new Error('Unable to add item');
+      notify('success', `✅ Added "${newItem.itemName.toUpperCase()}" to Store Master.`);
       setShowQuickAdd(false);
       setNewItem({ itemName: '', unitName: '', minimumLevel: 0 });
-      await fetchData({ preserveForm: true });
+      await fetchData();
+      setForm((current) => ({ ...current, itemName: newItem.itemName.toUpperCase() }));
     } catch (error) {
-      notify('error', error.message);
+      notify('error', `❌ ${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
-  if (initialLoading) {
-    return (
-      <div className="general-stock-page is-loading">
-        <div className="general-stock-toolbar skeleton-box" />
-        <div className="general-stock-form skeleton-box" />
-        <div className="general-stock-table-skeleton skeleton-box" />
-      </div>
-    );
-  }
+  const INBadge = () => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10b981', fontSize: 11, fontWeight: 800 }}>
+      IN
+    </span>
+  );
+  const OUTBadge = () => (
+    <span style={{ display: 'inline-flex', alignItems: 'center', padding: '2px 8px', borderRadius: 4, background: 'rgba(239,68,68,0.15)', color: '#ef4444', fontSize: 11, fontWeight: 800 }}>
+      OUT
+    </span>
+  );
 
   return (
-    <div className="general-stock-page">
-      <div className="general-stock-titlebar">
-        <h2><Store size={20} /> General Stock Management</h2>
-      </div>
-
-      <div className="general-stock-toolbar" style={{ background: 'var(--card-bg)', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--corp-ops)' }}>Stock Ledger Logs</h3>
-        <div className="general-stock-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <button type="button" className="btn btn-primary" onClick={() => openForm('IN')} style={{ textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
-            <Plus size={13} /> Stock IN
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, overflowY: 'auto', gap: 16, padding: '16px 16px 80px' }}>
+      {/* Header Bar */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+        <h2 style={{ color: 'var(--corp-ops)', display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
+          <Store size={22} /> General Store Management
+        </h2>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-clear" onClick={fetchData} disabled={loading} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <RefreshCw size={13} className={loading ? 'spin-animation' : ''} /> Refresh
           </button>
-          <button type="button" className="btn" onClick={() => openForm('OUT')} style={{ background: '#f97316', borderColor: '#f97316', color: '#fff', textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
-            Stock OUT
-          </button>
+          {!showForm && (
+            <>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#10b981', borderColor: '#10b981', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={() => openForm('IN')}
+              >
+                <ArrowDownToLine size={13} /> Stock IN
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: '#ef4444', borderColor: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}
+                onClick={() => openForm('OUT')}
+              >
+                <ArrowUpFromLine size={13} /> Stock OUT
+              </button>
+            </>
+          )}
           {selectedId && (
-            <button type="button" className="btn" onClick={cancelSelected} disabled={loading} style={{ background: '#ef4444', borderColor: '#ef4444', color: '#fff', textTransform: 'uppercase', fontWeight: 800, height: 32, fontSize: 11 }}>
+            <button
+              className="btn btn-clear"
+              style={{ color: '#ef4444', borderColor: '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}
+              onClick={cancelSelected}
+              disabled={loading}
+            >
               <Ban size={13} /> Cancel Selected
             </button>
           )}
         </div>
       </div>
 
+      {/* Message Banner */}
       {message && (
-        <div className={`general-stock-message ${message.type}`}>
-          <span>{message.type === 'success' ? '✓' : '⚠'} {message.text}</span>
-          <button type="button" onClick={() => setMessage(null)}>×</button>
+        <div style={{ padding: '10px 16px', borderRadius: 8, background: message.type === 'success' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', color: message.type === 'success' ? '#10b981' : '#ef4444', fontSize: 13, fontWeight: 700, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>{message.text}</span>
+          <button style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer' }} onClick={() => setMessage(null)}>✕</button>
         </div>
       )}
 
+      {/* STOCK FORM */}
       {showForm && (
-        <form className={`general-stock-form ${mode === 'OUT' ? 'out-mode' : ''}`} onSubmit={handleSubmit}>
-          <div className="general-stock-section-title">Stock Allocation Info</div>
-          <div className="general-stock-tabs">
-            <button type="button" className={mode === 'IN' ? 'active' : ''} onClick={() => switchMode('IN')}>Stock IN</button>
-            <button type="button" className={mode === 'OUT' ? 'active out' : ''} onClick={() => switchMode('OUT')}>Stock OUT</button>
+        <form onSubmit={handleSubmit} className="card" style={{ flexShrink: 0 }}>
+          <h3 style={{ fontSize: 13, fontWeight: 800, marginBottom: 14, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            {mode === 'IN' ? 'GENERAL STORE — STOCK IN PURCHASE BILL ENTRY' : 'GENERAL STORE — STOCK OUT CONSUMPTION'}
+          </h3>
+
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--corp-ops)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.5px' }}>
+            1. Stock Allocation Info
           </div>
 
-          <div className="general-stock-grid">
-            <Field label="GRN Number">
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12, marginBottom: 16 }}>
+            <Field label="GRN Number *">
               {mode === 'IN' ? (
-                <input className="form-control" value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} placeholder="Enter or auto-generated GRN" required />
+                <input className="form-control" style={inputStyle} value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} placeholder="Enter or auto-generated GRN" required />
               ) : (
-                <select className="form-control" value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} required>
+                <select className="form-control" style={inputStyle} value={form.grnNumber} onChange={(e) => setField('grnNumber', e.target.value)} required>
                   <option value="">Select source GRN</option>
                   {outGrns.map((grn) => <option key={grn} value={grn}>{grn}</option>)}
                 </select>
@@ -355,16 +343,16 @@ export default function GeneralStoreEntry() {
             {mode === 'IN' && (
               <>
                 <Field label="Invoice Date">
-                  <input type="date" className="form-control" value={form.invoiceDate} onChange={(e) => setField('invoiceDate', e.target.value)} />
+                  <input type="date" className="form-control" style={inputStyle} value={form.invoiceDate} onChange={(e) => setField('invoiceDate', e.target.value)} />
                 </Field>
                 <Field label="Invoice Number">
-                  <input className="form-control" value={form.invoiceNumber} onChange={(e) => setField('invoiceNumber', e.target.value)} placeholder="Supplier invoice number" />
+                  <input className="form-control" style={inputStyle} value={form.invoiceNumber} onChange={(e) => setField('invoiceNumber', e.target.value)} placeholder="Supplier invoice number" />
                 </Field>
               </>
             )}
 
-            <Field label="Production At">
-              <select className="form-control" value={form.unitId} onChange={(e) => setField('unitId', Number(e.target.value))} required>
+            <Field label="Production At *">
+              <select className="form-control" style={inputStyle} value={form.unitId} onChange={(e) => setField('unitId', Number(e.target.value))} required>
                 <option value="0">Select Unit...</option>
                 {masters.locations.map((location) => <option key={location.id} value={location.id}>{location.production_at}</option>)}
               </select>
@@ -372,14 +360,14 @@ export default function GeneralStoreEntry() {
 
             {mode === 'IN' && (
               <>
-                <Field label="Vendor Entity">
-                  <select className="form-control" value={form.vendorId} onChange={(e) => setField('vendorId', Number(e.target.value))}>
+                <Field label="Vendor Entity *">
+                  <select className="form-control" style={inputStyle} value={form.vendorId} onChange={(e) => setField('vendorId', Number(e.target.value))} required>
                     <option value="0">-- Select Vendor --</option>
                     {masters.vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
                   </select>
                 </Field>
                 <Field label="Accounting Ledger">
-                  <select className="form-control" value={form.accountingLedgerId} onChange={(e) => setField('accountingLedgerId', Number(e.target.value))}>
+                  <select className="form-control" style={inputStyle} value={form.accountingLedgerId} onChange={(e) => setField('accountingLedgerId', Number(e.target.value))}>
                     <option value="0">Auto - Stock Asset</option>
                     {masters.ledgers.map((ledger) => (
                       <option key={ledger.id} value={ledger.id}>
@@ -392,14 +380,15 @@ export default function GeneralStoreEntry() {
             )}
 
             <Field label="PO Number">
-              <select className="form-control" value={form.poNumber} onChange={(e) => setField('poNumber', e.target.value)}>
+              <select className="form-control" style={inputStyle} value={form.poNumber} onChange={(e) => setField('poNumber', e.target.value)}>
                 {masters.pos.map((po) => <option key={po} value={po}>{po}</option>)}
               </select>
             </Field>
 
-            <Field label="Product Nomenclature / Description">
+            <Field label="Product Nomenclature / Description *">
               <select
                 className="form-control"
+                style={inputStyle}
                 value={form.itemName}
                 onChange={(e) => {
                   if (e.target.value === '__add__') {
@@ -418,26 +407,32 @@ export default function GeneralStoreEntry() {
 
             {mode === 'IN' && (
               <Field label="Unit Name">
-                <input className="form-control" value={form.unitName} readOnly />
+                <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)' }} value={form.unitName} readOnly />
               </Field>
             )}
           </div>
 
-          <div className="general-stock-section-title metrics">Quantities & Stock Metrics</div>
-          <div className="general-stock-grid">
-            <Field label="Quantity">
-              <input type="number" min="0.01" step="0.01" className="form-control" value={form.quantity || ''} onChange={(e) => setField('quantity', number(e.target.value))} required />
+          <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--corp-ops)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '0.5px' }}>
+            2. Quantities & Stock Metrics
+          </div>
+
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
+            <Field label="Quantity *">
+              <input type="number" min="0.01" step="0.01" className="form-control" style={inputStyle} value={form.quantity || ''} onChange={(e) => setField('quantity', number(e.target.value))} required />
             </Field>
 
             {mode === 'IN' && (
               <>
                 <Field label="Base Price">
-                  <input type="number" min="0" step="0.01" className="form-control" value={form.rate || ''} onChange={(e) => setField('rate', number(e.target.value))} />
+                  <input type="number" min="0" step="0.01" className="form-control" style={inputStyle} value={form.rate || ''} onChange={(e) => setField('rate', number(e.target.value))} />
                 </Field>
-                <Field label="Taxable Value"><input className="form-control" value={fixed(amount)} readOnly /></Field>
+                <Field label="Taxable Value">
+                  <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)' }} value={fixed(amount)} readOnly />
+                </Field>
                 <Field label="HSN Code">
                   <select
                     className="form-control"
+                    style={inputStyle}
                     value={form.hsnCode}
                     onChange={(e) => {
                       const hsn = masters.hsns.find((item) => item.hsn_code === e.target.value);
@@ -455,101 +450,160 @@ export default function GeneralStoreEntry() {
                   </select>
                 </Field>
                 <Field label="GST %">
-                  <input type="number" min="0" step="0.01" className="form-control" value={form.gstPercent} onChange={(e) => setField('gstPercent', number(e.target.value))} />
+                  <input type="number" min="0" step="0.01" className="form-control" style={inputStyle} value={form.gstPercent} onChange={(e) => setField('gstPercent', number(e.target.value))} />
                 </Field>
-                <Field label="Tax Value"><input className="form-control" value={fixed(taxAmount)} readOnly /></Field>
-                <Field label="Grand Total"><input className="form-control" value={fixed(totalAmount)} readOnly /></Field>
+                <Field label="Tax Value">
+                  <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)' }} value={fixed(taxAmount)} readOnly />
+                </Field>
+                <Field label="Grand Total">
+                  <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)', fontWeight: 800, color: 'var(--corp-ops)' }} value={fixed(totalAmount)} readOnly />
+                </Field>
               </>
             )}
 
             {mode === 'OUT' && (
               <Field label="Selected GRN Available Qty">
-                <input className="form-control" value={fixed(form.grnAvailableStock)} readOnly />
+                <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)', fontWeight: 700 }} value={fixed(form.grnAvailableStock)} readOnly />
               </Field>
             )}
-            <Field label="Available Item Qty"><input className="form-control" value={fixed(form.openingStock)} readOnly /></Field>
-            {mode === 'IN' && <Field label="Available Stock"><input className="form-control" value={fixed(availableStock)} readOnly /></Field>}
-            {mode === 'IN' && <Field label="Minimum Level"><input className="form-control" value={fixed(form.minimumLevel)} readOnly /></Field>}
+            <Field label="Available Item Qty">
+              <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)' }} value={fixed(form.openingStock)} readOnly />
+            </Field>
+            {mode === 'IN' && (
+              <Field label="Available Stock">
+                <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)', fontWeight: 700 }} value={fixed(availableStock)} readOnly />
+              </Field>
+            )}
+            {mode === 'IN' && (
+              <Field label="Minimum Level">
+                <input className="form-control" style={{ ...inputStyle, backgroundColor: 'var(--header-bg)' }} value={fixed(form.minimumLevel)} readOnly />
+              </Field>
+            )}
           </div>
 
-          <div className="general-stock-form-actions">
-            <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? 'Saving…' : 'Save'}</button>
-            <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setForm(emptyForm); }}>Cancel</button>
-            <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(true)}>+ Add New Item</button>
+          <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+            <button
+              type="submit"
+              className="btn btn-primary"
+              disabled={loading}
+              style={{ background: mode === 'IN' ? '#10b981' : '#ef4444', borderColor: mode === 'IN' ? '#10b981' : '#ef4444', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              {mode === 'IN' ? <ArrowDownToLine size={14} /> : <ArrowUpFromLine size={14} />} Save
+            </button>
+            <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setForm(emptyForm); }}>
+              Cancel
+            </button>
+            <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(true)}>
+              + Add New Item
+            </button>
           </div>
         </form>
       )}
 
-      <div className="general-stock-table-wrap">
-        <table className="bknr-table general-stock-table">
-          <thead>
-            <tr>
-              <th>ID</th><th>GRN Number</th><th>Invoice Number</th><th>Location</th><th>Vendor</th><th>PO</th>
-              <th>Item Name</th><th>HSN</th><th>Unit</th><th>Movement</th><th>Qty</th><th>Rate</th>
-              <th>Value</th><th>GST</th><th>Total</th><th>Opening</th><th>Available</th><th>Minimum</th><th>Date</th><th>Time</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.length === 0 ? (
-              <tr><td colSpan="20" className="general-stock-empty">No stock entries for today.</td></tr>
-            ) : entries.map((row) => (
-              <tr
-                key={row.id}
-                className={`${selectedId === row.id ? 'selected' : ''} ${row.is_cancelled ? 'cancelled' : ''}`}
-                onClick={() => setSelectedId(row.id)}
-              >
-                <td>{row.id}{row.is_cancelled ? <span className="cancelled-pill">C</span> : null}</td>
-                <td>{row.grn_number}</td><td>{row.invoice_number || '—'}</td><td>{row.production_at || '—'}</td>
-                <td>{row.vendor_name || '—'}</td><td>{row.po_number || 'N/A'}</td><td style={{ textAlign: 'left', fontWeight: 600, color: 'var(--corp-ops)' }}>{row.item_name}</td>
-                <td>{row.hsn_code || '—'}</td><td>{row.unit_name}</td>
-                <td><span className={`movement-pill ${row.movement_type === 'IN' ? 'in' : 'out'}`}>{row.movement_type}</span></td>
-                <td>{fixed(row.quantity)}</td><td>{fixed(row.rate)}</td><td>{fixed(row.amount)}</td>
-                <td>{fixed(row.tax_amount)}</td><td>{fixed(row.total_amount || row.amount)}</td>
-                <td>{fixed(row.opening_stock)}</td><td>{fixed(row.available_stock)}</td><td>{fixed(row.minimum_level)}</td>
-                <td>{row.date || '—'}</td><td>{row.time ? String(row.time).slice(0, 5) : '—'}</td>
+      {/* TODAY'S LOG TABLE */}
+      <div style={{ flexShrink: 0 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 800, margin: '0 0 10px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Today's General Store Entries
+        </h3>
+        <div className="table-responsive">
+          <table className="bknr-table" style={{ minWidth: 1850 }}>
+            <thead>
+              <tr>
+                <th>ID</th><th>Date</th><th>Time</th><th>Movement</th><th>GRN Number</th><th>Invoice Number</th>
+                <th>Location</th><th>Vendor</th><th>PO Number</th><th>Product Nomenclature / Description</th><th>HSN</th>
+                <th>Unit</th><th className="text-right">Qty</th><th className="text-right">Rate</th>
+                <th className="text-right">Taxable Value</th><th className="text-right">GST</th><th className="text-right">Grand Total</th>
+                <th className="text-right">Opening</th><th className="text-right">Available</th><th className="text-right">Min Level</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {entries.length === 0 ? (
+                <tr><td colSpan={20} className="text-center" style={{ padding: 24, color: 'var(--text-secondary)' }}>No general stock entries recorded today.</td></tr>
+              ) : (
+                entries.map((row) => (
+                  <tr
+                    key={row.id}
+                    style={{ opacity: row.is_cancelled ? 0.5 : 1, textDecoration: row.is_cancelled ? 'line-through' : 'none', cursor: 'pointer' }}
+                    className={selectedId === row.id ? 'selected' : ''}
+                    onClick={() => setSelectedId(row.id)}
+                  >
+                    <td className="text-center">
+                      {row.id}
+                      {row.is_cancelled ? <span style={{ marginLeft: 4, padding: '1px 4px', background: '#ef4444', color: '#fff', borderRadius: 3, fontSize: 9, fontWeight: 800 }}>C</span> : null}
+                    </td>
+                    <td className="text-center">{row.date || '—'}</td>
+                    <td className="text-center">{row.time ? String(row.time).slice(0, 5) : '—'}</td>
+                    <td className="text-center">{row.movement_type === 'IN' ? <INBadge /> : <OUTBadge />}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{row.grn_number}</td>
+                    <td>{row.invoice_number || '—'}</td>
+                    <td>{row.production_at || '—'}</td>
+                    <td>{row.vendor_name || '—'}</td>
+                    <td>{row.po_number || 'N/A'}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--corp-ops)' }}>{row.item_name}</td>
+                    <td>{row.hsn_code || '—'}</td>
+                    <td>{row.unit_name}</td>
+                    <td className="text-right" style={{ fontWeight: 700 }}>{fixed(row.quantity)}</td>
+                    <td className="text-right">{fixed(row.rate)}</td>
+                    <td className="text-right">{fixed(row.amount)}</td>
+                    <td className="text-right">{fixed(row.tax_amount)}</td>
+                    <td className="text-right" style={{ fontWeight: 800, color: 'var(--corp-ops)' }}>{fixed(row.total_amount || row.amount)}</td>
+                    <td className="text-right">{fixed(row.opening_stock)}</td>
+                    <td className="text-right" style={{ fontWeight: 700 }}>{fixed(row.available_stock)}</td>
+                    <td className="text-right">{fixed(row.minimum_level)}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
+      {/* QUICK ADD ITEM MODAL */}
       {showQuickAdd && (
-        <div className="general-stock-modal-backdrop">
-          <form className="general-stock-modal" onSubmit={handleQuickAdd}>
-            <h3>Add New Item to Store Master</h3>
-            <Field label="Item Name">
-              <input className="form-control" value={newItem.itemName} onChange={(e) => setNewItem((current) => ({ ...current, itemName: e.target.value }))} required />
-            </Field>
-            <Field label="Unit Name">
-              <input className="form-control" value={newItem.unitName} onChange={(e) => setNewItem((current) => ({ ...current, unitName: e.target.value }))} required />
-            </Field>
-            <Field label="Minimum Stock Level">
-              <input type="number" min="0" step="0.01" className="form-control" value={newItem.minimumLevel} onChange={(e) => setNewItem((current) => ({ ...current, minimumLevel: number(e.target.value) }))} />
-            </Field>
-            <div className="general-stock-form-actions">
-              <button type="submit" className="btn btn-primary" disabled={loading}>Save</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+          <form className="card" style={{ width: 420, display: 'flex', flexDirection: 'column', gap: 14 }} onSubmit={handleQuickAdd}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: 13, fontWeight: 800, textTransform: 'uppercase', color: 'var(--corp-ops)' }}>
+                Add New Item to Store Master
+              </h3>
+              <button type="button" style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }} onClick={() => setShowQuickAdd(false)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={labelStyle}>Item Name *</label>
+              <input className="form-control" style={inputStyle} value={newItem.itemName} onChange={(e) => setNewItem((c) => ({ ...c, itemName: e.target.value }))} required placeholder="Enter item name" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={labelStyle}>Unit Name *</label>
+              <input className="form-control" style={inputStyle} value={newItem.unitName} onChange={(e) => setNewItem((c) => ({ ...c, unitName: e.target.value }))} required placeholder="e.g. KG, BOX, LTR, PCS" />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={labelStyle}>Minimum Stock Level</label>
+              <input type="number" min="0" step="0.01" className="form-control" style={inputStyle} value={newItem.minimumLevel} onChange={(e) => setNewItem((c) => ({ ...c, minimumLevel: number(e.target.value) }))} />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
               <button type="button" className="btn btn-clear" onClick={() => setShowQuickAdd(false)}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>Save Item</button>
             </div>
           </form>
         </div>
       )}
-
-      <style>{`
-        .general-stock-page{display:flex;flex:1;min-height:0;flex-direction:column;gap:10px;padding:10px 12px 28px;overflow:auto;color:var(--text-primary)}
-        .general-stock-titlebar h2{display:flex;align-items:center;gap:8px;margin:0;color:var(--corp-ops);font-size:17px}
-        .general-stock-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px}.general-stock-toolbar h3{margin:0;font-size:12px;text-transform:uppercase;color:var(--corp-ops)}
-        .general-stock-actions,.general-stock-form-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}.general-stock-out{background:#f97316!important;color:#fff!important}.general-stock-cancel{background:#dc2626!important;color:#fff!important}
-        .general-stock-message{display:flex;justify-content:space-between;padding:8px 10px;border-radius:7px;font-size:12px;font-weight:750}.general-stock-message.success{background:#dcfce7;color:#166534}.general-stock-message.error{background:#fee2e2;color:#991b1b}.general-stock-message button{border:0;background:none;color:inherit;font-size:16px;cursor:pointer}
-        .general-stock-form{padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--card-bg)}
-        .general-stock-section-title{padding-bottom:6px;border-bottom:1px dashed var(--border);color:var(--corp-ops);font-size:10px;font-weight:850;text-transform:uppercase}.general-stock-section-title.metrics{margin-top:11px}
-        .general-stock-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin:8px 0}.general-stock-tabs button{height:34px;border:1px solid var(--border);border-radius:6px;background:var(--input-bg);color:var(--text-secondary);font-weight:800}.general-stock-tabs button.active{border-color:var(--corp-ops);color:var(--corp-ops);background:color-mix(in srgb,var(--corp-ops) 10%,transparent)}.general-stock-tabs button.active.out{border-color:#f97316;color:#f97316}
-        .general-stock-grid{display:grid;grid-template-columns:repeat(5,minmax(125px,1fr));gap:8px;margin-top:8px}.general-stock-form-actions{justify-content:center;margin-top:12px}.general-stock-form input[readonly]{font-weight:750;background:var(--input-bg-disabled,var(--input-bg))}
-        .general-stock-table-wrap{min-height:0;overflow:auto;border:1px solid var(--border);border-radius:8px;background:var(--card-bg)}.general-stock-table{min-width:1850px}.general-stock-table th,.general-stock-table td{padding:7px 6px;font-size:10px;white-space:nowrap;text-align:center}.general-stock-table tbody tr{cursor:pointer}.general-stock-table tbody tr.selected{background:color-mix(in srgb,var(--corp-ops) 13%,transparent);box-shadow:inset 3px 0 var(--corp-ops)}.general-stock-table tbody tr.cancelled{opacity:.58;text-decoration:line-through}.cancelled-pill{margin-left:4px;padding:1px 4px;border-radius:999px;background:#fee2e2;color:#991b1b;text-decoration:none}.movement-pill{display:inline-block;padding:2px 6px;border-radius:4px;color:#fff;font-weight:850}.movement-pill.in{background:#16a34a}.movement-pill.out{background:#dc2626}.general-stock-empty{padding:24px!important;color:var(--text-secondary)}
-        .general-stock-modal-backdrop{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:16px;background:rgba(2,6,23,.65);backdrop-filter:blur(4px)}.general-stock-modal{width:min(390px,100%);display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--border);border-radius:12px;background:var(--card-bg)}.general-stock-modal h3{margin:0 0 4px;font-size:14px;color:var(--corp-ops)}
-        .skeleton-box{position:relative;overflow:hidden;background:var(--card-bg);border:1px solid var(--border);border-radius:9px}.skeleton-box:after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(148,163,184,.18),transparent);animation:generalStockShimmer 1.1s infinite}.is-loading .general-stock-toolbar{height:46px}.general-stock-form.skeleton-box{height:230px}.general-stock-table-skeleton{height:250px}@keyframes generalStockShimmer{to{transform:translateX(100%)}}
-        @media(max-width:1100px){.general-stock-grid{grid-template-columns:repeat(3,minmax(130px,1fr))}}
-        @media(max-width:700px){.general-stock-page{padding:8px}.general-stock-titlebar h2{font-size:15px}.general-stock-toolbar{align-items:flex-start;flex-direction:column}.general-stock-actions{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px}.general-stock-actions .btn{flex:0 0 auto}.general-stock-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.general-stock-form{padding:8px}.general-stock-table-wrap{max-height:none}.general-stock-modal{padding:14px}}
-      `}</style>
     </div>
   );
 }
+
+// Helpers
+function Field({ label, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+      <label style={labelStyle}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const labelStyle = { fontSize: 9, fontWeight: 800, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' };
+const inputStyle = { padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, height: 32, backgroundColor: 'var(--card-bg)', color: 'var(--text-main)', width: '100%', outline: 'none' };
