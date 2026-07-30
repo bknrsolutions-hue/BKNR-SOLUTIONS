@@ -45,6 +45,7 @@ export default function StockEntry() {
   // Stock OUT rows
   const [outRows, setOutRows] = useState([]);
   const [availableStock, setAvailableStock] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [outFilters, setOutFilters] = useState({ brand: '', species: '', variety: '', grade: '', prodAt: '', prodFor: '' });
 
   const fetchData = async () => {
@@ -156,6 +157,7 @@ export default function StockEntry() {
 
   const fetchAvailableStock = async () => {
     setLoading(true);
+    setHasSearched(true);
     try {
       const q = new URLSearchParams();
       if (outFilters.prodFor) q.set('production_for', outFilters.prodFor);
@@ -348,6 +350,11 @@ export default function StockEntry() {
           <button type="button" className="btn btn-primary" style={{ marginTop: 12 }} onClick={fetchAvailableStock}>
             Search Available Stock
           </button>
+          {hasSearched && outRows.length === 0 && (
+            <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              ⚠️ NOT AVAILABLE (No matching available stock found for selected criteria)
+            </div>
+          )}
           {outRows.length > 0 && (
             <div style={{ marginTop: 16, overflowX: 'auto' }}>
               <table className="bknr-table">
@@ -374,12 +381,12 @@ export default function StockEntry() {
                 <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#ef4444', borderColor: '#ef4444' }}>
                   <ArrowUpFromLine size={14} /> Save
                 </button>
-                <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setHasSearched(false); }}>Cancel</button>
               </div>
             </div>
           )}
           {outRows.length === 0 && <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+            <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setHasSearched(false); }}>Cancel</button>
           </div>}
         </form>
       )}
