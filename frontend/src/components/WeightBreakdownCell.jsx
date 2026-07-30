@@ -22,8 +22,7 @@ function parsePartsList(expr) {
 }
 
 /**
- * BreakdownModal
- * Rendered in document.body via Portal to prevent table clipping or overflow hidden cutoff.
+ * BreakdownModal - Dual Mode (Light & Dark Theme Compatible)
  */
 function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title = "Weight Expression Breakdown", unit = "KG" }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,7 +58,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.68)',
+        background: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(5px)',
         padding: '16px',
       }}
@@ -67,15 +66,16 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
     >
       <div
         style={{
-          background: 'var(--bg-card, #1e2433)',
-          border: '1px solid var(--border-light, rgba(255,255,255,0.18))',
+          background: 'var(--bg-card, var(--bg-surface, #ffffff))',
+          color: 'var(--text-primary, #0f172a)',
+          border: '1px solid var(--border-light, #e2e8f0)',
           borderRadius: '14px',
           width: '100%',
           maxWidth: partsList.length > 10 ? '540px' : '400px',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
           overflow: 'hidden',
         }}
         onClick={(e) => e.stopPropagation()}
@@ -83,17 +83,17 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
         {/* Modal Header */}
         <div style={{
           padding: '16px 20px',
-          borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.12))',
+          borderBottom: '1px solid var(--border-light, #e2e8f0)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'rgba(255,255,255,0.02)',
+          background: 'var(--bg-subtle, rgba(37,99,235,0.04))',
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--corp-dash, #3b82f6)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--corp-dash, #2563eb)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {title}
             </h3>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', marginTop: '2px' }}>
               {partsList.length} Total Parts Breakdown Entry List
             </div>
           </div>
@@ -101,13 +101,13 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.08)',
+              background: 'var(--bg-hover, rgba(0,0,0,0.06))',
               border: 'none',
               borderRadius: '50%',
               width: '32px',
               height: '32px',
               cursor: 'pointer',
-              color: 'var(--text-primary, #fff)',
+              color: 'var(--text-primary, #0f172a)',
               fontSize: '16px',
               display: 'flex',
               alignItems: 'center',
@@ -118,7 +118,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           </button>
         </div>
 
-        {/* Filter Search (for 15+ entries) */}
+        {/* Search */}
         {partsList.length > 15 && (
           <div style={{ padding: '10px 20px 0 20px' }}>
             <input
@@ -127,7 +127,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
               placeholder="Search part value or #..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ fontSize: '12px', height: '34px', background: 'rgba(0,0,0,0.2)' }}
+              style={{ fontSize: '12px', height: '34px' }}
             />
           </div>
         )}
@@ -157,14 +157,14 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
                     border: `1px solid ${item.sign === '-' ? 'rgba(239,68,68,0.25)' : 'rgba(22,163,74,0.25)'}`,
                   }}
                 >
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', fontWeight: '600' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', fontWeight: '600' }}>
                     Part #{idx + 1}
                   </span>
                   <span style={{
                     fontSize: '13px',
                     fontWeight: '800',
                     fontFamily: 'monospace',
-                    color: item.sign === '-' ? '#ef4444' : '#16a34a',
+                    color: item.sign === '-' ? '#dc2626' : '#16a34a',
                   }}>
                     {item.sign} {item.val.toFixed(2)} {unit}
                   </span>
@@ -175,9 +175,9 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
             <div style={{
               fontFamily: 'monospace',
               fontSize: '14px',
-              color: 'var(--text-primary)',
+              color: 'var(--text-primary, #0f172a)',
               padding: '16px',
-              background: 'rgba(0,0,0,0.2)',
+              background: 'var(--bg-subtle, rgba(0,0,0,0.03))',
               borderRadius: '8px',
               wordBreak: 'break-all'
             }}>
@@ -189,21 +189,21 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
         {/* Modal Footer */}
         <div style={{
           padding: '14px 20px',
-          borderTop: '1px solid var(--border-light, rgba(255,255,255,0.12))',
-          background: 'rgba(37,99,235,0.08)',
+          borderTop: '1px solid var(--border-light, #e2e8f0)',
+          background: 'var(--bg-subtle, rgba(37,99,235,0.05))',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
           <div>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Formula</span>
-            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary, #fff)', fontWeight: '700' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase' }}>Formula</span>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary, #0f172a)', fontWeight: '700' }}>
               {rawExpr}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Total Calculated Sum</span>
-            <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash, #3b82f6)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase' }}>Total Calculated Sum</span>
+            <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash, #2563eb)' }}>
               {totalSum} {unit}
             </div>
           </div>
@@ -216,8 +216,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
 }
 
 /**
- * WeightBreakdownCell
- * Renders a table cell value with clickable Center Modal Popup Dialog.
+ * WeightBreakdownCell - Dual Mode
  */
 export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = {} }) {
   const [showModal, setShowModal] = useState(false);
@@ -253,13 +252,13 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
           fontSize: 'inherit',
         }}
       >
-        <span style={{ textDecoration: 'underline dotted', textUnderlineOffset: '3px', color: 'var(--corp-dash)' }}>
+        <span style={{ textDecoration: 'underline dotted', textUnderlineOffset: '3px', color: 'var(--corp-dash, #2563eb)' }}>
           {num.toFixed(2)}
         </span>
         <span style={{
           fontSize: '9px',
-          background: 'rgba(37,99,235,0.18)',
-          color: 'var(--corp-dash)',
+          background: 'rgba(37,99,235,0.15)',
+          color: 'var(--corp-dash, #2563eb)',
           borderRadius: '4px',
           padding: '1px 5px',
           fontWeight: '700',

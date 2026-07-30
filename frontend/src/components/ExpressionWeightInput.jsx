@@ -22,7 +22,7 @@ export function parsePartsList(expr) {
 }
 
 /**
- * BreakdownModal
+ * BreakdownModal - Dual Mode (Light & Dark Theme Compatible)
  */
 function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title = "Weight Expression Breakdown", unit = "KG" }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -58,7 +58,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'rgba(0, 0, 0, 0.65)',
+        background: 'rgba(0, 0, 0, 0.5)',
         backdropFilter: 'blur(5px)',
         padding: '16px',
       }}
@@ -66,34 +66,34 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
     >
       <div
         style={{
-          background: 'var(--bg-card, #1e2433)',
-          border: '1px solid var(--border-light, rgba(255,255,255,0.18))',
+          background: 'var(--bg-card, var(--bg-surface, #ffffff))',
+          color: 'var(--text-primary, #0f172a)',
+          border: '1px solid var(--border-light, #e2e8f0)',
           borderRadius: '14px',
           width: '100%',
           maxWidth: partsList.length > 10 ? '540px' : '400px',
           maxHeight: '85vh',
           display: 'flex',
           flexDirection: 'column',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.25)',
           overflow: 'hidden',
-          animation: 'modalFadeIn 0.2s ease-out',
         }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
         <div style={{
           padding: '16px 20px',
-          borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.12))',
+          borderBottom: '1px solid var(--border-light, #e2e8f0)',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          background: 'rgba(255,255,255,0.02)',
+          background: 'var(--bg-subtle, rgba(37,99,235,0.04))',
         }}>
           <div>
-            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--corp-dash, #3b82f6)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '800', color: 'var(--corp-dash, #2563eb)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {title}
             </h3>
-            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', marginTop: '2px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', marginTop: '2px' }}>
               {partsList.length} Total Parts Breakdown Entry List
             </div>
           </div>
@@ -101,13 +101,13 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
             type="button"
             onClick={onClose}
             style={{
-              background: 'rgba(255,255,255,0.08)',
+              background: 'var(--bg-hover, rgba(0,0,0,0.06))',
               border: 'none',
               borderRadius: '50%',
               width: '32px',
               height: '32px',
               cursor: 'pointer',
-              color: 'var(--text-primary, #fff)',
+              color: 'var(--text-primary, #0f172a)',
               fontSize: '16px',
               display: 'flex',
               alignItems: 'center',
@@ -118,6 +118,7 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           </button>
         </div>
 
+        {/* Search */}
         {partsList.length > 15 && (
           <div style={{ padding: '10px 20px 0 20px' }}>
             <input
@@ -126,11 +127,12 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
               placeholder="Search part value or #..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ fontSize: '12px', height: '34px', background: 'rgba(0,0,0,0.2)' }}
+              style={{ fontSize: '12px', height: '34px' }}
             />
           </div>
         )}
 
+        {/* Modal Body - Multi Column Grid */}
         <div style={{
           padding: '16px 20px',
           overflowY: 'auto',
@@ -155,14 +157,14 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
                     border: `1px solid ${item.sign === '-' ? 'rgba(239,68,68,0.25)' : 'rgba(22,163,74,0.25)'}`,
                   }}
                 >
-                  <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', fontWeight: '600' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', fontWeight: '600' }}>
                     Part #{idx + 1}
                   </span>
                   <span style={{
                     fontSize: '13px',
                     fontWeight: '800',
                     fontFamily: 'monospace',
-                    color: item.sign === '-' ? '#ef4444' : '#16a34a',
+                    color: item.sign === '-' ? '#dc2626' : '#16a34a',
                   }}>
                     {item.sign} {item.val.toFixed(2)} {unit}
                   </span>
@@ -173,9 +175,9 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
             <div style={{
               fontFamily: 'monospace',
               fontSize: '14px',
-              color: 'var(--text-primary)',
+              color: 'var(--text-primary, #0f172a)',
               padding: '16px',
-              background: 'rgba(0,0,0,0.2)',
+              background: 'var(--bg-subtle, rgba(0,0,0,0.03))',
               borderRadius: '8px',
               wordBreak: 'break-all'
             }}>
@@ -184,23 +186,24 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
           )}
         </div>
 
+        {/* Modal Footer */}
         <div style={{
           padding: '14px 20px',
-          borderTop: '1px solid var(--border-light, rgba(255,255,255,0.12))',
-          background: 'rgba(37,99,235,0.08)',
+          borderTop: '1px solid var(--border-light, #e2e8f0)',
+          background: 'var(--bg-subtle, rgba(37,99,235,0.05))',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}>
           <div>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Formula</span>
-            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary, #fff)', fontWeight: '700' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase' }}>Formula</span>
+            <div style={{ fontFamily: 'monospace', fontSize: '12px', color: 'var(--text-primary, #0f172a)', fontWeight: '700' }}>
               {rawExpr}
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>Total Calculated Sum</span>
-            <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash, #3b82f6)' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary, #64748b)', textTransform: 'uppercase' }}>Total Calculated Sum</span>
+            <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash, #2563eb)' }}>
               {totalSum} {unit}
             </div>
           </div>
@@ -214,7 +217,6 @@ function BreakdownModal({ isOpen, onClose, partsList, rawExpr, totalSum, title =
 
 /**
  * ExpressionWeightInput
- * Enforces single operator rules: consecutive operators like `++`, `+-`, `+*`, `//` are auto-replaced with the newest symbol!
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
@@ -326,17 +328,17 @@ export default function ExpressionWeightInput({
           }}
           onClick={() => hasExpr && setShowModal(true)}
         >
-          <span style={{ fontWeight: '800', color: 'var(--corp-dash)', fontSize: '13px' }}>
+          <span style={{ fontWeight: '800', color: 'var(--corp-dash, #2563eb)', fontSize: '13px' }}>
             {parseFloat(value).toFixed(2)}
           </span>
-          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>KG</span>
+          <span style={{ fontSize: '10px', color: 'var(--text-secondary, #64748b)' }}>KG</span>
           {hasExpr && (
             <span style={{
               fontSize: '10px',
               background: 'rgba(37,99,235,0.18)',
               padding: '1px 6px',
               borderRadius: '10px',
-              color: 'var(--corp-dash)',
+              color: 'var(--corp-dash, #2563eb)',
               fontWeight: '700',
             }}>
               {partsList.length > 0 ? `${partsList.length} parts` : '= expr'}
@@ -351,7 +353,7 @@ export default function ExpressionWeightInput({
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--text-secondary)',
+              color: 'var(--text-secondary, #64748b)',
               fontSize: '12px',
               lineHeight: 1,
               padding: '0 2px',
@@ -382,12 +384,8 @@ export default function ExpressionWeightInput({
         value={raw}
         required={required}
         onChange={e => {
-          // Allow valid characters only
           let cleaned = e.target.value.replace(/[^0-9+\-*/().\s]/g, '');
-
-          // Replace consecutive operators with the latest entered operator (e.g. "25++" -> "25+", "25+-" -> "25-")
           cleaned = cleaned.replace(/([+\-*/])\s*([+\-*/])/g, '$2');
-
           setRaw(cleaned);
           setError('');
           if (!isExpr(cleaned)) {
@@ -401,11 +399,11 @@ export default function ExpressionWeightInput({
 
       {hasLiveResult && (
         <div style={{ fontSize: '11px', marginTop: '3px', display: 'flex', alignItems: 'center', gap: '5px' }}>
-          <span style={{ color: 'var(--text-secondary)' }}>=</span>
+          <span style={{ color: 'var(--text-secondary, #64748b)' }}>=</span>
           <span style={{ fontWeight: '800', color: '#16a34a', fontSize: '12px' }}>
             {liveResult.toFixed(2)} KG
           </span>
-          <span style={{ fontSize: '10px', color: 'var(--text-secondary)' }}>
+          <span style={{ fontSize: '10px', color: 'var(--text-secondary, #64748b)' }}>
             (Enter to confirm)
           </span>
         </div>
