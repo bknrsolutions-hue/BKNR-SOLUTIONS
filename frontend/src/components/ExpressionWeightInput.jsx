@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-/**
- * Helper to parse addition/subtraction expressions into individual signed parts.
- * Supports up to 100+ parts smoothly.
- */
 export function parsePartsList(expr) {
   const cleaned = String(expr || '').replace(/\s+/g, '');
   if (!cleaned) return [];
@@ -26,7 +22,7 @@ export function parsePartsList(expr) {
 
 /**
  * ExpressionWeightInput
- * Compact & scrollable breakdown card supporting up to 100+ rows.
+ * Multi-column grid breakdown card showing 25-30+ rows visible at once, with smooth scroll for 100+ rows.
  */
 export default function ExpressionWeightInput({
   value,           // numeric string saved to parent state
@@ -183,7 +179,7 @@ export default function ExpressionWeightInput({
           >✕</button>
         </div>
 
-        {/* Compact Scrollable Breakdown Popup */}
+        {/* Multi-Column Grid Breakdown Popup */}
         {showBreakdown && hasExpr && (
           <div
             ref={popupRef}
@@ -194,10 +190,10 @@ export default function ExpressionWeightInput({
               zIndex: 9999,
               background: 'var(--bg-card, #1e2433)',
               border: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-              borderRadius: '8px',
-              padding: '8px 12px',
-              width: '230px',
-              boxShadow: '0 10px 28px rgba(0,0,0,0.5)',
+              borderRadius: '10px',
+              padding: '10px 14px',
+              width: partsList.length > 15 ? '380px' : '260px',
+              boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
             }}
           >
             {/* Header */}
@@ -205,25 +201,25 @@ export default function ExpressionWeightInput({
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
-              fontSize: '10px',
+              fontSize: '11px',
               fontWeight: '800',
               color: 'var(--corp-dash)',
               borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.1))',
-              paddingBottom: '4px',
-              marginBottom: '6px',
+              paddingBottom: '6px',
+              marginBottom: '8px',
               textTransform: 'uppercase',
             }}>
-              <span>Parts List</span>
-              <span style={{ color: 'var(--text-secondary)' }}>{partsList.length} rows</span>
+              <span>Parts List Breakdown</span>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{partsList.length} total entries</span>
             </div>
             
-            {/* Scrollable Parts List (fits up to 100 rows) */}
+            {/* 2-Column / 3-Column Grid for high visibility */}
             {partsList.length > 0 ? (
               <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '2px',
-                maxHeight: '220px',
+                display: 'grid',
+                gridTemplateColumns: partsList.length > 15 ? 'repeat(2, 1fr)' : '1fr',
+                gap: '4px 10px',
+                maxHeight: '340px',
                 overflowY: 'auto',
                 paddingRight: '4px',
               }}>
@@ -233,11 +229,12 @@ export default function ExpressionWeightInput({
                     justifyContent: 'space-between',
                     alignItems: 'center',
                     fontSize: '11px',
-                    padding: '2px 4px',
-                    borderRadius: '3px',
-                    background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                    padding: '3px 6px',
+                    borderRadius: '4px',
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px solid rgba(255,255,255,0.05)',
                   }}>
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>#{idx + 1}</span>
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '10px', fontWeight: '600' }}>#{idx + 1}</span>
                     <span style={{
                       fontWeight: '700',
                       fontFamily: 'monospace',
@@ -254,19 +251,19 @@ export default function ExpressionWeightInput({
               </div>
             )}
 
-            {/* Sticky Total Footer */}
+            {/* Total Footer */}
             <div style={{
               borderTop: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-              marginTop: '6px',
-              paddingTop: '5px',
+              marginTop: '8px',
+              paddingTop: '6px',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
               fontSize: '12px',
               fontWeight: '800',
             }}>
-              <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>Total Sum</span>
-              <span style={{ color: 'var(--corp-dash)' }}>{parseFloat(value).toFixed(2)} KG</span>
+              <span style={{ color: 'var(--text-primary)', fontSize: '11px' }}>Total Calculated Sum</span>
+              <span style={{ color: 'var(--corp-dash)', fontSize: '13px' }}>{parseFloat(value).toFixed(2)} KG</span>
             </div>
           </div>
         )}

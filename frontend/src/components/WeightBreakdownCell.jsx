@@ -22,7 +22,7 @@ function parsePartsList(expr) {
 
 /**
  * WeightBreakdownCell
- * Compact high-density scrollable breakdown card supporting up to 100+ rows.
+ * Multi-column grid breakdown card showing 25-30+ rows visible at once.
  */
 export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = {} }) {
   const [show, setShow] = useState(false);
@@ -84,7 +84,7 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
         </span>
       </button>
 
-      {/* High-density scrollable breakdown card */}
+      {/* Multi-Column Grid Breakdown Popup Card */}
       {show && (
         <div
           ref={popupRef}
@@ -96,10 +96,10 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
             zIndex: 9999,
             background: 'var(--bg-card, #1e2433)',
             border: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-            borderRadius: '8px',
-            padding: '8px 12px',
-            width: '230px',
-            boxShadow: '0 10px 28px rgba(0,0,0,0.5)',
+            borderRadius: '10px',
+            padding: '10px 14px',
+            width: partsList.length > 15 ? '380px' : '260px',
+            boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
             whiteSpace: 'nowrap',
             textAlign: 'left'
           }}
@@ -109,25 +109,25 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            fontSize: '10px',
+            fontSize: '11px',
             fontWeight: '800',
             color: 'var(--corp-dash, #3b82f6)',
             borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.1))',
-            paddingBottom: '4px',
-            marginBottom: '6px',
+            paddingBottom: '6px',
+            marginBottom: '8px',
             textTransform: 'uppercase',
           }}>
             <span>Parts Breakdown</span>
-            <span style={{ color: 'var(--text-secondary, #94a3b8)' }}>{partsList.length} rows</span>
+            <span style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '10px' }}>{partsList.length} total entries</span>
           </div>
 
-          {/* Scrollable List (fits 100+ rows smoothly) */}
+          {/* 2-Column Grid for high visibility (up to 30 rows visible at once) */}
           {partsList.length > 0 ? (
             <div style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '2px',
-              maxHeight: '220px',
+              display: 'grid',
+              gridTemplateColumns: partsList.length > 15 ? 'repeat(2, 1fr)' : '1fr',
+              gap: '4px 10px',
+              maxHeight: '340px',
               overflowY: 'auto',
               paddingRight: '4px',
             }}>
@@ -137,11 +137,12 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
                   justifyContent: 'space-between',
                   alignItems: 'center',
                   fontSize: '11px',
-                  padding: '2px 4px',
-                  borderRadius: '3px',
-                  background: idx % 2 === 0 ? 'rgba(255,255,255,0.02)' : 'transparent',
+                  padding: '3px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(255,255,255,0.05)',
                 }}>
-                  <span style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '10px' }}>#{idx + 1}</span>
+                  <span style={{ color: 'var(--text-secondary, #94a3b8)', fontSize: '10px', fontWeight: '600' }}>#{idx + 1}</span>
                   <span style={{
                     fontWeight: '700',
                     fontFamily: 'monospace',
@@ -164,11 +165,11 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
             </div>
           )}
 
-          {/* Sticky Total Footer */}
+          {/* Total Footer */}
           <div style={{
             borderTop: '1px solid var(--border-light, rgba(255,255,255,0.15))',
-            marginTop: '6px',
-            paddingTop: '5px',
+            marginTop: '8px',
+            paddingTop: '6px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
@@ -176,7 +177,7 @@ export default function WeightBreakdownCell({ value, expr, unit = 'KG', style = 
             fontWeight: '800',
           }}>
             <span style={{ color: 'var(--text-primary, #e2e8f0)', fontSize: '11px' }}>Total Sum</span>
-            <span style={{ color: 'var(--corp-dash, #3b82f6)' }}>{num.toFixed(2)} {unit}</span>
+            <span style={{ color: 'var(--corp-dash, #3b82f6)', fontSize: '13px' }}>{num.toFixed(2)} {unit}</span>
           </div>
         </div>
       )}
