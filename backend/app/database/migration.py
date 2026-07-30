@@ -89,11 +89,21 @@ TABLE_COLUMNS = {
     "sales_dispatch": [
         ("journal_id", "INTEGER"),
     ],
+    "raw_material_purchasing": [
+        ("g1_expr", "VARCHAR(500)"),
+        ("g2_expr", "VARCHAR(500)"),
+        ("dc_expr", "VARCHAR(500)"),
+    ],
     "de_heading": [
         ("journal_id", "INTEGER"),
+        ("hlso_qty_expr", "VARCHAR(500)"),
     ],
     "peeling": [
         ("journal_id", "INTEGER"),
+        ("peeled_qty_expr", "VARCHAR(500)"),
+    ],
+    "grading": [
+        ("quantity_expr", "VARCHAR(500)"),
     ],
     "daily_attendance": [
         ("journal_id", "INTEGER"),
