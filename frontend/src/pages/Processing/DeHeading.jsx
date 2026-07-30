@@ -1402,7 +1402,35 @@ export default function DeHeading() {
                       if (locFiltered.length === 0) {
                         return <option value="" disabled>No tables created for today in {modalLocation || 'selected location'}</option>;
                       }
-                      return locFiltered.map(r => (
+
+                      // 2-hour shift retirement for older shift tables when a newer shift is created
+                      const now = new Date();
+                      const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+                      const groupedByBase = {};
+                      locFiltered.forEach(r => {
+                        const base = getBaseName(r.table_no).toLowerCase();
+                        if (!groupedByBase[base]) groupedByBase[base] = [];
+                        groupedByBase[base].push(r);
+                      });
+
+                      const activeShiftTables = [];
+                      Object.values(groupedByBase).forEach(regs => {
+                        regs.sort((a, b) => a.id - b.id);
+                        for (let i = 0; i < regs.length; i++) {
+                          const currentReg = regs[i];
+                          const newerReg = regs[i + 1];
+                          if (newerReg && newerReg.created_at) {
+                            const newerTime = new Date(newerReg.created_at);
+                            const diffHours = (now - newerTime) / (1000 * 60 * 60);
+                            if (diffHours >= 2) {
+                              continue; // Retire older shift 2 hours after newer shift creation
+                            }
+                          }
+                          activeShiftTables.push(currentReg);
+                        }
+                      });
+
+                      return activeShiftTables.map(r => (
                         <option key={r.id} value={r.table_no}>
                           {r.table_no} ({r.worker_type}{r.contractor_name ? ` - ${r.contractor_name}` : ''})
                         </option>
