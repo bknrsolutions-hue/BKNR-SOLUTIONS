@@ -17,7 +17,7 @@ from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry
 from app.database.models.criteria import (
     varieties, species, suppliers, hsn_codes, 
-    HOSO_HLSO_Yields, packing_styles, peeling_at
+    HOSO_HLSO_Yields, packing_styles, peeling_at, production_at
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters

@@ -15,7 +15,7 @@ from app.database.models.attendance import KgBasisWorker, KgBasisWorkerAttendanc
 from app.database.models.reprocess import Reprocess
 from app.database.models.floor_balance import FloorBalance  # Live Running Stock Table
 from app.database.models.criteria import (
-    peeling_rates, contractors, species as SpeciesMaster, peeling_at, production_for as ProductionForMaster
+    peeling_rates, contractors, species as SpeciesMaster, peeling_at, production_at, production_for as ProductionForMaster
 )
 
 # Centralized Hlso Grading Pool Sync Service

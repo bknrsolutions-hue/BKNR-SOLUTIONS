@@ -20,6 +20,7 @@ from app.database.models.criteria import (
     peeling_rates, 
     species, 
     peeling_at,
+    production_at,
     packing_styles,
     production_for as ProductionForMaster
 )

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 # 🟢 🔴 production_at ‌     !
-from app.database.models.criteria import coldstore_locations, production_at
+from app.database.models.criteria import coldstore_locations, production_at, peeling_at
 
 router = APIRouter(prefix="", tags=["COLDSTORE LOCATIONS"])
 templates = Jinja2Templates(directory="app/templates")

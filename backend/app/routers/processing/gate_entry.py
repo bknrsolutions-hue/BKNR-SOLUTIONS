@@ -27,6 +27,7 @@ from app.database.models.criteria import (
     purchasing_locations,
     vehicle_numbers,
     production_for,
+    production_at,
     peeling_at,
     vendors,
 )
