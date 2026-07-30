@@ -58,16 +58,18 @@ export default function ColdstoreLocations({ user }) {
       })
       .catch(err => console.error('Failed to load production_for:', err));
 
-    // Load production_at options
-    fetch('/criteria/api/production_at')
-      .then(res => res.json())
-      .then(resData => {
-        if (resData.status === 'success' && Array.isArray(resData.data)) {
-          const names = [...new Set(resData.data.map(item => item.production_at).filter(Boolean))].sort();
-          setProductionAtList(names);
-        }
+    // Load production_at and peeling_at location options
+    Promise.all([
+      fetch('/criteria/api/production_at').then(res => res.json()),
+      fetch('/criteria/api/peeling_at').then(res => res.json())
+    ])
+      .then(([prodRes, peelRes]) => {
+        const prodNames = (prodRes.status === 'success' && Array.isArray(prodRes.data)) ? prodRes.data.map(item => item.production_at).filter(Boolean) : [];
+        const peelNames = (peelRes.status === 'success' && Array.isArray(peelRes.data)) ? peelRes.data.map(item => item.peeling_at).filter(Boolean) : [];
+        const names = [...new Set([...prodNames, ...peelNames])].sort();
+        setProductionAtList(names);
       })
-      .catch(err => console.error('Failed to load production_at:', err));
+      .catch(err => console.error('Failed to load production_at / peeling_at lookups:', err));
   };
 
   useEffect(() => {

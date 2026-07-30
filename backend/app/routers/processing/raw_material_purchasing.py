@@ -209,15 +209,25 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
                 if g.batch_number and g.batch_number not in prod_batch_map[production_key]:
                     prod_batch_map[production_key].append(g.batch_number)
 
-        peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+        pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+        pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
         if user_allowed_locations:
             allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
             if allowed_clean:
-                peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+                pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(allowed_clean))
+                pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
         if global_loc:
-            peeling_q = peeling_q.filter(
+            pa_q = pa_q.filter(
+                func.upper(func.trim(production_at.production_at)) == str(global_loc).strip().upper()
+            )
+            pe_q = pe_q.filter(
                 func.upper(func.trim(peeling_at.peeling_at)) == str(global_loc).strip().upper()
             )
+
+        combined_peeling_locations = list(dict.fromkeys(
+            [p[0] for p in pa_q.order_by(production_at.production_at).all() if p[0]] +
+            [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+        ))
 
         hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
         return {
@@ -225,7 +235,7 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             "supplier_list": [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()],
             "variety_list": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
             "species_list": [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()],
-            "peeling_locations": [p.peeling_at for p in peeling_q.order_by(peeling_at.peeling_at).all()],
+            "peeling_locations": combined_peeling_locations,
             "prod_for_list": prod_for_list,
             "hsn_list": [h.description for h in hsn_records],
             "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),

@@ -431,7 +431,12 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         for r in variety_summary_q
     ]
 
-    pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
+    pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_id)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id)
+    pa_list = list(dict.fromkeys(
+        [p[0] for p in pa_q.all() if p[0]] +
+        [p[0] for p in pe_q.all() if p[0]]
+    ))
     success_msg = request.session.pop("success_msg", None)
 
     if request.query_params.get("format") == "json":

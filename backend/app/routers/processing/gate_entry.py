@@ -254,16 +254,23 @@ def load_dropdowns(db: Session, comp: str, user_allowed_locations: list = None, 
         if name and name.strip()
     ]
 
-    # Peeling At / Factory dropdown also layered with the same location restrictions if required
-    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == comp)
+    # Peeling At / Production At Factory dropdown layered with location restrictions
+    pa_q = db.query(production_at.production_at).filter(production_at.company_id == comp)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == comp)
     if user_allowed_locations:
         allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
         if allowed_clean:
-            peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+            pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(allowed_clean))
+            pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
     if global_loc:
-        peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
+        pa_q = pa_q.filter(func.trim(production_at.production_at) == func.trim(global_loc))
+        pe_q = pe_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
 
-    peeling_list = [x.peeling_at for x in peeling_q.order_by(peeling_at.peeling_at).all()]
+    raw_peeling_list = (
+        [x[0] for x in pa_q.order_by(production_at.production_at).all() if x[0]] +
+        [x[0] for x in pe_q.order_by(peeling_at.peeling_at).all() if x[0]]
+    )
+    peeling_list = list(dict.fromkeys(raw_peeling_list))
 
     prod_q = db.query(production_for.production_for).filter(production_for.company_id == comp)
     if global_p_for:
@@ -621,11 +628,14 @@ def save_goods_gate_movement(
     plant_exists = db.query(peeling_at.id).filter(
         peeling_at.company_id == comp,
         func.upper(func.trim(peeling_at.peeling_at)) == _clean(payload.plant_location).upper(),
+    ).first() or db.query(production_at.id).filter(
+        production_at.company_id == comp,
+        func.upper(func.trim(production_at.production_at)) == _clean(payload.plant_location).upper(),
     ).first()
     if not plant_exists:
         return JSONResponse({
             "success": False,
-            "message": "Plant Location must be selected from the configured Peeling At lookup.",
+            "message": "Plant Location must be selected from configured Production At / Peeling At lookups.",
         }, status_code=400)
     scope_error = _validate_goods_scope(request, payload.production_for, payload.plant_location)
     if scope_error:
@@ -918,10 +928,13 @@ async def save_entry(
     factory_exists = db.query(peeling_at.id).filter(
         peeling_at.company_id == comp,
         func.upper(func.trim(peeling_at.peeling_at)) == receiving_center.upper(),
+    ).first() or db.query(production_at.id).filter(
+        production_at.company_id == comp,
+        func.upper(func.trim(production_at.production_at)) == receiving_center.upper(),
     ).first()
     if not factory_exists:
         return JSONResponse(
-            {"error": "Factory Name must be selected from the Peeling At lookup."},
+            {"error": "Factory Name must be selected from configured Production At / Peeling At lookups."},
             status_code=400,
         )
 

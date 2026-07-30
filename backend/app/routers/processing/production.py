@@ -71,9 +71,16 @@ def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, fre
 # -----------------------------------------------------
 def get_common_data(db: Session, company_code: str, user_allowed_locations: list):
     """Fetch dropdown master data aligned securely with user permissions"""
-    pl_q = db.query(production_at).filter(production_at.company_id == company_code)
+    pl_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
     if user_allowed_locations:
         pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+
+    combined_locations = list(dict.fromkeys(
+        [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]] +
+        [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+    ))
         
     return {
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
@@ -90,7 +97,7 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         ],
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
-        "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
+        "prod_at_list": combined_locations,
         "prod_for_list": sorted(list(set([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]] + ["General Stock"]))),
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }

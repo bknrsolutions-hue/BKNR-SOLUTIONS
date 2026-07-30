@@ -157,13 +157,21 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
     masters = get_cached_masters(db, company_code)
 
-    # 🟢 🔴 FIXED: STRICT GLOBAL LOCATION OVERRIDE FOR PEELING DROPDOWN
-    peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+    # 🟢 🔴 FIXED: STRICT GLOBAL LOCATION OVERRIDE FOR PEELING/PLANT DROPDOWN
+    pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
     if global_location:
-        peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)) == global_location.strip().upper())
+        pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)) == global_location.strip().upper())
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)) == global_location.strip().upper())
     elif user_allowed_locations:
-        peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
-    peeling_locs = [p.peeling_at for p in peeling_q.all()]
+        pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+
+    raw_locs = (
+        [p[0] for p in pa_q.all() if p[0]] +
+        [p[0] for p in pe_q.all() if p[0]]
+    )
+    peeling_locs = list(dict.fromkeys(raw_locs))
 
     # 🟢 🔴 FIXED: STRICT GLOBAL PRODUCTION FOR OVERRIDE
     final_prod_for_list = [global_production_for] if global_production_for else masters["prod_for_list"]
