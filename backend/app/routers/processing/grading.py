@@ -62,6 +62,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/auth/login", status_code=303)
 
     company_code = str(raw_company_code)
+    clean_company = company_code.strip().upper()
 
     # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION MULTIPLE CHECK
     session_locations = request.session.get("allowed_locations", [])
@@ -71,23 +72,23 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     # Master Data for Dropdowns filtered securely
-    species_list = [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()]
-    variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
+    species_list = [s.species_name for s in db.query(species).filter(func.upper(func.trim(species.company_id)) == clean_company).all()]
+    variety_list = [v.variety_name for v in db.query(varieties).filter(func.upper(func.trim(varieties.company_id)) == clean_company).all()]
     
     # Peeling locations drop list protected with user permissions constraints (Form Independence)
-    pa_q = db.query(PeelingAtMaster.peeling_at).filter(PeelingAtMaster.company_id == company_code)
+    pa_q = db.query(PeelingAtMaster.peeling_at).filter(func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company)
     if user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(PeelingAtMaster.peeling_at)).in_(user_allowed_locations))
     peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
 
-    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if p[0]]
+    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
     if "General Stock" not in prod_for_list:
         prod_for_list.append("General Stock")
 
     # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global & Permission Matrices)
     start, end = get_today_range()
     today_q = db.query(Grading).filter(
-        Grading.company_id == company_code,
+        func.upper(func.trim(Grading.company_id)) == clean_company,
         Grading.date >= start.date(),
         Grading.date <= end.date()
     )
@@ -105,11 +106,11 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
     # 3. 🟢 REQUIREMENT LOGIC - CRITICAL FIXED FILTER ENGINE 🟢
     p_orders_q = db.query(pending_orders).filter(
-        pending_orders.company_id == company_code,
+        func.upper(func.trim(pending_orders.company_id)) == clean_company,
         (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
     )
 
-    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
+    stock_q = db.query(stock_entry).filter(func.upper(func.trim(stock_entry.company_id)) == clean_company)
     
     # Production For Filter (Bypass "ALL")
     if g_prod_clean and g_prod_clean != "ALL":
@@ -128,9 +129,9 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     p_orders = p_orders_q.all()
     all_stock = stock_q.all()
     
-    yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
-    p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
+    yield_records = db.query(HOSO_HLSO_Yields).filter(func.upper(func.trim(HOSO_HLSO_Yields.company_id)) == clean_company).all()
+    p_styles = db.query(packing_styles).filter(func.upper(func.trim(packing_styles.company_id)) == clean_company).all()
+    v_records = db.query(varieties).filter(func.upper(func.trim(varieties.company_id)) == clean_company).all()
 
     stock_pool = {}
     for s in all_stock:
@@ -214,7 +215,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
 
     pending_pool_q = db.query(HlsoForGrading).filter(
-        HlsoForGrading.company_id == company_code,
+        func.upper(func.trim(HlsoForGrading.company_id)) == clean_company,
         HlsoForGrading.status != "Completed",
         HlsoForGrading.available_qty > 0.01
     )
