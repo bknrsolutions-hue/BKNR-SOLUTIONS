@@ -29,7 +29,13 @@ from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_gr
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
 from app.utils.cancel_math import signed_sum
-from app.services.default_masters import ensure_processing_masters
+from app.services.default_masters import (
+    DEFAULT_PEELING_AT,
+    DEFAULT_PRODUCTION_FOR,
+    DEFAULT_SPECIES,
+    DEFAULT_VARIETIES,
+    ensure_processing_masters,
+)
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -93,9 +99,17 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
             if l.peeling_at
         ]
 
+    # Do not leave a new or legacy tenant with an unusable processing form if
+    # master-data seeding is still catching up. Stored tenant values win.
+    species_list = species_list or DEFAULT_SPECIES
+    variety_list = variety_list or DEFAULT_VARIETIES
+    peeling_locations = peeling_locations or DEFAULT_PEELING_AT
+
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
     if "General Stock" not in prod_for_list:
         prod_for_list.append("General Stock")
+    if len(prod_for_list) == 1:
+        prod_for_list = [*DEFAULT_PRODUCTION_FOR, "General Stock"]
 
     # 2. Operational table data: current 9 AM-to-next-9 AM shift only.
     # Historical records remain available through the dedicated reports.

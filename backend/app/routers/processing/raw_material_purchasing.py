@@ -21,7 +21,14 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
-from app.services.default_masters import ensure_processing_masters
+from app.services.default_masters import (
+    DEFAULT_PEELING_AT,
+    DEFAULT_PRODUCTION_FOR,
+    DEFAULT_SPECIES,
+    DEFAULT_SUPPLIERS,
+    DEFAULT_VARIETIES,
+    ensure_processing_masters,
+)
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
 from app.utils.cancel_math import active_sum
 
@@ -305,11 +312,20 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             func.upper(func.trim(species.company_id)) == clean_company
         ).order_by(species.species_name).all()
 
+        # Safety net for newly registered tenants or legacy staging schemas:
+        # never render an empty processing form while the idempotent seed is
+        # being recovered. Tenant database values always take precedence.
+        supplier_list = [s.supplier_name for s in supplier_records if s.supplier_name] or DEFAULT_SUPPLIERS
+        variety_list = [v.variety_name for v in variety_records if v.variety_name] or DEFAULT_VARIETIES
+        species_list = [s.species_name for s in species_records if s.species_name] or DEFAULT_SPECIES
+        combined_peeling_locations = combined_peeling_locations or DEFAULT_PEELING_AT
+        prod_for_list = prod_for_list or DEFAULT_PRODUCTION_FOR
+
         return {
             "batch_list": batch_list,
-            "supplier_list": [s.supplier_name for s in supplier_records if s.supplier_name],
-            "variety_list": [v.variety_name for v in variety_records if v.variety_name],
-            "species_list": [s.species_name for s in species_records if s.species_name],
+            "supplier_list": supplier_list,
+            "variety_list": variety_list,
+            "species_list": species_list,
             "peeling_locations": combined_peeling_locations,
             "prod_for_list": prod_for_list,
             "hsn_list": [h.description for h in hsn_records if h.description],
