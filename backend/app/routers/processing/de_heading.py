@@ -147,10 +147,10 @@ def update_floor_balance_row(
 @router.get("/de_heading", response_class=HTMLResponse)
 def show_de_heading(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location = get_global_filters(request)
-    raw_company_code = request.session.get("company_code")
+    raw_company_code = str(request.session.get("company_code") or "").strip().upper()
     if not raw_company_code:
         return RedirectResponse("/auth/login", status_code=303)
-    company_code = str(raw_company_code)
+    company_code = str(raw_company_code or "").strip().upper()
 
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [loc.strip().upper() for loc in session_locations if loc.strip()]
@@ -270,7 +270,7 @@ def show_de_heading(request: Request, db: Session = Depends(get_db)):
 
 @router.get("/get_valid_batches/{production_for}/{location}")
 def get_valid_batches(production_for: str, location: str, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return {"batches": []}
 
     global_p_for, global_loc = get_global_filters(request)
@@ -304,7 +304,7 @@ def get_valid_batches(production_for: str, location: str, request: Request, db: 
 
 @router.get("/get_hoso/{production_for}/{location}/{batch}")
 def get_hoso_counts(production_for: str, location: str, batch: str, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return {"counts": []}
 
     global_p_for, global_loc = get_global_filters(request)
@@ -339,7 +339,7 @@ def get_hoso_counts(production_for: str, location: str, batch: str, request: Req
 
 @router.get("/get_rate/{contractor}")
 def get_contractor_rate(contractor: str, count: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code") if request else None
+    company_code = str(request.session.get("company_code") or "").strip().upper() if request else None
     c_clean = contractor.strip()
     query = db.query(peeling_rates).filter(
         or_(
@@ -410,7 +410,7 @@ def get_available_qty(
     request: Request = None, 
     db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return {"available_qty": 0}
 
     global_p_for, global_loc = get_global_filters(request)
@@ -461,7 +461,7 @@ def save_de_heading(
     amount: float = Form(...), table_no: str = Form(None),
     hlso_qty_expr: str = Form(None)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -565,7 +565,7 @@ def delete_de_heading(
     cancel_reason: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -664,7 +664,7 @@ def ensure_table_registrations_schema(db: Session):
 
 @router.get("/de_heading/table_registrations")
 def get_de_heading_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -721,7 +721,7 @@ def save_de_heading_table_registration(
     production_for: str = Form(None), overwrite: str = Form("false"),
     confirm_shift: str = Form("false")
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -800,7 +800,7 @@ def save_de_heading_table_registration(
 
 @router.post("/de_heading/table_registration/delete/{id}")
 def delete_de_heading_table_registration(id: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     

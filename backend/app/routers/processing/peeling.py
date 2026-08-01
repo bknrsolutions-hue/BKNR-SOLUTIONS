@@ -576,7 +576,7 @@ def get_available_qty(
     species_name: str = Query(...), variety_name: str = Query(...),
     production_for: str = Query(...), request: Request = None, db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return {"available_qty": 0}
 
     global_p_for, global_loc = get_global_filters(request)
@@ -687,7 +687,7 @@ def save_peeling(
     contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...),
     table_no: str = Form(None), peeled_qty_expr: str = Form(None)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -899,7 +899,7 @@ def ensure_table_registrations_schema(db: Session):
 
 @router.get("/peeling/table_registrations")
 def get_peeling_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -956,7 +956,7 @@ def save_peeling_table_registration(
     production_for: str = Form(None), overwrite: str = Form("false"),
     confirm_shift: str = Form("false")
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -1035,7 +1035,7 @@ def save_peeling_table_registration(
 
 @router.post("/peeling/table_registration/delete/{id}")
 def delete_peeling_table_registration(id: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     

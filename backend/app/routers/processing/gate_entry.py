@@ -326,7 +326,7 @@ def gate_entry_page(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location = get_global_filters(request)
 
     email = request.session.get("email")
-    comp  = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
 
     if not email or not comp:
         return RedirectResponse("/auth/login", status_code=302)
@@ -532,7 +532,7 @@ def goods_gate_register(
     db: Session = Depends(get_db),
 ):
     email = request.session.get("email")
-    comp = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
     if not email or not comp:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
 
@@ -617,7 +617,7 @@ def save_goods_gate_movement(
     db: Session = Depends(get_db),
 ):
     email = request.session.get("email")
-    comp = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
     if not email or not comp:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
 
@@ -792,7 +792,7 @@ def cancel_goods_gate_movement(
     db: Session = Depends(get_db),
 ):
     email = request.session.get("email")
-    comp = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
     reason = _clean(payload.reason)
     if not email or not comp:
         return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
@@ -905,7 +905,7 @@ async def save_entry(
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
-    comp  = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
 
     if not email or not comp:
         return JSONResponse({"error": "Unauthorized. Please login again."}, status_code=401)
@@ -1000,7 +1000,7 @@ async def update_entry(
     no_of_ice_boxes: float = Form(0),
     db: Session = Depends(get_db)
 ):
-    comp = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
     if not comp:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
@@ -1046,7 +1046,7 @@ def delete_entry(
     cancel_reason: str = Form(None),
     db: Session = Depends(get_db)
 ):
-    comp = request.session.get("company_code")
+    comp = str(request.session.get("company_code") or "").strip().upper()
     if not comp:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 

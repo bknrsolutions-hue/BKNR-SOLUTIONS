@@ -96,7 +96,8 @@ def update_floor_balance_row(
 # =====================================================
 @router.get("/soaking", response_class=HTMLResponse)
 def show_soaking(request: Request, db: Session = Depends(get_db)):
-    raw_company_id = request.session.get("company_code")
+    raw_company_id = str(request.session.get("company_code") or "").strip().upper()
+    company_id = str(raw_company_id or "").strip().upper()
     email = request.session.get("email")
 
     if not email or raw_company_id is None:
@@ -212,7 +213,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 # =====================================================
 @router.get("/soaking/get_count/{batch}")
 def get_count(batch: str, production_for: str = Query(None), location: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id: return {"counts": []}
     production_for, location, _ = resolve_session_scope(request, production_for, location)
 
@@ -236,7 +237,7 @@ def get_count(batch: str, production_for: str = Query(None), location: str = Que
 
 @router.get("/soaking/get_available_qty")
 def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, production_for: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id:
         raise HTTPException(status_code=401, detail="Session expired")
     production_for, location, _ = resolve_session_scope(request, production_for, location)
@@ -263,7 +264,7 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
 
 @router.get("/soaking/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id or not prod_for: return {"batches": []}
     prod_for, global_location, user_allowed_locations = resolve_session_scope(request, prod_for)
     batch_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id, FloorBalance.production_for == prod_for)
@@ -294,7 +295,7 @@ def save_soaking(
     production_for: str = Form(...)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
@@ -360,7 +361,7 @@ def update_soaking(
     production_for: str = Form(...)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
@@ -443,7 +444,7 @@ def delete_soaking(
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 

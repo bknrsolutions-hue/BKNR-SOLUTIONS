@@ -128,7 +128,7 @@ def _unused_incomplete_production_page(
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
     g_loc_clean = global_location.strip().upper() if global_location else None
 
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
 
     if not company_code or not email:
@@ -464,7 +464,7 @@ def production_page(
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
     g_loc_clean = global_location.strip().upper() if global_location else None
 
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
 
     if not company_code or not email:
@@ -885,7 +885,7 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
     try:
         data = await request.json()
         new_status = data.get("status")
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         
         if not company_code:
             return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
@@ -907,7 +907,7 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
 @router.post("/production/complete_rejection/{soaking_id}")
 def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(get_db)):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
         
         if not company_code:
@@ -948,7 +948,7 @@ def save_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
 
         if not company_code or not email:
@@ -978,7 +978,7 @@ def save_production(
 # -----------------------------------------------------
 @router.get("/production/edit/{id}", response_class=HTMLResponse)
 def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
     entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
@@ -1000,7 +1000,7 @@ def update_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
         
@@ -1044,7 +1044,7 @@ def delete_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
