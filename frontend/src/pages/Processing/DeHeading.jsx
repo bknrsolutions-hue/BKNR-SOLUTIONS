@@ -540,11 +540,23 @@ export default function DeHeading() {
     }
   };
 
-  // Helper colors for chart locations
+  // Helper vibrant colors for chart locations
   const getLocationColor = (loc) => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#64748b', '#8b5cf6', '#ec4899', '#06b6d4'];
+    const colors = [
+      '#3B82F6', // Royal Blue
+      '#10B981', // Emerald Green
+      '#F59E0B', // Amber Gold
+      '#8B5CF6', // Purple Violet
+      '#EC4899', // Bright Magenta
+      '#06B6D4', // Vibrant Cyan
+      '#F97316', // Bright Orange
+      '#6366F1', // Deep Indigo
+      '#14B8A6', // Vivid Teal
+      '#E11D48', // Crimson Red
+    ];
     let hash = 0;
-    for (let i = 0; i < loc.length; i++) { hash = loc.charCodeAt(i) + ((hash << 5) - hash); }
+    const str = String(loc || 'Floor');
+    for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return colors[Math.abs(hash) % colors.length];
   };
 
