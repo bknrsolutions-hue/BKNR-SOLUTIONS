@@ -9,7 +9,7 @@ import './ErpTables.css';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnimatedBrandLogo from './components/AnimatedBrandLogo';
-import ApprovalAlertPopup from './components/ApprovalAlertPopup';
+const ApprovalAlertPopup = React.lazy(() => import('./components/ApprovalAlertPopup'));
 
 let initialSessionRequest;
 
@@ -655,7 +655,9 @@ export default function App() {
             {renderActivePage()}
           </Suspense>
         </main>
-        <ApprovalAlertPopup />
+        <Suspense fallback={null}>
+          <ApprovalAlertPopup />
+        </Suspense>
         {noticePopup}
       </div>
     );
@@ -704,7 +706,9 @@ export default function App() {
           </Suspense>
         </main>
       </div>
-      <ApprovalAlertPopup />
+      <Suspense fallback={null}>
+        <ApprovalAlertPopup />
+      </Suspense>
       {supportDrawer && (
         <div className="react-support-drawer" aria-label="Support and helpdesk">
           <aside
