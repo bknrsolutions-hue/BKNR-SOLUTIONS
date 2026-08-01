@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, text
 from datetime import datetime, timedelta
 from app.utils.timezone import ist_now
 import json
@@ -357,11 +357,25 @@ def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created
     entry.journal_id = voucher.id
     return voucher
 
+def ensure_rmp_columns_exist(db: Session):
+    try:
+        db.execute(text("""
+            ALTER TABLE raw_material_purchasing 
+            ADD COLUMN IF NOT EXISTS g1_expr VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS g2_expr VARCHAR(500),
+            ADD COLUMN IF NOT EXISTS dc_expr VARCHAR(500);
+        """))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Could not auto-add expression columns to raw_material_purchasing: %s", exc)
+
 # -----------------------------------------------------
 # REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
     company_code = str(company_code or "").strip().upper()
+    ensure_rmp_columns_exist(db)
     try:
         ensure_processing_masters(
             db,
@@ -555,6 +569,7 @@ def save_rmp(
     g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
+    ensure_rmp_columns_exist(db)
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
     now = ist_now()
@@ -602,6 +617,7 @@ def update_rmp(
     g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
+    ensure_rmp_columns_exist(db)
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()

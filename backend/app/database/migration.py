@@ -195,7 +195,7 @@ def run_migration():
                 if col_name not in existing_columns:
                     print(f"  -> Adding column '{col_name}' ({col_type}) to table '{table}'")
                     try:
-                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type};"))
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
                         print(f"  ✔ Column '{col_name}' added successfully.")
                     except Exception as e:
                         print(f"  ❌ Error adding column '{col_name}': {e}")

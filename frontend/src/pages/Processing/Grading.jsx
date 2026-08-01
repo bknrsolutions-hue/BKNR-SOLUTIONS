@@ -158,7 +158,17 @@ export default function Grading() {
       (item.production_for || '').trim().toUpperCase() === compVal &&
       (item.peeling_at || '').trim().toUpperCase() === locVal
     );
-    return Array.from(new Set(matches.map(m => m.batch_number))).sort();
+    const deheadingBatches = Array.from(new Set(matches.map(m => m.batch_number).filter(Boolean))).sort();
+    if (deheadingBatches.length > 0) return deheadingBatches;
+
+    const allCompMatches = deheadingPending.filter(item =>
+      (item.production_for || '').trim().toUpperCase() === compVal
+    );
+    const compBatches = Array.from(new Set(allCompMatches.map(m => m.batch_number).filter(Boolean))).sort();
+    if (compBatches.length > 0) return compBatches;
+
+    const todayBatches = Array.from(new Set(todayEntries.map(t => t.batch_number).filter(Boolean))).sort();
+    return todayBatches;
   };
 
   const getRelevantCounts = () => {
@@ -171,7 +181,17 @@ export default function Grading() {
       (item.production_for || '').trim().toUpperCase() === compVal &&
       (item.peeling_at || '').trim().toUpperCase() === locVal
     );
-    return Array.from(new Set(matches.map(m => m.hoso_count))).sort();
+    const counts = Array.from(new Set(matches.map(m => m.hoso_count).filter(Boolean))).sort();
+    if (counts.length > 0) return counts;
+
+    const batchMatches = deheadingPending.filter(item => item.batch_number === batchNumber);
+    const fallbackCounts = Array.from(new Set(batchMatches.map(m => m.hoso_count).filter(Boolean))).sort();
+    if (fallbackCounts.length > 0) return fallbackCounts;
+
+    const todayBatchCounts = Array.from(new Set(todayEntries.filter(t => t.batch_number === batchNumber).map(t => t.hoso_count).filter(Boolean))).sort();
+    if (todayBatchCounts.length > 0) return todayBatchCounts;
+
+    return ['16/20', '21/25', '26/30', '31/35', '31/40', '41/50', '51/60', '61/70', '71/90', '91/110', '111/130', '130+'];
   };
 
   // Resolve matching species choices based on pool match, or default to all species

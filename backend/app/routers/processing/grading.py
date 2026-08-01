@@ -5,7 +5,7 @@ from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
+from sqlalchemy import func, distinct, text
 from datetime import datetime, timedelta, date
 from app.utils.timezone import ist_now
 from app.services.floor_balance_sync import refresh_floor_balance
@@ -96,7 +96,20 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         )
 
 
+def ensure_grading_columns_exist(db: Session):
+    try:
+        db.execute(text("""
+            ALTER TABLE grading 
+            ADD COLUMN IF NOT EXISTS quantity_expr VARCHAR(500);
+        """))
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Auto-adding quantity_expr column to grading failed: %s", exc)
+
+
 def _render_grading_page(request: Request, db: Session):
+    ensure_grading_columns_exist(db)
     # 1. 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     global_production_for, global_location = get_global_filters(request)
     
