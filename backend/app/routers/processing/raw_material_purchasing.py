@@ -376,10 +376,13 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         global_loc=global_location,
     )
 
-    # The report grid is a tenant ledger, not a current-shift register.  Keep
-    # its API field name for frontend compatibility, but return all records.
+    # The operational grid shows only the active 9 AM-to-next-9 AM shift.
+    # Historical records remain available through the dedicated reports.
+    start, end = get_today_range()
     report_q = db.query(RawMaterialPurchasing).filter(
-        func.upper(func.trim(RawMaterialPurchasing.company_id)) == company_code
+        func.upper(func.trim(RawMaterialPurchasing.company_id)) == company_code,
+        RawMaterialPurchasing.date >= start.date(),
+        RawMaterialPurchasing.date <= end.date(),
     )
     
     if global_production_for and str(global_production_for).strip().upper() != "ALL":

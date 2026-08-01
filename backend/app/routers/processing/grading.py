@@ -97,10 +97,13 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if "General Stock" not in prod_for_list:
         prod_for_list.append("General Stock")
 
-    # 2. Report table data: return complete tenant history.  Shift-based
-    # aggregates below remain independent from this table data.
+    # 2. Operational table data: current 9 AM-to-next-9 AM shift only.
+    # Historical records remain available through the dedicated reports.
+    start, end = get_today_range()
     report_q = db.query(Grading).filter(
-        func.upper(func.trim(Grading.company_id)) == clean_company
+        func.upper(func.trim(Grading.company_id)) == clean_company,
+        Grading.date >= start.date(),
+        Grading.date <= end.date(),
     )
     
     # 🟢 Bypass "ALL" for Today's logic
