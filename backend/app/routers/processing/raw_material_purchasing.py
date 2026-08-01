@@ -31,9 +31,11 @@ from app.services.default_masters import (
 )
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
 from app.utils.cancel_math import active_sum
+import logging
 
 router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------
 # TODAY RANGE (9 AM TO NEXT DAY 9 AM)
@@ -360,11 +362,19 @@ def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created
 # -----------------------------------------------------
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
     company_code = str(company_code or "").strip().upper()
-    ensure_processing_masters(
-        db,
-        company_code,
-        email=request.session.get("email", "system@bknr.com"),
-    )
+    try:
+        ensure_processing_masters(
+            db,
+            company_code,
+            email=request.session.get("email", "system@bknr.com"),
+        )
+    except Exception:
+        # Existing master rows and the built-in lookup fallbacks keep the
+        # operational entry page usable while a legacy tenant master issue is
+        # investigated. A failed seed can leave PostgreSQL's transaction
+        # aborted, so reset it before running the normal read queries below.
+        db.rollback()
+        logger.exception("Unable to seed RMP lookup masters for tenant %s", company_code)
 
     # Fetch universal filters layer first
     global_production_for, global_location = get_global_filters(request)
@@ -377,20 +387,46 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         user_allowed_locations = session_locations
 
     # 🟢 🔴 REFACTOR:             !
-    hoso_summary, drill_down = get_cached_hoso_summary_data(
-        db=db, 
-        company_code=company_code, 
-        user_allowed_locations=user_allowed_locations,
-        global_p_for=global_production_for,
-        global_loc=global_location
-    )
-    master_context = get_cached_rmp_page_masters(
-        db=db,
-        company_code=company_code,
-        user_allowed_locations=user_allowed_locations,
-        global_p_for=global_production_for,
-        global_loc=global_location,
-    )
+    try:
+        hoso_summary, drill_down = get_cached_hoso_summary_data(
+            db=db,
+            company_code=company_code,
+            user_allowed_locations=user_allowed_locations,
+            global_p_for=global_production_for,
+            global_loc=global_location,
+        )
+    except Exception:
+        # Demand analytics must never block receiving raw material. This can
+        # occur with incomplete historical order/stock data in legacy tenants.
+        db.rollback()
+        logger.exception("Unable to calculate RMP HOSO summary for tenant %s", company_code)
+        hoso_summary, drill_down = [], {}
+
+    try:
+        master_context = get_cached_rmp_page_masters(
+            db=db,
+            company_code=company_code,
+            user_allowed_locations=user_allowed_locations,
+            global_p_for=global_production_for,
+            global_loc=global_location,
+        )
+    except Exception:
+        # Preserve the form using safe defaults if an optional legacy master
+        # table is unavailable. The error is retained in application logs.
+        db.rollback()
+        logger.exception("Unable to load RMP lookup masters for tenant %s", company_code)
+        master_context = {
+            "batch_list": [],
+            "supplier_list": DEFAULT_SUPPLIERS,
+            "variety_list": DEFAULT_VARIETIES,
+            "species_list": DEFAULT_SPECIES,
+            "peeling_locations": DEFAULT_PEELING_AT,
+            "prod_for_list": DEFAULT_PRODUCTION_FOR,
+            "hsn_list": [],
+            "hsn_map_json": "{}",
+            "prod_batch_map_json": "{}",
+            "batch_supplier_map_json": "{}",
+        }
 
     # The operational grid shows only the active 9 AM-to-next-9 AM shift.
     # Historical records remain available through the dedicated reports.
