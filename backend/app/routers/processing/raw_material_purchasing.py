@@ -448,9 +448,17 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
             == str(global_location).strip().upper()
         )
         
-    report_data = report_q.order_by(
-        RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.id.desc()
-    ).all()
+    try:
+        report_data = report_q.order_by(
+            RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.id.desc()
+        ).all()
+    except Exception:
+        # A partially migrated historical RMP row must not make the receiving
+        # form unavailable. The grid can be recovered from reports after the
+        # schema/data issue recorded in the server logs is corrected.
+        db.rollback()
+        logger.exception("Unable to load the active RMP grid for tenant %s", company_code)
+        report_data = []
 
     if request.query_params.get("format") == "json":
         hsn_map = master_context.get("hsn_map_json")
