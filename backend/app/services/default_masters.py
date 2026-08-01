@@ -27,8 +27,6 @@ from app.database.models.criteria import (
 DEFAULT_SPECIES = [
     "Vannamei",
     "Black Tiger",
-    "HGB",
-    "HGBU",
 ]
 
 DEFAULT_GLAZES = [
@@ -145,16 +143,21 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
             getattr(model, unique_field) == value
         ).first() is not None
 
+    has_existing_species = db.query(SpeciesModel.id).filter(
+        func.upper(func.trim(SpeciesModel.company_id)) == company_code
+    ).first() is not None
+
     changed = False
 
-    # 1. Species
-    for name in DEFAULT_SPECIES:
-        if not already_exists(SpeciesModel, "species_name", name):
-            db.add(SpeciesModel(
-                species_name=name, company_id=company_code, email=email,
-                date=now_date, time=func.current_time()
-            ))
-            changed = True
+    # 1. Species (Only seed if tenant has no species at all)
+    if not has_existing_species:
+        for name in DEFAULT_SPECIES:
+            if not already_exists(SpeciesModel, "species_name", name):
+                db.add(SpeciesModel(
+                    species_name=name, company_id=company_code, email=email,
+                    date=now_date, time=func.current_time()
+                ))
+                changed = True
 
     # 2. Glazes
     for name in DEFAULT_GLAZES:
