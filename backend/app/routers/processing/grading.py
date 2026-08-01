@@ -20,6 +20,7 @@ from app.database.models.criteria import (
     HOSO_HLSO_Yields, 
     packing_styles,
     peeling_at as PeelingAtMaster,
+    production_at as ProductionAtMaster,
     production_for as ProductionForMaster
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
@@ -137,21 +138,23 @@ def _render_grading_page(request: Request, db: Session):
     species_list = [s.species_name for s in db.query(species).filter(func.upper(func.trim(species.company_id)) == clean_company).all()]
     variety_list = [v.variety_name for v in db.query(varieties).filter(func.upper(func.trim(varieties.company_id)) == clean_company).all()]
     
-    # Peeling locations drop list protected with user permissions constraints (Form Independence)
+    # Locations drop list combining peeling_at + production_at masters uniquely
     pa_q = db.query(PeelingAtMaster.peeling_at).filter(func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company)
+    prod_loc_q = db.query(ProductionAtMaster.production_at).filter(func.upper(func.trim(ProductionAtMaster.company_id)) == clean_company)
     if user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(PeelingAtMaster.peeling_at)).in_(user_allowed_locations))
-    peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
+        prod_loc_q = prod_loc_q.filter(func.upper(func.trim(ProductionAtMaster.production_at)).in_(user_allowed_locations))
+
+    raw_locations = (
+        [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all() if l.peeling_at] +
+        [l.production_at for l in prod_loc_q.order_by(ProductionAtMaster.production_at).all() if l.production_at]
+    )
+    peeling_locations = list(dict.fromkeys([loc.strip() for loc in raw_locations if loc and loc.strip()]))
     if not peeling_locations:
-        # Old session permissions can reference locations that no longer exist.
-        # Do not render an unusable form: use the current tenant master list.
-        peeling_locations = [
-            l.peeling_at
-            for l in db.query(PeelingAtMaster.peeling_at).filter(
-                func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company
-            ).order_by(PeelingAtMaster.peeling_at).all()
-            if l.peeling_at
-        ]
+        all_pa = db.query(PeelingAtMaster.peeling_at).filter(func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company).all()
+        all_prod_loc = db.query(ProductionAtMaster.production_at).filter(func.upper(func.trim(ProductionAtMaster.company_id)) == clean_company).all()
+        fallback_raw = [l.peeling_at for l in all_pa if l.peeling_at] + [l.production_at for l in all_prod_loc if l.production_at]
+        peeling_locations = list(dict.fromkeys([loc.strip() for loc in fallback_raw if loc and loc.strip()]))
 
     # Do not leave a new or legacy tenant with an unusable processing form if
     # master-data seeding is still catching up. Stored tenant values win.
