@@ -5,6 +5,17 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   base: '/app/',
   plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react-router-dom',
+      'lucide-react',
+      'chart.js',
+      'sweetalert2',
+    ],
+  },
   build: {
     minify: 'esbuild',
     target: 'es2020',
@@ -23,7 +34,6 @@ export default defineConfig({
             return 'vendor-charts';
           }
         }
-
       }
     }
   },
