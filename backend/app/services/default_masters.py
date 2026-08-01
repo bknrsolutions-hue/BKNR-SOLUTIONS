@@ -4,6 +4,7 @@ Default Masters Seed Service
 New company register   function call .
 Existing data  skip  (idempotent).
 """
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database.models.criteria import (
     species as SpeciesModel,
@@ -13,6 +14,10 @@ from app.database.models.criteria import (
     freezers as FreezersModel,
     packing_styles as PackingStylesModel,
     brands as BrandsModel,
+    varieties as VarietiesModel,
+    suppliers as SuppliersModel,
+    production_for as ProductionForModel,
+    peeling_at as PeelingAtModel,
 )
 
 # -------------------------------------------------------
@@ -97,6 +102,27 @@ DEFAULT_BRANDS = [
     "DUMMY",
 ]
 
+DEFAULT_VARIETIES = [
+    "HLSO",
+    "HOSO",
+    "PDNS",
+    "PD",
+    "PDG2",
+    "EZPL",
+]
+
+DEFAULT_SUPPLIERS = [
+    "Sample Supplier",
+]
+
+DEFAULT_PRODUCTION_FOR = [
+    "Main Unit",
+]
+
+DEFAULT_PEELING_AT = [
+    "Main Plant",
+]
+
 
 # -------------------------------------------------------
 # SEED FUNCTION
@@ -106,13 +132,17 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
     Insert default master rows for a new company.
     Safe to call multiple times — skips if already exists (idempotent).
     """
+    company_code = str(company_code or "").strip().upper()
+    if not company_code:
+        raise ValueError("A tenant company code is required to seed master data.")
+
     from datetime import datetime
     now_date = datetime.now().date()
     now_time = str(datetime.now().time().strftime('%H:%M:%S'))
 
     def already_exists(model, unique_field, value):
         return db.query(model).filter(
-            model.company_id == company_code,
+            func.upper(func.trim(model.company_id)) == company_code,
             getattr(model, unique_field) == value
         ).first() is not None
 
@@ -181,6 +211,42 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(BrandsModel, "brand_name", name):
             db.add(BrandsModel(
                 brand_name=name, company_id=company_code, email=email,
+                date=now_date, time=now_time
+            ))
+            changed = True
+
+    # 8. Varieties
+    for name in DEFAULT_VARIETIES:
+        if not already_exists(VarietiesModel, "variety_name", name):
+            db.add(VarietiesModel(
+                variety_name=name, company_id=company_code, email=email,
+                date=now_date, time=now_time
+            ))
+            changed = True
+
+    # 9. Suppliers
+    for name in DEFAULT_SUPPLIERS:
+        if not already_exists(SuppliersModel, "supplier_name", name):
+            db.add(SuppliersModel(
+                supplier_name=name, company_id=company_code, email=email,
+                date=now_date, time=now_time
+            ))
+            changed = True
+
+    # 10. Production For
+    for name in DEFAULT_PRODUCTION_FOR:
+        if not already_exists(ProductionForModel, "production_for", name):
+            db.add(ProductionForModel(
+                production_for=name, company_id=company_code, email=email,
+                date=now_date, time=now_time
+            ))
+            changed = True
+
+    # 11. Peeling At
+    for name in DEFAULT_PEELING_AT:
+        if not already_exists(PeelingAtModel, "peeling_at", name):
+            db.add(PeelingAtModel(
+                peeling_at=name, company_id=company_code, email=email,
                 date=now_date, time=now_time
             ))
             changed = True

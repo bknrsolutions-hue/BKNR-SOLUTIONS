@@ -872,6 +872,19 @@ def masters_check(request: Request, db: Session = Depends(get_db)):
     masters_empty = (has_species == 0 and has_glazes == 0)
     return {"masters_empty": masters_empty, "company_code": comp_code}
 
+@router.post("/seed-masters")
+def seed_masters(request: Request, db: Session = Depends(get_db)):
+    """Re-seed default masters for the logged-in company (idempotent — skips existing rows)."""
+    comp_code = str(request.session.get("company_code") or "").strip().upper()
+    if not comp_code:
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+    email = request.session.get("email", "system@bknr.com")
+    try:
+        seed_default_masters(db, comp_code, email=email)
+        return JSONResponse({"ok": True, "company_code": comp_code, "message": "Masters seeded successfully"})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
 @router.get("/auto-login")
 def auto_login(request: Request, db: Session = Depends(get_db)):
     if os.getenv("ENVIRONMENT", "development").lower() == "production":
