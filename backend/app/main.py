@@ -881,7 +881,17 @@ def record_version(request: Request, payload: dict = Body(default={})):
 # while allowing compiled chunk assets to be cached long-term.
 class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope) -> Response:
-        response = await super().get_response(path, scope)
+        try:
+            response = await super().get_response(path, scope)
+        except Exception:
+            if not (path.startswith("assets/") or path.endswith((".js", ".css", ".png", ".jpg", ".svg", ".woff2"))):
+                response = await super().get_response("index.html", scope)
+            else:
+                raise
+
+        if response.status_code == 404 and not (path.startswith("assets/") or path.endswith((".js", ".css", ".png", ".jpg", ".svg", ".woff2"))):
+            response = await super().get_response("index.html", scope)
+
         if response.status_code == 200:
             content_type = response.headers.get("content-type", "")
             if "text/html" in content_type.lower() or path == "" or path.endswith(".html"):
