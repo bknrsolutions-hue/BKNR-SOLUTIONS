@@ -2715,6 +2715,167 @@
             transform-style: flat !important;
         }
 
+        /* Focused enterprise authentication experience. */
+        .login-page {
+            background:
+                radial-gradient(circle at 8% 12%, rgba(14, 165, 233, .16), transparent 28rem),
+                radial-gradient(circle at 90% 86%, rgba(16, 185, 129, .13), transparent 26rem),
+                #f5f8fc;
+        }
+
+        .login-page .site-nav {
+            min-height: 72px;
+            padding: 8px clamp(18px, 4vw, 56px);
+            background: rgba(255, 255, 255, .92);
+            border-bottom-color: rgba(15, 43, 70, .1);
+        }
+
+        .login-page .login-section {
+            grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+            gap: clamp(36px, 6vw, 96px);
+            max-width: 1280px;
+            min-height: calc(100vh - 72px);
+            padding-top: 42px;
+            padding-bottom: 42px;
+        }
+
+        .login-page .login-showcase-copy {
+            margin-bottom: 26px;
+        }
+
+        .login-page .login-showcase-copy .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 14px;
+            padding: 7px 10px;
+            color: #075985;
+            background: #e0f2fe;
+            border: 1px solid #bae6fd;
+            border-radius: 999px;
+            font-size: .72rem;
+            font-weight: 800;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+        }
+
+        .login-page .login-showcase-copy h1 {
+            max-width: 720px;
+            color: #102a43;
+            font-size: clamp(2.1rem, 4vw, 4.25rem);
+        }
+
+        .login-page .login-showcase-copy p {
+            max-width: 640px;
+            color: #486581;
+            font-size: 1rem;
+            line-height: 1.7;
+        }
+
+        .login-page .login-3d-carousel {
+            min-height: clamp(320px, 45vh, 500px);
+            border: 1px solid rgba(15, 43, 70, .12);
+            border-radius: 18px;
+            box-shadow: 0 26px 58px rgba(15, 43, 70, .16) !important;
+        }
+
+        .login-page .login-showcase-description {
+            display: none;
+        }
+
+        .login-page .form-side {
+            padding: 32px;
+            border: 1px solid rgba(15, 43, 70, .12);
+            border-radius: 18px;
+            background: rgba(255, 255, 255, .97);
+            box-shadow: 0 24px 56px rgba(15, 43, 70, .14) !important;
+        }
+
+        .login-page .auth-context {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 24px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid #e6edf5;
+        }
+
+        .login-page .auth-context-mark {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            flex: 0 0 auto;
+            border-radius: 10px;
+            color: #fff;
+            background: linear-gradient(135deg, #0f5b91, #0ea5a5);
+            font-size: 1rem;
+        }
+
+        .login-page .auth-context strong {
+            display: block;
+            color: #102a43;
+            font-size: .95rem;
+        }
+
+        .login-page .auth-context span {
+            display: block;
+            margin-top: 3px;
+            color: #627d98;
+            font-size: .76rem;
+            line-height: 1.45;
+        }
+
+        .login-page .form-side h2 {
+            margin-bottom: 20px;
+            color: #102a43;
+            font-size: 1.35rem;
+        }
+
+        .login-page .form-side label {
+            color: #334e68;
+            font-size: .76rem;
+        }
+
+        .login-page .form-side input,
+        .login-page .form-side textarea {
+            min-height: 46px;
+            border-color: #cbd7e5;
+            border-radius: 9px;
+            color: #102a43;
+            background: #fff;
+        }
+
+        .login-page .form-side input:focus,
+        .login-page .form-side textarea:focus {
+            border-color: #0f7bb8;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, .14) !important;
+        }
+
+        .login-page .form-side button:not(.password-toggle) {
+            min-height: 46px;
+            border-radius: 9px;
+            background: linear-gradient(135deg, #075985, #0f766e);
+            box-shadow: 0 10px 20px rgba(7, 89, 133, .2) !important;
+            font-weight: 800;
+        }
+
+        .login-page .form-side .link {
+            margin-top: 18px;
+            color: #627d98;
+        }
+
+        .login-page .form-side .link span {
+            color: #0875ae;
+            font-weight: 800;
+        }
+
+        @media (max-width: 900px) {
+            .login-page .login-section { grid-template-columns: minmax(0, 1fr); }
+            .login-page .login-showcase { display: none; }
+            .login-page .form-side { padding: 26px; }
+        }
+
     </style>
 </head>
 
@@ -2822,6 +2983,11 @@
         {% if show_login|default(false) %}
         <section class="login-section">
             <div class="login-showcase">
+                <div class="login-showcase-copy">
+                    <div class="eyebrow"><i class="fa-solid fa-shield-halved"></i> Secure enterprise workspace</div>
+                    <h1>Run your seafood operations from one connected system.</h1>
+                    <p>Bring purchasing, processing, inventory, finance, HR, exports and approvals into a single, traceable operating platform.</p>
+                </div>
                 <div class="login-3d-carousel" id="login3dCarousel" aria-label="SVBK ERP operational modules">
                     <figure class="login-carousel-slide active" data-label="Soaking"><img src="/static/images/soaking.jpg" alt="Seafood soaking operations" width="600" height="400" loading="eager"></figure>
                     <figure class="login-carousel-slide" data-label="Seafood Processing"><img src="/static/images/seafood_processing.jpg" alt="Seafood processing operations" width="600" height="400" loading="lazy"></figure>
@@ -2834,6 +3000,10 @@
             </div>
             <aside class="auth-panel" id="login">
                 <div class="form-side">
+                    <div class="auth-context">
+                        <div class="auth-context-mark"><i class="fa-solid fa-lock"></i></div>
+                        <div><strong>SVBK ERP Secure Access</strong><span>Use your tenant code and registered work email to continue.</span></div>
+                    </div>
                     <div id="registerBox" class="card">
                         <h2>Company Registration</h2>
                         <div class="form-group"><label>Company Name</label><input id="company_name" type="text"
