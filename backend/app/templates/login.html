@@ -2876,6 +2876,41 @@
             .login-page .form-side { padding: 26px; }
         }
 
+        /* Shared public-site alignment. Keeps marketing sections visually
+           consistent with the enterprise application on wide and small screens. */
+        .website-page .section-inner,
+        .website-page .hero-layout,
+        .website-page .cta-inner {
+            width: min(100%, 1280px);
+            margin-inline: auto;
+        }
+
+        .website-page .section {
+            padding-inline: clamp(18px, 4vw, 56px);
+        }
+
+        .website-page :is(.module-grid, .process-grid, .feature-grid, .automation-grid, .solution-grid) > * {
+            min-width: 0;
+        }
+
+        .website-page img {
+            max-width: 100%;
+        }
+
+        @media (max-width: 780px) {
+            .website-page .site-nav {
+                padding-inline: 14px;
+            }
+
+            .website-page .section {
+                padding-inline: 14px;
+            }
+
+            .website-page :is(.hero-layout, .cta-inner) {
+                gap: 24px;
+            }
+        }
+
     </style>
 </head>
 

@@ -2255,6 +2255,88 @@ body {
   color: var(--text-primary) !important;
 }
 
+/* Shared screen alignment contract: all React modules and backend iframes use
+   the same canvas, gutters, and overflow behavior. */
+:root {
+  --app-gutter: clamp(10px, 1.6vw, 24px);
+  --app-content-max: 1680px;
+}
+
+.app-container {
+  padding: var(--app-gutter);
+  gap: var(--app-gutter);
+}
+
+.main-content,
+.embedded-app-content {
+  min-width: 0;
+  min-height: 0;
+  isolation: isolate;
+}
+
+.main-content > *,
+.embedded-app-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main-content > :is(div, section, article),
+.embedded-app-content > :is(div, section, article) {
+  width: 100%;
+}
+
+.main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content) {
+  width: min(100%, var(--app-content-max));
+  margin-inline: auto;
+}
+
+.main-content :is(.table-responsive, .enterprise-table-wrap, .attendance-table-container, .report-table-wrap) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.main-content :is(.form-grid, .attendance-form-grid, .enterprise-form-grid, .master-form-grid) > * {
+  min-width: 0;
+}
+
+.main-content iframe {
+  display: block;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .main-content {
+    border-radius: 8px;
+  }
+
+  .main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .main-content {
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .app-back-strip {
+    padding-inline: 4px;
+  }
+}
+
 /* Daily Attendance has a custom terminal layout; keep its table viewport compact too. */
 .main-content > .attendance-page {
   width: 100% !important;
