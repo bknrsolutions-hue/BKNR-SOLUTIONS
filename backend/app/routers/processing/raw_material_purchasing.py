@@ -273,6 +273,21 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
                 [p[0] for p in pe_q_all.order_by(peeling_at.peeling_at).all() if p[0]]
             ))
 
+        # A stale allowed_locations session value must not leave a tenant with
+        # no selectable processing location.  Fall back to that tenant's own
+        # master locations only when the permission-filtered result is empty.
+        if not combined_peeling_locations:
+            tenant_production_locations = db.query(production_at.production_at).filter(
+                func.upper(func.trim(production_at.company_id)) == clean_company
+            ).order_by(production_at.production_at).all()
+            tenant_peeling_locations = db.query(peeling_at.peeling_at).filter(
+                func.upper(func.trim(peeling_at.company_id)) == clean_company
+            ).order_by(peeling_at.peeling_at).all()
+            combined_peeling_locations = list(dict.fromkeys(
+                [p[0] for p in tenant_production_locations if p[0]] +
+                [p[0] for p in tenant_peeling_locations if p[0]]
+            ))
+
         hsn_records = db.query(hsn_codes).filter(
             func.upper(func.trim(hsn_codes.company_id)) == clean_company
         ).all()

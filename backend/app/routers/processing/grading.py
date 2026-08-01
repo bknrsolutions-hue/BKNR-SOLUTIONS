@@ -82,6 +82,16 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(PeelingAtMaster.peeling_at)).in_(user_allowed_locations))
     peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
+    if not peeling_locations:
+        # Old session permissions can reference locations that no longer exist.
+        # Do not render an unusable form: use the current tenant master list.
+        peeling_locations = [
+            l.peeling_at
+            for l in db.query(PeelingAtMaster.peeling_at).filter(
+                func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company
+            ).order_by(PeelingAtMaster.peeling_at).all()
+            if l.peeling_at
+        ]
 
     prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
     if "General Stock" not in prod_for_list:
