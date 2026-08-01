@@ -13,7 +13,7 @@ def is_batch_used_in_rmp(db: Session, batch_number: str, company_id: str) -> boo
     """Check if the batch has moved from Gate Entry to Raw Material Purchasing."""
     if not batch_number or not company_id:
         return False
-    exists = db.query(RawMaterialPurchasing).filter(
+    exists = db.query(RawMaterialPurchasing.id).filter(
         RawMaterialPurchasing.batch_number == batch_number,
         RawMaterialPurchasing.company_id == company_id,
         RawMaterialPurchasing.is_cancelled == False
@@ -26,7 +26,7 @@ def is_batch_used_downstream_from_rmp(db: Session, batch_number: str, company_id
         return False, None
 
     # Check Deheading
-    if db.query(DeHeading).filter(
+    if db.query(DeHeading.id).filter(
         DeHeading.batch_number == batch_number,
         DeHeading.company_id == company_id,
         DeHeading.is_cancelled == False
@@ -34,7 +34,7 @@ def is_batch_used_downstream_from_rmp(db: Session, batch_number: str, company_id
         return True, "DeHeading"
 
     # Check Grading
-    if db.query(Grading).filter(
+    if db.query(Grading.id).filter(
         Grading.batch_number == batch_number,
         Grading.company_id == company_id,
         Grading.is_cancelled == False
@@ -42,7 +42,7 @@ def is_batch_used_downstream_from_rmp(db: Session, batch_number: str, company_id
         return True, "Grading"
 
     # Check Peeling
-    if db.query(Peeling).filter(
+    if db.query(Peeling.id).filter(
         Peeling.batch_number == batch_number,
         Peeling.company_id == company_id,
         Peeling.is_cancelled == False
@@ -50,7 +50,7 @@ def is_batch_used_downstream_from_rmp(db: Session, batch_number: str, company_id
         return True, "Peeling"
 
     # Check Soaking
-    if db.query(Soaking).filter(
+    if db.query(Soaking.id).filter(
         Soaking.batch_number == batch_number,
         Soaking.company_id == company_id,
         Soaking.is_cancelled == False
@@ -58,7 +58,7 @@ def is_batch_used_downstream_from_rmp(db: Session, batch_number: str, company_id
         return True, "Soaking"
 
     # Check Production
-    if db.query(Production).filter(
+    if db.query(Production.id).filter(
         Production.batch_number == batch_number,
         Production.company_id == company_id,
         Production.is_cancelled == False
@@ -73,7 +73,7 @@ def is_batch_used_downstream_from_deheading(db: Session, batch_number: str, comp
         return False, None
 
     # Check Grading
-    if db.query(Grading).filter(
+    if db.query(Grading.id).filter(
         Grading.batch_number == batch_number,
         Grading.company_id == company_id,
         Grading.is_cancelled == False
@@ -81,7 +81,7 @@ def is_batch_used_downstream_from_deheading(db: Session, batch_number: str, comp
         return True, "Grading"
 
     # Check Peeling
-    if db.query(Peeling).filter(
+    if db.query(Peeling.id).filter(
         Peeling.batch_number == batch_number,
         Peeling.company_id == company_id,
         Peeling.is_cancelled == False
@@ -89,7 +89,7 @@ def is_batch_used_downstream_from_deheading(db: Session, batch_number: str, comp
         return True, "Peeling"
 
     # Check Soaking
-    if db.query(Soaking).filter(
+    if db.query(Soaking.id).filter(
         Soaking.batch_number == batch_number,
         Soaking.company_id == company_id,
         Soaking.is_cancelled == False
@@ -97,7 +97,7 @@ def is_batch_used_downstream_from_deheading(db: Session, batch_number: str, comp
         return True, "Soaking"
 
     # Check Production
-    if db.query(Production).filter(
+    if db.query(Production.id).filter(
         Production.batch_number == batch_number,
         Production.company_id == company_id,
         Production.is_cancelled == False
@@ -112,7 +112,7 @@ def is_batch_used_downstream_from_grading(db: Session, batch_number: str, compan
         return False, None
 
     # Check Peeling
-    if db.query(Peeling).filter(
+    if db.query(Peeling.id).filter(
         Peeling.batch_number == batch_number,
         Peeling.company_id == company_id,
         Peeling.is_cancelled == False
@@ -120,7 +120,7 @@ def is_batch_used_downstream_from_grading(db: Session, batch_number: str, compan
         return True, "Peeling"
 
     # Check Soaking
-    if db.query(Soaking).filter(
+    if db.query(Soaking.id).filter(
         Soaking.batch_number == batch_number,
         Soaking.company_id == company_id,
         Soaking.is_cancelled == False
@@ -128,7 +128,7 @@ def is_batch_used_downstream_from_grading(db: Session, batch_number: str, compan
         return True, "Soaking"
 
     # Check Production
-    if db.query(Production).filter(
+    if db.query(Production.id).filter(
         Production.batch_number == batch_number,
         Production.company_id == company_id,
         Production.is_cancelled == False
@@ -143,7 +143,7 @@ def is_batch_used_downstream_from_peeling(db: Session, batch_number: str, compan
         return False, None
 
     # Check Soaking
-    if db.query(Soaking).filter(
+    if db.query(Soaking.id).filter(
         Soaking.batch_number == batch_number,
         Soaking.company_id == company_id,
         Soaking.is_cancelled == False
@@ -151,7 +151,7 @@ def is_batch_used_downstream_from_peeling(db: Session, batch_number: str, compan
         return True, "Soaking"
 
     # Check Production
-    if db.query(Production).filter(
+    if db.query(Production.id).filter(
         Production.batch_number == batch_number,
         Production.company_id == company_id,
         Production.is_cancelled == False
@@ -166,7 +166,7 @@ def is_batch_used_downstream_from_soaking(db: Session, batch_number: str, compan
         return False, None
 
     # Check Production
-    if db.query(Production).filter(
+    if db.query(Production.id).filter(
         Production.batch_number == batch_number,
         Production.company_id == company_id,
         Production.is_cancelled == False
