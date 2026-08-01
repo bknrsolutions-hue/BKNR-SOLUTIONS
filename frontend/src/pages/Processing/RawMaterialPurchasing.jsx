@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 import WeightBreakdownCell from '../../components/WeightBreakdownCell';
+import {
+  fetchProcessingPage,
+  getProcessingFilters,
+  normalizeLookupList,
+  selectLookupValue,
+} from '../../features/processing/processingLookupClient';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -62,52 +69,29 @@ export default function RawMaterialPurchasing() {
 
   const fetchBackendData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      
-      const queryParams = new URLSearchParams({ format: 'json' });
-      if (activeComp) queryParams.append('production_for', activeComp);
-      if (activeLoc) {
-        queryParams.append('location', activeLoc);
-        queryParams.append('peeling_at', activeLoc);
-      }
-
-      const res = await fetch(`/processing/raw_material_purchasing?${queryParams.toString()}`, { credentials: 'include' });
-
-      if (res.ok) {
-        const data = await res.json();
-        const nextProdForList = data.prod_for_list || [];
-        const nextPeelingLocations = data.peeling_locations || [];
-        setEntries(data.today_data || []);
-        setSuppliers(data.supplier_list || []);
-        setVarieties(data.variety_list || []);
-        setSpeciesList(data.species_list || []);
-        setPeelingLocations(nextPeelingLocations);
-        setProdForList(nextProdForList);
-        setProductionFor(current => {
-          if (current && nextProdForList.includes(current)) return current;
-          if (activeComp && nextProdForList.includes(activeComp)) return activeComp;
-          return nextProdForList.length > 0 ? nextProdForList[0] : '';
-        });
-        setPeelingAt(current => {
-          if (current && nextPeelingLocations.includes(current)) return current;
-          if (activeLoc && nextPeelingLocations.includes(activeLoc)) return activeLoc;
-          return nextPeelingLocations.length > 0 ? nextPeelingLocations[0] : '';
-        });
-        setHsnList(data.hsn_list || []);
-        setHsnMap(data.hsn_map || {});
-        setHosoSummary(data.hoso_summary || []);
-        setDrillDownData(data.drill_down || {});
-        setProdBatchMap(data.prod_batch_map || {});
-        setBatchSupplierMap(data.batch_supplier_map || {});
-
-
-      } else {
-        console.error('Failed to fetch purchasing data');
-      }
+      const data = await fetchProcessingPage('/processing/raw_material_purchasing');
+      const { productionFor: activeComp, location: activeLoc } = getProcessingFilters();
+      const nextProdForList = normalizeLookupList(data.prod_for_list);
+      const nextPeelingLocations = normalizeLookupList(data.peeling_locations);
+      setEntries(data.today_data || []);
+      setSuppliers(normalizeLookupList(data.supplier_list));
+      setVarieties(normalizeLookupList(data.variety_list));
+      setSpeciesList(normalizeLookupList(data.species_list));
+      setPeelingLocations(nextPeelingLocations);
+      setProdForList(nextProdForList);
+      setProductionFor(current => selectLookupValue(current, activeComp, nextProdForList));
+      setPeelingAt(current => selectLookupValue(current, activeLoc, nextPeelingLocations));
+      setHsnList(normalizeLookupList(data.hsn_list));
+      setHsnMap(data.hsn_map || {});
+      setHosoSummary(data.hoso_summary || []);
+      setDrillDownData(data.drill_down || {});
+      setProdBatchMap(data.prod_batch_map || {});
+      setBatchSupplierMap(data.batch_supplier_map || {});
     } catch (err) {
       console.error('Error fetching purchasing data:', err);
+      setLoadError(err.message || 'Unable to load RMP lookup data.');
     } finally {
       setLoading(false);
     }
@@ -377,6 +361,12 @@ export default function RawMaterialPurchasing() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="alert alert-danger" role="alert">
+          {loadError}
+        </div>
+      )}
 
       {/* Auto Fields */}
       <div style={autoFieldsRowStyle}>

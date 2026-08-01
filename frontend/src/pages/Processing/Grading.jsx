@@ -2,12 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
 import ExpressionWeightInput from '../../components/ExpressionWeightInput';
 import WeightBreakdownCell from '../../components/WeightBreakdownCell';
+import {
+  fetchProcessingPage,
+  getProcessingFilters,
+  normalizeLookupList,
+  selectLookupValue,
+} from '../../features/processing/processingLookupClient';
 
 export default function Grading() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
 
   // Form fields
@@ -45,52 +52,26 @@ export default function Grading() {
 
   const fetchBackendData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      
-      const queryParams = new URLSearchParams({ format: 'json' });
-      if (activeComp) queryParams.append('production_for', activeComp);
-      if (activeLoc) {
-        queryParams.append('location', activeLoc);
-        queryParams.append('peeling_at', activeLoc);
-      }
-
-      const res = await fetch(`/processing/grading?${queryParams.toString()}`, { credentials: 'include' });
-
-      if (res.ok) {
-        const data = await res.json();
-        const pList = data.prod_for_list || [];
-        const locList = data.peeling_locations || [];
-        setProdForList(pList);
-        setPeelingLocations(locList);
-        setSpeciesList(data.species_list || []);
-        setVarietyList(data.variety_list || []);
-        setTodayEntries(data.today_data || []);
-        setHlsoSummary(data.hlso_summary || []);
-        setHosoSummary(data.hoso_summary || []);
-        setDeheadingPending(data.deheading_pending || []);
-        setDrillDownData(data.drill_down || {});
-
-        setProductionFor(current => {
-          if (current && pList.includes(current)) return current;
-          if (activeComp && pList.includes(activeComp)) return activeComp;
-          if (data.selected_production_for && pList.includes(data.selected_production_for)) return data.selected_production_for;
-          return pList.length > 0 ? pList[0] : '';
-        });
-
-        setPeelingAt(current => {
-          if (current && locList.includes(current)) return current;
-          if (activeLoc && locList.includes(activeLoc)) return activeLoc;
-          if (data.selected_location && locList.includes(data.selected_location)) return data.selected_location;
-          return locList.length > 0 ? locList[0] : '';
-        });
-
-      } else {
-        console.error('Failed to fetch grading details');
-      }
+      const data = await fetchProcessingPage('/processing/grading');
+      const { productionFor: activeComp, location: activeLoc } = getProcessingFilters();
+      const pList = normalizeLookupList(data.prod_for_list);
+      const locList = normalizeLookupList(data.peeling_locations);
+      setProdForList(pList);
+      setPeelingLocations(locList);
+      setSpeciesList(normalizeLookupList(data.species_list));
+      setVarietyList(normalizeLookupList(data.variety_list));
+      setTodayEntries(data.today_data || []);
+      setHlsoSummary(data.hlso_summary || []);
+      setHosoSummary(data.hoso_summary || []);
+      setDeheadingPending(data.deheading_pending || []);
+      setDrillDownData(data.drill_down || {});
+      setProductionFor(current => selectLookupValue(current, activeComp || data.selected_production_for, pList));
+      setPeelingAt(current => selectLookupValue(current, activeLoc || data.selected_location, locList));
     } catch (err) {
       console.error('Error fetching grading details:', err);
+      setLoadError(err.message || 'Unable to load Grading lookup data.');
     } finally {
       setLoading(false);
     }
@@ -367,6 +348,12 @@ export default function Grading() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="alert alert-danger" role="alert">
+          {loadError}
+        </div>
+      )}
 
       {/* Auto Fields */}
       <div style={autoFieldsRowStyle}>
