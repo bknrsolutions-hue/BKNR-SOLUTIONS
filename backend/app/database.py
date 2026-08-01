@@ -3,6 +3,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 _IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").strip().lower() == "production"
+_ENV = os.environ.get("ENVIRONMENT", "development").strip().lower()
+_NEEDS_SSL = _ENV not in ("development", "test", "dev")
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 

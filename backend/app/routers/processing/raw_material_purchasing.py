@@ -17,7 +17,7 @@ from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry
 from app.database.models.criteria import (
     varieties, species, suppliers, hsn_codes, 
-    HOSO_HLSO_Yields, packing_styles, peeling_at, production_at
+    HOSO_HLSO_Yields, packing_styles, peeling_at, production_at, production_for
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
@@ -173,8 +173,10 @@ def get_cached_hoso_summary_data(db: Session, company_code: str, user_allowed_lo
 
 def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
     def build():
+        clean_company = str(company_code or "").strip().upper()
+
         gate_q = db.query(GateEntry).filter(
-            GateEntry.company_id == company_code,
+            func.upper(func.trim(GateEntry.company_id)) == clean_company,
             GateEntry.is_cancelled == False
         )
         if user_allowed_locations:
@@ -191,7 +193,26 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             )
 
         gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
-        prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
+        
+        # Query production_for criteria table as well as historical gate entries
+        pf_q = db.query(production_for.production_for).filter(
+            func.upper(func.trim(production_for.company_id)) == clean_company
+        )
+        if global_p_for:
+            pf_q = pf_q.filter(
+                func.upper(func.trim(production_for.production_for)) == str(global_p_for).strip().upper()
+            )
+        master_prod_for = [p[0] for p in pf_q.all() if p[0]]
+        
+        prod_for_list = sorted(list(set(master_prod_for + [g.production_for for g in gate_entries if g.production_for])))
+        
+        # Fallback if global_p_for filter returned empty list (e.g. stale filter in localStorage)
+        if not prod_for_list and global_p_for:
+            all_pf = db.query(production_for.production_for).filter(
+                func.upper(func.trim(production_for.company_id)) == clean_company
+            ).all()
+            prod_for_list = sorted(list(set([p[0] for p in all_pf if p[0]])))
+
         prod_batch_map = {}
         batch_supplier_map = {}
         batch_list = []
@@ -209,8 +230,12 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
                 if g.batch_number and g.batch_number not in prod_batch_map[production_key]:
                     prod_batch_map[production_key].append(g.batch_number)
 
-        pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
-        pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
+        pa_q = db.query(production_at.production_at).filter(
+            func.upper(func.trim(production_at.company_id)) == clean_company
+        )
+        pe_q = db.query(peeling_at.peeling_at).filter(
+            func.upper(func.trim(peeling_at.company_id)) == clean_company
+        )
         if user_allowed_locations:
             allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
             if allowed_clean:
@@ -229,16 +254,50 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
         ))
 
-        hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
+        # Fallback if global_loc filter yielded 0 locations (e.g. stale filter in localStorage)
+        if not combined_peeling_locations and global_loc:
+            pa_q_all = db.query(production_at.production_at).filter(
+                func.upper(func.trim(production_at.company_id)) == clean_company
+            )
+            pe_q_all = db.query(peeling_at.peeling_at).filter(
+                func.upper(func.trim(peeling_at.company_id)) == clean_company
+            )
+            if user_allowed_locations:
+                allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+                if allowed_clean:
+                    pa_q_all = pa_q_all.filter(func.upper(func.trim(production_at.production_at)).in_(allowed_clean))
+                    pe_q_all = pe_q_all.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+            combined_peeling_locations = list(dict.fromkeys(
+                [p[0] for p in pa_q_all.order_by(production_at.production_at).all() if p[0]] +
+                [p[0] for p in pe_q_all.order_by(peeling_at.peeling_at).all() if p[0]]
+            ))
+
+        hsn_records = db.query(hsn_codes).filter(
+            func.upper(func.trim(hsn_codes.company_id)) == clean_company
+        ).all()
+
+        supplier_records = db.query(suppliers).filter(
+            func.upper(func.trim(suppliers.company_id)) == clean_company
+        ).order_by(suppliers.supplier_name).all()
+
+        variety_records = db.query(varieties).filter(
+            func.upper(func.trim(varieties.company_id)) == clean_company
+        ).order_by(varieties.variety_name).all()
+
+        species_records = db.query(species).filter(
+            species.species_name != None,
+            func.upper(func.trim(species.company_id)) == clean_company
+        ).order_by(species.species_name).all()
+
         return {
             "batch_list": batch_list,
-            "supplier_list": [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()],
-            "variety_list": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
-            "species_list": [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()],
+            "supplier_list": [s.supplier_name for s in supplier_records if s.supplier_name],
+            "variety_list": [v.variety_name for v in variety_records if v.variety_name],
+            "species_list": [s.species_name for s in species_records if s.species_name],
             "peeling_locations": combined_peeling_locations,
             "prod_for_list": prod_for_list,
-            "hsn_list": [h.description for h in hsn_records],
-            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
+            "hsn_list": [h.description for h in hsn_records if h.description],
+            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records if h.description}),
             "prod_batch_map_json": json.dumps(prod_batch_map),
             "batch_supplier_map_json": json.dumps(batch_supplier_map),
         }
