@@ -541,21 +541,22 @@ export default function DeHeading() {
   };
 
   // Helper vibrant colors for chart locations
-  const getLocationColor = (loc) => {
+  // Helper unique vibrant colors per Company (Production For)
+  const getCompanyColor = (companyName) => {
     const colors = [
-      '#3B82F6', // Royal Blue
-      '#10B981', // Emerald Green
-      '#F59E0B', // Amber Gold
-      '#8B5CF6', // Purple Violet
-      '#EC4899', // Bright Magenta
-      '#06B6D4', // Vibrant Cyan
-      '#F97316', // Bright Orange
-      '#6366F1', // Deep Indigo
-      '#14B8A6', // Vivid Teal
-      '#E11D48', // Crimson Red
+      '#2563EB', // Royal Blue
+      '#059669', // Emerald Green
+      '#D97706', // Amber Gold
+      '#7C3AED', // Purple Violet
+      '#DB2777', // Rose Pink
+      '#0891B2', // Vibrant Cyan
+      '#EA580C', // Bright Orange
+      '#4F46E5', // Deep Indigo
+      '#0D9488', // Teal
+      '#DC2626', // Crimson Red
     ];
     let hash = 0;
-    const str = String(loc || 'Floor');
+    const str = String(companyName || 'General Stock').trim().toUpperCase();
     for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return colors[Math.abs(hash) % colors.length];
   };
@@ -566,7 +567,7 @@ export default function DeHeading() {
     let totals = 0;
     let countsSet = new Set();
     let batchesSet = new Set();
-    let chartMap = {}; // count -> { location -> qty }
+    let chartMap = {}; // count -> { company -> qty }
 
     hosoFloorBalance.forEach(item => {
       const comp = item.production_for || 'General Stock';
@@ -586,7 +587,7 @@ export default function DeHeading() {
       batchesSet.add(item.batch);
 
       if (!chartMap[countVal]) chartMap[countVal] = {};
-      chartMap[countVal][loc] = (chartMap[countVal][loc] || 0) + qty;
+      chartMap[countVal][comp] = (chartMap[countVal][comp] || 0) + qty;
     });
 
     // Structure list hierarchically
@@ -624,7 +625,7 @@ export default function DeHeading() {
     const counts = Object.keys(chartMap).sort();
     if (!balanceChartCanvasRef.current || !counts.length) return undefined;
 
-    const locations = Array.from(new Set(counts.flatMap(count => Object.keys(chartMap[count] || {}))));
+    const companies = Array.from(new Set(counts.flatMap(count => Object.keys(chartMap[count] || {}))));
     const rootStyles = getComputedStyle(document.documentElement);
     const textColor = rootStyles.getPropertyValue('--text-secondary').trim() || '#64748b';
     const gridColor = rootStyles.getPropertyValue('--border-light').trim() || 'rgba(148, 163, 184, 0.2)';
@@ -680,10 +681,10 @@ export default function DeHeading() {
       plugins: [barValueLabelsPlugin],
       data: {
         labels: counts,
-        datasets: locations.map(location => ({
-          label: location,
-          data: counts.map(count => Number(chartMap[count]?.[location] || 0)),
-          backgroundColor: getLocationColor(location),
+        datasets: companies.map(company => ({
+          label: company,
+          data: counts.map(count => Number(chartMap[count]?.[company] || 0)),
+          backgroundColor: getCompanyColor(company),
           borderWidth: 0,
           borderRadius: 3,
           barThickness: 16,
