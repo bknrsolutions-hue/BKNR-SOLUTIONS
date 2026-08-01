@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
@@ -39,6 +40,7 @@ from app.services.default_masters import (
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------
 # TODAY RANGE (9 AM → NEXT DAY 9 AM AUTOMATIC SHIFT)
@@ -56,6 +58,45 @@ def get_today_range():
 # -----------------------------------------------------
 @router.get("/grading", response_class=HTMLResponse)
 def show_grading(request: Request, db: Session = Depends(get_db)):
+    try:
+        return _render_grading_page(request, db)
+    except Exception:
+        # Historical order, stock, or pool data may be incomplete in a legacy
+        # tenant. It must not prevent the operational grading form from
+        # loading; retain the full exception in application logs instead.
+        db.rollback()
+        logger.exception(
+            "Unable to load grading data for tenant %s",
+            request.session.get("company_code", "unknown"),
+        )
+        fallback_context = {
+            "species_list": DEFAULT_SPECIES,
+            "variety_list": DEFAULT_VARIETIES,
+            "peeling_locations": DEFAULT_PEELING_AT,
+            "prod_for_list": DEFAULT_PRODUCTION_FOR,
+            "today_data": [],
+            "hlso_summary": [],
+            "hoso_summary": [],
+            "deheading_pending": [],
+            "drill_down": {"hlso": {}, "hoso": {}},
+        }
+        if request.query_params.get("format") == "json":
+            return JSONResponse(fallback_context)
+        return templates.TemplateResponse(
+            request=request,
+            name="processing/grading.html",
+            context={
+                **fallback_context,
+                "global_production_for": "",
+                "global_location": "",
+                "drill_down_json": json.dumps(fallback_context["drill_down"]),
+                "edit_data": None,
+                "message": "Grading summaries are temporarily unavailable; you can continue entering records.",
+            },
+        )
+
+
+def _render_grading_page(request: Request, db: Session):
     # 1. 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     global_production_for, global_location = get_global_filters(request)
     
