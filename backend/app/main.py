@@ -720,7 +720,12 @@ async def home_page(request: Request):
 @application.get("/health/live")
 def health_live():
     """Liveness check - is server running?"""
-    return {"status": "alive", "service": "BKNR_ERP"}
+    revision = os.getenv("RENDER_GIT_COMMIT", "").strip()
+    return {
+        "status": "alive",
+        "service": "BKNR_ERP",
+        "revision": revision[:12] if revision else "local",
+    }
 
 
 @application.get("/health/ready")

@@ -36,7 +36,7 @@ services:
 
   # ============================================================
   # STAGING SERVICE — staging branch
-  # URL: https://staging-bknrerp.onrender.com
+  # URL: https://bknr-erp-staging.onrender.com
   # ============================================================
   - type: web
     name: bknr-erp-staging
@@ -57,7 +57,7 @@ services:
       - key: REDIS_URL
         sync: false
       - key: PUBLIC_SITE_URL
-        value: https://staging-bknrerp.onrender.com
+        value: https://bknr-erp-staging.onrender.com
       - key: SESSION_SECRET_KEY
         generateValue: true
       - key: BREVO_API_KEY
@@ -67,7 +67,7 @@ services:
       - key: BREVO_SENDER_NAME
         value: SVBK Staging
       - key: APP_URL
-        value: https://staging-bknrerp.onrender.com
+        value: https://bknr-erp-staging.onrender.com
 
 # ============================================================
 # NEXT STEPS (Manual in Render Dashboard):
