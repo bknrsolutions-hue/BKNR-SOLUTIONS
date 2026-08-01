@@ -26,7 +26,7 @@ engine = create_engine(
     pool_recycle=300,
     pool_size=5,
     max_overflow=10,
-    connect_args={"sslmode": "require"} if _IS_PRODUCTION else {}
+    connect_args={"sslmode": "require"} if _NEEDS_SSL else {}
 )
 
 SessionLocal = sessionmaker(
