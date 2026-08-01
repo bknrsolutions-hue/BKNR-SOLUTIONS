@@ -28,7 +28,14 @@ def refresh_floor_balance(
         combos = set()
         
         # RMP
-        rmps = db.query(RawMaterialPurchasing).filter(
+        rmps = db.query(
+            RawMaterialPurchasing.batch_number,
+            RawMaterialPurchasing.count,
+            RawMaterialPurchasing.species,
+            RawMaterialPurchasing.variety_name,
+            RawMaterialPurchasing.production_for,
+            RawMaterialPurchasing.peeling_at
+        ).filter(
             RawMaterialPurchasing.company_id == company_id,
             RawMaterialPurchasing.batch_number == batch_number
         ).all()
@@ -37,7 +44,13 @@ def refresh_floor_balance(
 
         # De-heading creates HLSO stock from HOSO. Include this output combo so
         # a batch refresh does not drop generated HLSO rows.
-        deheads = db.query(DeHeading).filter(
+        deheads = db.query(
+            DeHeading.batch_number,
+            DeHeading.hoso_count,
+            DeHeading.species,
+            DeHeading.production_for,
+            DeHeading.peeling_at
+        ).filter(
             DeHeading.company_id == company_id,
             DeHeading.batch_number == batch_number
         ).all()
@@ -45,7 +58,14 @@ def refresh_floor_balance(
             combos.add((r.batch_number, r.hoso_count, r.species, "HLSO", r.production_for, r.peeling_at or "Floor", "RMP", None))
             
         # Grading
-        grads = db.query(Grading).filter(
+        grads = db.query(
+            Grading.batch_number,
+            Grading.graded_count,
+            Grading.species,
+            Grading.variety_name,
+            Grading.production_for,
+            Grading.peeling_at
+        ).filter(
             Grading.company_id == company_id,
             Grading.batch_number == batch_number
         ).all()
@@ -53,7 +73,14 @@ def refresh_floor_balance(
             combos.add((r.batch_number, r.graded_count, r.species, r.variety_name, r.production_for, r.peeling_at or "Floor", "RMP", None))
             
         # Peeling
-        peels = db.query(Peeling).filter(
+        peels = db.query(
+            Peeling.batch_number,
+            Peeling.hlso_count,
+            Peeling.species,
+            Peeling.variety_name,
+            Peeling.production_for,
+            Peeling.peeling_at
+        ).filter(
             Peeling.company_id == company_id,
             Peeling.batch_number == batch_number
         ).all()
