@@ -29,6 +29,7 @@ from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_gr
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
 from app.utils.cancel_math import signed_sum
+from app.services.default_masters import ensure_processing_masters
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
@@ -61,8 +62,9 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if not raw_company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    company_code = str(raw_company_code)
-    clean_company = company_code.strip().upper()
+    company_code = str(raw_company_code).strip().upper()
+    clean_company = company_code
+    ensure_processing_masters(db, clean_company, email=email)
 
     # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION MULTIPLE CHECK
     session_locations = request.session.get("allowed_locations", [])

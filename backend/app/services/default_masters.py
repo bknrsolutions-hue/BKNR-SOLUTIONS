@@ -138,7 +138,6 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
 
     from datetime import datetime
     now_date = datetime.now().date()
-    now_time = str(datetime.now().time().strftime('%H:%M:%S'))
 
     def already_exists(model, unique_field, value):
         return db.query(model).filter(
@@ -153,7 +152,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(SpeciesModel, "species_name", name):
             db.add(SpeciesModel(
                 species_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -162,7 +161,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(GlazesModel, "glaze_name", name):
             db.add(GlazesModel(
                 glaze_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -171,7 +170,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(GradesModel, "grade_name", name):
             db.add(GradesModel(
                 grade_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -182,7 +181,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
                 country_name=c["country_name"],
                 production_cost_per_kg=c["production_cost_per_kg"],
                 company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -191,7 +190,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(FreezersModel, "freezer_name", name):
             db.add(FreezersModel(
                 freezer_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -202,7 +201,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
                 packing_style=ps["packing_style"],
                 mc_weight=ps["mc_weight"],
                 company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -211,7 +210,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(BrandsModel, "brand_name", name):
             db.add(BrandsModel(
                 brand_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -220,7 +219,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(VarietiesModel, "variety_name", name):
             db.add(VarietiesModel(
                 variety_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -229,7 +228,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(SuppliersModel, "supplier_name", name):
             db.add(SuppliersModel(
                 supplier_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -238,7 +237,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(ProductionForModel, "production_for", name):
             db.add(ProductionForModel(
                 production_for=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                apply_from=now_date, date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -247,7 +246,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(PeelingAtModel, "peeling_at", name):
             db.add(PeelingAtModel(
                 peeling_at=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -260,3 +259,21 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         print(f"✅ Default masters seeded for company: {company_code}")
     else:
         print(f"ℹ️  Default masters already exist for: {company_code} — skipped.")
+
+
+def ensure_processing_masters(db: Session, company_code: str, email: str = "system@bknr.com") -> bool:
+    """Seed missing lookup masters needed by RMP and Grading for an existing tenant."""
+    company_code = str(company_code or "").strip().upper()
+    if not company_code:
+        return False
+
+    required_models = (SpeciesModel, VarietiesModel, ProductionForModel, PeelingAtModel)
+    has_missing_master = any(
+        db.query(model.id).filter(
+            func.upper(func.trim(model.company_id)) == company_code
+        ).first() is None
+        for model in required_models
+    )
+    if has_missing_master:
+        seed_default_masters(db, company_code, email=email)
+    return has_missing_master

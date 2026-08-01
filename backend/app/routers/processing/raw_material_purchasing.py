@@ -21,6 +21,7 @@ from app.database.models.criteria import (
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
+from app.services.default_masters import ensure_processing_masters
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
 from app.utils.cancel_math import active_sum
 
@@ -327,6 +328,13 @@ def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created
 # REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
+    company_code = str(company_code or "").strip().upper()
+    ensure_processing_masters(
+        db,
+        company_code,
+        email=request.session.get("email", "system@bknr.com"),
+    )
+
     # Fetch universal filters layer first
     global_production_for, global_location = get_global_filters(request)
     
@@ -437,7 +445,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
 # -----------------------------------------------------
 @router.get("/raw_material_purchasing", response_class=HTMLResponse)
 def show_rmp(request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return RedirectResponse("/auth/login", status_code=303)
     return render_rmp_page(request, db, company_code)
 
