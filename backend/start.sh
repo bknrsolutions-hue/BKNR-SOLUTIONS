@@ -2,6 +2,7 @@
 set -e
 
 PORT="${PORT:-10000}"
+alembic upgrade head
 exec gunicorn app.main:app \
   -k uvicorn.workers.UvicornWorker \
   --workers 1 \
