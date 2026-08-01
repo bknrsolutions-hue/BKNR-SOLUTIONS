@@ -431,7 +431,7 @@ export default function App() {
     if (!user) return undefined;
     let checking = false;
     const checkSession = async () => {
-      if (checking) return;
+      if (checking || document.visibilityState !== 'visible') return;
       checking = true;
       try {
         const response = await fetch('/auth/session-info', {
@@ -462,7 +462,7 @@ export default function App() {
         checking = false;
       }
     };
-    const interval = window.setInterval(checkSession, 15000);
+    const interval = window.setInterval(checkSession, 60000);
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') void checkSession();
     };
