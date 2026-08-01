@@ -376,21 +376,26 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         global_loc=global_location,
     )
 
-    start, end = get_today_range()
-    today_q = db.query(RawMaterialPurchasing).filter(
-        RawMaterialPurchasing.company_id == company_code,
-        and_(
-            RawMaterialPurchasing.date >= start.date(), 
-            RawMaterialPurchasing.date <= end.date()
-        )
+    # The report grid is a tenant ledger, not a current-shift register.  Keep
+    # its API field name for frontend compatibility, but return all records.
+    report_q = db.query(RawMaterialPurchasing).filter(
+        func.upper(func.trim(RawMaterialPurchasing.company_id)) == company_code
     )
     
-    if global_production_for:
-        today_q = today_q.filter(func.trim(RawMaterialPurchasing.production_for) == func.trim(global_production_for))
-    if global_location:
-        today_q = today_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_location))
+    if global_production_for and str(global_production_for).strip().upper() != "ALL":
+        report_q = report_q.filter(
+            func.upper(func.trim(RawMaterialPurchasing.production_for))
+            == str(global_production_for).strip().upper()
+        )
+    if global_location and str(global_location).strip().upper() != "ALL":
+        report_q = report_q.filter(
+            func.upper(func.trim(RawMaterialPurchasing.peeling_at))
+            == str(global_location).strip().upper()
+        )
         
-    today_data = today_q.order_by(RawMaterialPurchasing.id.desc()).all()
+    report_data = report_q.order_by(
+        RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.id.desc()
+    ).all()
 
     if request.query_params.get("format") == "json":
         hsn_map = master_context.get("hsn_map_json")
@@ -427,7 +432,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
                     "cancelled_by": r.cancelled_by,
                     "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
                     "email": r.email
-                } for r in today_data
+                } for r in report_data
             ],
             "supplier_list": master_context.get("supplier_list", []),
             "variety_list": master_context.get("variety_list", []),
@@ -444,7 +449,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
 
     context = {
         **master_context,
-        "today_data": today_data, "edit_data": edit_data,
+        "today_data": report_data, "edit_data": edit_data,
         "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
         "message": request.session.pop("message", None)
     }

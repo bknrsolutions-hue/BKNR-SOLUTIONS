@@ -97,24 +97,22 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if "General Stock" not in prod_for_list:
         prod_for_list.append("General Stock")
 
-    # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global & Permission Matrices)
-    start, end = get_today_range()
-    today_q = db.query(Grading).filter(
-        func.upper(func.trim(Grading.company_id)) == clean_company,
-        Grading.date >= start.date(),
-        Grading.date <= end.date()
+    # 2. Report table data: return complete tenant history.  Shift-based
+    # aggregates below remain independent from this table data.
+    report_q = db.query(Grading).filter(
+        func.upper(func.trim(Grading.company_id)) == clean_company
     )
     
     # 🟢 Bypass "ALL" for Today's logic
     if g_prod_clean and g_prod_clean != "ALL":
-        today_q = today_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
+        report_q = report_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
         
     if g_loc_clean and g_loc_clean != "ALL":
-        today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
+        report_q = report_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
     elif user_allowed_locations:
-        today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
+        report_q = report_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
 
-    today_data = today_q.order_by(Grading.id.desc()).all()
+    today_data = report_q.order_by(Grading.date.desc(), Grading.id.desc()).all()
 
     # 3. 🟢 REQUIREMENT LOGIC - CRITICAL FIXED FILTER ENGINE 🟢
     p_orders_q = db.query(pending_orders).filter(
