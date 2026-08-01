@@ -18,6 +18,7 @@ function isMobileClientEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const isWebView = Boolean(window.ReactNativeWebView || window.Capacitor || window.Cordova || ua.includes('wv') || ua.includes('bknr') || ua.includes('expo') || /android.*applewebkit/i.test(ua));
   const isMobileUrl = window.location.search.includes('mobile=true') || window.location.search.includes('is_mobile=true') || window.location.hash.includes('mobile=true');
+  // window.isMobileApp is injected by the React Native WebView wrapper at runtime
   return isWebView || isMobileUrl || window.isMobileApp === true;
 }
 

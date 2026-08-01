@@ -34,6 +34,7 @@ from app.config import (
     SESSION_SECRET_KEY,
 )
 from app.utils.access_control import has_permission, required_permission_for_path
+from app.utils.mobile_utils import is_mobile_client
 from sqlalchemy import func
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -59,36 +60,6 @@ SESSION_IDLE_TIMEOUT_SECONDS = int(
     os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60))
 )
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
-
-
-def is_mobile_client(request: Request) -> bool:
-    """
-    Checks if a request comes from the Mobile Native App or Mobile WebView wrapper.
-    Mobile client requests bypass the 30-minute idle session auto-logout.
-    """
-    if request.session.get("is_mobile_app") is True or request.session.get("is_mobile") is True:
-        return True
-
-    headers = request.headers
-    if headers.get("x-mobile-app", "").lower() in ("true", "1", "yes"):
-        request.session["is_mobile_app"] = True
-        return True
-    if headers.get("x-client-platform", "").lower() in ("mobile", "android", "ios", "react-native", "expo"):
-        request.session["is_mobile_app"] = True
-        return True
-
-    qp = request.query_params
-    if qp.get("is_mobile_app") == "true" or qp.get("mobile") == "true" or qp.get("x-mobile-app") == "true":
-        request.session["is_mobile_app"] = True
-        return True
-
-    ua = headers.get("user-agent", "").lower()
-    if any(token in ua for token in ["bknr", "expo", "okhttp", "reactnative", "cordova", "capacitor", "wv", "mobile_native"]):
-        request.session["is_mobile_app"] = True
-        return True
-
-    return False
-
 
 
 def get_screen_popup_config(db):

@@ -9,9 +9,7 @@ from typing import Optional
 from pathlib import Path
 from uuid import uuid4
 import logging, random, json, os, re, requests, secrets, time
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.utils.mobile_utils import is_mobile_client
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable, UserLoginActivity
@@ -124,18 +122,15 @@ def send_email(to_email: str, subject: str, html: str):
         raise RuntimeError("Email delivery is not configured")
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        
-        msg = MIMEMultipart()
-        msg['From'] = f"{sender_name} <{sender_email}>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(html, 'html'))
-        
-        server.send_message(msg)
-        server.quit()
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            msg = MIMEMultipart()
+            msg['From'] = f"{sender_name} <{sender_email}>"
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(html, 'html'))
+            server.send_message(msg)
         logger.info("Email successfully sent via Gmail SMTP fallback")
     except Exception as e:
         logger.error("SMTP email delivery failed: %s", e)
@@ -235,7 +230,7 @@ class OTPReq(BaseModel):
 
 class PasswordReq(BaseModel):
     email: str
-    password: str
+    password: str = Field(..., min_length=8, max_length=128)
 
 class LoginReq(BaseModel):
     company_id: str
@@ -313,7 +308,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
             db.delete(existing_user)
             db.commit()
     
-    otp = str(random.randint(1000, 9999))
+    otp = str(secrets.randbelow(900000) + 100000)
     extra_data = data.model_dump() if hasattr(data, "model_dump") else data.dict()
     extra_data["mpeda_registration_code"] = mpeda_code
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
@@ -454,7 +449,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     # 2. Check verification status
     if not getattr(user, "is_verified", False):
-        otp = str(random.randint(1000, 9999))
+        otp = str(secrets.randbelow(900000) + 100000)
         db.query(OTPTable).filter(OTPTable.email == user.email).delete()
         db.add(OTPTable(
             email=user.email,
@@ -479,7 +474,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         )
 
     # 3. Generate Login OTP for verified user
-    otp = str(random.randint(1000, 9999))
+    otp = str(secrets.randbelow(900000) + 100000)
     db.query(OTPTable).filter(OTPTable.email == user.email).delete()
     db.add(OTPTable(
         email=user.email,
@@ -566,10 +561,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")
     db.add(activity)
     db.commit()
-    from app.main import is_mobile_client
-
     is_mobile = is_mobile_client(request)
-
 
     request.session.update({
         "email": user.email,
@@ -582,7 +574,7 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
         "role": user.role,
         "permissions": user.permissions,
         "setup_completed": True,
-        "last_activity": get_ist_time().timestamp(),
+        "last_activity": time.time(),
         "session_id": session_id,
         "is_mobile_app": is_mobile
     })
@@ -603,7 +595,6 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         last_activity = float(request.session.get("last_activity") or now_ts)
     except (TypeError, ValueError):
         last_activity = now_ts
-    from app.main import is_mobile_client
     is_mobile = is_mobile_client(request)
     if not is_mobile and (now_ts - last_activity > idle_timeout):
         request.session.clear()

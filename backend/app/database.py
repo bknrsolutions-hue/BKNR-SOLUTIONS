@@ -2,6 +2,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
+_IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").strip().lower() == "production"
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if not DATABASE_URL:
@@ -22,9 +24,7 @@ engine = create_engine(
     pool_recycle=300,
     pool_size=5,
     max_overflow=10,
-    connect_args={
-        "sslmode": "require"
-    }
+    connect_args={"sslmode": "require"} if _IS_PRODUCTION else {}
 )
 
 SessionLocal = sessionmaker(

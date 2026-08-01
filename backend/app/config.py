@@ -26,7 +26,7 @@ def _env(name: str, dev_default: str = "") -> str:
 
 DATABASE_URL = _env(
     "DATABASE_URL",
-    "postgresql+psycopg2://postgres:143211Nr@localhost:5432/bknr_erp",
+    "postgresql+psycopg2://postgres:changeme@localhost:5432/bknr_erp",
 )
 
 SESSION_SECRET_KEY = _env(
