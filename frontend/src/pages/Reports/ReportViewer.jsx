@@ -1415,6 +1415,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
   // RENDER HELPERS: HEADERS, LOADERS, ERRORS, FILTERS
 
   function renderHeader(title) {
+    const displayCompany = selectedCompany || 'BKNR SEAFOODS PRIVATE LIMITED';
     return (
       <div style={reportHeaderStyle} className="batch-summary-header-banner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -1422,9 +1423,12 @@ export default function ReportViewer({ reportId, activeRoute }) {
             <FileText size={18} style={{ color: 'white' }} />
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }} className="batch-summary-print-title">
-              {title}
-            </h2>
+            <h1 className="company-name-print-header" style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-primary)', margin: 0 }}>
+              {displayCompany}
+            </h1>
+            <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', margin: '2px 0 0' }} className="batch-summary-print-title">
+              {title.toUpperCase()} REPORT
+            </h3>
             <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }} className="no-print">
               Natively rendering real-time operational registers from database framework
             </p>
@@ -1989,7 +1993,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
           <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
             {tab.replaceAll('_', ' ')} DETAILS
           </h4>
-          <div style={searchWrapperStyle}>
+          <div style={searchWrapperStyle} className="no-print">
             <Search size={13} style={searchIconStyle} />
             <input
               type="text"
@@ -2215,7 +2219,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
       return (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }} className="no-print">
             <div style={searchWrapperStyle}>
               <Search size={13} style={searchIconStyle} />
               <input

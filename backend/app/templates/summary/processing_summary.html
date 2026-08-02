@@ -323,12 +323,12 @@
     {% set kpi_gross.total = kpi_gross.total + r_gross %}
 {% endfor %}
 
-<div class="report-header">
+<div class="report-header batch-summary-header-banner">
     <div class="report-header-title">
-        <div class="report-header-badge"><i class="fas fa-cubes"></i></div>
+        <div class="report-header-badge no-print"><i class="fas fa-cubes"></i></div>
         <div>
-            <h1>Batch Wise Analysis Report</h1>
-            <p>{{ selected_company or 'Corporate Entity' }} · Comprehensive Batch Processing Matrix & Financial Ledger</p>
+            <h1 class="company-name-print-header" style="margin: 0; font-size: 18px; font-weight: 900; color: var(--brand); text-transform: uppercase;">{{ selected_company or 'BKNR SEAFOODS PRIVATE LIMITED' }}</h1>
+            <h3 class="batch-summary-print-title" style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">BATCH WISE ANALYSIS REPORT</h3>
         </div>
     </div>
     <button onclick="window.print()" class="no-print" style="background:var(--accent); color:white; border:none; padding:7px 16px; border-radius:6px; cursor:pointer; font-weight:800; font-size:10px; box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 30%, transparent); display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase;">
