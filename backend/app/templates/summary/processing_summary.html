@@ -158,7 +158,7 @@
         .batch-summary-table-card {
             width: 100%;
             background: var(--card-bg);
-            border: 1px solid var(--border);
+            border: 1.5px solid var(--border, #94a3b8);
             border-radius: var(--card-radius);
             overflow: hidden;
             margin-bottom: 14px;
@@ -170,20 +170,21 @@
             table-layout: fixed;
         }
         .matrix-5col-table tr {
-            border-bottom: 1px solid var(--td-border);
-        }
-        .matrix-5col-table tr:last-child {
             border-bottom: none;
         }
         .cell-5col {
             width: 20%;
             padding: 10px 12px;
-            border-right: 1px solid var(--td-border);
+            border-right: 1.5px solid var(--border, #cbd5e1);
+            border-bottom: 1.5px solid var(--border, #cbd5e1);
             vertical-align: middle;
             transition: background 0.2s ease;
         }
         .cell-5col:last-child {
             border-right: none;
+        }
+        .matrix-5col-table tr:last-child .cell-5col {
+            border-bottom: none;
         }
         .matrix-5col-table tr:hover td {
             background-color: color-mix(in srgb, var(--th-bg) 60%, transparent);
