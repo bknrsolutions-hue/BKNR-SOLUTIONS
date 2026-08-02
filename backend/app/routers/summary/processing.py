@@ -372,6 +372,58 @@ async def get_processing_summary(
                         target_yield = vv
                         break
 
+            rmp_received = sum(
+                active_number(r, r.received_qty)
+                for r in rows.get("rmp", [])
+                if norm_str(r.batch_number) == b_num
+                and (not spec or norm_upper(r.species) == norm_upper(spec))
+            )
+
+            dh_in = sum(
+                signed_number(d, d.hoso_qty)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+            )
+
+            dh_out = sum(
+                signed_number(d, d.hlso_qty)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+            )
+
+            deheading_diff = sum(
+                float(d.diff_qty or 0)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+            )
+
+            peel_in = sum(
+                signed_number(p, p.hlso_qty)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            peel_out = sum(
+                signed_number(p, p.peeled_qty)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            peeling_diff = sum(
+                float(p.diff_qty or 0)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
             soaking_in = sum(
                 signed_number(s, s.in_qty)
                 for s in rows["soaking"]
@@ -426,6 +478,18 @@ async def get_processing_summary(
 
             key = (p_for, p_at, spec, var, b_num)
             subtotals[key] = {
+                "species": spec,
+                "variety": var,
+                "batch_number": b_num,
+                "production_for": p_for,
+                "production_at": p_at,
+                "rmp_received": float(round(rmp_received, 2)),
+                "deheading_in": float(round(dh_in, 2)),
+                "deheading_out": float(round(dh_out, 2)),
+                "deheading_diff": float(round(deheading_diff, 2)),
+                "peeling_in": float(round(peel_in, 2)),
+                "peeling_out": float(round(peel_out, 2)),
+                "peeling_diff": float(round(peeling_diff, 2)),
                 "soaking_in": float(round(soaking_in, 2)),
                 "prod_qty": float(round(prod_qty, 2)),
                 "target_yield": float(round(target_yield, 2)),

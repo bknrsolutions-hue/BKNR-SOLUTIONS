@@ -1930,9 +1930,9 @@ export default function ReportViewer({ reportId, activeRoute }) {
         formats: { material_boxes: 'number', received_qty: 'number', amount: 'currency' }
       },
       reconciliation: {
-        headers: ['Production For', 'Production At', 'Species', 'Variety', 'Batch', 'Soaking In', 'Produced Qty', 'Target Yield', 'Actual Yield', 'Yield Diff', 'Diff Qty'],
-        keys: ['production_for', 'production_at', 'species', 'variety', 'batch_number', 'soaking_in', 'prod_qty', 'target_yield', 'actual_yield', 'diff_yield_perc', 'diff_qty'],
-        formats: { soaking_in: 'number', prod_qty: 'number', target_yield: 'percentage', actual_yield: 'percentage', diff_yield_perc: 'percentage', diff_qty: 'number' }
+        headers: ['Production For', 'Production At', 'Species', 'Variety', 'Batch', 'RMP Received', 'Deheading Diff', 'Peeling Diff', 'Soaking In', 'Produced Qty', 'Prod Diff Qty'],
+        keys: ['production_for', 'production_at', 'species', 'variety', 'batch_number', 'rmp_received', 'deheading_diff', 'peeling_diff', 'soaking_in', 'prod_qty', 'diff_qty'],
+        formats: { rmp_received: 'number', deheading_diff: 'number', peeling_diff: 'number', soaking_in: 'number', prod_qty: 'number', diff_qty: 'number' }
       }
     };
 

@@ -574,6 +574,7 @@
                     <tr>
                         <th rowspan="2" style="background:#f8fafc; vertical-align: middle;">Species</th>
                         <th rowspan="2" style="background:#f8fafc; vertical-align: middle;">Variety</th>
+                        <th rowspan="2" class="text-right" style="background:#e0f2fe; vertical-align: middle; color:#0369a1; font-weight:800;">RMP Received</th>
                         <th colspan="3" class="text-center" style="background: #f1f5f9;">DE-HEADING</th>
                         <th colspan="3" class="text-center" style="background: #fff7ed;">PEELING</th>
                         <th colspan="3" class="text-center" style="background: #f0fdf4;">PRODUCTION</th>
@@ -591,13 +592,19 @@
                     {% for r in rows.peeling %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
                     {% for r in rows.production %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
 
-                    {% set tot_recon = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0) %}
+                    {% set tot_recon = namespace(rmp=0.0, di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0) %}
                     {% for item in grouping %}
                         {% set parts = item.split("||") %}
                         {% set s_match = parts[0] %}
                         {% set v_match = parts[1] %}
                         
-                        {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0, prod_target_yield=0.0, soak_rejection=0.0) %}
+                        {% set ns = namespace(rmp=0.0, di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0, prod_target_yield=0.0, soak_rejection=0.0) %}
+
+                        {% for r in rows.rmp %}
+                            {% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}
+                                {% set ns.rmp = ns.rmp + (r.received_qty|default(0)|float) %}
+                            {% endif %}
+                        {% endfor %}
 
                         {% if v_match == "HOSO" or v_match == "FRESH" %}
                             {% for r in rows.deheading %}
@@ -642,6 +649,7 @@
                             {% set ns.total_prod_diff = ns.pro - ns.prod_expected %}
                         {% endif %}
                         
+                        {% set tot_recon.rmp = tot_recon.rmp + ns.rmp %}
                         {% set tot_recon.di = tot_recon.di + ns.di %}
                         {% set tot_recon.do = tot_recon.do + ns.do %}
                         {% set tot_recon.pi = tot_recon.pi + ns.pi %}
@@ -652,6 +660,7 @@
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="font-weight: 800;">{{ s_match }}</td>
                             <td><span class="tag">{{ v_match }}</span></td>
+                            <td class="text-right" style="font-weight:800; color:#0284c7; background:#f0f9ff;">{{ "%.2f"|format(ns.rmp) }}</td>
                             
                             <td class="text-right">{{ "%.2f"|format(ns.di) }}</td>
                             <td class="text-right">{{ "%.2f"|format(ns.do) }}</td>
@@ -693,6 +702,7 @@
                     {% endfor %}
                     <tr class="subtotal-row">
                         <td colspan="2" style="text-align:right;">TOTAL:</td>
+                        <td class="text-right" style="font-weight:800; color:#0284c7; background:#e0f2fe;">{{ "%.2f"|format(tot_recon.rmp) }}</td>
                         <td class="text-right">{{ "%.2f"|format(tot_recon.di) }}</td>
                         <td class="text-right">{{ "%.2f"|format(tot_recon.do) }}</td>
                         <td class="text-right">{% if tot_recon.di > 0 %}{{ "%.2f"|format((tot_recon.do / tot_recon.di) * 100) }}%{% else %}0%{% endif %}</td>
