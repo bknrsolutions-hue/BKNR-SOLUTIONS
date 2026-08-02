@@ -1235,13 +1235,22 @@
                     </tr>
                 {% endif %}
             {% endfor %}
-            <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b;">
-                <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">GRAND TOTAL PRODUCTION:</td>
+            <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b; font-weight:800;">
+                <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">SUBTOTAL PRODUCTION SUMMARY:</td>
                 <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.mc }}</td>
                 <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.loose }}</td>
                 <td class="text-right" style="font-weight:800; color:#312e81; background:#eeebff;">{{ "%.2f"|format(grand_prod.gross) }}</td>
-                <td class="qty-column" style="color:#b45309; background:#fff9db;">{{ "%.2f"|format(grand_prod.qty) }}</td>
-                <td colspan="3"></td>
+                <td class="qty-column" style="color:#b45309; background:#fff9db; font-weight:800;">{{ "%.2f"|format(grand_prod.qty) }}</td>
+                <td class="text-right" style="font-weight:800; color:#b45309;">
+                    {% set first_sub = (subtotals.values()|list)[0] if subtotals else {} %}
+                    {% if first_sub.actual_yield is defined %}{{ first_sub.actual_yield }}% ({{ first_sub.diff_yield_perc }}%){% else %}-{% endif %}
+                </td>
+                <td class="text-right" style="font-weight:800; color:#b45309;">
+                    {% if first_sub.diff_qty is defined %}{{ first_sub.diff_qty }}{% else %}-{% endif %}
+                </td>
+                <td style="font-size: 8.5px; text-align: left; padding-left: 6px; font-weight:700; color:#64748b;">
+                    {% if first_sub.soaking_in is defined %}In: {{ first_sub.soaking_in }} | Target: {{ first_sub.target_yield }}%{% else %}-{% endif %}
+                </td>
             </tr>
         </tbody>
     </table>

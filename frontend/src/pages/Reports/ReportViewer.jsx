@@ -2075,6 +2075,48 @@ export default function ReportViewer({ reportId, activeRoute }) {
                   </td>
                 </tr>
               )}
+              {tab === 'production' && filteredTabRows.length > 0 && (() => {
+                let totMC = 0, totLoose = 0, totGross = 0, totProdQty = 0;
+                filteredTabRows.forEach(r => {
+                  totMC += Number(r.no_of_mc || 0);
+                  totLoose += Number(r.loose || 0);
+                  totProdQty += Number(r.production_qty || 0);
+
+                  const netQty = Number(r.production_qty || 0);
+                  const glazeText = String(r.glaze || '').trim().toUpperCase();
+                  const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                  const glazePct = match ? Number(match[1]) : 0;
+                  const grossVal = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                  totGross += grossVal;
+                });
+
+                const firstSub = Object.values(data.subtotals || {})[0] || {};
+
+                return (
+                  <tr className="subtotal-row" style={{ background: '#fffbeb', borderTop: '2px double #f59e0b', fontWeight: '800' }}>
+                    <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
+                      SUBTOTAL PRODUCTION SUMMARY:
+                    </td>
+                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>{totMC}</td>
+                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>{totLoose}</td>
+                    <td className="text-right" style={{ fontWeight: '800', color: '#312e81', background: '#eeebff' }}>
+                      {totGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="text-right qty-column" style={{ fontWeight: '800', color: '#b45309', background: '#fff9db' }}>
+                      {totProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </td>
+                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
+                      {firstSub.actual_yield !== undefined ? `${firstSub.actual_yield}% (${firstSub.diff_yield_perc}%)` : '-'}
+                    </td>
+                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
+                      {firstSub.diff_qty !== undefined ? firstSub.diff_qty : '-'}
+                    </td>
+                    <td style={{ fontSize: '9px', textAlign: 'left', paddingLeft: '6px', fontWeight: '700', color: '#64748b' }}>
+                      {firstSub.soaking_in !== undefined ? `In: ${firstSub.soaking_in} | Target: ${firstSub.target_yield}%` : '-'}
+                    </td>
+                  </tr>
+                );
+              })()}
             </tbody>
           </table>
         </div>
