@@ -3302,7 +3302,7 @@ body.floating-support-dragging * {
     border: none !important;
   }
 
-  .sidebar, .sidebar-overlay, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, .app-back-strip, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn, .batch-summary-empty {
+  header, .app-header, .sidebar, .sidebar-overlay, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, .app-back-strip, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn, .batch-summary-empty {
     display: none !important;
     height: 0 !important;
     width: 0 !important;

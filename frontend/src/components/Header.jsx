@@ -849,7 +849,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         @media (max-width: 900px) { .global-search-container { display: none; } }
       `}</style>
 
-      <header className="app-header" ref={dropdownRef}>
+      <header className="app-header no-print" ref={dropdownRef}>
         {/* Left side actions */}
         <div className="header-left-meta">
           <button 
