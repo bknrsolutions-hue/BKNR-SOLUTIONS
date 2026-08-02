@@ -91,52 +91,61 @@
   border-left-color: #dc2626;
 }
 
-.batch-matrix-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(185px, 1fr));
-  gap: 8px;
-}
-
-.batch-metric-card {
-  display: flex;
-  min-width: 0;
-  min-height: 55px;
-  flex-direction: column;
-  justify-content: center;
-  gap: 3px;
-  padding: 8px 12px;
+.batch-summary-matrix-table {
+  width: 100%;
+  background: var(--surface-primary, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
   overflow: hidden;
-  border: 1px solid var(--border-color, #dbe2ea);
-  border-radius: 8px;
-  background: var(--surface-primary, #fff);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, .04);
-  transition: all 0.25s ease;
+  margin-bottom: 14px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-.batch-metric-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+.matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.batch-metric-label {
-  overflow: hidden;
-  color: var(--text-secondary);
-  font-size: 8.5px;
+.matrix-cell {
+  width: 33.333%;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color, #e2e8f0) !important;
+  vertical-align: middle;
+  background: var(--surface-primary, #ffffff);
+  transition: background 0.2s ease;
+}
+
+.matrix-table tr:hover td {
+  background-color: color-mix(in srgb, var(--surface-secondary, #f8fafc) 60%, transparent);
+}
+
+.matrix-label {
+  font-size: 9.5px;
   font-weight: 800;
-  letter-spacing: .4px;
-  text-overflow: ellipsis;
+  color: var(--text-secondary, #64748b);
   text-transform: uppercase;
-  white-space: nowrap;
+  letter-spacing: 0.5px;
+  margin-bottom: 3px;
 }
 
-.batch-metric-value {
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: 11px;
+.matrix-val-large {
+  font-size: 12.5px;
   font-weight: 850;
-  line-height: 1.25;
-  text-overflow: ellipsis;
+  color: var(--text-primary, #0f172a);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 768px) {
+  .matrix-table, .matrix-table tbody, .matrix-table tr, .matrix-cell {
+    display: block;
+    width: 100% !important;
+  }
+  .matrix-cell {
+    border-bottom: 1px solid var(--border-color, #e2e8f0) !important;
+  }
 }
 
 .batch-metric-accent {
