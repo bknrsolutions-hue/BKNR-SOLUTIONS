@@ -598,4 +598,66 @@
   .batch-section-title {
     break-after: avoid;
   }
+
+  .report-signature-block {
+    margin-top: 35px !important;
+    padding-top: 15px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+
+  .sig-line {
+    border-bottom: 1.5px dashed #000000 !important;
+  }
+
+  .sig-title {
+    color: #000000 !important;
+    font-size: 10.5px !important;
+  }
+
+  .sig-subtitle {
+    color: #334155 !important;
+    font-size: 9px !important;
+  }
+}
+
+/* 🖊️ Signature Block Base Styles */
+.report-signature-block {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-top: 40px;
+  padding: 20px 10px 10px 10px;
+  width: 100%;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.sig-col {
+  text-align: center;
+  flex: 1;
+  max-width: 220px;
+}
+
+.sig-line {
+  border-bottom: 1.5px dashed var(--text-secondary, #64748b);
+  margin-bottom: 8px;
+  height: 40px;
+}
+
+.sig-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-primary, #0f172a);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.sig-subtitle {
+  font-size: 9.5px;
+  font-weight: 600;
+  color: var(--text-muted, #64748b);
+  margin-top: 2px;
 }

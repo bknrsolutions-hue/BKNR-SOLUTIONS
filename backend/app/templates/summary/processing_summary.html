@@ -282,6 +282,13 @@
         .footer-item { font-size: 9.5px; font-weight: 600; color: var(--text-muted); }
         .footer-item b { color: var(--text-main); font-weight: 800; }
 
+        /* 🖊️ Signature Block */
+        .report-signature-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding: 20px 10px 10px 10px; width: 100%; page-break-inside: avoid; }
+        .sig-col { text-align: center; flex: 1; max-width: 220px; }
+        .sig-line { border-bottom: 1.5px dashed var(--text-muted, #64748b); margin-bottom: 8px; height: 40px; }
+        .sig-title { font-size: 11px; font-weight: 800; color: var(--brand, #0f172a); text-transform: uppercase; letter-spacing: 0.5px; }
+        .sig-subtitle { font-size: 9.5px; font-weight: 600; color: var(--text-muted, #64748b); margin-top: 2px; }
+
         /* Strict Print Engine */
         @media print { 
             html, body, .container, .container-fluid, .row, .col-12, main, #wrapper, .full-width-container { 
@@ -293,12 +300,17 @@
                 display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; 
             } 
             .report-header { padding: 0 0 6px 0 !important; margin: 0 0 10px 0 !important; border-bottom: 2px solid #0f172a !important; display: block !important; }
-            .report-header h1 { font-size: 16px !important; font-weight: 800 !important; color: #0f172a !important; margin: 0 !important; }
+            .company-name-print-header { font-size: 18px !important; font-weight: 900 !important; color: #0f172a !important; margin: 0 0 2px 0 !important; text-transform: uppercase !important; display: block !important; }
+            .batch-summary-print-title { font-size: 12px !important; font-weight: 800 !important; color: #475569 !important; margin: 0 !important; text-transform: uppercase !important; display: block !important; }
             table { width: 100% !important; table-layout: auto !important; page-break-inside: auto; }
             tr { page-break-inside: avoid !important; page-break-after: auto !important; }
             td, th { font-size: 9.5px !important; padding: 4px 6px !important; word-wrap: break-word !important; }
             .batch-summary-table-card, .table-wrap, .recon-wrap, .report-card, .section-title { border: 1.5px solid #64748b !important; box-shadow: none !important; page-break-inside: avoid !important; margin-bottom: 10px !important; }
             .section-title { page-break-after: avoid !important; }
+            .report-signature-block { margin-top: 35px !important; padding-top: 15px !important; page-break-inside: avoid !important; display: flex !important; }
+            .sig-line { border-bottom: 1.5px dashed #000000 !important; }
+            .sig-title { color: #000000 !important; font-size: 10.5px !important; }
+            .sig-subtitle { color: #334155 !important; font-size: 9px !important; }
         }
     </style>
     <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
@@ -1372,6 +1384,25 @@
             </tr>
         </tbody>
     </table>
+</div>
+
+<!-- 🖊️ Signatures Block (Incharge & Manager Signatures) -->
+<div class="report-signature-block">
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">PREPARED BY</div>
+        <div class="sig-subtitle">(Processing Incharge)</div>
+    </div>
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">VERIFIED BY</div>
+        <div class="sig-subtitle">(Store / QA Manager)</div>
+    </div>
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">AUTHORIZED SIGNATURE</div>
+        <div class="sig-subtitle">(Factory / Plant Manager)</div>
+    </div>
 </div>
 
 {% else %}

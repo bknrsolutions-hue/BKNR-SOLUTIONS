@@ -1120,6 +1120,25 @@ export default function ReportViewer({ reportId, activeRoute }) {
                 )}
               </section>
             ))}
+
+            {/* 🖊️ Signatures Block (Incharge & Manager Signatures) */}
+            <div className="report-signature-block">
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">PREPARED BY</div>
+                <div className="sig-subtitle">(Processing Incharge)</div>
+              </div>
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">VERIFIED BY</div>
+                <div className="sig-subtitle">(Store / QA Manager)</div>
+              </div>
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">AUTHORIZED SIGNATURE</div>
+                <div className="sig-subtitle">(Factory / Plant Manager)</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
