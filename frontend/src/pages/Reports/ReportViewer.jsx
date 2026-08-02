@@ -38,7 +38,12 @@ function GradingSummaryCards({ rows = [], details = [], selectedBatch = '' }) {
           String(detail.batch_number || detail.batch || '').toLowerCase() === String(batch).toLowerCase()
           && String(detail.species || '').toLowerCase() === String(row.species || '').toLowerCase()
           && String(detail.hoso_count || '').toLowerCase() === String(row.hoso_count || '').toLowerCase()
-          && String(detail.variety_name || detail.variety || '').toLowerCase() === String(row.variety || '').toLowerCase()
+          && (
+            !row.variety || !detail.variety_name ||
+            String(detail.variety_name || detail.variety || '').toLowerCase().trim() === String(row.variety || '').toLowerCase().trim() ||
+            String(detail.variety_name || detail.variety || '').toLowerCase().includes(String(row.variety || '').toLowerCase().trim()) ||
+            String(row.variety || '').toLowerCase().trim().includes(String(detail.variety_name || detail.variety || '').toLowerCase().trim())
+          )
         );
         const detailTotal = breakdown.reduce((total, detail) => total + Number(detail.quantity || 0), 0);
         const diffKg = Number(row.weight_diff_kg || 0);
