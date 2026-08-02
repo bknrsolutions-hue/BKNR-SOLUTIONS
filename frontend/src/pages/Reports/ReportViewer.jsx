@@ -2133,31 +2133,26 @@ const actionsRowStyle = {
 
 const filtersWrapperStyle = {
   display: 'flex',
-  flexWrap: 'nowrap',
-  gap: '6px',
-  background: 'var(--glass-bg)',
-  padding: '4px 7px',
-  borderRadius: 'var(--radius-element)',
-  border: '1px solid var(--border-light)',
-  marginBottom: '6px',
-  alignItems: 'flex-end',
-  overflowX: 'auto',
-  overflowY: 'hidden',
-  WebkitOverflowScrolling: 'touch',
-  scrollbarWidth: 'thin'
+  flexWrap: 'wrap',
+  gap: '10px',
+  background: 'var(--surface-primary, #ffffff)',
+  padding: '10px 14px',
+  borderRadius: '8px',
+  border: '1px solid var(--border-color, #e2e8f0)',
+  marginBottom: '12px',
+  alignItems: 'flex-end'
 };
 
 const filterBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '2px',
-  flexShrink: 0,
-  minWidth: '108px',
-  width: '108px'
+  gap: '4px',
+  flex: '1 1 160px',
+  minWidth: '150px'
 };
 
 const filterLabelStyle = {
-  fontSize: '8px',
+  fontSize: '9px',
   fontWeight: '800',
   color: 'var(--text-secondary)',
   textTransform: 'uppercase',
@@ -2165,16 +2160,18 @@ const filterLabelStyle = {
 };
 
 const selectControlStyle = {
-  height: '27px',
-  padding: '0 7px',
-  fontSize: '10px',
+  height: '32px',
+  padding: '0 8px',
+  fontSize: '11px',
   fontWeight: '600',
-  borderRadius: 'var(--radius-element)',
-  border: '1px solid var(--input-border)',
-  background: 'var(--input-bg)',
-  color: 'var(--text-primary)',
+  borderRadius: '6px',
+  border: '1px solid var(--border-color, #cbd5e1)',
+  background: 'var(--surface-primary, #ffffff)',
+  color: 'var(--text-primary, #0f172a)',
   outline: 'none',
-  width: '100%'
+  width: '100%',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap'
 };
 
 const searchWrapperStyle = {
