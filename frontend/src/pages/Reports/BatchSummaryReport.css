@@ -91,7 +91,7 @@
   border-left-color: #dc2626;
 }
 
-.batch-summary-matrix-table {
+.batch-summary-keyvalue-card {
   width: 100%;
   background: var(--surface-primary, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
@@ -101,51 +101,51 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-.matrix-table {
+.keyvalue-table {
   width: 100%;
   border-collapse: collapse;
-  table-layout: fixed;
 }
 
-.matrix-cell {
-  width: 33.333%;
-  padding: 10px 14px;
-  border: 1px solid var(--border-color, #e2e8f0) !important;
-  vertical-align: middle;
-  background: var(--surface-primary, #ffffff);
+.keyvalue-table tr {
+  border-bottom: 1px solid var(--border-color, #f1f5f9);
   transition: background 0.2s ease;
 }
 
-.matrix-table tr:hover td {
+.keyvalue-table tr:last-child {
+  border-bottom: none;
+}
+
+.keyvalue-table tr:hover {
   background-color: color-mix(in srgb, var(--surface-secondary, #f8fafc) 60%, transparent);
 }
 
-.matrix-label {
-  font-size: 9.5px;
+.kv-label {
+  width: 32%;
+  padding: 8px 14px;
+  font-size: 10.5px;
   font-weight: 800;
   color: var(--text-secondary, #64748b);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 3px;
+  background: var(--surface-secondary, #f8fafc);
+  border-right: 1px solid var(--border-color, #e2e8f0);
+  text-align: left;
+  vertical-align: middle;
 }
 
-.matrix-val-large {
+.kv-value {
+  width: 68%;
+  padding: 8px 14px;
   font-size: 12.5px;
   font-weight: 850;
   color: var(--text-primary, #0f172a);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: left;
+  vertical-align: middle;
 }
 
-@media (max-width: 768px) {
-  .matrix-table, .matrix-table tbody, .matrix-table tr, .matrix-cell {
-    display: block;
-    width: 100% !important;
-  }
-  .matrix-cell {
-    border-bottom: 1px solid var(--border-color, #e2e8f0) !important;
-  }
+@media (max-width: 640px) {
+  .kv-label { width: 40%; font-size: 9.5px; padding: 6px 10px; }
+  .kv-value { width: 60%; font-size: 11px; padding: 6px 10px; }
 }
 
 .batch-metric-accent {

@@ -154,56 +154,55 @@
 
         .full-width-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; }
 
-        /* Premium 3-Part Structured Matrix Table (No Colored Borders, Increased Text Size) */
-        .batch-summary-matrix-table {
+        /* 🟢 Structured Key-Value Summary Table (Left: Name, Right: Value) */
+        .batch-summary-keyvalue-card {
             width: 100%;
             background: var(--card-bg);
             border: 1px solid var(--border);
             border-radius: var(--card-radius);
             overflow: hidden;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
             box-shadow: var(--kpi-shadow);
         }
-        .matrix-table {
+        .keyvalue-table {
             width: 100%;
             border-collapse: collapse;
-            table-layout: fixed;
         }
-        .matrix-cell {
-            width: 33.333%;
-            padding: 9px 14px;
-            border: 1px solid var(--border) !important;
-            vertical-align: middle;
-            background: var(--card-bg);
+        .keyvalue-table tr {
+            border-bottom: 1px solid var(--td-border);
             transition: background 0.2s ease;
         }
-        .matrix-table tr:hover td {
+        .keyvalue-table tr:last-child {
+            border-bottom: none;
+        }
+        .keyvalue-table tr:hover {
             background-color: color-mix(in srgb, var(--th-bg) 60%, transparent);
         }
-        .matrix-label {
-            font-size: 9.5px;
+        .kv-label {
+            width: 32%;
+            padding: 8px 14px;
+            font-size: 10.5px;
             font-weight: 800;
             color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 3px;
+            background: var(--th-bg);
+            border-right: 1px solid var(--border);
+            text-align: left;
+            vertical-align: middle;
         }
-        .matrix-val-large {
+        .kv-value {
+            width: 68%;
+            padding: 8px 14px;
             font-size: 12.5px;
             font-weight: 850;
             color: var(--text-main);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            text-align: left;
+            vertical-align: middle;
         }
-        @media (max-width: 768px) {
-            .matrix-table, .matrix-table tbody, .matrix-table tr, .matrix-cell {
-                display: block;
-                width: 100% !important;
-            }
-            .matrix-cell {
-                border-bottom: 1px solid var(--border) !important;
-            }
+        @media (max-width: 640px) {
+            .kv-label { width: 40%; font-size: 9.5px; padding: 6px 10px; }
+            .kv-value { width: 60%; font-size: 11px; padding: 6px 10px; }
         }
 
         /* Recon Container */
@@ -363,63 +362,52 @@
 <div class="full-width-container">
     
     <div class="section-title" style="margin-top:0px;"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> BATCH MATRIX METRICS</div>
-    <div class="batch-summary-matrix-table">
-        <table class="matrix-table">
+    <div class="batch-summary-keyvalue-card">
+        <table class="keyvalue-table">
             <tbody>
                 <tr>
-                    <!-- Column 1: Batch & Receiving Info -->
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Batch Number</div>
-                        <div class="matrix-val-large" style="color:var(--accent)">{{ selected_batch }}</div>
-                    </td>
-                    <!-- Column 2: RMP & Raw Material -->
-                    <td class="matrix-cell">
-                        <div class="matrix-label">RM Total Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</div>
-                    </td>
-                    <!-- Column 3: Production & Stock -->
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
-                    </td>
+                    <th class="kv-label">Batch Number</th>
+                    <td class="kv-value" style="color:var(--accent); font-size:14px;">{{ selected_batch }}</td>
                 </tr>
                 <tr>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Supplier | Location</div>
-                        <div class="matrix-val-large">{{ card.supplier_name or 'N/A' }} | {{ card.purchasing_location or 'N/A' }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">De-Heading Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Stock Inventory Value</div>
-                        <div class="matrix-val-large">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</div>
-                    </td>
+                    <th class="kv-label">Supplier | Location</th>
+                    <td class="kv-value">{{ card.supplier_name or 'N/A' }} | {{ card.purchasing_location or 'N/A' }}</td>
                 </tr>
                 <tr>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Receiving At | Vehicle</div>
-                        <div class="matrix-val-large">{{ card.receiving_center or 'N/A' }} | {{ card.vehicle_number or 'N/A' }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Grading | Peeling Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.grading_qty or 0) }} K | {{ "%.2f"|format(card.peeling_qty or 0) }} K | ₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell" rowspan="2" style="vertical-align: middle;">
-                        <div class="matrix-label">Floor Balance Qty | Value</div>
-                        <div class="matrix-val-large" style="font-size:13.5px;">{{ "%.2f"|format(card.floor_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</div>
-                    </td>
+                    <th class="kv-label">Receiving At | Vehicle</th>
+                    <td class="kv-value">{{ card.receiving_center or 'N/A' }} | {{ card.vehicle_number or 'N/A' }}</td>
                 </tr>
                 <tr>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Boxes | Challan | Gatepass</div>
-                        <div class="matrix-val-large">{{ card.total_boxes or '0' }} Box | {{ card.challan_number or 'N/A' }} | {{ card.gate_pass_number or 'N/A' }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Soaking | Chem | Salt</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</div>
-                    </td>
+                    <th class="kv-label">Boxes | Challan | Gatepass</th>
+                    <td class="kv-value">{{ card.total_boxes or '0' }} Box | {{ card.challan_number or 'N/A' }} | {{ card.gate_pass_number or 'N/A' }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">RM Total Qty / Amount</th>
+                    <td class="kv-value">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">De-Heading Qty / Amount</th>
+                    <td class="kv-value">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">Grading | Peeling Qty / Amount</th>
+                    <td class="kv-value">{{ "%.2f"|format(card.grading_qty or 0) }} K | {{ "%.2f"|format(card.peeling_qty or 0) }} K | ₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">Soaking | Chem | Salt</th>
+                    <td class="kv-value">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">Gross Prod | Net Prod | Stock Qty</th>
+                    <td class="kv-value">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">Stock Inventory Value</th>
+                    <td class="kv-value">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</td>
+                </tr>
+                <tr>
+                    <th class="kv-label">Floor Balance Qty | Value</th>
+                    <td class="kv-value">{{ "%.2f"|format(card.floor_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</td>
                 </tr>
             </tbody>
         </table>

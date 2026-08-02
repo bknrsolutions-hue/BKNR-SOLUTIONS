@@ -927,63 +927,52 @@ export default function ReportViewer({ reportId, activeRoute }) {
         {data && selectedBatch && (
           <div className="batch-summary-content">
             <div className="batch-section-title batch-section-title-first">Batch Matrix Metrics</div>
-            <div className="batch-summary-matrix-table">
-              <table className="matrix-table">
+            <div className="batch-summary-keyvalue-card">
+              <table className="keyvalue-table">
                 <tbody>
                   <tr>
-                    {/* Column 1: Receiving Info */}
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Batch Number</div>
-                      <div className="matrix-val-large" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</div>
-                    </td>
-                    {/* Column 2: RMP & Stage Quantities */}
-                    <td className="matrix-cell">
-                      <div className="matrix-label">RM Total Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.rmp_qty)} KG | {money(card.rmp_amount)}</div>
-                    </td>
-                    {/* Column 3: Finished Goods & Stock */}
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
-                      <div className="matrix-val-large">{qty(grossProduction)} G | {qty(card.production_qty)} N | {qty(card.stock_qty)} S</div>
-                    </td>
+                    <th className="kv-label">Batch Number</th>
+                    <td className="kv-value" style={{ color: 'var(--accent, #2563eb)', fontSize: '14px' }}>{selectedBatch}</td>
                   </tr>
                   <tr>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Supplier | Location</div>
-                      <div className="matrix-val-large">{card.supplier_name || 'N/A'} | {card.purchasing_location || 'N/A'}</div>
-                    </td>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">De-Heading Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.deheading_qty)} KG | {money(card.deheading_amount)}</div>
-                    </td>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Stock Inventory Value</div>
-                      <div className="matrix-val-large">{money(card.stock_amount)}</div>
-                    </td>
+                    <th className="kv-label">Supplier | Location</th>
+                    <td className="kv-value">{card.supplier_name || 'N/A'} | {card.purchasing_location || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Receiving At | Vehicle</div>
-                      <div className="matrix-val-large">{card.receiving_center || 'N/A'} | {card.vehicle_number || 'N/A'}</div>
-                    </td>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Grading | Peeling Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.grading_qty)} K | {qty(card.peeling_qty)} K | {money(card.peeling_amount)}</div>
-                    </td>
-                    <td className="matrix-cell" rowSpan={2} style={{ verticalAlign: 'middle' }}>
-                      <div className="matrix-label">Floor Balance Qty | Value</div>
-                      <div className="matrix-val-large" style={{ fontSize: '13.5px' }}>{qty(card.floor_qty)} KG | {money(card.floor_amount)}</div>
-                    </td>
+                    <th className="kv-label">Receiving At | Vehicle</th>
+                    <td className="kv-value">{card.receiving_center || 'N/A'} | {card.vehicle_number || 'N/A'}</td>
                   </tr>
                   <tr>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Boxes | Challan | Gatepass</div>
-                      <div className="matrix-val-large">{card.total_boxes || 0} Box | {card.challan_number || 'N/A'} | {card.gate_pass_number || 'N/A'}</div>
-                    </td>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Soaking | Chem | Salt</div>
-                      <div className="matrix-val-large">{qty(card.soaking_qty)} KG | C: {qty(card.chemical_qty)} | S: {qty(card.salt_qty)}</div>
-                    </td>
+                    <th className="kv-label">Boxes | Challan | Gatepass</th>
+                    <td className="kv-value">{card.total_boxes || 0} Box | {card.challan_number || 'N/A'} | {card.gate_pass_number || 'N/A'}</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">RM Total Qty / Amount</th>
+                    <td className="kv-value">{qty(card.rmp_qty)} KG | {money(card.rmp_amount)}</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">De-Heading Qty / Amount</th>
+                    <td className="kv-value">{qty(card.deheading_qty)} KG | {money(card.deheading_amount)}</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">Grading | Peeling Qty / Amount</th>
+                    <td className="kv-value">{qty(card.grading_qty)} K | {qty(card.peeling_qty)} K | {money(card.peeling_amount)}</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">Soaking | Chem | Salt</th>
+                    <td className="kv-value">{qty(card.soaking_qty)} KG | C: {qty(card.chemical_qty)} | S: {qty(card.salt_qty)}</td>
+                  </tr>
+                  <tr>
+                    <th class="kv-label">Gross Prod | Net Prod | Stock Qty</th>
+                    <td className="kv-value">{qty(grossProduction)} G | {qty(card.production_qty)} N | {qty(card.stock_qty)} S</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">Stock Inventory Value</th>
+                    <td className="kv-value">{money(card.stock_amount)}</td>
+                  </tr>
+                  <tr>
+                    <th className="kv-label">Floor Balance Qty | Value</th>
+                    <td className="kv-value">{qty(card.floor_qty)} KG | {money(card.floor_amount)}</td>
                   </tr>
                 </tbody>
               </table>
