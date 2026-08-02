@@ -91,7 +91,7 @@
   border-left-color: #dc2626;
 }
 
-.batch-summary-keyvalue-card {
+.batch-summary-table-card {
   width: 100%;
   background: var(--surface-primary, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
@@ -101,51 +101,62 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
 }
 
-.keyvalue-table {
+.individual-matrix-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
-.keyvalue-table tr {
+.individual-matrix-table tr {
   border-bottom: 1px solid var(--border-color, #f1f5f9);
-  transition: background 0.2s ease;
 }
 
-.keyvalue-table tr:last-child {
+.individual-matrix-table tr:last-child {
   border-bottom: none;
 }
 
-.keyvalue-table tr:hover {
+.ind-cell {
+  width: 33.333%;
+  padding: 8px 14px;
+  border-right: 1px solid var(--border-color, #f1f5f9);
+  vertical-align: top;
+  transition: background 0.2s ease;
+}
+
+.ind-cell:last-child {
+  border-right: none;
+}
+
+.individual-matrix-table tr:hover td {
   background-color: color-mix(in srgb, var(--surface-secondary, #f8fafc) 60%, transparent);
 }
 
-.kv-label {
-  width: 32%;
-  padding: 8px 14px;
-  font-size: 10.5px;
+.ind-label {
+  display: block;
+  font-size: 9px;
   font-weight: 800;
   color: var(--text-secondary, #64748b);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  background: var(--surface-secondary, #f8fafc);
-  border-right: 1px solid var(--border-color, #e2e8f0);
-  text-align: left;
-  vertical-align: middle;
+  letter-spacing: 0.4px;
+  margin-bottom: 3px;
 }
 
-.kv-value {
-  width: 68%;
-  padding: 8px 14px;
-  font-size: 12.5px;
+.ind-val {
+  display: block;
+  font-size: 12px;
   font-weight: 850;
   color: var(--text-primary, #0f172a);
-  text-align: left;
-  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-@media (max-width: 640px) {
-  .kv-label { width: 40%; font-size: 9.5px; padding: 6px 10px; }
-  .kv-value { width: 60%; font-size: 11px; padding: 6px 10px; }
+@media (max-width: 768px) {
+  .individual-matrix-table, .individual-matrix-table tbody, .individual-matrix-table tr, .ind-cell {
+    display: block;
+    width: 100% !important;
+    border-right: none !important;
+  }
 }
 
 .batch-metric-accent {

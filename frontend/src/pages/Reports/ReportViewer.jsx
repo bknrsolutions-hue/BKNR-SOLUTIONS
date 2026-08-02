@@ -927,52 +927,128 @@ export default function ReportViewer({ reportId, activeRoute }) {
         {data && selectedBatch && (
           <div className="batch-summary-content">
             <div className="batch-section-title batch-section-title-first">Batch Matrix Metrics</div>
-            <div className="batch-summary-keyvalue-card">
-              <table className="keyvalue-table">
+            <div className="batch-summary-table-card">
+              <table className="individual-matrix-table">
                 <tbody>
+                  {/* Row 1 */}
                   <tr>
-                    <th className="kv-label">Batch Number</th>
-                    <td className="kv-value" style={{ color: 'var(--accent, #2563eb)', fontSize: '14px' }}>{selectedBatch}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Batch Number</span>
+                      <strong className="ind-val" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Supplier Name</span>
+                      <strong className="ind-val">{card.supplier_name || 'N/A'}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Purchasing Location</span>
+                      <strong className="ind-val">{card.purchasing_location || 'N/A'}</strong>
+                    </td>
                   </tr>
+                  {/* Row 2 */}
                   <tr>
-                    <th className="kv-label">Supplier | Location</th>
-                    <td className="kv-value">{card.supplier_name || 'N/A'} | {card.purchasing_location || 'N/A'}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Receiving Center</span>
+                      <strong className="ind-val">{card.receiving_center || 'N/A'}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Vehicle Number</span>
+                      <strong className="ind-val">{card.vehicle_number || 'N/A'}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Total Boxes</span>
+                      <strong className="ind-val">{card.total_boxes || 0} Box</strong>
+                    </td>
                   </tr>
+                  {/* Row 3 */}
                   <tr>
-                    <th className="kv-label">Receiving At | Vehicle</th>
-                    <td className="kv-value">{card.receiving_center || 'N/A'} | {card.vehicle_number || 'N/A'}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Challan Number</span>
+                      <strong class="ind-val">{card.challan_number || 'N/A'}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Gate Pass Number</span>
+                      <strong className="ind-val">{card.gate_pass_number || 'N/A'}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">RM Total Qty</span>
+                      <strong className="ind-val">{qty(card.rmp_qty)} KG</strong>
+                    </td>
                   </tr>
+                  {/* Row 4 */}
                   <tr>
-                    <th className="kv-label">Boxes | Challan | Gatepass</th>
-                    <td className="kv-value">{card.total_boxes || 0} Box | {card.challan_number || 'N/A'} | {card.gate_pass_number || 'N/A'}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">RM Total Amount</span>
+                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.rmp_amount)}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">De-Heading Qty</span>
+                      <strong className="ind-val">{qty(card.deheading_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">De-Heading Amount</span>
+                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.deheading_amount)}</strong>
+                    </td>
                   </tr>
+                  {/* Row 5 */}
                   <tr>
-                    <th className="kv-label">RM Total Qty / Amount</th>
-                    <td className="kv-value">{qty(card.rmp_qty)} KG | {money(card.rmp_amount)}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Grading Qty</span>
+                      <strong className="ind-val">{qty(card.grading_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Peeling Qty</span>
+                      <strong className="ind-val">{qty(card.peeling_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Peeling Amount</span>
+                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.peeling_amount)}</strong>
+                    </td>
                   </tr>
+                  {/* Row 6 */}
                   <tr>
-                    <th className="kv-label">De-Heading Qty / Amount</th>
-                    <td className="kv-value">{qty(card.deheading_qty)} KG | {money(card.deheading_amount)}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Soaking Qty</span>
+                      <strong className="ind-val">{qty(card.soaking_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Chemical Qty</span>
+                      <strong className="ind-val">{qty(card.chemical_qty)}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Salt Qty</span>
+                      <strong className="ind-val">{qty(card.salt_qty)}</strong>
+                    </td>
                   </tr>
+                  {/* Row 7 */}
                   <tr>
-                    <th className="kv-label">Grading | Peeling Qty / Amount</th>
-                    <td className="kv-value">{qty(card.grading_qty)} K | {qty(card.peeling_qty)} K | {money(card.peeling_amount)}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Gross Production Qty</span>
+                      <strong className="ind-val">{qty(grossProduction)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Net Production Qty</span>
+                      <strong className="ind-val">{qty(card.production_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Stock Qty</span>
+                      <strong className="ind-val">{qty(card.stock_qty)} KG</strong>
+                    </td>
                   </tr>
+                  {/* Row 8 */}
                   <tr>
-                    <th className="kv-label">Soaking | Chem | Salt</th>
-                    <td className="kv-value">{qty(card.soaking_qty)} KG | C: {qty(card.chemical_qty)} | S: {qty(card.salt_qty)}</td>
-                  </tr>
-                  <tr>
-                    <th class="kv-label">Gross Prod | Net Prod | Stock Qty</th>
-                    <td className="kv-value">{qty(grossProduction)} G | {qty(card.production_qty)} N | {qty(card.stock_qty)} S</td>
-                  </tr>
-                  <tr>
-                    <th className="kv-label">Stock Inventory Value</th>
-                    <td className="kv-value">{money(card.stock_amount)}</td>
-                  </tr>
-                  <tr>
-                    <th className="kv-label">Floor Balance Qty | Value</th>
-                    <td className="kv-value">{qty(card.floor_qty)} KG | {money(card.floor_amount)}</td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Stock Inventory Value</span>
+                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.stock_amount)}</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Floor Balance Qty</span>
+                      <strong className="ind-val" style={{ color: 'var(--danger, #dc2626)' }}>{qty(card.floor_qty)} KG</strong>
+                    </td>
+                    <td className="ind-cell">
+                      <span className="ind-label">Floor Balance Value</span>
+                      <strong className="ind-val" style={{ color: 'var(--danger, #dc2626)' }}>{money(card.floor_amount)}</strong>
+                    </td>
                   </tr>
                 </tbody>
               </table>
