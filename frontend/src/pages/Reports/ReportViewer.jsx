@@ -2033,14 +2033,24 @@ export default function ReportViewer({ reportId, activeRoute }) {
           >
             <thead>
               <tr>
-                {schema.headers.map((head, index) => (
-                  <th
-                    key={index}
-                    className={schema.keys[index] === '__sl' ? 'text-center' : schema.formats?.[schema.keys[index]] ? 'text-right' : 'text-left'}
-                  >
-                    {head}
-                  </th>
-                ))}
+                {schema.headers.map((head, index) => {
+                  const keyName = schema.keys[index];
+                  let colStyle = {};
+                  if (keyName === 'species') colStyle = { minWidth: '120px', width: '120px' };
+                  else if (keyName === 'variety') colStyle = { minWidth: '130px', width: '130px' };
+                  else if (keyName === 'batch_number') colStyle = { minWidth: '110px', width: '110px' };
+                  else if (keyName === 'rmp_received') colStyle = { minWidth: '120px', width: '120px' };
+
+                  return (
+                    <th
+                      key={index}
+                      className={keyName === '__sl' ? 'text-center' : schema.formats?.[keyName] ? 'text-right' : 'text-left'}
+                      style={colStyle}
+                    >
+                      {head}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
@@ -2270,8 +2280,14 @@ export default function ReportViewer({ reportId, activeRoute }) {
                                       </td>
                                     );
                                   }
+                                  let cellStyle = {};
+                                  if (k === 'species') cellStyle = { minWidth: '120px', fontWeight: '800' };
+                                  else if (k === 'variety') cellStyle = { minWidth: '130px' };
+                                  else if (k === 'batch_number') cellStyle = { minWidth: '110px', fontWeight: '700' };
+                                  else if (k === 'rmp_received') cellStyle = { minWidth: '120px', fontWeight: '800', color: '#0284c7', background: '#f0f9ff' };
+
                                   return (
-                                    <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                                    <td key={cIdx} className={format ? 'text-right' : 'text-left'} style={cellStyle}>
                                       {formatVal(value, format)}
                                     </td>
                                   );
