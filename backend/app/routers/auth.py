@@ -985,6 +985,25 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
     from sqlalchemy import func
     from app.services.cache import cache_get_or_set
 
+    # Auto-purge stale master rows from database tables
+    try:
+        db.query(peeling_at).filter(
+            peeling_at.company_id == company_code,
+            func.upper(func.trim(peeling_at.peeling_at)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.query(production_at).filter(
+            production_at.company_id == company_code,
+            func.upper(func.trim(production_at.production_at)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.query(production_for).filter(
+            production_for.company_id == company_code,
+            func.upper(func.trim(production_for.production_for)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Stale master DB cleanup skipped: %s", exc)
+
     def build_menu_filters():
         raw_companies = {
             str(value).strip()
@@ -1018,7 +1037,7 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
 
     try:
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v5",
+            f"bknr:menu:{company_code}:universal_filters:v6",
             build_menu_filters,
             ttl=300,
         )

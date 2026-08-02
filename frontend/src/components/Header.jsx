@@ -218,8 +218,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
       })
       .then(data => {
         if (data.status === 'success') {
-          setCompanies(data.companies || []);
-          setLocations(data.locations || []);
+          const excluded = ['MAIN PLANT', 'MAIN UNIT', 'GENERAL STOCK', 'N/A', 'NONE', 'NULL'];
+          setCompanies((data.companies || []).filter(c => !excluded.includes(String(c).trim().toUpperCase())));
+          setLocations((data.locations || []).filter(l => !excluded.includes(String(l).trim().toUpperCase())));
         }
       })
       .catch(err => console.error('Error fetching global dropdowns in header:', err));

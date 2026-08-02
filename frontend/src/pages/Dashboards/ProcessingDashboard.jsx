@@ -83,8 +83,9 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       })
       .then((resData) => {
         if (resData.status === 'success') {
-          setCompanies(resData.companies || []);
-          setLocations(resData.locations || []);
+          const excluded = ['MAIN PLANT', 'MAIN UNIT', 'GENERAL STOCK', 'N/A', 'NONE', 'NULL'];
+          setCompanies((resData.companies || []).filter(c => !excluded.includes(String(c).trim().toUpperCase())));
+          setLocations((resData.locations || []).filter(l => !excluded.includes(String(l).trim().toUpperCase())));
         }
       })
       .catch((err) => console.error(err));
