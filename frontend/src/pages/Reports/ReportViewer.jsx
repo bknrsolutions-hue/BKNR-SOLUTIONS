@@ -928,126 +928,171 @@ export default function ReportViewer({ reportId, activeRoute }) {
           <div className="batch-summary-content">
             <div className="batch-section-title batch-section-title-first">Batch Matrix Metrics</div>
             <div className="batch-summary-table-card">
-              <table className="individual-matrix-table">
+              <table className="matrix-5col-table">
                 <tbody>
                   {/* Row 1 */}
                   <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Batch Number</span>
-                      <strong className="ind-val" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Batch No:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Supplier Name</span>
-                      <strong className="ind-val">{card.supplier_name || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Supplier:</span>
+                        <strong className="flex-cell-val">{card.supplier_name || 'N/A'}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Purchasing Location</span>
-                      <strong className="ind-val">{card.purchasing_location || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Location:</span>
+                        <strong className="flex-cell-val">{card.purchasing_location || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Receiving At:</span>
+                        <strong className="flex-cell-val">{card.receiving_center || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Vehicle No:</span>
+                        <strong className="flex-cell-val">{card.vehicle_number || 'N/A'}</strong>
+                      </div>
                     </td>
                   </tr>
                   {/* Row 2 */}
                   <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Receiving Center</span>
-                      <strong className="ind-val">{card.receiving_center || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Total Boxes:</span>
+                        <strong className="flex-cell-val">{card.total_boxes || 0} Box</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Vehicle Number</span>
-                      <strong className="ind-val">{card.vehicle_number || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Challan No:</span>
+                        <strong className="flex-cell-val">{card.challan_number || 'N/A'}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Total Boxes</span>
-                      <strong className="ind-val">{card.total_boxes || 0} Box</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gate Pass:</span>
+                        <strong className="flex-cell-val">{card.gate_pass_number || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">RM Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.rmp_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">RM Amount:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.rmp_amount)}</strong>
+                      </div>
                     </td>
                   </tr>
                   {/* Row 3 */}
                   <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Challan Number</span>
-                      <strong class="ind-val">{card.challan_number || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">De-Heading Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.deheading_qty)} KG</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Gate Pass Number</span>
-                      <strong className="ind-val">{card.gate_pass_number || 'N/A'}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">De-Heading Amt:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.deheading_amount)}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">RM Total Qty</span>
-                      <strong className="ind-val">{qty(card.rmp_qty)} KG</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Grading Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.grading_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.peeling_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Amt:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.peeling_amount)}</strong>
+                      </div>
                     </td>
                   </tr>
                   {/* Row 4 */}
                   <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">RM Total Amount</span>
-                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.rmp_amount)}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Soaking Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.soaking_qty)} KG</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">De-Heading Qty</span>
-                      <strong className="ind-val">{qty(card.deheading_qty)} KG</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Chemical:</span>
+                        <strong className="flex-cell-val">{qty(card.chemical_qty)}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">De-Heading Amount</span>
-                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.deheading_amount)}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Salt Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.salt_qty)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gross Prod:</span>
+                        <strong className="flex-cell-val">{qty(grossProduction)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Net Prod:</span>
+                        <strong className="flex-cell-val">{qty(card.production_qty)} KG</strong>
+                      </div>
                     </td>
                   </tr>
                   {/* Row 5 */}
                   <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Grading Qty</span>
-                      <strong className="ind-val">{qty(card.grading_qty)} KG</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.stock_qty)} KG</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Peeling Qty</span>
-                      <strong className="ind-val">{qty(card.peeling_qty)} KG</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Value:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.stock_amount)}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Peeling Amount</span>
-                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.peeling_amount)}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Floor Bal Qty:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--danger, #dc2626)' }}>{qty(card.floor_qty)} KG</strong>
+                      </div>
                     </td>
-                  </tr>
-                  {/* Row 6 */}
-                  <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Soaking Qty</span>
-                      <strong className="ind-val">{qty(card.soaking_qty)} KG</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Floor Bal Value:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--danger, #dc2626)' }}>{money(card.floor_amount)}</strong>
+                      </div>
                     </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Chemical Qty</span>
-                      <strong className="ind-val">{qty(card.chemical_qty)}</strong>
-                    </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Salt Qty</span>
-                      <strong className="ind-val">{qty(card.salt_qty)}</strong>
-                    </td>
-                  </tr>
-                  {/* Row 7 */}
-                  <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Gross Production Qty</span>
-                      <strong className="ind-val">{qty(grossProduction)} KG</strong>
-                    </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Net Production Qty</span>
-                      <strong className="ind-val">{qty(card.production_qty)} KG</strong>
-                    </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Stock Qty</span>
-                      <strong className="ind-val">{qty(card.stock_qty)} KG</strong>
-                    </td>
-                  </tr>
-                  {/* Row 8 */}
-                  <tr>
-                    <td className="ind-cell">
-                      <span className="ind-label">Stock Inventory Value</span>
-                      <strong className="ind-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.stock_amount)}</strong>
-                    </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Floor Balance Qty</span>
-                      <strong className="ind-val" style={{ color: 'var(--danger, #dc2626)' }}>{qty(card.floor_qty)} KG</strong>
-                    </td>
-                    <td className="ind-cell">
-                      <span className="ind-label">Floor Balance Value</span>
-                      <strong className="ind-val" style={{ color: 'var(--danger, #dc2626)' }}>{money(card.floor_amount)}</strong>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Process Type:</span>
+                        <strong className="flex-cell-val">{selectedProdType || 'RMP'}</strong>
+                      </div>
                     </td>
                   </tr>
                 </tbody>

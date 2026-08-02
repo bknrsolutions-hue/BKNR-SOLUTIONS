@@ -154,7 +154,7 @@
 
         .full-width-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; }
 
-        /* 🟢 Unified 3-Column Table Card for Individual Un-grouped Metrics */
+        /* 🟢 5-Column Table Card Matrix (Label on Left, Value on Right) */
         .batch-summary-table-card {
             width: 100%;
             background: var(--card-bg);
@@ -164,54 +164,59 @@
             margin-bottom: 14px;
             box-shadow: var(--kpi-shadow);
         }
-        .individual-matrix-table {
+        .matrix-5col-table {
             width: 100%;
             border-collapse: collapse;
             table-layout: fixed;
         }
-        .individual-matrix-table tr {
+        .matrix-5col-table tr {
             border-bottom: 1px solid var(--td-border);
         }
-        .individual-matrix-table tr:last-child {
+        .matrix-5col-table tr:last-child {
             border-bottom: none;
         }
-        .ind-cell {
-            width: 33.333%;
-            padding: 8px 14px;
+        .cell-5col {
+            width: 20%;
+            padding: 8px 10px;
             border-right: 1px solid var(--td-border);
-            vertical-align: top;
+            vertical-align: middle;
             transition: background 0.2s ease;
         }
-        .ind-cell:last-child {
+        .cell-5col:last-child {
             border-right: none;
         }
-        .individual-matrix-table tr:hover td {
+        .matrix-5col-table tr:hover td {
             background-color: color-mix(in srgb, var(--th-bg) 60%, transparent);
         }
-        .ind-label {
-            display: block;
+        .flex-cell-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 6px;
+            width: 100%;
+        }
+        .flex-cell-label {
             font-size: 9px;
             font-weight: 800;
             color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.4px;
-            margin-bottom: 3px;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
         }
-        .ind-val {
-            display: block;
-            font-size: 12px;
+        .flex-cell-val {
+            font-size: 10.5px;
             font-weight: 850;
             color: var(--text-main);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
+            text-align: right;
         }
-        @media (max-width: 768px) {
-            .individual-matrix-table, .individual-matrix-table tbody, .individual-matrix-table tr, .ind-cell {
-                display: block;
-                width: 100% !important;
-                border-right: none !important;
-            }
+        @media (max-width: 1024px) {
+            .cell-5col { width: 33.333%; }
+        }
+        @media (max-width: 640px) {
+            .cell-5col { width: 100%; display: block; border-right: none !important; }
         }
 
         /* Recon Container */
@@ -372,126 +377,171 @@
     
     <div class="section-title" style="margin-top:0px;"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> BATCH MATRIX METRICS</div>
     <div class="batch-summary-table-card">
-        <table class="individual-matrix-table">
+        <table class="matrix-5col-table">
             <tbody>
                 <!-- Row 1 -->
                 <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Batch Number</span>
-                        <strong class="ind-val" style="color:var(--accent)">{{ selected_batch }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Batch No:</span>
+                            <strong class="flex-cell-val" style="color:var(--accent)">{{ selected_batch }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Supplier Name</span>
-                        <strong class="ind-val">{{ card.supplier_name or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Supplier:</span>
+                            <strong class="flex-cell-val">{{ card.supplier_name or 'N/A' }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Purchasing Location</span>
-                        <strong class="ind-val">{{ card.purchasing_location or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Location:</span>
+                            <strong class="flex-cell-val">{{ card.purchasing_location or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Receiving At:</span>
+                            <strong class="flex-cell-val">{{ card.receiving_center or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Vehicle No:</span>
+                            <strong class="flex-cell-val">{{ card.vehicle_number or 'N/A' }}</strong>
+                        </div>
                     </td>
                 </tr>
                 <!-- Row 2 -->
                 <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Receiving Center</span>
-                        <strong class="ind-val">{{ card.receiving_center or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Total Boxes:</span>
+                            <strong class="flex-cell-val">{{ card.total_boxes or '0' }} Box</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Vehicle Number</span>
-                        <strong class="ind-val">{{ card.vehicle_number or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Challan No:</span>
+                            <strong class="flex-cell-val">{{ card.challan_number or 'N/A' }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Total Boxes</span>
-                        <strong class="ind-val">{{ card.total_boxes or '0' }} Box</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gate Pass:</span>
+                            <strong class="flex-cell-val">{{ card.gate_pass_number or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rmp_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Amount:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</strong>
+                        </div>
                     </td>
                 </tr>
                 <!-- Row 3 -->
                 <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Challan Number</span>
-                        <strong class="ind-val">{{ card.challan_number or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">De-Heading Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.deheading_qty or 0) }} KG</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Gate Pass Number</span>
-                        <strong class="ind-val">{{ card.gate_pass_number or 'N/A' }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">De-Heading Amt:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">RM Total Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.rmp_qty or 0) }} KG</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Grading Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.grading_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.peeling_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Amt:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</strong>
+                        </div>
                     </td>
                 </tr>
                 <!-- Row 4 -->
                 <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">RM Total Amount</span>
-                        <strong class="ind-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Soaking Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.soaking_qty or 0) }} KG</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">De-Heading Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.deheading_qty or 0) }} KG</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Chemical:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.chemical_qty or 0) }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">De-Heading Amount</span>
-                        <strong class="ind-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Salt Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.salt_qty or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gross Prod:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(kpi_gross.total) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Net Prod:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.production_qty or 0) }} KG</strong>
+                        </div>
                     </td>
                 </tr>
                 <!-- Row 5 -->
                 <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Grading Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.grading_qty or 0) }} KG</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.stock_qty or 0) }} KG</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Peeling Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.peeling_qty or 0) }} KG</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Value:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Peeling Amount</span>
-                        <strong class="ind-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Floor Bal Qty:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger)">{{ "%.2f"|format(card.floor_qty or 0) }} KG</strong>
+                        </div>
                     </td>
-                </tr>
-                <!-- Row 6 -->
-                <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Soaking Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.soaking_qty or 0) }} KG</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Floor Bal Value:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger)">₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</strong>
+                        </div>
                     </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Chemical Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.chemical_qty or 0) }}</strong>
-                    </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Salt Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.salt_qty or 0) }}</strong>
-                    </td>
-                </tr>
-                <!-- Row 7 -->
-                <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Gross Production Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(kpi_gross.total) }} KG</strong>
-                    </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Net Production Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.production_qty or 0) }} KG</strong>
-                    </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Stock Qty</span>
-                        <strong class="ind-val">{{ "%.2f"|format(card.stock_qty or 0) }} KG</strong>
-                    </td>
-                </tr>
-                <!-- Row 8 -->
-                <tr>
-                    <td class="ind-cell">
-                        <span class="ind-label">Stock Inventory Value</span>
-                        <strong class="ind-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</strong>
-                    </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Floor Balance Qty</span>
-                        <strong class="ind-val" style="color:var(--danger)">{{ "%.2f"|format(card.floor_qty or 0) }} KG</strong>
-                    </td>
-                    <td class="ind-cell">
-                        <span class="ind-label">Floor Balance Value</span>
-                        <strong class="ind-val" style="color:var(--danger)">₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</strong>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Process Type:</span>
+                            <strong class="flex-cell-val">{{ selected_prod_type or 'RMP' }}</strong>
+                        </div>
                     </td>
                 </tr>
             </tbody>
