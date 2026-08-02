@@ -570,7 +570,7 @@ export default function DeHeading() {
     let chartMap = {}; // count -> { company -> qty }
 
     hosoFloorBalance.forEach(item => {
-      const comp = item.production_for || 'General Stock';
+      const comp = item.production_for || '';
       const loc = item.peeling_at || 'Purchased Stock';
       const sp = item.species || '';
       const qty = parseFloat(item.available_qty) || 0;
@@ -593,7 +593,7 @@ export default function DeHeading() {
     // Structure list hierarchically
     let hierarchy = {};
     filteredList.forEach(item => {
-      const comp = item.production_for || 'General Stock';
+      const comp = item.production_for || '';
       const loc = item.peeling_at || 'Purchased Stock';
       const qty = parseFloat(item.available_qty) || 0;
 

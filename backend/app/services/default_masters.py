@@ -113,9 +113,7 @@ DEFAULT_SUPPLIERS = [
     "Sample Supplier",
 ]
 
-DEFAULT_PRODUCTION_FOR = [
-    "Main Unit",
-]
+DEFAULT_PRODUCTION_FOR = []
 
 DEFAULT_PEELING_AT = [
     "Main Plant",
