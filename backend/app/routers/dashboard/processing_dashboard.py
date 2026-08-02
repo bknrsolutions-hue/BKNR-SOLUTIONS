@@ -919,17 +919,31 @@ def processing_dashboard(
     ]
 
     # =====================================================
-    # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
+    # 6. FLOOR BALANCE TOTAL (LIVE FOR TODAY, 9 AM IST SNAPSHOT FOR PAST)
     # =====================================================
-    floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
-        db,
-        company_id,
-        to_date,
-        production_for=global_production_for,
-        location=global_location,
-        allowed_locations=user_allowed_locations,
-    )
-    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_snapshot_rows), 2)
+    if to_date >= today:
+        from app.services.floor_balance import get_live_floor_balance_rows
+        floor_rows = get_live_floor_balance_rows(
+            db,
+            company_id,
+            production_for=global_production_for,
+            location=global_location,
+            allowed_locations=user_allowed_locations,
+        )
+        floor_snapshot_date = today
+        snapshot_time_label = "LIVE STOCK"
+    else:
+        floor_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
+            db,
+            company_id,
+            to_date,
+            production_for=global_production_for,
+            location=global_location,
+            allowed_locations=user_allowed_locations,
+        )
+        snapshot_time_label = "09:00 IST"
+
+    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_rows), 2)
 
     # 7. RESPONSE PAYLOAD
     if request.query_params.get("format") == "json":
@@ -944,7 +958,7 @@ def processing_dashboard(
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
             "floor_snapshot_date": str(floor_snapshot_date) if floor_snapshot_date else "",
-            "floor_snapshot_time": "09:00 IST",
+            "floor_snapshot_time": snapshot_time_label,
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,

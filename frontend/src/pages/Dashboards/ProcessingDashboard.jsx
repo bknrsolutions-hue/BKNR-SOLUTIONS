@@ -613,7 +613,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
                 {liveFloorKpi}<span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginLeft: '2px' }}>kg</span>
               </div>
               <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', marginTop: '4px', fontWeight: 700 }}>
-                {data?.floor_snapshot_date || selectedDate} · 09:00 IST
+                {data?.floor_snapshot_date || selectedDate} · {data?.floor_snapshot_time || 'LIVE STOCK'}
               </div>
             </div>
           </div>

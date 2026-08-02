@@ -31,8 +31,9 @@ def floor_balance_report(
     if isinstance(session_locations, str):
         session_locations = [value.strip() for value in session_locations.split(",") if value.strip()]
 
+    today_date = ist_now().date()
     actual_snapshot_date = None
-    if snapshot_date:
+    if snapshot_date and snapshot_date < today_date:
         rows_batch, actual_snapshot_date = get_floor_balance_snapshot_rows(
             db,
             company_id,
