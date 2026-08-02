@@ -920,7 +920,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
         
         {data && !selectedBatch && !loading && (
           <div className="batch-summary-empty">
-            Financial year, production company and batch number select chesi Batch Summary view cheyyandi.
+            Please select the Financial Year, Production Company, and Batch Number in the report to view the Batch Summary.
           </div>
         )}
 
