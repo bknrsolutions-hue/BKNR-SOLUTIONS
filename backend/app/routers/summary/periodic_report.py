@@ -900,6 +900,8 @@ async def get_periodic_summary_report(
     # KPI cards always use the selected date filter rows (not FY override)
     kpi_rows = rows
     card["gate_boxes"] = sum(int(r.no_of_material_boxes or 0) for r in kpi_rows["gate"])
+    veh_set = set(r.vehicle_number for r in kpi_rows["gate"] if getattr(r, "vehicle_number", None))
+    card["gate_vehicles"] = len(veh_set) if veh_set else len(kpi_rows["gate"])
     card["rmp_qty"] = sum(active_number(r, r.received_qty) for r in kpi_rows["rmp"])
     card["rmp_amount"] = sum(active_number(r, r.amount) for r in kpi_rows["rmp"])
     card["reprocess_qty"] = sum(float(r.in_qty or 0) for r in kpi_rows["reprocess"])

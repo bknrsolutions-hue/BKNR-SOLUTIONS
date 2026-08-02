@@ -1207,7 +1207,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
                     <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('gate')}>
                       <div className="flex-cell-item">
                         <span className="flex-cell-label">Gate Boxes:</span>
-                        <strong className="flex-cell-val">{quantity(card.gate_boxes)} Box</strong>
+                        <strong className="flex-cell-val">{quantity(card.gate_boxes || card.total_boxes)} Box {card.gate_vehicles ? `(${card.gate_vehicles} Veh)` : ''}</strong>
                       </div>
                     </td>
                     <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab(prodType === 'RMP' ? 'rmp' : 'reprocess')}>

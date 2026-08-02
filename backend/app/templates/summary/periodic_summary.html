@@ -365,7 +365,7 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-gate')">
                         <div class="flex-cell-item">
                             <span class="flex-cell-label">Gate Boxes:</span>
-                            <strong class="flex-cell-val">{{ card.gate_boxes|default(0) }} Box</strong>
+                            <strong class="flex-cell-val">{{ "{:,.2f}".format(card.gate_boxes|default(0)|float) }} Box {% if card.gate_vehicles %}({{ card.gate_vehicles }} Veh){% endif %}</strong>
                         </div>
                     </td>
                     {% if selected_prod_type == 'RMP' %}

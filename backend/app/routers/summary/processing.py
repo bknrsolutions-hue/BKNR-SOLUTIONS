@@ -270,7 +270,9 @@ async def get_processing_summary(
             
             if rows["gate"]:
                 g = rows["gate"][0]
-                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"])})
+                veh_set = set(row.vehicle_number for row in rows["gate"] if getattr(row, "vehicle_number", None))
+                gate_veh_count = len(veh_set) if veh_set else len(rows["gate"])
+                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"]), "gate_vehicles": gate_veh_count})
         else: 
             rows["reprocess"] = db.query(Reprocess).filter(Reprocess.new_batch_id==batch, Reprocess.company_id==company_code).all()
             if rows["reprocess"]:
