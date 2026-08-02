@@ -132,6 +132,7 @@ export default function ColdStorageHolding() {
 
   const handleSubmit = async event => {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setMessage('');
     const body = new URLSearchParams({

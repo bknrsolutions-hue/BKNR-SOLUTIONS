@@ -193,6 +193,7 @@ export default function GoodsGateMovements() {
 
   const submit = async event => {
     event.preventDefault();
+    if (saving || loading) return;
     setSaving(true);
     setMessage(null);
     try {

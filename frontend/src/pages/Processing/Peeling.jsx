@@ -318,6 +318,7 @@ export default function Peeling() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const inputQty = parseFloat(hlsoQty) || 0;
     if (inputQty > (floorAvail + 0.1)) {
       alert(`Insufficient floor stock! (Available: ${floorAvail} KG)`);

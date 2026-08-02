@@ -151,6 +151,7 @@ export default function GeneralStoreEntry() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (loading) return;
     setLoading(true);
     setMessage(null);
 

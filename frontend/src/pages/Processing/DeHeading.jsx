@@ -306,6 +306,7 @@ export default function DeHeading() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const reqQty = parseFloat(hosoQty) || 0;
     if (reqQty <= 0) {
       alert('Please enter a valid HOSO Quantity');

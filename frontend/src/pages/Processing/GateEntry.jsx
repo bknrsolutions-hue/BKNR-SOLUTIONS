@@ -173,6 +173,7 @@ function RawMaterialGateEntry() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setMessage(null);
     if (!productionFor || !receivingCenter || !supplierName || !purchasingLocation || !vehicleNumber) {
       setMessage({ type: 'error', text: 'Complete all required Gate Entry fields.' });
@@ -451,7 +452,7 @@ function RawMaterialGateEntry() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save
+              <Plus size={16} /> {loading ? 'Saving Entry...' : 'Save'}
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel

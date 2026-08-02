@@ -119,6 +119,7 @@ export default function StockEntry() {
 
   const handleStockIn = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     const fd = new URLSearchParams();
     fd.append('batch_number', batchNumber);
@@ -187,6 +188,7 @@ export default function StockEntry() {
 
   const handleStockOut = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     const validRows = outRows.filter(r => (parseInt(r.out_mc) || 0) > 0 || (parseInt(r.out_loose) || 0) > 0);
     if (!validRows.length) {

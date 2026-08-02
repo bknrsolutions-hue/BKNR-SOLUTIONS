@@ -242,6 +242,7 @@ export default function Grading() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     if (!productionFor || !peelingAt || !batchNumber || !hosoCount || !speciesVal || !varietyName || !gradedCount || !quantity) {
       alert('Please fill in all required fields.');
       return;

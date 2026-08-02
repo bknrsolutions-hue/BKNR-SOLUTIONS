@@ -279,6 +279,7 @@ export default function Production() {
   // Form submission handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
 
     if (
       !formCompany ||

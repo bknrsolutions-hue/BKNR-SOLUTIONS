@@ -238,6 +238,7 @@ export default function RawMaterialPurchasing() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     if (!productionFor || !peelingAt || !batchNumber || !varietyName || !species || !rate) {
       alert('Please fill in all required fields.');
       return;
@@ -668,7 +669,7 @@ export default function RawMaterialPurchasing() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save
+              <Plus size={16} /> {loading ? 'Saving Purchase...' : 'Save'}
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel

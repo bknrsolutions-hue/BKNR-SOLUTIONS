@@ -232,6 +232,7 @@ export default function Soaking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const qty = parseFloat(inQty) || 0;
     const rej = parseFloat(rejectionQty) || 0;
 
