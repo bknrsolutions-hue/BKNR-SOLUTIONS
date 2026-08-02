@@ -517,22 +517,21 @@
   }
 
   .batch-summary-filters,
+  .erp-horizontal-filter-row,
+  .report-filter-bar,
+  .no-print,
+  button,
+  .btn,
   .batch-summary-report > div:first-child button,
   .batch-summary-empty {
     display: none !important;
   }
 
-  .batch-matrix-grid {
-    grid-template-columns: repeat(4, 1fr) !important;
-    gap: 4px !important;
-  }
-
-  .batch-metric-card,
-  .batch-grading-card,
+  .batch-summary-table-card,
   .batch-reconciliation-card,
   .batch-table-card {
     break-inside: avoid;
-    border: 1px solid #aaa !important;
+    border: 1.5px solid #64748b !important;
     box-shadow: none !important;
   }
 

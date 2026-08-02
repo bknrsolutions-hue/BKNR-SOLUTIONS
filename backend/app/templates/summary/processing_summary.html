@@ -284,16 +284,13 @@
 
         /* Strict Print Engine */
         @media print { 
-            .filter-card, button, .no-print, .btn, .dropdown, form, nav, footer { display: none !important; } 
-            html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: var(--card-bg) !important; color: #000 !important; font-size: 8.5px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-            .container, .container-fluid, .row, .col-12, main, #wrapper { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+            .filter-card, .batch-summary-filters, .erp-horizontal-filter-row, .report-filter-bar, #filterForm, button, .no-print, .btn, .dropdown, form, nav, footer, .btn-filter-action, .btn-reset-action { display: none !important; } 
+            html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: #ffffff !important; color: #000 !important; font-size: 9px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+            .container, .container-fluid, .row, .col-12, main, #wrapper, .full-width-container { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; display: block !important; }
             table { width: 100% !important; table-layout: auto !important; page-break-inside: auto; }
             tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-            td, th { font-size: 8px !important; padding: 3px 4px !important; word-wrap: break-word !important; white-space: normal !important; }
-            th { font-size: 8.5px !important; background-color: #333 !important; color: #fff !important; }
-            .horizontal-kpi-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; }
-            .cards-view-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
-            .table-wrap, .kpi-column-card, .recon-wrap, .report-card, .section-title { border: 1px solid #aaa !important; box-shadow: none !important; page-break-inside: avoid !important; margin-bottom: 8px !important; }
+            td, th { font-size: 9px !important; padding: 4px 6px !important; word-wrap: break-word !important; }
+            .batch-summary-table-card, .table-wrap, .recon-wrap, .report-card, .section-title { border: 1.5px solid #64748b !important; box-shadow: none !important; page-break-inside: avoid !important; margin-bottom: 8px !important; }
             .section-title { page-break-after: avoid !important; }
             div, section, main, article { overflow: visible !important; }
         }
