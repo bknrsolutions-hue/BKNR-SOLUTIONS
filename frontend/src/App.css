@@ -249,7 +249,8 @@ body {
 
 .report-viewer-card .erp-horizontal-filter-row {
   flex: 0 0 auto;
-  max-height: 48px;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 .report-viewer-card .erp-report-kpi-row {

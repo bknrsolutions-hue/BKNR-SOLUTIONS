@@ -14,6 +14,8 @@
   flex-wrap: wrap !important;
   gap: 10px !important;
   margin-bottom: 18px !important;
+  max-height: none !important;
+  overflow: visible !important;
 }
 
 .batch-filter-actions {
