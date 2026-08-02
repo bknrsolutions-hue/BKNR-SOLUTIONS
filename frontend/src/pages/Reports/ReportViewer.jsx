@@ -1091,7 +1091,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
                     <td className="cell-5col">
                       <div className="flex-cell-item">
                         <span className="flex-cell-label">Process Type:</span>
-                        <strong className="flex-cell-val">{selectedProdType || 'RMP'}</strong>
+                        <strong className="flex-cell-val">{prodType || 'RMP'}</strong>
                       </div>
                     </td>
                   </tr>
