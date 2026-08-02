@@ -242,9 +242,9 @@ body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-fo
             </div>
         </div>
     </div>
-    <div class="panel" id="chartPanel">
+    <div class="panel" id="chartPanel" style="min-width: 0; overflow: hidden;">
         <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
-        <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; padding: 15px;">
+        <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; max-height: 300px; padding: 15px; overflow: hidden;">
             <canvas id="countStackedBar"></canvas>
         </div>
     </div>

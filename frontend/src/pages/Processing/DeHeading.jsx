@@ -756,7 +756,7 @@ export default function DeHeading() {
     }
 
     return (
-      <div style={{ position: 'relative', width: '100%', height: '250px' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '250px', maxHeight: '300px', overflow: 'hidden' }}>
         <canvas ref={balanceChartCanvasRef} />
       </div>
     );
@@ -1149,7 +1149,7 @@ export default function DeHeading() {
       {/* Main Grid Dashboard */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.65fr 1.35fr', gap: '16px', marginBottom: '25px', flexShrink: 0 }}>
         {/* HOSO Floor Balance Tree Panel */}
-        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
             HOSO Floor Balance
           </div>
@@ -1213,7 +1213,7 @@ export default function DeHeading() {
         </div>
 
         {/* Live Stats Panel */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filtered Batches</div>
           <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash)', margin: '8px 0 20px 0' }}>{uniqueBatches}</div>
           <div style={{ width: '80%', height: '1px', background: 'var(--border-light)', marginBottom: '20px' }} />
@@ -1222,11 +1222,11 @@ export default function DeHeading() {
         </div>
 
         {/* Chart Panel */}
-        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
             Count-Wise Stacked Balance (KG)
           </div>
-          <div style={{ flex: 1, padding: '10px', overflow: 'hidden' }}>
+          <div style={{ flex: 1, padding: '10px', overflow: 'hidden', position: 'relative', width: '100%', minHeight: '260px' }}>
             {renderCustomBarChart()}
           </div>
         </div>
