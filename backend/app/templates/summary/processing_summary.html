@@ -367,17 +367,48 @@
         <table class="matrix-table">
             <tbody>
                 <tr>
+                    <!-- Column 1: Batch & Receiving Info -->
                     <td class="matrix-cell">
                         <div class="matrix-label">Batch Number</div>
                         <div class="matrix-val-large" style="color:var(--accent)">{{ selected_batch }}</div>
                     </td>
+                    <!-- Column 2: RMP & Raw Material -->
+                    <td class="matrix-cell">
+                        <div class="matrix-label">RM Total Qty / Amount</div>
+                        <div class="matrix-val-large">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</div>
+                    </td>
+                    <!-- Column 3: Production & Stock -->
+                    <td class="matrix-cell">
+                        <div class="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
+                        <div class="matrix-val-large">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
+                    </td>
+                </tr>
+                <tr>
                     <td class="matrix-cell">
                         <div class="matrix-label">Supplier | Location</div>
                         <div class="matrix-val-large">{{ card.supplier_name or 'N/A' }} | {{ card.purchasing_location or 'N/A' }}</div>
                     </td>
                     <td class="matrix-cell">
+                        <div class="matrix-label">De-Heading Qty / Amount</div>
+                        <div class="matrix-val-large">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</div>
+                    </td>
+                    <td class="matrix-cell">
+                        <div class="matrix-label">Stock Inventory Value</div>
+                        <div class="matrix-val-large">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</div>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="matrix-cell">
                         <div class="matrix-label">Receiving At | Vehicle</div>
                         <div class="matrix-val-large">{{ card.receiving_center or 'N/A' }} | {{ card.vehicle_number or 'N/A' }}</div>
+                    </td>
+                    <td class="matrix-cell">
+                        <div class="matrix-label">Grading | Peeling Qty / Amount</div>
+                        <div class="matrix-val-large">{{ "%.2f"|format(card.grading_qty or 0) }} K | {{ "%.2f"|format(card.peeling_qty or 0) }} K | ₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</div>
+                    </td>
+                    <td class="matrix-cell" rowspan="2" style="vertical-align: middle;">
+                        <div class="matrix-label">Floor Balance Qty | Value</div>
+                        <div class="matrix-val-large" style="font-size:13.5px;">{{ "%.2f"|format(card.floor_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</div>
                     </td>
                 </tr>
                 <tr>
@@ -386,36 +417,8 @@
                         <div class="matrix-val-large">{{ card.total_boxes or '0' }} Box | {{ card.challan_number or 'N/A' }} | {{ card.gate_pass_number or 'N/A' }}</div>
                     </td>
                     <td class="matrix-cell">
-                        <div class="matrix-label">RM Total Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">De-Heading Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Grading | Peeling Qty / Amount</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.grading_qty or 0) }} K | {{ "%.2f"|format(card.peeling_qty or 0) }} K | ₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell">
                         <div class="matrix-label">Soaking | Chem | Salt</div>
                         <div class="matrix-val-large">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
-                    </td>
-                </tr>
-                <tr>
-                    <td class="matrix-cell">
-                        <div class="matrix-label">Stock Inventory Value</div>
-                        <div class="matrix-val-large">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</div>
-                    </td>
-                    <td class="matrix-cell" colspan="2">
-                        <div class="matrix-label">Floor Balance Qty | Value</div>
-                        <div class="matrix-val-large">{{ "%.2f"|format(card.floor_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</div>
                     </td>
                 </tr>
             </tbody>

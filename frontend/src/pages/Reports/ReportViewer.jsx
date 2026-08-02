@@ -931,17 +931,48 @@ export default function ReportViewer({ reportId, activeRoute }) {
               <table className="matrix-table">
                 <tbody>
                   <tr>
+                    {/* Column 1: Receiving Info */}
                     <td className="matrix-cell">
                       <div className="matrix-label">Batch Number</div>
                       <div className="matrix-val-large" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</div>
                     </td>
+                    {/* Column 2: RMP & Stage Quantities */}
+                    <td className="matrix-cell">
+                      <div className="matrix-label">RM Total Qty / Amount</div>
+                      <div className="matrix-val-large">{qty(card.rmp_qty)} KG | {money(card.rmp_amount)}</div>
+                    </td>
+                    {/* Column 3: Finished Goods & Stock */}
+                    <td className="matrix-cell">
+                      <div className="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
+                      <div className="matrix-val-large">{qty(grossProduction)} G | {qty(card.production_qty)} N | {qty(card.stock_qty)} S</div>
+                    </td>
+                  </tr>
+                  <tr>
                     <td className="matrix-cell">
                       <div className="matrix-label">Supplier | Location</div>
                       <div className="matrix-val-large">{card.supplier_name || 'N/A'} | {card.purchasing_location || 'N/A'}</div>
                     </td>
                     <td className="matrix-cell">
+                      <div className="matrix-label">De-Heading Qty / Amount</div>
+                      <div className="matrix-val-large">{qty(card.deheading_qty)} KG | {money(card.deheading_amount)}</div>
+                    </td>
+                    <td className="matrix-cell">
+                      <div className="matrix-label">Stock Inventory Value</div>
+                      <div className="matrix-val-large">{money(card.stock_amount)}</div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td className="matrix-cell">
                       <div className="matrix-label">Receiving At | Vehicle</div>
                       <div className="matrix-val-large">{card.receiving_center || 'N/A'} | {card.vehicle_number || 'N/A'}</div>
+                    </td>
+                    <td className="matrix-cell">
+                      <div className="matrix-label">Grading | Peeling Qty / Amount</div>
+                      <div className="matrix-val-large">{qty(card.grading_qty)} K | {qty(card.peeling_qty)} K | {money(card.peeling_amount)}</div>
+                    </td>
+                    <td className="matrix-cell" rowSpan={2} style={{ verticalAlign: 'middle' }}>
+                      <div className="matrix-label">Floor Balance Qty | Value</div>
+                      <div className="matrix-val-large" style={{ fontSize: '13.5px' }}>{qty(card.floor_qty)} KG | {money(card.floor_amount)}</div>
                     </td>
                   </tr>
                   <tr>
@@ -950,36 +981,8 @@ export default function ReportViewer({ reportId, activeRoute }) {
                       <div className="matrix-val-large">{card.total_boxes || 0} Box | {card.challan_number || 'N/A'} | {card.gate_pass_number || 'N/A'}</div>
                     </td>
                     <td className="matrix-cell">
-                      <div className="matrix-label">RM Total Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.rmp_qty)} KG | {money(card.rmp_amount)}</div>
-                    </td>
-                    <td class="matrix-cell">
-                      <div className="matrix-label">De-Heading Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.deheading_qty)} KG | {money(card.deheading_amount)}</div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Grading | Peeling Qty / Amount</div>
-                      <div className="matrix-val-large">{qty(card.grading_qty)} K | {qty(card.peeling_qty)} K | {money(card.peeling_amount)}</div>
-                    </td>
-                    <td className="matrix-cell">
                       <div className="matrix-label">Soaking | Chem | Salt</div>
                       <div className="matrix-val-large">{qty(card.soaking_qty)} KG | C: {qty(card.chemical_qty)} | S: {qty(card.salt_qty)}</div>
-                    </td>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Gross Prod | Net Prod | Stock Qty</div>
-                      <div className="matrix-val-large">{qty(grossProduction)} G | {qty(card.production_qty)} N | {qty(card.stock_qty)} S</div>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="matrix-cell">
-                      <div className="matrix-label">Stock Inventory Value</div>
-                      <div className="matrix-val-large">{money(card.stock_amount)}</div>
-                    </td>
-                    <td className="matrix-cell" colSpan={2}>
-                      <div className="matrix-label">Floor Balance Qty | Value</div>
-                      <div className="matrix-val-large">{qty(card.floor_qty)} KG | {money(card.floor_amount)}</div>
                     </td>
                   </tr>
                 </tbody>
