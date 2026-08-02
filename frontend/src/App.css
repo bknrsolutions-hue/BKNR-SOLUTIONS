@@ -3274,3 +3274,49 @@ body.floating-support-dragging * {
     margin-bottom: 6px;
   }
 }
+
+/* 🖨️ Global Rock-Solid Full-Page Print Rules (Prints All Pages, No Truncation) */
+@media print {
+  html, body, #root, .app-container, .main-content, .layout-content, .report-viewer-card, .batch-summary-report, .report-viewer-wrapper, .app-layout {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    position: static !important;
+    float: none !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+  }
+
+  .sidebar, .top-header, .header, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn {
+    display: none !important;
+  }
+
+  .table-responsive, .table-wrap, .bknr-table-wrapper {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  table {
+    page-break-inside: auto;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .batch-summary-table-card, .batch-reconciliation-card, .batch-table-card, .section-title {
+    page-break-inside: avoid !important;
+    border: 1.5px solid #64748b !important;
+    box-shadow: none !important;
+  }
+}
