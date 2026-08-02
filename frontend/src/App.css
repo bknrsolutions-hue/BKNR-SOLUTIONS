@@ -3275,9 +3275,14 @@ body.floating-support-dragging * {
   }
 }
 
-/* 🖨️ Global Rock-Solid Full-Page Print Rules (Prints All Pages, No Truncation) */
+/* 🖨️ Global Rock-Solid Full-Page Print Rules (Prints All Pages, No Truncation, No Blank Page 1) */
 @media print {
-  html, body, #root, .app-container, .main-content, .layout-content, .report-viewer-card, .batch-summary-report, .report-viewer-wrapper, .app-layout {
+  @page {
+    margin: 6mm !important;
+    size: auto;
+  }
+
+  html, body, #root, .app-container, .main-content, .layout-content, .report-viewer-card, .batch-summary-report, .report-viewer-wrapper, .app-layout, .embedded-app-shell, .embedded-app-content {
     height: auto !important;
     max-height: none !important;
     min-height: 0 !important;
@@ -3289,13 +3294,21 @@ body.floating-support-dragging * {
     display: block !important;
     margin: 0 !important;
     padding: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
     background: #ffffff !important;
     color: #000000 !important;
     box-shadow: none !important;
+    border: none !important;
   }
 
-  .sidebar, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn {
+  .sidebar, .sidebar-overlay, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, .app-back-strip, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn, .batch-summary-empty {
     display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
   }
 
   .table-responsive, .table-wrap, .bknr-table-wrapper {
