@@ -1192,22 +1192,78 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
         {data && (
           <div className="periodic-summary-content">
-            <div className="periodic-kpi-grid no-print">
-              <PeriodicKpi label="Opening Floor Bal" primary={`${quantity(card.floor_opening_qty)} KG`} secondary={currency(card.floor_opening_val)} icon="fa-hourglass-start" onClick={() => setActiveTab('opening_floor_balance')} />
-              <PeriodicKpi label="Gate Boxes" primary={quantity(card.gate_boxes)} secondary="Boxes Received" icon="fa-door-open" onClick={() => setActiveTab('gate')} />
-              {prodType === 'RMP' ? (
-                <PeriodicKpi label="RM Purchasing" primary={`${quantity(card.rmp_qty)} KG`} secondary={currency(card.rmp_amount)} icon="fa-cart-shopping" onClick={() => setActiveTab('rmp')} />
-              ) : (
-                <PeriodicKpi label="Reprocess" primary={`${quantity(card.rep_in)} KG`} secondary={`Out: ${quantity(card.rep_out)} KG`} icon="fa-recycle" onClick={() => setActiveTab('reprocess')} />
-              )}
-              <PeriodicKpi label="Deheading" primary={`${quantity(card.deh_hoso)} KG`} secondary={`HLSO: ${quantity(card.deh_hlso)} KG`} icon="fa-scissors" onClick={() => setActiveTab('deheading')} />
-              <PeriodicKpi label="Grading Output" primary={`${quantity(card.grd_qty)} KG`} secondary="Graded Qty" icon="fa-layer-group" onClick={() => setActiveTab('grading_details')} />
-              <PeriodicKpi label="Peeling Input" primary={`${quantity(card.pel_hlso)} KG`} secondary={`Peeled: ${quantity(card.pel_peeled)} KG`} icon="fa-hand-dots" onClick={() => setActiveTab('peeling')} />
-
-              <PeriodicKpi label="Soaking Input" primary={`${quantity(card.soaking_qty)} KG`} secondary={`Chem ${quantity(card.chemical_qty)} | Salt ${quantity(card.salt_qty)}`} icon="fa-water" onClick={() => setActiveTab('soaking')} />
-              <PeriodicKpi label="Net Production" primary={`${quantity(card.production_qty)} KG`} secondary="Packed Output" icon="fa-box-open" onClick={() => setActiveTab('production')} />
-              <PeriodicKpi label="Stock Vault Asset" primary={`${quantity(card.stock_qty)} KG`} secondary={`Out: ${quantity(card.stock_out_qty)} KG`} icon="fa-warehouse" onClick={() => setActiveTab('stock_in')} />
-              <PeriodicKpi label="Closing Floor Bal" primary={`${quantity(card.floor_closing_qty)} KG`} secondary={currency(card.floor_closing_val)} icon="fa-balance-scale" onClick={() => setActiveTab('closing_floor_balance')} />
+            {/* 🟢 KPI SUMMARY MATRIX TABLE (BATCH SUMMARY STYLE) */}
+            <div className="summary-table-wrap no-print" style={{ marginBottom: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+              <table className="batch-summary-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {/* Row 1 */}
+                  <tr>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('opening_floor_balance')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Opening Floor Bal:</span>
+                        <strong className="flex-cell-val">{quantity(card.floor_opening_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('gate')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gate Boxes:</span>
+                        <strong className="flex-cell-val">{quantity(card.gate_boxes)} Box</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab(prodType === 'RMP' ? 'rmp' : 'reprocess')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">{prodType === 'RMP' ? 'RM Purchasing:' : 'Reprocess Input:'}</span>
+                        <strong className="flex-cell-val">{quantity(prodType === 'RMP' ? card.rmp_qty : card.rep_in)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('deheading')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Deheading HOSO:</span>
+                        <strong className="flex-cell-val">{quantity(card.deh_hoso)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('grading_details')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Grading Output:</span>
+                        <strong className="flex-cell-val">{quantity(card.grd_qty)} KG</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 2 */}
+                  <tr>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('peeling')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Input:</span>
+                        <strong className="flex-cell-val">{quantity(card.pel_hlso)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('soaking')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Soaking Input:</span>
+                        <strong className="flex-cell-val">{quantity(card.soaking_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('production')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Net Production:</span>
+                        <strong className="flex-cell-val" style={{ color: '#0284c7' }}>{quantity(card.production_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('stock_in')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Vault Asset:</span>
+                        <strong className="flex-cell-val">{quantity(card.stock_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('closing_floor_balance')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Closing Floor Bal:</span>
+                        <strong className="flex-cell-val" style={{ color: '#dc2626' }}>{quantity(card.floor_closing_qty)} KG</strong>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {renderPeriodicFilters()}

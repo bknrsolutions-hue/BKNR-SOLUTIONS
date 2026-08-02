@@ -350,61 +350,87 @@ tr:hover td { background-color: var(--table-hover-bg); }
         {% set kpi_soak.total_in = kpi_soak.total_in + (s.in_qty|default(0.0)|float - s.rejection_qty|default(0.0)|float) %}
     {% endfor %}
 
-    <!-- 🔴 KPI MATRIX GRIDS -->
-    <div class="kpi-container-wrapper no-print">
-        <div class="kpi-matrix-grid">
-            
-            <div class="ref-kpi-card" onclick="openSection('sec-open-floor')">
-                <span class="ref-kpi-meta kpi-icon-row">Opening Floor Bal <i class="fas fa-hourglass-start"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_opening_val|default(0.0)) }}</span></span>
-            </div>
-
-            <div class="ref-kpi-card" onclick="openSection('sec-gate')">
-                <span class="ref-kpi-meta kpi-icon-row">Gate Boxes <i class="fas fa-door-open"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ card.gate_boxes }}</span><span class="amt-sub">Boxes Received</span></span>
-            </div>
-            
-            {% if selected_prod_type == 'RMP' %}
-            <div class="ref-kpi-card" onclick="openSection('sec-rmp')">
-                <span class="ref-kpi-meta kpi-icon-row">RM Purchasing <i class="fas fa-shopping-cart"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rmp_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.rmp_amount) }}</span></span>
-            </div>
-            {% else %}
-            <div class="ref-kpi-card" onclick="openSection('sec-rep')">
-                <span class="ref-kpi-meta kpi-icon-row">Reprocess <i class="fas fa-recycle"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rep_in|default(0)) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.rep_out|default(0)) }} KG</span></span>
-            </div>
-            {% endif %}
-
-            <div class="ref-kpi-card" onclick="openSection('sec-deh')">
-                <span class="ref-kpi-meta kpi-icon-row">Deheading <i class="fas fa-scissors"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG</span><span class="amt-sub">HLSO: {{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-grd')">
-                <span class="ref-kpi-meta kpi-icon-row">Grading Output <i class="fas fa-layer-group"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span><span class="amt-sub">Graded Qty</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-pel')">
-                <span class="ref-kpi-meta kpi-icon-row">Peeling Input <i class="fas fa-hands"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.pel_hlso|default(0)) }} KG</span><span class="amt-sub">Peeled: {{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-soak')">
-                <span class="ref-kpi-meta kpi-icon-row">Soaking Input <i class="fas fa-water"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.soaking_qty|default(0)) }} KG</span><span class="amt-sub">Chem {{ "%.2f"|format(card.chemical_qty|default(0)) }} | Salt {{ "%.2f"|format(card.salt_qty|default(0)) }}</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-prod')">
-                <span class="ref-kpi-meta kpi-icon-row">Net Production <i class="fas fa-box-open"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.production_qty) }} KG</span><span class="amt-sub">Packed Output</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-stk')">
-                <span class="ref-kpi-meta kpi-icon-row">Stock Vault Asset <i class="fas fa-warehouse"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.stock_qty) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.stock_out_qty|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-close-floor')">
-                <span class="ref-kpi-meta kpi-icon-row">Closing Floor Bal <i class="fas fa-balance-scale"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_closing_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_closing_val) }}</span></span>
-            </div>
-        </div>
+    <!-- 🟢 KPI SUMMARY MATRIX TABLE (BATCH SUMMARY STYLE) -->
+    <div class="summary-table-wrap no-print" style="margin-bottom: 12px; background: #fff; border-radius: var(--radius-premium); border: 1px solid var(--border-color); overflow: hidden;">
+        <table class="batch-summary-table" style="width: 100%; border-collapse: collapse;">
+            <tbody>
+                <!-- Row 1 -->
+                <tr>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-open-floor')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Opening Floor Bal:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-gate')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gate Boxes:</span>
+                            <strong class="flex-cell-val">{{ card.gate_boxes|default(0) }} Box</strong>
+                        </div>
+                    </td>
+                    {% if selected_prod_type == 'RMP' %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-rmp')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Purchasing:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rmp_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    {% else %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-rep')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Reprocess Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rep_in|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    {% endif %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-deh')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Deheading HOSO:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.deh_hoso|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-grd')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Grading Output:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.grd_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 2 -->
+                <tr>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-pel')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.pel_hlso|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-soak')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Soaking Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.soaking_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-prod')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Net Production:</span>
+                            <strong class="flex-cell-val" style="color:var(--accent-blue);">{{ "%.2f"|format(card.production_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-stk')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Vault Asset:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.stock_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-close-floor')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Closing Floor Bal:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger);">{{ "%.2f"|format(card.floor_closing_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- 🟢 FILTERS BAR PANEL -->
