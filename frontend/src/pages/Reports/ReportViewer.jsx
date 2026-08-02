@@ -2132,14 +2132,16 @@ const actionsRowStyle = {
 };
 
 const filtersWrapperStyle = {
+  position: 'relative',
+  zIndex: 20,
   display: 'flex',
   flexWrap: 'wrap',
   gap: '10px',
   background: 'var(--surface-primary, #ffffff)',
-  padding: '10px 14px',
+  padding: '12px 16px',
   borderRadius: '8px',
   border: '1px solid var(--border-color, #e2e8f0)',
-  marginBottom: '12px',
+  marginBottom: '18px',
   alignItems: 'flex-end'
 };
 

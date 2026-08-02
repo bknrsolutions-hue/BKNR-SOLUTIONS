@@ -8,10 +8,12 @@
 }
 
 .batch-summary-filters {
-  display: grid !important;
-  grid-template-columns: repeat(4, minmax(150px, 1fr)) auto !important;
-  align-items: end !important;
-  gap: 8px !important;
+  position: relative;
+  z-index: 20;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 10px !important;
+  margin-bottom: 18px !important;
 }
 
 .batch-filter-actions {
