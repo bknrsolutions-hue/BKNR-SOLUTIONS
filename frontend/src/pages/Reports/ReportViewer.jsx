@@ -1930,9 +1930,9 @@ export default function ReportViewer({ reportId, activeRoute }) {
         formats: { material_boxes: 'number', received_qty: 'number', amount: 'currency' }
       },
       reconciliation: {
-        headers: ['Production For', 'Production At', 'Species', 'Variety', 'Batch', 'RMP Received', 'Deheading Diff', 'Peeling Diff', 'Soaking In', 'Produced Qty', 'Prod Diff Qty'],
-        keys: ['production_for', 'production_at', 'species', 'variety', 'batch_number', 'rmp_received', 'deheading_diff', 'peeling_diff', 'soaking_in', 'prod_qty', 'diff_qty'],
-        formats: { rmp_received: 'number', deheading_diff: 'number', peeling_diff: 'number', soaking_in: 'number', prod_qty: 'number', diff_qty: 'number' }
+        headers: ['Species', 'Variety', 'Batch Number', 'RMP Received', 'Deheading In', 'Deheading Out', 'Deheading Diff', 'Peeling In', 'Peeling Out', 'Peeling Diff', 'Soaking In', 'Produced Qty', 'Prod Diff Qty'],
+        keys: ['species', 'variety', 'batch_number', 'rmp_received', 'deheading_in', 'deheading_out', 'deheading_diff', 'peeling_in', 'peeling_out', 'peeling_diff', 'soaking_in', 'prod_qty', 'diff_qty'],
+        formats: { rmp_received: 'number', deheading_in: 'number', deheading_out: 'number', deheading_diff: 'number', peeling_in: 'number', peeling_out: 'number', peeling_diff: 'number', soaking_in: 'number', prod_qty: 'number', diff_qty: 'number' }
       }
     };
 
