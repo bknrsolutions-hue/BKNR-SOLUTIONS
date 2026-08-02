@@ -3294,7 +3294,7 @@ body.floating-support-dragging * {
     box-shadow: none !important;
   }
 
-  .sidebar, .top-header, .header, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn {
+  .sidebar, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn {
     display: none !important;
   }
 
