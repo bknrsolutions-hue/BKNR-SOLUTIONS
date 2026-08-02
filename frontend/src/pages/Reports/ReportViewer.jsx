@@ -2194,6 +2194,156 @@ export default function ReportViewer({ reportId, activeRoute }) {
                       </tr>
                     </>
                   );
+                })() : tab === 'reconciliation' ? (() => {
+                  // Variety-wise grouping for Reconciliation table
+                  const groups = {};
+                  filteredTabRows.forEach(row => {
+                    const vName = String(row.variety || 'N/A').trim();
+                    if (!groups[vName]) groups[vName] = [];
+                    groups[vName].push(row);
+                  });
+
+                  let totRMP = 0, totDHIn = 0, totDHOut = 0, totDHDiff = 0;
+                  let totPelIn = 0, totPelOut = 0, totPelDiff = 0;
+                  let totSoakIn = 0, totProdQty = 0, totProdDiff = 0;
+
+                  const posBadgeStyle = {
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    color: '#059669',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: '800',
+                    fontSize: '11px',
+                    display: 'inline-block'
+                  };
+                  const negBadgeStyle = {
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: '800',
+                    fontSize: '11px',
+                    display: 'inline-block'
+                  };
+
+                  return (
+                    <>
+                      {Object.entries(groups).map(([varName, vRows], gIdx) => {
+                        let vRMP = 0, vDHIn = 0, vDHOut = 0, vDHDiff = 0;
+                        let vPelIn = 0, vPelOut = 0, vPelDiff = 0;
+                        let vSoakIn = 0, vProdQty = 0, vProdDiff = 0;
+
+                        vRows.forEach(r => {
+                          vRMP += Number(r.rmp_received || 0);
+                          vDHIn += Number(r.deheading_in || 0);
+                          vDHOut += Number(r.deheading_out || 0);
+                          vDHDiff += Number(r.deheading_diff || 0);
+                          vPelIn += Number(r.peeling_in || 0);
+                          vPelOut += Number(r.peeling_out || 0);
+                          vPelDiff += Number(r.peeling_diff || 0);
+                          vSoakIn += Number(r.soaking_in || 0);
+                          vProdQty += Number(r.prod_qty || 0);
+                          vProdDiff += Number(r.diff_qty || 0);
+                        });
+
+                        totRMP += vRMP; totDHIn += vDHIn; totDHOut += vDHOut; totDHDiff += vDHDiff;
+                        totPelIn += vPelIn; totPelOut += vPelOut; totPelDiff += vPelDiff;
+                        totSoakIn += vSoakIn; totProdQty += vProdQty; totProdDiff += vProdDiff;
+
+                        return (
+                          <React.Fragment key={gIdx}>
+                            {vRows.map((row, rIdx) => (
+                              <tr key={rIdx}>
+                                {schema.keys.map((k, cIdx) => {
+                                  const format = schema.formats?.[k];
+                                  let value = row[k];
+                                  if (['deheading_diff', 'peeling_diff', 'diff_qty'].includes(k)) {
+                                    const diffVal = Number(value || 0);
+                                    const isPos = diffVal >= 0;
+                                    return (
+                                      <td key={cIdx} className="text-right">
+                                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                          {isPos ? `+${diffVal.toFixed(2)}` : diffVal.toFixed(2)}
+                                        </span>
+                                      </td>
+                                    );
+                                  }
+                                  return (
+                                    <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                                      {formatVal(value, format)}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                            {/* VARIETY SUBTOTAL ROW FOR RECONCILIATION */}
+                            <tr className="subtotal-row" style={{ background: '#f8fafc', borderTop: '1px solid #cbd5e1', fontWeight: '800' }}>
+                              <td colSpan={3} className="text-right" style={{ fontWeight: '800', color: '#0f172a' }}>
+                                SUBTOTAL ({varName}):
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800', color: '#0284c7', background: '#e0f2fe' }}>
+                                {vRMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vDHIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vDHOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vDHDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vDHDiff >= 0 ? `+${vDHDiff.toFixed(2)}` : vDHDiff.toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vPelIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vPelOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vPelDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vPelDiff >= 0 ? `+${vPelDiff.toFixed(2)}` : vPelDiff.toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vSoakIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vProdDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vProdDiff >= 0 ? `+${vProdDiff.toFixed(2)}` : vProdDiff.toFixed(2)}
+                                </span>
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {/* OVERALL RECONCILIATION SUMMARY TOTAL */}
+                      <tr className="subtotal-row" style={{ background: '#e2e8f0', borderTop: '2px solid #64748b', fontWeight: '900' }}>
+                        <td colSpan={3} className="text-right" style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
+                          OVERALL RECONCILIATION TOTAL:
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900', color: '#0284c7', background: '#bae6fd' }}>
+                          {totRMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totDHIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totDHOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totDHDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totDHDiff >= 0 ? `+${totDHDiff.toFixed(2)}` : totDHDiff.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totPelIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totPelOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totPelDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totPelDiff >= 0 ? `+${totPelDiff.toFixed(2)}` : totPelDiff.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totSoakIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totProdDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totProdDiff >= 0 ? `+${totProdDiff.toFixed(2)}` : totProdDiff.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    </>
+                  );
                 })() : (
                   filteredTabRows.map((row, rIdx) => (
                     <tr key={rIdx}>
