@@ -98,7 +98,7 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
         "prod_at_list": combined_locations,
-        "prod_for_list": sorted(list(set([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]] + ["General Stock"]))),
+        "prod_for_list": sorted([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0] and pf[0].upper().strip() not in {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}]),
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }
 
@@ -433,7 +433,7 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
         "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
-        "prod_for_list": sorted(list(set([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]] + ["General Stock"]))),
+        "prod_for_list": sorted([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0] and pf[0].upper().strip() not in {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}]),
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }
 

@@ -162,11 +162,9 @@ def _render_grading_page(request: Request, db: Session):
     variety_list = variety_list or DEFAULT_VARIETIES
     peeling_locations = peeling_locations or DEFAULT_PEELING_AT
 
-    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
-    if "General Stock" not in prod_for_list:
-        prod_for_list.append("General Stock")
-    if len(prod_for_list) == 1:
-        prod_for_list = [*DEFAULT_PRODUCTION_FOR, "General Stock"]
+    raw_pf = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
+    excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+    prod_for_list = [p for p in raw_pf if p.upper().strip() not in excluded_names]
 
     # 2. Operational table data: current 9 AM-to-next-9 AM shift only.
     # Historical records remain available through the dedicated reports.

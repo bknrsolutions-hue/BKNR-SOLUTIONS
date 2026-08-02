@@ -986,7 +986,7 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
     from app.services.cache import cache_get_or_set
 
     def build_menu_filters():
-        companies = {
+        raw_companies = {
             str(value).strip()
             for (value,) in db.query(production_for.production_for).filter(
                 production_for.company_id == company_code,
@@ -994,6 +994,8 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
             ).distinct().all()
             if value and str(value).strip()
         }
+        excluded_company_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+        companies = {c for c in raw_companies if c.upper().strip() not in excluded_company_names}
         locations = {
             str(value).strip()
             for model, column in (
@@ -1014,7 +1016,7 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
 
     try:
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v3",
+            f"bknr:menu:{company_code}:universal_filters:v4",
             build_menu_filters,
             ttl=300,
         )

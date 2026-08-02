@@ -83,11 +83,11 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
     pf_q = db.query(distinct(ProductionForMaster.production_for))
     if company_id:
         pf_q = pf_q.filter(func.upper(func.trim(ProductionForMaster.company_id)) == company_id.strip().upper())
-    pf_list = [p[0] for p in pf_q.all() if p[0]]
-    if not pf_list:
-        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
-    if "General Stock" not in pf_list:
-        pf_list.append("General Stock")
+    raw_pf = [p[0] for p in pf_q.all() if p[0]]
+    if not raw_pf:
+        raw_pf = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
+    excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+    pf_list = [p for p in raw_pf if p.upper().strip() not in excluded_names]
 
     return {"contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
