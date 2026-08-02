@@ -2148,9 +2148,11 @@ const filtersWrapperStyle = {
 const filterBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
+  justifyContent: 'flex-end',
   gap: '4px',
   flex: '1 1 160px',
-  minWidth: '150px'
+  minWidth: '150px',
+  boxSizing: 'border-box'
 };
 
 const filterLabelStyle = {
@@ -2158,12 +2160,14 @@ const filterLabelStyle = {
   fontWeight: '800',
   color: 'var(--text-secondary)',
   textTransform: 'uppercase',
-  letterSpacing: '0.5px'
+  letterSpacing: '0.5px',
+  marginBottom: '2px'
 };
 
 const selectControlStyle = {
-  height: '32px',
-  padding: '0 8px',
+  height: '34px',
+  minHeight: '34px',
+  padding: '0 10px',
   fontSize: '11px',
   fontWeight: '600',
   borderRadius: '6px',
@@ -2172,6 +2176,9 @@ const selectControlStyle = {
   color: 'var(--text-primary, #0f172a)',
   outline: 'none',
   width: '100%',
+  boxSizing: 'border-box',
+  verticalAlign: 'middle',
+  lineHeight: 'normal',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap'
 };
