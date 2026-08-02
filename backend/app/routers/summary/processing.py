@@ -333,15 +333,7 @@ async def get_processing_summary(
 
         def match_variety(v1, v2):
             u1, u2 = norm_upper(v1), norm_upper(v2)
-            if not u1 or not u2:
-                return True
-            if u1 == u2:
-                return True
-            clean1 = u1.replace("VANNAMEI", "").replace("BLACK TIGER", "").replace("BT", "").strip()
-            clean2 = u2.replace("VANNAMEI", "").replace("BLACK TIGER", "").replace("BT", "").strip()
-            if clean1 and clean2 and (clean1 == clean2 or clean1 in clean2 or clean2 in clean1):
-                return True
-            return False
+            return u1 == u2 and u1 != ""
 
         for s in rows["soaking"]:
             p_for = norm_str(s.production_for) or norm_str(s.company_id) or production_for or ""
