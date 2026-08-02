@@ -115,9 +115,7 @@ DEFAULT_SUPPLIERS = [
 
 DEFAULT_PRODUCTION_FOR = []
 
-DEFAULT_PEELING_AT = [
-    "Main Plant",
-]
+DEFAULT_PEELING_AT = []
 
 
 # -------------------------------------------------------

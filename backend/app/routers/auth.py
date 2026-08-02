@@ -995,8 +995,9 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
             if value and str(value).strip()
         }
         excluded_company_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+        excluded_location_names = {"MAIN PLANT", "MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
         companies = {c for c in raw_companies if c.upper().strip() not in excluded_company_names}
-        locations = {
+        raw_locations = {
             str(value).strip()
             for model, column in (
                 (production_at, production_at.production_at),
@@ -1005,18 +1006,19 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
             for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
             if value and str(value).strip()
         }
-        locations.update(
+        raw_locations.update(
             str(value).strip()
             for (value,) in db.query(cold_storage_holding.cold_storage_name).filter(
                 cold_storage_holding.company_id == company_code,
             ).distinct().all()
             if value and str(value).strip()
         )
+        locations = {l for l in raw_locations if l.upper().strip() not in excluded_location_names}
         return {"companies": sorted(companies), "locations": sorted(locations)}
 
     try:
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v4",
+            f"bknr:menu:{company_code}:universal_filters:v5",
             build_menu_filters,
             ttl=300,
         )

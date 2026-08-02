@@ -160,7 +160,7 @@ def _render_grading_page(request: Request, db: Session):
     # master-data seeding is still catching up. Stored tenant values win.
     species_list = species_list or DEFAULT_SPECIES
     variety_list = variety_list or DEFAULT_VARIETIES
-    peeling_locations = peeling_locations or DEFAULT_PEELING_AT
+    peeling_locations = [l for l in (peeling_locations or DEFAULT_PEELING_AT) if l.upper().strip() not in {"MAIN PLANT", "MAIN UNIT", "N/A"}]
 
     raw_pf = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
     excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}

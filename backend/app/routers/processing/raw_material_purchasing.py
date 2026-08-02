@@ -320,7 +320,7 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
         supplier_list = [s.supplier_name for s in supplier_records if s.supplier_name] or DEFAULT_SUPPLIERS
         variety_list = [v.variety_name for v in variety_records if v.variety_name] or DEFAULT_VARIETIES
         species_list = [s.species_name for s in species_records if s.species_name] or DEFAULT_SPECIES
-        combined_peeling_locations = combined_peeling_locations or DEFAULT_PEELING_AT
+        combined_peeling_locations = [l for l in (combined_peeling_locations or DEFAULT_PEELING_AT) if l.upper().strip() not in {"MAIN PLANT", "MAIN UNIT", "N/A"}]
         prod_for_list = prod_for_list or DEFAULT_PRODUCTION_FOR
 
         return {
