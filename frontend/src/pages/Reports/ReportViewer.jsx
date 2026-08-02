@@ -2060,6 +2060,42 @@ export default function ReportViewer({ reportId, activeRoute }) {
                         const glazePct = match ? Number(match[1]) : 0;
                         value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
                       }
+
+                      // Badge formatting for Reconciliation table metrics (Actual Yield %, Diff %, Diff Qty)
+                      if (tab === 'reconciliation' && ['actual_yield', 'diff_yield_perc', 'diff_qty'].includes(k)) {
+                        const isPos = Number(row.diff_yield_perc || 0) >= 0;
+                        const badgeStyle = isPos ? {
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: '#059669',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '800',
+                          fontSize: '11px',
+                          display: 'inline-block'
+                        } : {
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          color: '#dc2626',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontWeight: '800',
+                          fontSize: '11px',
+                          display: 'inline-block'
+                        };
+
+                        let content = value;
+                        if (k === 'actual_yield') content = `${Number(value || 0).toFixed(2)}%`;
+                        else if (k === 'diff_yield_perc') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}%` : `${Number(value || 0).toFixed(2)}%`;
+                        else if (k === 'diff_qty') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}` : `${Number(value || 0).toFixed(2)}`;
+
+                        return (
+                          <td key={cIdx} className="text-right">
+                            <span style={badgeStyle}>{content}</span>
+                          </td>
+                        );
+                      }
+
                       return (
                         <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
                           {formatVal(value, format)}
@@ -2091,28 +2127,59 @@ export default function ReportViewer({ reportId, activeRoute }) {
                 });
 
                 const firstSub = Object.values(data.subtotals || {})[0] || {};
+                const isPos = Number(firstSub.diff_yield_perc || 0) >= 0;
+                const posBadgeStyle = {
+                  background: 'rgba(16, 185, 129, 0.12)',
+                  color: '#059669',
+                  border: '1px solid rgba(16, 185, 129, 0.3)',
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontWeight: '800',
+                  display: 'inline-block'
+                };
+                const negBadgeStyle = {
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  color: '#dc2626',
+                  border: '1px solid rgba(239, 68, 68, 0.3)',
+                  padding: '3px 8px',
+                  borderRadius: '4px',
+                  fontWeight: '800',
+                  display: 'inline-block'
+                };
 
                 return (
-                  <tr className="subtotal-row" style={{ background: '#fffbeb', borderTop: '2px double #f59e0b', fontWeight: '800' }}>
-                    <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
-                      SUBTOTAL PRODUCTION SUMMARY:
+                  <tr className="subtotal-row" style={{ background: '#f8fafc', borderTop: '2px solid #94a3b8', fontWeight: '800' }}>
+                    <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#0f172a' }}>
+                      GROUP SUBTOTAL SUMMARY:
                     </td>
-                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>{totMC}</td>
-                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>{totLoose}</td>
+                    <td className="text-right" style={{ fontWeight: '800' }}>{totMC}</td>
+                    <td className="text-right" style={{ fontWeight: '800' }}>{totLoose}</td>
                     <td className="text-right" style={{ fontWeight: '800', color: '#312e81', background: '#eeebff' }}>
                       {totGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="text-right qty-column" style={{ fontWeight: '800', color: '#b45309', background: '#fff9db' }}>
+                    <td className="text-right qty-column" style={{ fontWeight: '800', color: '#0f172a' }}>
                       {totProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </td>
-                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
-                      {firstSub.actual_yield !== undefined ? `${firstSub.actual_yield}% (${firstSub.diff_yield_perc}%)` : '-'}
+                    <td className="text-center">
+                      {firstSub.soaking_in > 0 ? (
+                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                          {firstSub.actual_yield}% ({isPos ? '+' : ''}{firstSub.diff_yield_perc}%)
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                      )}
                     </td>
-                    <td className="text-right" style={{ fontWeight: '800', color: '#b45309' }}>
-                      {firstSub.diff_qty !== undefined ? firstSub.diff_qty : '-'}
+                    <td className="text-right">
+                      {firstSub.soaking_in > 0 ? (
+                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                          {firstSub.diff_qty > 0 ? `+${firstSub.diff_qty}` : firstSub.diff_qty}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                      )}
                     </td>
-                    <td style={{ fontSize: '9px', textAlign: 'left', paddingLeft: '6px', fontWeight: '700', color: '#64748b' }}>
-                      {firstSub.soaking_in !== undefined ? `In: ${firstSub.soaking_in} | Target: ${firstSub.target_yield}%` : '-'}
+                    <td style={{ fontSize: '10px', textAlign: 'left', paddingLeft: '4px', color: 'var(--text-tertiary)' }}>
+                      {firstSub.soaking_in > 0 ? `In: ${firstSub.soaking_in} | Trg: ${firstSub.target_yield}%` : '-'}
                     </td>
                   </tr>
                 );
