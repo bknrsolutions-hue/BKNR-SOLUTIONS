@@ -2045,70 +2045,215 @@ export default function ReportViewer({ reportId, activeRoute }) {
             </thead>
             <tbody>
               {filteredTabRows.length > 0 ? (
-                filteredTabRows.map((row, rIdx) => (
-                  <tr key={rIdx}>
-                    {schema.keys.map((k, cIdx) => {
-                      const format = schema.formats?.[k];
-                      let value = row[k];
-                      if (k === '__sl') value = rIdx + 1;
-                      else if (k === '__batch') value = row.batch_number || row.batch || '';
-                      else if (k === 'peeling_at' && !value) value = row.location || '';
-                      else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
-                      else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
-                      else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
-                      else if (k === '__salt') value = `${Number(row.salt_percent || 0).toFixed(2)}% / ${Number(row.salt_qty || 0).toFixed(2)}`;
-                      else if (k === '__dash') value = '-';
-                      else if (k === '__gross_qty') {
-                        const netQty = Number(row.production_qty || 0);
-                        const glazeText = String(row.glaze || '').trim().toUpperCase();
-                        const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
-                        const glazePct = match ? Number(match[1]) : 0;
-                        value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
-                      }
+                tab === 'production' ? (() => {
+                  // Variety-wise grouping for Production table
+                  const groups = {};
+                  filteredTabRows.forEach(row => {
+                    const vName = String(row.variety_name || row.variety || 'N/A').trim();
+                    if (!groups[vName]) groups[vName] = [];
+                    groups[vName].push(row);
+                  });
 
-                      // Badge formatting for Reconciliation table metrics (Actual Yield %, Diff %, Diff Qty)
-                      if (tab === 'reconciliation' && ['actual_yield', 'diff_yield_perc', 'diff_qty'].includes(k)) {
-                        const isPos = Number(row.diff_yield_perc || 0) >= 0;
-                        const badgeStyle = isPos ? {
+                  let globalMC = 0, globalLoose = 0, globalGross = 0, globalProdQty = 0;
+                  let slCount = 0;
+
+                  return (
+                    <>
+                      {Object.entries(groups).map(([varName, vRows], gIdx) => {
+                        let groupMC = 0, groupLoose = 0, groupGross = 0, groupProdQty = 0;
+                        vRows.forEach(r => {
+                          groupMC += Number(r.no_of_mc || 0);
+                          groupLoose += Number(r.loose || 0);
+                          groupProdQty += Number(r.production_qty || 0);
+
+                          const netQty = Number(r.production_qty || 0);
+                          const glazeText = String(r.glaze || '').trim().toUpperCase();
+                          const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                          const glazePct = match ? Number(match[1]) : 0;
+                          const grossVal = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                          groupGross += grossVal;
+                        });
+
+                        globalMC += groupMC;
+                        globalLoose += groupLoose;
+                        globalGross += groupGross;
+                        globalProdQty += groupProdQty;
+
+                        // Find matching subtotal entry for this variety
+                        const subEntry = Object.values(data.subtotals || {}).find(s =>
+                          String(s.variety || '').trim().toUpperCase() === varName.toUpperCase()
+                        ) || {};
+
+                        const isPos = Number(subEntry.diff_yield_perc || 0) >= 0;
+                        const posBadgeStyle = {
                           background: 'rgba(16, 185, 129, 0.12)',
                           color: '#059669',
                           border: '1px solid rgba(16, 185, 129, 0.3)',
-                          padding: '2px 6px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
                           fontWeight: '800',
-                          fontSize: '11px',
                           display: 'inline-block'
-                        } : {
+                        };
+                        const negBadgeStyle = {
                           background: 'rgba(239, 68, 68, 0.12)',
                           color: '#dc2626',
                           border: '1px solid rgba(239, 68, 68, 0.3)',
-                          padding: '2px 6px',
+                          padding: '3px 8px',
                           borderRadius: '4px',
                           fontWeight: '800',
-                          fontSize: '11px',
                           display: 'inline-block'
                         };
 
-                        let content = value;
-                        if (k === 'actual_yield') content = `${Number(value || 0).toFixed(2)}%`;
-                        else if (k === 'diff_yield_perc') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}%` : `${Number(value || 0).toFixed(2)}%`;
-                        else if (k === 'diff_qty') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}` : `${Number(value || 0).toFixed(2)}`;
+                        return (
+                          <React.Fragment key={gIdx}>
+                            {vRows.map((row, rIdx) => {
+                              slCount++;
+                              return (
+                                <tr key={rIdx}>
+                                  {schema.keys.map((k, cIdx) => {
+                                    const format = schema.formats?.[k];
+                                    let value = row[k];
+                                    if (k === '__sl') value = slCount;
+                                    else if (k === '__batch') value = row.batch_number || row.batch || '';
+                                    else if (k === '__gross_qty') {
+                                      const netQty = Number(row.production_qty || 0);
+                                      const glazeText = String(row.glaze || '').trim().toUpperCase();
+                                      const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                                      const glazePct = match ? Number(match[1]) : 0;
+                                      value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                                    }
+
+                                    return (
+                                      <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                                        {formatVal(value, format)}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                            {/* VARIETY SUBTOTAL ROW */}
+                            <tr className="subtotal-row" style={{ background: '#f1f5f9', borderTop: '1px solid #cbd5e1', fontWeight: '800' }}>
+                              <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#1e293b' }}>
+                                VARIETY SUBTOTAL ({varName}):
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{groupMC}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{groupLoose}</td>
+                              <td className="text-right" style={{ fontWeight: '800', color: '#312e81', background: '#e0e7ff' }}>
+                                {groupGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right qty-column" style={{ fontWeight: '800', color: '#0f172a' }}>
+                                {groupProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-center">
+                                {subEntry.soaking_in > 0 ? (
+                                  <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                    {subEntry.actual_yield}% ({isPos ? '+' : ''}{subEntry.diff_yield_perc}%)
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                                )}
+                              </td>
+                              <td className="text-right">
+                                {subEntry.soaking_in > 0 ? (
+                                  <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                    {subEntry.diff_qty > 0 ? `+${subEntry.diff_qty}` : subEntry.diff_qty}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                                )}
+                              </td>
+                              <td style={{ fontSize: '10px', textAlign: 'left', paddingLeft: '4px', color: 'var(--text-tertiary)' }}>
+                                {subEntry.soaking_in > 0 ? `In: ${subEntry.soaking_in} | Trg: ${subEntry.target_yield}%` : '-'}
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {/* OVERALL PRODUCTION SUBTOTAL SUMMARY */}
+                      <tr className="subtotal-row" style={{ background: '#e2e8f0', borderTop: '2px solid #64748b', fontWeight: '900' }}>
+                        <td colSpan={14} className="text-right" style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
+                          OVERALL PRODUCTION SUBTOTAL SUMMARY:
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{globalMC}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{globalLoose}</td>
+                        <td className="text-right" style={{ fontWeight: '900', color: '#312e81', background: '#c7d2fe' }}>
+                          {globalGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right qty-column" style={{ fontWeight: '900', color: '#0f172a' }}>
+                          {globalProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
+                    </>
+                  );
+                })() : (
+                  filteredTabRows.map((row, rIdx) => (
+                    <tr key={rIdx}>
+                      {schema.keys.map((k, cIdx) => {
+                        const format = schema.formats?.[k];
+                        let value = row[k];
+                        if (k === '__sl') value = rIdx + 1;
+                        else if (k === '__batch') value = row.batch_number || row.batch || '';
+                        else if (k === 'peeling_at' && !value) value = row.location || '';
+                        else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
+                        else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
+                        else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
+                        else if (k === '__salt') value = `${Number(row.salt_percent || 0).toFixed(2)}% / ${Number(row.salt_qty || 0).toFixed(2)}`;
+                        else if (k === '__dash') value = '-';
+                        else if (k === '__gross_qty') {
+                          const netQty = Number(row.production_qty || 0);
+                          const glazeText = String(row.glaze || '').trim().toUpperCase();
+                          const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                          const glazePct = match ? Number(match[1]) : 0;
+                          value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                        }
+
+                        // Badge formatting for Reconciliation table metrics (Actual Yield %, Diff %, Diff Qty)
+                        if (tab === 'reconciliation' && ['actual_yield', 'diff_yield_perc', 'diff_qty'].includes(k)) {
+                          const isPos = Number(row.diff_yield_perc || 0) >= 0;
+                          const badgeStyle = isPos ? {
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#059669',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '800',
+                            fontSize: '11px',
+                            display: 'inline-block'
+                          } : {
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            color: '#dc2626',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '800',
+                            fontSize: '11px',
+                            display: 'inline-block'
+                          };
+
+                          let content = value;
+                          if (k === 'actual_yield') content = `${Number(value || 0).toFixed(2)}%`;
+                          else if (k === 'diff_yield_perc') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}%` : `${Number(value || 0).toFixed(2)}%`;
+                          else if (k === 'diff_qty') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}` : `${Number(value || 0).toFixed(2)}`;
+
+                          return (
+                            <td key={cIdx} className="text-right">
+                              <span style={badgeStyle}>{content}</span>
+                            </td>
+                          );
+                        }
 
                         return (
-                          <td key={cIdx} className="text-right">
-                            <span style={badgeStyle}>{content}</span>
+                          <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                            {formatVal(value, format)}
                           </td>
                         );
-                      }
-
-                      return (
-                        <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
-                          {formatVal(value, format)}
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))
+                      })}
+                    </tr>
+                  ))
+                )
               ) : (
                 <tr>
                   <td colSpan={schema.headers.length} className="text-center" style={{ padding: '24px', color: 'var(--text-tertiary)' }}>
@@ -2116,79 +2261,6 @@ export default function ReportViewer({ reportId, activeRoute }) {
                   </td>
                 </tr>
               )}
-              {tab === 'production' && filteredTabRows.length > 0 && (() => {
-                let totMC = 0, totLoose = 0, totGross = 0, totProdQty = 0;
-                filteredTabRows.forEach(r => {
-                  totMC += Number(r.no_of_mc || 0);
-                  totLoose += Number(r.loose || 0);
-                  totProdQty += Number(r.production_qty || 0);
-
-                  const netQty = Number(r.production_qty || 0);
-                  const glazeText = String(r.glaze || '').trim().toUpperCase();
-                  const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
-                  const glazePct = match ? Number(match[1]) : 0;
-                  const grossVal = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
-                  totGross += grossVal;
-                });
-
-                const firstSub = Object.values(data.subtotals || {})[0] || {};
-                const isPos = Number(firstSub.diff_yield_perc || 0) >= 0;
-                const posBadgeStyle = {
-                  background: 'rgba(16, 185, 129, 0.12)',
-                  color: '#059669',
-                  border: '1px solid rgba(16, 185, 129, 0.3)',
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  fontWeight: '800',
-                  display: 'inline-block'
-                };
-                const negBadgeStyle = {
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  color: '#dc2626',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  padding: '3px 8px',
-                  borderRadius: '4px',
-                  fontWeight: '800',
-                  display: 'inline-block'
-                };
-
-                return (
-                  <tr className="subtotal-row" style={{ background: '#f8fafc', borderTop: '2px solid #94a3b8', fontWeight: '800' }}>
-                    <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#0f172a' }}>
-                      GROUP SUBTOTAL SUMMARY:
-                    </td>
-                    <td className="text-right" style={{ fontWeight: '800' }}>{totMC}</td>
-                    <td className="text-right" style={{ fontWeight: '800' }}>{totLoose}</td>
-                    <td className="text-right" style={{ fontWeight: '800', color: '#312e81', background: '#eeebff' }}>
-                      {totGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="text-right qty-column" style={{ fontWeight: '800', color: '#0f172a' }}>
-                      {totProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </td>
-                    <td className="text-center">
-                      {firstSub.soaking_in > 0 ? (
-                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
-                          {firstSub.actual_yield}% ({isPos ? '+' : ''}{firstSub.diff_yield_perc}%)
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
-                      )}
-                    </td>
-                    <td className="text-right">
-                      {firstSub.soaking_in > 0 ? (
-                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
-                          {firstSub.diff_qty > 0 ? `+${firstSub.diff_qty}` : firstSub.diff_qty}
-                        </span>
-                      ) : (
-                        <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
-                      )}
-                    </td>
-                    <td style={{ fontSize: '10px', textAlign: 'left', paddingLeft: '4px', color: 'var(--text-tertiary)' }}>
-                      {firstSub.soaking_in > 0 ? `In: ${firstSub.soaking_in} | Trg: ${firstSub.target_yield}%` : '-'}
-                    </td>
-                  </tr>
-                );
-              })()}
             </tbody>
           </table>
         </div>
