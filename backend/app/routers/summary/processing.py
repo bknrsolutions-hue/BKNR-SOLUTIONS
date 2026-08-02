@@ -369,6 +369,7 @@ async def get_processing_summary(
                 for r in rows.get("rmp", [])
                 if norm_str(r.batch_number) == b_num
                 and (not spec or norm_upper(r.species) == norm_upper(spec))
+                and (match_variety(r.variety_name, var) or (not norm_str(r.variety_name) and norm_upper(var) == "HOSO"))
             )
 
             dh_in = sum(
@@ -376,6 +377,7 @@ async def get_processing_summary(
                 for d in rows["deheading"]
                 if norm_str(d.batch_number) == b_num
                 and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
             )
 
             dh_out = sum(
@@ -383,6 +385,7 @@ async def get_processing_summary(
                 for d in rows["deheading"]
                 if norm_str(d.batch_number) == b_num
                 and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
             )
 
             deheading_diff = sum(
@@ -390,6 +393,7 @@ async def get_processing_summary(
                 for d in rows["deheading"]
                 if norm_str(d.batch_number) == b_num
                 and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
             )
 
             peel_in = sum(
