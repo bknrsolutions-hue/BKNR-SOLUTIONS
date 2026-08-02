@@ -505,29 +505,49 @@
 
 @page batch-summary-page {
   size: A4 landscape;
-  margin: 7mm;
+  margin: 6mm;
 }
 
 @media print {
-  .batch-summary-report {
-    page: batch-summary-page;
-    height: auto !important;
-    overflow: visible !important;
+  html, body, #root, .app-layout, .main-content, .report-viewer-card, .batch-summary-report {
+    margin: 0 !important;
     padding: 0 !important;
+    top: 0 !important;
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
+  .sidebar,
+  .top-header,
+  .header,
+  .no-print,
   .batch-summary-filters,
   .erp-horizontal-filter-row,
   .report-filter-bar,
-  .report-header,
-  .report-viewer-header,
-  .batch-summary-header,
-  .no-print,
   button,
   .btn,
-  .batch-summary-report > div:first-child button,
   .batch-summary-empty {
     display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .batch-summary-header-banner {
+    padding: 0 0 6px 0 !important;
+    margin: 0 0 10px 0 !important;
+    border-bottom: 2px solid #0f172a !important;
+  }
+
+  .batch-summary-print-title {
+    font-size: 16px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    margin: 0 !important;
   }
 
   .batch-summary-table-card,

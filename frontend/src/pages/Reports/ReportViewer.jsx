@@ -1416,22 +1416,22 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
   function renderHeader(title) {
     return (
-      <div style={reportHeaderStyle}>
+      <div style={reportHeaderStyle} className="batch-summary-header-banner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={iconBadgeStyle}>
+          <div style={iconBadgeStyle} className="no-print">
             <FileText size={18} style={{ color: 'white' }} />
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+            <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }} className="batch-summary-print-title">
               {title}
             </h2>
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }} className="no-print">
               Natively rendering real-time operational registers from database framework
             </p>
           </div>
         </div>
 
-        <div style={actionsRowStyle}>
+        <div style={actionsRowStyle} className="no-print">
           <button onClick={fetchData} className="btn btn-secondary" style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={13} className={loading ? 'spin' : ''} /> Refresh
           </button>
