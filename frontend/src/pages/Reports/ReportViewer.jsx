@@ -2046,12 +2046,16 @@ export default function ReportViewer({ reportId, activeRoute }) {
             <tbody>
               {filteredTabRows.length > 0 ? (
                 tab === 'production' ? (() => {
-                  // Variety-wise grouping for Production table
+                  // Batch & Variety-wise grouping for Production table
                   const groups = {};
                   filteredTabRows.forEach(row => {
+                    const bName = String(row.batch_number || row.batch || 'N/A').trim();
                     const vName = String(row.variety_name || row.variety || 'N/A').trim();
-                    if (!groups[vName]) groups[vName] = [];
-                    groups[vName].push(row);
+                    const groupKey = `${bName}||${vName}`;
+                    if (!groups[groupKey]) {
+                      groups[groupKey] = { batch: bName, variety: vName, rows: [] };
+                    }
+                    groups[groupKey].rows.push(row);
                   });
 
                   let globalMC = 0, globalLoose = 0, globalGross = 0, globalProdQty = 0;
@@ -2059,7 +2063,8 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
                   return (
                     <>
-                      {Object.entries(groups).map(([varName, vRows], gIdx) => {
+                      {Object.values(groups).map((groupItem, gIdx) => {
+                        const { batch: bName, variety: varName, rows: vRows } = groupItem;
                         let groupMC = 0, groupLoose = 0, groupGross = 0, groupProdQty = 0;
                         vRows.forEach(r => {
                           groupMC += Number(r.no_of_mc || 0);
@@ -2079,8 +2084,9 @@ export default function ReportViewer({ reportId, activeRoute }) {
                         globalGross += groupGross;
                         globalProdQty += groupProdQty;
 
-                        // Find matching subtotal entry for this variety
+                        // Find matching subtotal entry for this batch & variety
                         const subEntry = Object.values(data.subtotals || {}).find(s =>
+                          String(s.batch_number || '').trim().toUpperCase() === bName.toUpperCase() &&
                           String(s.variety || '').trim().toUpperCase() === varName.toUpperCase()
                         ) || {};
 
@@ -2132,10 +2138,10 @@ export default function ReportViewer({ reportId, activeRoute }) {
                                 </tr>
                               );
                             })}
-                            {/* VARIETY SUBTOTAL ROW */}
+                            {/* VARIETY SUBTOTAL ROW FOR THIS BATCH */}
                             <tr className="subtotal-row" style={{ background: '#f1f5f9', borderTop: '1px solid #cbd5e1', fontWeight: '800' }}>
                               <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#1e293b' }}>
-                                VARIETY SUBTOTAL ({varName}):
+                                SUBTOTAL (Batch {bName} | {varName}):
                               </td>
                               <td className="text-right" style={{ fontWeight: '800' }}>{groupMC}</td>
                               <td className="text-right" style={{ fontWeight: '800' }}>{groupLoose}</td>

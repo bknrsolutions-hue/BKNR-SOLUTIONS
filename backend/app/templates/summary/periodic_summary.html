@@ -990,11 +990,13 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     <tr><th class="text-center" style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Type</th><th>Species</th><th>Batch No</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th><th class="text-right">MC</th><th class="text-right">Loose</th><th class="text-right" style="color:var(--accent-blue);">Gross Qty</th><th class="text-right">Prod Qty</th><th class="text-right">Yield %</th><th class="text-right">Diff</th><th>User</th></tr>
                 </thead>
                 <tbody>
-                    {% set p_ns = namespace(last_var=None, v_mc=0, v_loose=0, v_qty=0.0, v_gross=0.0, last_key=None) %}
+                    {% set p_ns = namespace(last_batch=None, last_var=None, v_mc=0, v_loose=0, v_qty=0.0, v_gross=0.0, last_key=None) %}
                     {% set grand_prod = namespace(mc=0, loose=0, qty=0.0, gross=0.0) %}
                     {% for r in rows.production %}
+                        {% set curr_batch = r.batch_number|string|trim %}
                         {% set curr_var = r.variety_name|string|trim %}
                         {% set current_key = (r.production_for|string|trim, r.production_at|string|trim, r.species|string|trim, r.variety_name|string|trim, r.batch_number|string|trim) %}
+                        {% set combo_key = curr_batch ~ "||" ~ curr_var %}
                         
                         {% set glaze_clean = r.glaze|string|upper|trim %}
                         {% set gross_qty = r.production_qty|default(0)|float %}
@@ -1008,10 +1010,10 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             {% endif %}
                         {% endif %}
 
-                        {% if p_ns.last_var and p_ns.last_var != curr_var %}
+                        {% if p_ns.last_key and (p_ns.last_batch != curr_batch or p_ns.last_var != curr_var) %}
                             {% set s = subtotals.get(p_ns.last_key, {}) %}
                             <tr class="subtotal-row" style="background:#f1f5f9; font-weight:800;">
-                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">VARIETY SUBTOTAL ({{ p_ns.last_var }}):</td>
+                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">SUBTOTAL (Batch {{ p_ns.last_batch }} | {{ p_ns.last_var }}):</td>
                                 <td class="text-right" style="font-weight:800;">{{ p_ns.v_mc }}</td>
                                 <td class="text-right" style="font-weight:800;">{{ p_ns.v_loose }}</td>
                                 <td class="text-right" style="font-weight:800; color:#312e81;">{{ "%.2f"|format(p_ns.v_gross) }}</td>
@@ -1057,13 +1059,14 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td style="font-size:8px; color: var(--text-muted); text-align: center;">{{ r.email }}</td>
                         </tr>
 
+                        {% set p_ns.last_batch = curr_batch %}
                         {% set p_ns.last_var = curr_var %}
                         {% set p_ns.last_key = current_key %}
                         
                         {% if loop.last %}
                             {% set s = subtotals.get(current_key, {}) %}
                             <tr class="subtotal-row" style="background:#f1f5f9; font-weight:800;">
-                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">VARIETY SUBTOTAL ({{ curr_var }}):</td>
+                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">SUBTOTAL (Batch {{ curr_batch }} | {{ curr_var }}):</td>
                                 <td class="text-right" style="font-weight:800;">{{ p_ns.v_mc }}</td>
                                 <td class="text-right" style="font-weight:800;">{{ p_ns.v_loose }}</td>
                                 <td class="text-right" style="font-weight:800; color:#312e81;">{{ "%.2f"|format(p_ns.v_gross) }}</td>
