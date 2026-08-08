@@ -665,7 +665,7 @@ def get_export_company_profile(db: Session, company_id: str) -> dict:
         "swift_code": "HDFCINBBXXX",
         "branch": "APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
         "currency_code": "USD",
-        "account_type": "EXPORT CURRENT ACCOUNT",
+        "account_type": "EXPORT CURRENT",
     }
     try:
         from app.database.models.enterprise_finance import BankMaster
@@ -684,7 +684,7 @@ def get_export_company_profile(db: Session, company_id: str) -> dict:
                 swift_code="HDFCINBBXXX",
                 branch="APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
                 currency_code="USD",
-                account_type="EXPORT CURRENT ACCOUNT",
+                account_type="EXPORT CURRENT",
                 is_export_account=True,
                 is_default=True,
                 is_active=True,
