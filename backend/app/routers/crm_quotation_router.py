@@ -688,6 +688,14 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
 
 
 def ensure_crm_quotation_schema(db: Session):
+    try:
+        from app.database.connection import engine
+        CRMQuotation.__table__.create(bind=engine, checkfirst=True)
+        CRMQuotationLine.__table__.create(bind=engine, checkfirst=True)
+        CRMQuotationReply.__table__.create(bind=engine, checkfirst=True)
+    except Exception as e:
+        print("Table create error:", e)
+
     statements = [
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50);",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_name VARCHAR(255);",
