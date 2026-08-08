@@ -1460,7 +1460,7 @@ export default function MonthlySalarySheet({ theme }) {
                 <tr><th>Employee Code</th><td>{selectedRow.id}</td><th>Bank Name</th><td>{selectedRow.bank_name || '—'}</td></tr>
                 <tr><th>Designation</th><td>{selectedRow.designation || '—'}</td><th>Bank A/C No</th><td>{selectedRow.account_number || '—'}</td></tr>
                 <tr><th>Department</th><td>{selectedRow.dept}</td><th>UAN / PF No</th><td>{selectedRow.uan_number || '—'}</td></tr>
-                <tr><th>Location</th><td>{selectedRow.location || '—'}</td><th>MPEDA Registration Code</th><td>{reportMeta.mpeda_registration_code || 'NOT REGISTERED'}</td></tr>
+                <tr><th>Location</th><td>{selectedRow.location || '—'}</td><th>Approval No</th><td>{reportMeta.mpeda_registration_code || 'NOT REGISTERED'}</td></tr>
                 <tr><th>Date of Joining</th><td>{selectedRow.joining_date ? new Intl.DateTimeFormat('en-GB').format(new Date(`${selectedRow.joining_date}T00:00:00`)) : '—'}</td><th>Employee Type</th><td>{selectedRow.employee_type || 'REGULAR'}</td></tr>
               </tbody>
             </table>

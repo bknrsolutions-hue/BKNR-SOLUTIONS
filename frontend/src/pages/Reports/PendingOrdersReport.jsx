@@ -1,5 +1,6 @@
 /**
  * PendingOrdersReport.jsx – Pending Orders Production Tracker
+ * Updated with exact 27 columns stream & Landscape print layout rules
  */
 import { Fragment, useState } from 'react';
 import {
@@ -7,6 +8,7 @@ import {
   Loader, ErrorBox, SearchInput,
   EmptyRow, useReport, fmt
 } from './ReportShell';
+import './PendingOrdersReport.css';
 
 export default function PendingOrdersReport({ activeRoute }) {
   const [fromDate, setFrom] = useState('');
@@ -118,8 +120,8 @@ export default function PendingOrdersReport({ activeRoute }) {
 
     keys.forEach(key => {
       const [spVar, count] = key.split('||');
-      const data = summaryObj[key];
-      grandSum += data.total;
+      const summaryData = summaryObj[key];
+      grandSum += summaryData.total;
       const isDrillOpen = !!drillExpanded[`${idPrefix}_${key}`];
 
       trs.push(
@@ -133,7 +135,7 @@ export default function PendingOrdersReport({ activeRoute }) {
             >
               {count}
             </td>
-            <td className="text-right" style={{ fontWeight: 700 }}>{fmt.number(data.total)}</td>
+            <td className="text-right" style={{ fontWeight: 700 }}>{fmt.number(summaryData.total)}</td>
           </tr>
           {isDrillOpen && (
             <tr className="drill-row">
@@ -148,7 +150,7 @@ export default function PendingOrdersReport({ activeRoute }) {
                       </tr>
                     </thead>
                     <tbody>
-                      {data.details.map((d, dIdx) => (
+                      {summaryData.details.map((d, dIdx) => (
                         <tr key={dIdx}>
                           <td className="text-center">{d.po}</td>
                           <td className="text-center">{d.exact}</td>
@@ -237,8 +239,6 @@ export default function PendingOrdersReport({ activeRoute }) {
             <td className="text-center" style={{ fontWeight: 700 }}>{row.nw_grade}</td>
             <td className="text-center">{row.no_of_pieces}</td>
             <td className="text-center" style={{ fontWeight: 800 }}>{row.no_of_mc}</td>
-            <td className="text-right">$ {fmt.number(row.selling_price)}</td>
-            <td className="text-right">₹{fmt.number(row.exchange_rate || 83.5)}</td>
             <td className="text-center">{row.stock_mc}</td>
             <td className="text-center">{row.prod_pending_mc}</td>
             <td className="text-center" style={{ background: 'rgba(148,163,184,0.04)', fontWeight: 700 }}>{row.net_count_calc}</td>
@@ -283,7 +283,7 @@ export default function PendingOrdersReport({ activeRoute }) {
 
           trs.push(
             <tr key={`expand-${rowKey}`} className="expand-row">
-              <td colSpan={29} style={{ padding: '0px', background: 'var(--bg)' }}>
+              <td colSpan={27} style={{ padding: '0px', background: 'var(--bg)' }}>
                 <div style={{ padding: '8px 12px', background: 'var(--card-bg)', border: '1px solid var(--border)', margin: '4px', borderRadius: 4 }}>
                   <div style={{ fontWeight: 800, fontSize: '10px', textTransform: 'uppercase', marginBottom: '6px', color: 'var(--accent)' }}>
                     ℹ️ {detailTitle} ({row.species} / {row.variety} / {row.grade})
@@ -334,7 +334,6 @@ export default function PendingOrdersReport({ activeRoute }) {
             TOTAL {po}:
           </td>
           <td className="text-center">{subMc}</td>
-          <td colSpan={2}></td>
           <td className="text-center">{subStockMc}</td>
           <td className="text-center">{subPendMc}</td>
           <td colSpan={3}></td>
@@ -351,48 +350,69 @@ export default function PendingOrdersReport({ activeRoute }) {
     return trs;
   };
 
+  const primaryCompany = rows[0]?.company_name || localStorage.getItem('production_for_filter') || 'BKNR EXPORTS';
+
   return (
     <div className="report-viewer-card pending-orders-exempt">
-      <ReportHeader
-        title="Pending Orders Premium Detailed Report"
-        subtitle={`${rows.length} active order items`}
-        loading={loading}
-        onReload={reload}
-      />
+      {/* Printable Banner (Visible only in Print mode) */}
+      <div className="pending-orders-print-header">
+        <div className="po-print-company">{primaryCompany}</div>
+        <div className="po-print-title">PENDING ORDERS DETAILED PRODUCTION TRACKER REPORT</div>
+        <div className="po-print-meta">
+          <span><strong>Approval No:</strong> {data?.approval_no || data?.mpeda_registration_code || '2162'}</span>
+          <span><strong>Ship Date Range:</strong> {fromDate || 'ALL'} to {toDate || 'ALL'}</span>
+          <span><strong>PO Filter:</strong> {poFilter || 'ALL ACTIVE POS'}</span>
+          <span><strong>Search Stream:</strong> {search || 'NONE'}</span>
+          <span><strong>Active Order Items:</strong> {rows.length}</span>
+          <span><strong>Printed Date:</strong> {new Date().toLocaleString('en-IN')}</span>
+        </div>
+      </div>
 
-      <FilterBar>
-        <FilterBox label="Ship From">
-          <FilterInput type="date" value={fromDate} onChange={setFrom} />
-        </FilterBox>
-        <FilterBox label="Ship To">
-          <FilterInput type="date" value={toDate} onChange={setTo} />
-        </FilterBox>
-        <FilterBox label="PO Selector">
-          <FilterSelect value={poFilter} onChange={setPoFilter}>
-            <option value="">ALL ACTIVE POS</option>
-            {poOptions.map(po => <option key={po} value={po}>{po}</option>)}
-          </FilterSelect>
-        </FilterBox>
-        <FilterBox label="Search Stream">
-          <SearchInput value={search} onChange={setSearch} placeholder="Buyer, Brand, Species, Var, Grd..." />
-        </FilterBox>
-        <FilterBox label="Actions">
-          <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn btn-clear" type="button" onClick={() => { setFrom(''); setTo(''); setPoFilter(''); setSearch(''); }}>Reset</button>
-            <button className="btn btn-primary" type="button" onClick={() => window.print()}>Print</button>
-          </div>
-        </FilterBox>
-      </FilterBar>
+      <div className="no-print">
+        <ReportHeader
+          title="Pending Orders Premium Detailed Report"
+          subtitle={`${rows.length} active order items`}
+          loading={loading}
+          onReload={reload}
+        />
+      </div>
+
+      <div className="no-print">
+        <FilterBar>
+          <FilterBox label="Ship From">
+            <FilterInput type="date" value={fromDate} onChange={setFrom} />
+          </FilterBox>
+          <FilterBox label="Ship To">
+            <FilterInput type="date" value={toDate} onChange={setTo} />
+          </FilterBox>
+          <FilterBox label="PO Selector">
+            <FilterSelect value={poFilter} onChange={setPoFilter}>
+              <option value="">ALL ACTIVE POS</option>
+              {poOptions.map(po => <option key={po} value={po}>{po}</option>)}
+            </FilterSelect>
+          </FilterBox>
+          <FilterBox label="Search Stream">
+            <SearchInput value={search} onChange={setSearch} placeholder="Buyer, Brand, Species, Var, Grd..." />
+          </FilterBox>
+          <FilterBox label="Actions">
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button className="btn btn-clear" type="button" onClick={() => { setFrom(''); setTo(''); setPoFilter(''); setSearch(''); }}>Reset</button>
+              <button className="btn btn-primary" type="button" onClick={() => window.print()}>Print</button>
+            </div>
+          </FilterBox>
+        </FilterBar>
+      </div>
 
       {loading && <Loader />}
       {error && <ErrorBox msg={error} onRetry={reload} />}
 
       {!loading && !error && (
         <>
-          {/* Collapsible Summaries Container */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
-            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+          {/* Requirement Summaries Container */}
+          <div className="po-summary-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
+            <div className="po-summary-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <div
+                className="po-summary-head"
                 onClick={() => setHlsoExpanded(!hlsoExpanded)}
                 style={{
                   background: 'var(--header-bg)', padding: '10px 14px', cursor: 'pointer',
@@ -400,7 +420,7 @@ export default function PendingOrdersReport({ activeRoute }) {
                 }}
               >
                 <span style={{ fontWeight: 850, fontSize: 11, letterSpacing: 0.5 }}>HLSO REQUIREMENT SUMMARY</span>
-                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{hlsoExpanded ? '▲' : '▼'}</span>
+                <span className="no-print" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{hlsoExpanded ? '▲' : '▼'}</span>
               </div>
               {hlsoExpanded && (
                 <div style={{ padding: 6 }}>
@@ -420,8 +440,9 @@ export default function PendingOrdersReport({ activeRoute }) {
               )}
             </div>
 
-            <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+            <div className="po-summary-card" style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <div
+                className="po-summary-head"
                 onClick={() => setHosoExpanded(!hosoExpanded)}
                 style={{
                   background: 'var(--header-bg)', padding: '10px 14px', cursor: 'pointer',
@@ -429,7 +450,7 @@ export default function PendingOrdersReport({ activeRoute }) {
                 }}
               >
                 <span style={{ fontWeight: 850, fontSize: 11, letterSpacing: 0.5 }}>HOSO REQUIREMENT SUMMARY</span>
-                <span style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{hosoExpanded ? '▲' : '▼'}</span>
+                <span className="no-print" style={{ fontSize: 10, color: 'var(--text-secondary)' }}>{hosoExpanded ? '▲' : '▼'}</span>
               </div>
               {hosoExpanded && (
                 <div style={{ padding: 6 }}>
@@ -450,45 +471,43 @@ export default function PendingOrdersReport({ activeRoute }) {
             </div>
           </div>
 
-          {/* Main Grouped Table */}
+          {/* Main Grouped 27-Column Table */}
           <div className="table-responsive" style={{ maxHeight: '600px', overflowY: 'auto' }}>
-            <table className="bknr-table" style={{ minWidth: 2200, width: '100%' }}>
+            <table className="bknr-table" style={{ width: '100%' }}>
               <thead>
                 <tr>
-                  <th style={{ width: 45 }}>Sl</th>
-                  <th style={{ width: 130 }}>Company</th>
-                  <th style={{ width: 110 }}>PO Number</th>
-                  <th style={{ width: 160 }}>Buyer</th>
-                  <th style={{ width: 100 }}>Ship Date</th>
-                  <th style={{ width: 120 }}>Packing Style</th>
-                  <th style={{ width: 100 }}>Brand</th>
-                  <th style={{ width: 90 }}>Sps</th>
-                  <th>Var</th>
-                  <th style={{ width: 65 }}>CG %</th>
-                  <th style={{ width: 65 }}>WG %</th>
-                  <th style={{ width: 70 }}>Grd</th>
-                  <th style={{ width: 85 }}>NW Grd</th>
-                  <th style={{ width: 75 }}>Pcs</th>
-                  <th style={{ width: 75 }}>Ord MC</th>
-                  <th style={{ width: 110 }}>Price ($)</th>
-                  <th style={{ width: 110 }}>Exch Rate</th>
-                  <th style={{ width: 75 }}>Stk MC</th>
-                  <th style={{ width: 75 }}>Pnd MC</th>
-                  <th style={{ width: 85 }}>Net Cnt</th>
-                  <th style={{ width: 85 }}>HL Cnt</th>
-                  <th style={{ width: 85 }}>HO Cnt</th>
-                  <th style={{ width: 100 }} className="text-right">Ord Qty</th>
-                  <th style={{ width: 100 }} className="text-right">Avl Stk</th>
-                  <th style={{ width: 100 }} className="text-right">Pnd Prd</th>
-                  <th style={{ width: 95 }} className="text-center">Ref Stk</th>
-                  <th style={{ width: 95 }} className="text-center">Stk Util</th>
-                  <th style={{ width: 100 }} className="text-right">Req HL</th>
-                  <th style={{ width: 100 }} className="text-right">Req HO</th>
+                  <th style={{ width: 40 }}>Sl</th>
+                  <th style={{ width: 120 }}>Company</th>
+                  <th style={{ width: 100 }}>PO Number</th>
+                  <th style={{ width: 140 }}>Buyer</th>
+                  <th style={{ width: 90 }}>Ship Date</th>
+                  <th style={{ width: 110 }}>Packing Style</th>
+                  <th style={{ width: 90 }}>Brand</th>
+                  <th style={{ width: 80 }}>Sps</th>
+                  <th style={{ width: 80 }}>Var</th>
+                  <th style={{ width: 60 }}>CG %</th>
+                  <th style={{ width: 60 }}>WG %</th>
+                  <th style={{ width: 65 }}>Grd</th>
+                  <th style={{ width: 80 }}>NW Grd</th>
+                  <th style={{ width: 65 }}>Pcs</th>
+                  <th style={{ width: 65 }}>Ord MC</th>
+                  <th style={{ width: 65 }}>Stk MC</th>
+                  <th style={{ width: 65 }}>Pnd MC</th>
+                  <th style={{ width: 75 }}>Net Cnt</th>
+                  <th style={{ width: 75 }}>HL Cnt</th>
+                  <th style={{ width: 75 }}>HO Cnt</th>
+                  <th style={{ width: 90 }} className="text-right">Ord Qty</th>
+                  <th style={{ width: 90 }} className="text-right">Avl Stk</th>
+                  <th style={{ width: 90 }} className="text-right">Pnd Prd</th>
+                  <th style={{ width: 85 }} className="text-center">Ref Stk</th>
+                  <th style={{ width: 85 }} className="text-center">Stk Util</th>
+                  <th style={{ width: 90 }} className="text-right">Req HL</th>
+                  <th style={{ width: 90 }} className="text-right">Req HO</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
-                  <EmptyRow cols={29} />
+                  <EmptyRow cols={27} />
                 ) : (
                   renderTableRows()
                 )}
@@ -497,7 +516,6 @@ export default function PendingOrdersReport({ activeRoute }) {
                 <tr style={{ fontWeight: 800, background: 'var(--header-bg)', color: 'var(--text)', borderTop: '2px solid var(--accent)' }}>
                   <td colSpan={14} style={{ textAlign: 'right', color: 'var(--text)' }}>GRAND TOTAL:</td>
                   <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.mc}</td>
-                  <td colSpan={2}></td>
                   <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.stockMc}</td>
                   <td className="text-center" style={{ color: 'var(--text)' }}>{grandTotal.pendMc}</td>
                   <td colSpan={3}></td>
@@ -510,6 +528,25 @@ export default function PendingOrdersReport({ activeRoute }) {
                 </tr>
               </tfoot>
             </table>
+          </div>
+
+          {/* Printable Signature Block (Visible only in Print mode) */}
+          <div className="pending-orders-print-signature">
+            <div className="po-sig-col">
+              <div className="po-sig-line"></div>
+              <div className="po-sig-title">PREPARED BY</div>
+              <div className="po-sig-sub">Production Manager</div>
+            </div>
+            <div className="po-sig-col">
+              <div className="po-sig-line"></div>
+              <div className="po-sig-title">CHECKED BY</div>
+              <div className="po-sig-sub">Quality Control In-Charge</div>
+            </div>
+            <div className="po-sig-col">
+              <div className="po-sig-line"></div>
+              <div className="po-sig-title">AUTHORIZED SIGNATORY</div>
+              <div className="po-sig-sub">Factory Manager / Director</div>
+            </div>
           </div>
         </>
       )}

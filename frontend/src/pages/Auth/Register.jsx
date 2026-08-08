@@ -66,11 +66,11 @@ export default function Register({ handleRegister, navigateToLogin }) {
           </div>
 
           <div className="form-group">
-            <label>MPEDA Registration Code *</label>
+            <label>Approval No (MPEDA Code) *</label>
             <input
               type="text"
               className="form-control"
-      placeholder="Registered MPEDA code"
+              placeholder="Approval No (e.g. 2162)"
               value={mpedaRegistrationCode}
               onChange={e => setMpedaRegistrationCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 4))}
               minLength={4}

@@ -16,6 +16,7 @@ from app.utils.global_filters import get_global_filters
 
 from app.database import get_db
 from app.database.models.inventory_management import pending_orders, stock_entry
+from app.database.models.users import Company
 from app.database.models.criteria import ( 
     varieties, 
     HOSO_HLSO_Yields,
@@ -251,11 +252,16 @@ def pending_orders_report_page(
     # 100% Data Consistency with Pending Orders Form: Include all active pending orders
     # rows are preserved so report matches the entry form exactly
 
+    comp_obj = db.query(Company).filter(func.lower(Company.company_id) == comp_code.lower()).first()
+    approval_code = comp_obj.mpeda_registration_code if comp_obj and comp_obj.mpeda_registration_code else "2162"
+
     # Template Response
     context = {
             "rows": rows, 
             "from_date": from_date or "", 
             "to_date": to_date or "",
+            "approval_no": approval_code,
+            "mpeda_registration_code": approval_code,
             "f_po": sorted({r.po_number for r in rows if r.po_number}),
             "f_grades": sorted({r.grade for r in rows if r.grade}),
             "f_nw_grades": sorted({r.nw_grade for r in rows if r.nw_grade and r.nw_grade != '-'}),

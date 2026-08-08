@@ -1754,7 +1754,7 @@ export default function ProformaInvoices({ setActivePage }) {
                   return (
                     <div style={{ marginTop: 18, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, padding: 14 }}>
                       <div style={{ fontSize: 11, fontWeight: 900, color: '#1e40af', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span>📦 Auto-Filled PI Product Details ({modalItems.length > 0 ? `${modalItems.length} Item Line(s)` : '1 Item Line'})</span>
+                        <span>Product Details</span>
                         <span style={{ background: '#dbeafe', color: '#1e3a8a', padding: '2px 8px', borderRadius: 10, fontSize: 10 }}>PI #{pendingTargetRow.pi_no}</span>
                       </div>
 
