@@ -506,12 +506,6 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
             </div>
           </div>
 
-          {loading && data && (
-            <div style={loadingOverlayStyle}>
-              <SkeletonBlock width="180px" height="10px" />
-            </div>
-          )}
-
           {error && (
             <div role="alert" style={errorPanelStyle}>
               <span><i className="fa-solid fa-triangle-exclamation"></i> {error}</span>
