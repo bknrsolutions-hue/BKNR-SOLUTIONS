@@ -30,7 +30,7 @@ const displayValue = value => Array.isArray(value) ? value.join(', ') : value;
 
 export default function RequirementDocumentPage(props) {
   const StructuredDocument = STRUCTURED_DOCUMENT_COMPONENTS[String(props.documentKind || '').toUpperCase()];
-  if (StructuredDocument) return <StructuredDocument embedded={props.embedded} />;
+  if (StructuredDocument) return <StructuredDocument embedded={props.embedded} setActivePage={props.setActivePage} />;
   return <GenericRequirementDocumentPage {...props} />;
 }
 

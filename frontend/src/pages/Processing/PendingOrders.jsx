@@ -411,22 +411,28 @@ export default function PendingOrders() {
         </form>
       )}
 
-      <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-        <button
-          type="button"
-          className={`btn ${orderView === 'pending' ? 'btn-primary' : 'btn-clear'}`}
-          onClick={() => setOrderView('pending')}
-        >
-          Pending Orders ({activeRows.length})
-        </button>
-        <button
-          type="button"
-          className={`btn ${orderView === 'completed' ? 'btn-primary' : 'btn-clear'}`}
-          onClick={() => setOrderView('completed')}
-        >
-          Completed Dispatches ({completedRows.length})
-        </button>
-      </div>
+      {(() => {
+        const activePoCount = new Set(activeRows.map(r => r.po_number || 'NO-PO')).size;
+        const completedPoCount = new Set(completedRows.map(r => r.po_number || 'NO-PO')).size;
+        return (
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button
+              type="button"
+              className={`btn ${orderView === 'pending' ? 'btn-primary' : 'btn-clear'}`}
+              onClick={() => setOrderView('pending')}
+            >
+              Pending Orders ({activePoCount})
+            </button>
+            <button
+              type="button"
+              className={`btn ${orderView === 'completed' ? 'btn-primary' : 'btn-clear'}`}
+              onClick={() => setOrderView('completed')}
+            >
+              Completed Dispatches ({completedPoCount})
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ACTIVE PO LIST */}
       {orderView === 'pending' && <div>

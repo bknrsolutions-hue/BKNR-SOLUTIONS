@@ -118,7 +118,10 @@ export default function Sidebar({ activePage, setActivePage, user, sidebarOpen, 
           name: "Export Documents",
           items: [
             { id: 'export_documents_dashboard', token: 'exp_dash', perm: 'export_documents_dashboard', route: '/export_documents/dashboard', icon: 'fa-file-export', label: 'Export Dashboard', badge: 'ExpOp' },
+            { id: 'crm_quotation', token: 'crm_qt', perm: 'proforma_invoice', route: '/crm/quotation/entry', icon: 'fa-file-signature', label: 'Sales Quotations', badge: 'QT' },
+            { id: 'proforma_invoice', token: 'exp_pi', perm: 'proforma_invoice', route: '/export_documents/proforma_invoice/entry', icon: 'fa-file-invoice', label: 'Proforma Invoices', badge: 'PI' },
             { id: 'export_shipment_workspace', token: 'exp_ws', perm: ['export_documents_dashboard', 'proforma_invoice', 'export_shipment', 'commercial_invoice', 'packing_list', 'container_stuffing', 'shipping_bill', 'bill_of_lading', 'health_certificate'], route: '/export_documents/workspace', icon: 'fa-ship', label: 'Shipment Workspace', badge: 'Flow' },
+
             { id: 'export_requirement_forms', token: 'exp_dc', perm: ['export_documents_dashboard', 'export_supporting_documents'], route: '/export_documents/requirement-pages/entry', icon: 'fa-folder-tree', label: 'Document Center', badge: 'Docs' },
             { id: 'export_document_approvals', token: 'exp_appr', perm: ['export_documents_dashboard', 'export_supporting_documents'], route: '/export_documents/approvals', icon: 'fa-user-check', label: 'Approvals', badge: 'Action' },
             { id: 'export_registers', token: 'exp_reg', perm: ['export_documents_dashboard', 'proforma_invoice', 'export_shipment', 'commercial_invoice', 'packing_list', 'container_stuffing', 'shipping_bill', 'bill_of_lading', 'health_certificate'], route: '/export_documents/registers', icon: 'fa-file-excel', label: 'Registers', badge: 'XLSX' }

@@ -52,7 +52,9 @@ export const TOKEN_MAP = {
   exp_appr:     { page_id: 'export_document_approvals',        backend: '/export_documents/approvals' },
   exp_reg:      { page_id: 'export_registers',                 backend: '/export_documents/registers' },
   exp_pi:       { page_id: 'proforma_invoice',                 backend: '/export_documents/proforma_invoice/entry' },
+  crm_qt:       { page_id: 'crm_quotation',                    backend: '/crm/quotation/entry' },
   exp_es:       { page_id: 'export_shipment',                  backend: '/export_documents/export_shipment/entry' },
+
   exp_ci:       { page_id: 'commercial_invoice',               backend: '/export_documents/commercial_invoice/entry' },
   exp_pl:       { page_id: 'packing_list',                     backend: '/export_documents/packing_list/entry' },
   exp_ct:       { page_id: 'container_stuffing',               backend: '/export_documents/container_stuffing/entry' },

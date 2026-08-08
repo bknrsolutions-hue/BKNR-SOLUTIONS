@@ -113,7 +113,9 @@ def save_grade_to_hoso(
         peel = (float(var.peeling_yield or 100)) / 100 if var else 1
         soak = (float(var.soaking_yield or 100)) / 100 if var else 1
 
-        hlso = math.floor(high / glaze_factor / peel / soak)
+        hlso = math.floor(high / glaze_factor * peel * soak)
+
+
 
         # 2️⃣ HOSO LOOKUP
         yield_row = (

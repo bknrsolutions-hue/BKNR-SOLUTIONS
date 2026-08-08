@@ -223,6 +223,11 @@ class RegisterReq(BaseModel):
     address: str
     mobile: str = Field(..., pattern=r"^[0-9]{10}$")
     email: str = Field(..., pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+    bank_name: str = Field(..., min_length=2, max_length=150)
+    account_number: str = Field(..., min_length=4, max_length=50)
+    ifsc_code: str = Field(..., min_length=4, max_length=20)
+    swift_code: Optional[str] = Field(default="", max_length=30)
+    branch: Optional[str] = Field(default="", max_length=150)
 
 class OTPReq(BaseModel):
     email: str
@@ -392,9 +397,34 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         user.is_verified = True
     db.flush()
 
-    # 🌱 Seed default masters for new company
+    # 🌱 Seed default masters and mandatory bank account for new company
     try:
         seed_default_masters(db, company.company_code, email=extra.get("email", "system@bknr.com"))
+        
+        # Create default BankMaster record for registered tenant
+        from app.database.models.enterprise_finance import BankMaster
+        bank_name = str(extra.get("bank_name", "") or "").strip()
+        account_number = str(extra.get("account_number", "") or "").strip()
+        if bank_name and account_number:
+            existing_bank = db.query(BankMaster).filter(
+                BankMaster.company_id == company.company_code,
+                BankMaster.account_number == account_number
+            ).first()
+            if not existing_bank:
+                new_bank = BankMaster(
+                    company_id=company.company_code,
+                    bank_name=bank_name,
+                    account_number=account_number,
+                    ifsc_code=str(extra.get("ifsc_code", "") or "").strip(),
+                    swift_code=str(extra.get("swift_code", "") or "").strip(),
+                    branch=str(extra.get("branch", "") or "").strip(),
+                    account_type="EXPORT CURRENT ACCOUNT",
+                    is_export_account=True,
+                    is_default=True,
+                    is_active=True,
+                    created_by=extra.get("email", "SYSTEM")
+                )
+                db.add(new_bank)
         db.commit()
     except Exception as e:
         db.rollback()

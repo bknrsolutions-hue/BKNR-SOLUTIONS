@@ -3056,6 +3056,11 @@
                         </div>
                         <div class="form-group"><label>Company Address</label><textarea id="address" rows="2"
                                 required></textarea></div>
+                        <div class="form-group"><label>Bank Name *</label><input id="reg_bank_name" type="text" placeholder="e.g. HDFC Bank" required></div>
+                        <div class="form-group"><label>Account Number *</label><input id="reg_account_number" type="text" placeholder="Account Number" required></div>
+                        <div class="form-group"><label>IFSC Code *</label><input id="reg_ifsc_code" type="text" placeholder="IFSC Code" required></div>
+                        <div class="form-group"><label>SWIFT / BIC Code</label><input id="reg_swift_code" type="text" placeholder="Optional SWIFT Code"></div>
+                        <div class="form-group"><label>Bank Branch</label><input id="reg_branch" type="text" placeholder="Branch location"></div>
                         <button id="btn-reg" onclick="sendOTP()">Send OTP</button>
                         <div id="regErr" class="msg error"></div>
                         <div class="link">Already Registered? <span onclick="showBox('loginBox')">Login</span></div>
@@ -3505,8 +3510,14 @@
             const mpedaCode = document.getElementById("mpeda_registration_code").value
                 .trim().toUpperCase().replace(/\s+/g, "");
 
-            if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim() || !mpedaCode) {
-                regErr.innerHTML = "Please fill out all required fields.";
+            const bankName = document.getElementById("reg_bank_name").value.trim();
+            const accountNumber = document.getElementById("reg_account_number").value.trim();
+            const ifscCode = document.getElementById("reg_ifsc_code").value.trim();
+            const swiftCode = document.getElementById("reg_swift_code").value.trim();
+            const branch = document.getElementById("reg_branch").value.trim();
+
+            if (!emailInput || !mobileInput || !document.getElementById("company_name").value.trim() || !mpedaCode || !bankName || !accountNumber || !ifscCode) {
+                regErr.innerHTML = "Please fill out all required fields including Bank Name, Account Number, and IFSC Code.";
                 regErr.style.display = "block";
                 return;
             }
@@ -3531,7 +3542,12 @@
                         designation: document.getElementById("designation").value.trim(),
                         address: document.getElementById("address").value.trim(),
                         mobile: mobileInput,
-                        email: emailInput.toLowerCase()
+                        email: emailInput.toLowerCase(),
+                        bank_name: bankName,
+                        account_number: accountNumber,
+                        ifsc_code: ifscCode,
+                        swift_code: swiftCode,
+                        branch: branch
                     })
                 });
 

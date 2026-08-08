@@ -989,6 +989,25 @@ body {
 /* =========================================================
    🌟 APP CONTAINER & HEADER
 ========================================================= */
+/* HIDE ALL MENU HEADERS WHEN EDIT MODAL POPUP IS OPEN */
+body:has(.attendance-modal-overlay) .app-header,
+body:has(.attendance-modal-overlay) .top-navbar-bar,
+body:has(.attendance-modal-overlay) .app-back-strip,
+body:has(.attendance-modal-overlay) header.no-print,
+body.modal-open .app-header,
+body.modal-open .top-navbar-bar,
+body.modal-open .app-back-strip,
+body.modal-open header.no-print {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
 .app-header {
     height: var(--header-h); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
     display: flex; align-items: center; justify-content: space-between; padding: 0 24px;

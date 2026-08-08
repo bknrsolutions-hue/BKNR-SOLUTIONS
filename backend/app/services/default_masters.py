@@ -249,6 +249,28 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
             ))
             changed = True
 
+    # 12. Default Bank Account
+    try:
+        from app.database.models.enterprise_finance import BankMaster
+        if not db.query(BankMaster.id).filter(func.upper(func.trim(BankMaster.company_id)) == company_code).first():
+            db.add(BankMaster(
+                company_id=company_code,
+                bank_name="HDFC BANK LIMITED",
+                account_number="50200084920194",
+                ifsc_code="HDFC0001234",
+                swift_code="HDFCINBBXXX",
+                branch="APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
+                currency_code="USD",
+                account_type="EXPORT CURRENT ACCOUNT",
+                is_export_account=True,
+                is_default=True,
+                is_active=True,
+                created_by=email
+            ))
+            changed = True
+    except Exception as exc:
+        print(f"BANK SEED ERROR: {exc}")
+
     if changed:
         try:
             db.commit()

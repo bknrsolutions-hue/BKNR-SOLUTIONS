@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request, Depends, Body, HTTPException, Query, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, StreamingResponse
 from fastapi.templating import Jinja2Templates
-from typing import Any
+from typing import Any, Optional, List, Dict
 from pydantic import BaseModel, Field, model_validator
 from decimal import Decimal
 from sqlalchemy.orm import Session
@@ -38,7 +38,7 @@ from app.database.models.invoices import (
 from app.database.models.users import Company, User
 from app.database.models.criteria import (
     buyers, buyer_agents, countries, species, varieties, grades, brands,
-    glazes, freezers, packing_styles, shipping_vendors,
+    glazes, freezers, packing_styles, shipping_vendors, production_for, production_at
 )
 from app.database.models.enterprise_finance import BankMaster, ProductionCostAllocation
 from app.database.models.inventory_management import pending_orders, sales_dispatch
@@ -53,6 +53,18 @@ from app.services.posting_engine import PostingEngineService
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
+
+def jinja_from_json(val):
+    if not val:
+        return []
+    if isinstance(val, (list, dict)):
+        return val
+    try:
+        return json.loads(val)
+    except Exception:
+        return []
+
+templates.env.filters["from_json"] = jinja_from_json
 logger = logging.getLogger(__name__)
 
 EXPORT_PDF_DIR = Path("uploads/export_documents_private")
@@ -295,7 +307,7 @@ def export_doc_config():
     return {
         "proforma_invoice": {
             "model": ProformaInvoice, "no": "pi_no", "date": "pi_date",
-            "title": "Proforma Invoice", "template": "export_documents/print_document.html",
+            "title": "Proforma Invoice", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("PI No", "pi_no"), ("PI Date", "pi_date"), ("Valid Until", "validity_date"),
                 ("Buyer", "buyer_name"), ("Buyer Address", "buyer_address"),
@@ -311,7 +323,7 @@ def export_doc_config():
         },
         "export_shipment": {
             "model": ExportShipment, "no": "shipment_no", "date": "created_at",
-            "title": "Export Shipment File", "template": "export_documents/print_document.html",
+            "title": "Export Shipment File", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Shipment No", "shipment_no"), ("PO Number", "po_number"), ("Invoice No", "invoice_no"),
                 ("Container No", "container_no"), ("Buyer", "buyer_name"), ("Country", "country"),
@@ -321,7 +333,7 @@ def export_doc_config():
         },
         "commercial_invoice": {
             "model": CommercialInvoice, "no": "invoice_no", "date": "invoice_date",
-            "title": "Commercial Invoice", "template": "export_documents/print_document.html",
+            "title": "Commercial Invoice", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Invoice No", "invoice_no"), ("Invoice Date", "invoice_date"), ("Shipment No", "shipment_no"),
                 ("PO Number", "po_number"), ("Buyer", "buyer_name"), ("Buyer Address", "buyer_address"),
@@ -337,7 +349,7 @@ def export_doc_config():
         },
         "packing_list": {
             "model": PackingList, "no": "packing_no", "date": "created_at",
-            "title": "Packing List", "template": "export_documents/print_document.html",
+            "title": "Packing List", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Packing No", "packing_no"), ("Invoice No", "invoice_no"), ("PO Number", "po_number"),
                 ("Container No", "container_no"), ("Buyer", "buyer_name"), ("Product", "product_name"),
@@ -350,7 +362,7 @@ def export_doc_config():
         },
         "container_stuffing": {
             "model": ContainerStuffing, "no": "container_no", "date": "stuffing_date",
-            "title": "Container Stuffing Report", "template": "export_documents/print_document.html",
+            "title": "Container Stuffing Report", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Container No", "container_no"), ("Invoice No", "invoice_no"), ("PO Number", "po_number"),
                 ("Buyer", "buyer_name"), ("Seal No", "seal_no"), ("Shipping Line", "shipping_line"),
@@ -364,7 +376,7 @@ def export_doc_config():
         },
         "shipping_bill": {
             "model": ShippingBill, "no": "shipping_bill_no", "date": "shipping_bill_date",
-            "title": "Shipping Bill Summary", "template": "export_documents/print_document.html",
+            "title": "Shipping Bill Summary", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Shipping Bill No", "shipping_bill_no"), ("Shipping Bill Date", "shipping_bill_date"),
                 ("Invoice No", "invoice_no"), ("Container No", "container_no"), ("PO Number", "po_number"),
@@ -377,7 +389,7 @@ def export_doc_config():
         },
         "bill_of_lading": {
             "model": BillOfLading, "no": "bl_no", "date": "bl_date",
-            "title": "Bill of Lading", "template": "export_documents/print_document.html",
+            "title": "Bill of Lading", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("B/L No", "bl_no"), ("B/L Date", "bl_date"), ("On Board Date", "onboard_date"),
                 ("Invoice No", "invoice_no"), ("Container No", "container_no"), ("PO Number", "po_number"),
@@ -391,7 +403,7 @@ def export_doc_config():
         },
         "health_certificate": {
             "model": HealthCertificate, "no": "certificate_no", "date": "issue_date",
-            "title": "Health Certificate", "template": "export_documents/print_document.html",
+            "title": "Health Certificate", "template": "export_documents/print_document_pdf.html",
             "fields": [
                 ("Certificate No", "certificate_no"), ("Issue Date", "issue_date"), ("Authority", "authority"),
                 ("Factory Approval No", "factory_approval_no"), ("Invoice No", "invoice_no"),
@@ -641,17 +653,78 @@ def pack_export_print_rows(fields: list[dict]) -> list[list[dict]]:
 
 
 def get_export_company_profile(db: Session, company_id: str) -> dict:
-    company = db.query(Company).filter(Company.company_code == company_id).first()
+    company_code_clean = str(company_id or "").strip().upper()
+    company = db.query(Company).filter(
+        func.upper(func.trim(Company.company_code)) == company_code_clean
+    ).first()
+    
+    bank_info = {
+        "bank_name": "HDFC BANK LIMITED",
+        "account_number": "50200084920194",
+        "ifsc_code": "HDFC0001234",
+        "swift_code": "HDFCINBBXXX",
+        "branch": "APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
+        "currency_code": "USD",
+        "account_type": "EXPORT CURRENT ACCOUNT",
+    }
+    try:
+        from app.database.models.enterprise_finance import BankMaster
+        bank = db.query(BankMaster).filter(
+            func.upper(func.trim(BankMaster.company_id)) == company_code_clean,
+            BankMaster.is_active != False
+        ).order_by(BankMaster.is_default.desc(), BankMaster.is_export_account.desc(), BankMaster.id.asc()).first()
+
+        if not bank and company_code_clean:
+            # Auto-seed default bank account for existing tenant if missing
+            bank = BankMaster(
+                company_id=company_code_clean,
+                bank_name="HDFC BANK LIMITED",
+                account_number="50200084920194",
+                ifsc_code="HDFC0001234",
+                swift_code="HDFCINBBXXX",
+                branch="APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
+                currency_code="USD",
+                account_type="EXPORT CURRENT ACCOUNT",
+                is_export_account=True,
+                is_default=True,
+                is_active=True,
+                created_by="SYSTEM_AUTO_SEED"
+            )
+            db.add(bank)
+            try:
+                db.commit()
+                db.refresh(bank)
+            except Exception:
+                db.rollback()
+                bank = db.query(BankMaster).filter(
+                    func.upper(func.trim(BankMaster.company_id)) == company_code_clean
+                ).first()
+
+        if bank:
+            bank_info = {
+                "bank_name": bank.bank_name or bank_info["bank_name"],
+                "account_number": bank.account_number or bank_info["account_number"],
+                "ifsc_code": bank.ifsc_code or bank_info["ifsc_code"],
+                "swift_code": bank.swift_code or bank_info["swift_code"],
+                "branch": bank.branch or bank_info["branch"],
+                "currency_code": bank.currency_code or bank_info["currency_code"],
+                "account_type": bank.account_type or bank_info["account_type"],
+            }
+    except Exception as exc:
+        logger.warning("Error fetching bank details for company %s: %s", company_id, exc)
+
     return {
-        "name": company.company_name if company else company_id,
-        "address": company.address if company else "",
-        "email": company.email if company else "",
+        "name": company.company_name if company else (company_id or "BHAGAVATHI KRISHNA EXPORTS"),
+        "address": company.address if company else "Survey No 142/2, APSEZ, Atchutapuram, Visakhapatnam - 531011, AP, India",
+        "email": company.email if company else "export@bknrexports.com",
+        "phone": getattr(company, "phone", "") or "+91 891 2748899",
         "code": (
             company.mpeda_registration_code
             if company and company.mpeda_registration_code
-            else "MPEDA CODE NOT REGISTERED"
+            else "BKNR-EXP-01"
         ),
         "tenant_code": company_id,
+        "bank": bank_info,
     }
 
 
@@ -790,6 +863,74 @@ def build_document_payload(cfg, row, packing_rows: list[PackingList] | None = No
     return payload
 
 
+def process_items_with_spans(raw_items, default_desc="", default_brand="", default_pack=""):
+    if not raw_items:
+        return []
+    
+    norm_items = []
+    for it in raw_items:
+        desc = (it.get("product_description") or it.get("item_name") or default_desc or "Seafood Export Product").strip()
+        brand = (it.get("brand") or default_brand or "").strip()
+        pack = (it.get("packing_style") or default_pack or "").strip()
+        grade = (it.get("grade") or "").strip()
+        mc = int(it.get("no_of_mc") or it.get("mc") or 0)
+        qty = float(it.get("quantity") or it.get("quantity_kg") or 0.0)
+        price = float(it.get("unit_price") or it.get("rate_per_kg") or 0.0)
+        amt = float(it.get("total_amount") or it.get("amount") or (qty * price))
+        
+        norm_items.append({
+            "product_description": desc,
+            "brand": brand,
+            "packing_style": pack,
+            "grade": grade,
+            "no_of_mc": mc,
+            "quantity": qty,
+            "unit_price": price,
+            "total_amount": amt,
+            "desc_span": 1,
+            "brand_span": 1,
+            "pack_span": 1,
+        })
+
+    groups = {}
+    for it in norm_items:
+        key = f"{it['product_description'].lower()}|||{it['brand'].lower()}|||{it['packing_style'].lower()}"
+        groups.setdefault(key, []).append(it)
+    
+    grouped_items = []
+    for g in groups.values():
+        grouped_items.extend(g)
+        
+    n = len(grouped_items)
+    i = 0
+    while i < n:
+        span = 1
+        desc = grouped_items[i]["product_description"].lower()
+        brand = grouped_items[i]["brand"].lower()
+        pack = grouped_items[i]["packing_style"].lower()
+        
+        for j in range(i + 1, n):
+            if (grouped_items[j]["product_description"].lower() == desc and
+                grouped_items[j]["brand"].lower() == brand and
+                grouped_items[j]["packing_style"].lower() == pack):
+                span += 1
+            else:
+                break
+                
+        grouped_items[i]["desc_span"] = span
+        grouped_items[i]["brand_span"] = span
+        grouped_items[i]["pack_span"] = span
+        
+        for k in range(i + 1, i + span):
+            grouped_items[k]["desc_span"] = 0
+            grouped_items[k]["brand_span"] = 0
+            grouped_items[k]["pack_span"] = 0
+            
+        i += span
+        
+    return grouped_items
+
+
 def render_document_pdf(
     cfg,
     row,
@@ -799,11 +940,37 @@ def render_document_pdf(
     packing_rows: list[PackingList] | None = None,
 ) -> bytes:
     payload = build_document_payload(cfg, row, packing_rows)
+    raw_items = []
+    if hasattr(row, "items_json") and row.items_json:
+        try:
+            raw_items = json.loads(row.items_json)
+        except Exception:
+            raw_items = []
+    if not raw_items and hasattr(row, "product_description"):
+        raw_items = [{
+            "product_description": getattr(row, "product_description", ""),
+            "brand": getattr(row, "brand", ""),
+            "packing_style": getattr(row, "packing_style", ""),
+            "grade": getattr(row, "grade", ""),
+            "no_of_mc": getattr(row, "no_of_mc", 0),
+            "quantity": getattr(row, "quantity", 0),
+            "unit_price": getattr(row, "unit_price", 0),
+            "total_amount": getattr(row, "total_amount", 0),
+        }]
+
+    processed_items = process_items_with_spans(
+        raw_items,
+        getattr(row, "product_description", ""),
+        getattr(row, "brand", ""),
+        getattr(row, "packing_style", ""),
+    )
+
     html = templates.env.get_template("export_documents/print_document_pdf.html").render(
         **payload,
         company_id=company_id,
         company=company_profile or {"name": company_id, "address": "", "email": "", "code": company_id},
         record=row,
+        items=processed_items,
         doc_type=doc_type,
         generated_at=datetime.utcnow(),
     )
@@ -2425,6 +2592,11 @@ class ProformaInvoiceSchema(BaseModel):
     no_of_pieces: str = None
     no_of_mc: int = 0
     items_json: str = None
+    bank_name: str = None
+    account_number: str = None
+    ifsc_code: str = None
+    swift_code: str = None
+    branch: str = None
 
     @model_validator(mode="before")
     @classmethod
@@ -2723,7 +2895,28 @@ def apply_invoice_container_defaults(db: Session, company_id: str, invoices: lis
 # ============================================================
 # PROFORMA INVOICES
 # ============================================================
-def serialize_proforma(row: ProformaInvoice) -> dict:
+def serialize_proforma(row: ProformaInvoice, db: Session = None) -> dict:
+    pending_info = None
+    if db:
+        try:
+            from app.database.models.inventory_management import pending_orders
+            p_nums = [p for p in [row.po_number, row.pi_no] if p and str(p).strip()]
+            if p_nums:
+                po_exist = db.query(pending_orders).filter(
+                    pending_orders.company_id == row.company_id,
+                    pending_orders.po_number.in_(p_nums)
+                ).first()
+                if po_exist:
+                    pending_info = {
+                        "company_name": po_exist.company_name,
+                        "production_at": po_exist.production_at,
+                        "buyer_name": po_exist.buyer,
+                        "agent_name": po_exist.agent_name,
+                        "po_number": po_exist.po_number,
+                    }
+        except Exception:
+            pass
+
     return {
         "id": row.id,
         "pi_no": row.pi_no,
@@ -2760,6 +2953,7 @@ def serialize_proforma(row: ProformaInvoice) -> dict:
         "no_of_pieces": getattr(row, "no_of_pieces", "") or "",
         "no_of_mc": getattr(row, "no_of_mc", 0) or 0,
         "items_json": getattr(row, "items_json", "") or "",
+        "pending_order_info": pending_info,
         "created_by": row.created_by,
         "created_at": _dt(row.created_at),
     }
@@ -2815,9 +3009,11 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
         if match:
             sequence_values.append(int(match.group(1)))
     next_pi_no = f"PI-{current_year}-{max(sequence_values, default=0) + 1:04d}"
+    comp_info = get_export_company_profile(db, comp_code)
     return {
         "success": True,
         "can_approve": is_supporting_document_admin(request),
+        "company": comp_info,
         "next_pi_no": next_pi_no,
         "buyers": [{
             "name": row.buyer_name,
@@ -2830,6 +3026,7 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
             "iec_code": row.iec_code or "",
         } for row in buyer_rows],
         "countries": [row.country_name for row in country_rows],
+        "agents": [a.agent_name for a in db.query(buyer_agents).filter(buyer_agents.company_id == comp_code).order_by(buyer_agents.agent_name).all()],
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == comp_code).order_by(brands.brand_name).all()],
         "packing_styles": [p.packing_style for p in db.query(packing_styles).filter(packing_styles.company_id == comp_code).order_by(packing_styles.packing_style).all()],
         "freezers": [f.freezer_name for f in db.query(freezers).filter(freezers.company_id == comp_code).order_by(freezers.freezer_name).all()],
@@ -2837,7 +3034,13 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
         "species": [s.species_name for s in db.query(species).filter(species.company_id == comp_code).order_by(species.species_name).all()],
         "varieties": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == comp_code).order_by(varieties.variety_name).all()],
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == comp_code).order_by(grades.grade_name).all()],
-        "rows": [serialize_proforma(row) for row in rows],
+        "production_for_options": sorted(list(set(
+            [p[0].strip() for p in db.query(production_for.production_for).filter(production_for.company_id == comp_code, production_for.production_for != None).distinct().all() if p[0] and p[0].strip()] or ([comp_info.get("name")] if comp_info and comp_info.get("name") else [])
+        ))),
+        "production_at_options": sorted(list(set(
+            [p[0].strip() for p in db.query(production_at.production_at).filter(production_at.company_id == comp_code, production_at.production_at != None).distinct().all() if p[0] and p[0].strip()] or [r.port_of_loading for r in rows if r.port_of_loading and r.port_of_loading.strip()]
+        ))),
+        "rows": [serialize_proforma(row, db) for row in rows],
         "audit_logs": [{
             "id": audit.id,
             "record_id": audit.record_id,
@@ -2850,8 +3053,40 @@ def proforma_invoice_data(request: Request, db: Session = Depends(get_db)):
     }
 
 
+def update_company_bank_master(db: Session, comp_code: str, payload: ProformaInvoiceSchema):
+    if not any([payload.bank_name, payload.account_number, payload.ifsc_code, payload.swift_code, payload.branch]):
+        return
+    company_code_clean = (comp_code or "").strip().upper()
+    bank_rec = db.query(BankMaster).filter(
+        func.upper(func.trim(BankMaster.company_id)) == company_code_clean,
+        BankMaster.is_active != False
+    ).order_by(BankMaster.is_default.desc(), BankMaster.is_export_account.desc(), BankMaster.id.asc()).first()
+
+    if bank_rec:
+        if payload.bank_name: bank_rec.bank_name = payload.bank_name.strip()
+        if payload.account_number: bank_rec.account_number = payload.account_number.strip()
+        if payload.ifsc_code: bank_rec.ifsc_code = payload.ifsc_code.strip()
+        if payload.swift_code: bank_rec.swift_code = payload.swift_code.strip()
+        if payload.branch: bank_rec.branch = payload.branch.strip()
+    else:
+        bank_rec = BankMaster(
+            company_id=comp_code,
+            bank_name=payload.bank_name.strip() if payload.bank_name else "HDFC BANK LIMITED",
+            account_number=payload.account_number.strip() if payload.account_number else "50200084920194",
+            ifsc_code=payload.ifsc_code.strip() if payload.ifsc_code else "HDFC0001234",
+            swift_code=payload.swift_code.strip() if payload.swift_code else "HDFCINBBXXX",
+            branch=payload.branch.strip() if payload.branch else "APSEZ VISAKHAPATNAM BRANCH",
+            is_default=True,
+            is_export_account=True,
+            is_active=True,
+        )
+        db.add(bank_rec)
+
+
 def proforma_payload_values(payload: ProformaInvoiceSchema) -> dict:
     values = payload.model_dump()
+    for bank_field in ["bank_name", "account_number", "ifsc_code", "swift_code", "branch"]:
+        values.pop(bank_field, None)
     values["pi_no"] = payload.pi_no.strip()
     values["buyer_name"] = payload.buyer_name.strip()
     values["total_amount"] = (payload.quantity * payload.unit_price).quantize(Decimal("0.01"))
@@ -2873,6 +3108,7 @@ def proforma_invoice_save(request: Request, payload: ProformaInvoiceSchema, db: 
     entry = ProformaInvoice(company_id=comp_code, created_by=email, **proforma_payload_values(payload))
     db.add(entry)
     db.flush()
+    update_company_bank_master(db, comp_code, payload)
     write_audit(db, "proforma_invoices", entry.id, comp_code, "CREATE", "NONE", f"PI {entry.pi_no}", email)
     db.commit()
     invalidate_export_cache(comp_code)
@@ -2914,6 +3150,7 @@ def proforma_invoice_update(record_id: int, request: Request, payload: ProformaI
     entry.approved_by = None
     entry.approved_at = None
     entry.approval_remarks = None
+    update_company_bank_master(db, comp_code, payload)
     write_audit(db, "proforma_invoices", entry.id, comp_code, "UPDATE", old_status, entry.status, email)
     if old_approval != "PENDING":
         write_audit(db, "proforma_invoices", entry.id, comp_code, "APPROVAL_RESET", old_approval, "PENDING", email)
@@ -2983,6 +3220,171 @@ def proforma_invoice_approval(
     db.commit()
     invalidate_export_cache(comp_code)
     return {"success": True, "message": f"Proforma invoice {decision.lower()} successfully"}
+
+
+class AddToPendingPayload(BaseModel):
+    company_name: Optional[str] = None
+    production_at: Optional[str] = None
+    buyer_name: Optional[str] = None
+    agent_name: Optional[str] = None
+    po_number: Optional[str] = None
+
+
+@router.post("/proforma_invoice/{record_id}/add-to-pending-orders")
+def proforma_invoice_add_to_pending_orders(
+    record_id: int,
+    request: Request,
+    payload: Optional[AddToPendingPayload] = None,
+    db: Session = Depends(get_db)
+):
+    """Auto-fill and populate Pending Orders form details from a Proforma Invoice (PI) with selected Company, Location, Buyer, Agent, and PO Number."""
+    comp_code = request.session.get("company_code")
+    email = request.session.get("email") or "SYSTEM"
+    if not comp_code:
+        return JSONResponse({"success": False, "message": "Unauthorized"}, status_code=401)
+
+    entry = db.query(ProformaInvoice).filter(
+        ProformaInvoice.id == record_id,
+        ProformaInvoice.company_id == comp_code,
+        ProformaInvoice.is_cancelled != True,
+    ).first()
+    if not entry:
+        return JSONResponse({"success": False, "message": "Proforma Invoice record not found"}, status_code=404)
+
+    from app.database.models.inventory_management import pending_orders
+    from app.services.production_requirements_service import ProductionRequirementService
+
+    # Extract user-selected values or fallback to defaults
+    final_company_name = (payload and payload.company_name and payload.company_name.strip()) or comp_code
+    final_production_at = (payload and payload.production_at and payload.production_at.strip()) or entry.port_of_loading or "APSEZ Plant"
+    final_buyer_name = (payload and payload.buyer_name and payload.buyer_name.strip()) or entry.buyer_name or "Export Buyer"
+    final_agent_name = (payload and payload.agent_name and payload.agent_name.strip()) or "Direct"
+    final_po_number = (payload and payload.po_number and payload.po_number.strip().upper()) or entry.pi_no
+
+    # Fetch next sl_no
+    max_sl = db.query(func.max(pending_orders.sl_no)).filter(
+        pending_orders.company_id == comp_code
+    ).scalar()
+    next_sl = (max_sl or 0) + 1
+
+    # Check for existing records matching PI #, old PO #, or new PO # to prevent duplicates
+    possible_po_numbers = list(set([
+        str(entry.pi_no or "").strip().upper(),
+        str(entry.po_number or "").strip().upper(),
+        str(final_po_number or "").strip().upper(),
+    ]))
+    possible_po_numbers = [p for p in possible_po_numbers if p]
+
+    existing_rows = db.query(pending_orders).filter(
+        pending_orders.company_id == comp_code,
+        pending_orders.po_number.in_(possible_po_numbers)
+    ).all()
+
+    target_sl = next_sl
+    is_update = False
+    if existing_rows:
+        is_update = True
+        target_sl = existing_rows[0].sl_no or next_sl
+        for old_r in existing_rows:
+            db.delete(old_r)
+        db.flush()
+
+    # Save PO Number link back to Proforma Invoice record
+    entry.po_number = final_po_number
+    entry.status = "ACCEPTED"
+
+    # Extract items list from items_json or single record
+    items_list = []
+    if entry.items_json:
+        try:
+            parsed = json.loads(entry.items_json)
+            if isinstance(parsed, list) and len(parsed) > 0:
+                items_list = parsed
+        except Exception:
+            pass
+
+    if not items_list:
+        items_list = [{
+            "brand": entry.brand or "N/A",
+            "packing_style": entry.packing_style or "10x1kg",
+            "freezer": entry.freezer or "IQF",
+            "count_glaze": entry.count_glaze or "0",
+            "weight_glaze": entry.weight_glaze or "0",
+            "species": entry.species or "Shrimp",
+            "variety": entry.variety or "PD",
+            "grade": entry.grade or "21/25",
+            "no_of_mc": int(entry.no_of_mc or entry.quantity or 100),
+            "unit_price": float(entry.unit_price or 5.0),
+        }]
+
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    shipment_dt_str = str(entry.validity_date or entry.pi_date or today_str)
+
+    def _calc_pcs(grade_str, manual_pcs=None):
+        try:
+            if manual_pcs is not None and str(manual_pcs).strip():
+                val = int(float(str(manual_pcs).strip()))
+                if val > 0:
+                    return val
+            nums = re.findall(r'\d+', str(grade_str or ""))
+            if nums:
+                last_num = int(nums[-1])
+                return int(round(last_num * 2.2))
+        except Exception:
+            pass
+        return 0
+
+    added_count = 0
+    for it in items_list:
+        grade_str = str(it.get("grade") or entry.grade or "21/25")
+        raw_pcs = it.get("no_of_pieces") or it.get("pieces") or entry.no_of_pieces
+        pieces_val = _calc_pcs(grade_str, raw_pcs)
+
+        p_row = pending_orders(
+            sl_no=target_sl,
+            company_name=final_company_name,
+            po_number=final_po_number,
+            buyer=final_buyer_name,
+            agent_name=final_agent_name,
+            country=entry.country or "India",
+            shipment_date=shipment_dt_str,
+            production_at=final_production_at,
+            exchange_rate=83.5,
+            brand=str(it.get("brand") or entry.brand or "N/A"),
+            packing_style=str(it.get("packing_style") or entry.packing_style or "10x1kg"),
+            freezer=str(it.get("freezer") or entry.freezer or "IQF"),
+            count_glaze=str(it.get("count_glaze") or entry.count_glaze or "0"),
+            weight_glaze=str(it.get("weight_glaze") or entry.weight_glaze or "0"),
+            species=str(it.get("species") or entry.species or "Shrimp"),
+            variety=str(it.get("variety") or entry.variety or "PD"),
+            grade=grade_str,
+            no_of_pieces=pieces_val,
+            no_of_mc=int(it.get("no_of_mc") or it.get("quantity") or entry.no_of_mc or 100),
+            selling_price=float(it.get("unit_price") or it.get("price") or entry.unit_price or 0.0),
+            company_id=comp_code,
+            email=email,
+            date=today_str,
+            progress_steps="pending"
+        )
+        db.add(p_row)
+        added_count += 1
+
+    entry.status = "ACCEPTED"
+    db.commit()
+
+    try:
+        ProductionRequirementService.refresh_requirements(db=db, company_id=comp_code)
+    except Exception as e:
+        logger.warning(f"Production requirements refresh exception: {e}")
+
+    write_audit(db, "proforma_invoices", entry.id, comp_code, "ADD_TO_PENDING_ORDERS", entry.status, "UPDATED_IN_PENDING_ORDERS" if is_update else "ADDED_TO_PENDING_ORDERS", email)
+
+    msg = f"🔄 Pending Order for PI #{entry.pi_no} updated successfully! (Old record replaced with new details)" if is_update else f"✅ PI #{entry.pi_no} added to Pending Orders list! ({added_count} line item(s) created)"
+
+    return JSONResponse({
+        "success": True,
+        "message": msg
+    })
 
 
 # ============================================================
@@ -3598,6 +4000,31 @@ def export_document_print(doc_type: str, record_id: int, request: Request, db: S
     cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
     payload = build_document_payload(cfg, row, get_invoice_packing_rows(db, row))
     company = get_export_company_profile(db, comp_code)
+    raw_items = []
+    if hasattr(row, "items_json") and row.items_json:
+        try:
+            raw_items = json.loads(row.items_json)
+        except Exception:
+            raw_items = []
+    if not raw_items and hasattr(row, "product_description"):
+        raw_items = [{
+            "product_description": getattr(row, "product_description", ""),
+            "brand": getattr(row, "brand", ""),
+            "packing_style": getattr(row, "packing_style", ""),
+            "grade": getattr(row, "grade", ""),
+            "no_of_mc": getattr(row, "no_of_mc", 0),
+            "quantity": getattr(row, "quantity", 0),
+            "unit_price": getattr(row, "unit_price", 0),
+            "total_amount": getattr(row, "total_amount", 0),
+        }]
+
+    processed_items = process_items_with_spans(
+        raw_items,
+        getattr(row, "product_description", ""),
+        getattr(row, "brand", ""),
+        getattr(row, "packing_style", ""),
+    )
+
     return templates.TemplateResponse(
         request=request,
         name=cfg["template"],
@@ -3606,6 +4033,7 @@ def export_document_print(doc_type: str, record_id: int, request: Request, db: S
             "company_id": comp_code,
             "company": company,
             "record": row,
+            "items": processed_items,
             "doc_type": doc_type,
             "generated_at": datetime.utcnow(),
         },
@@ -3642,10 +4070,12 @@ def export_document_pdf(doc_type: str, record_id: int, request: Request, db: Ses
     set_document_path(row, file_row.file_path)
     write_audit(db, doc_type, row.id, comp_code, "PDF_GENERATE", "NONE", file_row.file_path, request.session.get("email"))
     db.commit()
+    is_download = request.query_params.get("download") in ("1", "true", "yes", "True")
+    disposition = "attachment" if is_download else "inline"
     return StreamingResponse(
         BytesIO(pdf_bytes),
         media_type="application/pdf",
-        headers={"Content-Disposition": f"inline; filename={safe_filename(document_no)}.pdf"},
+        headers={"Content-Disposition": f"{disposition}; filename={safe_filename(document_no)}.pdf"},
     )
 
 
@@ -3710,3 +4140,64 @@ def export_document_file_download(file_id: int, request: Request, db: Session = 
         media_type=file_row.content_type or "application/pdf",
         headers={"Content-Disposition": f"inline; filename={safe_filename(file_row.file_name)}"},
     )
+
+
+@router.post("/{doc_type}/send-email/{record_id}")
+async def export_document_send_email(
+    doc_type: str,
+    record_id: int,
+    request: Request,
+    to_email: str = Form(...),
+    subject: str | None = Form(None),
+    body: str | None = Form(None),
+    file: UploadFile | None = File(None),
+    db: Session = Depends(get_db)
+):
+    cfg, row, comp_code = get_export_record_or_404(db, request, doc_type, record_id)
+    doc_no = getattr(row, cfg["no"], str(record_id))
+    company_profile = get_export_company_profile(db, comp_code)
+    
+    if file and file.filename:
+        pdf_bytes = await file.read()
+        filename = file.filename
+    else:
+        pdf_bytes = render_document_pdf(cfg, row, comp_code, doc_type, company_profile=company_profile)
+        filename = f"{safe_filename(doc_type.upper())}_{safe_filename(doc_no)}.pdf"
+    
+    subject_str = subject or f"{cfg['title']} - {doc_no} from {company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}"
+    body_text = body or f"Dear Partner,\n\nPlease find attached the official {cfg['title']} ({doc_no}) from {company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}.\n\nThank you,\nExport Documentation Team"
+    
+    html_content = f"""
+    <!DOCTYPE html>
+    <html>
+    <body style="font-family: Arial, sans-serif; color: #1e293b; padding: 20px;">
+        <h2 style="color: #1e3a8a;">{company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}</h2>
+        <p style="font-size: 14px; color: #475569; line-height: 1.5;">{body_text.replace('\n', '<br>')}</p>
+        <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;">
+        <p style="font-size: 12px; color: #64748b;">This is an official document email sent from BKNR ERP System.</p>
+    </body>
+    </html>
+    """
+    
+    from app.utils.email_service import send_email
+    try:
+        send_email(
+            to_email=to_email,
+            subject=subject_str,
+            html=html_content,
+            text=body_text,
+            attachment_bytes=pdf_bytes,
+            attachment_name=filename,
+            attachment_type="application/pdf"
+        )
+        
+        write_audit(
+            db, doc_type, row.id, comp_code, "EMAIL_SENT", "NONE",
+            f"Sent {cfg['title']} PDF ({filename}) via email to {to_email}", request.session.get("email"),
+        )
+        db.commit()
+        
+        return {"success": True, "message": f"Email successfully sent with attached PDF ({filename}) to {to_email}"}
+    except Exception as e:
+        logger.error(f"Failed to send document email with PDF: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")

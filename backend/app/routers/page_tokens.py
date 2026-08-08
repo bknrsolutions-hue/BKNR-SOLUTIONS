@@ -68,6 +68,8 @@ ROUTE_TOKENS: dict[str, dict] = {
     "exp_bl":       {"page_id": "bill_of_lading",                   "backend": "/export_documents/bill_of_lading/entry",      "permission": "bill_of_lading"},
     "exp_hc":       {"page_id": "health_certificate",               "backend": "/export_documents/health_certificate/entry",  "permission": "health_certificate"},
     "exp_sd":       {"page_id": "export_supporting_documents",      "backend": "/export_documents/supporting_documents/entry","permission": "export_supporting_documents"},
+    "crm_qt":       {"page_id": "crm_quotation",                    "backend": "/crm/quotation/entry",                         "permission": "proforma_invoice"},
+
 
     # ── Finance – Operational Bills ──────────────────────────────────────────
     "fin_eb":       {"page_id": "finance_electricity_bills",        "backend": "/api/electricity/entry",                      "permission": "electricity_bills"},

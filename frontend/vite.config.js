@@ -41,8 +41,10 @@ export default defineConfig({
     // Use IPv4 explicitly because localhost may resolve to ::1 while the
     // development backend is bound to 127.0.0.1.
     proxy: {
+      '/crm':              'http://127.0.0.1:8000',
       '/auth':             'http://127.0.0.1:8000',
       '/processing':       'http://127.0.0.1:8000',
+
       '/criteria':         'http://127.0.0.1:8000',
       '/finance_accounts': 'http://127.0.0.1:8000',
       '/export_documents': 'http://127.0.0.1:8000',

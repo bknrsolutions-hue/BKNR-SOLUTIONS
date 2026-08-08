@@ -225,16 +225,27 @@ export default function CommercialInvoices() {
     }
   };
 
-  const printSelected = () => {
-    if (!selectedRow) return;
+  const printSelected = (row) => {
+    const target = row || selectedRow;
+    if (!target) return;
     setMenuOpen(false);
-    window.open(`/export_documents/commercial_invoice/print/${selectedRow.id}`, "_blank");
+    if (window.confirm(`Do you want to print Commercial Invoice ${target.invoice_no || '#' + target.id}?`)) {
+      window.open(`/export_documents/commercial_invoice/print/${target.id}`, "_blank");
+    }
   };
 
-  const pdfSelected = () => {
-    if (!selectedRow) return;
+  const pdfSelected = (row) => {
+    const target = row || selectedRow;
+    if (!target) return;
     setMenuOpen(false);
-    window.open(`/export_documents/commercial_invoice/pdf/${selectedRow.id}`, "_blank");
+    if (window.confirm(`Do you want to download PDF for Commercial Invoice ${target.invoice_no || '#' + target.id}?`)) {
+      const link = document.createElement('a');
+      link.href = `/export_documents/commercial_invoice/pdf/${target.id}?download=true`;
+      link.download = `${target.invoice_no || 'Commercial_Invoice'}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
   };
 
   const uploadPdfSelected = () => {
@@ -397,10 +408,10 @@ export default function CommercialInvoices() {
                   <td>{row.terms}</td>
                   <td style={{ textAlign: 'center' }}>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'center' }}>
-                      <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={(e) => { e.stopPropagation(); window.open(`/export_documents/commercial_invoice/print/${row.id}`, '_blank'); }}>
+                      <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={(e) => { e.stopPropagation(); printSelected(row); }}>
                         Print
                       </button>
-                      <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={(e) => { e.stopPropagation(); window.open(`/export_documents/commercial_invoice/pdf/${row.id}`, '_blank'); }}>
+                      <button className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: '10px' }} onClick={(e) => { e.stopPropagation(); pdfSelected(row); }}>
                         PDF
                       </button>
                     </div>

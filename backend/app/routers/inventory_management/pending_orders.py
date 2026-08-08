@@ -96,7 +96,19 @@ def get_pending_order_masters(db: Session, company_code: str, user_allowed_locat
     cache_key = f"bknr:inventory_report:{company_code}:pending_order_masters:{allowed_key}:{production_for_filter or 'ALL'}:{location or 'ALL'}"
 
     def get_lookup(model, field_name):
-        return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
+        try:
+            if not hasattr(model, 'company_id'):
+                rows = db.query(model).all()
+            else:
+                rows = db.query(model).filter(
+                    (model.company_id == company_code) | (model.company_id.is_(None)) | (model.company_id == "")
+                ).all()
+                tenant_rows = [x for x in rows if getattr(x, 'company_id', '') == company_code]
+                if tenant_rows:
+                    rows = tenant_rows
+            return sorted(list(set(str(getattr(x, field_name, '') or '').strip() for x in rows if getattr(x, field_name, None))))
+        except Exception:
+            return []
 
     def build():
         if production_for_filter:
@@ -216,6 +228,8 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         return JSONResponse({
             "active_rows": [row_to_dict(r) for r in active_rows],
             "completed_rows": [row_to_dict(r) for r in completed_rows],
+            "active_po_count": len(po_groups),
+            "completed_po_count": len(completed_po_groups),
             "next_sl": next_sl,
             "global_production_for": production_for_filter or "",
             "global_location": location or "",

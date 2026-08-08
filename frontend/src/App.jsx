@@ -150,15 +150,20 @@ export default function App() {
   // Resolves the current URL to activePage + activeRoute without an API call.
   // Security for backend data remains in the existing FastAPI AuthMiddleware.
   const _rawPath = location.pathname;
-  const _isTokenRoute  = _rawPath.startsWith('/p/');
-  const _isLegacyRoute = _rawPath.startsWith('/page/');
-  const _currentToken  = _isTokenRoute  ? decodeURIComponent(_rawPath.slice('/p/'.length))    : null;
+  const _cleanPath = _rawPath.includes('/p/')
+    ? `/p/${_rawPath.split('/p/')[1]}`
+    : _rawPath.includes('/page/')
+    ? `/page/${_rawPath.split('/page/')[1]}`
+    : _rawPath;
+  const _isTokenRoute  = _cleanPath.startsWith('/p/');
+  const _isLegacyRoute = _cleanPath.startsWith('/page/');
+  const _currentToken  = _isTokenRoute  ? decodeURIComponent(_cleanPath.slice('/p/'.length))    : null;
   const _tokenEntry    = _currentToken  ? (TOKEN_MAP[_currentToken] ?? null)                   : null;
 
   const activePage = _isTokenRoute
     ? (_tokenEntry?.page_id || 'dashboard_processing')
     : _isLegacyRoute
-    ? decodeURIComponent(_rawPath.slice('/page/'.length))
+    ? decodeURIComponent(_cleanPath.slice('/page/'.length))
     : 'dashboard_processing';
 
   const activeRoute = _isTokenRoute
