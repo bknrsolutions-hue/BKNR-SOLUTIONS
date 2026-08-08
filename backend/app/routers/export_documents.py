@@ -4167,12 +4167,13 @@ async def export_document_send_email(
     subject_str = subject or f"{cfg['title']} - {doc_no} from {company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}"
     body_text = body or f"Dear Partner,\n\nPlease find attached the official {cfg['title']} ({doc_no}) from {company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}.\n\nThank you,\nExport Documentation Team"
     
+    body_html = body_text.replace('\n', '<br>')
     html_content = f"""
     <!DOCTYPE html>
     <html>
     <body style="font-family: Arial, sans-serif; color: #1e293b; padding: 20px;">
         <h2 style="color: #1e3a8a;">{company_profile.get('name', 'BHAGAVATHI KRISHNA EXPORTS')}</h2>
-        <p style="font-size: 14px; color: #475569; line-height: 1.5;">{body_text.replace('\n', '<br>')}</p>
+        <p style="font-size: 14px; color: #475569; line-height: 1.5;">{body_html}</p>
         <hr style="border: none; border-top: 1px solid #cbd5e1; margin: 20px 0;">
         <p style="font-size: 12px; color: #64748b;">This is an official document email sent from BKNR ERP System.</p>
     </body>
