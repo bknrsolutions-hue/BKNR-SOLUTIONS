@@ -433,7 +433,7 @@ export default function CommercialInvoices() {
       {/* NEW COMMERCIAL INVOICE MODAL */}
       {isModalOpen && (
         <div className="attendance-modal-overlay">
-          <div className="attendance-modal-content" style={{ maxWidth: '800px' }}>
+          <div className="attendance-modal-content" style={{ maxWidth: '1240px', width: '95vw' }}>
             <div className="attendance-modal-header">
               <h2>Create Commercial Invoice</h2>
               <button className="attendance-modal-close-btn" onClick={closeForm} aria-label="Close modal">
@@ -443,7 +443,7 @@ export default function CommercialInvoices() {
             
             <form onSubmit={handleFormSubmit}>
               <div className="attendance-modal-body">
-                <div className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                <div className="attendance-form-grid">
                   
                   <div className="attendance-form-group">
                     <label htmlFor="shipment_no">Export Shipment</label>

@@ -1200,14 +1200,14 @@ export default function QuotationPage({ setActivePage }) {
           </div>
         </div>
 
-        {/* 70% / 30% SPLIT SCREEN WORKSPACE LAYOUT */}
-        <div style={{ display: 'flex', gap: 16, width: '100%', alignItems: 'flex-start' }}>
+        {/* DYNAMIC RESPONSIVE SPLIT SCREEN WORKSPACE LAYOUT */}
+        <div className="quotation-split-workspace">
 
-          {/* LEFT PANEL - 70% QUOTATION FORM */}
-          <div style={{ width: '70%', flex: '0 0 70%', minWidth: 0 }}>
+          {/* LEFT PANEL - QUOTATION FORM */}
+          <div className="quotation-left-panel">
             <form onSubmit={save} style={{ background: 'var(--att-card, #fff)', borderRadius: 12, border: '1px solid var(--att-border, #e2e8f0)', padding: 16, boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
               <div className="pi-form-body">
-                {/* SECTION 1: CLEAN 4-COLUMN ZERO-OVERFLOW COMMERCIAL HEADER CONTEXT */}
+                {/* SECTION 1: RESPONSIVE COMMERCIAL HEADER CONTEXT */}
                 <section className="pi-form-section" style={{ background: '#ffffff', padding: '10px 12px', borderRadius: 8, border: '1px solid #cbd5e1', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6, borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>
                     <span style={{ fontWeight: 800, fontSize: 11.5, color: '#0f172a', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1216,7 +1216,7 @@ export default function QuotationPage({ setActivePage }) {
                     <span style={{ fontSize: 9.5, color: '#64748b', fontWeight: 600 }}>Commercial Terms & Buyer Details</span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px 10px' }}>
+                  <div className="quotation-header-grid">
                     {/* Row 1 */}
                     <div className="attendance-form-group" style={{ margin: 0 }}>
                       <label style={{ fontSize: 9.5, fontWeight: 700, color: '#334155', marginBottom: 1 }}>Quotation No *</label>
@@ -1325,7 +1325,7 @@ export default function QuotationPage({ setActivePage }) {
                     </button>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4, width: '100%', overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
                     {form.items.map((item, idx) => {
                       const biddingPriceVal = Number(item.bidding_price || item.rate_per_kg) || 0;
                       const lineAmt = (Number(item.quantity_kg) || 0) * biddingPriceVal;
@@ -1338,11 +1338,12 @@ export default function QuotationPage({ setActivePage }) {
                             border: '1px solid #cbd5e1',
                             borderRadius: 6,
                             overflow: 'hidden',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+                            minWidth: 780
                           }}
                         >
-                          {/* PINA (TOP ROW): PRODUCT SPECIFICATIONS (8 EQUAL COLUMNS WITH COMPACT LABELS) */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '26px repeat(8, 1fr) 24px', alignItems: 'flex-end', gap: 4, background: '#eff6ff', padding: '5px 6px 4px', borderBottom: '1px solid #bfdbfe' }}>
+                          {/* PINA (TOP ROW): PRODUCT SPECIFICATIONS (MATCHED 11-COLUMN GRID) */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '26px repeat(8, 1fr) 1.2fr 26px', alignItems: 'flex-end', gap: 4, background: '#eff6ff', padding: '5px 6px 4px', borderBottom: '1px solid #bfdbfe' }}>
                             <div style={{ textAlign: 'center', marginBottom: 2 }}>
                               <span style={{ fontWeight: 900, fontSize: 8.5, color: '#ffffff', background: '#2563eb', padding: '2px 4px', borderRadius: 3 }}>
                                 #{idx + 1}
@@ -1413,6 +1414,8 @@ export default function QuotationPage({ setActivePage }) {
                               </select>
                             </div>
 
+                            <div style={{ minWidth: 0 }}></div>
+
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 2 }}>
                               <button
                                 type="button"
@@ -1425,8 +1428,8 @@ export default function QuotationPage({ setActivePage }) {
                             </div>
                           </div>
 
-                          {/* KINDA (BOTTOM ROW): COMMERCIALS & COSTING (WITH COMPACT LABELS) */}
-                          <div style={{ display: 'grid', gridTemplateColumns: '26px repeat(8, 1fr) 24px', alignItems: 'flex-end', gap: 4, background: '#f8fafc', padding: '4px 6px' }}>
+                          {/* KINDA (BOTTOM ROW): COMMERCIALS & COSTING (MATCHED 11-COLUMN GRID) */}
+                          <div style={{ display: 'grid', gridTemplateColumns: '26px repeat(8, 1fr) 1.2fr 26px', alignItems: 'flex-end', gap: 4, background: '#f8fafc', padding: '4px 6px' }}>
                             <span style={{ fontSize: 8.5, fontWeight: 900, color: '#475569', textAlign: 'center', marginBottom: 4 }}>⚙️</span>
 
                             <div style={{ minWidth: 0 }}>
@@ -1538,13 +1541,13 @@ export default function QuotationPage({ setActivePage }) {
                             </div>
 
                             <div style={{ minWidth: 0, textAlign: 'right' }}>
-                              <label style={{ fontSize: 7.5, fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', display: 'block', marginBottom: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>TOTAL ($)</label>
-                              <div style={{ fontSize: 9.5, fontWeight: 800, color: 'var(--att-accent, #2563eb)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
-                                ${lineAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              <label style={{ fontSize: 7.5, fontWeight: 900, color: '#16a34a', textTransform: 'uppercase', display: 'block', marginBottom: 1, whiteSpace: 'nowrap' }}>TOTAL ({form.currency})</label>
+                              <div style={{ fontSize: 10, fontWeight: 900, color: '#15803d', background: '#dcfce7', padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', height: 24, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', border: '1px solid #bbf7d0' }}>
+                                {form.currency} {lineAmt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </div>
                             </div>
 
-                            <span></span>
+                            <div style={{ width: 26 }}></div>
                           </div>
                         </div>
                       );
@@ -1555,38 +1558,48 @@ export default function QuotationPage({ setActivePage }) {
                 <section className="pi-form-section" style={{ padding: 12, marginTop: 16 }}>
                   <div className="attendance-form-group pi-full-row">
                     <label>Special Terms & Remarks</label>
-                    <textarea className="attendance-input" name="remarks" value={form.remarks} onChange={changeForm} rows="2" placeholder="Delivery schedule, quality standards, or validity notes" />
+                    <textarea
+                      className="attendance-input"
+                      name="remarks"
+                      value={form.remarks}
+                      onChange={changeForm}
+                      onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${Math.max(60, e.target.scrollHeight)}px`; }}
+                      onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${Math.max(60, e.target.scrollHeight)}px`; }}
+                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${Math.max(60, el.scrollHeight)}px`; } }}
+                      style={{ minHeight: 60, resize: 'vertical', lineHeight: 1.45, overflowY: 'hidden' }}
+                      placeholder="Delivery schedule, quality standards, or validity notes"
+                    />
                   </div>
                 </section>
               </div>
 
-              <div className="attendance-modal-footer" style={{ marginTop: 20, padding: '16px 20px', borderTop: '1px solid var(--att-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--att-table-header-bg, #f8fafc)', borderRadius: 8 }}>
-                <div className="pi-footer-total">
-                  <span>Grand Total Offer</span>
-                  <strong style={{ fontSize: 18, color: 'var(--att-accent, #2563eb)' }}>{form.currency} {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
+              <div className="attendance-modal-footer" style={{ marginTop: 12, padding: '8px 12px', borderTop: '1px solid var(--att-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', background: 'var(--att-table-header-bg, #f8fafc)', borderRadius: 8 }}>
+                <div className="pi-footer-total" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 9.5, fontWeight: 800, color: '#64748b', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Grand Total Offer:</span>
+                  <strong style={{ fontSize: 13, fontWeight: 900, color: '#15803d', background: '#dcfce7', padding: '2px 8px', borderRadius: 5, border: '1px solid #bbf7d0', display: 'inline-block', whiteSpace: 'nowrap' }}>{form.currency} {grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </div>
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => setModalOpen(false)}>CANCEL</button>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                  <button type="button" className="attendance-btn attendance-btn-secondary" onClick={() => setModalOpen(false)} style={{ padding: '3px 9px', fontSize: 10.5, height: 28 }}>CANCEL</button>
                   <button
                     type="button"
                     className="attendance-btn attendance-btn-secondary"
                     onClick={analyzeStock}
                     disabled={analyzing}
-                    style={{ color: '#2563eb', borderColor: '#93c5fd', background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                    style={{ color: '#2563eb', borderColor: '#93c5fd', background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 700, padding: '3px 9px', fontSize: 10.5, height: 28 }}
                   >
-                    <BarChart2 size={16} /> {analyzing ? 'ANALYZING...' : 'ANALYZE STOCK'}
+                    <BarChart2 size={13} /> {analyzing ? 'ANALYZING...' : 'ANALYZE STOCK'}
                   </button>
                   {editingId && (
                     <button
                       type="button"
                       className="attendance-btn attendance-btn-secondary"
                       onClick={() => openSendEmailModal({ ...form, id: editingId })}
-                      style={{ color: '#1d4ed8', borderColor: '#bfdbfe', background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 800 }}
+                      style={{ color: '#1d4ed8', borderColor: '#bfdbfe', background: '#eff6ff', display: 'flex', alignItems: 'center', gap: 4, fontWeight: 800, padding: '3px 9px', fontSize: 10.5, height: 28 }}
                     >
-                      <Send size={16} /> SEND EMAIL ✉️
+                      <Send size={13} /> SEND EMAIL ✉️
                     </button>
                   )}
-                  <button type="submit" className="attendance-btn attendance-btn-primary" disabled={saving} style={{ padding: '8px 24px', fontSize: 13 }}>
+                  <button type="submit" className="attendance-btn attendance-btn-primary" disabled={saving} style={{ padding: '3px 14px', fontSize: 11, height: 28, fontWeight: 800 }}>
                     {saving ? 'SAVING...' : editingId ? 'UPDATE QUOTATION' : 'CREATE QUOTATION'}
                   </button>
                 </div>
@@ -1594,8 +1607,8 @@ export default function QuotationPage({ setActivePage }) {
             </form>
           </div>
 
-          {/* RIGHT PANEL - 30% DETAILED & COMPACT STOCK ANALYSIS */}
-          <div style={{ width: '30%', flex: '0 0 30%', minWidth: 0, position: 'sticky', top: 16, maxHeight: 'calc(100vh - 100px)', overflowY: 'auto' }}>
+          {/* RIGHT PANEL - DETAILED & COMPACT STOCK ANALYSIS */}
+          <div className="quotation-right-panel">
             <div style={{ background: 'var(--att-card, #ffffff)', borderRadius: 12, border: '1px solid var(--att-border, #e2e8f0)', padding: 14, boxShadow: '0 4px 12px rgba(0,0,0,0.05)', display: 'flex', flexDirection: 'column', gap: 12 }}>
               
               {/* Header */}
@@ -2608,9 +2621,12 @@ export default function QuotationPage({ setActivePage }) {
                   <textarea
                     rows={Math.max(4, (emailForm.footer_text || '').split('\n').length)}
                     className="attendance-input"
-                    style={{ fontSize: 11, width: '100%', resize: 'vertical', lineHeight: 1.5, padding: 10, borderColor: '#cbd5e1', color: '#0f172a', background: '#f8fafc', fontWeight: 600, border: '1px solid #cbd5e1', borderRadius: 6 }}
+                    style={{ fontSize: 11, width: '100%', resize: 'vertical', lineHeight: 1.5, padding: 10, borderColor: '#cbd5e1', color: '#0f172a', background: '#f8fafc', fontWeight: 600, border: '1px solid #cbd5e1', borderRadius: 6, overflowY: 'hidden' }}
                     value={emailForm.footer_text}
                     onChange={e => setEmailForm(curr => ({ ...curr, footer_text: e.target.value }))}
+                    onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
+                    onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
+                    ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
                     placeholder="Enter terms and conditions..."
                   />
                 </div>
@@ -2626,9 +2642,12 @@ export default function QuotationPage({ setActivePage }) {
                   <textarea
                     rows={Math.max(4, (emailForm.signoff_text || '').split('\n').length)}
                     className="attendance-input"
-                    style={{ fontSize: 11, width: '100%', resize: 'vertical', lineHeight: 1.5, padding: 10, borderColor: '#cbd5e1', fontWeight: 700, color: '#0f172a', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6 }}
+                    style={{ fontSize: 11, width: '100%', resize: 'vertical', lineHeight: 1.5, padding: 10, borderColor: '#cbd5e1', fontWeight: 700, color: '#0f172a', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, overflowY: 'hidden' }}
                     value={emailForm.signoff_text}
                     onChange={e => setEmailForm(curr => ({ ...curr, signoff_text: e.target.value }))}
+                    onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
+                    onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
+                    ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${e.target.scrollHeight}px`; } }}
                     placeholder="Enter Best Regards sign-off..."
                   />
                 </div>

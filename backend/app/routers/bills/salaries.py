@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy import extract, func, text
+from sqlalchemy import extract, func, text, or_
 from sqlalchemy.orm import Session, aliased
 
 from app.database import get_db
@@ -22,7 +22,7 @@ from app.database.models.enterprise_finance import AccountGroup, LedgerMaster, S
 from app.database.models.users import Company
 from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
 from app.services.posting_engine import PostingEngineService
-from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.payroll_statutory import calculate_duty_credit, calculate_pf_esi, effective_statutory_record
 from app.services.salary_advance_recovery import preview_monthly_advance_recovery, sync_monthly_advance_recovery
 from app.utils.timezone import ist_now
 
@@ -131,12 +131,18 @@ def is_contract_type(value: str) -> bool:
 
 
 def company_context(db: Session, company_code: str):
-    company = db.query(Company).filter(Company.company_code == company_code).first()
+    company = db.query(Company).filter(
+        or_(
+            func.upper(func.trim(Company.company_code)) == str(company_code or "").strip().upper(),
+            func.lower(func.trim(Company.company_name)) == str(company_code or "").strip().lower()
+        )
+    ).first()
+    first_company = db.query(Company).first() if not company else None
     return {
-        "name": company.company_name if company else company_code,
-        "address": company.address if company else "",
-        "email": company.email if company else "",
-        "mpeda_registration_code": company.mpeda_registration_code if company else "",
+        "name": company.company_name if company and company.company_name else (first_company.company_name if first_company else company_code),
+        "address": company.address if company else (first_company.address if first_company else ""),
+        "email": company.email if company else (first_company.email if first_company else ""),
+        "mpeda_registration_code": company.mpeda_registration_code if company else (first_company.mpeda_registration_code if first_company else ""),
     }
 
 
@@ -188,21 +194,7 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
                 adjustment = max(adjustment, float(rec.salary_adjustment))
             shift_name = rec.shift_name or "GENERAL"
             req_hours = shift_map.get(shift_name, 8.0)
-            raw_credit = float(rec.working_hours or 0.0) / req_hours if req_hours > 0 else 0.0
-            if raw_credit < 0.5:
-                duty_credit = 0.0
-            elif raw_credit < 1.0:
-                duty_credit = 0.5
-            elif raw_credit < 1.5:
-                duty_credit = 1.0
-            elif raw_credit < 2.0:
-                duty_credit = 1.5
-            elif raw_credit < 2.5:
-                duty_credit = 2.0
-            elif raw_credit < 3.0:
-                duty_credit = 2.5
-            else:
-                duty_credit = 3.0
+            duty_credit = calculate_duty_credit(rec.working_hours, req_hours)
             d_status = str(getattr(rec, "duty_status", "APPROVED") or "APPROVED").strip().upper()
             d_type = str(getattr(rec, "duty_type", "") or "").strip().upper()
             approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)

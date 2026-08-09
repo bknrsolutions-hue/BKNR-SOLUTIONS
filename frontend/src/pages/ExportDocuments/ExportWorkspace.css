@@ -331,3 +331,35 @@
   margin-bottom: 6px !important;
   font-size: 11px !important;
 }
+
+/* ── Embedded inside Export Workspace Styling ───────── */
+.export-workspace-content .attendance-container {
+  padding: 12px 18px !important;
+  background: var(--att-bg, var(--bg-app)) !important;
+}
+
+.export-workspace-content .attendance-page-header {
+  margin-bottom: 10px !important;
+  padding-bottom: 8px !important;
+}
+
+.export-workspace-content .attendance-page-header h1 {
+  font-size: 16px !important;
+  font-weight: 800 !important;
+}
+
+.export-workspace-content .attendance-page-header p {
+  font-size: 10px !important;
+  opacity: 0.8;
+}
+
+.export-workspace-content .kpi-grid,
+.export-workspace-content .supporting-summary-grid {
+  margin-bottom: 12px !important;
+  gap: 8px !important;
+}
+
+.export-workspace-content .attendance-filters-bar {
+  margin-bottom: 10px !important;
+  padding: 8px 12px !important;
+}

@@ -27,7 +27,7 @@ from app.database.models.criteria import (
 from app.database.models.processing import AuditLog
 from app.utils.timezone import ist_now
 
-router = APIRouter(prefix="/crm/quotation", tags=["CRM Quotation"])
+router = APIRouter(tags=["CRM Quotation"])
 
 
 class LineItemPayload(BaseModel):
@@ -327,7 +327,7 @@ def create_pi_from_quotation(db: Session, quotation: CRMQuotation, user_email: s
         return None
 
 
-@router.post("/analyze_stock")
+@router.post("/crm/quotation/analyze_stock")
 @router.post("/export_documents/quotation/analyze_stock", include_in_schema=False)
 async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -762,7 +762,7 @@ def ensure_crm_quotation_schema(db: Session):
         db.rollback()
 
 
-@router.get("/data")
+@router.get("/crm/quotation/data")
 @router.get("/export_documents/quotation/data", include_in_schema=False)
 async def get_quotation_data(request: Request, db: Session = Depends(get_db)):
     comp_code, comp_name = resolve_session_company_info(request, db)
@@ -1202,7 +1202,7 @@ def calculate_target_quotation_price_backend(db: Session, comp_code: str, item, 
     return round(target_usd, 2)
 
 
-@router.post("/save")
+@router.post("/crm/quotation/save")
 @router.post("/export_documents/quotation/save", include_in_schema=False)
 async def save_quotation(payload: QuotationPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1287,7 +1287,7 @@ async def save_quotation(payload: QuotationPayload, request: Request, db: Sessio
     return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} created successfully.{pi_created_msg}"})
 
 
-@router.put("/{quotation_id}")
+@router.put("/crm/quotation/{quotation_id}")
 @router.put("/export_documents/quotation/{quotation_id}", include_in_schema=False)
 async def update_quotation(quotation_id: int, payload: QuotationPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1373,7 +1373,7 @@ async def update_quotation(quotation_id: int, payload: QuotationPayload, request
     return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} updated successfully.{pi_created_msg}"})
 
 
-@router.post("/cancel/{quotation_id}")
+@router.post("/crm/quotation/cancel/{quotation_id}")
 @router.post("/export_documents/quotation/cancel/{quotation_id}", include_in_schema=False)
 async def cancel_quotation(quotation_id: int, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1394,7 +1394,7 @@ async def cancel_quotation(quotation_id: int, request: Request, db: Session = De
     return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} cancelled."})
 
 
-@router.post("/{quotation_id}/approval")
+@router.post("/crm/quotation/{quotation_id}/approval")
 @router.post("/export_documents/quotation/{quotation_id}/approval", include_in_schema=False)
 async def quotation_approval(quotation_id: int, payload: ApprovalPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1422,7 +1422,7 @@ async def quotation_approval(quotation_id: int, payload: ApprovalPayload, reques
     return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} status changed to {payload.decision}.{pi_created_msg}"})
 
 
-@router.get("/register.xlsx")
+@router.get("/crm/quotation/register.xlsx")
 @router.get("/export_documents/quotation/register.xlsx", include_in_schema=False)
 async def export_quotation_register(request: Request, grant: str = Query(...), db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1495,7 +1495,7 @@ async def export_quotation_register(request: Request, grant: str = Query(...), d
     )
 
 
-@router.post("/{quotation_id}/send-email")
+@router.post("/crm/quotation/{quotation_id}/send-email")
 @router.post("/export_documents/quotation/{quotation_id}/send-email", include_in_schema=False)
 async def send_quotation_email_endpoint(quotation_id: int, payload: SendQuotationEmailPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1686,7 +1686,7 @@ async def send_quotation_email_endpoint(quotation_id: int, payload: SendQuotatio
     return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} email sent successfully to {payload.to_email}."})
 
 
-@router.get("/{quotation_id}/replies")
+@router.get("/crm/quotation/{quotation_id}/replies")
 @router.get("/export_documents/quotation/{quotation_id}/replies", include_in_schema=False)
 async def get_quotation_replies(quotation_id: int, request: Request, db: Session = Depends(get_db)):
     ensure_crm_quotation_schema(db)
@@ -1725,7 +1725,7 @@ class OutboundChatbotPayload(BaseModel):
     attachments: Optional[List[Dict[str, Any]]] = None
 
 
-@router.post("/{quotation_id}/send-chatbot-reply")
+@router.post("/crm/quotation/{quotation_id}/send-chatbot-reply")
 @router.post("/export_documents/quotation/{quotation_id}/send-chatbot-reply", include_in_schema=False)
 async def send_chatbot_reply(quotation_id: int, payload: OutboundChatbotPayload, request: Request, db: Session = Depends(get_db)):
     """Send AI chatbot reply as email to customer with attachments and log it as OUTBOUND."""
@@ -1807,7 +1807,7 @@ async def send_chatbot_reply(quotation_id: int, payload: OutboundChatbotPayload,
     return JSONResponse(content={"success": True, "message": f"Reply sent to {payload.to_email} successfully."})
 
 
-@router.post("/{quotation_id}/post-reply")
+@router.post("/crm/quotation/{quotation_id}/post-reply")
 @router.post("/export_documents/quotation/{quotation_id}/post-reply", include_in_schema=False)
 async def post_customer_reply(quotation_id: int, payload: InboundReplyPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
@@ -1835,7 +1835,7 @@ async def post_customer_reply(quotation_id: int, payload: InboundReplyPayload, r
     return JSONResponse(content={"success": True, "message": "Customer reply logged successfully."})
 
 
-@router.post("/sync-inbound-emails")
+@router.post("/crm/quotation/sync-inbound-emails")
 @router.post("/export_documents/quotation/sync-inbound-emails", include_in_schema=False)
 async def sync_inbound_emails_endpoint(request: Request, db: Session = Depends(get_db)):
     from app.services.email_poller import poll_inbound_emails
@@ -1843,7 +1843,7 @@ async def sync_inbound_emails_endpoint(request: Request, db: Session = Depends(g
     return JSONResponse(content=result)
 
 
-@router.post("/{quotation_id}/ai-chatbot")
+@router.post("/crm/quotation/{quotation_id}/ai-chatbot")
 @router.post("/export_documents/quotation/{quotation_id}/ai-chatbot", include_in_schema=False)
 async def generate_ai_chatbot_proposal(quotation_id: int, payload: InboundReplyPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)

@@ -1448,18 +1448,26 @@ export default function MonthlySalarySheet({ theme }) {
       {selectedRow && (
         <div id="printSection" className="pay-slip-print">
           <div className="pay-slip-sheet">
-            <header className="pay-slip-company">
-              <h1>{reportMeta.company_name || 'ERP COMPANY'}</h1>
-              {reportMeta.company_address ? <p>{reportMeta.company_address}</p> : null}
-              <h2>PAY SLIP FOR THE MONTH OF {monthName.toUpperCase()} - {month.split('-')[0]}</h2>
-            </header>
+            <div className="pay-slip-company">
+              <h1 style={{ color: '#000000', fontSize: '20px', fontWeight: '900', textTransform: 'uppercase', margin: '0 0 4px 0' }}>
+                {(reportMeta.company_name && reportMeta.company_name !== 'ALL' && reportMeta.company_name.trim() !== '')
+                  ? reportMeta.company_name
+                  : ((localStorage.getItem('production_for_filter') && localStorage.getItem('production_for_filter') !== 'ALL' && localStorage.getItem('production_for_filter').trim() !== '')
+                      ? localStorage.getItem('production_for_filter')
+                      : (localStorage.getItem('company_name') || 'BKNR EXPORTS'))}
+              </h1>
+              {reportMeta.company_address ? <p style={{ color: '#333333', fontSize: '10px', margin: '0 0 6px 0' }}>{reportMeta.company_address}</p> : null}
+              <h2 style={{ color: '#000000', fontSize: '13px', fontWeight: '800', margin: '6px 0 0 0', borderTop: '1px solid #111', paddingTop: '6px' }}>
+                PAY SLIP FOR THE MONTH OF {(monthName || '').toUpperCase()} - {(month || '').split('-')[0]}
+              </h2>
+            </div>
 
             <table className="pay-slip-details">
               <tbody>
-                <tr><th>Employee Name</th><td>{selectedRow.name}</td><th>Pay Mode</th><td>{selectedRow.pay_mode || 'BANK'}</td></tr>
-                <tr><th>Employee Code</th><td>{selectedRow.id}</td><th>Bank Name</th><td>{selectedRow.bank_name || '—'}</td></tr>
+                <tr><th>Employee Name</th><td><strong>{selectedRow.name || selectedRow.employee_name || selectedRow.worker_name || '—'}</strong></td><th>Pay Mode</th><td>{selectedRow.pay_mode || 'BANK'}</td></tr>
+                <tr><th>Employee Code</th><td>{selectedRow.id || selectedRow.employee_id || selectedRow.worker_id || '—'}</td><th>Bank Name</th><td>{selectedRow.bank_name || '—'}</td></tr>
                 <tr><th>Designation</th><td>{selectedRow.designation || '—'}</td><th>Bank A/C No</th><td>{selectedRow.account_number || '—'}</td></tr>
-                <tr><th>Department</th><td>{selectedRow.dept}</td><th>UAN / PF No</th><td>{selectedRow.uan_number || '—'}</td></tr>
+                <tr><th>Department</th><td>{selectedRow.dept || selectedRow.department || 'GENERAL'}</td><th>UAN / PF No</th><td>{selectedRow.uan_number || '—'}</td></tr>
                 <tr><th>Location</th><td>{selectedRow.location || '—'}</td><th>Approval No</th><td>{reportMeta.mpeda_registration_code || 'NOT REGISTERED'}</td></tr>
                 <tr><th>Date of Joining</th><td>{selectedRow.joining_date ? new Intl.DateTimeFormat('en-GB').format(new Date(`${selectedRow.joining_date}T00:00:00`)) : '—'}</td><th>Employee Type</th><td>{selectedRow.employee_type || 'REGULAR'}</td></tr>
               </tbody>

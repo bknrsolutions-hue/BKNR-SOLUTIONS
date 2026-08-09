@@ -67,24 +67,52 @@
 .supporting-summary-card.pending strong { color: var(--att-danger); }
 
 .supporting-filters {
-  display: grid;
-  grid-template-columns: minmax(210px, 1fr) minmax(160px, .55fr) minmax(240px, 1.2fr);
+  display: grid !important;
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 1fr) minmax(360px, 1.5fr) !important;
+  gap: 16px !important;
+  padding: 12px 16px !important;
+  margin-bottom: 16px !important;
+  background: var(--att-card) !important;
+  border: 1px solid var(--att-border) !important;
+  border-radius: 10px !important;
+}
+
+.supporting-filters .attendance-filter-group label {
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  color: var(--att-muted) !important;
+  margin-bottom: 5px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+}
+
+.supporting-filters .attendance-input,
+.supporting-filters .attendance-select,
+.supporting-filters select,
+.supporting-filters input {
+  height: 38px !important;
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  font-size: 12.5px !important;
+  font-weight: 600 !important;
+  border-radius: 8px !important;
 }
 
 .supporting-search-wrap {
   position: relative;
+  width: 100%;
 }
 
 .supporting-search-wrap svg {
   position: absolute;
-  top: 10px;
-  left: 11px;
+  top: 11px;
+  left: 13px;
   color: var(--att-muted);
 }
 
 .supporting-search-wrap input {
   width: 100%;
-  padding-left: 34px;
+  padding-left: 38px !important;
   box-sizing: border-box;
 }
 
@@ -201,8 +229,8 @@
 .supporting-audit-table .supporting-po-detail-head span { color: var(--att-muted); font-size: 10px; }
 
 .supporting-requirements-modal {
-  width: min(980px, calc(100vw - 28px));
-  max-width: 980px;
+  width: min(1240px, calc(96vw - 28px));
+  max-width: 1240px;
 }
 
 .supporting-requirement-columns {

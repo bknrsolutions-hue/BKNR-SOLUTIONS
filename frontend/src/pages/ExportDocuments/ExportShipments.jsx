@@ -352,7 +352,7 @@ export default function ExportShipments() {
       {/* NEW SHIPMENT MODAL */}
       {isModalOpen && (
         <div className="attendance-modal-overlay">
-          <div className="attendance-modal-content" style={{ maxWidth: '750px' }}>
+          <div className="attendance-modal-content" style={{ maxWidth: '1240px', width: '95vw' }}>
             <div className="attendance-modal-header">
               <h2>Register Export Shipment</h2>
               <button className="attendance-modal-close-btn" onClick={closeForm} aria-label="Close modal">
@@ -362,7 +362,7 @@ export default function ExportShipments() {
             
             <form onSubmit={handleFormSubmit}>
               <div className="attendance-modal-body">
-                <div className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="attendance-form-grid">
                   
                   <div className="attendance-form-group">
                     <label htmlFor="shipment_no">Shipment No</label>

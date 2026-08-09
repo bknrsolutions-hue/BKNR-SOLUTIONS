@@ -300,7 +300,7 @@
 
 @media (max-width: 900px) {
   .pi-print-parties-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
   
   .pi-print-facts-grid {
@@ -319,8 +319,50 @@
   }
 }
 
-@media (max-width: 550px) {
+@media (max-width: 768px) {
+  .pi-print-document-sheet {
+    padding: 10px !important;
+    border-radius: 8px !important;
+  }
+
+  .pi-print-header-grid {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .pi-print-doc-box {
+    text-align: left !important;
+    align-items: flex-start !important;
+  }
+
+  .pi-print-parties-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
   .pi-print-facts-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .pi-print-party-box {
+    padding: 8px !important;
+    min-height: auto !important;
+  }
+
+  .pi-print-section-title {
+    font-size: 10.5px !important;
+    padding: 4px 8px !important;
+    margin: 10px 0 6px !important;
+  }
+}
+
+@media (max-width: 550px) {
+  .pi-print-parties-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .pi-print-facts-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
   }
 }

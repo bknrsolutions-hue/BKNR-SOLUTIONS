@@ -11,16 +11,35 @@ const today = () => new Date().toISOString().slice(0, 10);
 function AutoExpandInput({ className = "pi-print-input", style, value, onChange, placeholder, name, required, ...props }) {
   const ref = useRef(null);
 
-  const adjustHeight = (el) => {
+  const adjustHeight = () => {
+    const el = ref.current;
     if (el) {
       el.style.height = 'auto';
-      el.style.height = `${Math.max(28, el.scrollHeight)}px`;
+      const minH = style?.minHeight ? (typeof style.minHeight === 'number' ? style.minHeight : parseInt(style.minHeight, 10)) : 28;
+      const targetHeight = Math.max(minH, el.scrollHeight || 0);
+      el.style.height = `${targetHeight}px`;
     }
   };
 
   useEffect(() => {
-    adjustHeight(ref.current);
+    adjustHeight();
+    const t1 = setTimeout(adjustHeight, 40);
+    const t2 = setTimeout(adjustHeight, 150);
+    const t3 = setTimeout(adjustHeight, 350);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
   }, [value]);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(() => adjustHeight());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   return (
     <textarea
@@ -28,16 +47,19 @@ function AutoExpandInput({ className = "pi-print-input", style, value, onChange,
       className={className}
       name={name}
       value={value || ''}
-      onChange={onChange}
-      onFocus={e => adjustHeight(e.target)}
-      onInput={e => adjustHeight(e.target)}
+      onChange={(e) => {
+        if (onChange) onChange(e);
+        adjustHeight();
+      }}
+      onFocus={adjustHeight}
+      onInput={adjustHeight}
       placeholder={placeholder}
       required={required}
       rows={1}
       style={{
         resize: 'none',
         overflowY: 'hidden',
-        lineHeight: 1.35,
+        lineHeight: 1.4,
         boxSizing: 'border-box',
         width: '100%',
         display: 'block',
@@ -54,8 +76,15 @@ function EditableTextCell({ value, onChange, placeholder, style, multiline = fal
 
   useEffect(() => {
     if (editing && textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+      const adjust = () => {
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${textareaRef.current.scrollHeight}px`;
+        }
+      };
+      adjust();
+      const timer = setTimeout(adjust, 50);
+      return () => clearTimeout(timer);
     }
   }, [editing, value]);
 
@@ -854,11 +883,20 @@ export default function ProformaInvoices({ setActivePage }) {
               <tbody>
                 {auditLogs.map(log => (
                   <tr key={log.id}>
-                    <td>{log.created_at}</td>
-                    <td>{log.user_email}</td>
-                    <td><strong style={{ color: '#2563eb' }}>{log.action}</strong></td>
-                    <td>{log.target_id}</td>
-                    <td>{log.details}</td>
+                    <td style={{ fontSize: 11 }}>{log.edited_at || log.created_at || '—'}</td>
+                    <td style={{ fontSize: 11, fontWeight: 600 }}>{log.edited_by || log.user_email || 'System'}</td>
+                    <td><strong style={{ color: '#2563eb', fontSize: 11 }}>{log.action}</strong></td>
+                    <td style={{ fontSize: 11, fontWeight: 700 }}>{log.record_id || log.target_id ? `PI #${log.record_id || log.target_id}` : '—'}</td>
+                    <td style={{ fontSize: 11 }}>
+                      {log.old_value || log.new_value ? (
+                        <span>
+                          {log.old_value && <span style={{ color: '#64748b' }}>From: <strong>{log.old_value}</strong> </span>}
+                          {log.new_value && <span style={{ color: '#16a34a' }}>To: <strong>{log.new_value}</strong></span>}
+                        </span>
+                      ) : (
+                        log.details || '—'
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -909,8 +947,8 @@ export default function ProformaInvoices({ setActivePage }) {
                     </div>
                   </div>
 
-                  {/* 3-COLUMN PARTIES GRID: Exporter, Buyer, Consignee/Notify */}
-                  <div className="pi-print-parties-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+                  {/* 3-COLUMN PARTIES GRID (RESPONSIVE 2-COL ON MOBILE): Exporter, Buyer, Consignee/Notify */}
+                  <div className="pi-print-parties-grid">
                     <div className="pi-print-party-box">
                       <span className="pi-print-party-label">EXPORTER / SELLER</span>
                       <strong style={{ color: '#0f172a', fontSize: 12.5 }}>{companyInfo.name || 'BHAGAVATHI KRISHNA EXPORTS'}</strong>
@@ -925,17 +963,14 @@ export default function ProformaInvoices({ setActivePage }) {
                         {buyerOptions.map(buyer => <option key={buyer.name} value={buyer.name}>{buyer.name}{buyer.country ? ` · ${buyer.country}` : ''}</option>)}
                         {form.buyer_name && !buyerOptions.some(buyer => buyer.name === form.buyer_name) && <option value={form.buyer_name}>{form.buyer_name}</option>}
                       </select>
-                      <textarea
+                      <AutoExpandInput
                         className="pi-print-textarea"
                         name="buyer_address"
                         value={form.buyer_address}
                         onChange={change}
-                        onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                        onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                        ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
                         required
-                        style={{ resize: 'vertical', width: '100%', minHeight: 48, overflowY: 'hidden' }}
                         placeholder="Complete Buyer Billing & Shipping Address"
+                        style={{ width: '100%', minHeight: 48, resize: 'none', overflowY: 'hidden' }}
                       />
                       <select className="pi-print-select" name="country" value={form.country} onChange={change} required>
                         <option value="">Select Country</option>
@@ -947,23 +982,20 @@ export default function ProformaInvoices({ setActivePage }) {
                     <div className="pi-print-party-box">
                       <span className="pi-print-party-label">CONSIGNEE / NOTIFY PARTY</span>
                       <AutoExpandInput name="consignee_name" value={form.consignee_name || ''} onChange={change} placeholder="Consignee Name (Optional)" style={{ fontWeight: 700 }} />
-                      <textarea
+                      <AutoExpandInput
                         className="pi-print-textarea"
                         name="notify_party"
                         value={form.notify_party || ''}
                         onChange={change}
-                        onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                        onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                        ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
-                        style={{ resize: 'vertical', width: '100%', minHeight: 52, overflowY: 'hidden' }}
                         placeholder="Notify Party Name, Address & Contact Details"
+                        style={{ width: '100%', minHeight: 52, resize: 'none', overflowY: 'hidden' }}
                       />
                     </div>
                   </div>
 
                   {/* SECTION 1: COMMERCIAL & SHIPPING TERMS */}
                   <div className="pi-print-section-title">1. Commercial & Shipping Terms</div>
-                  <div className="pi-print-facts-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)' }}>
+                  <div className="pi-print-facts-grid">
                     <div className="pi-print-fact-item">
                       <small>Trade Incoterm *</small>
                       <select className="pi-print-select" name="incoterm" value={form.incoterm} onChange={change}>
@@ -993,7 +1025,7 @@ export default function ProformaInvoices({ setActivePage }) {
                   {/* COMPANY BANK DETAILS FOR WIRE TRANSFER (Under Commercial Terms) */}
                   <div style={{ marginTop: 10 }}>
                     <div className="pi-print-section-title">Company Bank Details for Payment Wire Transfer</div>
-                    <div className="pi-print-facts-grid" style={{ gridTemplateColumns: 'repeat(5, 1fr)', marginTop: 4 }}>
+                    <div className="pi-print-facts-grid" style={{ marginTop: 4 }}>
                       <div className="pi-print-fact-item">
                         <small>Beneficiary Bank *</small>
                         <AutoExpandInput name="bank_name" value={form.bank_name || ''} onChange={change} required placeholder="Bank Name" style={{ fontWeight: 700 }} />
@@ -1170,16 +1202,13 @@ export default function ProformaInvoices({ setActivePage }) {
                   {/* SECTION 3: TERMS & CONDITIONS */}
                   <div className="pi-print-section-title">3. Terms & Conditions</div>
                   <div style={{ marginTop: 6 }}>
-                    <textarea
+                    <AutoExpandInput
                       className="pi-print-textarea"
                       name="remarks"
                       value={form.remarks}
                       onChange={change}
-                      onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                      onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                      ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
-                      style={{ width: '100%', minHeight: 95, resize: 'vertical', lineHeight: 1.45, fontSize: 11.5, overflowY: 'hidden' }}
                       placeholder="Enter terms & conditions..."
+                      style={{ width: '100%', minHeight: 95, resize: 'none', lineHeight: 1.45, fontSize: 11.5, overflowY: 'hidden' }}
                     />
                   </div>
 

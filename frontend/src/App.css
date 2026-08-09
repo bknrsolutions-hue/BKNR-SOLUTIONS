@@ -44,10 +44,16 @@
   --row-hover: rgba(255, 255, 255, 0.02);
 }
 
-/* Standard enterprise form columns: 3 desktop, 2 tablet, 1 mobile. */
-.main-content .attendance-modal-content .attendance-form-grid,
-.main-content .export-workspace-content .attendance-form-grid {
+/* Standard enterprise form columns: 3 desktop, 2 tablet, 1 mobile. Export Documents use 6 columns. */
+.main-content .attendance-modal-content:not(.export-document-page *) .attendance-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.main-content .export-document-page .attendance-form-grid,
+.main-content .export-workspace-content .attendance-form-grid,
+.export-document-page .attendance-modal-content .attendance-form-grid {
+  grid-template-columns: repeat(6, minmax(130px, 1fr)) !important;
+  gap: 8px 12px !important;
 }
 
 .main-content .attendance-modal-content .attendance-form-grid > .attendance-form-section-title,
@@ -57,7 +63,10 @@
 .main-content .attendance-modal-content .attendance-form-grid > .requirement-save-row,
 .main-content .export-workspace-content .attendance-form-grid > .attendance-form-section-title,
 .main-content .export-workspace-content .attendance-form-grid > .pi-span-4,
-.main-content .export-workspace-content .attendance-form-grid > .full-width {
+.main-content .export-workspace-content .attendance-form-grid > .full-width,
+.export-document-page .full-width,
+.export-document-page .pi-span-4,
+.export-document-page .pi-full-row {
   grid-column: 1 / -1 !important;
 }
 
@@ -125,20 +134,26 @@
               border-color 0.3s ease !important;
 }
 
+html,
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg-app);
   color: var(--text-primary);
-  height: 100vh;
-  overflow: hidden;
+  height: 100vh !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   transition: background 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  height: 100vh !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 /* Scrollbars */
@@ -161,10 +176,11 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  padding: 16px;
-  gap: 16px;
+  padding: 0;
+  gap: 0;
   position: relative;
   width: 100%;
+  height: 100vh;
   background: var(--bg-app);
   transition: background 0.3s ease, background-color 0.3s ease;
 }
@@ -175,11 +191,12 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  border-radius: var(--radius-panel);
+  border-radius: 0;
   background: var(--surface-panel);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-soft);
+  border: none;
+  box-shadow: none;
   padding: 0;
+  width: 100%;
   transition: background 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -2197,7 +2214,7 @@ body.modal-open header.no-print {
 
 /* Reports are the sizing reference for Bills, HRMS and Attendance list pages. */
 .main-content > .attendance-container {
-  padding: 10px !important;
+  padding: 4px 8px !important;
   gap: 0 !important;
 }
 
@@ -2305,9 +2322,113 @@ body.modal-open header.no-print {
   width: 100%;
 }
 
-.main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content) {
-  width: min(100%, var(--app-content-max));
-  margin-inline: auto;
+.main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content, .export-document-page, .sales-dispatch-report, .user-profile-page, .requirement-forms-page, .requirement-document-page, .gs-items-page, .export-workspace) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  margin-inline: 0 !important;
+  padding: 4px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* Quotation Page Mobile Compact Responsive Workspace Layout */
+.quotation-split-workspace {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.quotation-left-panel {
+  width: 70%;
+  flex: 0 0 70%;
+  min-width: 0;
+}
+
+.quotation-right-panel {
+  width: 30%;
+  flex: 0 0 30%;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.quotation-header-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px 10px;
+}
+
+@media (max-width: 1100px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .quotation-split-workspace {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .quotation-left-panel,
+  .quotation-right-panel {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px 6px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .attendance-page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .attendance-page-header h1 {
+    font-size: 15px !important;
+  }
+
+  .attendance-page-header p {
+    font-size: 10px !important;
+  }
+
+  .attendance-page-header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .attendance-page-header-actions .attendance-btn,
+  .attendance-page-header .attendance-btn,
+  .attendance-modal-footer .attendance-btn,
+  .attendance-btn {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
+  }
+
+  .attendance-page-header-actions .attendance-btn svg,
+  .attendance-page-header .attendance-btn svg,
+  .attendance-modal-footer .attendance-btn svg,
+  .attendance-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
 }
 
 .main-content :is(.table-responsive, .enterprise-table-wrap, .attendance-table-container, .report-table-wrap) {

@@ -38,7 +38,7 @@ button{background:#3b82f6;color:#fff;border:0;border-radius:7px;padding:10px 16p
       <div class="sub">Month: {{ salary.month_year }} | Voucher: {{ voucher_no or 'Not Posted' }}</div>
     </div>
     <div class="meta">
-      <strong>{{ company.name }}</strong><br>
+      <strong>{{ company.name or company.company_name or 'BKNR EXPORTS' }}</strong><br>
       {{ company.address or '' }}<br>
       {{ company.email or '' }}<br>
       Approval No: {{ company.mpeda_registration_code or 'NOT REGISTERED' }}

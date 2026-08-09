@@ -531,14 +531,14 @@ export default function SupportingDocuments({
 
       {uploadModalOpen && (
         <div className="attendance-modal-overlay">
-          <div className="attendance-modal-content" style={{ maxWidth: 760 }}>
+          <div className="attendance-modal-content" style={{ maxWidth: '1240px', width: '95vw' }}>
             <div className="attendance-modal-header">
               <div><h2>Upload Export Document</h2><p>Uses the same PI-to-payment document master list.</p></div>
               <button className="attendance-modal-close-btn" type="button" onClick={() => !saving && setUploadModalOpen(false)}><X size={20} /></button>
             </div>
             <form onSubmit={uploadDocument}>
               <div className="attendance-modal-body">
-                <div className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                <div className="attendance-form-grid">
                   <div className="attendance-form-group">
                     <label htmlFor="upload-po-number">PO Number</label>
                     <select id="upload-po-number" className="attendance-select" value={uploadForm.po_number} onChange={event => changeUploadPo(event.target.value)} required>
