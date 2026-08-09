@@ -11,7 +11,7 @@ import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from fastapi import APIRouter, Request, Depends, HTTPException
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
@@ -626,6 +626,12 @@ class ExportShipmentSchema(BaseModel):
     etd: date = None
     eta: date = None
 
+    @model_validator(mode="after")
+    def eta_must_be_after_etd(self):
+        if self.etd and self.eta and self.eta < self.etd:
+            raise ValueError("ETA must be on or after ETD")
+        return self
+
 
 class ProformaInvoiceSchema(BaseModel):
     pi_no: str
@@ -663,6 +669,14 @@ class ProformaInvoiceSchema(BaseModel):
     swift_code: str = None
     branch: str = None
 
+    @model_validator(mode="after")
+    def validate_pi(self):
+        if self.quantity is not None and self.quantity <= 0:
+            raise ValueError("quantity must be greater than zero")
+        if self.validity_date and self.pi_date and self.validity_date < self.pi_date:
+            raise ValueError("validity_date must be on or after pi_date")
+        return self
+
 
 class CommercialInvoiceSchema(BaseModel):
     shipment_no: str
@@ -680,6 +694,14 @@ class CommercialInvoiceSchema(BaseModel):
     total_amount: Decimal
     payment_terms: str
     shipment_terms: str
+
+    @model_validator(mode="after")
+    def validate_amounts(self):
+        if self.exchange_rate is not None and self.exchange_rate <= 0:
+            raise ValueError("exchange_rate must be greater than zero")
+        if self.total_amount is not None and self.total_amount <= 0:
+            raise ValueError("total_amount must be greater than zero")
+        return self
 
 
 class PackingListSchema(BaseModel):
@@ -707,6 +729,12 @@ class PackingListSchema(BaseModel):
     inventory_batch_id: str = None
     stock_entry_no: str = None
     invoice_item_no: int = None
+
+    @model_validator(mode="after")
+    def gross_must_be_gte_net(self):
+        if self.gross_weight is not None and self.net_weight is not None and self.gross_weight < self.net_weight:
+            raise ValueError("gross_weight must be >= net_weight")
+        return self
 
 
 class PackingListBulkLineSchema(BaseModel):
@@ -773,6 +801,14 @@ class ShippingBillSchema(BaseModel):
     etd: date
     eta: date
 
+    @model_validator(mode="after")
+    def validate_shipping_bill(self):
+        if self.etd and self.eta and self.eta < self.etd:
+            raise ValueError("ETA must be on or after ETD")
+        if self.drawback_amount is not None and self.drawback_amount < 0:
+            raise ValueError("drawback_amount must be non-negative")
+        return self
+
 
 class BillOfLadingSchema(BaseModel):
     bl_no: str
@@ -787,6 +823,12 @@ class BillOfLadingSchema(BaseModel):
     no_of_original_bl: int = 3
     gross_weight: float = 0.0
     net_weight: float = 0.0
+
+    @model_validator(mode="after")
+    def validate_bl(self):
+        if self.no_of_original_bl is not None and self.no_of_original_bl < 1:
+            raise ValueError("no_of_original_bl must be at least 1")
+        return self
 
 
 class HealthCertificateSchema(BaseModel):
@@ -967,4 +1009,49 @@ def document_register_workbook(db: Session, company_id: str, doc_type: str | Non
     workbook.save(output)
     output.seek(0)
     return output.getvalue()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 📋 REQUIREMENT FIELD VALUE HELPERS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def requirement_field_values(values: list) -> list:
+    """Deduplicate and strip empty strings from a multi-select value list."""
+    seen = []
+    for v in values:
+        stripped = str(v).strip() if v is not None else ""
+        if stripped and stripped not in seen:
+            seen.append(stripped)
+    return seen
+
+
+def requirement_display_value(values: list) -> str:
+    """Join a list of values into a comma-separated display string."""
+    return ", ".join(str(v).strip() for v in values if v is not None and str(v).strip())
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# 📧 EMAIL APPROVAL STATUS REFRESH
+# ─────────────────────────────────────────────────────────────────────────────
+
+def refresh_email_approval_status(file_row, approvals: list) -> None:
+    """Recompute approval_status on a file row based on the approval records.
+
+    Rules:
+    - If every approval is APPROVED  → APPROVED
+    - If any approval is REJECTED    → REJECTED
+    - Otherwise                      → PENDING
+    """
+    if not approvals:
+        file_row.approval_status = "PENDING"
+        return
+
+    statuses = [str(a.decision or "").upper().strip() for a in approvals]
+
+    if any(s == "REJECTED" for s in statuses):
+        file_row.approval_status = "REJECTED"
+    elif all(s == "APPROVED" for s in statuses):
+        file_row.approval_status = "APPROVED"
+    else:
+        file_row.approval_status = "PENDING"
 
