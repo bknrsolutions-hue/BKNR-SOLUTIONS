@@ -1780,6 +1780,18 @@ export default function QuotationPage({ setActivePage }) {
                             </button>
                           </div>
 
+                          {/* Same-combination active pending orders reserve stock. */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fff7ed', padding: '4px 8px', borderRadius: 4, border: '1px solid #fed7aa' }}>
+                            <span style={{ fontWeight: 700, color: '#c2410c', fontSize: 10 }}>Pending Orders:</span>
+                            <button
+                              type="button"
+                              onClick={() => openStockDetailsModal(`Pending Orders · Item #${card.line_no} (${card.item_name})`, card.pending_order_details)}
+                              style={{ background: 'none', border: 'none', color: '#c2410c', fontWeight: 800, fontSize: 11, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 3, padding: 0 }}
+                            >
+                              {card.pending_order_mc || 0} MC ({card.pending_order_kg || 0} Kg) 🔍
+                            </button>
+                          </div>
+
                           {/* Referral Stock Row */}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#eff6ff', padding: '4px 8px', borderRadius: 4, border: '1px solid #dbeafe' }}>
                             <span style={{ fontWeight: 700, color: '#1e40af', fontSize: 10 }}>Ref Stk (Cross-Pack):</span>
@@ -2233,7 +2245,7 @@ export default function QuotationPage({ setActivePage }) {
                       </td>
                       <td style={{ textAlign: 'center' }}>
                         <div style={{ display: 'inline-flex', gap: 6 }}>
-                          <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: 11 }} onClick={() => openEdit(row)} title="Edit Quotation">
+                          <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '4px 8px', fontSize: 11, opacity: row.sales_dispatched ? 0.55 : 1 }} onClick={() => openEdit(row)} disabled={row.sales_dispatched} title={row.sales_dispatched ? 'Locked after Sales dispatch' : 'Edit Quotation'}>
                             <Pencil size={13} /> EDIT
                           </button>
 

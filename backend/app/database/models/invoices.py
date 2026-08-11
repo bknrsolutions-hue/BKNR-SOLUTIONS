@@ -14,6 +14,8 @@ class ProformaInvoice(Base):
     pi_date = Column(Date, nullable=False)
     validity_date = Column(Date, nullable=True)
     po_number = Column(String, index=True, nullable=True)
+    quotation_id = Column(Integer, nullable=True, index=True)
+    quotation_no = Column(String, nullable=True, index=True)
     buyer_name = Column(String, index=True, nullable=False)
     buyer_address = Column(Text, nullable=False)
     country = Column(String, index=True, nullable=False)

@@ -17,7 +17,7 @@ from app.utils.download_security import require_download_grant
 from app.database.models.crm_quotation import CRMQuotation, CRMQuotationLine, CRMQuotationReply
 from app.database.models.invoices import ProformaInvoice
 from app.database.models.users import Company, User
-from app.database.models.inventory_management import stock_entry, cold_storage_holding
+from app.database.models.inventory_management import stock_entry, cold_storage_holding, sales_dispatch, pending_orders
 from app.database.models.criteria import (
     buyers, buyer_agents, countries, species, varieties, grades,
     brands, glazes, freezers, packing_styles, production_for, production_at,
@@ -28,6 +28,32 @@ from app.database.models.processing import AuditLog
 from app.utils.timezone import ist_now
 
 router = APIRouter(tags=["CRM Quotation"])
+
+
+def is_sales_dispatched(db: Session, company_id: str, *references: str | None) -> bool:
+    identifiers = [str(value).strip() for value in references if value and str(value).strip()]
+    return bool(identifiers and db.query(sales_dispatch.id).filter(
+        sales_dispatch.company_id == company_id,
+        func.upper(func.trim(sales_dispatch.po_number)).in_([value.upper() for value in identifiers]),
+    ).first())
+
+
+def quotation_is_sales_dispatched(db: Session, company_id: str, quotation: CRMQuotation) -> bool:
+    """Follow Quotation → PI → PO/Sales when the quotation itself has no PO."""
+    references = [quotation.po_number, quotation.quotation_no]
+    linked_pis = db.query(ProformaInvoice).filter(
+        ProformaInvoice.company_id == company_id,
+        or_(
+            ProformaInvoice.quotation_id == quotation.id,
+            ProformaInvoice.quotation_no == quotation.quotation_no,
+            ProformaInvoice.id == quotation.linked_pi_id,
+            ProformaInvoice.pi_no == quotation.linked_pi_no,
+            ProformaInvoice.remarks.ilike(f"%Quotation {quotation.quotation_no}%"),
+        ),
+    ).all()
+    for pi in linked_pis:
+        references.extend([pi.po_number, pi.pi_no])
+    return is_sales_dispatched(db, company_id, *references)
 
 
 class LineItemPayload(BaseModel):
@@ -281,6 +307,8 @@ def create_pi_from_quotation(db: Session, quotation: CRMQuotation, user_email: s
         pi = ProformaInvoice(
             company_id=comp_code,
             pi_no=new_pi_no,
+            quotation_id=quotation.id,
+            quotation_no=quotation.quotation_no,
             pi_date=date.today(),
             validity_date=quotation.valid_until or date.today(),
             po_number=quotation.po_number or quotation.quotation_no,
@@ -319,6 +347,8 @@ def create_pi_from_quotation(db: Session, quotation: CRMQuotation, user_email: s
         )
         db.add(pi)
         db.flush()
+        quotation.linked_pi_id = pi.id
+        quotation.linked_pi_no = pi.pi_no
 
         log_audit(db, comp_code, user_email, "AUTO_CREATE_PI", quotation.quotation_no, f"Auto-created Proforma Invoice {pi.pi_no} for {quotation.customer_name}")
         return pi
@@ -341,6 +371,12 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
         all_stocks = db.query(stock_entry).all()
 
     eval_stock = list(all_stocks)
+
+    pending_query = db.query(pending_orders).filter(
+        pending_orders.company_id == comp_code,
+        or_(pending_orders.progress_steps.is_(None), func.lower(pending_orders.progress_steps) != "completed"),
+    )
+    active_pending_orders = pending_query.all()
 
 
     # Query grade_to_hoso list for NW grade lookup matching pending_orders_report
@@ -368,6 +404,16 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
             or norm_clean(getattr(s, "company_id", "")) == target_comp
             or norm_clean(getattr(s, "company_name", "")) == target_comp
         ]
+        active_pending_orders = [
+            order for order in active_pending_orders
+            if norm_clean(getattr(order, "company_name", "")) == target_comp
+            or target_comp in norm_clean(getattr(order, "company_name", ""))
+        ]
+
+    packing_weight_map = {
+        str(row.packing_style or "").strip(): float(row.mc_weight or 1.0)
+        for row in db.query(packing_styles).filter(packing_styles.company_id == comp_code).all()
+    }
 
 
     # Global weighted average rates helper matching inventory dashboard
@@ -513,6 +559,49 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
         avail_mc = max(0, avail_mc)
         avail_kg = max(0.0, round(avail_kg, 2))
         avail_avg_rate = round(avail_cost / avail_kg, 2) if avail_kg > 0 else 0.0
+
+        # Active pending POs with this exact product combination reserve the
+        # same finished-goods stock. Keep them separate from physical stock
+        # and expose their rows for a quotation user to drill into.
+        pending_order_mc = 0
+        pending_order_kg = 0.0
+        pending_order_details = []
+        for order in active_pending_orders:
+            o_spec = norm_clean(getattr(order, "species", ""))
+            o_var = norm_clean(getattr(order, "variety", ""))
+            o_grad = norm_clean(getattr(order, "grade", ""))
+            o_pack = norm_clean(getattr(order, "packing_style", ""))
+            o_frz = norm_clean(getattr(order, "freezer", ""))
+            o_gl = norm_clean(getattr(order, "count_glaze", "") or getattr(order, "weight_glaze", ""))
+            if (i_spec and i_spec != o_spec) or (i_var and i_var != o_var) or (i_grad and i_grad != o_grad):
+                continue
+            if i_pack and i_pack != o_pack:
+                continue
+            if i_frz and i_frz != o_frz:
+                continue
+            if i_gl and i_gl != o_gl:
+                continue
+            order_mc = int(getattr(order, "no_of_mc", 0) or 0)
+            order_kg = round(order_mc * packing_weight_map.get(str(getattr(order, "packing_style", "") or "").strip(), 1.0), 2)
+            pending_order_mc += order_mc
+            pending_order_kg += order_kg
+            pending_order_details.append({
+                "cold_storage_name": "Pending Order",
+                "batch_number": getattr(order, "po_number", "") or "—",
+                "production_for": getattr(order, "buyer", "") or "—",
+                "brand": getattr(order, "brand", "") or "—",
+                "packing_style": getattr(order, "packing_style", "") or "—",
+                "freezer": getattr(order, "freezer", "") or "—",
+                "glaze": getattr(order, "count_glaze", "") or getattr(order, "weight_glaze", "") or "—",
+                "grade": getattr(order, "grade", "") or "—",
+                "no_of_mc": order_mc,
+                "quantity_kg": order_kg,
+                "rate_per_kg": float(getattr(order, "selling_price", 0) or 0),
+                "po_number": getattr(order, "po_number", "") or "—",
+                "buyer": getattr(order, "buyer", "") or "—",
+                "variety": getattr(order, "variety", "") or "—",
+                "species": getattr(order, "species", "") or "—",
+            })
 
         # 2. Referral Stock Match matching pending_orders_report.py
         referral_mc = 0
@@ -667,6 +756,9 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
             "available_stock_kg": avail_kg,
             "avail_stock_avg_rate": avail_avg_rate,
             "avail_stock_details": avail_stock_details,
+            "pending_order_mc": pending_order_mc,
+            "pending_order_kg": round(pending_order_kg, 2),
+            "pending_order_details": pending_order_details,
             "deficit_mc": deficit_mc,
             "referral_stock_mc": referral_mc,
             "referral_stock_kg": ref_kg,
@@ -703,6 +795,8 @@ def ensure_crm_quotation_schema(db: Session):
         "ALTER TABLE crm_quotations ALTER COLUMN inquiry_id DROP NOT NULL;",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_no VARCHAR(50);",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS po_number VARCHAR(100);",
+        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_id INTEGER;",
+        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_no VARCHAR(100);",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_date DATE;",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS valid_until DATE;",
         "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS shipment_date VARCHAR(100);",
@@ -829,6 +923,7 @@ async def get_quotation_data(request: Request, db: Session = Depends(get_db)):
             "items": lines,
             "pi_id": None,
             "pi_no": "",
+            "sales_dispatched": quotation_is_sales_dispatched(db, comp_code, q),
         })
 
     # Attach linked PI id/no for each quotation (for chat PDF links)
@@ -1296,6 +1391,8 @@ async def update_quotation(quotation_id: int, payload: QuotationPayload, request
     quotation = db.query(CRMQuotation).filter(CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
+    if quotation_is_sales_dispatched(db, comp_code, quotation):
+        raise HTTPException(status_code=409, detail="This quotation is locked because its order has been dispatched to Sales")
 
     q_date = payload.quotation_date or quotation.quotation_date or date.today()
     if payload.valid_until and payload.valid_until < q_date:
@@ -1382,6 +1479,8 @@ async def cancel_quotation(quotation_id: int, request: Request, db: Session = De
     quotation = db.query(CRMQuotation).filter(CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
+    if quotation_is_sales_dispatched(db, comp_code, quotation):
+        raise HTTPException(status_code=409, detail="This quotation is locked because its order has been dispatched to Sales")
 
     quotation.is_cancelled = True
     quotation.status = "CANCELLED"
@@ -1403,6 +1502,8 @@ async def quotation_approval(quotation_id: int, payload: ApprovalPayload, reques
     quotation = db.query(CRMQuotation).filter(CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code).first()
     if not quotation:
         raise HTTPException(status_code=404, detail="Quotation not found")
+    if quotation_is_sales_dispatched(db, comp_code, quotation):
+        raise HTTPException(status_code=409, detail="This quotation is locked because its order has been dispatched to Sales")
 
     quotation.status = payload.decision
     quotation.approved_by = email
@@ -1880,5 +1981,3 @@ async def generate_ai_chatbot_proposal(quotation_id: int, payload: InboundReplyP
 
     ai_res = generate_ai_bot_reply(q_dict, payload.message_body)
     return JSONResponse(content=ai_res)
-
-

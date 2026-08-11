@@ -20,6 +20,7 @@ from app.database.models.criteria import (
 )
 from app.database.models.enterprise_finance import BankMaster
 from app.database.models.processing import AuditLog
+from app.database.models.inventory_management import sales_dispatch
 from app.services.bill_accounting import ensure_bill_accounting_schema
 from app.services.cache import invalidate_company_cache
 
@@ -38,6 +39,15 @@ from app.routers.export_documents.common import (
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def is_sales_dispatched(db: Session, company_id: str, *references: str | None) -> bool:
+    """True when any PO/PI reference has already been posted to Sales."""
+    identifiers = [str(value).strip() for value in references if value and str(value).strip()]
+    return bool(identifiers and db.query(sales_dispatch.id).filter(
+        sales_dispatch.company_id == company_id,
+        func.upper(func.trim(sales_dispatch.po_number)).in_([value.upper() for value in identifiers]),
+    ).first())
 
 
 def serialize_proforma(row: ProformaInvoice, db: Session = None) -> dict:
@@ -65,6 +75,7 @@ def serialize_proforma(row: ProformaInvoice, db: Session = None) -> dict:
     return {
         "id": row.id,
         "pi_no": row.pi_no,
+        "sales_dispatched": bool(db and is_sales_dispatched(db, row.company_id, row.po_number, row.pi_no)),
         "pi_date": _dt(row.pi_date),
         "validity_date": _dt(row.validity_date),
         "po_number": row.po_number,
@@ -239,6 +250,8 @@ def proforma_invoice_update(record_id: int, request: Request, payload: ProformaI
     ).first()
     if not entry:
         return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+    if is_sales_dispatched(db, comp_code, entry.po_number, entry.pi_no):
+        raise HTTPException(status_code=409, detail="This PI is locked because its order has been dispatched to Sales")
     duplicate = db.query(ProformaInvoice).filter(
         ProformaInvoice.company_id == comp_code,
         ProformaInvoice.pi_no == payload.pi_no.strip(),
@@ -277,6 +290,8 @@ def proforma_invoice_cancel(record_id: int, request: Request, db: Session = Depe
     ).first()
     if not entry:
         return JSONResponse({"success": False, "message": "Record not found"}, status_code=404)
+    if is_sales_dispatched(db, comp_code, entry.po_number, entry.pi_no):
+        raise HTTPException(status_code=409, detail="This PI is locked because its order has been dispatched to Sales")
     old_status = entry.status
     entry.is_cancelled = True
     entry.status = "CANCELLED"
@@ -354,6 +369,8 @@ def proforma_invoice_add_to_pending_orders(
     ).first()
     if not entry:
         return JSONResponse({"success": False, "message": "Proforma Invoice record not found"}, status_code=404)
+    if is_sales_dispatched(db, comp_code, entry.po_number, entry.pi_no):
+        raise HTTPException(status_code=409, detail="This PI is locked because its order has been dispatched to Sales")
 
     from app.database.models.inventory_management import pending_orders
     from app.services.production_requirements_service import ProductionRequirementService

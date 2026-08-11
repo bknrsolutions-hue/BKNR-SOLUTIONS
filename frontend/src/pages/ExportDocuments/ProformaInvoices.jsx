@@ -1416,10 +1416,10 @@ export default function ProformaInvoices({ setActivePage }) {
                     </td>
                     <td style={{ textAlign: 'center' }}>
                       <div style={{ display: 'inline-flex', gap: 4 }}>
-                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, color: '#d97706', fontWeight: 800, background: '#fffbeb', borderColor: '#fde68a' }} onClick={() => openAddToPendingModal(row)} title="Auto-fill details into Pending Orders Production List">
+                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, color: '#d97706', fontWeight: 800, background: '#fffbeb', borderColor: '#fde68a', opacity: row.sales_dispatched ? 0.55 : 1 }} onClick={() => openAddToPendingModal(row)} disabled={row.sales_dispatched} title={row.sales_dispatched ? 'Locked after Sales dispatch' : 'Auto-fill details into Pending Orders Production List'}>
                           <Plus size={12} /> PENDING LIST
                         </button>
-                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10 }} onClick={() => openEdit(row)} title="Edit Proforma Invoice">
+                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, opacity: row.sales_dispatched ? 0.55 : 1 }} onClick={() => openEdit(row)} disabled={row.sales_dispatched} title={row.sales_dispatched ? 'Locked after Sales dispatch' : 'Edit Proforma Invoice'}>
                           <Pencil size={12} /> EDIT
                         </button>
                         <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, color: '#2563eb' }} onClick={() => confirmAndPrint(row)} title="Print PI">
@@ -1436,7 +1436,7 @@ export default function ProformaInvoices({ setActivePage }) {
                             <CheckCircle2 size={12} /> APPROVE
                           </button>
                         )}
-                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, color: '#ef4444' }} onClick={() => cancelRow(row)} title="Cancel PI">
+                        <button type="button" className="attendance-btn attendance-btn-secondary" style={{ padding: '3px 7px', fontSize: 10, color: '#ef4444', opacity: row.sales_dispatched ? 0.55 : 1 }} onClick={() => cancelRow(row)} disabled={row.sales_dispatched} title={row.sales_dispatched ? 'Locked after Sales dispatch' : 'Cancel PI'}>
                           <Ban size={12} />
                         </button>
                       </div>

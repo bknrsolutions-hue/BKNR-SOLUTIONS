@@ -47,6 +47,7 @@ export default function PendingOrders() {
   const [invoiceDate, setInvoiceDate] = useState('');
   const [shippingBill, setShippingBill] = useState('');
   const [containerNo, setContainerNo] = useState('');
+  const [loadedAssortment, setLoadedAssortment] = useState([]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -150,6 +151,20 @@ export default function PendingOrders() {
     fd.append('invoice_date', invoiceDate);
     fd.append('shipping_bill', shippingBill);
     fd.append('container_no', containerNo);
+    // Send the edited rows as one payload so Sales always receives the values
+    // currently visible in the Loaded Assortment grid.
+    fd.append('loaded_assortment_json', JSON.stringify(loadedAssortment));
+    loadedAssortment.forEach(item => {
+      fd.append('loaded_buyer', item.buyer || '');
+      fd.append('loaded_brand', item.brand || '');
+      fd.append('loaded_packing_style', item.packing_style || '');
+      fd.append('loaded_freezer', item.freezer || '');
+      fd.append('loaded_count_glaze', item.count_glaze || '');
+      fd.append('loaded_weight_glaze', item.weight_glaze || '');
+      fd.append('loaded_variety', item.variety || '');
+      fd.append('loaded_grade', item.grade || '');
+      fd.append('loaded_no_of_mc', item.no_of_mc ?? 0);
+    });
 
     try {
       const res = await fetch('/inventory/move_to_sales', {
@@ -166,12 +181,28 @@ export default function PendingOrders() {
       setInvoiceDate('');
       setShippingBill('');
       setContainerNo('');
+      setLoadedAssortment([]);
       await fetchData();
-    } catch {
-      setMsg('❌ Failed to post dispatch details');
+    } catch (error) {
+      setMsg(`❌ ${error.message || 'Failed to post dispatch details'}`);
     } finally {
       setLoading(false);
     }
+  };
+
+  const openMoveToSales = (poNum) => {
+    const poRows = activeRows.filter(row => row.po_number === poNum);
+    setSelectedPo(poNum);
+    setLoadedAssortment(poRows.map(row => ({
+      buyer: row.buyer || '', brand: row.brand || '', packing_style: row.packing_style || '',
+      freezer: row.freezer || '', count_glaze: row.count_glaze || '', weight_glaze: row.weight_glaze || '',
+      variety: row.variety || '', grade: row.grade || '', no_of_mc: row.no_of_mc ?? 0,
+    })));
+    setShowMoveModal(true);
+  };
+
+  const updateLoadedAssortment = (index, field, value) => {
+    setLoadedAssortment(rows => rows.map((row, rowIndex) => rowIndex === index ? { ...row, [field]: value } : row));
   };
 
   const handleDeletePo = async (poNum) => {
@@ -196,8 +227,7 @@ export default function PendingOrders() {
 
   const handleStatusChange = async (poNum, status) => {
     if (status === 'completed') {
-      setSelectedPo(poNum);
-      setShowMoveModal(true);
+      openMoveToSales(poNum);
       return;
     }
     if (!window.confirm(`Change PO ${poNum} status to ${status.toUpperCase()}?`)) return;
@@ -474,7 +504,7 @@ export default function PendingOrders() {
               <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>PO: {selectedPo}</h3>
               <p style={{ margin: '5px 0 0', color: 'var(--text-secondary)', fontSize: 11 }}>Select an action for this purchase order.</p>
             </div>
-            <button className="btn btn-primary" type="button" onClick={() => { setShowPoActions(false); setShowMoveModal(true); }}>
+            <button className="btn btn-primary" type="button" onClick={() => { setShowPoActions(false); openMoveToSales(selectedPo); }}>
               <Eye size={13} /> Move to Sales Dispatch
             </button>
             <button className="btn btn-clear" type="button" style={{ color: '#ef4444' }} onClick={() => handleDeletePo(selectedPo)}>
@@ -488,24 +518,45 @@ export default function PendingOrders() {
       {/* DISPATCH/SALES MODAL OVERLAY */}
       {showMoveModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
-          <form onSubmit={handleMoveToSales} className="card" style={{ width: 420, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <form onSubmit={handleMoveToSales} className="card" style={{ width: 'min(1120px, calc(100vw - 32px))', maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <h3 style={{ margin: 0, fontSize: 14, fontWeight: 800 }}>Dispatch PO: {selectedPo} to Sales Ledger</h3>
-            <div className="form-group">
-              <label>Invoice Number *</label>
-              <input type="text" className="form-control" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 12 }}>
+              <div className="form-group">
+                <label>Invoice Number *</label>
+                <input type="text" className="form-control" value={invoiceNo} onChange={e => setInvoiceNo(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Invoice / Shipping Date *</label>
+                <input type="date" className="form-control" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label>Shipping Bill #</label>
+                <input type="text" className="form-control" value={shippingBill} onChange={e => setShippingBill(e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label>Container Number</label>
+                <input type="text" className="form-control" value={containerNo} onChange={e => setContainerNo(e.target.value)} />
+              </div>
             </div>
-            <div className="form-group">
-              <label>Invoice / Shipping Date *</label>
-              <input type="date" className="form-control" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} required />
-            </div>
-            <div className="form-group">
-              <label>Shipping Bill #</label>
-              <input type="text" className="form-control" value={shippingBill} onChange={e => setShippingBill(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Container Number</label>
-              <input type="text" className="form-control" value={containerNo} onChange={e => setContainerNo(e.target.value)} />
-            </div>
+            <section style={{ border: '1px solid var(--border)', borderRadius: 8, overflowX: 'auto' }}>
+              <div style={{ padding: '10px 12px', fontSize: 12, fontWeight: 800, background: 'var(--header-bg)' }}>LOADED ASSORTMENT</div>
+              <table className="bknr-table" style={{ minWidth: 980 }}>
+                <thead><tr><th>Buyer</th><th>Brand</th><th>Packing Style</th><th>Freezer</th><th>Count Glaze</th><th>Weight Glaze</th><th>Variety</th><th>Grade</th><th>M.C Box</th></tr></thead>
+                <tbody>{loadedAssortment.map((item, index) => (
+                  <tr key={index}>
+                    <td><select className="form-control" value={item.buyer} onChange={e => updateLoadedAssortment(index, 'buyer', e.target.value)}>{selectOptions(buyers, item.buyer)}</select></td>
+                    <td><select className="form-control" value={item.brand} onChange={e => updateLoadedAssortment(index, 'brand', e.target.value)}>{selectOptions(brands, item.brand)}</select></td>
+                    <td><select className="form-control" value={item.packing_style} onChange={e => updateLoadedAssortment(index, 'packing_style', e.target.value)}>{selectOptions(packing.map(p => p.packing_style), item.packing_style)}</select></td>
+                    <td><select className="form-control" value={item.freezer} onChange={e => updateLoadedAssortment(index, 'freezer', e.target.value)}>{selectOptions(freezers, item.freezer)}</select></td>
+                    <td><select className="form-control" value={item.count_glaze} onChange={e => updateLoadedAssortment(index, 'count_glaze', e.target.value)}>{selectOptions(glazes, item.count_glaze)}</select></td>
+                    <td><select className="form-control" value={item.weight_glaze} onChange={e => updateLoadedAssortment(index, 'weight_glaze', e.target.value)}>{selectOptions(glazes, item.weight_glaze)}</select></td>
+                    <td><select className="form-control" value={item.variety} onChange={e => updateLoadedAssortment(index, 'variety', e.target.value)}>{selectOptions(varieties, item.variety)}</select></td>
+                    <td><select className="form-control" value={item.grade} onChange={e => updateLoadedAssortment(index, 'grade', e.target.value)}>{selectOptions(grades, item.grade)}</select></td>
+                    <td><input type="number" min="0" step="1" className="form-control" value={item.no_of_mc} onChange={e => updateLoadedAssortment(index, 'no_of_mc', e.target.value)} /></td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </section>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
               <button type="button" className="btn btn-clear" onClick={() => setShowMoveModal(false)}>Close</button>
               <button type="submit" className="btn btn-primary">Confirm Dispatch</button>
@@ -515,6 +566,11 @@ export default function PendingOrders() {
       )}
     </div>
   );
+}
+
+function selectOptions(options, currentValue) {
+  const values = Array.from(new Set([...(options || []), currentValue].filter(Boolean)));
+  return <>{!currentValue && <option value="">— Select —</option>}{values.map(value => <option key={value} value={value}>{value}</option>)}</>;
 }
 
 function OrdersTable({ rows, completed = false, onStatusChange, onRowClick }) {

@@ -17,6 +17,8 @@ class CRMQuotation(Base):
     inquiry_id = Column(Integer, nullable=True)
     quotation_no = Column(String(50), index=True, nullable=False)  # e.g., QT-2026-0001
     po_number = Column(String(100), nullable=True)
+    linked_pi_id = Column(Integer, nullable=True)
+    linked_pi_no = Column(String(100), nullable=True)
     quotation_date = Column(Date, nullable=False)
     valid_until = Column(Date, nullable=False)
     shipment_date = Column(String(100), nullable=True)
@@ -105,4 +107,3 @@ class CRMQuotationReply(Base):
     attachments_json = Column(Text, nullable=True)  # JSON: [{filename, mime_type, data_url}]
 
     quotation = relationship("CRMQuotation", back_populates="email_replies")
-

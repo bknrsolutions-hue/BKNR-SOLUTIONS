@@ -132,6 +132,7 @@ class sales_dispatch(Base):
     count_glaze = Column(String(50))
     weight_glaze = Column(String(50))
     packing_style = Column(String(255))
+    freezer = Column(String(255), nullable=True)
     no_of_mc = Column(Integer)
     price = Column(Float)
     variety = Column(String, nullable=True)

@@ -40,7 +40,10 @@ TABLES = [
     "lc_tracking",
     "salary_processing",
     "production_cost_allocations",
-    "commercial_invoices"
+    "commercial_invoices",
+    "sales_dispatch",
+    "proforma_invoices",
+    "crm_quotations",
 ]
 
 COLUMNS = [
@@ -88,6 +91,15 @@ TABLE_COLUMNS = {
     ],
     "sales_dispatch": [
         ("journal_id", "INTEGER"),
+        ("freezer", "VARCHAR(255)"),
+    ],
+    "proforma_invoices": [
+        ("quotation_id", "INTEGER"),
+        ("quotation_no", "VARCHAR(100)"),
+    ],
+    "crm_quotations": [
+        ("linked_pi_id", "INTEGER"),
+        ("linked_pi_no", "VARCHAR(100)"),
     ],
     "raw_material_purchasing": [
         ("g1_expr", "VARCHAR(500)"),
