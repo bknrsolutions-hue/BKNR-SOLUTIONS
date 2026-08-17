@@ -453,10 +453,13 @@ def on_startup():
         # Prefer Alembic (`alembic upgrade head`) for schema changes.
         def migrate_with_retry():
             from app.database.migration import run_migration
+            from app.services.bill_accounting import ensure_bill_accounting_schema
 
             for attempt in range(1, 4):
                 try:
                     run_migration()
+                    with SessionLocal() as db:
+                        ensure_bill_accounting_schema(db)
                     logger.info("Legacy startup migration completed on attempt %s", attempt)
                     return
                 except Exception as exc:

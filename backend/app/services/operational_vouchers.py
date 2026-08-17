@@ -19,71 +19,91 @@ from app.services.bill_accounting import amount_line
 from app.services.posting_engine import PostingEngineService
 
 
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+_OPERATIONAL_SCHEMA_ENSURED = False
+_OPERATIONAL_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_operational_voucher_schema(db: Session) -> None:
-    statements = [
-        """
-        CREATE TABLE IF NOT EXISTS operational_monthly_vouchers (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            source_type VARCHAR(60) NOT NULL,
-            contractor_name VARCHAR(255) NOT NULL,
-            period_month DATE NOT NULL,
-            voucher_id INTEGER UNIQUE,
-            status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
-            locked_at TIMESTAMP,
-            locked_by VARCHAR(100),
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT uq_operational_monthly_voucher UNIQUE (company_id, source_type, contractor_name, period_month)
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS operational_voucher_sources (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            source_type VARCHAR(60) NOT NULL,
-            source_table VARCHAR(80) NOT NULL,
-            source_record_id INTEGER NOT NULL,
-            operational_voucher_id INTEGER REFERENCES operational_monthly_vouchers(id),
-            source_date DATE NOT NULL,
-            contractor_name VARCHAR(255) NOT NULL,
-            taxable_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
-            gst_percent NUMERIC(8,2) NOT NULL DEFAULT 0,
-            quantity NUMERIC(18,3) NOT NULL DEFAULT 0,
-            rate NUMERIC(18,4) NOT NULL DEFAULT 0,
-            is_active BOOLEAN NOT NULL DEFAULT TRUE,
-            payload JSONB,
-            created_by VARCHAR(100),
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            modified_by VARCHAR(100),
-            modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            CONSTRAINT uq_operational_voucher_source UNIQUE (company_id, source_type, source_table, source_record_id)
-        )
-        """,
-        """
-        CREATE TABLE IF NOT EXISTS operational_voucher_audits (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            operational_voucher_id INTEGER REFERENCES operational_monthly_vouchers(id),
-            source_id INTEGER REFERENCES operational_voucher_sources(id),
-            action VARCHAR(30) NOT NULL,
-            old_value JSONB,
-            new_value JSONB,
-            user_email VARCHAR(100) NOT NULL,
-            created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS ix_operational_voucher_sources_period ON operational_voucher_sources(company_id, source_type, source_date, is_active)",
-        "CREATE INDEX IF NOT EXISTS ix_operational_voucher_audits_source ON operational_voucher_audits(company_id, source_id, created_at DESC)",
-    ]
-    for statement in statements:
-        db.execute(text(statement))
-    # The 10th is inclusive: periods become read-only from the 11th of the
-    # following month, even when no user has attempted another edit.
-    db.execute(text("""UPDATE operational_monthly_vouchers
-        SET status='LOCKED', locked_at=COALESCE(locked_at, CURRENT_TIMESTAMP),
-            locked_by=COALESCE(locked_by, 'SYSTEM'), updated_at=CURRENT_TIMESTAMP
-        WHERE status='OPEN' AND CURRENT_DATE > (period_month + INTERVAL '1 month' + INTERVAL '9 days')"""))
+    global _OPERATIONAL_SCHEMA_ENSURED
+    if _OPERATIONAL_SCHEMA_ENSURED:
+        return
+
+    with _OPERATIONAL_SCHEMA_LOCK:
+        if _OPERATIONAL_SCHEMA_ENSURED:
+            return
+
+        statements = [
+            """
+            CREATE TABLE IF NOT EXISTS operational_monthly_vouchers (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                source_type VARCHAR(60) NOT NULL,
+                contractor_name VARCHAR(255) NOT NULL,
+                period_month DATE NOT NULL,
+                voucher_id INTEGER UNIQUE,
+                status VARCHAR(20) NOT NULL DEFAULT 'OPEN',
+                locked_at TIMESTAMP,
+                locked_by VARCHAR(100),
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_operational_monthly_voucher UNIQUE (company_id, source_type, contractor_name, period_month)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS operational_voucher_sources (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                source_type VARCHAR(60) NOT NULL,
+                source_table VARCHAR(80) NOT NULL,
+                source_record_id INTEGER NOT NULL,
+                operational_voucher_id INTEGER REFERENCES operational_monthly_vouchers(id),
+                source_date DATE NOT NULL,
+                contractor_name VARCHAR(255) NOT NULL,
+                taxable_amount NUMERIC(18,2) NOT NULL DEFAULT 0,
+                gst_percent NUMERIC(8,2) NOT NULL DEFAULT 0,
+                quantity NUMERIC(18,3) NOT NULL DEFAULT 0,
+                rate NUMERIC(18,4) NOT NULL DEFAULT 0,
+                is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                payload JSONB,
+                created_by VARCHAR(100),
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                modified_by VARCHAR(100),
+                modified_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                CONSTRAINT uq_operational_voucher_source UNIQUE (company_id, source_type, source_table, source_record_id)
+            )
+            """,
+            """
+            CREATE TABLE IF NOT EXISTS operational_voucher_audits (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                operational_voucher_id INTEGER REFERENCES operational_monthly_vouchers(id),
+                source_id INTEGER REFERENCES operational_voucher_sources(id),
+                action VARCHAR(30) NOT NULL,
+                old_value JSONB,
+                new_value JSONB,
+                user_email VARCHAR(100) NOT NULL,
+                created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_operational_voucher_sources_period ON operational_voucher_sources(company_id, source_type, source_date, is_active)",
+            "CREATE INDEX IF NOT EXISTS ix_operational_voucher_audits_source ON operational_voucher_audits(company_id, source_id, created_at DESC)",
+        ]
+        try:
+            for statement in statements:
+                db.execute(text(statement))
+            db.execute(text("""UPDATE operational_monthly_vouchers
+                SET status='LOCKED', locked_at=COALESCE(locked_at, CURRENT_TIMESTAMP),
+                    locked_by=COALESCE(locked_by, 'SYSTEM'), updated_at=CURRENT_TIMESTAMP
+                WHERE status='OPEN' AND CURRENT_DATE > (period_month + INTERVAL '1 month' + INTERVAL '9 days')"""))
+            _OPERATIONAL_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Operational voucher schema check failed: %s", exc)
 
 
 def _period_month(value: date) -> date:

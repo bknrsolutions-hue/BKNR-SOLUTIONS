@@ -357,18 +357,33 @@ def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created
     entry.journal_id = voucher.id
     return voucher
 
+import threading
+
+_RMP_COLUMNS_ENSURED = False
+_RMP_COLUMNS_LOCK = threading.Lock()
+
+
 def ensure_rmp_columns_exist(db: Session):
-    try:
-        db.execute(text("""
-            ALTER TABLE raw_material_purchasing 
-            ADD COLUMN IF NOT EXISTS g1_expr VARCHAR(500),
-            ADD COLUMN IF NOT EXISTS g2_expr VARCHAR(500),
-            ADD COLUMN IF NOT EXISTS dc_expr VARCHAR(500);
-        """))
-        db.commit()
-    except Exception as exc:
-        db.rollback()
-        logger.warning("Could not auto-add expression columns to raw_material_purchasing: %s", exc)
+    global _RMP_COLUMNS_ENSURED
+    if _RMP_COLUMNS_ENSURED:
+        return
+
+    with _RMP_COLUMNS_LOCK:
+        if _RMP_COLUMNS_ENSURED:
+            return
+
+        try:
+            db.execute(text("""
+                ALTER TABLE raw_material_purchasing 
+                ADD COLUMN IF NOT EXISTS g1_expr VARCHAR(500),
+                ADD COLUMN IF NOT EXISTS g2_expr VARCHAR(500),
+                ADD COLUMN IF NOT EXISTS dc_expr VARCHAR(500);
+            """))
+            db.commit()
+            _RMP_COLUMNS_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Could not auto-add expression columns to raw_material_purchasing: %s", exc)
 
 # -----------------------------------------------------
 # REUSABLE PAGE RENDERER 

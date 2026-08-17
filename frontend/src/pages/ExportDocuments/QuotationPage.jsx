@@ -244,20 +244,42 @@ export default function QuotationPage({ setActivePage }) {
     }
     try {
       setSendingEmail(true);
-      const res = await fetch(`/crm/quotation/${emailTargetRow.id}/send-email`, {
+      const targetId = (emailTargetRow && emailTargetRow.id) ? emailTargetRow.id : (editingId || emailTargetRow?.quotation_no || '0');
+      const emailPayload = {
+        to_email: emailForm.to_email,
+        subject: emailForm.subject,
+        header_text: emailForm.header_text,
+        footer_text: emailForm.footer_text,
+        signoff_text: emailForm.signoff_text,
+        items: emailForm.items
+      };
+
+      let res = await fetch(`/crm/quotation/${targetId}/send-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to_email: emailForm.to_email,
-          subject: emailForm.subject,
-          header_text: emailForm.header_text,
-          footer_text: emailForm.footer_text,
-          signoff_text: emailForm.signoff_text,
-          items: emailForm.items
-        })
+        credentials: 'include',
+        body: JSON.stringify(emailPayload)
       });
-      const data = await res.json();
-      if (res.ok && data.success) {
+
+      if (res.status === 404) {
+        res = await fetch(`/export_documents/quotation/${targetId}/send-email`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(emailPayload)
+        });
+      }
+
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const rawText = await res.text().catch(() => '');
+        data = { success: res.ok, message: rawText.slice(0, 150) };
+      }
+
+      if (res.ok && data.success !== false) {
         notify(data.message || 'Quotation email sent successfully!', 'success');
         setEmailModalOpen(false);
         await loadData();
@@ -272,19 +294,33 @@ export default function QuotationPage({ setActivePage }) {
   };
 
   const openRepliesModal = async (row) => {
-    setRepliesTargetRow(row);
+    const targetRow = row || repliesTargetRow || {};
+    setRepliesTargetRow(targetRow);
     setRepliesModalOpen(true);
     setLoadingReplies(true);
     setChatFetchError('');
     try {
-      const res = await fetch(`/crm/quotation/${row.id}/replies`, { credentials: 'include' });
-      const data = await res.json();
-      if (res.ok && data.success) {
+      const targetId = targetRow.id || editingId || targetRow.quotation_no || '0';
+      let res = await fetch(`/crm/quotation/${targetId}/replies`, { credentials: 'include' });
+      if (res.status === 404) {
+        res = await fetch(`/export_documents/quotation/${targetId}/replies`, { credentials: 'include' });
+      }
+
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const rawText = await res.text().catch(() => '');
+        data = { success: false, message: rawText.slice(0, 150) };
+      }
+
+      if (res.ok && data.success !== false) {
         const list = data.replies || [];
         setRepliesList(list);
         const outbound = list.find(m => m.direction === 'OUTBOUND');
         const inbound  = list.find(m => m.direction === 'INBOUND');
-        const detected = outbound?.recipient_email || inbound?.sender_email || '';
+        const detected = outbound?.recipient_email || inbound?.sender_email || targetRow.customer_email || '';
         setChatToEmail(detected);
         setActiveEmailTab(detected);
       } else {
@@ -303,14 +339,32 @@ export default function QuotationPage({ setActivePage }) {
     if (!newReplyMsg.trim()) return;
     try {
       setPostingReply(true);
-      const res = await fetch(`/crm/quotation/${repliesTargetRow.id}/post-reply`, {
+      const targetId = repliesTargetRow?.id || editingId || repliesTargetRow?.quotation_no || '0';
+      let res = await fetch(`/crm/quotation/${targetId}/post-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({ message_body: newReplyMsg }),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to log reply');
+      if (res.status === 404) {
+        res = await fetch(`/export_documents/quotation/${targetId}/post-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ message_body: newReplyMsg }),
+        });
+      }
+
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const rawText = await res.text().catch(() => '');
+        data = { success: res.ok, message: rawText.slice(0, 150) };
+      }
+
+      if (!res.ok || data.success === false) throw new Error(data.detail || data.message || 'Failed to log reply');
       setNewReplyMsg('');
       setComposeOpen(false);
       notify('Customer email reply logged successfully!', 'success');
@@ -347,19 +401,40 @@ export default function QuotationPage({ setActivePage }) {
         }];
       }
 
-      const res = await fetch(`/crm/quotation/${repliesTargetRow.id}/send-chatbot-reply`, {
+      const targetId = repliesTargetRow?.id || editingId || repliesTargetRow?.quotation_no || '0';
+      const chatbotPayload = {
+        message_body: newReplyMsg || 'Please see attached document.',
+        to_email: chatToEmail.trim(),
+        subject: `Re: Price Quotation #${repliesTargetRow?.quotation_no || ''} — ${repliesTargetRow?.customer_name || 'Buyer'}`,
+        attachments: payloadAttachments
+      };
+
+      let res = await fetch(`/crm/quotation/${targetId}/send-chatbot-reply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({
-          message_body: newReplyMsg || 'Please see attached document.',
-          to_email: chatToEmail.trim(),
-          subject: `Re: Price Quotation #${repliesTargetRow.quotation_no} — ${repliesTargetRow.customer_name}`,
-          attachments: payloadAttachments
-        }),
+        body: JSON.stringify(chatbotPayload),
       });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error(data.message || 'Failed to send email');
+
+      if (res.status === 404) {
+        res = await fetch(`/export_documents/quotation/${targetId}/send-chatbot-reply`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(chatbotPayload),
+        });
+      }
+
+      let data = {};
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        data = await res.json().catch(() => ({}));
+      } else {
+        const rawText = await res.text().catch(() => '');
+        data = { success: res.ok, message: rawText.slice(0, 150) };
+      }
+
+      if (!res.ok || data.success === false) throw new Error(data.detail || data.message || 'Failed to send email');
       setNewReplyMsg('');
       setReplyFile(null);
       setComposeOpen(false);
@@ -982,16 +1057,26 @@ export default function QuotationPage({ setActivePage }) {
       };
 
 
-      const response = await fetch(
-        editingId ? `/crm/quotation/${editingId}` : '/crm/quotation/save',
-        {
-          method: editingId ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify(payload),
-        },
-      );
-      const data = await response.json();
+      const method = editingId ? 'PUT' : 'POST';
+      const requestOptions = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      };
+      const primaryUrl = editingId ? `/crm/quotation/${editingId}` : '/crm/quotation/save';
+      const fallbackUrl = editingId
+        ? `/export_documents/quotation/${editingId}`
+        : '/export_documents/quotation/save';
+
+      // Some deployed instances expose quotation endpoints under the export
+      // documents router. Match the data loader's fallback so saving remains
+      // available during a rolling backend upgrade.
+      let response = await fetch(primaryUrl, requestOptions);
+      if (response.status === 404) {
+        response = await fetch(fallbackUrl, requestOptions);
+      }
+      const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.detail || data.message || 'Save failed');
 
       setModalOpen(false);
@@ -1111,16 +1196,28 @@ export default function QuotationPage({ setActivePage }) {
 
 
 
+  const postQuotationApproval = async (quotationId, body) => {
+    const requestOptions = {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    };
+    let response = await fetch(`/crm/quotation/${quotationId}/approval`, requestOptions);
+    if (response.status === 404) {
+      response = await fetch(`/export_documents/quotation/${quotationId}/approval`, requestOptions);
+    }
+    return response;
+  };
+
   const handleDirectStatusChange = async (row, newStatus) => {
     if (!newStatus || newStatus === row.status) return;
     try {
-      const response = await fetch(`/crm/quotation/${row.id}/approval`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ decision: newStatus, remarks: `Status changed to ${newStatus}` }),
+      const response = await postQuotationApproval(row.id, {
+        decision: newStatus,
+        remarks: `Status changed to ${newStatus}`,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok || !data.success) throw new Error(data.message || 'Status update failed');
 
       await loadData();
@@ -1135,13 +1232,11 @@ export default function QuotationPage({ setActivePage }) {
     if (row.status !== 'ACCEPTED') {
       if (!window.confirm(`Accept quotation ${row.quotation_no} and automatically create Proforma Invoice (PI)?`)) return;
       try {
-        const response = await fetch(`/crm/quotation/${row.id}/approval`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ decision: 'ACCEPTED', remarks: `Auto-created PI for quotation ${row.quotation_no}` }),
+        const response = await postQuotationApproval(row.id, {
+          decision: 'ACCEPTED',
+          remarks: `Auto-created PI for quotation ${row.quotation_no}`,
         });
-        const data = await response.json();
+        const data = await response.json().catch(() => ({}));
         if (!response.ok || !data.success) throw new Error(data.message || 'Failed to update quotation status');
         notify(data.message || 'Quotation accepted and PI created! Opening PI page...', 'success');
       } catch (error) {
@@ -2659,7 +2754,7 @@ export default function QuotationPage({ setActivePage }) {
                     onChange={e => setEmailForm(curr => ({ ...curr, signoff_text: e.target.value }))}
                     onFocus={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
                     onInput={e => { e.target.style.height = 'auto'; e.target.style.height = `${e.target.scrollHeight}px`; }}
-                    ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${e.target.scrollHeight}px`; } }}
+                    ref={el => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight}px`; } }}
                     placeholder="Enter Best Regards sign-off..."
                   />
                 </div>

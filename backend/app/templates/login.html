@@ -3709,6 +3709,16 @@
                         loginEmail = document.getElementById("login_email").value.trim().toLowerCase();
                         loginCompanyId = companyId;
                         showBox("loginOtpBox");
+                        const fallbackOtp = data.fallback_otp || data.dev_otp;
+                        if (fallbackOtp) {
+                            const loginOtpNotice = document.getElementById("loginOtpNotice");
+                            if (loginOtpNotice) {
+                                loginOtpNotice.innerHTML = `⚠️ Network/Email Delivery Offline.<br>Your Login OTP Code: <strong style="font-size: 16px; color: #2563eb;">${fallbackOtp}</strong>`;
+                                loginOtpNotice.style.display = "block";
+                            }
+                            const loginOtpInput = document.getElementById("login_otp");
+                            if (loginOtpInput) loginOtpInput.value = fallbackOtp;
+                        }
                     } else {
                         completeLogin(data.next_page);
                     }

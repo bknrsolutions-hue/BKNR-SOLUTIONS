@@ -390,6 +390,22 @@ def move_to_sales(
             raise HTTPException(status_code=422, detail="Loaded assortment data is invalid")
         if not isinstance(loaded_assortment, list):
             raise HTTPException(status_code=422, detail="Loaded assortment data must be a list")
+        assortment_by_id = {}
+        try:
+            for row in loaded_assortment:
+                row_id = int(row.get("id"))
+                if row_id in assortment_by_id:
+                    raise ValueError
+                assortment_by_id[row_id] = row
+        except (AttributeError, TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="Each loaded assortment row must have a valid unique pending-order ID")
+        pending_ids = {item.id for item in items}
+        if set(assortment_by_id) != pending_ids:
+            raise HTTPException(status_code=422, detail="Loaded assortment rows do not match the selected pending order")
+        # Match popup edits to their original Pending Order line by ID. This
+        # avoids values being assigned to the wrong Sales Dispatch row if the
+        # database returns the PO lines in a different order.
+        loaded_assortment = [assortment_by_id[item.id] for item in items]
         loaded_buyer = [str(row.get("buyer") or "") for row in loaded_assortment]
         loaded_brand = [str(row.get("brand") or "") for row in loaded_assortment]
         loaded_packing_style = [str(row.get("packing_style") or "") for row in loaded_assortment]

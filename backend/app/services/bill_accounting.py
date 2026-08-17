@@ -3,99 +3,118 @@ import logging
 from typing import Optional
 from sqlalchemy import text
 from sqlalchemy.orm import Session, joinedload
+import threading
 
 from app.database.models.enterprise_finance import AccountGroup, LedgerMaster, VoucherHeader
 from app.services.posting_engine import PostingEngineService
 
 logger = logging.getLogger(__name__)
 
+_BILL_ACCOUNTING_SCHEMA_ENSURED = False
+_BILL_ACCOUNTING_SCHEMA_LOCK = threading.Lock()
+
 
 def ensure_bill_accounting_schema(db: Session) -> None:
-    statements = [
-        "ALTER TABLE diesel_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
-        "ALTER TABLE diesel_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE purchase_invoices ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
-        "ALTER TABLE purchase_invoices ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE container_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
-        "ALTER TABLE container_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
-        "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS product_name VARCHAR(150)",
-        "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS parameters TEXT",
-        "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
-        "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS cogs_journal_id INTEGER",
-        "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS customer_ledger_id INTEGER",
-        "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS sales_ledger_id INTEGER",
-        "ALTER TABLE sales_dispatch ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE de_heading ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE peeling ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-        "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS salary_adjustment_reason TEXT",
-        "ALTER TABLE employee_statutory_master ADD COLUMN IF NOT EXISTS eps_applicable BOOLEAN DEFAULT TRUE",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS brand VARCHAR(150)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS packing_style VARCHAR(150)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS freezer VARCHAR(150)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS count_glaze VARCHAR(100)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS weight_glaze VARCHAR(100)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS species VARCHAR(150)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS variety VARCHAR(150)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS grade VARCHAR(100)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100)",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0",
-        "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS items_json TEXT",
-        """
-        CREATE TABLE IF NOT EXISTS employee_salary_advance_recovery (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            employee_id VARCHAR(50) NOT NULL,
-            advance_id INTEGER NOT NULL,
-            salary_processing_id INTEGER,
-            month_year VARCHAR(7) NOT NULL,
-            amount DOUBLE PRECISION DEFAULT 0 NOT NULL,
-            status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL,
-            recovered_at TIMESTAMP,
-            reversed_at TIMESTAMP,
-            CONSTRAINT uq_advance_recovery_month UNIQUE (company_id, advance_id, month_year)
-        )
-        """,
-        "CREATE INDEX IF NOT EXISTS ix_advance_recovery_employee ON employee_salary_advance_recovery (company_id, employee_id, month_year)",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_date DATE",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS utr_reference VARCHAR(50)",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS paid_amount DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS epf_employer DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS eps_employer DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS edli_employer DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_journal_id INTEGER",
-        """
-        CREATE TABLE IF NOT EXISTS salary_payment_logs (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            salary_id INTEGER NOT NULL,
-            employee_id VARCHAR(50),
-            employee_name VARCHAR(150),
-            month_year VARCHAR(7) NOT NULL,
-            paid_amount DOUBLE PRECISION DEFAULT 0,
-            payment_mode VARCHAR(20) DEFAULT 'BANK',
-            payment_date DATE,
-            utr_reference VARCHAR(50),
-            payment_status VARCHAR(20) DEFAULT 'PARTIAL',
-            journal_id INTEGER,
-            bank_cash_ledger_id INTEGER,
-            is_cancelled BOOLEAN DEFAULT FALSE,
-            created_by VARCHAR(150),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER",
-        "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE",
-        "CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)",
-    ]
-    for statement in statements:
-        db.execute(text(statement))
-    db.flush()
+    global _BILL_ACCOUNTING_SCHEMA_ENSURED
+    if _BILL_ACCOUNTING_SCHEMA_ENSURED:
+        return
+
+    with _BILL_ACCOUNTING_SCHEMA_LOCK:
+        if _BILL_ACCOUNTING_SCHEMA_ENSURED:
+            return
+
+        statements = [
+            "ALTER TABLE diesel_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
+            "ALTER TABLE diesel_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE purchase_invoices ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
+            "ALTER TABLE purchase_invoices ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE container_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
+            "ALTER TABLE container_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
+            "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS product_name VARCHAR(150)",
+            "ALTER TABLE qa_testing_logs ADD COLUMN IF NOT EXISTS parameters TEXT",
+            "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT'",
+            "ALTER TABLE other_expenses ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS cogs_journal_id INTEGER",
+            "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS customer_ledger_id INTEGER",
+            "ALTER TABLE commercial_invoices ADD COLUMN IF NOT EXISTS sales_ledger_id INTEGER",
+            "ALTER TABLE sales_dispatch ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE de_heading ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE peeling ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+            "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE daily_attendance ADD COLUMN IF NOT EXISTS salary_adjustment_reason TEXT",
+            "ALTER TABLE employee_statutory_master ADD COLUMN IF NOT EXISTS eps_applicable BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS quotation_id INTEGER",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS quotation_no VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS brand VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS packing_style VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS freezer VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS count_glaze VARCHAR(100)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS weight_glaze VARCHAR(100)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS species VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS variety VARCHAR(150)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS grade VARCHAR(100)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100)",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0",
+            "ALTER TABLE proforma_invoices ADD COLUMN IF NOT EXISTS items_json TEXT",
+            """
+            CREATE TABLE IF NOT EXISTS employee_salary_advance_recovery (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                employee_id VARCHAR(50) NOT NULL,
+                advance_id INTEGER NOT NULL,
+                salary_processing_id INTEGER,
+                month_year VARCHAR(7) NOT NULL,
+                amount DOUBLE PRECISION DEFAULT 0 NOT NULL,
+                status VARCHAR(20) DEFAULT 'ACTIVE' NOT NULL,
+                recovered_at TIMESTAMP,
+                reversed_at TIMESTAMP,
+                CONSTRAINT uq_advance_recovery_month UNIQUE (company_id, advance_id, month_year)
+            )
+            """,
+            "CREATE INDEX IF NOT EXISTS ix_advance_recovery_employee ON employee_salary_advance_recovery (company_id, employee_id, month_year)",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_date DATE",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS utr_reference VARCHAR(50)",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS paid_amount DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS epf_employer DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS eps_employer DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS edli_employer DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE salary_processing ADD COLUMN IF NOT EXISTS payment_journal_id INTEGER",
+            """
+            CREATE TABLE IF NOT EXISTS salary_payment_logs (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                salary_id INTEGER NOT NULL,
+                employee_id VARCHAR(50),
+                employee_name VARCHAR(150),
+                month_year VARCHAR(7) NOT NULL,
+                paid_amount DOUBLE PRECISION DEFAULT 0,
+                payment_mode VARCHAR(20) DEFAULT 'BANK',
+                payment_date DATE,
+                utr_reference VARCHAR(50),
+                payment_status VARCHAR(20) DEFAULT 'PARTIAL',
+                journal_id INTEGER,
+                bank_cash_ledger_id INTEGER,
+                is_cancelled BOOLEAN DEFAULT FALSE,
+                created_by VARCHAR(150),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER",
+            "ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE",
+            "CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)",
+        ]
+        try:
+            for statement in statements:
+                db.execute(text(statement))
+            db.flush()
+            _BILL_ACCOUNTING_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Bill accounting schema check failed: %s", exc)
 
 
 def amount_line(

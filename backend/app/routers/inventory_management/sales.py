@@ -9,7 +9,7 @@ from app.utils.timezone import ist_now
 
 # Database and Models
 from app.database import get_db
-from app.database.models.inventory_management import sales_dispatch, stock_entry
+from app.database.models.inventory_management import sales_dispatch, stock_entry, pending_orders
 from app.database.models.criteria import packing_styles, production_for
 from app.database.models.bills import ContainerLog, PurchaseInvoice
 from app.utils.global_filters import get_global_filters
@@ -155,16 +155,14 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
                 func.trim(sales_dispatch.production_at) == ""
             )
         )
-    # Permanently delete invalid/empty records from sales_dispatch table in DB
-    # (Removes records if invoice_no, po_number, buyer_name, container_no, or shipping_bill are blank)
+    # Shipping bill and container number are optional while dispatch logistics
+    # are pending, so only remove rows missing core dispatch identifiers.
     empty_records = db.query(sales_dispatch).filter(
         sales_dispatch.company_id == company_code,
         or_(
             sales_dispatch.invoice_no == None, func.trim(sales_dispatch.invoice_no) == "",
             sales_dispatch.po_number == None, func.trim(sales_dispatch.po_number) == "",
-            sales_dispatch.buyer_name == None, func.trim(sales_dispatch.buyer_name) == "",
-            sales_dispatch.container_no == None, func.trim(sales_dispatch.container_no) == "",
-            sales_dispatch.shipping_bill == None, func.trim(sales_dispatch.shipping_bill) == ""
+            sales_dispatch.buyer_name == None, func.trim(sales_dispatch.buyer_name) == ""
         )
     ).all()
     if empty_records:
@@ -173,6 +171,22 @@ def sales_report(request: Request, db: Session = Depends(get_db)):
         db.commit()
 
     raw_sales_data = sales_q.order_by(sales_dispatch.po_number, sales_dispatch.invoice_date.desc(), sales_dispatch.id.asc()).all()
+
+    # Older dispatch rows predate the freezer column. Restore that product
+    # attribute from the matching Pending Order line when it is still blank.
+    pending_rows = db.query(pending_orders).filter(pending_orders.company_id == company_code).all()
+    def product_key(row):
+        return tuple(str(getattr(row, field, "") or "").strip().upper() for field in (
+            "po_number", "brand", "packing_style", "variety", "grade",
+        ))
+    pending_freezers = {
+        product_key(row): row.freezer
+        for row in pending_rows
+        if row.freezer and product_key(row)
+    }
+    for row in raw_sales_data:
+        if not row.freezer:
+            row.freezer = pending_freezers.get(product_key(row)) or row.freezer
 
     # 🟢 Auto Deduplication: Delete any duplicate/double entries permanently from DB
     seen_keys = set()
@@ -386,6 +400,7 @@ async def update_exchange_rate(request: Request, db: Session = Depends(get_db)):
         "new_inr": round(total_inr, 2), 
         "new_pl": round(sale_item.profit_loss, 2)
     }
+
 
 # -------------------------------------------------------------------------
 # 3️⃣ STATUS UPDATE ROUTES (AJAX)

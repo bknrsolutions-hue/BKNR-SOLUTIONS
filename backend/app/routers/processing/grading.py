@@ -97,16 +97,31 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         )
 
 
+import threading
+
+_GRADING_COLUMNS_ENSURED = False
+_GRADING_COLUMNS_LOCK = threading.Lock()
+
+
 def ensure_grading_columns_exist(db: Session):
-    try:
-        db.execute(text("""
-            ALTER TABLE grading 
-            ADD COLUMN IF NOT EXISTS quantity_expr VARCHAR(500);
-        """))
-        db.commit()
-    except Exception as exc:
-        db.rollback()
-        logger.warning("Auto-adding quantity_expr column to grading failed: %s", exc)
+    global _GRADING_COLUMNS_ENSURED
+    if _GRADING_COLUMNS_ENSURED:
+        return
+
+    with _GRADING_COLUMNS_LOCK:
+        if _GRADING_COLUMNS_ENSURED:
+            return
+
+        try:
+            db.execute(text("""
+                ALTER TABLE grading 
+                ADD COLUMN IF NOT EXISTS quantity_expr VARCHAR(500);
+            """))
+            db.commit()
+            _GRADING_COLUMNS_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Auto-adding quantity_expr column to grading failed: %s", exc)
 
 
 def _render_grading_page(request: Request, db: Session):

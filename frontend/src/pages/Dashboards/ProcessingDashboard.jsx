@@ -47,6 +47,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
     if (cat === 'ATT_INSIDE') return list.filter(w => w.status === 'OPEN');
     if (cat === 'ATT_AWAY') return list.filter(w => w.status === 'AWAY');
     if (cat === 'ATT_DOUBLE_OT') return list.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
+    if (cat.startsWith('SHIFT_')) {
+      const shiftName = cat.replace('SHIFT_', '');
+      return list.filter(w => w.shift_name && w.shift_name.trim().toUpperCase() === shiftName.trim().toUpperCase());
+    }
     return list.filter(w => w.category === cat);
   };
 
@@ -105,14 +109,18 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
   // Fetch Dashboard Stats on Filter Change
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      setSelectedDate(todayIso());
+      return;
+    }
 
     const controller = new AbortController();
     const loadingTimer = window.setTimeout(() => {
       setLoading(true);
       setError('');
     }, 200);
-    let url = `/dashboard/processing_dashboard?format=json&from_date=${selectedDate}&to_date=${selectedDate}&hour_date=${selectedDate}`;
+    const queryDate = selectedDate || todayIso();
+    let url = `/dashboard/processing_dashboard?format=json&from_date=${queryDate}&to_date=${queryDate}&hour_date=${queryDate}`;
     if (selectedCompany) url += `&production_for=${encodeURIComponent(selectedCompany)}`;
     if (selectedLocation) url += `&location=${encodeURIComponent(selectedLocation)}`;
 
@@ -161,73 +169,94 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   useEffect(() => {
     if (!data) return;
 
-    const currentTheme = theme || document.documentElement.getAttribute("data-theme") || 'dark';
-    const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
-    const labelColor = currentTheme === 'dark' ? '#94a3b8' : '#475569';
+    let isSubscribed = true;
 
-    const chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: gridColor },
-          ticks: {
-            color: labelColor,
-            font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
-          }
-        },
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: labelColor,
-            font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+    const renderCharts = () => {
+      if (!isSubscribed || !window.Chart) return;
+      const currentTheme = theme || document.documentElement.getAttribute("data-theme") || 'dark';
+      const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
+      const labelColor = currentTheme === 'dark' ? '#94a3b8' : '#475569';
+
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor },
+            ticks: {
+              color: labelColor,
+              font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: labelColor,
+              font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+            }
           }
         }
+      };
+
+      const labels = data.hourly_labels || Array.from({ length: 24 }, (_, i) => `${i}:00`);
+
+      // De-heading
+      if (dhChartInstance.current) dhChartInstance.current.destroy();
+      if (dhCanvasRef.current) {
+        dhChartInstance.current = new window.Chart(dhCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.dh_hourly_data || [], backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
+      }
+
+      // Peeling
+      if (peelingChartInstance.current) peelingChartInstance.current.destroy();
+      if (peelingCanvasRef.current) {
+        peelingChartInstance.current = new window.Chart(peelingCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.peeling_hourly_data || [], backgroundColor: '#10b981', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
+      }
+
+      // Production
+      if (prodChartInstance.current) prodChartInstance.current.destroy();
+      if (prodCanvasRef.current) {
+        prodChartInstance.current = new window.Chart(prodCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.prod_hourly_data || [], backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
       }
     };
 
-    // De-heading
-    if (dhChartInstance.current) dhChartInstance.current.destroy();
-    if (dhCanvasRef.current && window.Chart) {
-      dhChartInstance.current = new window.Chart(dhCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.dh_hourly_data, backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
-    }
-
-    // Peeling
-    if (peelingChartInstance.current) peelingChartInstance.current.destroy();
-    if (peelingCanvasRef.current && window.Chart) {
-      peelingChartInstance.current = new window.Chart(peelingCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.peeling_hourly_data, backgroundColor: '#10b981', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
-    }
-
-    // Production
-    if (prodChartInstance.current) prodChartInstance.current.destroy();
-    if (prodCanvasRef.current && window.Chart) {
-      prodChartInstance.current = new window.Chart(prodCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.prod_hourly_data, backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
+    if (window.Chart) {
+      renderCharts();
+    } else {
+      let script = document.getElementById('chartjs-cdn-script');
+      if (!script) {
+        script = document.createElement('script');
+        script.id = 'chartjs-cdn-script';
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        document.head.appendChild(script);
+      }
+      script.addEventListener('load', renderCharts);
     }
 
     return () => {
+      isSubscribed = false;
       if (dhChartInstance.current) dhChartInstance.current.destroy();
       if (peelingChartInstance.current) peelingChartInstance.current.destroy();
       if (prodChartInstance.current) prodChartInstance.current.destroy();
@@ -470,7 +499,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           <div className="erp-horizontal-filter-row" style={filterToolbarStyle}>
             <div style={filterGroupStyle}>
               <label style={filterLabelStyle}>Dashboard Date</label>
-              <input type="date" style={filterInputStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
+              <input
+                type="date"
+                style={filterInputStyle}
+                value={selectedDate}
+                onChange={e => {
+                  const val = e.target.value;
+                  setSelectedDate(val ? val : todayIso());
+                }}
+              />
             </div>
             <div style={filterGroupStyle}>
               <label style={filterLabelStyle}>Production For (Company)</label>
@@ -694,7 +731,16 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
             </div>
 
             {data?.shift_kpis?.map((sk, idx) => (
-              <div key={idx} style={{ ...attendanceCardStyle, width: '200px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }} className="card erp-inline-kpi-card kpi-blue">
+              <div
+                key={idx}
+                style={{ ...attendanceCardStyle, width: '200px', flexDirection: 'column', alignItems: 'stretch', gap: '8px', cursor: 'pointer' }}
+                className="card erp-inline-kpi-card kpi-blue"
+                role="button"
+                tabIndex="0"
+                title={`View ${sk.name} Workers List`}
+                onClick={() => openWorkerModal(`SHIFT_${sk.name.trim().toUpperCase()}`, `${sk.name} — Workers List`)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal(`SHIFT_${sk.name.trim().toUpperCase()}`, `${sk.name} — Workers List`); }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={kpiLabelStyle}>{sk.name}</div>
                   <div style={{ ...kpiIconWrapperStyle, width: '28px', height: '28px', fontSize: '13px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>

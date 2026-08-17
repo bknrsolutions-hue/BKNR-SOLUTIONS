@@ -20,26 +20,48 @@ router = APIRouter(tags=["GENERAL STOCK"])
 templates = Jinja2Templates(directory="app/templates")
 
 
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+_GENERAL_STOCK_SCHEMA_ENSURED = False
+_GENERAL_STOCK_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_general_stock_accounting_schema(db: Session) -> None:
-    statements = [
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(100)",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS unit_id INTEGER",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS po_number VARCHAR(100)",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS vendor_id INTEGER",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS vendor_name VARCHAR(255)",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS hsn_code VARCHAR(50)",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS gst_percent DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS tax_amount DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS total_amount DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS accounting_ledger_id INTEGER",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS rate DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION DEFAULT 0",
-        "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS journal_id INTEGER",
-    ]
-    for statement in statements:
-        db.execute(text(statement))
-    db.flush()
+    global _GENERAL_STOCK_SCHEMA_ENSURED
+    if _GENERAL_STOCK_SCHEMA_ENSURED:
+        return
+
+    with _GENERAL_STOCK_SCHEMA_LOCK:
+        if _GENERAL_STOCK_SCHEMA_ENSURED:
+            return
+
+        statements = [
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS invoice_number VARCHAR(100)",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS unit_id INTEGER",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS po_number VARCHAR(100)",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS vendor_id INTEGER",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS vendor_name VARCHAR(255)",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS hsn_code VARCHAR(50)",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS gst_percent DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS tax_amount DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS total_amount DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS accounting_ledger_id INTEGER",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS rate DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION DEFAULT 0",
+            "ALTER TABLE general_stock ADD COLUMN IF NOT EXISTS journal_id INTEGER",
+        ]
+        try:
+            for statement in statements:
+                db.execute(text(statement))
+            db.flush()
+            _GENERAL_STOCK_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("General stock schema check failed: %s", exc)
 
 
 def item_accounting_profile(item_name: str):

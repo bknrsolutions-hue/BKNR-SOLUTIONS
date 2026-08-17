@@ -74,12 +74,31 @@ def clean_filter_value(value):
     return value
 
 
+import threading
+
+_HR_DASHBOARD_SCHEMA_ENSURED = False
+_HR_DASHBOARD_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_hr_dashboard_schema(db: Session) -> None:
-    db.execute(text(
-        "ALTER TABLE daily_attendance "
-        "ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0"
-    ))
-    db.flush()
+    global _HR_DASHBOARD_SCHEMA_ENSURED
+    if _HR_DASHBOARD_SCHEMA_ENSURED:
+        return
+
+    with _HR_DASHBOARD_SCHEMA_LOCK:
+        if _HR_DASHBOARD_SCHEMA_ENSURED:
+            return
+
+        try:
+            db.execute(text(
+                "ALTER TABLE daily_attendance "
+                "ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0"
+            ))
+            db.flush()
+            _HR_DASHBOARD_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("HR dashboard schema check failed: %s", exc)
 
 
 def get_shift_required_hours(db: Session, company_id: str, shift_name: str) -> float:

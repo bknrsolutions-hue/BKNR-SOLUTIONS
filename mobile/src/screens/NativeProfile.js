@@ -25,7 +25,7 @@ const resolveLogoUrl = value => value
   ? (/^https?:\/\//i.test(value) ? value : `${API_URL}${value}`)
   : '';
 
-export default function NativeProfile({ filters = {}, onBack, onProfileUpdated }) {
+export default function NativeProfile({ filters = {}, onBack, onProfileUpdated, onLogout }) {
   const { theme } = useERPTheme();
   const [profile, setProfile] = useState(emptyProfile);
   const [loading, setLoading] = useState(true);
@@ -127,6 +127,13 @@ export default function NativeProfile({ filters = {}, onBack, onProfileUpdated }
         <ProfileRow label="Working Location" icon="map-marker-outline" theme={theme} value={profile.working_location} />
         <ProfileRow label="Address" icon="home-map-marker" theme={theme} value={profile.address || 'Please update'} attention={!profile.address} last />
       </View>
+
+      {onLogout ? (
+        <Pressable onPress={onLogout} style={styles.logoutBtn}>
+          <MaterialCommunityIcons name="logout" size={20} color="#ffffff" />
+          <Text style={styles.logoutBtnText}>LOGOUT FROM ACCOUNT</Text>
+        </Pressable>
+      ) : null}
     </>}
   </Screen>;
 }
@@ -166,4 +173,6 @@ const styles = StyleSheet.create({
   logoButtonSecondary: { borderWidth: 1, backgroundColor: 'transparent' },
   logoButtonSecondaryText: { fontSize: 10, fontWeight: '900', textTransform: 'uppercase' },
   logoMessage: { marginTop: 7, fontSize: 9.5, fontWeight: '750' },
+  logoutBtn: { marginTop: 18, marginBottom: 40, width: '100%', height: 50, borderRadius: 14, backgroundColor: '#dc2626', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, shadowColor: '#dc2626', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6, elevation: 4 },
+  logoutBtnText: { color: '#ffffff', fontSize: 13, fontWeight: '900', letterSpacing: 0.5 },
 });

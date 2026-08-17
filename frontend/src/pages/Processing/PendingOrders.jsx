@@ -194,6 +194,7 @@ export default function PendingOrders() {
     const poRows = activeRows.filter(row => row.po_number === poNum);
     setSelectedPo(poNum);
     setLoadedAssortment(poRows.map(row => ({
+      id: row.id,
       buyer: row.buyer || '', brand: row.brand || '', packing_style: row.packing_style || '',
       freezer: row.freezer || '', count_glaze: row.count_glaze || '', weight_glaze: row.weight_glaze || '',
       variety: row.variety || '', grade: row.grade || '', no_of_mc: row.no_of_mc ?? 0,

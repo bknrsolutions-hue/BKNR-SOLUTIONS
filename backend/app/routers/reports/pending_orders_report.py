@@ -252,7 +252,7 @@ def pending_orders_report_page(
     # 100% Data Consistency with Pending Orders Form: Include all active pending orders
     # rows are preserved so report matches the entry form exactly
 
-    comp_obj = db.query(Company).filter(func.lower(Company.company_id) == comp_code.lower()).first()
+    comp_obj = db.query(Company).filter(func.lower(Company.company_code) == comp_code.lower()).first()
     approval_code = comp_obj.mpeda_registration_code if comp_obj and comp_obj.mpeda_registration_code else "2162"
 
     # Template Response

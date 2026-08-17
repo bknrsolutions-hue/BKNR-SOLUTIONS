@@ -407,14 +407,107 @@ async def get_inventory_dashboard(
 
     rate_map = {gk: (v["sum_val"] / v["sum_qty"] if abs(v["sum_qty"]) > 0.01 else 0.0) for gk, v in global_item_rates.items()}
 
+    # Aggregate Pending Orders Demand for Order Against Stock Tab
+    from app.database.models.inventory_management import pending_orders
+    from app.database.models.criteria import packing_styles
+
+    p_orders_q = db.query(pending_orders).filter(
+        pending_orders.company_id == comp_code,
+        or_(
+            pending_orders.progress_steps.is_(None),
+            not_(pending_orders.progress_steps.ilike("%completed%"))
+        )
+    )
+    if g_prod_clean and g_prod_clean != "ALL":
+        p_orders_q = p_orders_q.filter(func.upper(func.trim(pending_orders.company_name)) == g_prod_clean)
+    if sel_species != "ALL": p_orders_q = p_orders_q.filter(pending_orders.species == sel_species)
+    if sel_variety != "ALL": p_orders_q = p_orders_q.filter(pending_orders.variety == sel_variety)
+    if sel_grade != "ALL": p_orders_q = p_orders_q.filter(pending_orders.grade == sel_grade)
+    if sel_prod_for != "ALL": p_orders_q = p_orders_q.filter(pending_orders.company_name == sel_prod_for)
+
+    p_orders = p_orders_q.all()
+
+    p_styles_map = {
+        str(ps.packing_style).strip().lower(): float(ps.mc_weight or 1.0)
+        for ps in db.query(packing_styles).filter(packing_styles.company_id == comp_code).all()
+    }
+
+    def norm_spec(val):
+        if not val: return ""
+        s = str(val).upper().strip()
+        s = s.replace("GRADE GLAZE%", "").replace("WEIGHT GLAZE%", "").strip()
+        return re.sub(r'[^A-Z0-9]', '', s)
+
+    pending_order_agg = defaultdict(lambda: {
+        "order_mc": 0, "order_qty": 0.0,
+        "raw_sp": "", "raw_vr": "", "raw_gr": "", "raw_frz": "", "raw_gl": "", "raw_pk": "", "raw_pfor": ""
+    })
+
+    for po in p_orders:
+        sp_c = str(po.species or "N/A").strip()
+        vr_c = str(po.variety or "N/A").strip()
+        gr_c = str(po.grade or "N/A").strip()
+        frz_c = str(po.freezer or "IQF").strip()
+        gl_c = str(po.count_glaze or po.weight_glaze or "NW").strip()
+        pk_c = str(po.packing_style or "N/A").strip()
+        pfor_c = str(po.company_name or "N/A").strip()
+
+        mc_cnt = int(po.no_of_mc or 0)
+        mc_wt = p_styles_map.get(pk_c.lower(), 1.0)
+        ord_kg = mc_cnt * mc_wt if mc_cnt > 0 else 0.0
+
+        po_key = (
+            norm_spec(pfor_c),
+            norm_spec(sp_c),
+            norm_spec(vr_c),
+            norm_spec(gr_c),
+            norm_spec(frz_c),
+            norm_spec(gl_c),
+            norm_spec(pk_c)
+        )
+        p_agg = pending_order_agg[po_key]
+        p_agg["order_mc"] += mc_cnt
+        p_agg["order_qty"] += ord_kg
+        p_agg["raw_sp"] = sp_c
+        p_agg["raw_vr"] = vr_c
+        p_agg["raw_gr"] = gr_c
+        p_agg["raw_frz"] = frz_c
+        p_agg["raw_gl"] = gl_c
+        p_agg["raw_pk"] = pk_c
+        p_agg["raw_pfor"] = pfor_c
+
     stock_table_data = []
     total_inventory_value = 0.0
+    matched_po_keys = set()
+
     for (loc, fr, vr, pk, gl, gr, p_for), data in table_grouping.items():
         if abs(data["qty"]) > 0.01 or abs(data["opening_qty"]) > 0.01:
             g_key = (data["sp"], vr, pk, gl, gr, p_for)
             avg_rate = rate_map.get(g_key, 0.0)
             inv_value = data["qty"] * avg_rate
             total_inventory_value += inv_value
+
+            stock_key = (
+                norm_spec(p_for),
+                norm_spec(data["sp"]),
+                norm_spec(vr),
+                norm_spec(gr),
+                norm_spec(fr),
+                norm_spec(gl),
+                norm_spec(pk)
+            )
+
+            po_info = None
+            if stock_key not in matched_po_keys:
+                po_info = pending_order_agg.get(stock_key)
+
+            if po_info:
+                matched_po_keys.add(stock_key)
+                ord_mc = po_info["order_mc"]
+                ord_qty = round(po_info["order_qty"], 2)
+            else:
+                ord_mc = 0
+                ord_qty = 0.0
 
             stock_table_data.append({
                 "loc": loc, "fr": fr, "sp": data["sp"], "vr": vr, "pk": pk, "gl": gl, "gr": gr,
@@ -423,7 +516,32 @@ async def get_inventory_dashboard(
                 "in_qty": round(data["in_qty"], 2), "out_qty": round(data["out_qty"], 2),
                 "qty": round(data["qty"], 2), "mc": data["mc"], "loose": data["loose"],
                 "avg_rate": round(abs(avg_rate), 2), "value": round(inv_value, 2),
-                "ageing_days": data["ageing_days"]
+                "ageing_days": data["ageing_days"],
+                "order_mc": ord_mc,
+                "order_qty": ord_qty,
+                "net_bal_qty": round(data["qty"] - ord_qty, 2),
+                "net_bal_mc": data["mc"] - ord_mc,
+                "has_stock": True
+            })
+
+    for po_key, po_info in pending_order_agg.items():
+        if po_key not in matched_po_keys and po_info["order_mc"] > 0:
+            ord_mc = po_info["order_mc"]
+            ord_qty = round(po_info["order_qty"], 2)
+            stock_table_data.append({
+                "loc": "MAIN UNIT", "fr": po_info["raw_frz"] or "IQF", "sp": po_info["raw_sp"], "vr": po_info["raw_vr"], 
+                "pk": po_info["raw_pk"], "gl": po_info["raw_gl"] or "NW", "gr": po_info["raw_gr"],
+                "production_for": po_info["raw_pfor"], "opening_qty": 0.0,
+                "opening_mc": 0, "opening_loose": 0,
+                "in_qty": 0.0, "out_qty": 0.0,
+                "qty": 0.0, "mc": 0, "loose": 0,
+                "avg_rate": 0.0, "value": 0.0,
+                "ageing_days": 0,
+                "order_mc": ord_mc,
+                "order_qty": ord_qty,
+                "net_bal_qty": round(0.0 - ord_qty, 2),
+                "net_bal_mc": 0 - ord_mc,
+                "has_stock": False
             })
 
     stock_table_data.sort(key=lambda x: (x["loc"], x["sp"], x["vr"], x["gr"]))

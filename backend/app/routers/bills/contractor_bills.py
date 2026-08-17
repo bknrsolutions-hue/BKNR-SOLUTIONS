@@ -42,11 +42,33 @@ class ContractorPaymentPayload(BaseModel):
     bank_cash_ledger_id: int | None = None
 
 
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+_CONTRACTOR_PAYMENT_SCHEMA_ENSURED = False
+_CONTRACTOR_PAYMENT_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_contractor_payment_schema(db: Session) -> None:
-    ContractorBillPayment.__table__.create(bind=db.get_bind(), checkfirst=True)
-    ensure_bill_accounting_schema(db)
-    db.execute(text("ALTER TABLE contractor_bill_payments ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
-    db.flush()
+    global _CONTRACTOR_PAYMENT_SCHEMA_ENSURED
+    if _CONTRACTOR_PAYMENT_SCHEMA_ENSURED:
+        return
+
+    with _CONTRACTOR_PAYMENT_SCHEMA_LOCK:
+        if _CONTRACTOR_PAYMENT_SCHEMA_ENSURED:
+            return
+
+        try:
+            ContractorBillPayment.__table__.create(bind=db.get_bind(), checkfirst=True)
+            ensure_bill_accounting_schema(db)
+            db.execute(text("ALTER TABLE contractor_bill_payments ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
+            db.flush()
+            _CONTRACTOR_PAYMENT_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Contractor payment schema check failed: %s", exc)
 
 
 def bank_cash_ledgers(db: Session, company_id: str):

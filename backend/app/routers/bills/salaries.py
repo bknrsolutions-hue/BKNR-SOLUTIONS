@@ -38,33 +38,55 @@ class SalaryPaymentPayload(BaseModel):
     bank_cash_ledger_id: int | None = None
 
 
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+_SALARY_PAYMENT_SCHEMA_ENSURED = False
+_SALARY_PAYMENT_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_salary_payment_log_schema(db: Session) -> None:
-    ensure_bill_accounting_schema(db)
-    db.execute(text("""
-        CREATE TABLE IF NOT EXISTS salary_payment_logs (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            salary_id INTEGER NOT NULL,
-            employee_id VARCHAR(50),
-            employee_name VARCHAR(150),
-            month_year VARCHAR(7) NOT NULL,
-            paid_amount DOUBLE PRECISION DEFAULT 0,
-            payment_mode VARCHAR(20) DEFAULT 'BANK',
-            payment_date DATE,
-            utr_reference VARCHAR(50),
-            payment_status VARCHAR(20) DEFAULT 'PARTIAL',
-            journal_id INTEGER,
-            bank_cash_ledger_id INTEGER,
-            is_cancelled BOOLEAN DEFAULT FALSE,
-            created_by VARCHAR(150),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """))
-    db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
-    db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE"))
-    db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_company_month ON salary_payment_logs(company_id, month_year)"))
-    db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)"))
-    db.flush()
+    global _SALARY_PAYMENT_SCHEMA_ENSURED
+    if _SALARY_PAYMENT_SCHEMA_ENSURED:
+        return
+
+    with _SALARY_PAYMENT_SCHEMA_LOCK:
+        if _SALARY_PAYMENT_SCHEMA_ENSURED:
+            return
+
+        try:
+            ensure_bill_accounting_schema(db)
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS salary_payment_logs (
+                    id SERIAL PRIMARY KEY,
+                    company_id VARCHAR(50) NOT NULL,
+                    salary_id INTEGER NOT NULL,
+                    employee_id VARCHAR(50),
+                    employee_name VARCHAR(150),
+                    month_year VARCHAR(7) NOT NULL,
+                    paid_amount DOUBLE PRECISION DEFAULT 0,
+                    payment_mode VARCHAR(20) DEFAULT 'BANK',
+                    payment_date DATE,
+                    utr_reference VARCHAR(50),
+                    payment_status VARCHAR(20) DEFAULT 'PARTIAL',
+                    journal_id INTEGER,
+                    bank_cash_ledger_id INTEGER,
+                    is_cancelled BOOLEAN DEFAULT FALSE,
+                    created_by VARCHAR(150),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
+            db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_company_month ON salary_payment_logs(company_id, month_year)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)"))
+            db.flush()
+            _SALARY_PAYMENT_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Salary payment log schema check failed: %s", exc)
 
 
 def salary_payment_history(db: Session, company_id: str, salary_id: int):

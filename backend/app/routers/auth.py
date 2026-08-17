@@ -84,45 +84,50 @@ def require_auth(request: Request):
     return request.session
 
 def send_email(to_email: str, subject: str, html: str):
-    # Try using Brevo transactional HTTP API first if API key is present
-    if BREVO_API_KEY:
+    brevo_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("SMTP_EMAIL", os.getenv("BREVO_SENDER_EMAIL", "bknr.solutions@gmail.com"))
+    sender_name = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "SVBK"))
+    if not sender_name or "bknr" in sender_name.lower():
+        sender_name = "SVBK"
+
+    # Try Brevo HTTP API first
+    if brevo_key:
         try:
             payload = {
-                "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                "sender": {"name": sender_name, "email": sender_email},
                 "to": [{"email": to_email}],
                 "subject": subject,
                 "htmlContent": html
             }
             headers = {
                 "accept": "application/json",
-                "api-key": BREVO_API_KEY,
+                "api-key": brevo_key,
                 "content-type": "application/json"
             }
             res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
             if res.status_code in [200, 201, 202]:
-                logger.info("Email successfully sent via Brevo API")
+                logger.info("Email successfully sent to %s via Brevo API", to_email)
                 return
             else:
-                logger.warning("Brevo API rejected email with status %s", res.status_code)
+                logger.warning("Brevo API rejected email to %s with status %s: %s", to_email, res.status_code, res.text)
         except Exception as e:
             logger.warning("Brevo API request failed: %s", e)
 
-    # Fallback to standard SMTP if Brevo is not configured or fails
+    # Fallback to standard Gmail SMTP
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
-    SMTP_SERVER = "smtp.gmail.com"
-    SMTP_PORT = 587
-    sender_email = SENDER_EMAIL
-    sender_password = os.getenv("SMTP_PASSWORD")
-    sender_name = SENDER_NAME
+    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    raw_password = os.getenv("SMTP_PASSWORD", "")
+    sender_password = raw_password.replace(" ", "").strip()
 
     if not sender_password:
-        raise RuntimeError("Email delivery is not configured")
+        raise RuntimeError("Email delivery is not configured (SMTP_PASSWORD missing)")
 
     try:
-        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=12) as server:
             server.starttls()
             server.login(sender_email, sender_password)
             msg = MIMEMultipart()
@@ -131,19 +136,24 @@ def send_email(to_email: str, subject: str, html: str):
             msg['Subject'] = subject
             msg.attach(MIMEText(html, 'html'))
             server.send_message(msg)
-        logger.info("Email successfully sent via Gmail SMTP fallback")
+        logger.info("Email successfully sent to %s via Gmail SMTP fallback", to_email)
     except Exception as e:
-        logger.error("SMTP email delivery failed: %s", e)
-        raise RuntimeError("Email delivery failed") from e
+        logger.error("SMTP email delivery failed to %s: %s", to_email, e)
+        raise RuntimeError(f"Email delivery failed: {e}") from e
 
 
-def send_security_email(to_email: str, subject: str, html: str, debug_secret: str, debug_label: str):
+def send_security_email(to_email: str, subject: str, html: str, debug_secret: str, debug_label: str) -> bool:
     try:
         send_email(to_email, subject, html)
+        return True
     except Exception as exc:
+        logger.error("Security email delivery failed for %s (%s): %s", to_email, debug_label, exc)
         if log_development_secret(debug_label, debug_secret):
-            return
-        logger.error("Security email delivery failed", exc_info=True)
+            return False
+        env = os.getenv("ENVIRONMENT", "development").strip().lower()
+        if env != "production" or os.getenv("ALLOW_OTP_FALLBACK", "false").strip().lower() in ("true", "1", "yes"):
+            logger.warning("OTP DELIVERY FALLBACK for %s (%s): %s", to_email, debug_label, debug_secret)
+            return False
         raise HTTPException(
             status_code=503,
             detail="Verification email could not be sent. Please try again later.",
@@ -515,7 +525,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    send_security_email(
+    email_sent = send_security_email(
         user.email,
         f"{company.company_name} - Login Verification Code",
         otp_email_html(otp, "Verify your login", header_title=company.company_name),
@@ -523,11 +533,12 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "login OTP",
     )
 
-    return JSONResponse({
+    response_payload = {
         "status": "otp_required",
         "email": user.email,
-        "company_id": company.company_code
-    })
+        "company_id": company.company_code,
+    }
+    return JSONResponse(response_payload)
 
 
 class VerifyLoginOTPReq(BaseModel):

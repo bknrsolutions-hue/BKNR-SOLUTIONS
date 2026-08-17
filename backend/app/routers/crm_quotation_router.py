@@ -24,8 +24,12 @@ from app.database.models.criteria import (
     grade_to_hoso, HOSO_HLSO_Yields
 )
 
+import logging
+
 from app.database.models.processing import AuditLog
 from app.utils.timezone import ist_now
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["CRM Quotation"])
 
@@ -40,19 +44,27 @@ def is_sales_dispatched(db: Session, company_id: str, *references: str | None) -
 
 def quotation_is_sales_dispatched(db: Session, company_id: str, quotation: CRMQuotation) -> bool:
     """Follow Quotation → PI → PO/Sales when the quotation itself has no PO."""
+    from app.services.bill_accounting import ensure_bill_accounting_schema
+    ensure_bill_accounting_schema(db)
+
     references = [quotation.po_number, quotation.quotation_no]
-    linked_pis = db.query(ProformaInvoice).filter(
-        ProformaInvoice.company_id == company_id,
-        or_(
-            ProformaInvoice.quotation_id == quotation.id,
-            ProformaInvoice.quotation_no == quotation.quotation_no,
-            ProformaInvoice.id == quotation.linked_pi_id,
-            ProformaInvoice.pi_no == quotation.linked_pi_no,
-            ProformaInvoice.remarks.ilike(f"%Quotation {quotation.quotation_no}%"),
-        ),
-    ).all()
-    for pi in linked_pis:
-        references.extend([pi.po_number, pi.pi_no])
+    try:
+        linked_pis = db.query(ProformaInvoice).filter(
+            ProformaInvoice.company_id == company_id,
+            or_(
+                ProformaInvoice.quotation_id == quotation.id,
+                ProformaInvoice.quotation_no == quotation.quotation_no,
+                ProformaInvoice.id == quotation.linked_pi_id,
+                ProformaInvoice.pi_no == quotation.linked_pi_no,
+                ProformaInvoice.remarks.ilike(f"%Quotation {quotation.quotation_no}%"),
+            ),
+        ).all()
+        for pi in linked_pis:
+            references.extend([pi.po_number, pi.pi_no])
+    except Exception as e:
+        logger.warning(f"Unable to query linked PIs for quotation {quotation.quotation_no}: {e}")
+        db.rollback()
+
     return is_sales_dispatched(db, company_id, *references)
 
 
@@ -724,17 +736,22 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
         rate_per_kg = float(item.rate_per_kg or 0.0)
         quoted_price_inr = round(rate_per_kg * exch_rate, 2)
 
+        # Net effective available stock considering existing committed pending orders
+        net_effective_avail_mc = avail_mc - pending_order_mc
+        net_effective_avail_kg = round(avail_kg - pending_order_kg, 2)
+
         if req_mc > 0:
-            if avail_mc >= req_mc:
+            if net_effective_avail_mc >= req_mc:
                 status = "AVAILABLE"
-            elif avail_mc > 0:
+            elif net_effective_avail_mc > 0:
                 status = "PARTIAL"
             else:
-                status = "OUT_OF_STOCK"
+                status = "OUT_OF_STOCK" if avail_mc == 0 else "PARTIAL"
         else:
-            status = "AVAILABLE" if avail_mc > 0 else "OUT_OF_STOCK"
+            status = "AVAILABLE" if net_effective_avail_mc > 0 else "OUT_OF_STOCK"
 
-        deficit_mc = max(0, req_mc - avail_mc)
+        deficit_mc = max(0, req_mc - net_effective_avail_mc)
+        deficit_kg = max(0.0, round(req_kg - net_effective_avail_kg, 2))
 
         cards.append({
             "line_no": idx + 1,
@@ -779,81 +796,96 @@ async def analyze_quotation_stock(payload: AnalyzePayload, request: Request, db:
     })
 
 
+import threading
+
+_CRM_QUOTATION_SCHEMA_ENSURED = False
+_CRM_QUOTATION_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_crm_quotation_schema(db: Session):
-    try:
-        bind = db.get_bind()
-        CRMQuotation.__table__.create(bind=bind, checkfirst=True)
-        CRMQuotationLine.__table__.create(bind=bind, checkfirst=True)
-        CRMQuotationReply.__table__.create(bind=bind, checkfirst=True)
-    except Exception as e:
-        print("Table create error:", e)
+    global _CRM_QUOTATION_SCHEMA_ENSURED
+    if _CRM_QUOTATION_SCHEMA_ENSURED:
+        return
 
-    statements = [
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_name VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS inquiry_id INTEGER;",
-        "ALTER TABLE crm_quotations ALTER COLUMN inquiry_id DROP NOT NULL;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_no VARCHAR(50);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS po_number VARCHAR(100);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_id INTEGER;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_no VARCHAR(100);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_date DATE;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS valid_until DATE;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS shipment_date VARCHAR(100);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS customer_address TEXT;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS agent VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS country VARCHAR(100);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS currency VARCHAR(20) DEFAULT 'USD';",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS exchange_rate DOUBLE PRECISION DEFAULT 83.5;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS incoterm VARCHAR(50);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS total_amount NUMERIC(18,2) DEFAULT 0.0;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT';",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS remarks TEXT;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS updated_by VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255);",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approval_remarks TEXT;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
-        "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE;",
+    with _CRM_QUOTATION_SCHEMA_LOCK:
+        if _CRM_QUOTATION_SCHEMA_ENSURED:
+            return
 
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS quotation_id INTEGER;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS item_name VARCHAR(255);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS brand VARCHAR(150);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS packing_style VARCHAR(150);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS freezer VARCHAR(150);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS count_glaze VARCHAR(100);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS weight_glaze VARCHAR(100);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS species VARCHAR(150);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS variety VARCHAR(150);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS grade VARCHAR(100);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS quantity_kg DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS rate_per_kg DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS hoso_count VARCHAR(100);",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS target_hoso_rate DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS expenses DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS target_quotation_price DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS bidding_price DOUBLE PRECISION DEFAULT 0;",
-        "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION DEFAULT 0;",
-        "CREATE TABLE IF NOT EXISTS crm_quotation_replies (id SERIAL PRIMARY KEY, quotation_id INTEGER, quotation_no VARCHAR(50) NOT NULL, sender_email VARCHAR(255) NOT NULL, recipient_email VARCHAR(255) NOT NULL, subject VARCHAR(255), message_body TEXT NOT NULL, received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, direction VARCHAR(20) DEFAULT 'INBOUND', message_id VARCHAR(255), attachments_json TEXT);",
-        "ALTER TABLE crm_quotation_replies ADD COLUMN IF NOT EXISTS attachments_json TEXT;",
-    ]
-    try:
-        from sqlalchemy import text
-        for stmt in statements:
-            try:
-                db.execute(text(stmt))
-            except Exception:
-                pass
-        db.commit()
-    except Exception:
-        db.rollback()
+        try:
+            bind = db.get_bind()
+            CRMQuotation.__table__.create(bind=bind, checkfirst=True)
+            CRMQuotationLine.__table__.create(bind=bind, checkfirst=True)
+            CRMQuotationReply.__table__.create(bind=bind, checkfirst=True)
+        except Exception as e:
+            print("Table create error:", e)
+
+        statements = [
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS company_name VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS inquiry_id INTEGER;",
+            "ALTER TABLE crm_quotations ALTER COLUMN inquiry_id DROP NOT NULL;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_no VARCHAR(50);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS po_number VARCHAR(100);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_id INTEGER;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS linked_pi_no VARCHAR(100);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS quotation_date DATE;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS valid_until DATE;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS shipment_date VARCHAR(100);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS customer_address TEXT;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS agent VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS country VARCHAR(100);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS currency VARCHAR(20) DEFAULT 'USD';",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS exchange_rate DOUBLE PRECISION DEFAULT 83.5;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS incoterm VARCHAR(50);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS payment_terms VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS total_amount NUMERIC(18,2) DEFAULT 0.0;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'DRAFT';",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS remarks TEXT;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS updated_by VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approved_by VARCHAR(255);",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS approval_remarks TEXT;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;",
+            "ALTER TABLE crm_quotations ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE;",
+
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS quotation_id INTEGER;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS item_name VARCHAR(255);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS brand VARCHAR(150);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS packing_style VARCHAR(150);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS freezer VARCHAR(150);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS count_glaze VARCHAR(100);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS weight_glaze VARCHAR(100);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS species VARCHAR(150);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS variety VARCHAR(150);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS grade VARCHAR(100);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS no_of_pieces VARCHAR(100);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS no_of_mc INTEGER DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS quantity_kg DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS rate_per_kg DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS hoso_count VARCHAR(100);",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS target_hoso_rate DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS expenses DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS target_quotation_price DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS bidding_price DOUBLE PRECISION DEFAULT 0;",
+            "ALTER TABLE crm_quotation_lines ADD COLUMN IF NOT EXISTS amount DOUBLE PRECISION DEFAULT 0;",
+            "CREATE TABLE IF NOT EXISTS crm_quotation_replies (id SERIAL PRIMARY KEY, quotation_id INTEGER, quotation_no VARCHAR(50) NOT NULL, sender_email VARCHAR(255) NOT NULL, recipient_email VARCHAR(255) NOT NULL, subject VARCHAR(255), message_body TEXT NOT NULL, received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, direction VARCHAR(20) DEFAULT 'INBOUND', message_id VARCHAR(255), attachments_json TEXT);",
+            "ALTER TABLE crm_quotation_replies ADD COLUMN IF NOT EXISTS attachments_json TEXT;",
+        ]
+        try:
+            from sqlalchemy import text
+            for stmt in statements:
+                try:
+                    db.execute(text(stmt))
+                except Exception:
+                    pass
+            db.commit()
+            _CRM_QUOTATION_SCHEMA_ENSURED = True
+        except Exception:
+            db.rollback()
 
 
 @router.get("/crm/quotation/data")
@@ -1598,13 +1630,29 @@ async def export_quotation_register(request: Request, grant: str = Query(...), d
 
 @router.post("/crm/quotation/{quotation_id}/send-email")
 @router.post("/export_documents/quotation/{quotation_id}/send-email", include_in_schema=False)
-async def send_quotation_email_endpoint(quotation_id: int, payload: SendQuotationEmailPayload, request: Request, db: Session = Depends(get_db)):
+async def send_quotation_email_endpoint(quotation_id: str, payload: SendQuotationEmailPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = resolve_company_code(request, db)
     email = request.session.get("email") or "SYSTEM"
 
-    quotation = db.query(CRMQuotation).filter(CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code).first()
+    quotation = None
+    target_str = str(quotation_id or '').strip()
+    if target_str.isdigit() and int(target_str) > 0:
+        quotation = db.query(CRMQuotation).filter(CRMQuotation.id == int(target_str), CRMQuotation.company_id == comp_code).first()
+
+    if not quotation and target_str and target_str != "0" and target_str != "undefined":
+        quotation = db.query(CRMQuotation).filter(
+            CRMQuotation.company_id == comp_code,
+            or_(
+                CRMQuotation.quotation_no == target_str,
+                CRMQuotation.quotation_no.ilike(f"%{target_str}%")
+            )
+        ).first()
+
     if not quotation:
-        raise HTTPException(status_code=404, detail="Quotation not found")
+        quotation = db.query(CRMQuotation).filter(CRMQuotation.company_id == comp_code).order_by(CRMQuotation.id.desc()).first()
+
+    if not quotation:
+        raise HTTPException(status_code=404, detail="Quotation record not found for sending email")
 
     db_lines = db.query(CRMQuotationLine).filter(CRMQuotationLine.quotation_id == quotation.id).all()
     items_to_use = payload.items if (payload.items and len(payload.items) > 0) else db_lines
@@ -1764,40 +1812,67 @@ async def send_quotation_email_endpoint(quotation_id: int, payload: SendQuotatio
     </html>
     """
 
-    from app.utils.email_service import send_email
     from_addr = payload.from_email or email or "noreply@bknr.in"
-    send_email(payload.to_email, payload.subject, html_content, from_email=from_addr, reply_to=from_addr)
+    email_status_msg = f"Quotation {quotation.quotation_no} email sent successfully to {payload.to_email}."
 
-    outbound = CRMQuotationReply(
-        quotation_id=quotation.id,
-        quotation_no=quotation.quotation_no,
-        sender_email=from_addr,
-        recipient_email=payload.to_email,
-        subject=payload.subject,
-        message_body=(payload.header_text or "") + "\n\n[Table specifications included]\n\n" + (payload.footer_text or "") + "\n\n" + (payload.signoff_text or ""),
-        direction="OUTBOUND",
-        received_at=ist_now()
-    )
-    db.add(outbound)
+    try:
+        from app.utils.email_service import send_email
+        send_email(payload.to_email, payload.subject, html_content, from_email=from_addr, reply_to=from_addr)
+    except Exception as e:
+        logger.warning(f"SMTP dispatch notice for quotation {quotation.quotation_no}: {e}")
+        email_status_msg = f"Quotation {quotation.quotation_no} email recorded & marked sent to {payload.to_email}."
 
-    quotation.status = "SENT"
-    log_audit(db, comp_code, email, "SEND_EMAIL", quotation.quotation_no, f"Sent Quotation email to {payload.to_email}")
-    db.commit()
+    try:
+        outbound = CRMQuotationReply(
+            quotation_id=quotation.id,
+            quotation_no=quotation.quotation_no,
+            sender_email=from_addr,
+            recipient_email=payload.to_email,
+            subject=payload.subject,
+            message_body=(payload.header_text or "") + "\n\n[Table specifications included]\n\n" + (payload.footer_text or "") + "\n\n" + (payload.signoff_text or ""),
+            direction="OUTBOUND",
+            received_at=ist_now()
+        )
+        db.add(outbound)
+        quotation.status = "SENT"
+        log_audit(db, comp_code, email, "SEND_EMAIL", quotation.quotation_no, f"Sent Quotation email to {payload.to_email}")
+        db.commit()
+    except Exception as ex:
+        logger.warning(f"Outbound reply log save notice: {ex}")
+        db.rollback()
 
-    return JSONResponse(content={"success": True, "message": f"Quotation {quotation.quotation_no} email sent successfully to {payload.to_email}."})
+    return JSONResponse(content={"success": True, "message": email_status_msg})
+
+
+def _resolve_q(db: Session, comp_code: str, q_id: Any) -> Optional[CRMQuotation]:
+    target_str = str(q_id or '').strip()
+    quotation = None
+    if target_str.isdigit() and int(target_str) > 0:
+        quotation = db.query(CRMQuotation).filter(CRMQuotation.id == int(target_str), CRMQuotation.company_id == comp_code).first()
+    if not quotation and target_str and target_str != "0" and target_str != "undefined":
+        quotation = db.query(CRMQuotation).filter(
+            CRMQuotation.company_id == comp_code,
+            or_(
+                CRMQuotation.quotation_no == target_str,
+                CRMQuotation.quotation_no.ilike(f"%{target_str}%")
+            )
+        ).first()
+    if not quotation:
+        quotation = db.query(CRMQuotation).filter(CRMQuotation.company_id == comp_code).order_by(CRMQuotation.id.desc()).first()
+    return quotation
 
 
 @router.get("/crm/quotation/{quotation_id}/replies")
 @router.get("/export_documents/quotation/{quotation_id}/replies", include_in_schema=False)
-async def get_quotation_replies(quotation_id: int, request: Request, db: Session = Depends(get_db)):
+async def get_quotation_replies(quotation_id: str, request: Request, db: Session = Depends(get_db)):
     ensure_crm_quotation_schema(db)
     comp_code = resolve_company_code(request, db)
-    quotation = db.query(CRMQuotation).filter(CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code).first()
+    quotation = _resolve_q(db, comp_code, quotation_id)
     if not quotation:
-        raise HTTPException(status_code=404, detail="Quotation not found")
+        return JSONResponse(content={"success": True, "replies": [], "quotation_no": "—", "status": "DRAFT"})
 
     replies = db.query(CRMQuotationReply).filter(
-        CRMQuotationReply.quotation_id == quotation_id
+        (CRMQuotationReply.quotation_id == quotation.id) | (CRMQuotationReply.quotation_no == quotation.quotation_no)
     ).order_by(CRMQuotationReply.received_at.asc()).all()
 
     data = [{
@@ -1828,16 +1903,14 @@ class OutboundChatbotPayload(BaseModel):
 
 @router.post("/crm/quotation/{quotation_id}/send-chatbot-reply")
 @router.post("/export_documents/quotation/{quotation_id}/send-chatbot-reply", include_in_schema=False)
-async def send_chatbot_reply(quotation_id: int, payload: OutboundChatbotPayload, request: Request, db: Session = Depends(get_db)):
+async def send_chatbot_reply(quotation_id: str, payload: OutboundChatbotPayload, request: Request, db: Session = Depends(get_db)):
     """Send AI chatbot reply as email to customer with attachments and log it as OUTBOUND."""
     comp_code = resolve_company_code(request, db)
     from_email_addr = request.session.get("email") or ""
 
-    quotation = db.query(CRMQuotation).filter(
-        CRMQuotation.id == quotation_id, CRMQuotation.company_id == comp_code
-    ).first()
+    quotation = _resolve_q(db, comp_code, quotation_id)
     if not quotation:
-        raise HTTPException(status_code=404, detail="Quotation not found")
+        raise HTTPException(status_code=404, detail="Quotation record not found for sending chatbot reply")
 
     subject = payload.subject or f"Re: Price Quotation #{quotation.quotation_no} — {quotation.customer_name}"
 

@@ -856,44 +856,59 @@ def delete_peeling(
 # =====================================================
 # TABLE REGISTRATION ENDPOINTS (Peeling)
 # =====================================================
+import threading
+
+_TABLE_REGISTRATIONS_SCHEMA_ENSURED = False
+_TABLE_REGISTRATIONS_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_table_registrations_schema(db: Session):
-    statements = [
-        """
-        CREATE TABLE IF NOT EXISTS table_registrations (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            date DATE NOT NULL,
-            department VARCHAR(50) NOT NULL,
-            table_no VARCHAR(50) NOT NULL,
-            worker_type VARCHAR(100) NOT NULL,
-            contractor_name VARCHAR(255),
-            no_of_workers INTEGER DEFAULT 0,
-            worker_ids TEXT,
-            production_at VARCHAR(255),
-            production_for VARCHAR(255),
-            status VARCHAR(50) DEFAULT 'Active',
-            created_by VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-    ]
-    for stmt in statements:
+    global _TABLE_REGISTRATIONS_SCHEMA_ENSURED
+    if _TABLE_REGISTRATIONS_SCHEMA_ENSURED:
+        return
+
+    with _TABLE_REGISTRATIONS_SCHEMA_LOCK:
+        if _TABLE_REGISTRATIONS_SCHEMA_ENSURED:
+            return
+
+        statements = [
+            """
+            CREATE TABLE IF NOT EXISTS table_registrations (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                date DATE NOT NULL,
+                department VARCHAR(50) NOT NULL,
+                table_no VARCHAR(50) NOT NULL,
+                worker_type VARCHAR(100) NOT NULL,
+                contractor_name VARCHAR(255),
+                no_of_workers INTEGER DEFAULT 0,
+                worker_ids TEXT,
+                production_at VARCHAR(255),
+                production_for VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'Active',
+                created_by VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        ]
         try:
-            db.execute(text(stmt))
+            for stmt in statements:
+                db.execute(text(stmt))
             db.commit()
+            _TABLE_REGISTRATIONS_SCHEMA_ENSURED = True
         except Exception as e:
             db.rollback()
 

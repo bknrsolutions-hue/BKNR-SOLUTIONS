@@ -62,5 +62,69 @@
         "date": "2026-06-27 21:59:09",
         "status": "Success",
         "details": "Exported General Stock records"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "EXPORT",
+        "module": "Processing Module",
+        "date": "2026-08-14 02:00:05",
+        "status": "Success",
+        "details": "Exported Processing records"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 02:24:12",
+        "status": "Failed",
+        "details": "(psycopg2.errors.CannotCoerce) VALUES could not convert type timestamp without time zone to time without time zone\nLINE 1: ...'::float, 22), ('2026-07-16T00:00:00'::timestamp, '1900-01-0...\n                                                             ^\n\n[SQL: INSERT INTO de_heading (date, time, peeling_at, production_for, species, batch_number, hoso_count, hoso_qty, hlso_qty, hlso_qty_expr, yield_percent, target_yield_percent, diff_qty, diff_percent, contractor, table_no, rate_per_kg, amount, journal_id,  ... 12891 characters truncated ... 22, p23, p24, p25, sen_counter) ORDER BY sen_counter RETURNING de_heading.id, de_heading.id AS id__1]\n[parameters: {'batch_number__0': 'v-001', 'yield_percent__0': 70, 'rate_per_kg__0': None, 'cancel_reason__0': nan, 'email__0': 'bknr.solutions@gmail.com', 'production_for__0': 'VNBKC SOLUTIONS', 'cancelled_by__0': nan, 'hlso_qty__0': 70, 'date__0': Timestamp('2026-07-16 00:00:00'), 'diff_qty__0': 0, 'table_no__0': nan, 'time__0': datetime.time(1, 35, 9), 'peeling_at__0': 'AP', 'diff_percent__0': 0, 'amount__0': 210, 'hoso_count__0': 33, 'species__0': 'Vannamei', 'hlso_qty_expr__0': nan, 'cancelled_at__0': nan, 'is_cancelled__0': False, 'hoso_qty__0': 100, 'journal_id__0': 355, 'company_id__0': 'VNBK2162', 'target_yield_percent__0': 70, 'contractor__0': 'GARIKINA NAGARAJU', 'status__0': 'Active', 'batch_number__1': 'v-001', 'yield_percent__1': 67, 'rate_per_kg__1': None, 'cancel_reason__1': nan, 'email__1': 'bknr.solutions@gmail.com', 'production_for__1': 'VNBKC SOLUTIONS', 'cancelled_by__1': nan, 'hlso_qty__1': 67, 'date__1': Timestamp('2026-07-16 00:00:00'), 'diff_qty__1': 0, 'table_no__1': nan, 'time__1': datetime.time(14, 35, 9), 'peeling_at__1': 'AP', 'diff_percent__1': 0, 'amount__1': 201, 'hoso_count__1': 33, 'species__1': 'Vannamei', 'hlso_qty_expr__1': nan, 'cancelled_at__1': nan, 'is_cancelled__1': False, 'hoso_qty__1': 100, 'journal_id__1': 355, 'company_id__1': 'VNBK2163', 'target_yield_percent__1': 70 ... 524 parameters truncated ... 'rate_per_kg__22': None, 'cancel_reason__22': nan, 'email__22': 'bknr.solutions@gmail.com', 'production_for__22': 'VNBKC SOLUTIONS', 'cancelled_by__22': nan, 'hlso_qty__22': 70, 'date__22': Timestamp('2026-07-16 00:00:00'), 'diff_qty__22': 0, 'table_no__22': nan, 'time__22': datetime.time(23, 35, 8, 858000), 'peeling_at__22': 'AP', 'diff_percent__22': 0, 'amount__22': 210, 'hoso_count__22': 33, 'species__22': 'Vannamei', 'hlso_qty_expr__22': nan, 'cancelled_at__22': nan, 'is_cancelled__22': False, 'hoso_qty__22': 100, 'journal_id__22': 355, 'company_id__22': 'VNBK2184', 'target_yield_percent__22': 70, 'contractor__22': 'GARIKINA NAGARAJU', 'status__22': 'Active', 'batch_number__23': 'v-001', 'yield_percent__23': 34, 'rate_per_kg__23': None, 'cancel_reason__23': nan, 'email__23': 'bknr.solutions@gmail.com', 'production_for__23': 'VNBKC SOLUTIONS', 'cancelled_by__23': nan, 'hlso_qty__23': 34, 'date__23': Timestamp('2026-07-16 00:00:00'), 'diff_qty__23': 0, 'table_no__23': nan, 'time__23': datetime.datetime(1900, 1, 1, 0, 35, 8, 858000), 'peeling_at__23': 'AP', 'diff_percent__23': 0, 'amount__23': 102, 'hoso_count__23': 33, 'species__23': 'Vannamei', 'hlso_qty_expr__23': nan, 'cancelled_at__23': nan, 'is_cancelled__23': False, 'hoso_qty__23': 100, 'journal_id__23': 355, 'company_id__23': 'VNBK2185', 'target_yield_percent__23': 70, 'contractor__23': 'GARIKINA NAGARAJU', 'status__23': 'Active'}]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 02:31:19",
+        "status": "Failed",
+        "details": "(psycopg2.errors.CannotCoerce) VALUES could not convert type timestamp without time zone to time without time zone\nLINE 1: ...'::float, 22), ('2026-07-16T00:00:00'::timestamp, '1900-01-0...\n                                                             ^\n\n[SQL: INSERT INTO de_heading (date, time, peeling_at, production_for, species, batch_number, hoso_count, hoso_qty, hlso_qty, hlso_qty_expr, yield_percent, target_yield_percent, diff_qty, diff_percent, contractor, table_no, rate_per_kg, amount, journal_id,  ... 12891 characters truncated ... 22, p23, p24, p25, sen_counter) ORDER BY sen_counter RETURNING de_heading.id, de_heading.id AS id__1]\n[parameters: {'batch_number__0': 'v-001', 'yield_percent__0': 70, 'rate_per_kg__0': 3, 'cancel_reason__0': nan, 'email__0': 'bknr.solutions@gmail.com', 'production_for__0': 'VNBKC SOLUTIONS', 'cancelled_by__0': nan, 'hlso_qty__0': 70, 'date__0': Timestamp('2026-07-16 00:00:00'), 'diff_qty__0': 0, 'table_no__0': nan, 'time__0': datetime.time(1, 35, 9), 'peeling_at__0': 'AP', 'diff_percent__0': 0, 'amount__0': 210, 'hoso_count__0': 33, 'species__0': 'Vannamei', 'hlso_qty_expr__0': nan, 'cancelled_at__0': nan, 'is_cancelled__0': False, 'hoso_qty__0': 100, 'journal_id__0': 355, 'company_id__0': 'VNBK2162', 'target_yield_percent__0': 70, 'contractor__0': 'GARIKINA NAGARAJU', 'status__0': 'Active', 'batch_number__1': 'v-001', 'yield_percent__1': 67, 'rate_per_kg__1': 3, 'cancel_reason__1': nan, 'email__1': 'bknr.solutions@gmail.com', 'production_for__1': 'VNBKC SOLUTIONS', 'cancelled_by__1': nan, 'hlso_qty__1': 67, 'date__1': Timestamp('2026-07-16 00:00:00'), 'diff_qty__1': 0, 'table_no__1': nan, 'time__1': datetime.time(2, 35, 9), 'peeling_at__1': 'AP', 'diff_percent__1': 0, 'amount__1': 201, 'hoso_count__1': 33, 'species__1': 'Vannamei', 'hlso_qty_expr__1': nan, 'cancelled_at__1': nan, 'is_cancelled__1': False, 'hoso_qty__1': 100, 'journal_id__1': 355, 'company_id__1': 'VNBK2163', 'target_yield_percent__1': 70 ... 524 parameters truncated ... 'rate_per_kg__22': 3, 'cancel_reason__22': nan, 'email__22': 'bknr.solutions@gmail.com', 'production_for__22': 'VNBKC SOLUTIONS', 'cancelled_by__22': nan, 'hlso_qty__22': 70, 'date__22': Timestamp('2026-07-16 00:00:00'), 'diff_qty__22': 0, 'table_no__22': nan, 'time__22': datetime.time(23, 35, 8, 858000), 'peeling_at__22': 'AP', 'diff_percent__22': 0, 'amount__22': 210, 'hoso_count__22': 33, 'species__22': 'Vannamei', 'hlso_qty_expr__22': nan, 'cancelled_at__22': nan, 'is_cancelled__22': False, 'hoso_qty__22': 100, 'journal_id__22': 355, 'company_id__22': 'VNBK2184', 'target_yield_percent__22': 70, 'contractor__22': 'GARIKINA NAGARAJU', 'status__22': 'Active', 'batch_number__23': 'v-001', 'yield_percent__23': 34, 'rate_per_kg__23': 3, 'cancel_reason__23': nan, 'email__23': 'bknr.solutions@gmail.com', 'production_for__23': 'VNBKC SOLUTIONS', 'cancelled_by__23': nan, 'hlso_qty__23': 34, 'date__23': Timestamp('2026-07-16 00:00:00'), 'diff_qty__23': 0, 'table_no__23': nan, 'time__23': datetime.datetime(1900, 1, 1, 0, 35, 8, 858000), 'peeling_at__23': 'AP', 'diff_percent__23': 0, 'amount__23': 102, 'hoso_count__23': 33, 'species__23': 'Vannamei', 'hlso_qty_expr__23': nan, 'cancelled_at__23': nan, 'is_cancelled__23': False, 'hoso_qty__23': 100, 'journal_id__23': 355, 'company_id__23': 'VNBK2185', 'target_yield_percent__23': 70, 'contractor__23': 'GARIKINA NAGARAJU', 'status__23': 'Active'}]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 02:31:47",
+        "status": "Failed",
+        "details": "(psycopg2.errors.CannotCoerce) VALUES could not convert type timestamp without time zone to time without time zone\nLINE 1: ...'::float, 22), ('2026-07-16T00:00:00'::timestamp, '1900-01-0...\n                                                             ^\n\n[SQL: INSERT INTO de_heading (date, time, peeling_at, production_for, species, batch_number, hoso_count, hoso_qty, hlso_qty, hlso_qty_expr, yield_percent, target_yield_percent, diff_qty, diff_percent, contractor, table_no, rate_per_kg, amount, journal_id,  ... 12891 characters truncated ... 22, p23, p24, p25, sen_counter) ORDER BY sen_counter RETURNING de_heading.id, de_heading.id AS id__1]\n[parameters: {'batch_number__0': 'v-001', 'yield_percent__0': 70, 'rate_per_kg__0': 3, 'cancel_reason__0': nan, 'email__0': 'bknr.solutions@gmail.com', 'production_for__0': 'VNBKC SOLUTIONS', 'cancelled_by__0': nan, 'hlso_qty__0': 70, 'date__0': Timestamp('2026-07-16 00:00:00'), 'diff_qty__0': 0, 'table_no__0': nan, 'time__0': datetime.time(1, 35, 9), 'peeling_at__0': 'AP', 'diff_percent__0': 0, 'amount__0': 210, 'hoso_count__0': 33, 'species__0': 'Vannamei', 'hlso_qty_expr__0': nan, 'cancelled_at__0': nan, 'is_cancelled__0': False, 'hoso_qty__0': 100, 'journal_id__0': 355, 'company_id__0': 'VNBK2162', 'target_yield_percent__0': 70, 'contractor__0': 'GARIKINA NAGARAJU', 'status__0': 'Active', 'batch_number__1': 'v-001', 'yield_percent__1': 67, 'rate_per_kg__1': 3, 'cancel_reason__1': nan, 'email__1': 'bknr.solutions@gmail.com', 'production_for__1': 'VNBKC SOLUTIONS', 'cancelled_by__1': nan, 'hlso_qty__1': 67, 'date__1': Timestamp('2026-07-16 00:00:00'), 'diff_qty__1': 0, 'table_no__1': nan, 'time__1': datetime.time(2, 35, 9), 'peeling_at__1': 'AP', 'diff_percent__1': 0, 'amount__1': 201, 'hoso_count__1': 33, 'species__1': 'Vannamei', 'hlso_qty_expr__1': nan, 'cancelled_at__1': nan, 'is_cancelled__1': False, 'hoso_qty__1': 100, 'journal_id__1': 355, 'company_id__1': 'VNBK2163', 'target_yield_percent__1': 70 ... 524 parameters truncated ... 'rate_per_kg__22': 3, 'cancel_reason__22': nan, 'email__22': 'bknr.solutions@gmail.com', 'production_for__22': 'VNBKC SOLUTIONS', 'cancelled_by__22': nan, 'hlso_qty__22': 70, 'date__22': Timestamp('2026-07-16 00:00:00'), 'diff_qty__22': 0, 'table_no__22': nan, 'time__22': datetime.time(23, 35, 8, 858000), 'peeling_at__22': 'AP', 'diff_percent__22': 0, 'amount__22': 210, 'hoso_count__22': 33, 'species__22': 'Vannamei', 'hlso_qty_expr__22': nan, 'cancelled_at__22': nan, 'is_cancelled__22': False, 'hoso_qty__22': 100, 'journal_id__22': 355, 'company_id__22': 'VNBK2184', 'target_yield_percent__22': 70, 'contractor__22': 'GARIKINA NAGARAJU', 'status__22': 'Active', 'batch_number__23': 'v-001', 'yield_percent__23': 34, 'rate_per_kg__23': 3, 'cancel_reason__23': nan, 'email__23': 'bknr.solutions@gmail.com', 'production_for__23': 'VNBKC SOLUTIONS', 'cancelled_by__23': nan, 'hlso_qty__23': 34, 'date__23': Timestamp('2026-07-16 00:00:00'), 'diff_qty__23': 0, 'table_no__23': nan, 'time__23': datetime.datetime(1900, 1, 1, 0, 35, 8, 858000), 'peeling_at__23': 'AP', 'diff_percent__23': 0, 'amount__23': 102, 'hoso_count__23': 33, 'species__23': 'Vannamei', 'hlso_qty_expr__23': nan, 'cancelled_at__23': nan, 'is_cancelled__23': False, 'hoso_qty__23': 100, 'journal_id__23': 355, 'company_id__23': 'VNBK2185', 'target_yield_percent__23': 70, 'contractor__23': 'GARIKINA NAGARAJU', 'status__23': 'Active'}]\n(Background on this error at: https://sqlalche.me/e/20/f405)"
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 02:36:59",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 02:46:28",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "DeHeading",
+        "date": "2026-08-14 03:06:53",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 24 records."
+    },
+    {
+        "company_code": "VNBK2162",
+        "type": "IMPORT",
+        "module": "Peeling",
+        "date": "2026-08-14 03:07:58",
+        "status": "Success",
+        "details": "Successfully dynamically mapped and imported 20 records."
     }
 ]

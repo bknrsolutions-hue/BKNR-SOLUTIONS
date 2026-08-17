@@ -149,7 +149,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     if (activeItem === 'hrms_kg_company_staff') activeScreen = <NativeWorkerManagement kind="kg" filters={filters} onBack={back} />;
     if (activeItem === 'hrms_visitors_workers') activeScreen = <NativeVisitorsDayWorkers filters={filters} onBack={back} />;
     if (activeItem === 'hrms_approvals') activeScreen = <NativeApprovals filters={filters} onBack={back} />;
-    if (activeItem === 'user_profile') activeScreen = <NativeProfile user={user} filters={filters} onBack={back} onProfileUpdated={onUserUpdated} />;
+    if (activeItem === 'user_profile') activeScreen = <NativeProfile user={user} filters={filters} onBack={back} onProfileUpdated={onUserUpdated} onLogout={onLogout} />;
     if (activeItem === 'admin_user_configuration' && ['admin', 'super_admin'].includes(user?.role) && (grantedPermissions.has('ALL') || grantedPermissions.has('add_user'))) activeScreen = <NativeUserConfiguration onBack={back} />;
   }
 
@@ -293,8 +293,8 @@ function AppCard({ item, onPress }) {
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#f4f7fb' },
   app: { flex: 1, backgroundColor: '#f4f7fb' },
-  activePage: { flex: 1, paddingBottom: 68 },
-  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 68 },
+  activePage: { flex: 1, paddingBottom: 85 },
+  content: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 125 },
   header: { minHeight: 95, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, paddingHorizontal: 15, paddingTop: 28, paddingBottom: 11, borderBottomWidth: 1, backgroundColor: '#0b2345', shadowColor: '#061426', shadowOpacity: .24, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 7, zIndex: 2 },
   headerCopy: { flex: 1, minWidth: 0 },
   eyebrow: { color: '#67e8f9', fontSize: 11, fontWeight: '900', letterSpacing: 1.1 },
@@ -330,9 +330,9 @@ const styles = StyleSheet.create({
   cardNote: { marginTop: 4, color: '#64748b', fontSize: 10.5, fontWeight: '700' },
   arrowIcon: { position: 'absolute', top: 12, right: 9 },
   pressed: { opacity: .72, transform: [{ scale: .99 }] },
-  logoutCard: { width: '48.5%', minHeight: 112, padding: 11, borderWidth: 1, borderColor: '#fecaca', borderRadius: 15, backgroundColor: '#fff' },
-  logoutIcon: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', borderRadius: 14, backgroundColor: '#fef2f2' },
-  logoutTitle: { marginTop: 8, color: '#dc2626', fontSize: 13, fontWeight: '900' },
+  logoutCard: { width: '100%', minHeight: 70, flexDirection: 'row', alignItems: 'center', padding: 14, borderWidth: 1, borderColor: '#fecaca', borderRadius: 15, backgroundColor: '#fff5f5', gap: 12, marginTop: 10 },
+  logoutIcon: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12, backgroundColor: '#fef2f2' },
+  logoutTitle: { color: '#dc2626', fontSize: 14, fontWeight: '900' },
   bottomBar: { position: 'absolute', left: 0, right: 0, bottom: -2, zIndex: 20, height: 71, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', paddingHorizontal: 10, borderWidth: 0, borderTopWidth: 0, borderColor: 'transparent', borderTopColor: 'transparent', backgroundColor: '#fff', shadowColor: 'transparent', shadowOpacity: 0, shadowRadius: 0, shadowOffset: { width: 0, height: 0 }, elevation: 0, overflow: 'visible' },
   bottomBarTopCover: { position: 'absolute', left: 0, right: 0, top: -2, height: 4, borderWidth: 0 },
   bottomItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 },

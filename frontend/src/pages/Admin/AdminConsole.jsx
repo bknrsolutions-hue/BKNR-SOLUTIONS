@@ -629,13 +629,43 @@ function DataManagement({ activePage }) {
     if (!data.success) return setMessage(data.error || 'Unable to inspect file');
     setUploadInfo(data); const firstSheet = Object.keys(data.sheets || {})[0] || ''; setSheet(firstSheet); setMessage('File inspected. Select a table and map columns.');
   };
+  const normalizeCol = str => (str || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  const isColumnMatch = (dbCol, exCol) => {
+    const dbNorm = normalizeCol(dbCol);
+    const exNorm = normalizeCol(exCol);
+    if (!dbNorm || !exNorm) return false;
+    if (dbNorm === exNorm) return true;
+    const aliases = {
+      batch_number: ['batchnumber', 'batchno', 'batchnum', 'batch', 'batchcode', 'batchid'],
+      employee_id: ['employeeid', 'empid', 'empcode', 'workerid', 'labourid', 'staffid'],
+      employee_name: ['employeename', 'empname', 'workername', 'labourname', 'staffname', 'name'],
+      hoso_count: ['hosocount', 'count', 'sizecount', 'size'],
+      hoso_qty: ['hosoqty', 'hosoquantity', 'rawqty'],
+      hlso_qty: ['hlsoqty', 'hlsoquantity', 'headedqty'],
+      peeled_qty: ['peeledqty', 'peeledquantity'],
+      rate_per_kg: ['rateperkg', 'rate', 'kgrate', 'price'],
+      invoice_no: ['invoiceno', 'invoicenumber', 'invno', 'billno', 'billnumber'],
+      invoice_date: ['invoicedate', 'invdate', 'billdate'],
+      po_number: ['ponumber', 'pono', 'purchaseorder'],
+      production_for: ['productionfor', 'companyname', 'company', 'client'],
+      peeling_at: ['peelingat', 'location', 'unit', 'plant'],
+      received_qty: ['receivedqty', 'receivedquantity', 'totalweight', 'totalweightkg', 'weightkg', 'qty', 'quantity']
+    };
+    return !!(aliases[dbCol] && aliases[dbCol].includes(exNorm));
+  };
+
   const buildMapping = (tableName, sheetName) => {
     const excelColumns = uploadInfo?.sheets?.[sheetName] || [];
-    return Object.fromEntries((schema[tableName] || []).map(column => [column, excelColumns.find(excel => excel.toLowerCase() === column.toLowerCase()) || '']));
+    return Object.fromEntries((schema[tableName] || []).map(column => [column, excelColumns.find(excel => isColumnMatch(column, excel)) || '']));
   };
   const executeImport = () => secureAction('import', targetTable, async () => {
     const response = await fetch('/data-management/execute-import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ filename: uploadInfo.filename, table_name: targetTable, sheet_name: sheet, mapping: Object.fromEntries(Object.entries(mapping).filter(([,value]) => value)) }) });
     const data = await response.json(); if (!data.success) throw new Error(data.error || 'Import failed');
+    setUpload(null);
+    setUploadInfo(null);
+    setTargetTable('');
+    setSheet('');
+    setMapping({});
   });
   const recovery = action => secureAction(action, cleanupTable, async () => {
     const endpoint = action === 'undo' ? '/data-management/undo-import' : '/data-management/clear-table';

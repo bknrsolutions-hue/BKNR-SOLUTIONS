@@ -16,6 +16,7 @@ export default function StaffRegistration({ theme }) {
   const [contractors, setContractors] = useState([]);
   const [sites, setSites] = useState([]);
   const [nextEmployeeId, setNextEmployeeId] = useState('');
+  const [registeredCompanyName, setRegisteredCompanyName] = useState('');
   const [selectedRow, setSelectedRow] = useState(null);
   
   // Filter States
@@ -26,6 +27,7 @@ export default function StaffRegistration({ theme }) {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const [idCardModalEmp, setIdCardModalEmp] = useState(null);
   const [activeTab, setActiveTab] = useState('personal');
   const [menuOpen, setMenuOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -71,7 +73,8 @@ export default function StaffRegistration({ theme }) {
     permanent_address: '',
     skills: '',
     about: '',
-    location: ''
+    location: '',
+    photo_path: ''
   });
 
   // Validation States
@@ -95,6 +98,7 @@ export default function StaffRegistration({ theme }) {
         setContractors(data.contractors || []);
         setSites(data.sites || []);
         setNextEmployeeId(data.next_employee_id || '');
+        if (data.company_name) setRegisteredCompanyName(data.company_name);
       }
     } catch (e) {
       showNotification('❌ Failed to fetch database index!', 'danger');
@@ -133,6 +137,20 @@ export default function StaffRegistration({ theme }) {
     const upper = val.toUpperCase().trim();
     if (upper === '') return null;
     return /^[A-Z]{4}0[A-Z0-9]{6}$/.test(upper);
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      showNotification('❌ Photo must be less than 5 MB', 'danger');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({ ...prev, photo_path: reader.result }));
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleInputChange = (e) => {
@@ -392,13 +410,6 @@ export default function StaffRegistration({ theme }) {
                 <button className="attendance-dropdown-item" onClick={printSelected}><Printer size={14} /> Print View</button>
                 <button className="attendance-dropdown-item" onClick={exportPDF}><FileText size={14} style={{ color: 'var(--att-danger)' }} /> Download PDF</button>
                 <button className="attendance-dropdown-item" onClick={exportExcel}><FileSpreadsheet size={14} style={{ color: 'var(--att-success)' }} /> Export Excel</button>
-                <button 
-                  className="attendance-dropdown-item" 
-                  onClick={deleteSelected}
-                  style={{ color: 'var(--att-danger)', borderTop: '1px solid var(--att-border)' }}
-                >
-                  <Ban size={14} /> Cancel Record
-                </button>
               </div>
             )}
           </div>
@@ -442,6 +453,9 @@ export default function StaffRegistration({ theme }) {
                 <th style={{ width: '110px' }}>Resign Date</th>
                 <th style={{ width: '110px' }}>Rejoin Date</th>
                 <th style={{ width: '160px' }}>Contractor</th>
+                <th style={{ width: '140px', textAlign: 'center' }}>ID Card</th>
+                <th style={{ width: '60px', textAlign: 'center' }}>Photo</th>
+                <th style={{ width: '60px', textAlign: 'center' }}>QR Code</th>
               </tr>
             </thead>
             <tbody>
@@ -487,6 +501,41 @@ export default function StaffRegistration({ theme }) {
                   <td style={{ color: 'var(--att-danger)' }}>{emp.resignation_date || '-'}</td>
                   <td style={{ color: 'var(--att-accent)', fontWeight: 700 }}>{getRejoinDate(emp)}</td>
                   <td>{emp.contractor_name || '-'}</td>
+
+                  {/* 🪪 ID CARD DOWNLOAD BUTTON CELL */}
+                  <td style={{ textAlign: 'center' }}>
+                    <button 
+                      className="attendance-btn attendance-btn-primary" 
+                      style={{ padding: '4px 10px', fontSize: '10px', fontWeight: '900', letterSpacing: '0.3px', background: 'linear-gradient(135deg, #2563eb, #1d4ed8)', border: 'none', borderRadius: '6px' }}
+                      onClick={(e) => { e.stopPropagation(); setIdCardModalEmp(emp); }}
+                    >
+                      🪪 DOWNLOAD ID
+                    </button>
+                  </td>
+
+                  {/* 📷 PHOTO CELL (LAST COLUMN #2) */}
+                  <td style={{ textAlign: 'center' }}>
+                    {emp.photo_path ? (
+                      <img src={emp.photo_path} alt="Photo" style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--att-border)' }} />
+                    ) : (
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--att-table-header-bg)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', fontWeight: '800', color: 'var(--att-muted)' }}>
+                        {(emp.employee_name || 'E').charAt(0)}
+                      </div>
+                    )}
+                  </td>
+
+                  {/* 📱 QR CODE CELL (LAST COLUMN #3) */}
+                  <td style={{ textAlign: 'center' }}>
+                    {emp.employee_id ? (
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=60x60&data=${encodeURIComponent(emp.employee_id)}`} 
+                        alt="QR" 
+                        title={`QR: ${emp.employee_id}`}
+                        style={{ width: '30px', height: '30px', borderRadius: '4px', cursor: 'pointer' }} 
+                        onClick={(e) => { e.stopPropagation(); window.open(`https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(emp.employee_id)}`, '_blank'); }}
+                      />
+                    ) : '-'}
+                  </td>
                 </tr>
               ))}
               {!filteredEmployees.length && (
@@ -550,15 +599,69 @@ export default function StaffRegistration({ theme }) {
               <div className="attendance-modal-body">
                 {activeTab === 'personal' && (
                   <div className="attendance-form-grid">
+                    {/* 🪪 LIVE ID CARD BADGE & AUTO-CREATED QR CODE PREVIEW */}
+                    <div className="attendance-form-group full-width" style={{
+                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                      padding: '16px',
+                      borderRadius: '12px',
+                      border: '1px solid #38bdf8',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '20px',
+                      color: '#ffffff',
+                      marginBottom: '12px'
+                    }}>
+                      <div style={{ position: 'relative', width: '80px', height: '80px', borderRadius: '10px', overflow: 'hidden', border: '2px solid #38bdf8', background: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {formData.photo_path ? (
+                          <img src={formData.photo_path} alt="ID Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <UserCheck size={36} color="#64748b" />
+                        )}
+                      </div>
+
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '10px', color: '#38bdf8', fontWeight: '900', letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                          STAFF BADGE & QR PASSPORT
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: '900', color: '#ffffff', marginTop: '2px' }}>
+                          {formData.employee_name || 'Staff Member'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
+                          ID: <strong style={{ color: '#38bdf8' }}>{formData.employee_id || 'AUTO ID'}</strong> • {formData.designation || 'Staff'}
+                        </div>
+                        <div style={{ marginTop: '8px' }}>
+                          <label htmlFor="reg-photo-upload" style={{ background: '#2563eb', color: '#fff', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: '800', cursor: 'pointer', display: 'inline-block' }}>
+                            📷 UPLOAD ID PHOTO
+                          </label>
+                          <input id="reg-photo-upload" type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: 'none' }} />
+                        </div>
+                      </div>
+
+                      {/* 📱 AUTO-CREATED QR CODE BADGE */}
+                      {formData.employee_id ? (
+                        <div style={{ background: '#ffffff', padding: '6px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)' }}>
+                          <img 
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(formData.employee_id)}`} 
+                            alt="Auto QR Code" 
+                            style={{ width: '80px', height: '80px', display: 'block' }} 
+                          />
+                          <div style={{ fontSize: '9px', fontWeight: '900', color: '#0f172a', marginTop: '3px' }}>
+                            {formData.employee_id}
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
+
                     <div className="attendance-form-section-title">Primary Info</div>
                     <div className="attendance-form-group">
-                      <label htmlFor="reg-emp-id">Employee ID</label>
+                      <label htmlFor="reg-emp-id">Employee ID (Auto QR Code)</label>
                       <input 
                         id="reg-emp-id"
                         className="attendance-input" 
                         name="employee_id" 
                         value={formData.employee_id} 
                         readOnly 
+                        style={{ fontWeight: '800', color: 'var(--att-accent)' }}
                       />
                     </div>
                     <div className="attendance-form-group">
@@ -1057,6 +1160,161 @@ export default function StaffRegistration({ theme }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 🪪 DOUBLE-SIDED EMPLOYEE ID CARD MODAL */}
+      {idCardModalEmp && (
+        <div className="attendance-modal-overlay" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(6px)', zIndex: 9999 }}>
+          <div className="attendance-modal-content" style={{ maxWidth: '820px', background: '#090d16', borderRadius: '20px', border: '1px solid #38bdf8', overflow: 'hidden' }}>
+            <div className="attendance-modal-header" style={{ background: '#0f172a', borderBottom: '1px solid #1e293b', padding: '16px 24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{ background: '#2563eb', padding: '6px 12px', borderRadius: '8px', color: '#fff', fontWeight: '900', fontSize: '12px' }}>
+                  OFFICIAL ID BADGE
+                </div>
+                <h2 style={{ color: '#ffffff', margin: 0, fontSize: '16px', fontWeight: '900' }}>
+                  Double-Sided ID Card: {idCardModalEmp.employee_name} ({idCardModalEmp.employee_id})
+                </h2>
+              </div>
+              <button className="attendance-modal-close-btn" onClick={() => setIdCardModalEmp(null)} aria-label="Close modal">
+                <X size={20} color="#94a3b8" />
+              </button>
+            </div>
+
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '24px', alignItems: 'center' }}>
+              {/* PRINTABLE DOUBLE SIDED ID CARD SHEETS CONTAINER */}
+              <div id="printable-id-cards-container" style={{ display: 'flex', gap: '24px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                
+                {/* 🎴 FRONT SIDE OF ID CARD */}
+                <div className="id-card-front" style={{
+                  width: '330px',
+                  height: '530px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(180deg, #0b2345 0%, #0f172a 100%)',
+                  border: '2px solid #38bdf8',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  color: '#ffffff'
+                }}>
+                  {/* Front Top Banner */}
+                  <div style={{ background: 'linear-gradient(90deg, #1d4ed8, #2563eb)', padding: '14px 16px', textAlign: 'center', borderBottom: '2px solid #38bdf8' }}>
+                    <div style={{ fontSize: '15px', fontWeight: '900', letterSpacing: '1px', color: '#ffffff', textTransform: 'uppercase' }}>
+                      {registeredCompanyName || idCardModalEmp.company_name || sessionStorage.getItem('company_name') || localStorage.getItem('company_name') || 'COMPANY IDENTITY CARD'}
+                    </div>
+                    <div style={{ fontSize: '9.5px', color: '#93c5fd', fontWeight: '800', marginTop: '2px' }}>STAFF IDENTITY CARD</div>
+                  </div>
+
+                  {/* Front Photo Box (Large & High-Impact Portrait Showcase) */}
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '20px' }}>
+                    <div style={{ width: '170px', height: '170px', borderRadius: '50%', border: '4px solid #38bdf8', overflow: 'hidden', background: '#1e293b', boxShadow: '0 8px 24px rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {idCardModalEmp.photo_path ? (
+                        <img src={idCardModalEmp.photo_path} alt="Photo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <UserCheck size={78} color="#64748b" />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Name & Title */}
+                  <div style={{ textAlign: 'center', marginTop: '14px', paddingHorizontal: '12px' }}>
+                    <div style={{ fontSize: '19px', fontWeight: '900', color: '#ffffff', letterSpacing: '-0.3px' }}>{idCardModalEmp.employee_name}</div>
+                    <div style={{ fontSize: '12.5px', fontWeight: '800', color: '#38bdf8', marginTop: '2px' }}>{idCardModalEmp.designation || 'Staff Member'}</div>
+                  </div>
+
+                  {/* Details Grid (Expanded outward with 14px margins) */}
+                  <div style={{ marginTop: 'auto', marginBottom: '20px', marginLeft: '14px', marginRight: '14px', padding: '14px 16px', background: 'rgba(30, 41, 59, 0.88)', borderRadius: '12px', border: '1px solid #334155', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px 14px', fontSize: '11px' }}>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>EMPLOYEE ID</div>
+                      <div style={{ fontWeight: '900', color: '#38bdf8' }}>{idCardModalEmp.employee_id}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>DEPARTMENT</div>
+                      <div style={{ fontWeight: '800', color: '#f8fafc' }}>{idCardModalEmp.department || 'Processing'}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>PLANT UNIT</div>
+                      <div style={{ fontWeight: '800', color: '#f8fafc' }}>{idCardModalEmp.production_at || 'Main Plant'}</div>
+                    </div>
+                    <div>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>BLOOD GROUP</div>
+                      <div style={{ fontWeight: '800', color: '#ef4444' }}>{idCardModalEmp.blood_group || 'O+'}</div>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase' }}>EMERGENCY CONTACT</div>
+                      <div style={{ fontWeight: '800', color: '#f8fafc' }}>{idCardModalEmp.emergency_mobile || idCardModalEmp.mobile || '-'}</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 🔲 BACK SIDE OF ID CARD (VENAKA QR CODE) */}
+                <div className="id-card-back" style={{
+                  width: '330px',
+                  height: '530px',
+                  borderRadius: '16px',
+                  background: 'linear-gradient(180deg, #0f172a 0%, #0b2345 100%)',
+                  border: '2px solid #38bdf8',
+                  boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  position: 'relative',
+                  color: '#ffffff'
+                }}>
+                  {/* Back Top Banner */}
+                  <div style={{ background: '#1e293b', padding: '12px 14px', textAlign: 'center', borderBottom: '1px solid #334155' }}>
+                    <div style={{ fontSize: '11px', fontWeight: '900', letterSpacing: '0.8px', color: '#38bdf8', textTransform: 'uppercase' }}>
+                      {registeredCompanyName || idCardModalEmp.company_name || sessionStorage.getItem('company_name') || localStorage.getItem('company_name') || 'ATTENDANCE QR BADGE'}
+                    </div>
+                  </div>
+
+                  {/* Back Center QR Code */}
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '20px', textAlign: 'center' }}>
+                    <div style={{ background: '#ffffff', padding: '14px', borderRadius: '16px', boxShadow: '0 8px 24px rgba(0,0,0,0.5)', border: '2px solid #38bdf8' }}>
+                      <img 
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(idCardModalEmp.employee_id)}`} 
+                        alt="Employee QR Code" 
+                        style={{ width: '160px', height: '160px', display: 'block' }} 
+                      />
+                    </div>
+
+                    <div style={{ marginTop: '16px', fontSize: '15px', fontWeight: '900', color: '#38bdf8', letterSpacing: '1px' }}>
+                      {idCardModalEmp.employee_id}
+                    </div>
+                    {/* EMPLOYEE ADDRESS */}
+                    <div style={{ marginTop: '12px', padding: '12px 16px', background: 'rgba(30, 41, 59, 0.88)', borderRadius: '12px', border: '1px solid #334155', width: 'calc(100% - 12px)', textAlign: 'center' }}>
+                      <div style={{ color: '#94a3b8', fontSize: '9px', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        RESIDENTIAL ADDRESS
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#f8fafc', fontWeight: '800', marginTop: '3px', lineHeight: '15px' }}>
+                        {idCardModalEmp.present_address || idCardModalEmp.permanent_address || idCardModalEmp.address || 'Address not registered'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                <button 
+                  className="attendance-btn attendance-btn-secondary" 
+                  onClick={() => setIdCardModalEmp(null)}
+                  style={{ padding: '10px 20px', fontSize: '12px', fontWeight: '900' }}
+                >
+                  CLOSE
+                </button>
+                <button 
+                  className="attendance-btn attendance-btn-primary" 
+                  onClick={() => window.print()}
+                  style={{ padding: '10px 24px', fontSize: '12px', fontWeight: '900', background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none' }}
+                >
+                  🖨️ PRINT DOUBLE-SIDED ID CARD
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
