@@ -2,8 +2,10 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/app/',
+export default defineConfig(({ command }) => ({
+  // The backend mounts production assets at /app/. Keep local Vite development
+  // at / so the normal http://localhost:5173/ entry does not 404.
+  base: command === 'serve' ? '/' : '/app/',
   plugins: [react()],
   optimizeDeps: {
     include: [
@@ -13,7 +15,6 @@ export default defineConfig({
       'react-router-dom',
       'lucide-react',
       'chart.js',
-      'sweetalert2',
     ],
   },
   build: {
@@ -43,6 +44,7 @@ export default defineConfig({
     proxy: {
       '/crm':              'http://127.0.0.1:8000',
       '/auth':             'http://127.0.0.1:8000',
+      '/website-assets':   'http://127.0.0.1:8000',
       '/processing':       'http://127.0.0.1:8000',
 
       '/criteria':         'http://127.0.0.1:8000',
@@ -65,4 +67,4 @@ export default defineConfig({
       '/home':             'http://127.0.0.1:8000',
     }
   }
-})
+}))

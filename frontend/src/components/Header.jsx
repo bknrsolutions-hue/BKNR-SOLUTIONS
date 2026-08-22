@@ -358,7 +358,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
           { id: 'admin_system_settings',      token: 'adm_sys', perm: 'system_settings',      icon: 'fa-sliders', label: 'System & Pipeline',    route: '/admin/system_settings' },
           { id: 'admin_system_architecture',  token: 'adm_arc', perm: 'system_architecture',  icon: 'fa-sitemap', label: 'System Architecture',  route: '/admin/system_architecture' }
         ] : []),
-        { id: 'admin_raise_ticket',      token: 'sup_tkt',  perm: 'raise_ticket',      icon: 'fa-support-agent',      label: 'My Complaints',         route: '/support/my_tickets' },
+        { id: 'admin_raise_ticket',      token: 'sup_tkt',  perm: 'raise_ticket',      icon: 'fa-comments',           label: 'My Complaints',         route: '/support/my_tickets' },
         { id: 'admin_helpdesk',          token: 'sup_hd',   perm: 'admin_helpdesk',    icon: 'fa-ticket',             label: 'Helpdesk',              route: '/admin/all_tickets' },
         { id: 'admin_manage_support',    token: 'sup_team', perm: 'manage_support',    icon: 'fa-users-gear',         label: 'Support Team',          route: '/admin/support_team' },
         { id: 'admin_user_activity',     token: 'sup_act',  perm: 'user_activity',     icon: 'fa-clock-rotate-left',  label: 'User Activity Logs',    route: '/admin/activities' }
@@ -939,7 +939,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             aria-label="Open support and helpdesk panel"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-support-agent" aria-hidden="true"></i>
+            <i className="fa-solid fa-comments" aria-hidden="true"></i>
             <span className="icon-action-label">Support</span>
           </button>
 

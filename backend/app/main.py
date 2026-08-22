@@ -202,9 +202,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/auth/login", "/auth/landing", "/auth/register", "/auth/verify-otp",
             "/auth/set-password", "/auth/verify-login-otp", "/auth/session-info",
             "/auth/forgot-password", "/auth/reset-password", "/auth/auto-login",
-            "/auth/logout",
+            "/auth/logout", "/index.html", "/processing.html", "/inventory.html",
+            "/hrms.html", "/export.html", "/finance.html", "/quality.html",
+            "/website_styles.css",
         ]
-        prefix_paths = ["/app/", "/static/", "/create-all", "/admin/maintenance"]
+        prefix_paths = ["/app/", "/static/", "/website-assets/", "/create-all", "/admin/maintenance"]
 
         # Check deployment token header bypass
         deploy_token = request.headers.get("X-Deploy-Token")
@@ -490,9 +492,12 @@ def on_shutdown():
 # =====================================================
 static_path = os.path.join(os.path.dirname(__file__), "static")
 templates_path = os.path.join(os.path.dirname(__file__), "templates")
+frontend_public_path = Path(__file__).resolve().parents[2] / "frontend" / "public"
 os.makedirs(static_path, exist_ok=True)
 os.makedirs(templates_path, exist_ok=True)
 application.mount("/static", StaticFiles(directory=static_path), name="static")
+application.mount("/website-assets", StaticFiles(directory=str(frontend_public_path)), name="website-assets")
+application.mount("/brain-images", StaticFiles(directory="/Users/nagaraju/.gemini/antigravity-ide/brain/4ed93a22-66c9-4303-ad31-25037d673a72"), name="brain-images")
 templates = Jinja2Templates(directory=templates_path)
 
 # ✅ VERY IMPORTANT:  ‌  ,
@@ -577,10 +582,47 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSON
 async def serve_brand_dp():
     return FileResponse("app/static/brand-dp-3d.png", media_type="image/png")
 
+@application.get("/favicon.ico", include_in_schema=False)
+async def serve_favicon():
+    return FileResponse("app/static/icon-192.png", media_type="image/png")
+
 @application.get("/svbk-it-solutions-logo-3d.png")
 @application.get("/svbk-it-solutions-logo-3d-transparent.png")
 async def serve_brand_logo():
     return FileResponse("app/static/images/svbk-it-solutions-logo-3d.png", media_type="image/png")
+
+@application.get("/website_styles.css")
+async def serve_website_styles():
+    # Compatibility response for a retired static marketing stylesheet.
+    return Response(content="", media_type="text/css")
+
+@application.get("/index.html", response_class=HTMLResponse)
+async def serve_index_page():
+    return RedirectResponse("/app/", status_code=303)
+
+@application.get("/processing.html", response_class=HTMLResponse)
+async def serve_processing_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/inventory.html", response_class=HTMLResponse)
+async def serve_inventory_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/hrms.html", response_class=HTMLResponse)
+async def serve_hrms_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/export.html", response_class=HTMLResponse)
+async def serve_export_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/finance.html", response_class=HTMLResponse)
+async def serve_finance_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/quality.html", response_class=HTMLResponse)
+async def serve_quality_page():
+    return RedirectResponse("/", status_code=303)
 
 @application.get("/tally_dashboard", response_class=HTMLResponse)
 async def legacy_tally_dashboard_redirect():
@@ -588,10 +630,15 @@ async def legacy_tally_dashboard_redirect():
 
 
 @application.get("/", response_class=HTMLResponse)
-async def login_page(request: Request):
-    # The production web entry is the React application. Authentication still
-    # uses the same signed backend session and API endpoints.
-    return RedirectResponse("/app/", status_code=303)
+async def landing_page(request: Request):
+    """Serve the existing public/login website from the login template."""
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request, "show_login": False},
+    )
 
 
 @application.head("/")

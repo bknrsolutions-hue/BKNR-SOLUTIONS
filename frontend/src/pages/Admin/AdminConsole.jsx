@@ -15,6 +15,7 @@ const PAGE_META = {
   admin_user_activity: ['System Control Dashboard', 'Company and user access monitoring'],
 };
 const ACTIVITY_TYPES = [['registrations','Registrations'],['active','Active Companies'],['active_users','Active Users'],['new_month','New This Month'],['tickets','Open Tickets'],['pending_approvals','Pending Approvals']];
+const SUPPORT_AGENT_AVATAR = `${import.meta.env.BASE_URL}support-agent.png`;
 
 const ADMIN_NAV_ITEMS = [
   { id: 'admin_add_user', perm: 'add_user', route: '/admin/add_user', icon: 'fa-user-gear', label: 'User Configuration' },
@@ -22,7 +23,7 @@ const ADMIN_NAV_ITEMS = [
   { id: 'admin_data_management', perm: 'data_management', route: '/data-management', icon: 'fa-database', label: 'Data Management' },
   { id: 'admin_system_settings', perm: 'system_settings', route: '/admin/system_settings', icon: 'fa-sliders', label: 'System & Pipeline', superAdminOnly: true },
   { id: 'admin_system_architecture', perm: 'system_architecture', route: '/admin/system_architecture', icon: 'fa-sitemap', label: 'System Architecture', superAdminOnly: true },
-  { id: 'admin_raise_ticket', perm: 'raise_ticket', route: '/support/my_tickets', icon: 'fa-support-agent', label: 'My Complaints' },
+  { id: 'admin_raise_ticket', perm: 'raise_ticket', route: '/support/my_tickets', icon: 'fa-comments', label: 'My Complaints' },
   { id: 'admin_helpdesk', perm: 'admin_helpdesk', route: '/admin/all_tickets', icon: 'fa-ticket', label: 'Helpdesk', superAdminOnly: true },
   { id: 'admin_manage_support', perm: 'manage_support', route: '/admin/support_team', icon: 'fa-users-gear', label: 'Support Team', superAdminOnly: true },
   { id: 'admin_user_activity', perm: 'user_activity', route: '/admin/activities', icon: 'fa-clock-rotate-left', label: 'User Activity Logs', superAdminOnly: true },
@@ -487,6 +488,7 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
     const matchesStatus = ticketStatusFilter === 'ALL' || ticket.status === ticketStatusFilter;
     return matchesSearch && matchesStatus;
   });
+  const showWelcome = !loadingTickets && !ticketError && tickets.length === 0;
   const normalizeQuestion = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const knowledgeQuery = normalizeQuestion(knowledgeSearch);
   const questionMatchScore = question => {
@@ -540,7 +542,13 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
       <div className="support-kb-results">{!knowledgeQuery ? null : knowledgeLoading ? <div className="admin-empty">Loading complete ERP knowledge base…</div> : visibleKnowledge.length ? visibleKnowledge.map(item => <article className={`support-kb-item ${expandedAnswer === item.id ? 'open' : ''}`} key={item.id}><button type="button" onClick={() => setExpandedAnswer(current => current === item.id ? '' : item.id)}><span><strong>{item.question}</strong></span><i className={`fa-solid fa-chevron-${expandedAnswer === item.id ? 'up' : 'down'}`}></i></button>{expandedAnswer === item.id ? <div className="support-kb-answer"><p>{item.answer}</p>{item.route ? <code>{item.route}</code> : null}</div> : null}</article>) : <div className="admin-empty">No matching answer found. Raise a complaint with the page name and exact issue.</div>}</div>
     </div> : <>
     {ticketError && <div className="admin-card admin-error" role="alert">{ticketError} <button className="admin-btn" type="button" onClick={loadTickets}>RETRY</button></div>}
-    <div className={`ticket-layout support-ticket-layout ${selected ? 'chat-active' : ''}`}>
+    {showWelcome ? <section className="support-welcome-panel" aria-label="SVBK Support welcome">
+      <img src={SUPPORT_AGENT_AVATAR} alt="SVBK Support team member" />
+      <p>SVBK IT Solutions</p>
+      <h3>{isAdmin ? 'No support requests yet.' : 'Hi, I’m SVBK Support.'}</h3>
+      <span>{isAdmin ? 'New customer support requests will appear here.' : 'Tell us what you need help with and our team will respond through this secure workspace.'}</span>
+      {!isAdmin && <button className="admin-btn primary" type="button" onClick={openNewComplaint}><i className="fa-solid fa-plus"></i> START A SUPPORT REQUEST</button>}
+    </section> : <div className={`ticket-layout support-ticket-layout ${selected ? 'chat-active' : ''}`}>
       <section className="admin-card support-ticket-list-panel" aria-label={isAdmin ? 'Support queue' : 'My complaints'}>
         <div className="support-ticket-search">
           <input className="admin-search" placeholder="Search complaints..." value={search} onChange={event => setSearch(event.target.value)}/>
@@ -570,7 +578,7 @@ export function TicketDesk({ activePage, activeRoute, compact = false, onClose, 
           {selected.status === 'RESOLVED' && isAdmin ? <div className="support-closed-banner"><i className="fa-solid fa-lock"></i> This ticket is permanently closed.</div> : <div className="chat-compose"><label className="admin-btn" title="Attach file"><i className="fa-solid fa-paperclip"></i><input type="file" hidden onChange={event => setAttachment(event.target.files?.[0] || null)}/></label><input value={reply} onChange={event => setReply(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') send(); }} placeholder={attachment ? attachment.name : 'Type a reply...'}/><button className="support-send-btn" onClick={send} aria-label="Send reply"><i className="fa-solid fa-paper-plane"></i></button></div>}
         </>}
       </section>
-    </div>
+    </div>}
     {newOpen && <div className="support-new-overlay" onClick={() => setNewOpen(false)}><form className="support-new-dialog" onSubmit={createTicket} onClick={event => event.stopPropagation()}><div className="support-new-head"><h2>Raise New Complaint</h2><button type="button" onClick={() => setNewOpen(false)} aria-label="Close"><i className="fa-solid fa-xmark"></i></button></div><div className="admin-field"><label>Issue Summary</label><input autoFocus required value={subject} onChange={event => setSubject(event.target.value)}/></div><div className="admin-field"><label>Detailed Message</label><textarea required rows="8" value={detail} onChange={event => setDetail(event.target.value)}/></div><button className="admin-btn primary">SUBMIT TICKET</button></form></div>}
     </>}
   </div>;

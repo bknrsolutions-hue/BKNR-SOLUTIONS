@@ -2,59 +2,26 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="description" content="BKNR ERP - Next-Gen Operational Intelligence for Seafood Processing & Cold Storage Management" />
+    <meta name="description" content="SVBK IT Solutions operational workspace." />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0f172a" />
-    <title>BKNR ERP - Next-Gen Operational Intelligence</title>
+    <title>SVBK IT Solutions</title>
     <script>
-      // Some Chromium WebView/DevTools builds inject a metrics script without
-      // installing its reporter callback. Keep that tooling-only failure from
-      // flooding the console or interrupting document-start evaluations.
-      if (typeof window.__chromium_devtools_metrics_reporter !== 'function') {
-        window.__chromium_devtools_metrics_reporter = function () {};
-      }
-    </script>
-    <!-- ⚡ Blocking theme init — must run before CSS renders to avoid flash -->
-    <script>
-      (function() {
+      (function () {
         try {
-          var saved = localStorage.getItem('theme');
-          var theme = (saved === 'light' || saved === 'dark') ? saved : 'dark';
-          document.documentElement.setAttribute('data-theme', theme);
-        } catch(e) {
+          var savedTheme = localStorage.getItem('theme');
+          document.documentElement.setAttribute('data-theme', savedTheme === 'light' ? 'light' : 'dark');
+        } catch (error) {
           document.documentElement.setAttribute('data-theme', 'dark');
         }
-      })();
+      }());
     </script>
-    <link rel="icon" type="image/png" href="/brand-dp-3d.png" />
-
-
-    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
-    <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
-
-    <style>
-      html, body {
-        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        font-display: swap;
-        background-color: #0f172a;
-        color: #f8fafc;
-      }
-    </style>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"></noscript>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-
+    <link rel="icon" type="image/png" href="%BASE_URL%svbk-it-solutions-logo-3d-square.png" />
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
-
 </html>

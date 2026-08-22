@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { Chart, registerables } from 'chart.js';
 import FloorBalanceReport from '../Reports/FloorBalanceReport';
+import './ProcessingDashboard.css';
+
+Chart.register(...registerables);
 
 const todayIso = () => {
   const now = new Date();
@@ -19,7 +23,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   }, []);
 
   // Filters State
-  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [selectedDate, setSelectedDate] = useState(() => localStorage.getItem('dashboard_date_filter') || todayIso());
   const [selectedCompany, setSelectedCompany] = useState(() => localStorage.getItem('production_for_filter') || '');
   const [selectedLocation, setSelectedLocation] = useState(() => localStorage.getItem('plant_location_filter') || '');
 
@@ -43,13 +47,14 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   const getFilteredWorkers = () => {
     const list = data?.present_workers_list || [];
     const cat = workerModal.category;
-    if (!cat || cat === 'ALL') return list;
-    if (cat === 'ATT_INSIDE') return list.filter(w => w.status === 'OPEN');
-    if (cat === 'ATT_AWAY') return list.filter(w => w.status === 'AWAY');
-    if (cat === 'ATT_DOUBLE_OT') return list.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
+    const staffList = list.filter(w => w.category === 'STAFF');
+    if (!cat || cat === 'ALL') return staffList;
+    if (cat === 'ATT_INSIDE') return staffList.filter(w => w.status === 'OPEN');
+    if (cat === 'ATT_AWAY') return staffList.filter(w => w.status === 'AWAY');
+    if (cat === 'ATT_DOUBLE_OT') return staffList.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
     if (cat.startsWith('SHIFT_')) {
       const shiftName = cat.replace('SHIFT_', '');
-      return list.filter(w => w.shift_name && w.shift_name.trim().toUpperCase() === shiftName.trim().toUpperCase());
+      return staffList.filter(w => w.shift_name && w.shift_name.trim().toUpperCase() === shiftName.trim().toUpperCase());
     }
     return list.filter(w => w.category === cat);
   };
@@ -93,6 +98,16 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
         }
       })
       .catch((err) => console.error(err));
+  }, []);
+
+  // Keep the selected day consistent when it is changed from another dashboard.
+  useEffect(() => {
+    const syncDashboardDate = (event) => {
+      const nextDate = event.detail?.date;
+      if (nextDate) setSelectedDate(nextDate);
+    };
+    window.addEventListener('dashboard_date_change', syncDashboardDate);
+    return () => window.removeEventListener('dashboard_date_change', syncDashboardDate);
   }, []);
 
   // Listen to parent global filter changes
@@ -172,7 +187,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
     let isSubscribed = true;
 
     const renderCharts = () => {
-      if (!isSubscribed || !window.Chart) return;
+      if (!isSubscribed) return;
       const currentTheme = theme || document.documentElement.getAttribute("data-theme") || 'dark';
       const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
       const labelColor = currentTheme === 'dark' ? '#94a3b8' : '#475569';
@@ -205,7 +220,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       // De-heading
       if (dhChartInstance.current) dhChartInstance.current.destroy();
       if (dhCanvasRef.current) {
-        dhChartInstance.current = new window.Chart(dhCanvasRef.current, {
+        dhChartInstance.current = new Chart(dhCanvasRef.current, {
           type: 'bar',
           data: {
             labels: labels,
@@ -218,7 +233,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       // Peeling
       if (peelingChartInstance.current) peelingChartInstance.current.destroy();
       if (peelingCanvasRef.current) {
-        peelingChartInstance.current = new window.Chart(peelingCanvasRef.current, {
+        peelingChartInstance.current = new Chart(peelingCanvasRef.current, {
           type: 'bar',
           data: {
             labels: labels,
@@ -231,7 +246,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       // Production
       if (prodChartInstance.current) prodChartInstance.current.destroy();
       if (prodCanvasRef.current) {
-        prodChartInstance.current = new window.Chart(prodCanvasRef.current, {
+        prodChartInstance.current = new Chart(prodCanvasRef.current, {
           type: 'bar',
           data: {
             labels: labels,
@@ -242,18 +257,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       }
     };
 
-    if (window.Chart) {
-      renderCharts();
-    } else {
-      let script = document.getElementById('chartjs-cdn-script');
-      if (!script) {
-        script = document.createElement('script');
-        script.id = 'chartjs-cdn-script';
-        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
-        document.head.appendChild(script);
-      }
-      script.addEventListener('load', renderCharts);
-    }
+    renderCharts();
 
     return () => {
       isSubscribed = false;
@@ -393,7 +397,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   }
 
   return (
-    <div className="module-shell" style={containerStyle}>
+    <div className="module-shell processing-dashboard" style={containerStyle}>
       {!isMobile && (
         <aside className="module-rail">
           <div className="rail-title">
@@ -477,26 +481,25 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       )}
 
       <main className="module-main" style={isMobile ? { width: '100%', height: '100%', overflowY: 'auto' } : { height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-        <div style={{ padding: '12px 14px' }}>
+        <div className="processing-workspace">
 
           {/* Header Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div className="processing-page-header">
             <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fa-solid fa-industry" style={{ color: '#3b82f6' }}></i>
+              <h1>
+                <span className="processing-title-icon"><i className="fa-solid fa-industry"></i></span>
                 Processing Dashboard
               </h1>
-
             </div>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
-                {selectedDate}
-              </div>
+            <div className="processing-header-status">
+              <span className="processing-live-dot"></span>
+              <span>Daily view</span>
+              <strong>{selectedDate}</strong>
             </div>
           </div>
 
           {/* Filters Toolbar */}
-          <div className="erp-horizontal-filter-row" style={filterToolbarStyle}>
+          <div className="erp-horizontal-filter-row processing-filter-bar" style={filterToolbarStyle}>
             <div style={filterGroupStyle}>
               <label style={filterLabelStyle}>Dashboard Date</label>
               <input
@@ -505,7 +508,10 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
                 value={selectedDate}
                 onChange={e => {
                   const val = e.target.value;
-                  setSelectedDate(val ? val : todayIso());
+                  const dashboardDate = val || todayIso();
+                  setSelectedDate(dashboardDate);
+                  localStorage.setItem('dashboard_date_filter', dashboardDate);
+                  window.dispatchEvent(new CustomEvent('dashboard_date_change', { detail: { date: dashboardDate } }));
                 }}
               />
             </div>
@@ -551,7 +557,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           )}
 
           {/* KPI Cards Grid */}
-          <div className="kpi-grid">
+          <div className="kpi-grid processing-single-row">
             <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Gate Entry" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('gate_entry', '/processing/gate_entry'); }} onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
               <div className="kpi-header">
                 <h3>Gate Entries</h3>
@@ -653,7 +659,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
         {/* Live Attendance Swipe Module */}
         <div style={sectionHeaderStyle}>
-          <span>Staff Attendance — Selected Dashboard Date</span>
+          <span>Staff Attendance</span>
           <div style={sectionHeaderLineStyle}></div>
         </div>
         <div style={attendanceViewportStyle}>

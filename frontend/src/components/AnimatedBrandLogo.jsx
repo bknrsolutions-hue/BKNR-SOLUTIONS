@@ -6,7 +6,7 @@ export default function AnimatedBrandLogo({
   size = 72,
   className = '',
   loop = false,
-  label = 'BKNR ERP',
+  label = 'SVBK IT Solutions',
 
 }) {
   return (

@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnimatedBrandLogo from './components/AnimatedBrandLogo';
 const ApprovalAlertPopup = React.lazy(() => import('./components/ApprovalAlertPopup'));
+const SUPPORT_AGENT_AVATAR = `${import.meta.env.BASE_URL}support-agent.png`;
 
 let initialSessionRequest;
 
@@ -728,10 +729,12 @@ export default function App() {
             } : undefined}
           >
             <div className="react-support-drawer-head" onPointerDown={startSupportDrawerDrag}>
-              <div>
-                <span>BKNR ERP</span>
-
-                <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
+              <div className="react-support-drawer-identity">
+                <img className="support-drawer-agent-avatar" src={SUPPORT_AGENT_AVATAR} alt="" />
+                <div>
+                  <span>SVBK IT Solutions</span>
+                  <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
+                </div>
               </div>
               <button
                 type="button"
@@ -739,7 +742,7 @@ export default function App() {
                 title="Close Support"
                 aria-label="Close Support"
               >
-                <i className="fa-solid fa-support-agent" aria-hidden="true" />
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
               </button>
             </div>
             <div className="react-support-drawer-content">
@@ -770,11 +773,11 @@ export default function App() {
           right: 'auto',
           bottom: 'auto',
         } : undefined}
-        title="Open Support"
-        aria-label="Open Support"
+        title="Open support chat"
+        aria-label="Open support chat"
         aria-pressed={Boolean(supportDrawer)}
       >
-        <i className="fa-solid fa-support-agent" aria-hidden="true" />
+        <img className="floating-support-avatar" src={SUPPORT_AGENT_AVATAR} alt="" />
       </button>
       {noticePopup}
     </React.Fragment>

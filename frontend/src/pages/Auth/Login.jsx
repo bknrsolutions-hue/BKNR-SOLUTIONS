@@ -1,28 +1,40 @@
-import React, { useState } from 'react';
-import { Layers } from 'lucide-react';
+import { useState } from 'react';
+import ErpRigAnimation from '../../components/ErpRigAnimation';
 
 export default function Login({ handleLogin, navigateToRegister }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      alert('Please enter email and password.');
+      setError('Please enter email and password.');
       return;
     }
-    handleLogin(email, password);
+
+    setError('');
+    setLoading(true);
+    try {
+      await handleLogin(email.trim(), password);
+    } catch (err) {
+      setError(err?.message || 'Unable to sign in. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
+        <ErpRigAnimation />
         <div style={{ textAlign: 'center' }}>
           <h2 style={{ fontSize: '20px', fontWeight: '800', marginTop: '16px', color: 'var(--text-primary)' }}>
-            SVBK ERP Corporate Login
+            SVBK IT Solutions Corporate Login
           </h2>
           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '4px' }}>
-            Enter credentials to access plant worksheets
+            Enter your tenant credentials to access the seafood operations workspace
           </p>
         </div>
 
