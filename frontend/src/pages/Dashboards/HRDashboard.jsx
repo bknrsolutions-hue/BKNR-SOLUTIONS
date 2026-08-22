@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sessionFetch } from '../../utils/sessionFetch';
-import { Bars, DashboardHeader, DashboardState, MetricCard, ModuleRail, money, number, Panel, ProgressList, useDashboardData } from './DashboardPrimitives';
+import { Bars, DashboardHeader, DashboardState, Field, MetricCard, ModuleRail, money, number, Panel, ProgressList, useDashboardData } from './DashboardPrimitives';
 import './HRDashboard.css';
 import './HRDashboardModal.css';
 
@@ -32,6 +32,7 @@ const TABS = [
 
 const TableEmpty = ({ columns, text = 'No records available.' }) => <tr><td colSpan={columns} className="hr-empty">{text}</td></tr>;
 const Pill = ({ children, tone = 'blue' }) => <span className={`hr-pill ${tone}`}>{children}</span>;
+const currentDashboardDate = () => localStorage.getItem('dashboard_date_filter') || new Date().toISOString().slice(0, 10);
 
 export default function HRDashboard({ setActivePage }) {
   const [tab, setTab] = useState(() => {
@@ -49,19 +50,32 @@ export default function HRDashboard({ setActivePage }) {
   const [deptFilter, setDeptFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [dashboardDate, setDashboardDate] = useState(currentDashboardDate);
   const [search, setSearch] = useState('');
   const [actionBusy, setActionBusy] = useState('');
   const [dutyInputs, setDutyInputs] = useState({});
   const [kpiModal, setKpiModal] = useState(null);
+  useEffect(() => {
+    const syncDashboardDate = event => setDashboardDate(event.detail?.date || currentDashboardDate());
+    window.addEventListener('dashboard_date_change', syncDashboardDate);
+    return () => window.removeEventListener('dashboard_date_change', syncDashboardDate);
+  }, []);
   const buildUrl = useCallback(() => {
     const params = new URLSearchParams({ format: 'json' });
+    if (dashboardDate) params.set('dashboard_date', dashboardDate);
     if (deptFilter) params.set('dept_filter', deptFilter);
     if (typeFilter) params.set('type_filter', typeFilter);
     if (statusFilter) params.set('status_filter', statusFilter);
     return `/dashboard/hr_command_center?${params.toString()}`;
-  }, [deptFilter, typeFilter, statusFilter]);
+  }, [deptFilter, typeFilter, statusFilter, dashboardDate]);
   const { data, loading, error, reload } = useDashboardData(buildUrl);
   const go = (id, route) => setActivePage(id, route);
+  const changeDashboardDate = (value) => {
+    const nextDate = value || currentDashboardDate();
+    setDashboardDate(nextDate);
+    localStorage.setItem('dashboard_date_filter', nextDate);
+    window.dispatchEvent(new CustomEvent('dashboard_date_change', { detail: { date: nextDate } }));
+  };
 
   const directory = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -101,6 +115,7 @@ export default function HRDashboard({ setActivePage }) {
       if (deptFilter) params.set('dept_filter', deptFilter);
       if (typeFilter) params.set('type_filter', typeFilter);
       if (statusFilter) params.set('status_filter', statusFilter);
+      if (dashboardDate) params.set('dashboard_date', dashboardDate);
       const response = await sessionFetch(`/dashboard/hr_kpi_details?${params.toString()}`, { headers: { Accept: 'application/json' } });
       const payload = await response.json();
       if (!response.ok || payload.status !== 'success') throw new Error(payload.message || 'KPI details could not be loaded.');
@@ -113,20 +128,22 @@ export default function HRDashboard({ setActivePage }) {
   return <div className="module-shell hr-react-dashboard">
     <ModuleRail title="HRMS" icon="fa-users-gear" sections={HR_RAIL} onNavigate={item => go(item.id, item.route)} />
     <main className="enterprise-dashboard">
-      <DashboardHeader title="HR Dashboard" subtitle={data?.actual_location || 'ALL UNITS'} onRefresh={reload} />
+      <DashboardHeader title="HR Dashboard" subtitle={data?.actual_location || 'ALL UNITS'} onRefresh={reload}>
+        <Field label="Dashboard Date"><input type="date" value={dashboardDate} onChange={event => changeDashboardDate(event.target.value)} /></Field>
+      </DashboardHeader>
       <DashboardState loading={loading} error={error}>
-        <div className="enterprise-kpis hr-kpis">
+        <div className="enterprise-kpis hr-kpis hr-kpis-two-lines">
           <MetricCard label="Total Manpower" value={number(data?.total_employees)} note="All registered staff" icon="fa-users" onClick={() => openKpiDetails('TOTAL_STAFF', 'Total Manpower')} />
           <MetricCard label="Active Force" value={number(data?.active_employees)} note="Currently active" icon="fa-user-check" color="#16a34a" onClick={() => openKpiDetails('ACTIVE_STAFF', 'Active Force')} />
+          <MetricCard label="Permanent Labor" value={`${number(data?.perm_pct)}%`} icon="fa-building-user" onClick={() => openKpiDetails('PERMANENT', 'Permanent Labor')} />
+          <MetricCard label="Contract Labor" value={`${number(data?.contract_pct)}%`} icon="fa-helmet-safety" color="#64748b" onClick={() => openKpiDetails('CONTRACT', 'Contract Labor')} />
           <MetricCard label="Present Today" value={`${number(data?.present_pct)}%`} note={`${number(data?.present_today)} present today`} icon="fa-clipboard-user" onClick={() => openKpiDetails('PRESENT', 'Present Today')} />
           <MetricCard label="Absent Today" value={number(data?.absent_today)} note="Unaccounted" icon="fa-user-xmark" color="#f59e0b" onClick={() => openKpiDetails('ABSENT', 'Absent Today')} />
+          <MetricCard label="OT Hours Logged" value={`${number(data?.ot_hours_today)} Hrs`} note="Today OT total" icon="fa-clock" color="#f59e0b" onClick={() => openKpiDetails('OT_TODAY', 'OT Hours Logged')} />
+          <MetricCard label="Productivity Index" value={`${number(data?.employee_productivity)}%`} note="Efficiency index" icon="fa-chart-line" color="#16a34a" onClick={() => setTab('analytics')} />
           <MetricCard label="Est. Monthly Budget" value={money(data?.total_monthly_payroll_est)} note="Active monthly salaries" icon="fa-calculator" color="#8b5cf6" onClick={() => setTab('cost')} />
           <MetricCard label="Est. Today Labor Cost" value={money(data?.labor_cost_today)} note="Today's estimate" icon="fa-indian-rupee-sign" onClick={() => setTab('cost')} />
           <MetricCard label="Labour Cost/KG" value={money(data?.cost_per_kg)} note="Per kg processed" icon="fa-scale-unbalanced" onClick={() => setTab('cost')} />
-          <MetricCard label="OT Hours Logged" value={`${number(data?.ot_hours_today)} Hrs`} note="Today OT total" icon="fa-clock" color="#f59e0b" onClick={() => openKpiDetails('OT_TODAY', 'OT Hours Logged')} />
-          <MetricCard label="Productivity Index" value={`${number(data?.employee_productivity)}%`} note="Efficiency index" icon="fa-chart-line" color="#16a34a" onClick={() => setTab('analytics')} />
-          <MetricCard label="Permanent Labor" value={`${number(data?.perm_pct)}%`} icon="fa-building-user" onClick={() => openKpiDetails('PERMANENT', 'Permanent Labor')} />
-          <MetricCard label="Contract Labor" value={`${number(data?.contract_pct)}%`} icon="fa-helmet-safety" color="#64748b" onClick={() => openKpiDetails('CONTRACT', 'Contract Labor')} />
           <MetricCard label="Avg Net Salary" value={money(data?.avg_salary)} note="Per employee" icon="fa-money-check-dollar" color="#64748b" onClick={() => setTab('cost')} />
           <MetricCard label="Attrition (YTD)" value={`${number(data?.attrition_rate)}%`} note={Number(data?.attrition_rate) <= 5 ? 'Under control' : 'Needs attention'} icon="fa-person-walking-arrow-right" color="#f59e0b" onClick={() => setTab('analytics')} />
           <MetricCard label="Pending OT Queue" value={number(data?.pending_ot_count)} note="Awaiting approval" icon="fa-stopwatch" color="#f59e0b" onClick={() => setTab('approvals')} />

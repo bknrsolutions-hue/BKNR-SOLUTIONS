@@ -875,15 +875,55 @@ body {
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  padding: 40px;
+  max-width: 480px;
+  padding: 28px;
   background: var(--surface-panel);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-float);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.erp-rig-banner {
+  position: relative;
+  width: 100%;
+  height: 210px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #091833, #050d1a);
+  border: 1px solid rgba(57, 123, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(4, 10, 24, 0.45);
+}
+
+.erp-rig-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.erp-rig-overlay {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  pointer-events: none;
+}
+
+.erp-rig-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(10, 24, 51, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
 }
 
 /* =========================================================
@@ -1660,19 +1700,6 @@ body.modal-open header.no-print {
     color: var(--action-color);
     font-size: 14px;
     line-height: 18px;
-}
-
-.icon-action-btn.action-support > i.fa-support-agent {
-    width: 18px;
-    height: 18px;
-    flex-basis: 18px;
-    border: 1px solid color-mix(in srgb, var(--action-color) 70%, #ffffff);
-    border-radius: 50%;
-    background-image: url('/support-agent.png');
-    background-position: center 30%;
-    background-size: 112%;
-    box-shadow: 0 1px 4px color-mix(in srgb, var(--action-color) 35%, transparent);
-    vertical-align: initial;
 }
 
 .icon-action-btn[class*="action-"] .icon-action-label {
@@ -2838,24 +2865,6 @@ body.modal-open header.no-print {
   .main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"]) { transition: none !important; }
 }
 }
-.fa-solid.fa-support-agent {
-  position: relative;
-  display: inline-block;
-  width: 2.15em;
-  height: 2.15em;
-  line-height: 1;
-  vertical-align: -0.58em;
-  border: 1px solid color-mix(in srgb, #06b6d4 55%, var(--border-light));
-  border-radius: 50%;
-  background: url('/support-agent.png') center 34% / cover no-repeat;
-  box-shadow: 0 1px 4px rgb(6 182 212 / 30%);
-}
-
-.fa-solid.fa-support-agent::before,
-.fa-solid.fa-support-agent::after {
-  content: none;
-}
-
 /* Mobile header: company identity on top, controls in one aligned row below. */
 @media (max-width: 767px) {
   :root {
@@ -2967,12 +2976,6 @@ body.modal-open header.no-print {
     flex-basis: 16px;
     font-size: 12px;
     line-height: 16px;
-  }
-
-  .header-right-actions .icon-action-btn.action-support > i.fa-support-agent {
-    width: 16px;
-    height: 16px;
-    flex-basis: 16px;
   }
 
   .header-right-actions .corp-profile-btn {
@@ -3202,10 +3205,26 @@ body.modal-open header.no-print {
   user-select: none;
 }
 
-.react-support-drawer-head > div {
+.react-support-drawer-identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.react-support-drawer-identity > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.support-drawer-agent-avatar {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  object-fit: cover;
+  object-position: center 26%;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
 }
 
 .react-support-drawer-head span {
@@ -3263,18 +3282,17 @@ body.support-drawer-dragging * {
   right: 20px;
   bottom: 20px;
   z-index: 100002;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   width: 72px;
   height: 72px;
   padding: 0;
-  overflow: visible;
-  border: 0;
-  color: var(--text-primary);
-  background: transparent;
-  box-shadow: none;
+  overflow: hidden;
+  border: 1px solid #60a5fa;
+  border-radius: 999px;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.32);
   cursor: pointer;
   touch-action: none;
   user-select: none;
@@ -3290,18 +3308,13 @@ body.support-drawer-dragging * {
   display: none;
 }
 
-.floating-support-launcher i {
-  display: grid;
-  flex: 0 0 69px;
-  width: 69px;
-  height: 69px;
-  place-items: center;
-  border: 1px solid #60a5fa;
-  border-radius: 999px;
-  color: #fff;
-  background: #2563eb;
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.32);
-  font-size: 24px;
+.floating-support-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 26%;
+  pointer-events: none;
 }
 
 body.floating-support-dragging,
@@ -3328,9 +3341,8 @@ body.floating-support-dragging * {
 }
 
 .react-support-drawer .support-drawer-page .ticket-layout {
+  display: flex;
   flex: 1 1 auto;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(135px, 32%) minmax(0, 1fr);
   height: auto;
   min-height: 0;
   overflow: hidden;
@@ -3338,8 +3350,22 @@ body.floating-support-dragging * {
 
 .react-support-drawer .support-drawer-page .ticket-layout > .admin-card {
   display: flex;
+  width: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   flex-direction: column;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout .support-chat-panel {
+  display: none !important;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout.chat-active .support-ticket-list-panel {
+  display: none !important;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout.chat-active .support-chat-panel {
+  display: flex !important;
 }
 
 .react-support-drawer .support-drawer-page .ticket-list {
