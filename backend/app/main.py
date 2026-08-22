@@ -497,7 +497,7 @@ os.makedirs(static_path, exist_ok=True)
 os.makedirs(templates_path, exist_ok=True)
 application.mount("/static", StaticFiles(directory=static_path), name="static")
 application.mount("/website-assets", StaticFiles(directory=str(frontend_public_path)), name="website-assets")
-application.mount("/brain-images", StaticFiles(directory="/Users/nagaraju/.gemini/antigravity-ide/brain/4ed93a22-66c9-4303-ad31-25037d673a72"), name="brain-images")
+#application.mount("/brain-images", StaticFiles(directory="/Users/nagaraju/.gemini/antigravity-ide/brain/4ed93a22-66c9-4303-ad31-25037d673a72"), name="brain-images")
 templates = Jinja2Templates(directory=templates_path)
 
 # ✅ VERY IMPORTANT:  ‌  ,
