@@ -98,7 +98,8 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
 
   const openItem = key => {
     if (key === 'admin_my_complaints') {
-      setSupportOpen(true);
+      setFilterError('');
+      setActiveItem('admin_my_complaints');
       return;
     }
     const target = appItems.find(item => item.key === key);
@@ -150,6 +151,7 @@ export default function NativeHomeScreen({ user, onLogout, onUserUpdated }) {
     if (activeItem === 'hrms_visitors_workers') activeScreen = <NativeVisitorsDayWorkers filters={filters} onBack={back} />;
     if (activeItem === 'hrms_approvals') activeScreen = <NativeApprovals filters={filters} onBack={back} />;
     if (activeItem === 'user_profile') activeScreen = <NativeProfile user={user} filters={filters} onBack={back} onProfileUpdated={onUserUpdated} onLogout={onLogout} />;
+    if (activeItem === 'admin_my_complaints') activeScreen = <NativeComplaints filters={filters} onBack={back} />;
     if (activeItem === 'admin_user_configuration' && ['admin', 'super_admin'].includes(user?.role) && (grantedPermissions.has('ALL') || grantedPermissions.has('add_user'))) activeScreen = <NativeUserConfiguration onBack={back} />;
   }
 
