@@ -1,6 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from app.database.models.attendance import EmployeeSalaryAdvance, EmployeeSalaryAdvanceRecovery
 
@@ -74,13 +75,28 @@ def sync_monthly_advance_recovery(
 
         if target_amount > 0:
             if not recovery:
-                recovery = EmployeeSalaryAdvanceRecovery(
-                    company_id=company_id,
-                    employee_id=employee_id,
-                    advance_id=advance.id,
-                    month_year=month_year,
-                )
-                db.add(recovery)
+                # Use a nested transaction / savepoint when creating the recovery row so
+                # concurrent callers attempting to insert the same unique (company_id, advance_id, month_year)
+                # do not rollback the outer transaction on IntegrityError.
+                try:
+                    with db.begin_nested():
+                        recovery = EmployeeSalaryAdvanceRecovery(
+                            company_id=company_id,
+                            employee_id=employee_id,
+                            advance_id=advance.id,
+                            month_year=month_year,
+                        )
+                        db.add(recovery)
+                        db.flush()
+                except IntegrityError:
+                    # Another transaction inserted the recovery concurrently; fetch it.
+                    recovery = db.query(EmployeeSalaryAdvanceRecovery).filter(
+                        EmployeeSalaryAdvanceRecovery.company_id == company_id,
+                        EmployeeSalaryAdvanceRecovery.advance_id == advance.id,
+                        EmployeeSalaryAdvanceRecovery.month_year == month_year,
+                    ).first()
+                    if not recovery:
+                        raise
             recovery.salary_processing_id = salary_processing_id
             recovery.amount = target_amount
             recovery.status = "ACTIVE"
