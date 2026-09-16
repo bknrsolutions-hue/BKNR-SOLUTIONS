@@ -5,11 +5,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Stre
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, desc, func
+from sqlalchemy import or_, and_, desc, func, text
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, date, timedelta
 from app.utils.timezone import ist_now
 import datetime as dt
+import zlib
 import logging
 import io
 import openpyxl
@@ -291,11 +292,32 @@ async def attendance_entry(
         location=actual_location,
     )
 
+    # To prevent duplicate OPEN duties under concurrent IN requests, acquire a
+    # Postgres advisory lock scoped to (company_id, employee_id, date). This serializes
+    # fresh-duty creation without altering schema. If advisory locks are unavailable
+    # on the DB, the exception is ignored and behavior falls back to best-effort.
+    try:
+        key = zlib.crc32(f"{company_id}:{full_employee_id}:{now.date()}".encode()) & 0x7fffffff
+        db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": key})
+    except Exception:
+        # Not a Postgres DB or advisory locks not supported in test env; continue.
+        pass
+
     duty = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
         DailyAttendance.status != "CLOSED"
     ).first()
+
+    # Re-load the duty with a FOR UPDATE lock when present and when we will modify it
+    # This prevents concurrent finalizers from both closing/posting the same duty.
+    if duty:
+        try:
+            duty = db.query(DailyAttendance).with_for_update().filter(DailyAttendance.id == duty.id).first()
+        except Exception:
+            # Some DB backends or test environments may not support SELECT FOR UPDATE in the same way;
+            # fall back to the unlocked duty when FOR UPDATE isn't supported.
+            duty = db.query(DailyAttendance).filter(DailyAttendance.id == duty.id).first()
 
     if auto_closed and action in {"OUT", "EXIT"} and not duty:
         db.commit()
