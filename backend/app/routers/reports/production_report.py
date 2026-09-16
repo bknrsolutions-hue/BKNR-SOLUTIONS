@@ -120,19 +120,19 @@ def production_report_page(
     all_data = q.all()
 
     # ============================================================
-    # 1. SUMMARY TABLE LOGIC (Grouped by: At, For, Batch, Variety, Grade)
+    # 1. SUMMARY TABLE LOGIC (Grouped by: At, For, Batch, Species, Variety)
     # ============================================================
     summary_rows = sorted(all_data, key=lambda x: (
         x.production_at or "", 
         x.production_for or "", 
         x.batch_number or "", 
-        x.variety_name or "", 
-        x.grade or ""
+        x.species or "",
+        x.variety_name or ""
     ))
 
     summary_subtotals = {}
     for r in summary_rows:
-        key = (r.production_at, r.production_for, r.batch_number, r.variety_name, r.grade)
+        key = (r.production_at, r.production_for, r.batch_number, r.species, r.variety_name)
         
         if key not in summary_subtotals:
             var_data = db.query(varieties).filter(
@@ -141,11 +141,15 @@ def production_report_page(
             ).first()
             target_yield = float(var_data.soaking_yield or 0) if var_data else 0.0
 
-            soaking_in = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
+            soaking_q = db.query(signed_sum(Soaking, Soaking.in_qty)).filter(
                 Soaking.company_id == comp_code,
-                Soaking.batch_number == r.batch_number,
-                Soaking.variety_name == r.variety_name
-            ).scalar() or 0.0
+                func.upper(func.trim(Soaking.batch_number)) == func.upper(func.trim(r.batch_number or "")),
+                func.upper(func.trim(Soaking.variety_name)) == func.upper(func.trim(r.variety_name or "")),
+                func.upper(func.trim(Soaking.species)) == func.upper(func.trim(r.species or "")),
+                func.upper(func.trim(Soaking.production_at)) == func.upper(func.trim(r.production_at or "")),
+                func.upper(func.trim(Soaking.production_for)) == func.upper(func.trim(r.production_for or ""))
+            )
+            soaking_in = soaking_q.scalar() or 0.0
 
             summary_subtotals[key] = {
                 "mc": 0, "loose": 0, "prod_qty": 0.0,
@@ -247,7 +251,7 @@ def production_report_page(
         # Convert dictionary keys of summary_subtotals to strings
         subtotals_json = {}
         for key, val in summary_subtotals.items():
-            str_key = "__".join(str(k or "") for k in key)
+            str_key = "|".join(str(k or "") for k in key)
             subtotals_json[str_key] = val
         context_json["summary_subtotals"] = subtotals_json
 
@@ -333,15 +337,27 @@ def update_production(request: Request, payload: dict = Body(...), db: Session =
     if has_changes:
         pack = db.query(packing_styles).filter(
             packing_styles.company_id == comp_code, 
-            packing_styles.packing_style == row.packing_style
+            func.lower(func.trim(packing_styles.packing_style)) == func.lower(func.trim(row.packing_style))
         ).first()
         
-        if pack:
-            mc_w = float(pack.mc_weight or 0)
-            sl_w = float(pack.slab_weight or 0)
-            base_qty = (float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w)
-        else:
-            base_qty = 0.0
+        mc_w = float(pack.mc_weight or 0) if pack else 0.0
+        sl_w = float(pack.slab_weight or 0) if pack else 0.0
+
+        if mc_w <= 0 or sl_w <= 0:
+            import re
+            style_str = str(row.packing_style or "").strip()
+            match = re.search(r'(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)', style_str)
+            if match:
+                count = float(match.group(1))
+                per_slab = float(match.group(2))
+                if sl_w <= 0: sl_w = per_slab
+                if mc_w <= 0: mc_w = count * per_slab
+            else:
+                single_match = re.search(r'(\d+\.?\d*)', style_str)
+                if single_match and mc_w <= 0:
+                    mc_w = float(single_match.group(1))
+
+        base_qty = (float(row.no_of_mc or 0) * mc_w) + (float(row.loose or 0) * sl_w)
 
         final_production_qty = base_qty
         glaze_text = str(row.glaze or "").strip().upper()

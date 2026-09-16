@@ -270,7 +270,13 @@ async def get_processing_summary(
             
             if rows["gate"]:
                 g = rows["gate"][0]
-                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"])})
+                veh_set = set(
+                    (getattr(row, "batch_number", None), getattr(row, "vehicle_number", None))
+                    for row in rows["gate"]
+                    if getattr(row, "vehicle_number", None) or getattr(row, "batch_number", None)
+                )
+                gate_veh_count = len(veh_set) if veh_set else len(rows["gate"])
+                card.update({"supplier_name": g.supplier_name, "purchasing_location": g.purchasing_location, "receiving_center": g.receiving_center, "vehicle_number": g.vehicle_number, "challan_number": g.challan_number, "gate_pass_number": g.gate_pass_number, "total_boxes": sum(int(row.no_of_material_boxes or 0) for row in rows["gate"]), "gate_vehicles": gate_veh_count})
         else: 
             rows["reprocess"] = db.query(Reprocess).filter(Reprocess.new_batch_id==batch, Reprocess.company_id==company_code).all()
             if rows["reprocess"]:
@@ -322,30 +328,180 @@ async def get_processing_summary(
             })
         rows["grading_summary"] = grading_summary
 
-        # --- PRODUCTION SUMMARY SUBTOTAL TRACKS ---
-        for p in rows["production"]:
-            v_name, s_name, b_num = str(p.variety_name or "").strip(), str(p.species or "").strip(), str(p.batch_number or "").strip()
-            key = (str(p.production_for or "").strip(), str(p.production_at or "").strip(), s_name, v_name, b_num)
-            
-            if key not in subtotals:
-                target_yield = var_map.get(v_name.upper(), 0.0)
-                soaking_in = sum(
-                    signed_number(s, s.in_qty)
-                    for s in rows["soaking"]
-                    if str(s.batch_number or "").strip() == b_num
-                    and str(s.variety_name or "").strip() == v_name
-                    and str(s.species or "").strip().upper() == s_name.upper()
-                )
-                subtotals[key] = {"prod_qty": 0.0, "target_yield": target_yield, "soaking_in": float(soaking_in), "actual_yield": 0.0, "diff_yield_perc": 0.0, "diff_qty": 0.0}
-            subtotals[key]["prod_qty"] += signed_number(p, p.production_qty)
+        # --- PRODUCTION & RECONCILIATION SUMMARY SUBTOTAL TRACKS ---
+        recon_keys = []
 
-        for key in subtotals:
-            s = subtotals[key]
-            if s["soaking_in"] > 0:
-                s["actual_yield"] = round((s["prod_qty"] / s["soaking_in"]) * 100, 2)
-                s["diff_yield_perc"] = round(s["actual_yield"] - s["target_yield"], 2)
-                expected_qty = (s["soaking_in"] * s["target_yield"]) / 100
-                s["diff_qty"] = round(s["prod_qty"] - expected_qty, 2)
+        def norm_str(val):
+            return str(val or "").strip()
+
+        def norm_upper(val):
+            return str(val or "").strip().upper()
+
+        def match_variety(v1, v2):
+            u1, u2 = norm_upper(v1), norm_upper(v2)
+            return u1 == u2 and u1 != ""
+
+        for s in rows["soaking"]:
+            p_for = norm_str(s.production_for) or norm_str(s.company_id) or production_for or ""
+            p_at = norm_str(s.production_at) or "AP"
+            spec = norm_str(s.species)
+            var = norm_str(s.variety_name)
+            b_num = norm_str(s.batch_number)
+            k = (p_for, p_at, spec, var, b_num)
+            if k not in recon_keys:
+                recon_keys.append(k)
+
+        for p in rows["production"]:
+            p_for = norm_str(p.production_for) or production_for or ""
+            p_at = norm_str(p.production_at) or "AP"
+            spec = norm_str(p.species)
+            var = norm_str(p.variety_name)
+            b_num = norm_str(p.batch_number)
+            k = (p_for, p_at, spec, var, b_num)
+            if k not in recon_keys:
+                recon_keys.append(k)
+
+        subtotals = {}
+        for (p_for, p_at, spec, var, b_num) in recon_keys:
+            target_yield = var_map.get(norm_upper(var), 0.0)
+            if not target_yield:
+                for vk, vv in var_map.items():
+                    if match_variety(var, vk):
+                        target_yield = vv
+                        break
+
+            rmp_received = sum(
+                active_number(r, r.received_qty)
+                for r in rows.get("rmp", [])
+                if norm_str(r.batch_number) == b_num
+                and (not spec or norm_upper(r.species) == norm_upper(spec))
+                and (match_variety(r.variety_name, var) or (not norm_str(r.variety_name) and norm_upper(var) == "HOSO"))
+            )
+
+            dh_in = sum(
+                signed_number(d, d.hoso_qty)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
+            )
+
+            dh_out = sum(
+                signed_number(d, d.hlso_qty)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
+            )
+
+            deheading_diff = sum(
+                float(d.diff_qty or 0)
+                for d in rows["deheading"]
+                if norm_str(d.batch_number) == b_num
+                and (not spec or norm_upper(d.species) == norm_upper(spec))
+                and match_variety(getattr(d, "variety_name", None) or "HOSO", var)
+            )
+
+            peel_in = sum(
+                signed_number(p, p.hlso_qty)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            peel_out = sum(
+                signed_number(p, p.peeled_qty)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            peeling_diff = sum(
+                float(p.diff_qty or 0)
+                for p in rows["peeling"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            soaking_in = sum(
+                signed_number(s, s.in_qty)
+                for s in rows["soaking"]
+                if norm_str(s.batch_number) == b_num
+                and (not spec or norm_upper(s.species) == norm_upper(spec))
+                and match_variety(s.variety_name, var)
+            )
+
+            prod_qty = sum(
+                signed_number(p, p.production_qty)
+                for p in rows["production"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            mc_sum = sum(
+                int(p.no_of_mc or 0)
+                for p in rows["production"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            loose_sum = sum(
+                int(p.loose or 0)
+                for p in rows["production"]
+                if norm_str(p.batch_number) == b_num
+                and (not spec or norm_upper(p.species) == norm_upper(spec))
+                and match_variety(p.variety_name, var)
+            )
+
+            gross_sum = 0.0
+            for p in rows["production"]:
+                if norm_str(p.batch_number) == b_num and (not spec or norm_upper(p.species) == norm_upper(spec)) and match_variety(p.variety_name, var):
+                    net = signed_number(p, p.production_qty)
+                    glaze_clean = norm_upper(p.glaze)
+                    glaze_pct = 0
+                    if "NWNC" not in glaze_clean and "%" in glaze_clean:
+                        digits = glaze_clean.replace("%", "").strip()
+                        if digits.isdigit():
+                            glaze_pct = int(digits)
+                    if 0 < glaze_pct < 100:
+                        gross_sum += net / ((100 - glaze_pct) / 100)
+                    else:
+                        gross_sum += net
+
+            actual_yield = round((prod_qty / soaking_in * 100), 2) if soaking_in > 0 else 0.0
+            diff_yield_perc = round(actual_yield - target_yield, 2) if soaking_in > 0 else 0.0
+            expected_qty = (soaking_in * target_yield) / 100 if soaking_in > 0 else 0.0
+            diff_qty = round(prod_qty - expected_qty, 2) if soaking_in > 0 else 0.0
+
+            key = (p_for, p_at, spec, var, b_num)
+            subtotals[key] = {
+                "species": spec,
+                "variety": var,
+                "batch_number": b_num,
+                "production_for": p_for,
+                "production_at": p_at,
+                "rmp_received": float(round(rmp_received, 2)),
+                "deheading_in": float(round(dh_in, 2)),
+                "deheading_out": float(round(dh_out, 2)),
+                "deheading_diff": float(round(deheading_diff, 2)),
+                "peeling_in": float(round(peel_in, 2)),
+                "peeling_out": float(round(peel_out, 2)),
+                "peeling_diff": float(round(peeling_diff, 2)),
+                "soaking_in": float(round(soaking_in, 2)),
+                "prod_qty": float(round(prod_qty, 2)),
+                "target_yield": float(round(target_yield, 2)),
+                "actual_yield": float(actual_yield),
+                "diff_yield_perc": float(diff_yield_perc),
+                "diff_qty": float(diff_qty),
+                "mc": mc_sum,
+                "loose": loose_sum,
+                "gross": float(round(gross_sum, 2))
+            }
 
         # 🔥 DIRECT SELECTION FROM stock_entry WITH NO BACKEND RUNTIME CALCULATIONS
         rows["stock"] = db.query(stock_entry).filter(
@@ -427,6 +583,20 @@ async def get_processing_summary(
         card["chemical_qty"] = sum(signed_number(s, s.chemical_qty) for s in rows["soaking"])
         card["salt_qty"] = sum(signed_number(s, s.salt_qty) for s in rows["soaking"])
         card["production_qty"] = sum(signed_number(pr, pr.production_qty) for pr in rows["production"])
+        gross_prod_card_total = 0.0
+        for pr in rows["production"]:
+            net_q = signed_number(pr, pr.production_qty)
+            glaze_clean = norm_upper(pr.glaze)
+            glaze_pct = 0
+            if "NWNC" not in glaze_clean and "%" in glaze_clean:
+                digits = glaze_clean.replace("%", "").strip()
+                if digits.isdigit():
+                    glaze_pct = int(digits)
+            if 0 < glaze_pct < 100:
+                gross_prod_card_total += net_q / ((100 - glaze_pct) / 100)
+            else:
+                gross_prod_card_total += net_q
+        card["gross_production_qty"] = round(gross_prod_card_total, 2)
         card["stock_qty"] = sum(float(st.quantity or 0) for st in rows["stock"])
         card["stock_amount"] = sum(float(st.inventory_value or 0) for st in rows["stock"])
         card["floor_qty"] = round(sum(f["available_qty"] for f in floor_balance_list), 2)

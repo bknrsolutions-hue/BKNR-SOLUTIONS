@@ -2,9 +2,11 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
+_IS_PRODUCTION = os.environ.get("ENVIRONMENT", "development").strip().lower() == "production"
+_ENV = os.environ.get("ENVIRONMENT", "development").strip().lower()
+_NEEDS_SSL = _ENV not in ("development", "test", "dev")
 
-print("DATABASE_URL:", DATABASE_URL)
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 if not DATABASE_URL:
     raise RuntimeError("❌ DATABASE_URL not set")
@@ -24,9 +26,7 @@ engine = create_engine(
     pool_recycle=300,
     pool_size=5,
     max_overflow=10,
-    connect_args={
-        "sslmode": "require"
-    }
+    connect_args={"sslmode": "require"} if _NEEDS_SSL else {}
 )
 
 SessionLocal = sessionmaker(

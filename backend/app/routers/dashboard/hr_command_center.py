@@ -74,12 +74,31 @@ def clean_filter_value(value):
     return value
 
 
+import threading
+
+_HR_DASHBOARD_SCHEMA_ENSURED = False
+_HR_DASHBOARD_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_hr_dashboard_schema(db: Session) -> None:
-    db.execute(text(
-        "ALTER TABLE daily_attendance "
-        "ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0"
-    ))
-    db.flush()
+    global _HR_DASHBOARD_SCHEMA_ENSURED
+    if _HR_DASHBOARD_SCHEMA_ENSURED:
+        return
+
+    with _HR_DASHBOARD_SCHEMA_LOCK:
+        if _HR_DASHBOARD_SCHEMA_ENSURED:
+            return
+
+        try:
+            db.execute(text(
+                "ALTER TABLE daily_attendance "
+                "ADD COLUMN IF NOT EXISTS approved_duty_credit DOUBLE PRECISION DEFAULT 0"
+            ))
+            db.flush()
+            _HR_DASHBOARD_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("HR dashboard schema check failed: %s", exc)
 
 
 def get_shift_required_hours(db: Session, company_id: str, shift_name: str) -> float:
@@ -204,7 +223,8 @@ def hr_command_center(
     dept_filter: str = Query("", description="Filter by Department"),
     type_filter: str = Query("", description="Filter by Employee Type"),
     status_filter: str = Query("", description="Filter by Status"),
-    location: str | None = Query(None)  
+    location: str | None = Query(None),
+    dashboard_date: date | None = Query(None, description="Dashboard date in YYYY-MM-DD format"),
 ):
     email = request.session.get("email") or request.session.get("user") or "admin@bknr.com"
     comp_code = request.session.get("company_code") or request.session.get("company_id") or "BKNR"
@@ -222,7 +242,7 @@ def hr_command_center(
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    today = ist_now().date()
+    today = dashboard_date or ist_now().date()
     start_of_month = today.replace(day=1)
     current_year = today.year
     upcoming_festivals = get_upcoming_festivals(today)
@@ -819,6 +839,7 @@ async def get_hr_kpi_details(
     dept_filter: str = Query(""),
     type_filter: str = Query(""),
     status_filter: str = Query(""),
+    dashboard_date: date | None = Query(None),
     db: Session = Depends(get_db)
 ):
     comp_code = request.session.get("company_code")
@@ -834,7 +855,7 @@ async def get_hr_kpi_details(
     session_locations = request.session.get("allowed_locations", [])
     user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()] if isinstance(session_locations, str) else [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
-    today = ist_now().date()
+    today = dashboard_date or ist_now().date()
     
     allowed_emp_ids, g_loc_clean, emp_loc_col = get_secure_hr_scope(db, comp_code, global_location, user_allowed_locations)
     dept_filter = clean_filter_value(dept_filter)

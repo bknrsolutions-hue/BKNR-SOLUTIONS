@@ -4,6 +4,7 @@ Default Masters Seed Service
 New company register   function call .
 Existing data  skip  (idempotent).
 """
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.database.models.criteria import (
     species as SpeciesModel,
@@ -13,6 +14,10 @@ from app.database.models.criteria import (
     freezers as FreezersModel,
     packing_styles as PackingStylesModel,
     brands as BrandsModel,
+    varieties as VarietiesModel,
+    suppliers as SuppliersModel,
+    production_for as ProductionForModel,
+    peeling_at as PeelingAtModel,
 )
 
 # -------------------------------------------------------
@@ -22,8 +27,6 @@ from app.database.models.criteria import (
 DEFAULT_SPECIES = [
     "Vannamei",
     "Black Tiger",
-    "HGB",
-    "HGBU",
 ]
 
 DEFAULT_GLAZES = [
@@ -97,6 +100,23 @@ DEFAULT_BRANDS = [
     "DUMMY",
 ]
 
+DEFAULT_VARIETIES = [
+    "HLSO",
+    "HOSO",
+    "PDNS",
+    "PD",
+    "PDG2",
+    "EZPL",
+]
+
+DEFAULT_SUPPLIERS = [
+    "Sample Supplier",
+]
+
+DEFAULT_PRODUCTION_FOR = []
+
+DEFAULT_PEELING_AT = []
+
 
 # -------------------------------------------------------
 # SEED FUNCTION
@@ -106,33 +126,41 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
     Insert default master rows for a new company.
     Safe to call multiple times — skips if already exists (idempotent).
     """
+    company_code = str(company_code or "").strip().upper()
+    if not company_code:
+        raise ValueError("A tenant company code is required to seed master data.")
+
     from datetime import datetime
     now_date = datetime.now().date()
-    now_time = str(datetime.now().time().strftime('%H:%M:%S'))
 
     def already_exists(model, unique_field, value):
         return db.query(model).filter(
-            model.company_id == company_code,
+            func.upper(func.trim(model.company_id)) == company_code,
             getattr(model, unique_field) == value
         ).first() is not None
 
+    has_existing_species = db.query(SpeciesModel.id).filter(
+        func.upper(func.trim(SpeciesModel.company_id)) == company_code
+    ).first() is not None
+
     changed = False
 
-    # 1. Species
-    for name in DEFAULT_SPECIES:
-        if not already_exists(SpeciesModel, "species_name", name):
-            db.add(SpeciesModel(
-                species_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
-            ))
-            changed = True
+    # 1. Species (Only seed if tenant has no species at all)
+    if not has_existing_species:
+        for name in DEFAULT_SPECIES:
+            if not already_exists(SpeciesModel, "species_name", name):
+                db.add(SpeciesModel(
+                    species_name=name, company_id=company_code, email=email,
+                    date=now_date, time=func.current_time()
+                ))
+                changed = True
 
     # 2. Glazes
     for name in DEFAULT_GLAZES:
         if not already_exists(GlazesModel, "glaze_name", name):
             db.add(GlazesModel(
                 glaze_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -141,7 +169,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(GradesModel, "grade_name", name):
             db.add(GradesModel(
                 grade_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -152,7 +180,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
                 country_name=c["country_name"],
                 production_cost_per_kg=c["production_cost_per_kg"],
                 company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -161,7 +189,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(FreezersModel, "freezer_name", name):
             db.add(FreezersModel(
                 freezer_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -172,7 +200,7 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
                 packing_style=ps["packing_style"],
                 mc_weight=ps["mc_weight"],
                 company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
 
@@ -181,9 +209,67 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         if not already_exists(BrandsModel, "brand_name", name):
             db.add(BrandsModel(
                 brand_name=name, company_id=company_code, email=email,
-                date=now_date, time=now_time
+                date=now_date, time=func.current_time()
             ))
             changed = True
+
+    # 8. Varieties
+    for name in DEFAULT_VARIETIES:
+        if not already_exists(VarietiesModel, "variety_name", name):
+            db.add(VarietiesModel(
+                variety_name=name, company_id=company_code, email=email,
+                date=now_date, time=func.current_time()
+            ))
+            changed = True
+
+    # 9. Suppliers
+    for name in DEFAULT_SUPPLIERS:
+        if not already_exists(SuppliersModel, "supplier_name", name):
+            db.add(SuppliersModel(
+                supplier_name=name, company_id=company_code, email=email,
+                date=now_date, time=func.current_time()
+            ))
+            changed = True
+
+    # 10. Production For
+    for name in DEFAULT_PRODUCTION_FOR:
+        if not already_exists(ProductionForModel, "production_for", name):
+            db.add(ProductionForModel(
+                production_for=name, company_id=company_code, email=email,
+                apply_from=now_date, date=now_date, time=func.current_time()
+            ))
+            changed = True
+
+    # 11. Peeling At
+    for name in DEFAULT_PEELING_AT:
+        if not already_exists(PeelingAtModel, "peeling_at", name):
+            db.add(PeelingAtModel(
+                peeling_at=name, company_id=company_code, email=email,
+                date=now_date, time=func.current_time()
+            ))
+            changed = True
+
+    # 12. Default Bank Account
+    try:
+        from app.database.models.enterprise_finance import BankMaster
+        if not db.query(BankMaster.id).filter(func.upper(func.trim(BankMaster.company_id)) == company_code).first():
+            db.add(BankMaster(
+                company_id=company_code,
+                bank_name="HDFC BANK LIMITED",
+                account_number="50200084920194",
+                ifsc_code="HDFC0001234",
+                swift_code="HDFCINBBXXX",
+                branch="APSEZ VISAKHAPATNAM BRANCH, ANDHRA PRADESH",
+                currency_code="USD",
+                account_type="EXPORT CURRENT",
+                is_export_account=True,
+                is_default=True,
+                is_active=True,
+                created_by=email
+            ))
+            changed = True
+    except Exception as exc:
+        print(f"BANK SEED ERROR: {exc}")
 
     if changed:
         try:
@@ -194,3 +280,21 @@ def seed_default_masters(db: Session, company_code: str, email: str = "system@bk
         print(f"✅ Default masters seeded for company: {company_code}")
     else:
         print(f"ℹ️  Default masters already exist for: {company_code} — skipped.")
+
+
+def ensure_processing_masters(db: Session, company_code: str, email: str = "system@bknr.com") -> bool:
+    """Seed missing lookup masters needed by RMP and Grading for an existing tenant."""
+    company_code = str(company_code or "").strip().upper()
+    if not company_code:
+        return False
+
+    required_models = (SpeciesModel, VarietiesModel, ProductionForModel, PeelingAtModel)
+    has_missing_master = any(
+        db.query(model.id).filter(
+            func.upper(func.trim(model.company_id)) == company_code
+        ).first() is None
+        for model in required_models
+    )
+    if has_missing_master:
+        seed_default_masters(db, company_code, email=email)
+    return has_missing_master

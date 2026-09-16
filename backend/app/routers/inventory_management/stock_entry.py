@@ -16,7 +16,7 @@ from app.database.models.processing import GateEntry
 from app.database.models.reprocess import Reprocess
 from app.database.models.criteria import (
     brands, glazes, varieties, grades, packing_styles, freezers,
-    production_types, purposes, production_at, production_for,
+    production_types, purposes, production_at, peeling_at, production_for,
     coldstore_locations, species as species_model
 )
 
@@ -68,7 +68,7 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
     # 2. Today's entries layered with global filters scope controls
     table_q = db.query(stock_entry).filter(
         stock_entry.company_id == company_code,
-        stock_entry.date == date.today()
+        stock_entry.date == ist_now().date()
     )
     if global_production_for:
         table_q = table_q.filter(func.trim(stock_entry.production_for) == func.trim(global_production_for))
@@ -121,11 +121,19 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
     # "Production At" (Second Column Dropdown) layout control synced with Global Location
     pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
     if global_location:
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)) == global_location.strip().upper())
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)) == global_location.strip().upper())
     elif user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
-    production_places_list = [p.production_at for p in pa_q.order_by(production_at.production_at).all()]
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+
+    raw_places = (
+        [p[0] for p in pa_q.order_by(production_at.production_at).all() if p[0]] +
+        [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+    )
+    production_places_list = list(dict.fromkeys(raw_places))
 
     # Initial Coldstore Locations dropdown loading by selected/global Production At.
     cl_q = db.query(coldstore_locations.coldstore_location).filter(coldstore_locations.company_id == company_code)
@@ -204,12 +212,12 @@ def stock_entry_page(request: Request, db: Session = Depends(get_db)):
 
 
 # -----------------------------------------------------
-# 🟢 🔴 NEW: DYNAMIC COLDSTORE LOOKUP BY PLANT (PRODUCTION AT) ONLY
+# 🟢 🔴 NEW: DYNAMIC COLDSTORE LOOKUP BY PLANT (PRODUCTION AT) WITH FALLBACK
 # -----------------------------------------------------
 @router.get("/get_matched_coldstores")
 def get_matched_coldstores(
     request: Request, 
-    production_at: str = Query(...),
+    production_at: str = Query(""),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -217,27 +225,28 @@ def get_matched_coldstores(
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     selected_production_at = (production_at or "").strip()
-    if not selected_production_at:
-        return JSONResponse({"locations": []})
 
-    # Multi-permission applies to plant/production_at, not coldstore location names.
-    session_locations = request.session.get("allowed_locations", [])
-    if isinstance(session_locations, str):
-        user_allowed_locations = [loc.strip().upper() for loc in session_locations.split(",") if loc.strip()]
-    else:
-        user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
+    loc_list = []
+    if selected_production_at:
+        query = db.query(coldstore_locations.coldstore_location).filter(
+            coldstore_locations.company_id == company_code,
+            func.upper(func.trim(coldstore_locations.production_at)) == selected_production_at.upper()
+        )
+        matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
+        loc_list = sorted({r.coldstore_location for r in matched_rows if r.coldstore_location})
 
-    if user_allowed_locations and selected_production_at.upper() not in user_allowed_locations:
-        return JSONResponse({"locations": []})
+    if not loc_list:
+        all_query = db.query(coldstore_locations.coldstore_location).filter(
+            coldstore_locations.company_id == company_code
+        )
+        loc_list = sorted({r.coldstore_location for r in all_query.all() if r.coldstore_location})
 
-    # Coldstore names are looked up only by the selected plant / production_at.
-    query = db.query(coldstore_locations.coldstore_location).filter(
-        coldstore_locations.company_id == company_code,
-        func.upper(func.trim(coldstore_locations.production_at)) == selected_production_at.upper()
-    )
-
-    matched_rows = query.order_by(coldstore_locations.coldstore_location).all()
-    loc_list = sorted({r.coldstore_location for r in matched_rows if r.coldstore_location})
+    if not loc_list:
+        from app.database.models.inventory_management import cold_storage_holding
+        holding_query = db.query(cold_storage_holding.cold_storage_name).filter(
+            cold_storage_holding.company_id == company_code
+        )
+        loc_list = sorted({r.cold_storage_name for r in holding_query.all() if r.cold_storage_name})
 
     return JSONResponse({"locations": loc_list})
 # -----------------------------------------------------
@@ -256,25 +265,19 @@ def save_stock_in(
     company_code = request.session.get("company_code")
 
     if not email or not company_code:
-        return RedirectResponse("/auth/login", status_code=302)
-
-    coldstore_exists = db.query(coldstore_locations.id).filter(
-        coldstore_locations.company_id == company_code,
-        func.upper(func.trim(coldstore_locations.coldstore_location)) == location.strip().upper(),
-        func.upper(func.trim(coldstore_locations.production_at)) == production_at.strip().upper(),
-    ).first()
-    if not coldstore_exists:
-        request.session["success_msg"] = "Invalid coldstore location for selected Production At."
-        return RedirectResponse("/inventory/stock_entry", status_code=303)
+        return JSONResponse({"error": "Unauthorized"}, status_code=401)
 
     pack = db.query(packing_styles).filter(
         packing_styles.company_id == company_code,
         packing_styles.packing_style == packing_style
     ).first()
 
-    mc_weight = pack.mc_weight if pack else 0
-    slab_weight = pack.slab_weight if pack else 0
+    mc_weight = float(pack.mc_weight) if (pack and pack.mc_weight is not None) else 0.0
+    slab_weight = float(pack.slab_weight) if (pack and pack.slab_weight is not None) else 0.0
     quantity = (no_of_mc * mc_weight) + (loose * slab_weight)
+
+    today_date = ist_now().date()
+    current_time = ist_now().time()
 
     entry = stock_entry(
         batch_number=batch_number, type_of_production=type_of_production, cargo_movement_type="IN",
@@ -282,7 +285,7 @@ def save_stock_in(
         species=species, variety=variety, grade=grade, no_of_mc=no_of_mc, loose=loose, quantity=quantity,
         purpose=purpose or None, po_number=po_number or None, production_at=production_at,
         production_for=production_for or None, email=email, company_id=company_code,
-        date=date.today(), time=ist_now().time()
+        date=today_date, time=current_time
     )
     db.add(entry)
     db.commit()
@@ -292,6 +295,9 @@ def save_stock_in(
     invalidate_company_cache(company_code, "inventory_report")
     invalidate_company_cache(company_code, "inventory_dashboard")
     invalidate_company_cache(company_code, "costing_dashboard")
+
+    if request.headers.get("accept") == "application/json" or request.query_params.get("format") == "json":
+        return JSONResponse({"status": "success", "message": f"Stock In Entry for Batch {batch_number} Saved Successfully!"})
 
     request.session["success_msg"] = f"Stock In Entry for Batch {batch_number} Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
@@ -366,8 +372,8 @@ def stock_out_save(
         packing_styles.packing_style == packing_style
     ).first()
     
-    mc_weight = pack.mc_weight if pack else 0
-    slab_weight = pack.slab_weight if pack else 0
+    mc_weight = float(pack.mc_weight) if (pack and pack.mc_weight is not None) else 0.0
+    slab_weight = float(pack.slab_weight) if (pack and pack.slab_weight is not None) else 0.0
     now = ist_now()
 
     for i in range(len(out_batch)):
@@ -385,7 +391,7 @@ def stock_out_save(
             variety=variety, grade=grade, no_of_mc=mc_val, loose=ls_val, quantity=calculated_qty,
             production_at=production_at, production_for=production_for or None, purpose=purpose or None,
             po_number=po_number or None, email=email, company_id=company_code,
-            date=date.today(), time=now.time()
+            date=now.date(), time=now.time()
         )
         db.add(entry)
 
@@ -397,6 +403,9 @@ def stock_out_save(
     invalidate_company_cache(company_code, "inventory_dashboard")
     invalidate_company_cache(company_code, "costing_dashboard")
     
+    if request.headers.get("accept") == "application/json" or request.query_params.get("format") == "json":
+        return JSONResponse({"status": "success", "message": "Stock Out Entry Saved Successfully!"})
+
     request.session["success_msg"] = "Stock Out Entry Saved Successfully!"
     return RedirectResponse("/inventory/stock_entry", status_code=303)
 

@@ -76,13 +76,13 @@ function RawMaterialGateEntry() {
           const options = data.prod_for_list || [];
           if (activeComp && options.includes(activeComp)) return activeComp;
           if (current && options.includes(current)) return current;
-          return options.length === 1 ? options[0] : '';
+          return options.length > 0 ? options[0] : '';
         });
         setReceivingCenter(current => {
           const options = data.peeling_ats || [];
           if (activeLoc && options.includes(activeLoc)) return activeLoc;
           if (current && options.includes(current)) return current;
-          return options.length === 1 ? options[0] : '';
+          return options.length > 0 ? options[0] : '';
         });
         
 
@@ -173,6 +173,7 @@ function RawMaterialGateEntry() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setMessage(null);
     if (!productionFor || !receivingCenter || !supplierName || !purchasingLocation || !vehicleNumber) {
       setMessage({ type: 'error', text: 'Complete all required Gate Entry fields.' });
@@ -296,7 +297,7 @@ function RawMaterialGateEntry() {
             onClick={() => setShowForm(!showForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
           >
-            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : 'Record New Arrival'}
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : 'Add New Entry'}
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -451,7 +452,7 @@ function RawMaterialGateEntry() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save
+              <Plus size={16} /> {loading ? 'Saving Entry...' : 'Save'}
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel

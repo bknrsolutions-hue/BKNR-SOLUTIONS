@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingBag, Plus, Ban, Edit2, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
+import {
+  fetchProcessingPage,
+  getProcessingFilters,
+  normalizeLookupList,
+  selectLookupValue,
+} from '../../features/processing/processingLookupClient';
 
 export default function RawMaterialPurchasing() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -23,6 +32,9 @@ export default function RawMaterialPurchasing() {
   const [g1, setG1] = useState('0');
   const [g2, setG2] = useState('0');
   const [dc, setDc] = useState('0');
+  const [g1Expr, setG1Expr] = useState('');
+  const [g2Expr, setG2Expr] = useState('');
+  const [dcExpr, setDcExpr] = useState('');
   const [rate, setRate] = useState('0');
   const [remarks, setRemarks] = useState('');
 
@@ -57,44 +69,46 @@ export default function RawMaterialPurchasing() {
 
   const fetchBackendData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      
-      const queryParams = new URLSearchParams({ format: 'json' });
-      if (activeComp) queryParams.append('production_for', activeComp);
-      if (activeLoc) {
-        queryParams.append('location', activeLoc);
-        queryParams.append('peeling_at', activeLoc);
-      }
-
-      const res = await fetch(`/processing/raw_material_purchasing?${queryParams.toString()}`, { credentials: 'include' });
-
-      if (res.ok) {
-        const data = await res.json();
-        setEntries(data.today_data || []);
-        setSuppliers(data.supplier_list || []);
-        setVarieties(data.variety_list || []);
-        setSpeciesList(data.species_list || []);
-        setPeelingLocations(data.peeling_locations || []);
-        setProdForList(data.prod_for_list || []);
-        setHsnList(data.hsn_list || []);
-        setHsnMap(data.hsn_map || {});
-        setHosoSummary(data.hoso_summary || []);
-        setDrillDownData(data.drill_down || {});
-        setProdBatchMap(data.prod_batch_map || {});
-        setBatchSupplierMap(data.batch_supplier_map || {});
-
-
-      } else {
-        console.error('Failed to fetch purchasing data');
-      }
+      const data = await fetchProcessingPage('/processing/raw_material_purchasing');
+      const { productionFor: activeComp, location: activeLoc } = getProcessingFilters();
+      const nextProdForList = normalizeLookupList(data.prod_for_list);
+      const nextPeelingLocations = normalizeLookupList(data.peeling_locations);
+      setEntries(data.today_data || []);
+      setSuppliers(normalizeLookupList(data.supplier_list));
+      setVarieties(normalizeLookupList(data.variety_list));
+      setSpeciesList(normalizeLookupList(data.species_list));
+      setPeelingLocations(nextPeelingLocations);
+      setProdForList(nextProdForList);
+      setProductionFor(current => selectLookupValue(current, activeComp, nextProdForList));
+      setPeelingAt(current => selectLookupValue(current, activeLoc, nextPeelingLocations));
+      setHsnList(normalizeLookupList(data.hsn_list));
+      setHsnMap(data.hsn_map || {});
+      setHosoSummary(data.hoso_summary || []);
+      setDrillDownData(data.drill_down || {});
+      setProdBatchMap(data.prod_batch_map || {});
+      setBatchSupplierMap(data.batch_supplier_map || {});
     } catch (err) {
       console.error('Error fetching purchasing data:', err);
+      setLoadError(err.message || 'Unable to load RMP lookup data.');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!peelingAt && peelingLocations.length > 0) {
+        setPeelingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showForm, prodForList, peelingLocations, productionFor, peelingAt]);
 
   useEffect(() => {
     const now = new Date();
@@ -149,7 +163,7 @@ export default function RawMaterialPurchasing() {
     const compVal = productionFor.trim().toUpperCase();
     const locVal = peelingAt.trim().toUpperCase();
     
-    const candidates = prodBatchMap[compVal] || [];
+    const candidates = prodBatchMap[compVal] || prodBatchMap[productionFor] || [];
     return candidates.filter(b => {
       const meta = batchSupplierMap[b];
       if (meta && meta.prod_for && meta.receiving_center) {
@@ -213,6 +227,9 @@ export default function RawMaterialPurchasing() {
     setG1('0');
     setG2('0');
     setDc('0');
+    setG1Expr('');
+    setG2Expr('');
+    setDcExpr('');
     setRate('0');
     setRemarks('');
     setSelectedId(null);
@@ -221,6 +238,7 @@ export default function RawMaterialPurchasing() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     if (!productionFor || !peelingAt || !batchNumber || !varietyName || !species || !rate) {
       alert('Please fill in all required fields.');
       return;
@@ -240,6 +258,9 @@ export default function RawMaterialPurchasing() {
     formData.append('g1_qty', parseFloat(g1) || 0);
     formData.append('g2_qty', parseFloat(g2) || 0);
     formData.append('dc_qty', parseFloat(dc) || 0);
+    if (g1Expr) formData.append('g1_expr', g1Expr);
+    if (g2Expr) formData.append('g2_expr', g2Expr);
+    if (dcExpr) formData.append('dc_expr', dcExpr);
     formData.append('rate_per_kg', parseFloat(rate) || 0);
     formData.append('remarks', remarks);
 
@@ -329,7 +350,7 @@ export default function RawMaterialPurchasing() {
             className="btn btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> New Entry
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -341,6 +362,12 @@ export default function RawMaterialPurchasing() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="alert alert-danger" role="alert">
+          {loadError}
+        </div>
+      )}
 
       {/* Auto Fields */}
       <div style={autoFieldsRowStyle}>
@@ -495,6 +522,7 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handleProductionForChange(e.target.value)}
                 required 
               >
+                <option value="">Select Production For</option>
                 {optionList(prodForList, productionFor).map(p => <option key={p} value={p}>{p}</option>)}
               </select>
 
@@ -508,6 +536,7 @@ export default function RawMaterialPurchasing() {
                 onChange={e => handlePeelingAtChange(e.target.value)}
                 required 
               >
+                <option value="">Select Receiving Location</option>
                 {optionList(peelingLocations, peelingAt).map(l => <option key={l} value={l}>{l}</option>)}
               </select>
 
@@ -594,15 +623,30 @@ export default function RawMaterialPurchasing() {
           <div className="form-grid">
             <div className="form-group">
               <label>G1 Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={g1} onChange={e => setG1(e.target.value)} />
+              <ExpressionWeightInput
+                value={g1}
+                onChange={setG1}
+                onExprChange={setG1Expr}
+                placeholder="0.00 or 25+30-5"
+              />
             </div>
             <div className="form-group">
               <label>G2 Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={g2} onChange={e => setG2(e.target.value)} />
+              <ExpressionWeightInput
+                value={g2}
+                onChange={setG2}
+                onExprChange={setG2Expr}
+                placeholder="0.00 or 25+30-5"
+              />
             </div>
             <div className="form-group">
               <label>DC Qty (Kg)</label>
-              <input type="number" step="0.01" className="form-control" value={dc} onChange={e => setDc(e.target.value)} />
+              <ExpressionWeightInput
+                value={dc}
+                onChange={setDc}
+                onExprChange={setDcExpr}
+                placeholder="0.00 or 25+30-5"
+              />
             </div>
             <div className="form-group">
               <label>Total Received Qty</label>
@@ -625,7 +669,7 @@ export default function RawMaterialPurchasing() {
 
           <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
             <button type="submit" className="btn btn-primary" disabled={loading}>
-              <Plus size={16} /> Save
+              <Plus size={16} /> {loading ? 'Saving Purchase...' : 'Save'}
             </button>
             <button type="button" className="btn btn-clear" onClick={clearForm}>
               Cancel
@@ -708,9 +752,15 @@ export default function RawMaterialPurchasing() {
                   <td className="text-left">{row.species}</td>
                   <td className="text-center">{row.count}</td>
                   <td className="text-right">{(row.material_boxes || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.g1_qty || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.g2_qty || 0).toFixed(2)}</td>
-                  <td className="text-right">{(row.dc_qty || 0).toFixed(2)}</td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.g1_qty || 0} expr={row.g1_expr} />
+                  </td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.g2_qty || 0} expr={row.g2_expr} />
+                  </td>
+                  <td className="text-right">
+                    <WeightBreakdownCell value={row.dc_qty || 0} expr={row.dc_expr} />
+                  </td>
                   <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-dash)' }}>{(row.is_cancelled ? 0 : row.received_qty).toFixed(2)}</td>
                   <td className="text-right">₹{row.rate_per_kg.toFixed(2)}</td>
                   <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>₹{(row.is_cancelled ? 0 : (Number(row.amount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>

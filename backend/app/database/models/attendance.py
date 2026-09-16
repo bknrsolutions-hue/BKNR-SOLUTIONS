@@ -58,7 +58,7 @@ class EmployeeRegistration(Base, metacolumns):
     permanent_address = Column(Text)
     reporting_to = Column(String(100))
     location = Column(String(100))
-    photo_path = Column(String(255))
+    photo_path = Column(Text, nullable=True)
 
 class DailyAttendance(Base, metacolumns):
     __tablename__ = "daily_attendance"

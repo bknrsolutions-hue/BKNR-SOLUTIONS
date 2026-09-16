@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Filter, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronUp, X, Info } from 'lucide-react';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
+import {
+  fetchProcessingPage,
+  getProcessingFilters,
+  normalizeLookupList,
+  selectLookupValue,
+} from '../../features/processing/processingLookupClient';
 
 export default function Grading() {
   const [date, setDate] = useState('');
   const [time, setTime] = useState('');
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState('');
   const [showForm, setShowForm] = useState(false);
 
   // Form fields
@@ -17,6 +26,7 @@ export default function Grading() {
   const [varietyName, setVarietyName] = useState('');
   const [gradedCount, setGradedCount] = useState('');
   const [quantity, setQuantity] = useState('');
+  const [quantityExpr, setQuantityExpr] = useState('');  // raw expression
 
   // Dropdown options & raw data sets
   const [prodForList, setProdForList] = useState([]);
@@ -42,41 +52,44 @@ export default function Grading() {
 
   const fetchBackendData = async () => {
     setLoading(true);
+    setLoadError('');
     try {
-      const activeComp = localStorage.getItem('production_for_filter') || '';
-      const activeLoc = localStorage.getItem('plant_location_filter') || '';
-      
-      const queryParams = new URLSearchParams({ format: 'json' });
-      if (activeComp) queryParams.append('production_for', activeComp);
-      if (activeLoc) {
-        queryParams.append('location', activeLoc);
-        queryParams.append('peeling_at', activeLoc);
-      }
-
-      const res = await fetch(`/processing/grading?${queryParams.toString()}`, { credentials: 'include' });
-
-      if (res.ok) {
-        const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
-        setSpeciesList(data.species_list || []);
-        setVarietyList(data.variety_list || []);
-        setTodayEntries(data.today_data || []);
-        setHlsoSummary(data.hlso_summary || []);
-        setHosoSummary(data.hoso_summary || []);
-        setDeheadingPending(data.deheading_pending || []);
-        setDrillDownData(data.drill_down || {});
-
-
-      } else {
-        console.error('Failed to fetch grading details');
-      }
+      const data = await fetchProcessingPage('/processing/grading');
+      const { productionFor: activeComp, location: activeLoc } = getProcessingFilters();
+      const pList = normalizeLookupList(data.prod_for_list);
+      const locList = normalizeLookupList(data.peeling_locations);
+      setProdForList(pList);
+      setPeelingLocations(locList);
+      setSpeciesList(normalizeLookupList(data.species_list));
+      setVarietyList(normalizeLookupList(data.variety_list));
+      setTodayEntries(data.today_data || []);
+      setHlsoSummary(data.hlso_summary || []);
+      setHosoSummary(data.hoso_summary || []);
+      setDeheadingPending(data.deheading_pending || []);
+      setDrillDownData(data.drill_down || {});
+      setProductionFor(current => selectLookupValue(current, activeComp || data.selected_production_for, pList));
+      setPeelingAt(current => selectLookupValue(current, activeLoc || data.selected_location, locList));
     } catch (err) {
       console.error('Error fetching grading details:', err);
+      setLoadError(err.message || 'Unable to load Grading lookup data.');
     } finally {
       setLoading(false);
     }
   };
+
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!peelingAt && peelingLocations.length > 0) {
+        setPeelingAt(peelingLocations.includes(activeLoc) ? activeLoc : peelingLocations[0]);
+      }
+    }
+  }, [showForm, prodForList, peelingLocations, productionFor, peelingAt]);
 
   useEffect(() => {
     const now = new Date();
@@ -145,7 +158,17 @@ export default function Grading() {
       (item.production_for || '').trim().toUpperCase() === compVal &&
       (item.peeling_at || '').trim().toUpperCase() === locVal
     );
-    return Array.from(new Set(matches.map(m => m.batch_number))).sort();
+    const deheadingBatches = Array.from(new Set(matches.map(m => m.batch_number).filter(Boolean))).sort();
+    if (deheadingBatches.length > 0) return deheadingBatches;
+
+    const allCompMatches = deheadingPending.filter(item =>
+      (item.production_for || '').trim().toUpperCase() === compVal
+    );
+    const compBatches = Array.from(new Set(allCompMatches.map(m => m.batch_number).filter(Boolean))).sort();
+    if (compBatches.length > 0) return compBatches;
+
+    const todayBatches = Array.from(new Set(todayEntries.map(t => t.batch_number).filter(Boolean))).sort();
+    return todayBatches;
   };
 
   const getRelevantCounts = () => {
@@ -158,7 +181,17 @@ export default function Grading() {
       (item.production_for || '').trim().toUpperCase() === compVal &&
       (item.peeling_at || '').trim().toUpperCase() === locVal
     );
-    return Array.from(new Set(matches.map(m => m.hoso_count))).sort();
+    const counts = Array.from(new Set(matches.map(m => m.hoso_count).filter(Boolean))).sort();
+    if (counts.length > 0) return counts;
+
+    const batchMatches = deheadingPending.filter(item => item.batch_number === batchNumber);
+    const fallbackCounts = Array.from(new Set(batchMatches.map(m => m.hoso_count).filter(Boolean))).sort();
+    if (fallbackCounts.length > 0) return fallbackCounts;
+
+    const todayBatchCounts = Array.from(new Set(todayEntries.filter(t => t.batch_number === batchNumber).map(t => t.hoso_count).filter(Boolean))).sort();
+    if (todayBatchCounts.length > 0) return todayBatchCounts;
+
+    return ['16/20', '21/25', '26/30', '31/35', '31/40', '41/50', '51/60', '61/70', '71/90', '91/110', '111/130', '130+'];
   };
 
   // Resolve matching species choices based on pool match, or default to all species
@@ -209,6 +242,7 @@ export default function Grading() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     if (!productionFor || !peelingAt || !batchNumber || !hosoCount || !speciesVal || !varietyName || !gradedCount || !quantity) {
       alert('Please fill in all required fields.');
       return;
@@ -224,6 +258,7 @@ export default function Grading() {
     formData.append('variety_name', varietyName);
     formData.append('graded_count', gradedCount.toUpperCase().trim());
     formData.append('quantity', String(quantity));
+    if (quantityExpr) formData.append('quantity_expr', quantityExpr);
 
     try {
       const res = await fetch('/processing/grading?format=json', {
@@ -296,6 +331,7 @@ export default function Grading() {
     setVarietyName('');
     setGradedCount('');
     setQuantity('');
+    setQuantityExpr('');
     setSelectedId(null);
     setShowForm(false);
   };
@@ -321,7 +357,7 @@ export default function Grading() {
             className="btn btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> New Entry
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -333,6 +369,12 @@ export default function Grading() {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="alert alert-danger" role="alert">
+          {loadError}
+        </div>
+      )}
 
       {/* Auto Fields */}
       <div style={autoFieldsRowStyle}>
@@ -664,15 +706,12 @@ export default function Grading() {
 
             <div className="form-group">
               <label>Quantity (Kg) *</label>
-              <input 
-                type="number" 
-                step="0.01" 
-                min="0" 
-                className="form-control" 
-                placeholder="0.00" 
-                value={quantity} 
-                onChange={e => setQuantity(e.target.value)} 
-                required 
+              <ExpressionWeightInput
+                value={quantity}
+                onChange={setQuantity}
+                onExprChange={setQuantityExpr}
+                placeholder="0.00 or 25+30-5*2"
+                required
               />
             </div>
           </div>
@@ -737,7 +776,9 @@ export default function Grading() {
                   <td className="text-center">{row.hoso_count}</td>
                   <td className="text-center" style={{ color: 'var(--corp-dash)', fontWeight: '800' }}>{row.graded_count}</td>
                   <td className="text-left">{row.species} | {row.variety_name}</td>
-                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>{(row.is_cancelled ? 0 : (Number(row.quantity) || 0)).toFixed(2)} KG</td>
+                  <td className="text-right" style={{ fontWeight: '800', color: 'var(--corp-fin)' }}>
+                    <WeightBreakdownCell value={row.is_cancelled ? 0 : (Number(row.quantity) || 0)} expr={row.is_cancelled ? null : row.quantity_expr} />
+                  </td>
                   <td className="text-center" style={{ color: 'var(--text-secondary)', fontSize: '10px' }}>{row.time}</td>
                   <td className="text-center">
                     {!row.is_cancelled && (

@@ -30,7 +30,7 @@ const displayValue = value => Array.isArray(value) ? value.join(', ') : value;
 
 export default function RequirementDocumentPage(props) {
   const StructuredDocument = STRUCTURED_DOCUMENT_COMPONENTS[String(props.documentKind || '').toUpperCase()];
-  if (StructuredDocument) return <StructuredDocument embedded={props.embedded} />;
+  if (StructuredDocument) return <StructuredDocument embedded={props.embedded} setActivePage={props.setActivePage} />;
   return <GenericRequirementDocumentPage {...props} />;
 }
 
@@ -214,7 +214,7 @@ function GenericRequirementDocumentPage({ documentKind, embedded = false }) {
     {notice && <div className={`attendance-toast ${notice.type === 'error' ? 'error' : 'success'}`} style={{ top: 80 }}>{notice.message}</div>}
     <div className="attendance-page-header"><div>{!embedded && <button type="button" onClick={goBack} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: 0, border: 0, background: 'transparent', color: 'var(--att-muted)', cursor: 'pointer', fontSize: 12 }}><ArrowLeft size={14} /> {returnToShipmentStatus ? 'Back to Shipment Status' : 'All Requirement Forms'}</button>}
       <h1 style={{ marginTop: 6 }}>{definition.label}</h1><p style={{ margin: '4px 0 0', fontSize: 11, color: 'var(--att-muted)' }}>{definition.stage} · {documentMode.replaceAll('_', ' ')} · Versioned PDF storage and unanimous email approval</p></div>
-      <button className="attendance-btn attendance-btn-primary" onClick={() => formOpen ? setFormOpen(false) : openForm()}><Plus size={16} /> {formOpen ? 'HIDE ENTRY FORM' : 'NEW ENTRY & UPLOAD'}</button>
+      <button className="attendance-btn attendance-btn-primary" onClick={() => formOpen ? setFormOpen(false) : openForm()}><Plus size={16} /> {formOpen ? 'HIDE ENTRY FORM' : 'Add New Entry'}</button>
     </div>
 
     {formOpen && <section className="requirement-inline-form">

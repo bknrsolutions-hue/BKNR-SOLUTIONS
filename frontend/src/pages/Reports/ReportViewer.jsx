@@ -38,7 +38,12 @@ function GradingSummaryCards({ rows = [], details = [], selectedBatch = '' }) {
           String(detail.batch_number || detail.batch || '').toLowerCase() === String(batch).toLowerCase()
           && String(detail.species || '').toLowerCase() === String(row.species || '').toLowerCase()
           && String(detail.hoso_count || '').toLowerCase() === String(row.hoso_count || '').toLowerCase()
-          && String(detail.variety_name || detail.variety || '').toLowerCase() === String(row.variety || '').toLowerCase()
+          && (
+            !row.variety || !detail.variety_name ||
+            String(detail.variety_name || detail.variety || '').toLowerCase().trim() === String(row.variety || '').toLowerCase().trim() ||
+            String(detail.variety_name || detail.variety || '').toLowerCase().includes(String(row.variety || '').toLowerCase().trim()) ||
+            String(row.variety || '').toLowerCase().trim().includes(String(detail.variety_name || detail.variety || '').toLowerCase().trim())
+          )
         );
         const detailTotal = breakdown.reduce((total, detail) => total + Number(detail.quantity || 0), 0);
         const diffKg = Number(row.weight_diff_kg || 0);
@@ -920,25 +925,183 @@ export default function ReportViewer({ reportId, activeRoute }) {
         
         {data && !selectedBatch && !loading && (
           <div className="batch-summary-empty">
-            Financial year, production company and batch number select chesi Batch Summary view cheyyandi.
+            Please select the Financial Year, Production Company, and Batch Number in the report to view the Batch Summary.
           </div>
         )}
 
         {data && selectedBatch && (
           <div className="batch-summary-content">
             <div className="batch-section-title batch-section-title-first">Batch Matrix Metrics</div>
-            <div className="batch-matrix-grid">
-              <Metric label="Batch Number" value={selectedBatch} accent />
-              <Metric label="Supplier | Location" value={`${card.supplier_name || 'N/A'} | ${card.purchasing_location || 'N/A'}`} />
-              <Metric label="Receiving At | Vehicle" value={`${card.receiving_center || 'N/A'} | ${card.vehicle_number || 'N/A'}`} />
-              <Metric label="Boxes | Challan | Gatepass" value={`${card.total_boxes || 0} Box | ${card.challan_number || 'N/A'} | ${card.gate_pass_number || 'N/A'}`} />
-              <Metric label="RM Total Qty / Amount" value={`${qty(card.rmp_qty)} KG | ${money(card.rmp_amount)}`} success />
-              <Metric label="De-Heading Qty / Amount" value={`${qty(card.deheading_qty)} KG | ${money(card.deheading_amount)}`} />
-              <Metric label="Grading | Peeling Qty / Amount" value={`${qty(card.grading_qty)} K | ${qty(card.peeling_qty)} K | ${money(card.peeling_amount)}`} />
-              <Metric label="Soaking | Chem | Salt" value={`${qty(card.soaking_qty)} KG | C: ${qty(card.chemical_qty)} | S: ${qty(card.salt_qty)}`} />
-              <Metric label="Gross Prod | Net Prod | Stock Qty" value={`${qty(grossProduction)} G | ${qty(card.production_qty)} N | ${qty(card.stock_qty)} S`} purple />
-              <Metric label="Stock Inventory Value" value={money(card.stock_amount)} success />
-              <Metric label="Floor Balance Qty | Value" value={`${qty(card.floor_qty)} KG | ${money(card.floor_amount)}`} danger />
+            <div className="batch-summary-table-card">
+              <table className="matrix-5col-table">
+                <tbody>
+                  {/* Row 1 */}
+                  <tr>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Batch No:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--accent, #2563eb)' }}>{selectedBatch}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Supplier:</span>
+                        <strong className="flex-cell-val">{card.supplier_name || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Location:</span>
+                        <strong className="flex-cell-val">{card.purchasing_location || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Receiving At:</span>
+                        <strong className="flex-cell-val">{card.receiving_center || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Vehicle No:</span>
+                        <strong className="flex-cell-val">{card.vehicle_number || 'N/A'}</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 2 */}
+                  <tr>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Total Boxes:</span>
+                        <strong className="flex-cell-val">{card.total_boxes || 0} Box</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Challan No:</span>
+                        <strong className="flex-cell-val">{card.challan_number || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gate Pass:</span>
+                        <strong className="flex-cell-val">{card.gate_pass_number || 'N/A'}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">RM Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.rmp_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">RM Amount:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.rmp_amount)}</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 3 */}
+                  <tr>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">De-Heading Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.deheading_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">De-Heading Amt:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.deheading_amount)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Grading Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.grading_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.peeling_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Amt:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.peeling_amount)}</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 4 */}
+                  <tr>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Soaking Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.soaking_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Chemical:</span>
+                        <strong className="flex-cell-val">{qty(card.chemical_qty)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Salt Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.salt_qty)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gross Prod:</span>
+                        <strong className="flex-cell-val">{qty(grossProduction)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Net Prod:</span>
+                        <strong className="flex-cell-val">{qty(card.production_qty)} KG</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 5 */}
+                  <tr>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Qty:</span>
+                        <strong className="flex-cell-val">{qty(card.stock_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Value:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--success, #16a34a)' }}>{money(card.stock_amount)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Floor Bal Qty:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--danger, #dc2626)' }}>{qty(card.floor_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Floor Bal Value:</span>
+                        <strong className="flex-cell-val" style={{ color: 'var(--danger, #dc2626)' }}>{money(card.floor_amount)}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col">
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Process Type:</span>
+                        <strong className="flex-cell-val">{prodType || 'RMP'}</strong>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <div className="batch-reconciliation-card">
@@ -962,6 +1125,22 @@ export default function ReportViewer({ reportId, activeRoute }) {
                 )}
               </section>
             ))}
+
+            {/* 🖊️ Signatures Block (Incharge & Manager Signatures) */}
+            <div className="report-signature-block">
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">PREPARED BY</div>
+              </div>
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">VERIFIED BY</div>
+              </div>
+              <div className="sig-col">
+                <div className="sig-line"></div>
+                <div className="sig-title">AUTHORIZED SIGNATURE</div>
+              </div>
+            </div>
           </div>
         )}
       </div>
@@ -1013,22 +1192,78 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
         {data && (
           <div className="periodic-summary-content">
-            <div className="periodic-kpi-grid no-print">
-              <PeriodicKpi label="Opening Floor Bal" primary={`${quantity(card.floor_opening_qty)} KG`} secondary={currency(card.floor_opening_val)} icon="fa-hourglass-start" onClick={() => setActiveTab('opening_floor_balance')} />
-              <PeriodicKpi label="Gate Boxes" primary={quantity(card.gate_boxes)} secondary="Boxes Received" icon="fa-door-open" onClick={() => setActiveTab('gate')} />
-              {prodType === 'RMP' ? (
-                <PeriodicKpi label="RM Purchasing" primary={`${quantity(card.rmp_qty)} KG`} secondary={currency(card.rmp_amount)} icon="fa-cart-shopping" onClick={() => setActiveTab('rmp')} />
-              ) : (
-                <PeriodicKpi label="Reprocess" primary={`${quantity(card.rep_in)} KG`} secondary={`Out: ${quantity(card.rep_out)} KG`} icon="fa-recycle" onClick={() => setActiveTab('reprocess')} />
-              )}
-              <PeriodicKpi label="Deheading" primary={`${quantity(card.deh_hoso)} KG`} secondary={`HLSO: ${quantity(card.deh_hlso)} KG`} icon="fa-scissors" onClick={() => setActiveTab('deheading')} />
-              <PeriodicKpi label="Grading Output" primary={`${quantity(card.grd_qty)} KG`} secondary="Graded Qty" icon="fa-layer-group" onClick={() => setActiveTab('grading_details')} />
-              <PeriodicKpi label="Peeling Input" primary={`${quantity(card.pel_hlso)} KG`} secondary={`Peeled: ${quantity(card.pel_peeled)} KG`} icon="fa-hand-dots" onClick={() => setActiveTab('peeling')} />
-
-              <PeriodicKpi label="Soaking Input" primary={`${quantity(card.soaking_qty)} KG`} secondary={`Chem ${quantity(card.chemical_qty)} | Salt ${quantity(card.salt_qty)}`} icon="fa-water" onClick={() => setActiveTab('soaking')} />
-              <PeriodicKpi label="Net Production" primary={`${quantity(card.production_qty)} KG`} secondary="Packed Output" icon="fa-box-open" onClick={() => setActiveTab('production')} />
-              <PeriodicKpi label="Stock Vault Asset" primary={`${quantity(card.stock_qty)} KG`} secondary={`Out: ${quantity(card.stock_out_qty)} KG`} icon="fa-warehouse" onClick={() => setActiveTab('stock_in')} />
-              <PeriodicKpi label="Closing Floor Bal" primary={`${quantity(card.floor_closing_qty)} KG`} secondary={currency(card.floor_closing_val)} icon="fa-balance-scale" onClick={() => setActiveTab('closing_floor_balance')} />
+            {/* 🟢 KPI SUMMARY MATRIX TABLE (BATCH SUMMARY STYLE) */}
+            <div className="summary-table-wrap no-print" style={{ marginBottom: '12px', background: '#fff', borderRadius: '8px', border: '1px solid #cbd5e1', overflow: 'hidden' }}>
+              <table className="batch-summary-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <tbody>
+                  {/* Row 1 */}
+                  <tr>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('opening_floor_balance')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Opening Floor Bal:</span>
+                        <strong className="flex-cell-val">{quantity(card.floor_opening_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('gate')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Gate Boxes:</span>
+                        <strong className="flex-cell-val">{quantity(card.gate_boxes || card.total_boxes)} Box {card.gate_vehicles ? `(${card.gate_vehicles} Veh)` : ''}</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab(prodType === 'RMP' ? 'rmp' : 'reprocess')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">{prodType === 'RMP' ? 'RM Purchasing:' : 'Reprocess Input:'}</span>
+                        <strong className="flex-cell-val">{quantity(prodType === 'RMP' ? card.rmp_qty : card.rep_in)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('deheading')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Deheading HOSO:</span>
+                        <strong className="flex-cell-val">{quantity(card.deh_hoso)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('grading_details')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Grading Output:</span>
+                        <strong className="flex-cell-val">{quantity(card.grd_qty)} KG</strong>
+                      </div>
+                    </td>
+                  </tr>
+                  {/* Row 2 */}
+                  <tr>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('peeling')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Peeling Input:</span>
+                        <strong className="flex-cell-val">{quantity(card.pel_hlso)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('soaking')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Soaking Input:</span>
+                        <strong className="flex-cell-val">{quantity(card.soaking_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('production')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Net Production:</span>
+                        <strong className="flex-cell-val" style={{ color: '#0284c7' }}>{quantity(card.production_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('stock_in')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Stock Vault Asset:</span>
+                        <strong className="flex-cell-val">{quantity(card.stock_qty)} KG</strong>
+                      </div>
+                    </td>
+                    <td className="cell-5col" style={{ cursor: 'pointer' }} onClick={() => setActiveTab('closing_floor_balance')}>
+                      <div className="flex-cell-item">
+                        <span className="flex-cell-label">Closing Floor Bal:</span>
+                        <strong className="flex-cell-val" style={{ color: '#dc2626' }}>{quantity(card.floor_closing_qty)} KG</strong>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             {renderPeriodicFilters()}
@@ -1257,23 +1492,27 @@ export default function ReportViewer({ reportId, activeRoute }) {
   // RENDER HELPERS: HEADERS, LOADERS, ERRORS, FILTERS
 
   function renderHeader(title) {
+    const displayCompany = selectedCompany || 'BKNR SEAFOODS PRIVATE LIMITED';
     return (
-      <div style={reportHeaderStyle}>
+      <div style={reportHeaderStyle} className="batch-summary-header-banner">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={iconBadgeStyle}>
+          <div style={iconBadgeStyle} className="no-print">
             <FileText size={18} style={{ color: 'white' }} />
           </div>
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
-              {title}
-            </h2>
-            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }}>
+            <h1 className="company-name-print-header" style={{ fontSize: '18px', fontWeight: '900', color: 'var(--text-primary)', margin: 0 }}>
+              {displayCompany}
+            </h1>
+            <h3 style={{ fontSize: '12px', fontWeight: '800', color: 'var(--text-secondary)', margin: '2px 0 0' }} className="batch-summary-print-title">
+              {title.toUpperCase()} REPORT
+            </h3>
+            <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: 0 }} className="no-print">
               Natively rendering real-time operational registers from database framework
             </p>
           </div>
         </div>
 
-        <div style={actionsRowStyle}>
+        <div style={actionsRowStyle} className="no-print">
           <button onClick={fetchData} className="btn btn-secondary" style={{ height: '36px', display: 'flex', alignItems: 'center', gap: '6px' }}>
             <RefreshCw size={13} className={loading ? 'spin' : ''} /> Refresh
           </button>
@@ -1752,9 +1991,9 @@ export default function ReportViewer({ reportId, activeRoute }) {
         formats: { material_boxes: 'number', received_qty: 'number', amount: 'currency' }
       },
       reconciliation: {
-        headers: ['Production For', 'Production At', 'Species', 'Variety', 'Batch', 'Soaking In', 'Produced Qty', 'Target Yield', 'Actual Yield', 'Yield Diff', 'Diff Qty'],
-        keys: ['production_for', 'production_at', 'species', 'variety', 'batch_number', 'soaking_in', 'prod_qty', 'target_yield', 'actual_yield', 'diff_yield_perc', 'diff_qty'],
-        formats: { soaking_in: 'number', prod_qty: 'number', target_yield: 'percentage', actual_yield: 'percentage', diff_yield_perc: 'percentage', diff_qty: 'number' }
+        headers: ['Species', 'Variety', 'Batch Number', 'RMP Received', 'Deheading In', 'Deheading Out', 'Deheading Diff', 'Peeling In', 'Peeling Out', 'Peeling Diff', 'Soaking In', 'Produced Qty', 'Prod Diff Qty'],
+        keys: ['species', 'variety', 'batch_number', 'rmp_received', 'deheading_in', 'deheading_out', 'deheading_diff', 'peeling_in', 'peeling_out', 'peeling_diff', 'soaking_in', 'prod_qty', 'diff_qty'],
+        formats: { rmp_received: 'number', deheading_in: 'number', deheading_out: 'number', deheading_diff: 'number', peeling_in: 'number', peeling_out: 'number', peeling_diff: 'number', soaking_in: 'number', prod_qty: 'number', diff_qty: 'number' }
       }
     };
 
@@ -1831,7 +2070,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
           <h4 style={{ fontSize: '13px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-primary)' }}>
             {tab.replaceAll('_', ' ')} DETAILS
           </h4>
-          <div style={searchWrapperStyle}>
+          <div style={searchWrapperStyle} className="no-print">
             <Search size={13} style={searchIconStyle} />
             <input
               type="text"
@@ -1850,46 +2089,399 @@ export default function ReportViewer({ reportId, activeRoute }) {
           >
             <thead>
               <tr>
-                {schema.headers.map((head, index) => (
-                  <th
-                    key={index}
-                    className={schema.keys[index] === '__sl' ? 'text-center' : schema.formats?.[schema.keys[index]] ? 'text-right' : 'text-left'}
-                  >
-                    {head}
-                  </th>
-                ))}
+                {schema.headers.map((head, index) => {
+                  const keyName = schema.keys[index];
+                  let colStyle = {};
+                  if (keyName === 'species') colStyle = { minWidth: '120px', width: '120px' };
+                  else if (keyName === 'variety') colStyle = { minWidth: '130px', width: '130px' };
+                  else if (keyName === 'batch_number') colStyle = { minWidth: '110px', width: '110px' };
+                  else if (keyName === 'rmp_received') colStyle = { minWidth: '120px', width: '120px' };
+
+                  return (
+                    <th
+                      key={index}
+                      className={keyName === '__sl' ? 'text-center' : schema.formats?.[keyName] ? 'text-right' : 'text-left'}
+                      style={colStyle}
+                    >
+                      {head}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
               {filteredTabRows.length > 0 ? (
-                filteredTabRows.map((row, rIdx) => (
-                  <tr key={rIdx}>
-                    {schema.keys.map((k, cIdx) => {
-                      const format = schema.formats?.[k];
-                      let value = row[k];
-                      if (k === '__sl') value = rIdx + 1;
-                      else if (k === '__batch') value = row.batch_number || row.batch || '';
-                      else if (k === 'peeling_at' && !value) value = row.location || '';
-                      else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
-                      else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
-                      else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
-                      else if (k === '__salt') value = `${Number(row.salt_percent || 0).toFixed(2)}% / ${Number(row.salt_qty || 0).toFixed(2)}`;
-                      else if (k === '__dash') value = '-';
-                      else if (k === '__gross_qty') {
-                        const netQty = Number(row.production_qty || 0);
-                        const glazeText = String(row.glaze || '').trim().toUpperCase();
-                        const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
-                        const glazePct = match ? Number(match[1]) : 0;
-                        value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
-                      }
-                      return (
-                        <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
-                          {formatVal(value, format)}
+                tab === 'production' ? (() => {
+                  // Batch & Variety-wise grouping for Production table
+                  const groups = {};
+                  filteredTabRows.forEach(row => {
+                    const bName = String(row.batch_number || row.batch || 'N/A').trim();
+                    const vName = String(row.variety_name || row.variety || 'N/A').trim();
+                    const groupKey = `${bName}||${vName}`;
+                    if (!groups[groupKey]) {
+                      groups[groupKey] = { batch: bName, variety: vName, rows: [] };
+                    }
+                    groups[groupKey].rows.push(row);
+                  });
+
+                  let globalMC = 0, globalLoose = 0, globalGross = 0, globalProdQty = 0;
+                  let slCount = 0;
+
+                  return (
+                    <>
+                      {Object.values(groups).map((groupItem, gIdx) => {
+                        const { batch: bName, variety: varName, rows: vRows } = groupItem;
+                        let groupMC = 0, groupLoose = 0, groupGross = 0, groupProdQty = 0;
+                        vRows.forEach(r => {
+                          groupMC += Number(r.no_of_mc || 0);
+                          groupLoose += Number(r.loose || 0);
+                          groupProdQty += Number(r.production_qty || 0);
+
+                          const netQty = Number(r.production_qty || 0);
+                          const glazeText = String(r.glaze || '').trim().toUpperCase();
+                          const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                          const glazePct = match ? Number(match[1]) : 0;
+                          const grossVal = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                          groupGross += grossVal;
+                        });
+
+                        globalMC += groupMC;
+                        globalLoose += groupLoose;
+                        globalGross += groupGross;
+                        globalProdQty += groupProdQty;
+
+                        // Find matching subtotal entry for this batch & variety
+                        const subEntry = Object.values(data.subtotals || {}).find(s =>
+                          String(s.batch_number || '').trim().toUpperCase() === bName.toUpperCase() &&
+                          String(s.variety || '').trim().toUpperCase() === varName.toUpperCase()
+                        ) || {};
+
+                        const isPos = Number(subEntry.diff_yield_perc || 0) >= 0;
+                        const posBadgeStyle = {
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          color: '#059669',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '800',
+                          display: 'inline-block'
+                        };
+                        const negBadgeStyle = {
+                          background: 'rgba(239, 68, 68, 0.12)',
+                          color: '#dc2626',
+                          border: '1px solid rgba(239, 68, 68, 0.3)',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          fontWeight: '800',
+                          display: 'inline-block'
+                        };
+
+                        return (
+                          <React.Fragment key={gIdx}>
+                            {vRows.map((row, rIdx) => {
+                              slCount++;
+                              return (
+                                <tr key={rIdx}>
+                                  {schema.keys.map((k, cIdx) => {
+                                    const format = schema.formats?.[k];
+                                    let value = row[k];
+                                    if (k === '__sl') value = slCount;
+                                    else if (k === '__batch') value = row.batch_number || row.batch || '';
+                                    else if (k === '__gross_qty') {
+                                      const netQty = Number(row.production_qty || 0);
+                                      const glazeText = String(row.glaze || '').trim().toUpperCase();
+                                      const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                                      const glazePct = match ? Number(match[1]) : 0;
+                                      value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                                    }
+
+                                    return (
+                                      <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                                        {formatVal(value, format)}
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                            {/* VARIETY SUBTOTAL ROW FOR THIS BATCH */}
+                            <tr className="subtotal-row" style={{ background: '#f1f5f9', borderTop: '1px solid #cbd5e1', fontWeight: '800' }}>
+                              <td colSpan={14} className="text-right" style={{ fontWeight: '800', color: '#1e293b' }}>
+                                SUBTOTAL (Batch {bName} | {varName}):
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{groupMC}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{groupLoose}</td>
+                              <td className="text-right" style={{ fontWeight: '800', color: '#312e81', background: '#e0e7ff' }}>
+                                {groupGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right qty-column" style={{ fontWeight: '800', color: '#0f172a' }}>
+                                {groupProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-center">
+                                {subEntry.soaking_in > 0 ? (
+                                  <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                    {subEntry.actual_yield}% ({isPos ? '+' : ''}{subEntry.diff_yield_perc}%)
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                                )}
+                              </td>
+                              <td className="text-right">
+                                {subEntry.soaking_in > 0 ? (
+                                  <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                    {subEntry.diff_qty > 0 ? `+${subEntry.diff_qty}` : subEntry.diff_qty}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-tertiary)', fontSize: '10px' }}>-</span>
+                                )}
+                              </td>
+                              <td style={{ fontSize: '10px', textAlign: 'left', paddingLeft: '4px', color: 'var(--text-tertiary)' }}>
+                                {subEntry.soaking_in > 0 ? `In: ${subEntry.soaking_in} | Trg: ${subEntry.target_yield}%` : '-'}
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {/* OVERALL PRODUCTION SUBTOTAL SUMMARY */}
+                      <tr className="subtotal-row" style={{ background: '#e2e8f0', borderTop: '2px solid #64748b', fontWeight: '900' }}>
+                        <td colSpan={14} className="text-right" style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
+                          OVERALL PRODUCTION SUBTOTAL SUMMARY:
                         </td>
-                      );
-                    })}
-                  </tr>
-                ))
+                        <td className="text-right" style={{ fontWeight: '900' }}>{globalMC}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{globalLoose}</td>
+                        <td className="text-right" style={{ fontWeight: '900', color: '#312e81', background: '#c7d2fe' }}>
+                          {globalGross.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right qty-column" style={{ fontWeight: '900', color: '#0f172a' }}>
+                          {globalProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td colSpan={3}></td>
+                      </tr>
+                    </>
+                  );
+                })() : tab === 'reconciliation' ? (() => {
+                  // Variety-wise grouping for Reconciliation table
+                  const groups = {};
+                  filteredTabRows.forEach(row => {
+                    const vName = String(row.variety || 'N/A').trim();
+                    if (!groups[vName]) groups[vName] = [];
+                    groups[vName].push(row);
+                  });
+
+                  let totRMP = 0, totDHIn = 0, totDHOut = 0, totDHDiff = 0;
+                  let totPelIn = 0, totPelOut = 0, totPelDiff = 0;
+                  let totSoakIn = 0, totProdQty = 0, totProdDiff = 0;
+
+                  const posBadgeStyle = {
+                    background: 'rgba(16, 185, 129, 0.12)',
+                    color: '#059669',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: '800',
+                    fontSize: '11px',
+                    display: 'inline-block'
+                  };
+                  const negBadgeStyle = {
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    color: '#dc2626',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    fontWeight: '800',
+                    fontSize: '11px',
+                    display: 'inline-block'
+                  };
+
+                  return (
+                    <>
+                      {Object.entries(groups).map(([varName, vRows], gIdx) => {
+                        let vRMP = 0, vDHIn = 0, vDHOut = 0, vDHDiff = 0;
+                        let vPelIn = 0, vPelOut = 0, vPelDiff = 0;
+                        let vSoakIn = 0, vProdQty = 0, vProdDiff = 0;
+
+                        vRows.forEach(r => {
+                          vRMP += Number(r.rmp_received || 0);
+                          vDHIn += Number(r.deheading_in || 0);
+                          vDHOut += Number(r.deheading_out || 0);
+                          vDHDiff += Number(r.deheading_diff || 0);
+                          vPelIn += Number(r.peeling_in || 0);
+                          vPelOut += Number(r.peeling_out || 0);
+                          vPelDiff += Number(r.peeling_diff || 0);
+                          vSoakIn += Number(r.soaking_in || 0);
+                          vProdQty += Number(r.prod_qty || 0);
+                          vProdDiff += Number(r.diff_qty || 0);
+                        });
+
+                        totRMP += vRMP; totDHIn += vDHIn; totDHOut += vDHOut; totDHDiff += vDHDiff;
+                        totPelIn += vPelIn; totPelOut += vPelOut; totPelDiff += vPelDiff;
+                        totSoakIn += vSoakIn; totProdQty += vProdQty; totProdDiff += vProdDiff;
+
+                        return (
+                          <React.Fragment key={gIdx}>
+                            {vRows.map((row, rIdx) => (
+                              <tr key={rIdx}>
+                                {schema.keys.map((k, cIdx) => {
+                                  const format = schema.formats?.[k];
+                                  let value = row[k];
+                                  if (['deheading_diff', 'peeling_diff', 'diff_qty'].includes(k)) {
+                                    const diffVal = Number(value || 0);
+                                    const isPos = diffVal >= 0;
+                                    return (
+                                      <td key={cIdx} className="text-right">
+                                        <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                                          {isPos ? `+${diffVal.toFixed(2)}` : diffVal.toFixed(2)}
+                                        </span>
+                                      </td>
+                                    );
+                                  }
+                                  let cellStyle = {};
+                                  if (k === 'species') cellStyle = { minWidth: '120px', fontWeight: '800' };
+                                  else if (k === 'variety') cellStyle = { minWidth: '130px' };
+                                  else if (k === 'batch_number') cellStyle = { minWidth: '110px', fontWeight: '700' };
+                                  else if (k === 'rmp_received') cellStyle = { minWidth: '120px', fontWeight: '800', color: '#0284c7', background: '#f0f9ff' };
+
+                                  return (
+                                    <td key={cIdx} className={format ? 'text-right' : 'text-left'} style={cellStyle}>
+                                      {formatVal(value, format)}
+                                    </td>
+                                  );
+                                })}
+                              </tr>
+                            ))}
+                            {/* VARIETY SUBTOTAL ROW FOR RECONCILIATION */}
+                            <tr className="subtotal-row" style={{ background: '#f8fafc', borderTop: '1px solid #cbd5e1', fontWeight: '800' }}>
+                              <td colSpan={3} className="text-right" style={{ fontWeight: '800', color: '#0f172a' }}>
+                                SUBTOTAL ({varName}):
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800', color: '#0284c7', background: '#e0f2fe' }}>
+                                {vRMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vDHIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vDHOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vDHDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vDHDiff >= 0 ? `+${vDHDiff.toFixed(2)}` : vDHDiff.toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vPelIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vPelOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vPelDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vPelDiff >= 0 ? `+${vPelDiff.toFixed(2)}` : vPelDiff.toFixed(2)}
+                                </span>
+                              </td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vSoakIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right" style={{ fontWeight: '800' }}>{vProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                              <td className="text-right">
+                                <span style={vProdDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                                  {vProdDiff >= 0 ? `+${vProdDiff.toFixed(2)}` : vProdDiff.toFixed(2)}
+                                </span>
+                              </td>
+                            </tr>
+                          </React.Fragment>
+                        );
+                      })}
+
+                      {/* OVERALL RECONCILIATION SUMMARY TOTAL */}
+                      <tr className="subtotal-row" style={{ background: '#e2e8f0', borderTop: '2px solid #64748b', fontWeight: '900' }}>
+                        <td colSpan={3} className="text-right" style={{ fontWeight: '900', color: '#0f172a', textTransform: 'uppercase' }}>
+                          OVERALL RECONCILIATION TOTAL:
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900', color: '#0284c7', background: '#bae6fd' }}>
+                          {totRMP.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totDHIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totDHOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totDHDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totDHDiff >= 0 ? `+${totDHDiff.toFixed(2)}` : totDHDiff.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totPelIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totPelOut.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totPelDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totPelDiff >= 0 ? `+${totPelDiff.toFixed(2)}` : totPelDiff.toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totSoakIn.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>{totProdQty.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td className="text-right" style={{ fontWeight: '900' }}>
+                          <span style={totProdDiff >= 0 ? posBadgeStyle : negBadgeStyle}>
+                            {totProdDiff >= 0 ? `+${totProdDiff.toFixed(2)}` : totProdDiff.toFixed(2)}
+                          </span>
+                        </td>
+                      </tr>
+                    </>
+                  );
+                })() : (
+                  filteredTabRows.map((row, rIdx) => (
+                    <tr key={rIdx}>
+                      {schema.keys.map((k, cIdx) => {
+                        const format = schema.formats?.[k];
+                        let value = row[k];
+                        if (k === '__sl') value = rIdx + 1;
+                        else if (k === '__batch') value = row.batch_number || row.batch || '';
+                        else if (k === 'peeling_at' && !value) value = row.location || '';
+                        else if (k === '__g123') value = [row.g1_qty, row.g2_qty, row.dc_qty].map(v => Number(v || 0).toFixed(2)).join(' / ');
+                        else if (k === '__mc_loose') value = `${Number(row.no_of_mc || 0)} / ${Number(row.loose || 0)}`;
+                        else if (k === '__chemical') value = `${Number(row.chemical_percent || 0).toFixed(2)}% / ${Number(row.chemical_qty || 0).toFixed(2)}`;
+                        else if (k === '__salt') value = `${Number(row.salt_percent || 0).toFixed(2)}% / ${Number(row.salt_qty || 0).toFixed(2)}`;
+                        else if (k === '__dash') value = '-';
+                        else if (k === '__gross_qty') {
+                          const netQty = Number(row.production_qty || 0);
+                          const glazeText = String(row.glaze || '').trim().toUpperCase();
+                          const match = glazeText.includes('NWNC') ? null : glazeText.match(/^(\d+(?:\.\d+)?)%$/);
+                          const glazePct = match ? Number(match[1]) : 0;
+                          value = glazePct > 0 && glazePct < 100 ? netQty / ((100 - glazePct) / 100) : netQty;
+                        }
+
+                        // Badge formatting for Reconciliation table metrics (Actual Yield %, Diff %, Diff Qty)
+                        if (tab === 'reconciliation' && ['actual_yield', 'diff_yield_perc', 'diff_qty'].includes(k)) {
+                          const isPos = Number(row.diff_yield_perc || 0) >= 0;
+                          const badgeStyle = isPos ? {
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            color: '#059669',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '800',
+                            fontSize: '11px',
+                            display: 'inline-block'
+                          } : {
+                            background: 'rgba(239, 68, 68, 0.12)',
+                            color: '#dc2626',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                            fontWeight: '800',
+                            fontSize: '11px',
+                            display: 'inline-block'
+                          };
+
+                          let content = value;
+                          if (k === 'actual_yield') content = `${Number(value || 0).toFixed(2)}%`;
+                          else if (k === 'diff_yield_perc') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}%` : `${Number(value || 0).toFixed(2)}%`;
+                          else if (k === 'diff_qty') content = Number(value || 0) >= 0 ? `+${Number(value || 0).toFixed(2)}` : `${Number(value || 0).toFixed(2)}`;
+
+                          return (
+                            <td key={cIdx} className="text-right">
+                              <span style={badgeStyle}>{content}</span>
+                            </td>
+                          );
+                        }
+
+                        return (
+                          <td key={cIdx} className={format ? 'text-right' : 'text-left'}>
+                            {formatVal(value, format)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  ))
+                )
               ) : (
                 <tr>
                   <td colSpan={schema.headers.length} className="text-center" style={{ padding: '24px', color: 'var(--text-tertiary)' }}>
@@ -2057,7 +2649,7 @@ export default function ReportViewer({ reportId, activeRoute }) {
 
       return (
         <div>
-          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '12px' }} className="no-print">
             <div style={searchWrapperStyle}>
               <Search size={13} style={searchIconStyle} />
               <input
@@ -2132,49 +2724,55 @@ const actionsRowStyle = {
 };
 
 const filtersWrapperStyle = {
+  position: 'relative',
+  zIndex: 20,
   display: 'flex',
-  flexWrap: 'nowrap',
-  gap: '6px',
-  background: 'var(--glass-bg)',
-  padding: '4px 7px',
-  borderRadius: 'var(--radius-element)',
-  border: '1px solid var(--border-light)',
-  marginBottom: '6px',
-  alignItems: 'flex-end',
-  overflowX: 'auto',
-  overflowY: 'hidden',
-  WebkitOverflowScrolling: 'touch',
-  scrollbarWidth: 'thin'
+  flexWrap: 'wrap',
+  gap: '10px',
+  background: 'var(--surface-primary, #ffffff)',
+  padding: '12px 16px',
+  borderRadius: '8px',
+  border: '1px solid var(--border-color, #e2e8f0)',
+  marginBottom: '18px',
+  alignItems: 'flex-end'
 };
 
 const filterBoxStyle = {
   display: 'flex',
   flexDirection: 'column',
-  gap: '2px',
-  flexShrink: 0,
-  minWidth: '108px',
-  width: '108px'
+  justifyContent: 'flex-end',
+  gap: '4px',
+  flex: '1 1 160px',
+  minWidth: '150px',
+  boxSizing: 'border-box'
 };
 
 const filterLabelStyle = {
-  fontSize: '8px',
+  fontSize: '9px',
   fontWeight: '800',
   color: 'var(--text-secondary)',
   textTransform: 'uppercase',
-  letterSpacing: '0.5px'
+  letterSpacing: '0.5px',
+  marginBottom: '2px'
 };
 
 const selectControlStyle = {
-  height: '27px',
-  padding: '0 7px',
-  fontSize: '10px',
+  height: '34px',
+  minHeight: '34px',
+  padding: '0 10px',
+  fontSize: '11px',
   fontWeight: '600',
-  borderRadius: 'var(--radius-element)',
-  border: '1px solid var(--input-border)',
-  background: 'var(--input-bg)',
-  color: 'var(--text-primary)',
+  borderRadius: '6px',
+  border: '1px solid var(--border-color, #cbd5e1)',
+  background: 'var(--surface-primary, #ffffff)',
+  color: 'var(--text-primary, #0f172a)',
   outline: 'none',
-  width: '100%'
+  width: '100%',
+  boxSizing: 'border-box',
+  verticalAlign: 'middle',
+  lineHeight: 'normal',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap'
 };
 
 const searchWrapperStyle = {

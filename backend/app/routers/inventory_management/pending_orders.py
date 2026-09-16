@@ -96,7 +96,19 @@ def get_pending_order_masters(db: Session, company_code: str, user_allowed_locat
     cache_key = f"bknr:inventory_report:{company_code}:pending_order_masters:{allowed_key}:{production_for_filter or 'ALL'}:{location or 'ALL'}"
 
     def get_lookup(model, field_name):
-        return [getattr(x, field_name) for x in db.query(model).filter(model.company_id == company_code).all()]
+        try:
+            if not hasattr(model, 'company_id'):
+                rows = db.query(model).all()
+            else:
+                rows = db.query(model).filter(
+                    (model.company_id == company_code) | (model.company_id.is_(None)) | (model.company_id == "")
+                ).all()
+                tenant_rows = [x for x in rows if getattr(x, 'company_id', '') == company_code]
+                if tenant_rows:
+                    rows = tenant_rows
+            return sorted(list(set(str(getattr(x, field_name, '') or '').strip() for x in rows if getattr(x, field_name, None))))
+        except Exception:
+            return []
 
     def build():
         if production_for_filter:
@@ -216,6 +228,8 @@ def pending_orders_page(request: Request, edit: str | None = None, db: Session =
         return JSONResponse({
             "active_rows": [row_to_dict(r) for r in active_rows],
             "completed_rows": [row_to_dict(r) for r in completed_rows],
+            "active_po_count": len(po_groups),
+            "completed_po_count": len(completed_po_groups),
             "next_sl": next_sl,
             "global_production_for": production_for_filter or "",
             "global_location": location or "",
@@ -339,6 +353,16 @@ def move_to_sales(
     invoice_date: str = Form(...),
     shipping_bill: str = Form(""),
     container_no: str = Form(""),
+    loaded_assortment_json: str = Form(""),
+    loaded_buyer: List[str] = Form(...),
+    loaded_brand: List[str] = Form(...),
+    loaded_packing_style: List[str] = Form(...),
+    loaded_freezer: List[str] = Form(...),
+    loaded_count_glaze: List[str] = Form(...),
+    loaded_weight_glaze: List[str] = Form(...),
+    loaded_variety: List[str] = Form(...),
+    loaded_grade: List[str] = Form(...),
+    loaded_no_of_mc: List[int] = Form(...),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -356,6 +380,52 @@ def move_to_sales(
     if any(is_edit_locked(request, item.date) for item in items):
         request.session["message"] = f"❌ {edit_lock_message()}"
         return RedirectResponse("/inventory/pending_orders", status_code=303)
+
+    # Prefer the complete, explicit grid payload. The individual fields remain
+    # as a compatibility fallback for clients on the previous screen version.
+    if loaded_assortment_json:
+        try:
+            loaded_assortment = json.loads(loaded_assortment_json)
+        except (TypeError, json.JSONDecodeError):
+            raise HTTPException(status_code=422, detail="Loaded assortment data is invalid")
+        if not isinstance(loaded_assortment, list):
+            raise HTTPException(status_code=422, detail="Loaded assortment data must be a list")
+        assortment_by_id = {}
+        try:
+            for row in loaded_assortment:
+                row_id = int(row.get("id"))
+                if row_id in assortment_by_id:
+                    raise ValueError
+                assortment_by_id[row_id] = row
+        except (AttributeError, TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="Each loaded assortment row must have a valid unique pending-order ID")
+        pending_ids = {item.id for item in items}
+        if set(assortment_by_id) != pending_ids:
+            raise HTTPException(status_code=422, detail="Loaded assortment rows do not match the selected pending order")
+        # Match popup edits to their original Pending Order line by ID. This
+        # avoids values being assigned to the wrong Sales Dispatch row if the
+        # database returns the PO lines in a different order.
+        loaded_assortment = [assortment_by_id[item.id] for item in items]
+        loaded_buyer = [str(row.get("buyer") or "") for row in loaded_assortment]
+        loaded_brand = [str(row.get("brand") or "") for row in loaded_assortment]
+        loaded_packing_style = [str(row.get("packing_style") or "") for row in loaded_assortment]
+        loaded_freezer = [str(row.get("freezer") or "") for row in loaded_assortment]
+        loaded_count_glaze = [str(row.get("count_glaze") or "") for row in loaded_assortment]
+        loaded_weight_glaze = [str(row.get("weight_glaze") or "") for row in loaded_assortment]
+        loaded_variety = [str(row.get("variety") or "") for row in loaded_assortment]
+        loaded_grade = [str(row.get("grade") or "") for row in loaded_assortment]
+        try:
+            loaded_no_of_mc = [int(row.get("no_of_mc") or 0) for row in loaded_assortment]
+        except (TypeError, ValueError):
+            raise HTTPException(status_code=422, detail="Loaded assortment MC quantity must be a whole number")
+
+    assortment_fields = (
+        loaded_buyer, loaded_brand, loaded_packing_style, loaded_freezer,
+        loaded_count_glaze, loaded_weight_glaze, loaded_variety, loaded_grade,
+        loaded_no_of_mc,
+    )
+    if len(items) != len(loaded_buyer) or any(len(field) != len(items) for field in assortment_fields):
+        raise HTTPException(status_code=422, detail="Loaded assortment must include one complete row for every pending-order line")
 
     try:
         ensure_bill_accounting_schema(db)
@@ -378,10 +448,14 @@ def move_to_sales(
 
         saved_rows = []
         invoice_total_inr = 0.0
-        buyer_name = items[0].buyer or "Export Buyer"
+        buyer_name = loaded_buyer[0] or items[0].buyer or "Export Buyer"
 
-        for item in items:
-            qty_kg, amount_usd, amount_inr = calculate_sales_values(item, weight_map)
+        for index, item in enumerate(items):
+            loaded_mc = max(0, int(loaded_no_of_mc[index] or 0))
+            loaded_packing = loaded_packing_style[index]
+            qty_kg = round(loaded_mc * weight_map.get(str(loaded_packing or "").strip(), 1.0), 3)
+            amount_usd = round(qty_kg * float(item.selling_price or 0), 2)
+            amount_inr = round(amount_usd * float(item.exchange_rate or 83.5), 2)
             invoice_total_inr += amount_inr
             sale_row = sales_dispatch(company_id=company_code)
             sale_row.invoice_no = invoice_no
@@ -389,16 +463,17 @@ def move_to_sales(
             sale_row.shipping_bill = shipping_bill
             sale_row.container_no = container_no
             sale_row.po_number = item.po_number
-            sale_row.buyer_name = item.buyer
-            sale_row.brand = item.brand
+            sale_row.buyer_name = loaded_buyer[index]
+            sale_row.brand = loaded_brand[index]
             sale_row.country = item.country
-            sale_row.count_glaze = item.count_glaze
-            sale_row.weight_glaze = item.weight_glaze
-            sale_row.packing_style = item.packing_style
-            sale_row.no_of_mc = item.no_of_mc
+            sale_row.count_glaze = loaded_count_glaze[index]
+            sale_row.weight_glaze = loaded_weight_glaze[index]
+            sale_row.packing_style = loaded_packing
+            sale_row.freezer = loaded_freezer[index]
+            sale_row.no_of_mc = loaded_mc
             sale_row.price = item.selling_price
-            sale_row.variety = item.variety
-            sale_row.grade = item.grade
+            sale_row.variety = loaded_variety[index]
+            sale_row.grade = loaded_grade[index]
             sale_row.company_name = item.company_name
             sale_row.production_at = item.production_at
             sale_row.exchange_rate = item.exchange_rate
@@ -473,6 +548,14 @@ def delete_po(
         pending_orders.company_id == company_code,
         pending_orders.po_number == po_number
     ).all()
+
+    dispatched = db.query(sales_dispatch.id).filter(
+        sales_dispatch.company_id == company_code,
+        func.upper(func.trim(sales_dispatch.po_number)) == str(po_number or "").strip().upper(),
+    ).first()
+    if dispatched:
+        request.session["message"] = "❌ This PO has already been dispatched to Sales and cannot be cancelled from Pending Orders"
+        return RedirectResponse("/inventory/pending_orders", status_code=303)
 
     if rows and any(is_edit_locked(request, row.date) for row in rows):
         request.session["message"] = f"❌ {edit_lock_message()}"

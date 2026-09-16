@@ -218,8 +218,9 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
       })
       .then(data => {
         if (data.status === 'success') {
-          setCompanies(data.companies || []);
-          setLocations(data.locations || []);
+          const excluded = ['MAIN PLANT', 'MAIN UNIT', 'GENERAL STOCK', 'N/A', 'NONE', 'NULL'];
+          setCompanies((data.companies || []).filter(c => !excluded.includes(String(c).trim().toUpperCase())));
+          setLocations((data.locations || []).filter(l => !excluded.includes(String(l).trim().toUpperCase())));
         }
       })
       .catch(err => console.error('Error fetching global dropdowns in header:', err));
@@ -327,6 +328,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         { id: 'criteria_contractors',      token: 'mst_con',      perm: 'contractors',      icon: 'fa-hard-hat',         label: 'Contractors',       route: '/criteria/contractors' },
         { id: 'criteria_peeling_at',       token: 'mst_pat',      perm: 'peeling_at',       icon: 'fa-map-pin',          label: 'Peeling At',        route: '/criteria/peeling_at' },
         { id: 'criteria_peeling_rates',    token: 'mst_prt',      perm: 'peeling_rates',    icon: 'fa-money-bill',       label: 'Peeling Rates',     route: '/criteria/peeling_rates' },
+        { id: 'criteria_purchasing_locations', token: 'mst_plc',   perm: 'purchasing_locations', icon: 'fa-location-dot',   label: 'Purchasing Locations', route: '/criteria/purchasing_locations' },
         { id: 'criteria_production_at',    token: 'mst_pra',      perm: 'production_at',    icon: 'fa-industry',         label: 'Production At',     route: '/criteria/production_at' },
         { id: 'criteria_production_for',   token: 'pf_8Kx92LmQ',  perm: 'production_for',   icon: 'fa-building-flag',    label: 'Production For',    route: '/criteria/production_for' },
         { id: 'criteria_production_types', token: 'mst_prt2',     perm: 'production_types', icon: 'fa-tags',             label: 'Production Types',  route: '/criteria/production_types' },
@@ -356,7 +358,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
           { id: 'admin_system_settings',      token: 'adm_sys', perm: 'system_settings',      icon: 'fa-sliders', label: 'System & Pipeline',    route: '/admin/system_settings' },
           { id: 'admin_system_architecture',  token: 'adm_arc', perm: 'system_architecture',  icon: 'fa-sitemap', label: 'System Architecture',  route: '/admin/system_architecture' }
         ] : []),
-        { id: 'admin_raise_ticket',      token: 'sup_tkt',  perm: 'raise_ticket',      icon: 'fa-support-agent',      label: 'My Complaints',         route: '/support/my_tickets' },
+        { id: 'admin_raise_ticket',      token: 'sup_tkt',  perm: 'raise_ticket',      icon: 'fa-comments',           label: 'My Complaints',         route: '/support/my_tickets' },
         { id: 'admin_helpdesk',          token: 'sup_hd',   perm: 'admin_helpdesk',    icon: 'fa-ticket',             label: 'Helpdesk',              route: '/admin/all_tickets' },
         { id: 'admin_manage_support',    token: 'sup_team', perm: 'manage_support',    icon: 'fa-users-gear',         label: 'Support Team',          route: '/admin/support_team' },
         { id: 'admin_user_activity',     token: 'sup_act',  perm: 'user_activity',     icon: 'fa-clock-rotate-left',  label: 'User Activity Logs',    route: '/admin/activities' }
@@ -847,7 +849,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
         @media (max-width: 900px) { .global-search-container { display: none; } }
       `}</style>
 
-      <header className="app-header" ref={dropdownRef}>
+      <header className="app-header no-print" ref={dropdownRef}>
         {/* Left side actions */}
         <div className="header-left-meta">
           <button 
@@ -937,7 +939,7 @@ export default function Header({ toggleTheme, user, handleLogout, sidebarOpen, s
             aria-label="Open support and helpdesk panel"
             style={{ cursor: 'pointer' }}
           >
-            <i className="fa-solid fa-support-agent" aria-hidden="true"></i>
+            <i className="fa-solid fa-comments" aria-hidden="true"></i>
             <span className="icon-action-label">Support</span>
           </button>
 

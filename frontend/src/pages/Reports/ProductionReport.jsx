@@ -79,6 +79,53 @@ export default function ProductionReport({ activeRoute }) {
   const totalMC = summaryRows.reduce((s, r) => s + Number(r.no_of_mc || 0), 0);
   const totalQty = summaryRows.reduce((s, r) => s + Number(r.production_qty || 0), 0);
 
+  const calcEditQty = (editObj) => {
+    if (!editObj) return 0;
+    const mcVal = parseFloat(editObj.no_of_mc) || 0;
+    const looseVal = parseFloat(editObj.loose) || 0;
+    const pStyle = (editObj.packing_style || '').trim().toLowerCase();
+    
+    let mcW = 0;
+    let slW = 0;
+    
+    const packingStylesList = data?.packing_styles_list || [];
+    const pMatch = packingStylesList.find(p => 
+      typeof p === 'object' 
+        ? (p.packing_style || '').trim().toLowerCase() === pStyle 
+        : (p || '').trim().toLowerCase() === pStyle
+    );
+
+    if (pMatch && typeof pMatch === 'object') {
+      mcW = parseFloat(pMatch.mc_weight) || 0;
+      slW = parseFloat(pMatch.slab_weight) || 0;
+    }
+
+    if (mcW <= 0 || slW <= 0) {
+      const match = pStyle.match(/(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)/);
+      if (match) {
+        const count = parseFloat(match[1]) || 0;
+        const perSlab = parseFloat(match[2]) || 0;
+        if (slW <= 0) slW = perSlab;
+        if (mcW <= 0) mcW = count * perSlab;
+      } else {
+        const singleMatch = pStyle.match(/(\d+\.?\d*)/);
+        if (singleMatch && mcW <= 0) mcW = parseFloat(singleMatch[1]) || 0;
+      }
+    }
+
+    const gross = (mcVal * mcW) + (looseVal * slW);
+
+    let glazePercent = 0;
+    const glazeText = (editObj.glaze || '').toUpperCase().trim();
+    if (glazeText && !glazeText.includes('NWNC')) {
+      const match = glazeText.match(/(\d+\.?\d*)/);
+      if (match) glazePercent = parseFloat(match[1]) || 0;
+    }
+
+    const net = glazePercent > 0 ? gross * ((100 - glazePercent) / 100) : gross;
+    return net;
+  };
+
   const getExportUrl = (type) => {
     const pf = localStorage.getItem('production_for_filter') || '';
     const loc = localStorage.getItem('plant_location_filter') || '';
@@ -148,31 +195,107 @@ export default function ProductionReport({ activeRoute }) {
     { label: 'Cancel Selected Row', onClick: () => { setConfirmAction('cancel'); setConfirmModalOpen(true); }, danger: true, disabled: !selectedRow }
   ];
 
+  const getSummarySubtotal = (key, rowsForGroup) => {
+    const rawSub = summarySubtotals[key] || {};
+    const totalMc = rowsForGroup.reduce((s, r) => s + (Number(r.no_of_mc) || 0), 0);
+    const totalLoose = rowsForGroup.reduce((s, r) => s + (Number(r.loose) || 0), 0);
+    const totalProdQty = rowsForGroup.reduce((s, r) => s + (Number(r.production_qty) || 0), 0);
+
+    const soakingIn = Number(rawSub.soaking_in || 0);
+    const targetYield = Number(rawSub.target_yield || 0);
+
+    let hasSoaking = soakingIn > 0;
+    let actualYield = 0;
+    let diffYieldPerc = 0;
+    let diffQty = 0;
+
+    if (hasSoaking) {
+      actualYield = Number(((totalProdQty / soakingIn) * 100).toFixed(2));
+      diffYieldPerc = Number((actualYield - targetYield).toFixed(2));
+      const expectedQty = (soakingIn * targetYield) / 100;
+      diffQty = Number((totalProdQty - expectedQty).toFixed(2));
+    }
+
+    return {
+      mc: totalMc,
+      loose: totalLoose,
+      prod_qty: totalProdQty,
+      soaking_in: soakingIn,
+      target_yield: targetYield,
+      has_soaking: hasSoaking,
+      actual_yield: actualYield,
+      diff_yield_perc: diffYieldPerc,
+      diff_qty: diffQty,
+    };
+  };
+
   const renderSummaryRows = () => {
     const result = [];
     let lastKey = null;
+    let currentGroupRows = [];
+
+    const appendSubtotalRow = (key, rows, keyIdx) => {
+      const s = getSummarySubtotal(key, rows);
+      const isPos = s.diff_yield_perc >= 0;
+      const posBadgeStyle = {
+        background: 'rgba(16, 185, 129, 0.12)',
+        color: '#059669',
+        border: '1px solid rgba(16, 185, 129, 0.3)',
+        padding: '3px 8px',
+        borderRadius: '4px',
+        fontWeight: '800',
+        display: 'inline-block'
+      };
+      const negBadgeStyle = {
+        background: 'rgba(239, 68, 68, 0.12)',
+        color: '#dc2626',
+        border: '1px solid rgba(239, 68, 68, 0.3)',
+        padding: '3px 8px',
+        borderRadius: '4px',
+        fontWeight: '800',
+        display: 'inline-block'
+      };
+
+      result.push(
+        <tr key={`sub-${key}-${keyIdx}`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
+          <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
+          <td className="text-right">{s.mc}</td>
+          <td className="text-right">{s.loose}</td>
+          <td className="text-right" style={{ color: 'var(--corp-rep)', fontWeight: 800 }}>{fmt.number(s.prod_qty)}</td>
+          <td className="text-center">
+            {s.has_soaking ? (
+              <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                {s.actual_yield}% ({isPos ? '+' : ''}{s.diff_yield_perc}%)
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>-</span>
+            )}
+          </td>
+          <td className="text-right">
+            {s.has_soaking ? (
+              <span style={isPos ? posBadgeStyle : negBadgeStyle}>
+                {s.diff_qty > 0 ? `+${s.diff_qty}` : s.diff_qty}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-tertiary)', fontSize: 10 }}>-</span>
+            )}
+          </td>
+          <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
+            In: {s.soaking_in} | Trg: {s.target_yield}%
+          </td>
+        </tr>
+      );
+    };
 
     summaryRows.forEach((r, idx) => {
-      const currentKey = `${r.production_at || ''}|${r.production_for || ''}|${r.batch_number || ''}|${r.variety_name || ''}|${r.grade || ''}`;
+      const currentKey = `${r.production_at || ''}|${r.production_for || ''}|${r.batch_number || ''}|${r.species || ''}|${r.variety_name || ''}`;
 
       if (lastKey && lastKey !== currentKey) {
-        const s = summarySubtotals[lastKey];
-        if (s) {
-          result.push(
-            <tr key={`sub-${lastKey}-${idx}`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
-              <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
-              <td className="text-right">{s.mc}</td>
-              <td className="text-right">{s.loose}</td>
-              <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
-              <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981' }}>{s.actual_yield}% ({s.diff_yield_perc}%)</td>
-              <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981' }}>{s.diff_qty}</td>
-              <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
-                In: {s.soaking_in} | Trg: {s.target_yield}%
-              </td>
-            </tr>
-          );
-        }
+        appendSubtotalRow(lastKey, currentGroupRows, idx);
+        currentGroupRows = [];
       }
+
+      currentGroupRows.push(r);
 
       const isSelected = selectedRow?.id === r.id;
       const slNo = summaryRows.length - idx;
@@ -338,7 +461,7 @@ export default function ProductionReport({ activeRoute }) {
             )}
           </td>
           <td className="text-right calc-cell" style={{ background: 'var(--input-bg)', fontWeight: 700 }}>
-            {fmt.number(r.production_qty)}
+            {isEditing && isSelected ? fmt.number(calcEditQty(editData)) : fmt.number(r.production_qty)}
           </td>
           <td className="text-center">-</td>
           <td className="text-center">-</td>
@@ -349,22 +472,7 @@ export default function ProductionReport({ activeRoute }) {
       lastKey = currentKey;
 
       if (idx === summaryRows.length - 1) {
-        const s = summarySubtotals[currentKey];
-        if (s) {
-          result.push(
-            <tr key={`sub-last`} className="subtotal-row" style={{ background: '#f8fafc', fontWeight: 800 }}>
-              <td colSpan={14} style={{ textAlign: 'right', fontWeight: 800 }}>GROUP SUBTOTAL:</td>
-              <td className="text-right">{s.mc}</td>
-              <td className="text-right">{s.loose}</td>
-              <td className="text-right" style={{ color: 'var(--corp-rep)' }}>{fmt.number(s.prod_qty)}</td>
-              <td className="text-center" style={{ color: Number(s.diff_yield_perc) < 0 ? '#ef4444' : '#10b981' }}>{s.actual_yield}% ({s.diff_yield_perc}%)</td>
-              <td className="text-right" style={{ color: Number(s.diff_qty) < 0 ? '#ef4444' : '#10b981' }}>{s.diff_qty}</td>
-              <td style={{ textTransform: 'none', fontSize: 10, color: 'var(--text-tertiary)', textAlign: 'left', paddingLeft: 4 }}>
-                In: {s.soaking_in} | Trg: {s.target_yield}%
-              </td>
-            </tr>
-          );
-        }
+        appendSubtotalRow(currentKey, currentGroupRows, 'last');
       }
     });
 
@@ -555,7 +663,7 @@ export default function ProductionReport({ activeRoute }) {
             )}
           </td>
           <td className="text-right calc-cell" style={{ background: 'var(--input-bg)', fontWeight: 700 }}>
-            {fmt.number(r.production_qty)}
+            {isEditing && isSelected ? fmt.number(calcEditQty(editData)) : fmt.number(r.production_qty)}
           </td>
           <td style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>{r.email?.split('@')[0]}</td>
         </tr>

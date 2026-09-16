@@ -397,7 +397,7 @@ export default function BillsOfLading() {
       {/* NEW BL MODAL */}
       {isModalOpen && (
         <div className="attendance-modal-overlay">
-          <div className="attendance-modal-content" style={{ maxWidth: '800px' }}>
+          <div className="attendance-modal-content" style={{ maxWidth: '1240px', width: '95vw' }}>
             <div className="attendance-modal-header">
               <h2>Log Bill of Lading</h2>
               <button className="attendance-modal-close-btn" onClick={closeForm} aria-label="Close modal">
@@ -407,7 +407,7 @@ export default function BillsOfLading() {
             
             <form onSubmit={handleFormSubmit}>
               <div className="attendance-modal-body">
-                <div className="attendance-form-grid" style={{ gridTemplateColumns: '1fr 1fr 1fr' }}>
+                <div className="attendance-form-grid">
                   
                   <div className="attendance-form-group">
                     <label htmlFor="bl_no">Bill of Lading No</label>

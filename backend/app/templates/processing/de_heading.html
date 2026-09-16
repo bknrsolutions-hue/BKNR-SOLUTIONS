@@ -242,9 +242,9 @@ body { background: var(--bg); color: var(--text); overflow-x: hidden; -webkit-fo
             </div>
         </div>
     </div>
-    <div class="panel" id="chartPanel">
+    <div class="panel" id="chartPanel" style="min-width: 0; overflow: hidden;">
         <div class="panel-title">Count-Wise Floor Balance (Kg)</div>
-        <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; padding: 15px;">
+        <div style="position: relative; flex-grow: 1; width: 100%; min-height: 250px; max-height: 300px; padding: 15px; overflow: hidden;">
             <canvas id="countStackedBar"></canvas>
         </div>
     </div>
@@ -377,10 +377,22 @@ const rawFloorData = {{ hoso_floor_balance | safe if hoso_floor_balance else '[]
 let chartInstance = null;
 let selectedId = null;
 
-const getLocationColor = (loc) => {
-    const colors = ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4'];
+const getCompanyColor = (companyName) => {
+    const colors = [
+        '#2563EB', // Royal Blue
+        '#059669', // Emerald Green
+        '#D97706', // Amber Gold
+        '#7C3AED', // Purple Violet
+        '#DB2777', // Rose Pink
+        '#0891B2', // Vibrant Cyan
+        '#EA580C', // Bright Orange
+        '#4F46E5', // Deep Indigo
+        '#0D9488', // Teal
+        '#DC2626'  // Crimson Red
+    ];
     let hash = 0;
-    for (let i = 0; i < loc.length; i++) { hash = loc.charCodeAt(i) + ((hash << 5) - hash); }
+    const str = String(companyName || '').trim().toUpperCase();
+    for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return colors[Math.abs(hash) % colors.length];
 };
 
@@ -395,7 +407,7 @@ function updateDashboard() {
     let hierarchy = {}; let grandTotal = 0; let chartDataMap = {}; let batches = new Set(); let counts = new Set();
 
     rawFloorData.forEach(item => {
-        const comp = item.production_for || "General Stock";
+        const comp = item.production_for || "";
         const loc = item.peeling_at || "Purchased Stock";
         const species = item.species || "";
         const qty = parseFloat(item.available_qty) || 0;
@@ -413,7 +425,7 @@ function updateDashboard() {
         hierarchy[comp].locations[loc].items.push(item);
 
         if (!chartDataMap[count]) chartDataMap[count] = {};
-        chartDataMap[count][loc] = (chartDataMap[count][loc] || 0) + qty;
+        chartDataMap[count][comp] = (chartDataMap[count][comp] || 0) + qty;
 
         grandTotal += qty; batches.add(item.batch); counts.add(item.count);
     });
@@ -422,7 +434,8 @@ function updateDashboard() {
         let layoutHtml = "";
         Object.keys(hierarchy).sort().forEach((comp, cIdx) => {
             const cId = `comp_${cIdx}`;
-            layoutHtml += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')"><td><i class="fa-solid fa-building" style="margin-right:8px;"></i> ${comp}</td><td>${hierarchy[comp].total.toFixed(2)}</td></tr>`;
+            const compColor = getCompanyColor(comp);
+            layoutHtml += `<tr class="company-row" onclick="toggleRows('.child-of-${cId}', 'none')" style="border-left: 4px solid ${compColor};"><td style="color:${compColor}; font-weight:800;"><i class="fa-solid fa-building" style="margin-right:8px; color:${compColor};"></i> ${comp}</td><td style="color:${compColor}; font-weight:800;">${hierarchy[comp].total.toFixed(2)}</td></tr>`;
             Object.keys(hierarchy[comp].locations).sort().forEach((loc, lIdx) => {
                 const lId = `${cId}_loc_${lIdx}`;
                 layoutHtml += `
@@ -450,9 +463,9 @@ function updateDashboard() {
 function renderStackedBar(dataMap) {
     const canvas = document.getElementById('countStackedBar'); if(!canvas) return;
     const ctx = canvas.getContext('2d'); if (chartInstance) chartInstance.destroy();
-    const labels = Object.keys(dataMap).sort(); const locations = [...new Set(rawFloorData.map(i => i.peeling_at || "Purchased Stock"))];
-    const datasets = locations.map(loc => ({
-        label: loc, data: labels.map(label => dataMap[label][loc] || 0), backgroundColor: getLocationColor(loc), borderRadius: 4
+    const labels = Object.keys(dataMap).sort(); const companies = [...new Set(rawFloorData.map(i => i.production_for || ""))];
+    const datasets = companies.map(comp => ({
+        label: comp, data: labels.map(label => dataMap[label][comp] || 0), backgroundColor: getCompanyColor(comp), borderRadius: 4
     })).filter(ds => ds.data.some(v => v > 0));
 
     chartInstance = BKNRCharts.create(ctx, {

@@ -70,8 +70,10 @@ export default function Soaking() {
       const res = await fetch(`/processing/soaking?${queryParams.toString()}`);
       if (res.ok) {
         const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
+        setProdForList(pList);
+        setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
         setChemicalsList(data.chemicals || []);
         setSpeciesList(data.species || []);
@@ -79,8 +81,21 @@ export default function Soaking() {
         setTodayEntries(data.today_data || []);
 
         if (data.selected_production_for) setFilterCompany(data.selected_production_for);
-        if (data.selected_location) setProductionAt(data.selected_location);
 
+        const nextComp = pList.includes(productionFor) ? productionFor :
+          (activeComp && pList.includes(activeComp) ? activeComp :
+          (data.selected_production_for && pList.includes(data.selected_production_for) ? data.selected_production_for :
+          (pList.length > 0 ? pList[0] : '')));
+
+        setProductionFor(nextComp);
+
+        setProductionAt(current => {
+          if (current && locList.includes(current) && (current !== nextComp || locList.length === 1)) return current;
+          if (activeLoc && locList.includes(activeLoc) && (activeLoc !== nextComp || locList.length === 1)) return activeLoc;
+          if (data.selected_location && locList.includes(data.selected_location) && (data.selected_location !== nextComp || locList.length === 1)) return data.selected_location;
+          const distinctLoc = locList.find(l => l !== nextComp);
+          return distinctLoc || (locList.length > 0 ? locList[0] : '');
+        });
 
       } else {
         console.error('Failed to fetch Soaking details');
@@ -91,6 +106,24 @@ export default function Soaking() {
       setLoading(false);
     }
   };
+
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      const currentComp = productionFor || (prodForList.includes(activeComp) ? activeComp : prodForList[0]) || '';
+      if (!productionFor && prodForList.length > 0) {
+        setProductionFor(currentComp);
+      }
+      if (!productionAt && peelingLocations.length > 0) {
+        const preferredLoc = (activeLoc && peelingLocations.includes(activeLoc) && (activeLoc !== currentComp || peelingLocations.length === 1))
+          ? activeLoc
+          : (peelingLocations.find(l => l !== currentComp) || peelingLocations[0]);
+        setProductionAt(preferredLoc);
+      }
+    }
+  }, [showModal, prodForList, peelingLocations, productionFor, productionAt]);
 
   useEffect(() => {
     const now = new Date();
@@ -199,6 +232,7 @@ export default function Soaking() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const qty = parseFloat(inQty) || 0;
     const rej = parseFloat(rejectionQty) || 0;
 
@@ -407,7 +441,7 @@ export default function Soaking() {
             className="btn btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> New Entry
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -762,7 +796,10 @@ export default function Soaking() {
                     }} 
                     required
                   >
-                    {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
+                    {(peelingLocations.filter(l => !prodForList.includes(l)).length
+                      ? peelingLocations.filter(l => !prodForList.includes(l))
+                      : peelingLocations
+                    ).map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 
                 </div>

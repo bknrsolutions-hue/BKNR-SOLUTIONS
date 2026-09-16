@@ -48,7 +48,7 @@ export default function InventoryDashboard({ theme, setActivePage }) {
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState('');
-  const [stockTableTab, setStockTableTab] = useState('closing');
+  const [stockTableTab, setStockTableTab] = useState('order_against_stock');
 
   // Interactive chart filter states
   const [varietyChartFilter, setVarietyChartFilter] = useState(null);
@@ -1015,6 +1015,16 @@ export default function InventoryDashboard({ theme, setActivePage }) {
         <button
           type="button"
           role="tab"
+          aria-selected={stockTableTab === 'order_against_stock'}
+          style={stockTabStyle(stockTableTab === 'order_against_stock')}
+          onClick={() => setStockTableTab('order_against_stock')}
+        >
+          <i className="fa-solid fa-cart-flatbed" style={{ marginRight: '7px' }}></i>
+          Order Against Stock
+        </button>
+        <button
+          type="button"
+          role="tab"
           aria-selected={stockTableTab === 'closing'}
           style={stockTabStyle(stockTableTab === 'closing')}
           onClick={() => setStockTableTab('closing')}
@@ -1033,6 +1043,133 @@ export default function InventoryDashboard({ theme, setActivePage }) {
           Opening Stock
         </button>
       </div>
+
+      {/* Order Against Stock Table */}
+      {stockTableTab === 'order_against_stock' && <>
+      <div style={secHeader} id="orderAgainstStockBox">
+        <span style={secTitle}><i className="fa-solid fa-cart-flatbed"></i> Order Against Stock (Closing Inventory vs Pending Orders)</span>
+        <div style={secLine}></div>
+        <button 
+          onClick={() => exportToCSV(filteredRows, 'Order_Against_Stock')}
+          style={{ height: '26px', padding: '0 10px', fontSize: '10px', fontWeight: 800, background: 'rgba(16,185,129,0.1)', color: '#10b981', border: '1px solid rgba(16,185,129,0.3)', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap', marginRight: '6px' }}
+        >
+          <i className="fa-solid fa-file-excel" style={{ marginRight: '4px' }}></i> Export Excel
+        </button>
+        <button onClick={() => openModal('/reports/pending_orders_report')}
+          style={{ height: '26px', padding: '0 10px', fontSize: '10px', fontWeight: 800, background: 'rgba(59,130,246,0.1)', color: '#3b82f6', border: '1px solid rgba(59,130,246,0.3)', borderRadius: '6px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          Pending Orders →
+        </button>
+      </div>
+
+      {filteredRows.filter(r => !r.has_stock || (r.qty || 0) === 0).length > 0 && (
+        <div style={{
+          marginBottom: '12px', padding: '8px 14px', borderRadius: '8px',
+          background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)',
+          color: '#ef4444', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px'
+        }}>
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          <span>
+            <strong>Not Available Stock Warning:</strong> {filteredRows.filter(r => !r.has_stock || (r.qty || 0) === 0).length} Pending Order items have <strong>0 Available Stock</strong> in inventory.
+          </span>
+        </div>
+      )}
+
+      <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
+        <div className="inventory-stock-table-scroll" style={{ maxHeight: '550px' }}>
+          <table className="bknr-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Loc</th>
+                <th>Storage</th>
+                <th>Species</th>
+                <th>Variety</th>
+                <th>Packing</th>
+                <th>Glaze</th>
+                <th>Grade</th>
+                <th>Client</th>
+                <th style={{ textAlign: 'right' }}>Cl MC</th>
+                <th style={{ textAlign: 'right' }}>Cl Qty (Kg)</th>
+                <th style={{ textAlign: 'right' }}>Order MC</th>
+                <th style={{ textAlign: 'right' }}>Order Qty (Kg)</th>
+                <th style={{ textAlign: 'right' }}>Net Bal (Kg)</th>
+                <th style={{ textAlign: 'center' }}>Stock Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length ? filteredRows.map((row, i) => {
+                const clQty = row.qty || 0;
+                const clMc = row.mc || 0;
+                const ordMc = row.order_mc || 0;
+                const ordQty = row.order_qty || 0;
+                const netBal = row.net_bal_qty ?? (clQty - ordQty);
+                const isNoStock = !row.has_stock || clQty === 0;
+                const isShortage = netBal < -0.01;
+                return (
+                  <tr key={i} className={isNoStock ? 'dead-row' : (isShortage ? 'op-row' : '')}>
+                    <td>{i + 1}</td>
+                    <td>{row.loc}</td>
+                    <td>{row.fr}</td>
+                    <td><strong>{row.sp}</strong></td>
+                    <td>{row.vr}</td>
+                    <td>{row.pk}</td>
+                    <td>{row.gl}</td>
+                    <td>{row.gr}</td>
+                    <td>{row.production_for}</td>
+                    <td align="right">{clMc}</td>
+                    <td align="right" style={{ color: clQty === 0 ? '#ef4444' : 'var(--ui-accent, #3b82f6)', fontWeight: 800 }}>{fmt(clQty)}</td>
+                    <td align="right" style={{ color: '#f59e0b', fontWeight: 800 }}>{ordMc}</td>
+                    <td align="right" style={{ color: '#f59e0b', fontWeight: 800 }}>{fmt(ordQty)}</td>
+                    <td align="right" style={{ color: isShortage ? '#ef4444' : '#10b981', fontWeight: 800 }}>
+                      {fmt(netBal)}
+                    </td>
+                    <td align="center">
+                      <span style={{
+                        padding: '2px 8px', borderRadius: '4px', fontSize: '9px', fontWeight: 800,
+                        background: isNoStock ? 'rgba(239,68,68,0.2)' : (isShortage ? 'rgba(245,158,11,0.15)' : 'rgba(16,185,129,0.15)'),
+                        color: isNoStock ? '#dc2626' : (isShortage ? '#f59e0b' : '#10b981'),
+                        border: isNoStock ? '1px solid #ef4444' : (isShortage ? '1px solid rgba(245,158,11,0.3)' : '1px solid rgba(16,185,129,0.3)')
+                      }}>
+                        {isNoStock ? 'NOT AVAILABLE STOCK' : (isShortage ? 'SHORTAGE' : 'SURPLUS')}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              }) : (
+                <tr>
+                  <td colSpan="15" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
+                    No stock vs order records found for selected filters.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+            <tfoot>
+              {(() => {
+                const ordTotals = filteredRows.reduce((acc, row) => {
+                  acc.cl_mc += (row.mc || 0);
+                  acc.cl_qty += (row.qty || 0);
+                  acc.ord_mc += (row.order_mc || 0);
+                  acc.ord_qty += (row.order_qty || 0);
+                  acc.net_bal += (row.net_bal_qty ?? ((row.qty || 0) - (row.order_qty || 0)));
+                  return acc;
+                }, { cl_mc: 0, cl_qty: 0, ord_mc: 0, ord_qty: 0, net_bal: 0 });
+                return (
+                  <tr className="grand-total-row">
+                    <td colSpan="9" style={{ textAlign: 'right', fontWeight: 800 }}>GRAND TOTAL</td>
+                    <td align="right">{ordTotals.cl_mc.toLocaleString('en-IN')}</td>
+                    <td align="right" style={{ color: 'var(--ui-accent, #3b82f6)', fontWeight: 800 }}>{fmt(ordTotals.cl_qty)}</td>
+                    <td align="right" style={{ color: '#f59e0b', fontWeight: 800 }}>{ordTotals.ord_mc.toLocaleString('en-IN')}</td>
+                    <td align="right" style={{ color: '#f59e0b', fontWeight: 800 }}>{fmt(ordTotals.ord_qty)}</td>
+                    <td align="right" style={{ color: ordTotals.net_bal < 0 ? '#ef4444' : '#10b981', fontWeight: 800 }}>{fmt(ordTotals.net_bal)}</td>
+                    <td></td>
+                  </tr>
+                );
+              })()}
+            </tfoot>
+          </table>
+        </div>
+      </div>
+      </>}
 
       {/* Live Closing Inventory Table */}
       {stockTableTab === 'closing' && <>

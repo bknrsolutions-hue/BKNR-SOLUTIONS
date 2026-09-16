@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View, Vibration, ActivityIndicator, Animated, Image } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Speech from 'expo-speech';
 import { apiRequest } from '../services/api';
 import { downloadAndShare } from '../services/download';
 import { Empty, ErrorState, Loading, Screen } from '../components/NativeScreenKit';
+
+import { CameraView, Camera, useCameraPermissions } from 'expo-camera';
 
 const ERROR_MESSAGES = {
   GLOBAL_FILTER_REQUIRED: 'Select one plant location in the global filter.',
@@ -36,6 +38,48 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
   const [auditLoading, setAuditLoading] = useState(false);
   const [audits, setAudits] = useState([]);
   const [auditTargetId, setAuditTargetId] = useState(null);
+
+  // 📱 MOBILE QR CAMERA SCANNER & SHIFT SELECTION STATES
+  const [permission, requestPermission] = useCameraPermissions();
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [scanned, setScanned] = useState(false);
+  const scannedRef = useRef(false);
+  const [torchOn, setTorchOn] = useState(false);
+  const [facing, setFacing] = useState('back');
+  const [scannedEmpId, setScannedEmpId] = useState('');
+  const [scannedEmpName, setScannedEmpName] = useState('');
+  const [shiftSelectOpen, setShiftSelectOpen] = useState(false);
+  const [saveConfirmation, setSaveConfirmation] = useState(null);
+
+  const scanAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (qrModalOpen) {
+      scanAnim.setValue(0);
+      const animation = Animated.loop(
+        Animated.sequence([
+          Animated.timing(scanAnim, {
+            toValue: 215,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+          Animated.timing(scanAnim, {
+            toValue: 0,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+        ])
+      );
+      animation.start();
+      return () => animation.stop();
+    }
+  }, [qrModalOpen, scanAnim]);
+
+  useEffect(() => {
+    if (qrModalOpen && (!permission || !permission.granted) && requestPermission) {
+      void requestPermission();
+    }
+  }, [qrModalOpen, permission, requestPermission]);
 
   const showToast = useCallback((kind, message) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -122,8 +166,8 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
   }, [activeRows, activeShift, auditTargetId]);
   const shifts = meta?.shifts || [];
 
-  const punch = useCallback(async (action, shiftName = 'GENERAL') => {
-    const id = employeeId.trim();
+  const punch = useCallback(async (action, shiftName = 'GENERAL', overrideId = null) => {
+    const id = (overrideId || employeeId || '').trim();
     if (!id) {
       showToast('error', 'Enter or scan an Employee ID.');
       employeeInput.current?.focus();
@@ -155,6 +199,177 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
       setTimeout(() => employeeInput.current?.focus(), 0);
     }
   }, [employeeId, loadRows, location, showToast, voiceEnabled]);
+
+  const openQrScanner = useCallback(async () => {
+    let activeLoc = location || meta?.locations?.[0] || (locations?.[0]?.company_name || locations?.[0]) || 'PLANT TERMINAL';
+    if (!location) {
+      setLocation(activeLoc);
+    }
+    scannedRef.current = false;
+    setScanned(false);
+    setQrModalOpen(true);
+
+    if (!permission?.granted && requestPermission) {
+      try {
+        await requestPermission();
+      } catch (e) {}
+    }
+  }, [location, meta, locations, permission, requestPermission]);
+
+  const onBarcodeScanned = useCallback(res => {
+    if (scannedRef.current) return;
+    const rawVal = String(res?.data || res?.nativeEvent?.data || (typeof res === 'string' ? res : '') || '').trim();
+    if (!rawVal) return;
+    scannedRef.current = true;
+    setScanned(true);
+    try { Vibration.vibrate(100); } catch (e) {}
+
+    let extractedId = rawVal;
+    let extractedName = '';
+
+    // 1. JSON Payload Parsing
+    try {
+      const parsed = JSON.parse(rawVal);
+      if (parsed && (parsed.employee_id || parsed.id || parsed.code)) {
+        extractedId = String(parsed.employee_id || parsed.id || parsed.code).trim();
+        extractedName = parsed.employee_name || parsed.name || '';
+      }
+    } catch (e) {}
+
+    // 2. URL Payload Parsing & Clean Employee ID Extraction (e.g. https://domain.com/emp/VNBK2162000006)
+    if (extractedId.includes('http://') || extractedId.includes('https://') || extractedId.includes('/') || extractedId.includes('?')) {
+      try {
+        const matchVnbk = extractedId.match(/[A-Za-z]{2,6}\d{5,12}/);
+        if (matchVnbk) {
+          extractedId = matchVnbk[0].toUpperCase();
+        } else {
+          const matchDigits = extractedId.match(/\d{5,12}/);
+          if (matchDigits) {
+            extractedId = matchDigits[0];
+          } else if (extractedId.includes('id=')) {
+            extractedId = extractedId.split('id=')[1].split('&')[0];
+          } else {
+            const pathParts = extractedId.split('?')[0].split('/').filter(Boolean);
+            if (pathParts.length > 0) {
+              extractedId = pathParts[pathParts.length - 1];
+            }
+          }
+        }
+      } catch (e) {}
+    }
+
+    // Clean final ID
+    extractedId = String(extractedId || '').trim();
+
+    if (!extractedId) {
+      showToast('error', 'Invalid QR Code scanned.');
+      setTimeout(() => {
+        scannedRef.current = false;
+        setScanned(false);
+      }, 1800);
+      return;
+    }
+
+    // 3. Strict & Full Employee ID Database Validation (Session & Master Registered Employees)
+    const cleanSearchId = extractedId.trim().toUpperCase();
+    const numericSuffix = cleanSearchId.replace(/[^0-9]/g, '');
+
+    const allEmps = [
+      ...(meta?.employees || []),
+      ...rows
+    ];
+
+    // Priority 1: Exact Full ID Match (e.g. VNBK2162000006)
+    let matchedEmp = allEmps.find(e => {
+      const empId = String(e.employee_id || e.id || e.code || '').trim().toUpperCase();
+      return empId === cleanSearchId;
+    });
+
+    // Priority 2: Fallback Suffix / Numeric ID Match
+    if (!matchedEmp) {
+      matchedEmp = allEmps.find(e => {
+        const empId = String(e.employee_id || e.id || e.code || '').trim().toUpperCase();
+        if (!empId) return false;
+        if (numericSuffix && numericSuffix.length >= 4) {
+          const empNumeric = empId.replace(/[^0-9]/g, '');
+          return empNumeric && (empNumeric.endsWith(numericSuffix) || numericSuffix.endsWith(empNumeric));
+        }
+        return false;
+      });
+    }
+
+    if (matchedEmp) {
+      extractedId = String(matchedEmp.employee_id || matchedEmp.id || extractedId).trim();
+      extractedName = matchedEmp.employee_name || matchedEmp.name || extractedName;
+    }
+
+    // If QR code does not belong to any registered employee in session/plant database -> SHOW ERROR & BLOCK!
+    if (!matchedEmp && !extractedName) {
+      const errorMsg = `QR Code (${extractedId}) is not registered for ${location || 'this plant'}.`;
+      showToast('error', errorMsg);
+      try { Vibration.vibrate([0, 120, 80, 120]); } catch (e) {}
+      if (voiceEnabled) {
+        Speech.speak('Unrecognized employee QR code', { rate: 1 });
+      }
+      setTimeout(() => {
+        scannedRef.current = false;
+        setScanned(false);
+      }, 2200);
+      return;
+    }
+
+    setScannedEmpId(extractedId);
+    setScannedEmpName(extractedName || `Employee #${extractedId}`);
+    setEmployeeId(extractedId);
+    setShiftSelectOpen(true);
+  }, [showToast, rows, meta]);
+
+  const confirmSaveShiftEntry = useCallback(async (action, shiftName) => {
+    const id = scannedEmpId || employeeId;
+    if (!id || !location) return;
+
+    setSubmitting(true);
+    try {
+      const result = await apiRequest('/attendance/entry', {
+        method: 'POST',
+        body: JSON.stringify({ employee_id: id, action, shift_name: shiftName || 'GENERAL', location }),
+      });
+
+      const empName = result.employee_name || scannedEmpName || id;
+      const actionLabel = action === 'OUT' ? 'Break Out' : action === 'EXIT' ? 'Shift Check-Out' : `${shiftName} Check-In`;
+      const confirmText = `✅ Saved! ${empName} → ${actionLabel}`;
+
+      setSaveConfirmation(confirmText);
+      showToast('success', confirmText);
+
+      if (voiceEnabled) {
+        const speech = action === 'OUT' ? `Break recorded for ${empName}` : action === 'EXIT' ? `Goodbye ${empName}` : `Welcome ${empName}, ${shiftName} recorded`;
+        Speech.speak(speech, { rate: 1 });
+      }
+
+      setEmployeeId('');
+      setScannedEmpId('');
+      setScannedEmpName('');
+      setShiftSelectOpen(false);
+      await loadRows(location);
+
+      // Save confirmation auto-clears and scanner becomes IMMEDIATELY AVAILABLE FOR NEXT SCAN!
+      setTimeout(() => {
+        setSaveConfirmation(null);
+        scannedRef.current = false;
+        setScanned(false);
+      }, 700);
+
+    } catch (requestError) {
+      showToast('error', ERROR_MESSAGES[requestError.message] || requestError.message);
+      setScannedEmpId('');
+      setScannedEmpName('');
+      scannedRef.current = false;
+      setScanned(false);
+    } finally {
+      setSubmitting(false);
+    }
+  }, [scannedEmpId, employeeId, location, scannedEmpName, showToast, voiceEnabled, loadRows]);
 
   const openAudit = useCallback(async () => {
     setMenuOpen(false);
@@ -268,7 +483,18 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
           </ScrollView>
 
           <View style={styles.terminalCard}>
-            <Text style={styles.scanLabel}>SCAN ID BADGE</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+              <Text style={styles.scanLabel}>SCAN ID BADGE / QR CODE</Text>
+              <Pressable
+                disabled={submitting}
+                onPress={openQrScanner}
+                style={[styles.qrHeaderBtn, submitting && styles.disabled]}
+              >
+                <MaterialCommunityIcons name="qrcode-scan" size={15} color="#ffffff" />
+                <Text style={styles.qrHeaderBtnText}>SCAN QR CODE</Text>
+              </Pressable>
+            </View>
+
             <View style={styles.inputWrap}>
               <TextInput
                 ref={employeeInput}
@@ -280,7 +506,7 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
                 placeholderTextColor="#94a3b8"
                 autoCapitalize="characters"
                 returnKeyType="done"
-                editable={Boolean(location) && !submitting}
+                editable={!submitting}
               />
               {employeeId ? (
                 <Pressable onPress={() => { setEmployeeId(''); employeeInput.current?.focus(); }} style={styles.clearInputBtn}>
@@ -396,6 +622,179 @@ export default function NativeDailyAttendance({ onBack, filters = {} }) {
           </View>
         </View>
       </Modal>
+
+      {/* 📱 MOBILE CAMERA QR SCANNER MODAL */}
+      <Modal visible={qrModalOpen} animationType="slide" statusBarTranslucent onRequestClose={() => setQrModalOpen(false)}>
+        <View style={styles.qrScannerContainer}>
+          <View style={styles.qrScannerHeader}>
+            <Pressable onPress={() => setQrModalOpen(false)} style={styles.qrCloseBtn}>
+              <MaterialCommunityIcons name="arrow-left" size={24} color="#ffffff" />
+            </Pressable>
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={styles.qrHeaderTitle}>MOBILE QR SCANNER</Text>
+              <Text style={styles.qrHeaderSub}>{location || 'Plant Terminal'} • {facing.toUpperCase()} CAMERA</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <Pressable onPress={() => setFacing(prev => prev === 'back' ? 'front' : 'back')} style={styles.torchBtn}>
+                <MaterialCommunityIcons name="camera-flip-outline" size={22} color="#ffffff" />
+              </Pressable>
+              <Pressable onPress={() => setTorchOn(prev => !prev)} style={styles.torchBtn}>
+                <MaterialCommunityIcons name={torchOn ? 'flashlight' : 'flashlight-off'} size={22} color={torchOn ? '#f59e0b' : '#ffffff'} />
+              </Pressable>
+            </View>
+          </View>
+
+          <View style={styles.cameraViewfinderBox}>
+            {permission?.granted ? (
+              <CameraView
+                style={styles.cameraSurface}
+                facing={facing}
+                enableTorch={torchOn}
+                onBarcodeScanned={onBarcodeScanned}
+              />
+            ) : (
+              <View style={styles.cameraFallbackBox}>
+                <MaterialCommunityIcons name="camera-outline" size={52} color="#38bdf8" />
+                <Text style={styles.cameraFallbackText}>
+                  {permission === null ? 'Requesting Camera Access…' : 'Camera access is required to scan QR code badges.'}
+                </Text>
+                <Pressable onPress={requestPermission} style={styles.grantCameraBtn}>
+                  <Text style={styles.grantCameraBtnText}>ENABLE CAMERA PERMISSION</Text>
+                </Pressable>
+              </View>
+            )}
+
+            {/* Viewfinder Target Overlay Frame */}
+            <View style={styles.targetFrame}>
+              <View style={[styles.targetCorner, styles.cornerTL]} />
+              <View style={[styles.targetCorner, styles.cornerTR]} />
+              <View style={[styles.targetCorner, styles.cornerBL]} />
+              <View style={[styles.targetCorner, styles.cornerBR]} />
+              
+              {/* ANIMATED LASER SCANNER SWEEPING LINE */}
+              <Animated.View
+                style={[
+                  styles.laserLine,
+                  {
+                    transform: [{ translateY: scanAnim }],
+                  },
+                ]}
+              />
+              
+              {/* LIVE SCANNED QR PREVIEW BADGE */}
+              <View style={styles.liveDetectedBadge}>
+                <MaterialCommunityIcons name={scannedEmpId ? "qrcode-scan" : "radar"} size={16} color={scannedEmpId ? "#10b981" : "#38bdf8"} />
+                <Text style={styles.liveDetectedText}>
+                  {scannedEmpId ? `EMPLOYEE ID: ${scannedEmpId}` : 'READY TO SCAN QR CODE'}
+                </Text>
+              </View>
+            </View>
+
+            {/* SAVE CONFIRMATION BANNER */}
+            {saveConfirmation ? (
+              <View style={styles.saveConfirmationBanner}>
+                <MaterialCommunityIcons name="check-circle" size={24} color="#10b981" />
+                <Text style={styles.saveConfirmationText}>{saveConfirmation}</Text>
+              </View>
+            ) : null}
+
+            {/* SCANNED SHIFT SELECTION CARD OVERLAY */}
+            {shiftSelectOpen ? (() => {
+              const activeDuty = rows.find(r => 
+                String(r.employee_id || '').trim().toUpperCase() === String(scannedEmpId || '').trim().toUpperCase()
+              );
+              const statusTag = activeDuty
+                ? (activeDuty.status === 'AWAY' ? 'ON BREAK' : activeDuty.status === 'CLOSED' ? 'SHIFT CLOSED' : 'INSIDE')
+                : 'FRESH ENTRY';
+              const statusColor = activeDuty
+                ? (activeDuty.status === 'AWAY' ? '#f97316' : activeDuty.status === 'CLOSED' ? '#94a3b8' : '#10b981')
+                : '#38bdf8';
+              const lastMvt = activeDuty?.movements && activeDuty.movements.length > 0
+                ? activeDuty.movements[activeDuty.movements.length - 1]
+                : null;
+              const lastMvtTime = lastMvt ? ` (${lastMvt.type} ${lastMvt.time})` : '';
+
+              return (
+                <View style={styles.shiftCardSheetOverlay}>
+                  <View style={styles.scannedEmpHeaderCard}>
+                    <MaterialCommunityIcons name="card-account-details" size={24} color="#38bdf8" />
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.scannedEmpName}>{scannedEmpName || 'Employee'}</Text>
+                      <Text style={styles.scannedEmpSub}>
+                        ID: {scannedEmpId} • Plant: {location} • <Text style={{ fontWeight: '900', color: statusColor }}>{statusTag}{lastMvtTime}</Text>
+                      </Text>
+                    </View>
+                    <Pressable onPress={() => { setShiftSelectOpen(false); setScannedEmpId(''); setScannedEmpName(''); scannedRef.current = false; setScanned(false); }} style={styles.closeCardBtn}>
+                      <MaterialCommunityIcons name="close" size={18} color="#94a3b8" />
+                    </Pressable>
+                  </View>
+
+                  <Text style={styles.selectShiftTitle}>TAP SHIFT CARD TO SAVE ENTRY:</Text>
+
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scannedShiftGrid}>
+                  {shifts.length ? shifts.map((shift, idx) => (
+                    <Pressable
+                      key={shift.id || shift.shift_name}
+                      onPress={() => confirmSaveShiftEntry('IN', shift.shift_name)}
+                      style={[styles.scannedShiftCard, { borderColor: SHIFT_COLORS[idx % SHIFT_COLORS.length] }]}
+                    >
+                      <MaterialCommunityIcons name="clock-outline" size={20} color={SHIFT_COLORS[idx % SHIFT_COLORS.length]} />
+                      <Text style={[styles.scannedShiftName, { color: SHIFT_COLORS[idx % SHIFT_COLORS.length] }]}>{shift.shift_name}</Text>
+                      <Text style={styles.scannedShiftLabel}>Check In</Text>
+                    </Pressable>
+                  )) : (
+                    <Pressable
+                      onPress={() => confirmSaveShiftEntry('IN', 'GENERAL')}
+                      style={[styles.scannedShiftCard, { borderColor: '#2563eb' }]}
+                    >
+                      <MaterialCommunityIcons name="login" size={20} color="#2563eb" />
+                      <Text style={[styles.scannedShiftName, { color: '#2563eb' }]}>GENERAL</Text>
+                      <Text style={styles.scannedShiftLabel}>Check In</Text>
+                    </Pressable>
+                  )}
+
+                  <Pressable
+                    onPress={() => confirmSaveShiftEntry('OUT', 'BREAK')}
+                    style={[styles.scannedShiftCard, { borderColor: '#ea580c' }]}
+                  >
+                    <MaterialCommunityIcons name="coffee-outline" size={20} color="#ea580c" />
+                    <Text style={[styles.scannedShiftName, { color: '#ea580c' }]}>BREAK OUT</Text>
+                    <Text style={styles.scannedShiftLabel}>Pause Duty</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => confirmSaveShiftEntry('IN', 'RESUME_BREAK')}
+                    style={[styles.scannedShiftCard, { borderColor: '#10b981' }]}
+                  >
+                    <MaterialCommunityIcons name="play-circle-outline" size={20} color="#10b981" />
+                    <Text style={[styles.scannedShiftName, { color: '#10b981' }]}>BREAK IN</Text>
+                    <Text style={styles.scannedShiftLabel}>Resume Duty</Text>
+                  </Pressable>
+
+                  <Pressable
+                    onPress={() => confirmSaveShiftEntry('EXIT', 'EXIT')}
+                    style={[styles.scannedShiftCard, { borderColor: '#dc2626' }]}
+                  >
+                    <MaterialCommunityIcons name="logout" size={20} color="#dc2626" />
+                    <Text style={[styles.scannedShiftName, { color: '#dc2626' }]}>CHECK OUT</Text>
+                    <Text style={styles.scannedShiftLabel}>Shift Exit</Text>
+                  </Pressable>
+                </ScrollView>
+              </View>
+            );
+          })() : null}
+          </View>
+
+          <View style={styles.qrScannerFooter}>
+            <Text style={styles.qrInstructionText}>
+              Align Employee ID QR code inside the viewfinder frame to scan.
+            </Text>
+            <Pressable onPress={() => setQrModalOpen(false)} style={styles.qrCancelBtn}>
+              <Text style={styles.qrCancelBtnText}>CLOSE SCANNER</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </Screen>
   );
 }
@@ -424,9 +823,18 @@ function TerminalAction({ label, icon, color, onPress, disabled, full }) {
 function AttendanceRow({ row, shiftIndex, highlighted }) {
   return (
     <View style={[styles.tableRow, highlighted && styles.highlightedRow]}>
-      <View style={styles.personnelCell}>
-        <Text numberOfLines={1} style={styles.personName}>{row.employee_name || '—'}</Text>
-        <Text numberOfLines={1} style={styles.personId}>{row.employee_id || '—'} • Row #{row.id ?? '—'}</Text>
+      <View style={[styles.personnelCell, { flexDirection: 'row', alignItems: 'center', gap: 8 }]}>
+        {row.photo_path ? (
+          <Image source={{ uri: row.photo_path }} style={{ width: 28, height: 28, borderRadius: 14, borderWidth: 1, borderColor: '#cbd5e1' }} />
+        ) : (
+          <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: '#38bdf8', alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ color: '#fff', fontSize: 11, fontWeight: '900' }}>{(row.employee_name || 'E').charAt(0)}</Text>
+          </View>
+        )}
+        <View style={{ flex: 1 }}>
+          <Text numberOfLines={1} style={styles.personName}>{row.employee_name || '—'}</Text>
+          <Text numberOfLines={1} style={styles.personId}>{row.employee_id || '—'} • Row #{row.id ?? '—'}</Text>
+        </View>
       </View>
       <View style={styles.shiftCell}>
         <View style={[styles.shiftPill, { backgroundColor: `${SHIFT_COLORS[shiftIndex % SHIFT_COLORS.length]}16`, borderColor: `${SHIFT_COLORS[shiftIndex % SHIFT_COLORS.length]}55` }]}>
@@ -532,4 +940,49 @@ const styles = StyleSheet.create({
   auditDetails: { marginTop: 4, color: '#334155', fontSize: 10, lineHeight: 14 },
   auditUser: { marginTop: 4, color: '#64748b', fontSize: 8.5, fontWeight: '700' },
   auditLink: { marginTop: 5, color: '#2563eb', fontSize: 8.5, fontWeight: '900' },
+
+  // 📱 MOBILE QR SCANNER STYLES
+  qrHeaderBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 9, paddingVertical: 5, borderRadius: 6, backgroundColor: '#2563eb' },
+  qrHeaderBtnText: { color: '#ffffff', fontSize: 9.5, fontWeight: '900', letterSpacing: 0.3 },
+  qrScannerContainer: { flex: 1, backgroundColor: '#090d16' },
+  qrScannerHeader: { paddingTop: 48, paddingBottom: 15, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#0f172a', borderBottomWidth: 1, borderBottomColor: '#1e293b' },
+  qrCloseBtn: { padding: 6 },
+  qrHeaderTitle: { color: '#ffffff', fontSize: 14, fontWeight: '900', letterSpacing: 0.5 },
+  qrHeaderSub: { color: '#38bdf8', fontSize: 10.5, fontWeight: '700', marginTop: 2 },
+  torchBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#1e293b', alignItems: 'center', justifyContent: 'center' },
+  cameraViewfinderBox: { flex: 1, width: '100%', minHeight: 380, backgroundColor: '#000000', position: 'relative', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },
+  cameraSurface: { width: '100%', height: '100%', position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+  cameraFallbackBox: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 24, gap: 14 },
+  cameraFallbackText: { color: '#94a3b8', fontSize: 13, fontWeight: '700', textAlign: 'center', lineHeight: 18 },
+  grantCameraBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, backgroundColor: '#2563eb' },
+  grantCameraBtnText: { color: '#ffffff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  targetFrame: { width: 250, height: 250, position: 'relative', justifyContent: 'center', alignItems: 'center' },
+  targetCorner: { position: 'absolute', width: 28, height: 28, borderColor: '#38bdf8' },
+  cornerTL: { top: 0, left: 0, borderTopWidth: 4, borderLeftWidth: 4, borderTopLeftRadius: 8 },
+  cornerTR: { top: 0, right: 0, borderTopWidth: 4, borderRightWidth: 4, borderTopRightRadius: 8 },
+  cornerBL: { bottom: 0, left: 0, borderBottomWidth: 4, borderLeftWidth: 4, borderBottomLeftRadius: 8 },
+  cornerBR: { bottom: 0, right: 0, borderBottomWidth: 4, borderRightWidth: 4, borderBottomRightRadius: 8 },
+  laserLine: { position: 'absolute', top: 12, left: '5%', width: '90%', height: 3, backgroundColor: '#38bdf8', borderRadius: 2, shadowColor: '#38bdf8', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.95, shadowRadius: 8, elevation: 6 },
+  qrScannerFooter: { padding: 20, backgroundColor: '#0f172a', alignItems: 'center', gap: 14, borderTopWidth: 1, borderTopColor: '#1e293b' },
+  qrInstructionText: { color: '#cbd5e1', fontSize: 12, fontWeight: '700', textAlign: 'center' },
+  simScanBtn: { flex: 1, height: 44, borderRadius: 8, backgroundColor: '#1e293b', borderWidth: 1, borderColor: '#38bdf8', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  simScanBtnText: { color: '#38bdf8', fontSize: 10, fontWeight: '900', letterSpacing: 0.3 },
+  qrCancelBtn: { width: '100%', height: 44, borderRadius: 8, backgroundColor: '#dc2626', alignItems: 'center', justifyContent: 'center' },
+  qrCancelBtnText: { color: '#ffffff', fontSize: 12, fontWeight: '900', letterSpacing: 0.5 },
+
+  // 📱 SAVE CONFIRMATION & SCANNED SHIFT SELECTION CARD STYLES
+  saveConfirmationBanner: { position: 'absolute', top: 20, left: 16, right: 16, padding: 14, borderRadius: 10, backgroundColor: 'rgba(16, 185, 129, 0.95)', flexDirection: 'row', alignItems: 'center', gap: 10, zIndex: 30, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 6 },
+  saveConfirmationText: { flex: 1, color: '#ffffff', fontSize: 13, fontWeight: '900' },
+  shiftCardSheetOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, borderTopLeftRadius: 18, borderTopRightRadius: 18, backgroundColor: 'rgba(15, 23, 42, 0.96)', borderTopWidth: 2, borderTopColor: '#38bdf8', zIndex: 40, gap: 10 },
+  scannedEmpHeaderCard: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 10, borderRadius: 8, backgroundColor: '#1e293b' },
+  scannedEmpName: { color: '#ffffff', fontSize: 14, fontWeight: '900' },
+  scannedEmpSub: { color: '#94a3b8', fontSize: 10, fontWeight: '700', marginTop: 2 },
+  closeCardBtn: { padding: 4 },
+  selectShiftTitle: { color: '#38bdf8', fontSize: 10, fontWeight: '900', letterSpacing: 0.5 },
+  scannedShiftGrid: { gap: 10, paddingVertical: 4 },
+  scannedShiftCard: { width: 105, height: 82, borderRadius: 10, backgroundColor: '#0f172a', borderWidth: 2, alignItems: 'center', justifyContent: 'center', padding: 6, gap: 3 },
+  scannedShiftName: { fontSize: 11, fontWeight: '900', textAlign: 'center' },
+  scannedShiftLabel: { color: '#94a3b8', fontSize: 8.5, fontWeight: '700' },
+  liveDetectedBadge: { position: 'absolute', bottom: -48, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: 'rgba(15, 23, 42, 0.92)', borderWidth: 1, borderColor: '#38bdf8', flexDirection: 'row', alignItems: 'center', gap: 7, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.4, shadowRadius: 4 },
+  liveDetectedText: { color: '#ffffff', fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
 });

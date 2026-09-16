@@ -119,8 +119,8 @@ export default function GoodsGateMovements() {
       setMasters(nextMasters);
       setForm(current => ({
         ...current,
-        production_for: current.production_for || (nextMasters.productionFor.length === 1 ? nextMasters.productionFor[0] : ''),
-        plant_location: current.plant_location || (nextMasters.plants.length === 1 ? nextMasters.plants[0] : ''),
+        production_for: current.production_for || (nextMasters.productionFor.length > 0 ? nextMasters.productionFor[0] : ''),
+        plant_location: current.plant_location || (nextMasters.plants.length > 0 ? nextMasters.plants[0] : ''),
       }));
     } catch (error) {
       setMessage({ type: 'error', text: `Dropdown data could not be loaded: ${error.message}` });
@@ -193,6 +193,7 @@ export default function GoodsGateMovements() {
 
   const submit = async event => {
     event.preventDefault();
+    if (saving || loading) return;
     setSaving(true);
     setMessage(null);
     try {
@@ -303,7 +304,7 @@ export default function GoodsGateMovements() {
             onClick={() => setShowForm(!showForm)}
             style={{ display: 'flex', alignItems: 'center', gap: '6px', height: '32px', fontSize: '11px', fontWeight: '800' }}
           >
-            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : '+ New Goods Movement'}
+            {showForm ? <Ban size={14} /> : <Plus size={14} />} {showForm ? 'Close Form' : 'Add New Entry'}
           </button>
           <button 
             type="button" 

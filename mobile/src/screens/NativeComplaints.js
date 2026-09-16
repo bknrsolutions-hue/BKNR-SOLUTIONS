@@ -30,12 +30,16 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     setLoading(true); setError('');
     try {
       const [ticketPayload, knowledgePayload] = await Promise.all([
-        apiRequest('/support/my_tickets?format=json'),
-        apiRequest('/support/knowledge-base'),
+        apiRequest('/support/my_tickets?format=json').catch(() => ({ tickets: [] })),
+        apiRequest('/support/knowledge-base').catch(() => ({ entries: [], categories: [], total: 0 })),
       ]);
-      setTickets(ticketPayload.tickets || []);
-      setKnowledge(knowledgePayload || { entries: [], categories: [], total: 0 });
-    } catch (requestError) { setError(requestError.message); }
+      setTickets(Array.isArray(ticketPayload?.tickets) ? ticketPayload.tickets : []);
+      setKnowledge({
+        entries: Array.isArray(knowledgePayload?.entries) ? knowledgePayload.entries : [],
+        categories: Array.isArray(knowledgePayload?.categories) ? knowledgePayload.categories : [],
+        total: Number(knowledgePayload?.total || 0),
+      });
+    } catch (requestError) { setError(requestError?.message || 'Unable to load complaints.'); }
     finally { setLoading(false); }
   }, []);
   useEffect(() => { void load(); }, [load]);
@@ -44,9 +48,9 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     setSelected(ticket); setMessages([]); setError('');
     try {
       const payload = await apiRequest(`/support/get_messages/${ticket.id}`);
-      setMessages(payload.messages || []);
-      setSelected(current => ({ ...current, status: payload.status, subject: payload.subject || current.subject }));
-    } catch (requestError) { setError(requestError.message); }
+      setMessages(Array.isArray(payload?.messages) ? payload.messages : []);
+      setSelected(current => current ? ({ ...current, status: payload?.status || current.status, subject: payload?.subject || current.subject }) : null);
+    } catch (requestError) { setError(requestError?.message || 'Unable to load ticket details.'); }
   };
 
   const createTicket = () => {
@@ -55,7 +59,7 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     const form = new FormData(); form.append('subject', subject.trim()); form.append('message', message.trim());
     apiRequest('/support/create_ticket?format=json', { method: 'POST', body: form })
       .then(() => { setCreateOpen(false); setSubject(''); setMessage(''); return load(); })
-      .catch(requestError => setError(requestError.message))
+      .catch(requestError => setError(requestError?.message || 'Failed to submit ticket.'))
       .finally(() => setSubmitting(false));
   };
 
@@ -66,11 +70,11 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     if (attachment) form.append('file', { uri: attachment.uri, name: attachment.name, type: attachment.mimeType || 'application/octet-stream' });
     apiRequest('/support/send_message', { method: 'POST', body: form })
       .then(() => { setReply(''); setAttachment(null); return openTicket(selected); })
-      .catch(requestError => setError(requestError.message))
+      .catch(requestError => setError(requestError?.message || 'Failed to send message.'))
       .finally(() => setSubmitting(false));
   };
-  const pickAttachment = async () => { const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false }); if (!result.canceled && result.assets?.[0]) setAttachment(result.assets[0]); };
-  const filteredTickets = tickets.filter(ticket => !search || `${ticket.ticket_number} ${ticket.subject}`.toLowerCase().includes(search.toLowerCase()));
+  const pickAttachment = async () => { try { const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false }); if (!result.canceled && result.assets?.[0]) setAttachment(result.assets[0]); } catch {} };
+  const filteredTickets = (tickets || []).filter(ticket => !search || `${ticket.ticket_number || ''} ${ticket.subject || ''}`.toLowerCase().includes(search.toLowerCase()));
   const normalizeQuestion = value => String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
   const cleanSearch = normalizeQuestion(search);
   const questionMatchScore = question => {
@@ -115,9 +119,9 @@ export default function NativeComplaints({ onBack, filters = {}, panelMode = fal
     </>}
   </>;
 
-  const createDialog = <Modal visible={createOpen} animationType="slide" transparent statusBarTranslucent onRequestClose={() => setCreateOpen(false)}><View style={[styles.modalOverlay, panelMode && styles.sideModalOverlay]}><View style={[styles.modalCard, panelMode && styles.sideModalCard]}><View style={styles.modalHeader}><Text style={styles.modalTitle}>New Complaint</Text><Pressable onPress={() => setCreateOpen(false)}><Text style={styles.close}>×</Text></Pressable></View><TextInput style={styles.input} value={subject} onChangeText={setSubject} placeholder="Subject" placeholderTextColor="#718299" /><TextInput style={[styles.input, styles.messageInput]} value={message} onChangeText={setMessage} placeholder="Describe the issue" placeholderTextColor="#718299" multiline textAlignVertical="top" /><Pressable disabled={submitting} onPress={createTicket} style={styles.submit}><Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit Complaint'}</Text></Pressable></View></View></Modal>;
+  const createDialog = <Modal visible={createOpen} animationType="slide" transparent={true} statusBarTranslucent={false} onRequestClose={() => setCreateOpen(false)}><View style={[styles.modalOverlay, panelMode && styles.sideModalOverlay]}><View style={[styles.modalCard, panelMode && styles.sideModalCard]}><View style={styles.modalHeader}><Text style={styles.modalTitle}>New Complaint</Text><Pressable onPress={() => setCreateOpen(false)}><Text style={styles.close}>×</Text></Pressable></View><TextInput style={styles.input} value={subject} onChangeText={setSubject} placeholder="Subject" placeholderTextColor="#718299" /><TextInput style={[styles.input, styles.messageInput]} value={message} onChangeText={setMessage} placeholder="Describe the issue" placeholderTextColor="#718299" multiline textAlignVertical="top" /><Pressable disabled={submitting} onPress={createTicket} style={styles.submit}><Text style={styles.submitText}>{submitting ? 'Submitting…' : 'Submit Complaint'}</Text></Pressable></View></View></Modal>;
 
-  const chatDialog = <Modal visible={Boolean(selected)} transparent={panelMode} animationType="slide" statusBarTranslucent={panelMode} onRequestClose={() => setSelected(null)}><View style={panelMode ? styles.sideChatOverlay : styles.chatFullOverlay}><View style={[styles.chatPage, panelMode && styles.sideChatPage]}><View style={styles.chatHeader}><Pressable onPress={() => setSelected(null)} style={styles.chatBack}><Text style={styles.chatBackText}>‹</Text></Pressable><View style={styles.chatCopy}><Text numberOfLines={2} style={styles.chatTitle}>{selected?.subject}</Text><Text style={styles.chatSub}>{selected?.ticket_number} • {selected?.status}</Text></View></View><ScrollView contentContainerStyle={styles.messages}>{messages.map((item, index) => <View key={`${item.time}-${index}`} style={[styles.bubble, item.sender_type === 'USER' ? styles.userBubble : styles.supportBubble]}><Text style={[styles.sender, item.sender_type === 'USER' && styles.userMessage]}>{item.sender_type === 'USER' ? 'You' : 'Support'}</Text><Text style={[styles.message, item.sender_type === 'USER' && styles.userMessage]}>{item.message}</Text>{item.media_path ? <Text onPress={() => Linking.openURL(`${API_URL}${item.media_path}`)} style={[styles.media, item.sender_type === 'USER' && styles.userMessage]}>Open attachment</Text> : null}<Text style={[styles.time, item.sender_type === 'USER' && styles.userMessage]}>{item.time}</Text></View>)}{!messages.length ? <Empty text="No messages found." /> : null}</ScrollView>{attachment ? <View style={styles.fileBar}><Text numberOfLines={1} style={styles.fileName}>{attachment.name}</Text><Pressable onPress={() => setAttachment(null)}><Text style={styles.fileRemove}>×</Text></Pressable></View> : null}<View style={styles.replyBar}><Pressable onPress={pickAttachment} style={styles.attach}><Text style={styles.attachText}>＋</Text></Pressable><TextInput style={styles.replyInput} value={reply} onChangeText={setReply} placeholder="Reply…" placeholderTextColor="#718299" multiline /><Pressable disabled={submitting || (!reply.trim() && !attachment)} onPress={sendReply} style={styles.send}><MaterialCommunityIcons name="send" size={16} color="#fff" /></Pressable></View></View></View></Modal>;
+  const chatDialog = <Modal visible={Boolean(selected)} transparent={true} animationType="slide" statusBarTranslucent={false} onRequestClose={() => setSelected(null)}><View style={panelMode ? styles.sideChatOverlay : styles.chatFullOverlay}><View style={[styles.chatPage, panelMode && styles.sideChatPage]}><View style={styles.chatHeader}><Pressable onPress={() => setSelected(null)} style={styles.chatBack}><Text style={styles.chatBackText}>‹</Text></Pressable><View style={styles.chatCopy}><Text numberOfLines={2} style={styles.chatTitle}>{selected?.subject}</Text><Text style={styles.chatSub}>{selected?.ticket_number} • {selected?.status}</Text></View></View><ScrollView contentContainerStyle={styles.messages}>{messages.map((item, index) => <View key={`${item.time}-${index}`} style={[styles.bubble, item.sender_type === 'USER' ? styles.userBubble : styles.supportBubble]}><Text style={[styles.sender, item.sender_type === 'USER' && styles.userMessage]}>{item.sender_type === 'USER' ? 'You' : 'Support'}</Text><Text style={[styles.message, item.sender_type === 'USER' && styles.userMessage]}>{item.message}</Text>{item.media_path ? <Text onPress={() => Linking.openURL(`${API_URL}${item.media_path}`)} style={[styles.media, item.sender_type === 'USER' && styles.userMessage]}>Open attachment</Text> : null}<Text style={[styles.time, item.sender_type === 'USER' && styles.userMessage]}>{item.time}</Text></View>)}{!messages.length ? <Empty text="No messages found." /> : null}</ScrollView>{attachment ? <View style={styles.fileBar}><Text numberOfLines={1} style={styles.fileName}>{attachment.name}</Text><Pressable onPress={() => setAttachment(null)}><Text style={styles.fileRemove}>×</Text></Pressable></View> : null}<View style={styles.replyBar}><Pressable onPress={pickAttachment} style={styles.attach}><Text style={styles.attachText}>＋</Text></Pressable><TextInput style={styles.replyInput} value={reply} onChangeText={setReply} placeholder="Reply…" placeholderTextColor="#718299" multiline /><Pressable disabled={submitting || (!reply.trim() && !attachment)} onPress={sendReply} style={styles.send}><MaterialCommunityIcons name="send" size={16} color="#fff" /></Pressable></View></View></View></Modal>;
 
   if (panelMode) {
     return <View style={[styles.panelPage, { backgroundColor: theme.surface }]}>

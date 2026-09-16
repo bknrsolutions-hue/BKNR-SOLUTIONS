@@ -201,14 +201,29 @@ def accounts_flow_guide(request: Request):
     )
 
 
+import threading
+
+_EXPENSE_VOUCHER_SCHEMA_ENSURED = False
+_EXPENSE_VOUCHER_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_expense_voucher_schema(db: Session) -> None:
     """Older production DBs may not yet have columns added in the ORM model."""
-    try:
-        db.execute(text("ALTER TABLE expense_vouchers ADD COLUMN IF NOT EXISTS journal_id INTEGER"))
-        db.commit()
-    except Exception as exc:
-        db.rollback()
-        logger.warning("Expense voucher schema check failed: %s", exc)
+    global _EXPENSE_VOUCHER_SCHEMA_ENSURED
+    if _EXPENSE_VOUCHER_SCHEMA_ENSURED:
+        return
+
+    with _EXPENSE_VOUCHER_SCHEMA_LOCK:
+        if _EXPENSE_VOUCHER_SCHEMA_ENSURED:
+            return
+
+        try:
+            db.execute(text("ALTER TABLE expense_vouchers ADD COLUMN IF NOT EXISTS journal_id INTEGER"))
+            db.commit()
+            _EXPENSE_VOUCHER_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Expense voucher schema check failed: %s", exc)
 
 
 def safe_filename(value: str) -> str:

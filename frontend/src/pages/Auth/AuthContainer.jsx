@@ -29,8 +29,8 @@ export default function AuthContainer({ handleLoginSuccess }) {
   return (
     <iframe
       ref={iframeRef}
-      title="BKNR ERP Website and Login"
-      src="/auth/login"
+      title="SVBK IT Solutions Website and Login"
+      src="/auth/landing"
       style={{ display: 'block', width: '100vw', height: '100vh', border: 0, background: '#060913' }}
     />
   );

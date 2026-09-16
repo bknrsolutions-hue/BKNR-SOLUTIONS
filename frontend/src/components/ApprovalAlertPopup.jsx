@@ -13,6 +13,7 @@ export default function ApprovalAlertPopup() {
   const activeApprovalMessage = activeApproval?.message;
 
   const loadApprovals = useCallback(async () => {
+    if (document.visibilityState !== 'visible') return;
     try {
       const response = await sessionFetch('/attendance/approval-alerts');
       const data = await response.json();
@@ -24,10 +25,15 @@ export default function ApprovalAlertPopup() {
 
   useEffect(() => {
     const initialTimeout = window.setTimeout(loadApprovals, 0);
-    const intervalId = window.setInterval(loadApprovals, 8000);
+    const intervalId = window.setInterval(loadApprovals, 30000);
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') void loadApprovals();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
     return () => {
       window.clearTimeout(initialTimeout);
       window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibility);
     };
   }, [loadApprovals]);
 

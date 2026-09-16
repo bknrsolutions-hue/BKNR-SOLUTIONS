@@ -350,61 +350,87 @@ tr:hover td { background-color: var(--table-hover-bg); }
         {% set kpi_soak.total_in = kpi_soak.total_in + (s.in_qty|default(0.0)|float - s.rejection_qty|default(0.0)|float) %}
     {% endfor %}
 
-    <!-- 🔴 KPI MATRIX GRIDS -->
-    <div class="kpi-container-wrapper no-print">
-        <div class="kpi-matrix-grid">
-            
-            <div class="ref-kpi-card" onclick="openSection('sec-open-floor')">
-                <span class="ref-kpi-meta kpi-icon-row">Opening Floor Bal <i class="fas fa-hourglass-start"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_opening_val|default(0.0)) }}</span></span>
-            </div>
-
-            <div class="ref-kpi-card" onclick="openSection('sec-gate')">
-                <span class="ref-kpi-meta kpi-icon-row">Gate Boxes <i class="fas fa-door-open"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ card.gate_boxes }}</span><span class="amt-sub">Boxes Received</span></span>
-            </div>
-            
-            {% if selected_prod_type == 'RMP' %}
-            <div class="ref-kpi-card" onclick="openSection('sec-rmp')">
-                <span class="ref-kpi-meta kpi-icon-row">RM Purchasing <i class="fas fa-shopping-cart"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rmp_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.rmp_amount) }}</span></span>
-            </div>
-            {% else %}
-            <div class="ref-kpi-card" onclick="openSection('sec-rep')">
-                <span class="ref-kpi-meta kpi-icon-row">Reprocess <i class="fas fa-recycle"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.rep_in|default(0)) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.rep_out|default(0)) }} KG</span></span>
-            </div>
-            {% endif %}
-
-            <div class="ref-kpi-card" onclick="openSection('sec-deh')">
-                <span class="ref-kpi-meta kpi-icon-row">Deheading <i class="fas fa-scissors"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.deh_hoso|default(0)) }} KG</span><span class="amt-sub">HLSO: {{ "%.2f"|format(card.deh_hlso|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-grd')">
-                <span class="ref-kpi-meta kpi-icon-row">Grading Output <i class="fas fa-layer-group"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.grd_qty|default(0)) }} KG</span><span class="amt-sub">Graded Qty</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-pel')">
-                <span class="ref-kpi-meta kpi-icon-row">Peeling Input <i class="fas fa-hands"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.pel_hlso|default(0)) }} KG</span><span class="amt-sub">Peeled: {{ "%.2f"|format(card.pel_peeled|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-soak')">
-                <span class="ref-kpi-meta kpi-icon-row">Soaking Input <i class="fas fa-water"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.soaking_qty|default(0)) }} KG</span><span class="amt-sub">Chem {{ "%.2f"|format(card.chemical_qty|default(0)) }} | Salt {{ "%.2f"|format(card.salt_qty|default(0)) }}</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-prod')">
-                <span class="ref-kpi-meta kpi-icon-row">Net Production <i class="fas fa-box-open"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.production_qty) }} KG</span><span class="amt-sub">Packed Output</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-stk')">
-                <span class="ref-kpi-meta kpi-icon-row">Stock Vault Asset <i class="fas fa-warehouse"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.stock_qty) }} KG</span><span class="amt-sub">Out: {{ "%.2f"|format(card.stock_out_qty|default(0)) }} KG</span></span>
-            </div>
-            <div class="ref-kpi-card" onclick="openSection('sec-close-floor')">
-                <span class="ref-kpi-meta kpi-icon-row">Closing Floor Bal <i class="fas fa-balance-scale"></i></span>
-                <span class="ref-kpi-value"><span class="primary-value">{{ "%.2f"|format(card.floor_closing_qty) }} KG</span><span class="amt-sub">₹ {{ "{:,.0f}".format(card.floor_closing_val) }}</span></span>
-            </div>
-        </div>
+    <!-- 🟢 KPI SUMMARY MATRIX TABLE (BATCH SUMMARY STYLE) -->
+    <div class="summary-table-wrap no-print" style="margin-bottom: 12px; background: #fff; border-radius: var(--radius-premium); border: 1px solid var(--border-color); overflow: hidden;">
+        <table class="batch-summary-table" style="width: 100%; border-collapse: collapse;">
+            <tbody>
+                <!-- Row 1 -->
+                <tr>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-open-floor')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Opening Floor Bal:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.floor_opening_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-gate')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gate Boxes:</span>
+                            <strong class="flex-cell-val">{{ "{:,.2f}".format(card.gate_boxes|default(0)|float) }} Box {% if card.gate_vehicles %}({{ card.gate_vehicles }} Veh){% endif %}</strong>
+                        </div>
+                    </td>
+                    {% if selected_prod_type == 'RMP' %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-rmp')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Purchasing:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rmp_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    {% else %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-rep')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Reprocess Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rep_in|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    {% endif %}
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-deh')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Deheading HOSO:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.deh_hoso|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-grd')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Grading Output:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.grd_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 2 -->
+                <tr>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-pel')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.pel_hlso|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-soak')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Soaking Input:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.soaking_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-prod')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Net Production:</span>
+                            <strong class="flex-cell-val" style="color:var(--accent-blue);">{{ "%.2f"|format(card.production_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-stk')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Vault Asset:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.stock_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col" style="cursor:pointer;" onclick="openSection('sec-close-floor')">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Closing Floor Bal:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger);">{{ "%.2f"|format(card.floor_closing_qty|default(0.0)) }} KG</strong>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <!-- 🟢 FILTERS BAR PANEL -->
@@ -712,16 +738,17 @@ tr:hover td { background-color: var(--table-hover-bg); }
             <table>
                 <thead>
                     <tr>
-                        <th rowspan="2" style="vertical-align: middle;">Species</th>
-                        <th rowspan="2" style="vertical-align: middle;">Variety</th>
+                        <th rowspan="2" style="vertical-align: middle; min-width: 100px; text-align: left;">Species</th>
+                        <th rowspan="2" style="vertical-align: middle; min-width: 110px; text-align: left;">Variety</th>
+                        <th rowspan="2" class="text-right" style="background:#e0f2fe; vertical-align: middle; color:#0369a1; font-weight:800; min-width: 110px;">RMP Received</th>
                         <th colspan="3" class="text-center" style="background: var(--table-header-bg);">DE-HEADING</th>
                         <th colspan="3" class="text-center" style="background: var(--table-header-bg);">PEELING</th>
                         <th colspan="3" class="text-center" style="background: var(--table-header-bg);">PRODUCTION</th>
                     </tr>
                     <tr>
-                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
-                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
-                        <th style="background: var(--table-header-bg);" class="text-right">In</th><th style="background: var(--table-header-bg);" class="text-right">Out</th><th style="background: var(--table-header-bg);" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">In</th><th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">Out</th><th style="background: var(--table-header-bg); min-width: 85px;" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">In</th><th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">Out</th><th style="background: var(--table-header-bg); min-width: 85px;" class="text-right">Yield (Diff)</th>
+                        <th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">In</th><th style="background: var(--table-header-bg); min-width: 75px;" class="text-right">Out</th><th style="background: var(--table-header-bg); min-width: 85px;" class="text-right">Yield (Diff)</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -990,10 +1017,13 @@ tr:hover td { background-color: var(--table-hover-bg); }
                     <tr><th class="text-center" style="width:30px">Sl</th><th>Date</th><th>Time</th><th>Prod At</th><th>Prod For</th><th>Type</th><th>Species</th><th>Batch No</th><th>Brand</th><th>Variety</th><th>Glaze</th><th>Freezer</th><th>Packing</th><th>Grade</th><th class="text-right">MC</th><th class="text-right">Loose</th><th class="text-right" style="color:var(--accent-blue);">Gross Qty</th><th class="text-right">Prod Qty</th><th class="text-right">Yield %</th><th class="text-right">Diff</th><th>User</th></tr>
                 </thead>
                 <tbody>
-                    {% set p_ns = namespace(last_key=None) %}
+                    {% set p_ns = namespace(last_batch=None, last_var=None, v_mc=0, v_loose=0, v_qty=0.0, v_gross=0.0, last_key=None) %}
                     {% set grand_prod = namespace(mc=0, loose=0, qty=0.0, gross=0.0) %}
                     {% for r in rows.production %}
+                        {% set curr_batch = r.batch_number|string|trim %}
+                        {% set curr_var = r.variety_name|string|trim %}
                         {% set current_key = (r.production_for|string|trim, r.production_at|string|trim, r.species|string|trim, r.variety_name|string|trim, r.batch_number|string|trim) %}
+                        {% set combo_key = curr_batch ~ "||" ~ curr_var %}
                         
                         {% set glaze_clean = r.glaze|string|upper|trim %}
                         {% set gross_qty = r.production_qty|default(0)|float %}
@@ -1007,24 +1037,30 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             {% endif %}
                         {% endif %}
 
-                        {% set grand_prod.mc = grand_prod.mc + (r.no_of_mc|default(0)|int) %}
-                        {% set grand_prod.loose = grand_prod.loose + (r.loose|default(0)|int) %}
-                        {% set grand_prod.qty = grand_prod.qty + (r.production_qty|default(0)|float) %}
-                        {% set grand_prod.gross = grand_prod.gross + gross_qty %}
-
-                        {% if p_ns.last_key and p_ns.last_key != current_key %}
+                        {% if p_ns.last_key and (p_ns.last_batch != curr_batch or p_ns.last_var != curr_var) %}
                             {% set s = subtotals.get(p_ns.last_key, {}) %}
-                            <tr class="subtotal-row">
-                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ p_ns.last_key[4] }}):</td>
-                                <td class="text-right">-</td>
-                                <td class="text-right">-</td>
-                                <td class="text-right">-</td>
-                                <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
+                            <tr class="subtotal-row" style="background:#f1f5f9; font-weight:800;">
+                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">SUBTOTAL (Batch {{ p_ns.last_batch }} | {{ p_ns.last_var }}):</td>
+                                <td class="text-right" style="font-weight:800;">{{ p_ns.v_mc }}</td>
+                                <td class="text-right" style="font-weight:800;">{{ p_ns.v_loose }}</td>
+                                <td class="text-right" style="font-weight:800; color:#312e81;">{{ "%.2f"|format(p_ns.v_gross) }}</td>
+                                <td class="qty-cell" style="font-weight:800;">{{ "%.2f"|format(p_ns.v_qty) }}</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
                                 <td style="font-size: 8px; text-align: left; padding-left: 6px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
                             </tr>
+                            {% set p_ns.v_mc = 0 %}{% set p_ns.v_loose = 0 %}{% set p_ns.v_qty = 0.0 %}{% set p_ns.v_gross = 0.0 %}
                         {% endif %}
+
+                        {% set p_ns.v_mc = p_ns.v_mc + (r.no_of_mc|default(0)|int) %}
+                        {% set p_ns.v_loose = p_ns.v_loose + (r.loose|default(0)|int) %}
+                        {% set p_ns.v_qty = p_ns.v_qty + (r.production_qty|default(0)|float) %}
+                        {% set p_ns.v_gross = p_ns.v_gross + gross_qty %}
+
+                        {% set grand_prod.mc = grand_prod.mc + (r.no_of_mc|default(0)|int) %}
+                        {% set grand_prod.loose = grand_prod.loose + (r.loose|default(0)|int) %}
+                        {% set grand_prod.qty = grand_prod.qty + (r.production_qty|default(0)|float) %}
+                        {% set grand_prod.gross = grand_prod.gross + gross_qty %}
 
                         <tr class="prod-row" data-species="{{ r.species|upper|trim }}" data-variety="{{ (r.variety_name or r.variety)|upper|trim }}">
                             <td class="sl-no">{{ loop.index }}</td>
@@ -1050,16 +1086,18 @@ tr:hover td { background-color: var(--table-hover-bg); }
                             <td style="font-size:8px; color: var(--text-muted); text-align: center;">{{ r.email }}</td>
                         </tr>
 
+                        {% set p_ns.last_batch = curr_batch %}
+                        {% set p_ns.last_var = curr_var %}
                         {% set p_ns.last_key = current_key %}
                         
                         {% if loop.last %}
                             {% set s = subtotals.get(current_key, {}) %}
-                            <tr class="subtotal-row">
-                                <td colspan="14" style="text-align:right">SUBTOTAL ({{ current_key[4] }}):</td>
-                                <td class="text-right">-</td>
-                                <td class="text-right">-</td>
-                                <td class="text-right">-</td>
-                                <td class="qty-cell">{{ s.get('prod_qty', 0) }}</td>
+                            <tr class="subtotal-row" style="background:#f1f5f9; font-weight:800;">
+                                <td colspan="14" style="text-align:right; font-weight:800; color:#1e293b;">SUBTOTAL (Batch {{ curr_batch }} | {{ curr_var }}):</td>
+                                <td class="text-right" style="font-weight:800;">{{ p_ns.v_mc }}</td>
+                                <td class="text-right" style="font-weight:800;">{{ p_ns.v_loose }}</td>
+                                <td class="text-right" style="font-weight:800; color:#312e81;">{{ "%.2f"|format(p_ns.v_gross) }}</td>
+                                <td class="qty-cell" style="font-weight:800;">{{ "%.2f"|format(p_ns.v_qty) }}</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_yield_perc', 0) >= 0 else 'var(--danger)' }}">{{ s.get('actual_yield', 0) }}% ({{ s.get('diff_yield_perc', 0) }}%)</td>
                                 <td class="text-right" style="color: {{ 'var(--success)' if s.get('diff_qty', 0) >= 0 else 'var(--danger)' }}">{{ s.get('diff_qty', 0) }}</td>
                                 <td style="font-size: 8px; text-align: left; padding-left: 6px;">In: {{ s.get('soaking_in', 0) }} | Target: {{ s.get('target_yield', 0) }}%</td>
@@ -1067,11 +1105,11 @@ tr:hover td { background-color: var(--table-hover-bg); }
                         {% endif %}
                     {% endfor %}
                     <tr class="subtotal-row" style="background:var(--table-header-bg) !important; border-top:1.5px solid var(--orange-accent);">
-                        <td colspan="14" style="text-align:right; font-weight:800; color:var(--orange-accent);">GRAND TOTAL PRODUCTION:</td>
-                        <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.mc }}</td>
-                        <td class="text-right" style="font-weight:800; color:var(--orange-accent);">{{ grand_prod.loose }}</td>
-                        <td class="text-right" style="font-weight:800; color:var(--accent-blue);">{{ "%.2f"|format(grand_prod.gross) }}</td>
-                        <td class="qty-cell" style="color:var(--orange-accent);">{{ "%.2f"|format(grand_prod.qty) }}</td>
+                        <td colspan="14" style="text-align:right; font-weight:900; color:var(--orange-accent); text-transform:uppercase;">OVERALL PRODUCTION SUBTOTAL SUMMARY:</td>
+                        <td class="text-right" style="font-weight:900; color:var(--orange-accent);">{{ grand_prod.mc }}</td>
+                        <td class="text-right" style="font-weight:900; color:var(--orange-accent);">{{ grand_prod.loose }}</td>
+                        <td class="text-right" style="font-weight:900; color:var(--accent-blue);">{{ "%.2f"|format(grand_prod.gross) }}</td>
+                        <td class="qty-cell" style="color:var(--orange-accent); font-weight:900;">{{ "%.2f"|format(grand_prod.qty) }}</td>
                         <td colspan="3"></td>
                     </tr>
                 </tbody>

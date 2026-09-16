@@ -369,7 +369,7 @@ export default function ElectricityBills({ theme }) {
             </div>
           )}
           <button className="attendance-btn attendance-btn-primary" onClick={openForm}>
-            <Plus size={16} /> NEW LOG ENTRY
+            <Plus size={16} /> Add New Entry
           </button>
         </div>
       </div>

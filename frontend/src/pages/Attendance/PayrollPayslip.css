@@ -4,10 +4,14 @@
 
 .pay-slip-sheet {
   width: 100%;
-  color: #111;
-  background: #fff;
+  color: #000000 !important;
+  background: #ffffff !important;
   font-family: Arial, Helvetica, sans-serif;
   font-size: 11px;
+}
+
+.pay-slip-sheet * {
+  color: #000000 !important;
 }
 
 .pay-slip-company {
@@ -15,6 +19,8 @@
   border: 2px solid #111;
   border-bottom: 0;
   text-align: center;
+  background: #ffffff !important;
+  color: #000000 !important;
 }
 
 .pay-slip-company h1 {
@@ -22,6 +28,7 @@
   font-size: 19px;
   font-weight: 800;
   text-transform: uppercase;
+  color: #000000 !important;
 }
 
 .pay-slip-company p {
@@ -30,6 +37,7 @@
   font-size: 9px;
   line-height: 1.35;
   text-transform: uppercase;
+  color: #000000 !important;
 }
 
 .pay-slip-company h2 {
@@ -38,6 +46,7 @@
   border-top: 1px solid #111;
   font-size: 12px;
   font-weight: 800;
+  color: #000000 !important;
 }
 
 .pay-slip-sheet table {
@@ -183,6 +192,17 @@
 
   body.print-single-mode .pay-slip-sheet {
     break-inside: avoid;
+    display: block !important;
+  }
+
+  body.print-single-mode .pay-slip-company,
+  body.print-single-mode .pay-slip-company h1,
+  body.print-single-mode .pay-slip-company h2,
+  body.print-single-mode .pay-slip-company p {
+    display: block !important;
+    visibility: visible !important;
+    color: #000000 !important;
+    opacity: 1 !important;
   }
 
   body:not(.print-single-mode) #printSection {

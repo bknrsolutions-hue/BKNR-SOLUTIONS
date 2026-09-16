@@ -29,3 +29,6 @@ from .gst_models import *             # GSTRegister, GSTRFilingStatus, ITCUtiliz
 
 # ── Fixed Assets Module ──
 from .assets import *                 # FixedAssetMaster, DepreciationSchedule
+
+# ── CRM & Quotation Module ──
+from .crm_quotation import *          # CRMQuotation, CRMQuotationLine

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 # 🟢 🔴 production_at ‌     !
-from app.database.models.criteria import coldstore_locations, production_at
+from app.database.models.criteria import coldstore_locations, production_at, peeling_at
 
 router = APIRouter(prefix="", tags=["COLDSTORE LOCATIONS"])
 templates = Jinja2Templates(directory="app/templates")
@@ -36,12 +36,12 @@ def coldstore_locations_page(request: Request, db: Session = Depends(get_db)):
         .all()
     )
 
-    # 🟢 🔴       ‌   !
-    plants = (
-        db.query(production_at)
-        .filter(production_at.company_id == company_code)
-        .all()
-    )
+    pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_code).all()
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code).all()
+    plants = list(dict.fromkeys(
+        [p[0] for p in pa_q if p[0]] +
+        [p[0] for p in pe_q if p[0]]
+    ))
 
     return templates.TemplateResponse(
         request=request,

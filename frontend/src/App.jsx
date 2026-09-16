@@ -9,7 +9,8 @@ import './ErpTables.css';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import AnimatedBrandLogo from './components/AnimatedBrandLogo';
-import ApprovalAlertPopup from './components/ApprovalAlertPopup';
+const ApprovalAlertPopup = React.lazy(() => import('./components/ApprovalAlertPopup'));
+const SUPPORT_AGENT_AVATAR = `${import.meta.env.BASE_URL}support-agent.png`;
 
 let initialSessionRequest;
 
@@ -18,6 +19,7 @@ function isMobileClientEnv() {
   const ua = (navigator.userAgent || '').toLowerCase();
   const isWebView = Boolean(window.ReactNativeWebView || window.Capacitor || window.Cordova || ua.includes('wv') || ua.includes('bknr') || ua.includes('expo') || /android.*applewebkit/i.test(ua));
   const isMobileUrl = window.location.search.includes('mobile=true') || window.location.search.includes('is_mobile=true') || window.location.hash.includes('mobile=true');
+  // window.isMobileApp is injected by the React Native WebView wrapper at runtime
   return isWebView || isMobileUrl || window.isMobileApp === true;
 }
 
@@ -149,15 +151,20 @@ export default function App() {
   // Resolves the current URL to activePage + activeRoute without an API call.
   // Security for backend data remains in the existing FastAPI AuthMiddleware.
   const _rawPath = location.pathname;
-  const _isTokenRoute  = _rawPath.startsWith('/p/');
-  const _isLegacyRoute = _rawPath.startsWith('/page/');
-  const _currentToken  = _isTokenRoute  ? decodeURIComponent(_rawPath.slice('/p/'.length))    : null;
+  const _cleanPath = _rawPath.includes('/p/')
+    ? `/p/${_rawPath.split('/p/')[1]}`
+    : _rawPath.includes('/page/')
+    ? `/page/${_rawPath.split('/page/')[1]}`
+    : _rawPath;
+  const _isTokenRoute  = _cleanPath.startsWith('/p/');
+  const _isLegacyRoute = _cleanPath.startsWith('/page/');
+  const _currentToken  = _isTokenRoute  ? decodeURIComponent(_cleanPath.slice('/p/'.length))    : null;
   const _tokenEntry    = _currentToken  ? (TOKEN_MAP[_currentToken] ?? null)                   : null;
 
   const activePage = _isTokenRoute
     ? (_tokenEntry?.page_id || 'dashboard_processing')
     : _isLegacyRoute
-    ? decodeURIComponent(_rawPath.slice('/page/'.length))
+    ? decodeURIComponent(_cleanPath.slice('/page/'.length))
     : 'dashboard_processing';
 
   const activeRoute = _isTokenRoute
@@ -430,7 +437,7 @@ export default function App() {
     if (!user) return undefined;
     let checking = false;
     const checkSession = async () => {
-      if (checking) return;
+      if (checking || document.visibilityState !== 'visible') return;
       checking = true;
       try {
         const response = await fetch('/auth/session-info', {
@@ -461,7 +468,7 @@ export default function App() {
         checking = false;
       }
     };
-    const interval = window.setInterval(checkSession, 15000);
+    const interval = window.setInterval(checkSession, 60000);
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') void checkSession();
     };
@@ -654,7 +661,9 @@ export default function App() {
             {renderActivePage()}
           </Suspense>
         </main>
-        <ApprovalAlertPopup />
+        <Suspense fallback={null}>
+          <ApprovalAlertPopup />
+        </Suspense>
         {noticePopup}
       </div>
     );
@@ -703,7 +712,9 @@ export default function App() {
           </Suspense>
         </main>
       </div>
-      <ApprovalAlertPopup />
+      <Suspense fallback={null}>
+        <ApprovalAlertPopup />
+      </Suspense>
       {supportDrawer && (
         <div className="react-support-drawer" aria-label="Support and helpdesk">
           <aside
@@ -718,10 +729,12 @@ export default function App() {
             } : undefined}
           >
             <div className="react-support-drawer-head" onPointerDown={startSupportDrawerDrag}>
-              <div>
-                <span>BKNR ERP</span>
-
-                <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
+              <div className="react-support-drawer-identity">
+                <img className="support-drawer-agent-avatar" src={SUPPORT_AGENT_AVATAR} alt="" />
+                <div>
+                  <span>SVBK IT Solutions</span>
+                  <strong>{supportDrawer.activePage === 'admin_helpdesk' ? 'Helpdesk' : 'Support'}</strong>
+                </div>
               </div>
               <button
                 type="button"
@@ -729,7 +742,7 @@ export default function App() {
                 title="Close Support"
                 aria-label="Close Support"
               >
-                <i className="fa-solid fa-support-agent" aria-hidden="true" />
+                <i className="fa-solid fa-xmark" aria-hidden="true" />
               </button>
             </div>
             <div className="react-support-drawer-content">
@@ -760,11 +773,11 @@ export default function App() {
           right: 'auto',
           bottom: 'auto',
         } : undefined}
-        title="Open Support"
-        aria-label="Open Support"
+        title="Open support chat"
+        aria-label="Open support chat"
         aria-pressed={Boolean(supportDrawer)}
       >
-        <i className="fa-solid fa-support-agent" aria-hidden="true" />
+        <img className="floating-support-avatar" src={SUPPORT_AGENT_AVATAR} alt="" />
       </button>
       {noticePopup}
     </React.Fragment>

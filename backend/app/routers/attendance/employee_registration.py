@@ -17,6 +17,8 @@ from app.database.models.criteria import contractors, production_at
 from app.database.models.users import Company
 from app.utils.timezone import ist_now
 
+from sqlalchemy import text
+
 router = APIRouter(tags=["EMPLOYEE REGISTRATION"])
 templates = Jinja2Templates(directory="app/templates")
 
@@ -27,6 +29,11 @@ def get_session_context(request: Request, db: Session):
     comp_code = request.session.get("company_code")
     email = request.session.get("email")
     if not comp_code: return None
+    try:
+        db.execute(text("ALTER TABLE employee_registration ALTER COLUMN photo_path TYPE TEXT;"))
+        db.commit()
+    except Exception:
+        db.rollback()
     company_info = db.query(Company).filter(Company.company_code == comp_code).first()
     return { "comp_code": comp_code, "email": email, "company_info": company_info }
 
@@ -107,9 +114,11 @@ def employee_master_page(request: Request, emp_id: Optional[str] = None, format:
     if emp_id:
         edit_row = db.query(EmployeeRegistration).filter(EmployeeRegistration.company_id == comp, EmployeeRegistration.employee_id == emp_id).first()
 
+    company_name = ctx["company_info"].company_name if (ctx["company_info"] and ctx["company_info"].company_name) else comp
     if format.lower() == "json" or "application/json" in request.headers.get("accept", ""):
         return JSONResponse({
             "status": "success",
+            "company_name": company_name,
             "contractors": [{"contractor_name": c.contractor_name} for c in contractor_list],
             "sites": [{"production_at": s.production_at} for s in site_list],
             "next_employee_id": next_employee_id,
@@ -128,8 +137,8 @@ async def save_or_update_employee(
     request: Request, db_id: Optional[int] = None, employee_id: str = Form(...), employee_name: str = Form(...),
     production_at: Optional[str] = Form(None), designation: Optional[str] = Form(None), department: Optional[str] = Form(None),
     employee_type: Optional[str] = Form(None), contractor_name: Optional[str] = Form(None), joining_date: Optional[str] = Form(None),
-    resignation_date: Optional[str] = Form(None), current_salary: float = Form(0.0), basic_salary: float = Form(0.0),
-    hra: float = Form(0.0), conveyance_allowance: float = Form(0.0), other_expenses: float = Form(0.0), tds: float = Form(0.0),
+    resignation_date: Optional[str] = Form(None), current_salary: Optional[str] = Form(None), basic_salary: Optional[str] = Form(None),
+    hra: Optional[str] = Form(None), conveyance_allowance: Optional[str] = Form(None), other_expenses: Optional[str] = Form(None), tds: Optional[str] = Form(None),
     bank_name: Optional[str] = Form(None), account_number: Optional[str] = Form(None), ifsc_code: Optional[str] = Form(None),
     branch_name: Optional[str] = Form(None), account_holder_name: Optional[str] = Form(None), pan_number: Optional[str] = Form(None),
     aadhar_number: Optional[str] = Form(None), uan_number: Optional[str] = Form(None), mobile: Optional[str] = Form(None),
@@ -137,7 +146,7 @@ async def save_or_update_employee(
     blood_group: Optional[str] = Form(None), marital_status: Optional[str] = Form(None), emergency_name: Optional[str] = Form(None),
     emergency_mobile: Optional[str] = Form(None), official_email: Optional[str] = Form(None), about: Optional[str] = Form(None),
     skills: Optional[str] = Form(None), present_address: Optional[str] = Form(None), permanent_address: Optional[str] = Form(None),
-    reporting_to: Optional[str] = Form(None), location: Optional[str] = Form(None), db: Session = Depends(get_db)
+    reporting_to: Optional[str] = Form(None), location: Optional[str] = Form(None), photo_path: Optional[str] = Form(None), db: Session = Depends(get_db)
 ):
     ctx = get_session_context(request, db)
     wants_json = request.query_params.get("format") == "json" or "application/json" in request.headers.get("accept", "")
@@ -163,6 +172,10 @@ async def save_or_update_employee(
         return RedirectResponse("/attendance/employee/register", status_code=303)
 
     def parse_dt(d): return date.fromisoformat(d) if d and d.strip() else None
+    def safe_float(v):
+        if not v: return 0.0
+        try: return float(str(v).strip())
+        except (ValueError, TypeError): return 0.0
 
     if db_id:
         row = db.query(EmployeeRegistration).filter(EmployeeRegistration.id == db_id, EmployeeRegistration.company_id == comp).first()
@@ -188,12 +201,12 @@ async def save_or_update_employee(
         row.contractor_name = contractor_name if normalized_employee_type in {"CONTRACT", "CONTRACTOR"} else None
         row.joining_date = parse_dt(joining_date)
         row.resignation_date = parse_dt(resignation_date)
-        row.current_salary = current_salary
-        row.basic_salary = basic_salary
-        row.hra = hra
-        row.conveyance_allowance = conveyance_allowance
-        row.other_expenses = other_expenses
-        row.tds = tds
+        row.current_salary = safe_float(current_salary)
+        row.basic_salary = safe_float(basic_salary)
+        row.hra = safe_float(hra)
+        row.conveyance_allowance = safe_float(conveyance_allowance)
+        row.other_expenses = safe_float(other_expenses)
+        row.tds = safe_float(tds)
         row.bank_name = bank_name
         row.account_number = account_number
         row.ifsc_code = ifsc_code_upper
@@ -219,6 +232,7 @@ async def save_or_update_employee(
         row.permanent_address = permanent_address
         row.reporting_to = reporting_to
         row.location = location
+        row.photo_path = photo_path
         row.date = date.today()
         row.time = ist_now().time()
 
@@ -242,11 +256,23 @@ def delete_employee(db_id: int, request: Request, db: Session = Depends(get_db))
     comp = request.session.get("company_code")
     if not comp: return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
     row = db.query(EmployeeRegistration).filter(EmployeeRegistration.id == db_id, EmployeeRegistration.company_id == comp).first()
-    if row:
+    if not row:
+        return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+
+    try:
+        from app.database.models.attendance import DailyAttendance
+        # 🟢 Cleanly delete dependent attendance records to prevent ForeignKeyViolation error
+        db.query(DailyAttendance).filter(
+            DailyAttendance.employee_id == row.employee_id,
+            DailyAttendance.company_id == comp
+        ).delete(synchronize_session=False)
+
         db.delete(row)
         db.commit()
-        return JSONResponse({"status": "ok"})
-    return JSONResponse({"status": "error", "message": "Record not found"}, status_code=404)
+        return JSONResponse({"status": "ok", "message": f"Employee {row.employee_id} deleted successfully."})
+    except Exception as e:
+        db.rollback()
+        return JSONResponse({"status": "error", "message": f"Could not delete employee: {str(e)}"}, status_code=500)
 
 # =========================================================
 # 4. PRINT VIEW & PDF EXPORT

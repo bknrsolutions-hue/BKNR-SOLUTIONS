@@ -5,11 +5,12 @@ from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Stre
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, desc, func
+from sqlalchemy import or_, and_, desc, func, text
 from sqlalchemy.orm.attributes import flag_modified
 from datetime import datetime, date, timedelta
 from app.utils.timezone import ist_now
 import datetime as dt
+import zlib
 import logging
 import io
 import openpyxl
@@ -216,6 +217,11 @@ def daily_attendance_page(
             func.upper(func.trim(Shift.production_at)) == actual_location
         ).all()
 
+    all_registered_employees = db.query(EmployeeRegistration).filter(
+        EmployeeRegistration.company_id == company_code,
+        EmployeeRegistration.status == "ACTIVE"
+    ).all()
+
     if format.lower() == "json":
         return JSONResponse({
             "status": "success",
@@ -235,6 +241,17 @@ def daily_attendance_page(
                 }
                 for shift in plant_shifts
             ],
+            "employees": [
+                {
+                    "employee_id": emp.employee_id,
+                    "employee_name": emp.employee_name,
+                    "designation": emp.designation or "STAFF",
+                    "department": emp.department or "GENERAL",
+                    "production_at": emp.production_at or "",
+                    "photo_path": emp.photo_path or "",
+                }
+                for emp in all_registered_employees
+            ]
         })
 
     return RedirectResponse("/app/#/p/hr_da", status_code=303)
@@ -256,14 +273,10 @@ async def attendance_entry(
         return JSONResponse({"success": False, "error": "INVALID_SESSION"}, status_code=401)
     ensure_bill_accounting_schema(db)
 
-    # 🟢 🔴 Explicit Location Fallback Fix
+    # 🟢 🔴 Explicit Location Fallback Fix (Mobile App Support)
     frontend_location = payload.location.strip().upper() if payload.location else None
     backend_location, _ = get_strict_location(request)
-    actual_location = frontend_location or backend_location
     
-    if not actual_location:
-        return JSONResponse({"success": False, "error": "GLOBAL_FILTER_REQUIRED"}, status_code=400)
-
     input_id = payload.employee_id.strip()
     action = payload.action.upper().strip()
     shift_name = payload.shift_name.strip() 
@@ -282,6 +295,13 @@ async def attendance_entry(
     if not emp:
         return JSONResponse({"success": False, "error": f"ID {input_id} Not Found"}, status_code=404)
 
+    actual_location = (
+        frontend_location 
+        or backend_location 
+        or (emp.production_at.strip().upper() if emp.production_at else None)
+        or "AP"
+    )
+
     full_employee_id = emp.employee_id
     auto_closed = auto_close_stale_attendance(
         db,
@@ -291,11 +311,32 @@ async def attendance_entry(
         location=actual_location,
     )
 
+    # To prevent duplicate OPEN duties under concurrent IN requests, acquire a
+    # Postgres advisory lock scoped to (company_id, employee_id, date). This serializes
+    # fresh-duty creation without altering schema. If advisory locks are unavailable
+    # on the DB, the exception is ignored and behavior falls back to best-effort.
+    try:
+        key = zlib.crc32(f"{company_id}:{full_employee_id}:{now.date()}".encode()) & 0x7fffffff
+        db.execute(text("SELECT pg_advisory_xact_lock(:k)"), {"k": key})
+    except Exception:
+        # Not a Postgres DB or advisory locks not supported in test env; continue.
+        pass
+
     duty = db.query(DailyAttendance).filter(
         DailyAttendance.employee_id == full_employee_id,
         DailyAttendance.company_id == company_id,
         DailyAttendance.status != "CLOSED"
     ).first()
+
+    # Re-load the duty with a FOR UPDATE lock when present and when we will modify it
+    # This prevents concurrent finalizers from both closing/posting the same duty.
+    if duty:
+        try:
+            duty = db.query(DailyAttendance).with_for_update().filter(DailyAttendance.id == duty.id).first()
+        except Exception:
+            # Some DB backends or test environments may not support SELECT FOR UPDATE in the same way;
+            # fall back to the unlocked duty when FOR UPDATE isn't supported.
+            duty = db.query(DailyAttendance).filter(DailyAttendance.id == duty.id).first()
 
     if auto_closed and action in {"OUT", "EXIT"} and not duty:
         db.commit()
@@ -403,19 +444,22 @@ async def attendance_entry(
                     )
                     duty.journal_id = voucher.id
 
-        db.add(AuditLog(
-            table_name="daily_attendance", record_id=emp.id, company_id=company_id,
-            field_name=f"PUNCH_{action}", old_value="ATTENDANCE_STREAM", 
-            new_value=f"Emp: {emp.employee_name} ({full_employee_id}) | {audit_details}",
-            edited_by=email, edited_at=datetime.now(dt.timezone.utc)
-        ))
+        try:
+            db.add(AuditLog(
+                table_name="daily_attendance", record_id=emp.id, company_id=company_id,
+                field_name=f"PUNCH_{action}", old_value="ATTENDANCE_STREAM", 
+                new_value=f"Emp: {emp.employee_name} ({full_employee_id}) | {audit_details}",
+                edited_by=email, edited_at=datetime.utcnow()
+            ))
+        except Exception as audit_err:
+            logger.warning("AuditLog insertion failed: %s", audit_err)
 
         db.commit()
         return {"success": True, "employee_name": emp.employee_name, "message": "Punch committed successfully"}
 
     except Exception as e:
         db.rollback()
-        logger.error(f"ATTENDANCE POST ERROR: {str(e)}")
+        logger.exception("ATTENDANCE POST ERROR: %s", str(e))
         return JSONResponse({"success": False, "error": f"Database processing fault: {str(e)}"}, status_code=500)
 
 
@@ -445,7 +489,8 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
     query = db.query(
         DailyAttendance, 
         EmployeeRegistration.department,
-        EmployeeRegistration.designation
+        EmployeeRegistration.designation,
+        EmployeeRegistration.photo_path
     ).join(
         EmployeeRegistration, 
         and_(
@@ -468,7 +513,7 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
     rows = query.order_by(DailyAttendance.first_in.desc()).all()
 
     results = []
-    for da, dept, desg in rows:
+    for da, dept, desg, emp_photo in rows:
         wh = float(da.working_hours or 0)
         duty_type = da.duty_type if da.status == "CLOSED" else "ON-DUTY"
         
@@ -483,7 +528,8 @@ def today_attendance_list(request: Request, location: str = None, db: Session = 
             "status": da.status,
             "shift_name": da.shift_name,
             "calculated_ot_hours": da.calculated_ot_hours or 0.0,
-            "movements": da.movements or []
+            "movements": da.movements or [],
+            "photo_path": emp_photo or ""
         })
     return results
 

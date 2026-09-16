@@ -40,7 +40,10 @@ TABLES = [
     "lc_tracking",
     "salary_processing",
     "production_cost_allocations",
-    "commercial_invoices"
+    "commercial_invoices",
+    "sales_dispatch",
+    "proforma_invoices",
+    "crm_quotations",
 ]
 
 COLUMNS = [
@@ -88,12 +91,31 @@ TABLE_COLUMNS = {
     ],
     "sales_dispatch": [
         ("journal_id", "INTEGER"),
+        ("freezer", "VARCHAR(255)"),
+    ],
+    "proforma_invoices": [
+        ("quotation_id", "INTEGER"),
+        ("quotation_no", "VARCHAR(100)"),
+    ],
+    "crm_quotations": [
+        ("linked_pi_id", "INTEGER"),
+        ("linked_pi_no", "VARCHAR(100)"),
+    ],
+    "raw_material_purchasing": [
+        ("g1_expr", "VARCHAR(500)"),
+        ("g2_expr", "VARCHAR(500)"),
+        ("dc_expr", "VARCHAR(500)"),
     ],
     "de_heading": [
         ("journal_id", "INTEGER"),
+        ("hlso_qty_expr", "VARCHAR(500)"),
     ],
     "peeling": [
         ("journal_id", "INTEGER"),
+        ("peeled_qty_expr", "VARCHAR(500)"),
+    ],
+    "grading": [
+        ("quantity_expr", "VARCHAR(500)"),
     ],
     "daily_attendance": [
         ("journal_id", "INTEGER"),
@@ -185,7 +207,7 @@ def run_migration():
                 if col_name not in existing_columns:
                     print(f"  -> Adding column '{col_name}' ({col_type}) to table '{table}'")
                     try:
-                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col_name} {col_type};"))
+                        conn.execute(text(f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS {col_name} {col_type};"))
                         print(f"  ✔ Column '{col_name}' added successfully.")
                     except Exception as e:
                         print(f"  ❌ Error adding column '{col_name}': {e}")

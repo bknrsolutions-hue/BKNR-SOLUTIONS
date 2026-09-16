@@ -12,7 +12,7 @@ from app.database.models.processing import Soaking
 from app.database.models.reprocess import Reprocess
 from app.database.models.floor_balance import FloorBalance  # Live Running Stock Table
 from app.database.models.criteria import (
-    varieties, species, chemicals, production_at, production_for as ProductionForMaster
+    varieties, species, chemicals, production_at, peeling_at, production_for as ProductionForMaster
 )
 
 from app.utils.timezone import ist_now 
@@ -44,9 +44,9 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
     v_list = [v[0] for v in db.query(varieties.variety_name).filter(varieties.company_id == company_id).all() if v[0]]
     s_list = [s[0] for s in db.query(species.species_name).filter(species.company_id == company_id).all() if s[0]]
     c_list = [c[0] for c in db.query(chemicals.chemical_name).filter(chemicals.company_id == company_id).all() if c[0]]
-    pf_list = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
-    if "General Stock" not in pf_list:
-        pf_list.append("General Stock")
+    raw_pf = [pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_id).order_by(ProductionForMaster.production_for).all() if pf[0]]
+    excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+    pf_list = [p for p in raw_pf if p.upper().strip() not in excluded_names]
     return {"varieties": v_list, "species": s_list, "chemicals": c_list, "prod_for_list": pf_list}
 
 
@@ -96,7 +96,8 @@ def update_floor_balance_row(
 # =====================================================
 @router.get("/soaking", response_class=HTMLResponse)
 def show_soaking(request: Request, db: Session = Depends(get_db)):
-    raw_company_id = request.session.get("company_code")
+    raw_company_id = str(request.session.get("company_code") or "").strip().upper()
+    company_id = str(raw_company_id or "").strip().upper()
     email = request.session.get("email")
 
     if not email or raw_company_id is None:
@@ -110,11 +111,33 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
     global_production_for, global_location, user_allowed_locations = resolve_session_scope(request)
 
     masters = get_cached_masters(db, company_id)
-    
+    company_names = set(masters["prod_for_list"])
+
+    raw_locs = []
+
     pl_q = db.query(production_at.production_at).filter(production_at.company_id == company_id)
     if user_allowed_locations:
         pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
-    prod_locs = [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]]
+    for p in pl_q.order_by(production_at.production_at).all():
+        if p[0] and p[0] not in raw_locs:
+            raw_locs.append(p[0])
+
+    pa_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id)
+    if user_allowed_locations:
+        pa_q = pa_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+    for p in pa_q.order_by(peeling_at.peeling_at).all():
+        if p[0] and p[0] not in raw_locs:
+            raw_locs.append(p[0])
+
+    fb_q = db.query(distinct(FloorBalance.location)).filter(FloorBalance.company_id == company_id)
+    if user_allowed_locations:
+        fb_q = fb_q.filter(func.upper(func.trim(FloorBalance.location)).in_(user_allowed_locations))
+    for f in fb_q.all():
+        if f[0] and f[0] not in raw_locs:
+            raw_locs.append(f[0])
+
+    non_company_locs = [l for l in raw_locs if l and l.strip() and l.strip() not in company_names]
+    prod_locs = non_company_locs if non_company_locs else raw_locs
 
     # Recent Log Table limited to 100 rows
     today_q = db.query(Soaking).filter(Soaking.company_id == company_id, Soaking.date == current_date)
@@ -190,7 +213,7 @@ def show_soaking(request: Request, db: Session = Depends(get_db)):
 # =====================================================
 @router.get("/soaking/get_count/{batch}")
 def get_count(batch: str, production_for: str = Query(None), location: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id: return {"counts": []}
     production_for, location, _ = resolve_session_scope(request, production_for, location)
 
@@ -214,7 +237,7 @@ def get_count(batch: str, production_for: str = Query(None), location: str = Que
 
 @router.get("/soaking/get_available_qty")
 def get_available_qty_api(location: str, batch: str, count: str, species: str, variety: str, production_for: str = Query(None), request: Request = None, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id:
         raise HTTPException(status_code=401, detail="Session expired")
     production_for, location, _ = resolve_session_scope(request, production_for, location)
@@ -241,7 +264,7 @@ def get_available_qty_api(location: str, batch: str, count: str, species: str, v
 
 @router.get("/soaking/get_batches_by_company")
 def get_batches_by_company(prod_for: str, request: Request, db: Session = Depends(get_db)):
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not company_id or not prod_for: return {"batches": []}
     prod_for, global_location, user_allowed_locations = resolve_session_scope(request, prod_for)
     batch_q = db.query(FloorBalance).filter(FloorBalance.company_id == company_id, FloorBalance.production_for == prod_for)
@@ -272,7 +295,7 @@ def save_soaking(
     production_for: str = Form(...)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
@@ -338,7 +361,7 @@ def update_soaking(
     production_for: str = Form(...)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 
@@ -421,7 +444,7 @@ def delete_soaking(
     db: Session = Depends(get_db)
 ):
     email = request.session.get("email")
-    company_id = request.session.get("company_code")
+    company_id = str(request.session.get("company_code") or "").strip().upper()
     if not email or not company_id:
         return JSONResponse({"error": "Session expired"}, status_code=401)
 

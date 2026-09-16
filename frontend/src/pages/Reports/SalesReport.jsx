@@ -176,8 +176,9 @@ export default function SalesReport({ activeRoute, setActivePage }) {
   // Local Filtered Rows
   const filtered = useMemo(() => localData.filter(item => {
     const s = item.obj || {};
-    // Ignore incomplete/empty records missing key required fields (invoice_no, po_number, buyer_name, container_no, or shipping_bill)
-    if (!s.invoice_no || !s.po_number || !s.buyer_name || !s.container_no || !s.shipping_bill) return false;
+    // Shipping bill and container number can be added after dispatch. Keep the
+    // dispatch visible once its invoice, PO and buyer are saved.
+    if (!s.invoice_no || !s.po_number || !s.buyer_name) return false;
 
     if (selBuyer !== 'ALL' && s.buyer_name !== selBuyer) return false;
     if (selCountry !== 'ALL' && s.country !== selCountry) return false;
@@ -510,11 +511,12 @@ export default function SalesReport({ activeRoute, setActivePage }) {
               <td>{s.country}</td>
               <td>{s.brand}</td>
               <td>{s.variety}</td>
-              <td style={{ fontWeight: 700 }}>{s.grade}</td>
+              <td>{s.freezer || '—'}</td>
               <td>{s.container_no}</td>
               <td>{s.shipping_bill}</td>
               <td>{[s.count_glaze, s.weight_glaze].filter(Boolean).join(' / ')}</td>
               <td>{s.packing_style}</td>
+              <td style={{ fontWeight: 700 }}>{s.grade}</td>
               <td align="right">{s.no_of_mc}</td>
               <td align="right" style={{ fontWeight: 800 }}>{fmt(row.total_qty_kg)}</td>
               <td align="right" style={{ padding: '2px 4px' }}>
@@ -562,7 +564,7 @@ export default function SalesReport({ activeRoute, setActivePage }) {
         })}
 
         <tr style={{ borderTop: '1px solid var(--border-light)', fontSize: '11px' }}>
-          <td colSpan={13} style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-secondary)' }}>
+          <td colSpan={14} style={{ textAlign: 'right', fontWeight: 700, color: 'var(--text-secondary)' }}>
             PO SUBTOTAL ({poNumber}):
           </td>
           <td align="right" style={{ fontWeight: 700 }}>{subMc} MC</td>
@@ -961,11 +963,12 @@ export default function SalesReport({ activeRoute, setActivePage }) {
                         <th>Country</th>
                         <th>Brand</th>
                         <th>Variety</th>
-                        <th>Grade</th>
+                        <th>Freezer</th>
                         <th>Container</th>
                         <th>S.Bill</th>
                         <th>Glaze (C/W)</th>
                         <th>Packing</th>
+                        <th>Grade</th>
                         <th>MC</th>
                         <th style={{ textAlign: 'right' }}>Qty (Kg)</th>
                         <th style={{ textAlign: 'right' }}>Ex. Rate</th>
@@ -982,7 +985,7 @@ export default function SalesReport({ activeRoute, setActivePage }) {
                     <tbody>
                       {filtered.length === 0 ? (
                         <tr>
-                          <td colSpan="24" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
+                          <td colSpan="25" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-tertiary)' }}>
                             No sales records found for selected filters.
                           </td>
                         </tr>

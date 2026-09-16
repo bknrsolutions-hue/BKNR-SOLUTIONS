@@ -199,7 +199,7 @@ export default function GeneralStoreItems() {
       <div className="gs-items-toolbar">
         <h3>Registered Items List</h3>
         <div className="gs-items-actions">
-          <button type="button" className="btn btn-primary" onClick={openAdd}><Plus size={13} /> Add Item</button>
+          <button type="button" className="btn btn-primary" onClick={openAdd}><Plus size={13} /> Add New Entry</button>
           {selectedItem && (
             <>
               <button type="button" className="btn btn-clear" onClick={openEdit}><Pencil size={13} /> Edit</button>

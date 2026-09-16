@@ -116,7 +116,9 @@ export const OtherExpenses = lazy(() => import('../pages/FinanceAccounts/OtherEx
 
 // Export Documents Components
 export const ProformaInvoices = lazy(() => import('../pages/ExportDocuments/ProformaInvoices'));
+export const QuotationPage = lazy(() => import('../pages/ExportDocuments/QuotationPage'));
 export const ExportShipments = lazy(() => import('../pages/ExportDocuments/ExportShipments'));
+
 export const CommercialInvoices = lazy(() => import('../pages/ExportDocuments/CommercialInvoices'));
 export const PackingLists = lazy(() => import('../pages/ExportDocuments/PackingLists'));
 export const ContainerStuffing = lazy(() => import('../pages/ExportDocuments/ContainerStuffing'));
@@ -178,6 +180,8 @@ export const CRITERIA_COMPONENTS = {
   stock_entry: StockEntry,
   pending_orders: PendingOrders,
   cold_storage_holding: ColdStorageHolding,
+  // `inv_gse` resolves to this page id; retain the legacy alias below too.
+  general_stock_entry: GeneralStoreEntry,
   general_store_entry: GeneralStoreEntry,
   attendance_daily_attendance: DailyAttendance,
   attendance_employee_register: StaffRegistration,
@@ -224,7 +228,9 @@ export const CRITERIA_COMPONENTS = {
   // Export Documents
   export_documents_dashboard: ExportDashboard,
   proforma_invoice: ProformaInvoices,
+  crm_quotation: QuotationPage,
   export_shipment: ExportShipments,
+
   commercial_invoice: CommercialInvoices,
   packing_list: PackingLists,
   container_stuffing: ContainerStuffing,

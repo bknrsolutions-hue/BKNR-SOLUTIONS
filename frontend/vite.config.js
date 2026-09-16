@@ -2,9 +2,21 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
-  base: '/app/',
+export default defineConfig(({ command }) => ({
+  // The backend mounts production assets at /app/. Keep local Vite development
+  // at / so the normal http://localhost:5173/ entry does not 404.
+  base: command === 'serve' ? '/' : '/app/',
   plugins: [react()],
+  optimizeDeps: {
+    include: [
+      'react',
+      'react-dom',
+      'react-dom/client',
+      'react-router-dom',
+      'lucide-react',
+      'chart.js',
+    ],
+  },
   build: {
     minify: 'esbuild',
     target: 'es2020',
@@ -23,7 +35,6 @@ export default defineConfig({
             return 'vendor-charts';
           }
         }
-
       }
     }
   },
@@ -31,8 +42,11 @@ export default defineConfig({
     // Use IPv4 explicitly because localhost may resolve to ::1 while the
     // development backend is bound to 127.0.0.1.
     proxy: {
+      '/crm':              'http://127.0.0.1:8000',
       '/auth':             'http://127.0.0.1:8000',
+      '/website-assets':   'http://127.0.0.1:8000',
       '/processing':       'http://127.0.0.1:8000',
+
       '/criteria':         'http://127.0.0.1:8000',
       '/finance_accounts': 'http://127.0.0.1:8000',
       '/export_documents': 'http://127.0.0.1:8000',
@@ -53,4 +67,4 @@ export default defineConfig({
       '/home':             'http://127.0.0.1:8000',
     }
   }
-})
+}))

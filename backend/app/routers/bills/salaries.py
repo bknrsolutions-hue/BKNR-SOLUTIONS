@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from sqlalchemy import extract, func, text
+from sqlalchemy import extract, func, text, or_
 from sqlalchemy.orm import Session, aliased
 
 from app.database import get_db
@@ -22,7 +22,7 @@ from app.database.models.enterprise_finance import AccountGroup, LedgerMaster, S
 from app.database.models.users import Company
 from app.services.bill_accounting import cancel_linked_bill_voucher, ensure_bill_accounting_schema
 from app.services.posting_engine import PostingEngineService
-from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.payroll_statutory import calculate_duty_credit, calculate_pf_esi, effective_statutory_record
 from app.services.salary_advance_recovery import preview_monthly_advance_recovery, sync_monthly_advance_recovery
 from app.utils.timezone import ist_now
 
@@ -38,33 +38,55 @@ class SalaryPaymentPayload(BaseModel):
     bank_cash_ledger_id: int | None = None
 
 
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+_SALARY_PAYMENT_SCHEMA_ENSURED = False
+_SALARY_PAYMENT_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_salary_payment_log_schema(db: Session) -> None:
-    ensure_bill_accounting_schema(db)
-    db.execute(text("""
-        CREATE TABLE IF NOT EXISTS salary_payment_logs (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            salary_id INTEGER NOT NULL,
-            employee_id VARCHAR(50),
-            employee_name VARCHAR(150),
-            month_year VARCHAR(7) NOT NULL,
-            paid_amount DOUBLE PRECISION DEFAULT 0,
-            payment_mode VARCHAR(20) DEFAULT 'BANK',
-            payment_date DATE,
-            utr_reference VARCHAR(50),
-            payment_status VARCHAR(20) DEFAULT 'PARTIAL',
-            journal_id INTEGER,
-            bank_cash_ledger_id INTEGER,
-            is_cancelled BOOLEAN DEFAULT FALSE,
-            created_by VARCHAR(150),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """))
-    db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
-    db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE"))
-    db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_company_month ON salary_payment_logs(company_id, month_year)"))
-    db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)"))
-    db.flush()
+    global _SALARY_PAYMENT_SCHEMA_ENSURED
+    if _SALARY_PAYMENT_SCHEMA_ENSURED:
+        return
+
+    with _SALARY_PAYMENT_SCHEMA_LOCK:
+        if _SALARY_PAYMENT_SCHEMA_ENSURED:
+            return
+
+        try:
+            ensure_bill_accounting_schema(db)
+            db.execute(text("""
+                CREATE TABLE IF NOT EXISTS salary_payment_logs (
+                    id SERIAL PRIMARY KEY,
+                    company_id VARCHAR(50) NOT NULL,
+                    salary_id INTEGER NOT NULL,
+                    employee_id VARCHAR(50),
+                    employee_name VARCHAR(150),
+                    month_year VARCHAR(7) NOT NULL,
+                    paid_amount DOUBLE PRECISION DEFAULT 0,
+                    payment_mode VARCHAR(20) DEFAULT 'BANK',
+                    payment_date DATE,
+                    utr_reference VARCHAR(50),
+                    payment_status VARCHAR(20) DEFAULT 'PARTIAL',
+                    journal_id INTEGER,
+                    bank_cash_ledger_id INTEGER,
+                    is_cancelled BOOLEAN DEFAULT FALSE,
+                    created_by VARCHAR(150),
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """))
+            db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS bank_cash_ledger_id INTEGER"))
+            db.execute(text("ALTER TABLE salary_payment_logs ADD COLUMN IF NOT EXISTS is_cancelled BOOLEAN DEFAULT FALSE"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_company_month ON salary_payment_logs(company_id, month_year)"))
+            db.execute(text("CREATE INDEX IF NOT EXISTS ix_salary_payment_logs_salary ON salary_payment_logs(company_id, salary_id)"))
+            db.flush()
+            _SALARY_PAYMENT_SCHEMA_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Salary payment log schema check failed: %s", exc)
 
 
 def salary_payment_history(db: Session, company_id: str, salary_id: int):
@@ -131,12 +153,18 @@ def is_contract_type(value: str) -> bool:
 
 
 def company_context(db: Session, company_code: str):
-    company = db.query(Company).filter(Company.company_code == company_code).first()
+    company = db.query(Company).filter(
+        or_(
+            func.upper(func.trim(Company.company_code)) == str(company_code or "").strip().upper(),
+            func.lower(func.trim(Company.company_name)) == str(company_code or "").strip().lower()
+        )
+    ).first()
+    first_company = db.query(Company).first() if not company else None
     return {
-        "name": company.company_name if company else company_code,
-        "address": company.address if company else "",
-        "email": company.email if company else "",
-        "mpeda_registration_code": company.mpeda_registration_code if company else "",
+        "name": company.company_name if company and company.company_name else (first_company.company_name if first_company else company_code),
+        "address": company.address if company else (first_company.address if first_company else ""),
+        "email": company.email if company else (first_company.email if first_company else ""),
+        "mpeda_registration_code": company.mpeda_registration_code if company else (first_company.mpeda_registration_code if first_company else ""),
     }
 
 
@@ -188,21 +216,7 @@ def monthly_salary_sheet_rows(db: Session, company_id: str, month: str):
                 adjustment = max(adjustment, float(rec.salary_adjustment))
             shift_name = rec.shift_name or "GENERAL"
             req_hours = shift_map.get(shift_name, 8.0)
-            raw_credit = float(rec.working_hours or 0.0) / req_hours if req_hours > 0 else 0.0
-            if raw_credit < 0.5:
-                duty_credit = 0.0
-            elif raw_credit < 1.0:
-                duty_credit = 0.5
-            elif raw_credit < 1.5:
-                duty_credit = 1.0
-            elif raw_credit < 2.0:
-                duty_credit = 1.5
-            elif raw_credit < 2.5:
-                duty_credit = 2.0
-            elif raw_credit < 3.0:
-                duty_credit = 2.5
-            else:
-                duty_credit = 3.0
+            duty_credit = calculate_duty_credit(rec.working_hours, req_hours)
             d_status = str(getattr(rec, "duty_status", "APPROVED") or "APPROVED").strip().upper()
             d_type = str(getattr(rec, "duty_type", "") or "").strip().upper()
             approved_credit = float(getattr(rec, "approved_duty_credit", 0.0) or 0.0)

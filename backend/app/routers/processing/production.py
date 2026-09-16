@@ -71,9 +71,16 @@ def build_stock_key(prod_for, species, variety, grade, packing_style, glaze, fre
 # -----------------------------------------------------
 def get_common_data(db: Session, company_code: str, user_allowed_locations: list):
     """Fetch dropdown master data aligned securely with user permissions"""
-    pl_q = db.query(production_at).filter(production_at.company_id == company_code)
+    pl_q = db.query(production_at.production_at).filter(production_at.company_id == company_code)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_code)
     if user_allowed_locations:
         pl_q = pl_q.filter(func.upper(func.trim(production_at.production_at)).in_(user_allowed_locations))
+        pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(user_allowed_locations))
+
+    combined_locations = list(dict.fromkeys(
+        [p[0] for p in pl_q.order_by(production_at.production_at).all() if p[0]] +
+        [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+    ))
         
     return {
         "brands": [b.brand_name for b in db.query(brands).filter(brands.company_id == company_code).all()],
@@ -90,8 +97,8 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         ],
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
-        "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
-        "prod_for_list": sorted(list(set([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]] + ["General Stock"]))),
+        "prod_at_list": combined_locations,
+        "prod_for_list": sorted([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0] and pf[0].upper().strip() not in {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}]),
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }
 
@@ -121,7 +128,7 @@ def _unused_incomplete_production_page(
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
     g_loc_clean = global_location.strip().upper() if global_location else None
 
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
 
     if not company_code or not email:
@@ -426,7 +433,7 @@ def get_common_data(db: Session, company_code: str, user_allowed_locations: list
         "grades": [g.grade_name for g in db.query(grades).filter(grades.company_id == company_code).all()],
         "species": [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()],
         "prod_at_list": [p.production_at for p in pl_q.order_by(production_at.production_at).all()],
-        "prod_for_list": sorted(list(set([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0]] + ["General Stock"]))),
+        "prod_for_list": sorted([pf[0] for pf in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).all() if pf[0] and pf[0].upper().strip() not in {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}]),
         "prod_types_list": [pt.production_type for pt in db.query(production_types).filter(production_types.company_id == company_code).all()],
     }
 
@@ -457,7 +464,7 @@ def production_page(
     g_prod_clean = global_production_for.strip().upper() if global_production_for else None
     g_loc_clean = global_location.strip().upper() if global_location else None
 
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
 
     if not company_code or not email:
@@ -878,7 +885,7 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
     try:
         data = await request.json()
         new_status = data.get("status")
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         
         if not company_code:
             return JSONResponse({"status": "error", "message": "Unauthorized"}, status_code=401)
@@ -900,7 +907,7 @@ async def update_soaking_status(id: int, request: Request, db: Session = Depends
 @router.post("/production/complete_rejection/{soaking_id}")
 def complete_rejection(soaking_id: int, request: Request, db: Session = Depends(get_db)):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
         
         if not company_code:
@@ -941,19 +948,13 @@ def save_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
 
         if not company_code or not email:
             return RedirectResponse("/auth/login", status_code=302)
 
-        final_production_qty = float(production_qty or 0)
-        glaze_text = str(glaze or "").strip().upper()
-
-        if "NWNC" not in glaze_text:
-            glaze_percent = extract_number(glaze_text, 0)
-            if glaze_percent > 0:
-                final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
+        final_production_qty = round(float(production_qty or 0), 3)
 
         current_ist = ist_now()
         obj = Production(
@@ -977,7 +978,7 @@ def save_production(
 # -----------------------------------------------------
 @router.get("/production/edit/{id}", response_class=HTMLResponse)
 def edit_production(id: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return RedirectResponse("/auth/login", status_code=303)
     entry = db.query(Production).filter(Production.id == id, Production.company_id == company_code).first()
@@ -999,7 +1000,7 @@ def update_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)
         
@@ -1008,13 +1009,7 @@ def update_production(
             if is_edit_locked(request, entry.date):
                 request.session["message"] = f"❌ {edit_lock_message()}"
                 return RedirectResponse("/processing/production", status_code=303)
-            final_production_qty = float(production_qty or 0)
-            glaze_text = str(glaze or "").strip().upper()
-
-            if "NWNC" not in glaze_text:
-                glaze_percent = extract_number(glaze_text, 0)
-                if glaze_percent > 0:
-                    final_production_qty = round(final_production_qty * ((100 - glaze_percent) / 100), 3)
+            final_production_qty = round(float(production_qty or 0), 3)
 
             entry.batch_number = batch_number
             entry.brand = brand
@@ -1049,7 +1044,7 @@ def delete_production(
     db: Session = Depends(get_db)
 ):
     try:
-        company_code = request.session.get("company_code")
+        company_code = str(request.session.get("company_code") or "").strip().upper()
         email = request.session.get("email")
         if not company_code:
             return RedirectResponse("/auth/login", status_code=302)

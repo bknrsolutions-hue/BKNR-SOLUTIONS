@@ -551,7 +551,7 @@ export default function PurchasePackaging({ theme }) {
             </React.Fragment>
           )}
           <button className="attendance-btn attendance-btn-primary" onClick={openForm}>
-            <Plus size={16} /> NEW INVOICE
+            <Plus size={16} /> Add New Entry
           </button>
         </div>
       </div>

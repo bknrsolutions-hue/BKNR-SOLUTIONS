@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Layers, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { sessionFetch } from '../../utils/sessionFetch';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 
 export default function Peeling() {
   const [date, setDate] = useState('');
@@ -9,7 +11,9 @@ export default function Peeling() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Form inputs
+  // Form inputs (isolated from page filters)
+  const [modalProductionFor, setModalProductionFor] = useState('');
+  const [modalLocation, setModalLocation] = useState('');
   const [productionFor, setProductionFor] = useState('');
   const [locationVal, setLocationVal] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
@@ -18,6 +22,7 @@ export default function Peeling() {
   const [hlsoQty, setHlsoQty] = useState('');
   const [variety, setVariety] = useState('');
   const [peeledQty, setPeeledQty] = useState('');
+  const [peeledQtyExpr, setPeeledQtyExpr] = useState('');  // raw expression
   const [contractor, setContractor] = useState('');
   const [rate, setRate] = useState(0);
   const [yieldPercent, setYieldPercent] = useState('0.00');
@@ -109,21 +114,12 @@ export default function Peeling() {
 
   const formattedPreviewTableNo = React.useMemo(() => {
     if (!regTableNo.trim()) return '';
-    const cleanLoc = (regPeelingAt || filterLocation || locationVal || '').trim();
     const raw = regTableNo.trim();
-    if (!cleanLoc) {
-      return raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
+    if (/^\d+$/.test(raw)) {
+      return `Table ${raw}`;
     }
-    if (raw.toLowerCase().startsWith(cleanLoc.toLowerCase())) {
-      const after = raw.slice(cleanLoc.length).trim().replace(/^[-_\s]+/, '').trim();
-      if (after && !after.toLowerCase().startsWith('table')) {
-        return `${cleanLoc}-table ${after}`;
-      }
-      return raw;
-    }
-    const tablePart = raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
-    return `${cleanLoc}-${tablePart}`;
-  }, [regTableNo, regPeelingAt, filterLocation, locationVal]);
+    return raw;
+  }, [regTableNo]);
 
   const isTableAlreadyRegistered = React.useMemo(() => {
     if (!formattedPreviewTableNo) return false;
@@ -147,9 +143,17 @@ export default function Peeling() {
       const res = await fetch(`/processing/peeling?${queryParams.toString()}`, { credentials: 'include' });
       if (res.ok) {
         const data = await res.json();
-        setProdForList(data.prod_for_list || []);
-        setPeelingLocations(data.peeling_locations || []);
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
+        setProdForList(pList);
+        setPeelingLocations(locList);
         setVarietiesList(data.varieties || []);
+
+        setFilterCompany(activeComp || data.selected_production_for || '');
+        setFilterLocation(activeLoc || data.selected_location || '');
+        setProductionFor(activeComp || data.selected_production_for || '');
+        setLocationVal(activeLoc || data.selected_location || '');
+        setRegPeelingAt(activeLoc || data.selected_location || '');
 
         let cList = data.contractors || [];
         if (!cList.length) {
@@ -170,12 +174,6 @@ export default function Peeling() {
         setVarietySummary(data.variety_summary || []);
         setDrillDownData(data.drill_down_json || {});
         setTodayEntries(data.today_data || []);
-
-        if (data.selected_production_for) setFilterCompany(data.selected_production_for);
-        if (data.selected_location) {
-          setFilterLocation(data.selected_location);
-          setRegPeelingAt(data.selected_location);
-        }
       } else {
         console.error('Failed to fetch Peeling data');
       }
@@ -191,6 +189,16 @@ export default function Peeling() {
       setLoading(false);
     }
   };
+
+  // Auto-set state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || filterCompany || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || filterLocation || '';
+      setModalProductionFor(activeComp || (prodForList.length > 0 ? prodForList[0] : ''));
+      setModalLocation(activeLoc || (peelingLocations.length > 0 ? peelingLocations[0] : ''));
+    }
+  }, [showModal, prodForList, peelingLocations, filterCompany, filterLocation]);
 
   useEffect(() => {
     const now = new Date();
@@ -208,9 +216,9 @@ export default function Peeling() {
 
   // Form cascading lookups
   const getFilteredBatches = () => {
-    if (!productionFor || !locationVal) return [];
-    const compVal = productionFor.toUpperCase().trim();
-    const locVal = locationVal.toUpperCase().trim();
+    if (!modalProductionFor || !modalLocation) return [];
+    const compVal = modalProductionFor.toUpperCase().trim();
+    const locVal = modalLocation.toUpperCase().trim();
 
     const matches = hlsoFloorBalance.filter(row => 
       (row.production_for || '').toUpperCase().trim() === compVal &&
@@ -220,9 +228,9 @@ export default function Peeling() {
   };
 
   const getFilteredCounts = () => {
-    if (!productionFor || !locationVal || !batchNumber) return [];
-    const compVal = productionFor.toUpperCase().trim();
-    const locVal = locationVal.toUpperCase().trim();
+    if (!modalProductionFor || !modalLocation || !batchNumber) return [];
+    const compVal = modalProductionFor.toUpperCase().trim();
+    const locVal = modalLocation.toUpperCase().trim();
 
     const matches = hlsoFloorBalance.filter(row => 
       row.batch === batchNumber &&
@@ -236,9 +244,9 @@ export default function Peeling() {
   // backend formula instead of relying only on the page-load snapshot.
   useEffect(() => {
     let active = true;
-    if (productionFor && locationVal && batchNumber && inCount) {
-      const compVal = productionFor.toUpperCase().trim();
-      const locVal = locationVal.toUpperCase().trim();
+    if (modalProductionFor && modalLocation && batchNumber && inCount) {
+      const compVal = modalProductionFor.toUpperCase().trim();
+      const locVal = modalLocation.toUpperCase().trim();
 
       const match = hlsoFloorBalance.find(row => 
         row.batch === batchNumber &&
@@ -249,8 +257,8 @@ export default function Peeling() {
       if (match) {
         setSpecies(match.species || '');
         const params = new URLSearchParams({
-          production_for: productionFor,
-          location: locationVal,
+          production_for: modalProductionFor,
+          location: modalLocation,
           batch: batchNumber,
           count: inCount,
           species_name: match.species || '',
@@ -272,7 +280,7 @@ export default function Peeling() {
       setFloorAvail(0);
     }
     return () => { active = false; };
-  }, [productionFor, locationVal, batchNumber, inCount, hlsoFloorBalance]);
+  }, [modalProductionFor, modalLocation, batchNumber, inCount, hlsoFloorBalance]);
 
   // Load Peeling Rate
   useEffect(() => {
@@ -310,6 +318,7 @@ export default function Peeling() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const inputQty = parseFloat(hlsoQty) || 0;
     if (inputQty > (floorAvail + 0.1)) {
       alert(`Insufficient floor stock! (Available: ${floorAvail} KG)`);
@@ -318,14 +327,15 @@ export default function Peeling() {
 
     setLoading(true);
     const formData = new URLSearchParams();
-    formData.append('production_for', productionFor);
-    formData.append('location', locationVal);
+    formData.append('production_for', modalProductionFor);
+    formData.append('location', modalLocation);
     formData.append('batch_number', batchNumber);
     formData.append('in_count', inCount);
     formData.append('species', species);
     formData.append('hlso_qty', String(hlsoQty));
     formData.append('variety', variety);
     formData.append('peeled_qty', String(peeledQty));
+    if (peeledQtyExpr) formData.append('peeled_qty_expr', peeledQtyExpr);
     formData.append('contractor_name', contractor);
     formData.append('table_no', tableNo);
     formData.append('rate', String(rate));
@@ -350,6 +360,7 @@ export default function Peeling() {
         setSpecies('');
         setHlsoQty('');
         setPeeledQty('');
+        setPeeledQtyExpr('');
         setContractor('');
         setTableNo('');
         setRate(0);
@@ -375,13 +386,35 @@ export default function Peeling() {
     }
 
     const cleanLocation = regPeelingAt || filterLocation || locationVal || '';
+    if (!cleanLocation.trim()) {
+      alert('Peeling At / Location is required!');
+      return;
+    }
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
-    const cleanCheck = formattedTableNo.toLowerCase();
-    const isDuplicate = registeredTables.some(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
-    if (isDuplicate) {
-      alert(`Table Number '${formattedTableNo}' is already registered for today!`);
-      return;
+    const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+    const baseInput = getBaseName(formattedTableNo);
+    const existingMatches = registeredTables.filter(r => 
+      r.table_no && getBaseName(r.table_no).toLowerCase() === baseInput.toLowerCase()
+    );
+
+    let isConfirmedShift = false;
+    if (existingMatches.length > 0) {
+      const getOrdinal = (n) => {
+        if (11 <= (n % 100) && (n % 100) <= 13) return n + 'th';
+        return n + ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th');
+      };
+      const nextShift = existingMatches.length + 1;
+      const baseCleanName = baseInput.match(/^\d+$/) ? `Table ${baseInput}` : baseInput;
+      const nextTableNo = `${baseCleanName} (${getOrdinal(nextShift)})`;
+      const lastReg = existingMatches[existingMatches.length - 1];
+      const lastInfo = lastReg.contractor_name ? `Contractor (${lastReg.contractor_name})` : lastReg.worker_type;
+
+      const confirmShift = window.confirm(
+        `Table '${baseCleanName}' is already registered today (${existingMatches.length} time(s), last under ${lastInfo}).\n\nDo you want to register Shift ${nextShift} as '${nextTableNo}'?`
+      );
+      if (!confirmShift) return;
+      isConfirmedShift = true;
     }
 
     if (regWorkerType !== 'Contractor') {
@@ -397,27 +430,44 @@ export default function Peeling() {
     }
 
     setLoading(true);
-    const formData = new URLSearchParams();
-    formData.append('table_no', formattedTableNo);
-    formData.append('worker_type', regWorkerType);
-    if (regWorkerType === 'Contractor') {
-      formData.append('contractor_name', regContractor);
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-    } else {
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-      formData.append('worker_ids', selectedWorkerIds.join(', '));
-    }
-    formData.append('production_at', cleanLocation);
-    formData.append('production_for', productionFor);
+    const postData = async (confirmFlag = false) => {
+      const formData = new URLSearchParams();
+      formData.append('table_no', formattedTableNo);
+      formData.append('worker_type', regWorkerType);
+      if (regWorkerType === 'Contractor') {
+        formData.append('contractor_name', regContractor);
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+      } else {
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+        formData.append('worker_ids', selectedWorkerIds.join(', '));
+      }
+      formData.append('production_at', cleanLocation);
+      formData.append('production_for', productionFor);
+      if (confirmFlag) formData.append('confirm_shift', 'true');
 
-    try {
       const res = await sessionFetch('/processing/peeling/table_registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       });
+
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        if (data.already_exists) {
+          if (window.confirm(data.error || 'Table already registered today. Register for new shift?')) {
+            await postData(true);
+            return;
+          } else {
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       if (res.ok) {
-        alert('Table Registered Successfully!');
+        const resJson = await res.json().catch(() => ({}));
+        const registeredName = resJson.table_no || formattedTableNo;
+        alert(`Table '${registeredName}' Registered Successfully!`);
         setRegTableNo('');
         setRegContractor('');
         setRegNoOfWorkers('');
@@ -428,6 +478,10 @@ export default function Peeling() {
         const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
         alert(data.error || data.detail || data.message || 'Registration failed');
       }
+    };
+
+    try {
+      await postData(isConfirmedShift);
     } catch (err) {
       console.error(err);
       alert(err?.message || 'Error saving table registration');
@@ -668,7 +722,7 @@ export default function Peeling() {
             className="btn btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> New Entry
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -718,6 +772,7 @@ export default function Peeling() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
+                    <option value="">Select Peeling At / Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 
@@ -932,18 +987,29 @@ export default function Peeling() {
                   </tr>
                 </thead>
                 <tbody>
-                  {registeredTables.length === 0 ? (
-                    <tr>
-                      <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
-                        No tables registered for today yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    registeredTables.map((reg, idx) => {
+                  {(() => {
+                    const isLocMatch = (tableLoc, targetLoc) => {
+                      if (!targetLoc || !targetLoc.trim()) return true;
+                      if (!tableLoc) return true;
+                      const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                    };
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, filterLocation));
+                    if (displayedTables.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                            No tables registered for today in {filterLocation || 'selected location'}.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return displayedTables.map((reg, idx) => {
                       const isMatch = formattedPreviewTableNo && reg.table_no && reg.table_no.trim().toLowerCase() === formattedPreviewTableNo.toLowerCase();
                       return (
                         <tr key={reg.id} style={{ background: isMatch ? 'rgba(254, 240, 138, 0.4)' : 'transparent' }}>
-                          <td className="text-center" style={{ fontWeight: '700' }}>{registeredTables.length - idx}</td>
+                          <td className="text-center" style={{ fontWeight: '700' }}>{displayedTables.length - idx}</td>
                           <td className="text-center">{reg.date}</td>
                           <td className="text-left" style={{ fontWeight: '600' }}>{reg.production_at || '-'}</td>
                           <td className="text-center">
@@ -976,8 +1042,8 @@ export default function Peeling() {
                           </td>
                         </tr>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1505,7 +1571,9 @@ export default function Peeling() {
                   <td className="text-left" style={{ color: 'var(--corp-dash)' }}>{row.variety_name}</td>
                   <td className="text-center">{row.hlso_count}</td>
                   <td className="text-right">{(row.is_cancelled ? 0 : row.hlso_qty).toFixed(2)}</td>
-                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>{(row.is_cancelled ? 0 : row.peeled_qty).toFixed(2)}</td>
+                  <td className="text-right" style={{ color: 'var(--success)', fontWeight: '800' }}>
+                    <WeightBreakdownCell value={row.is_cancelled ? 0 : row.peeled_qty} expr={row.is_cancelled ? null : row.peeled_qty_expr} />
+                  </td>
                   <td className="text-center">{row.yield_percent}%</td>
                   <td className="text-left">{row.peeling_at}</td>
                   <td className="text-left">{row.contractor_name}</td>
@@ -1549,9 +1617,9 @@ export default function Peeling() {
                   <label>Company *</label>
                   <select 
                     className="form-control" 
-                    value={productionFor} 
+                    value={modalProductionFor} 
                     onChange={e => {
-                      setProductionFor(e.target.value);
+                      setModalProductionFor(e.target.value);
                       setBatchNumber('');
                       setInCount('');
                       setSpecies('');
@@ -1567,9 +1635,9 @@ export default function Peeling() {
                   <label>Location (Processing At) *</label>
                   <select 
                     className="form-control" 
-                    value={locationVal} 
+                    value={modalLocation} 
                     onChange={e => {
-                      setLocationVal(e.target.value);
+                      setModalLocation(e.target.value);
                       setBatchNumber('');
                       setInCount('');
                       setSpecies('');
@@ -1590,21 +1658,65 @@ export default function Peeling() {
                       const sel = e.target.value;
                       setTableNo(sel);
                       const reg = registeredTables.find(r => r.table_no === sel);
-                      if (reg && reg.contractor_name) {
-                        setContractor(reg.contractor_name);
+                      if (reg) {
+                        const wType = (reg.worker_type || '').toUpperCase();
+                        if (wType.includes('KG')) {
+                          setContractor('KG BASIS');
+                        } else if (wType.includes('DAILY')) {
+                          setContractor('DAILY BASIS');
+                        } else if (reg.contractor_name) {
+                          setContractor(reg.contractor_name);
+                        }
                       }
                     }}
                   >
                     <option value="">Select Table No</option>
-                    {registeredTables.length === 0 ? (
-                      <option value="" disabled>No tables created for today yet</option>
-                    ) : (
-                      registeredTables.map(r => (
+                    {(() => {
+                      const curLoc = modalLocation || filterLocation || locationVal || '';
+                      const isLocMatch = (tableLoc, targetLoc) => {
+                        if (!targetLoc || !tableLoc) return true;
+                        const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                      };
+                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, curLoc));
+                      if (locFiltered.length === 0) {
+                        return <option value="" disabled>No tables created for today in {curLoc || 'selected location'}</option>;
+                      }
+
+                      // 2-hour shift retirement for older shift tables when a newer shift is created
+                      const now = new Date();
+                      const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+                      const groupedByBase = {};
+                      locFiltered.forEach(r => {
+                        const base = getBaseName(r.table_no).toLowerCase();
+                        if (!groupedByBase[base]) groupedByBase[base] = [];
+                        groupedByBase[base].push(r);
+                      });
+
+                      const activeShiftTables = [];
+                      Object.values(groupedByBase).forEach(regs => {
+                        regs.sort((a, b) => a.id - b.id);
+                        for (let i = 0; i < regs.length; i++) {
+                          const currentReg = regs[i];
+                          const newerReg = regs[i + 1];
+                          if (newerReg && newerReg.created_at) {
+                            const newerTime = new Date(newerReg.created_at);
+                            const diffHours = (now - newerTime) / (1000 * 60 * 60);
+                            if (diffHours >= 2) {
+                              continue; // Retire older shift 2 hours after newer shift creation
+                            }
+                          }
+                          activeShiftTables.push(currentReg);
+                        }
+                      });
+
+                      return activeShiftTables.map(r => (
                         <option key={r.id} value={r.table_no}>
                           {r.table_no} ({r.worker_type}{r.contractor_name ? ` - ${r.contractor_name}` : ''})
                         </option>
-                      ))
-                    )}
+                      ));
+                    })()}
                   </select>
                 </div>
 
@@ -1676,14 +1788,11 @@ export default function Peeling() {
 
                 <div className="form-group">
                   <label>Peeled Out (Qty) *</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    className="form-control" 
-                    value={peeledQty} 
-                    onChange={e => setPeeledQty(e.target.value)} 
-                    placeholder="0.00" 
-                    required 
+                  <ExpressionWeightInput
+                    value={peeledQty}
+                    onChange={setPeeledQty}
+                    placeholder="0.00 or 25+30+45"
+                    required
                   />
                 </div>
 

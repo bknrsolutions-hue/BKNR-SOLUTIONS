@@ -370,7 +370,7 @@ export default function OtherExpenses({ theme }) {
             </div>
           )}
           <button className="attendance-btn attendance-btn-primary" onClick={openForm}>
-            <Plus size={16} /> NEW EXPENSE ENTRY
+            <Plus size={16} /> Add New Entry
           </button>
         </div>
       </div>

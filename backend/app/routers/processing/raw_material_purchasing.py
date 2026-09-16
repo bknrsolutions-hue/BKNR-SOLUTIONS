@@ -2,7 +2,7 @@ from fastapi import APIRouter, Request, Form, Depends
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, and_
+from sqlalchemy import func, and_, text
 from datetime import datetime, timedelta
 from app.utils.timezone import ist_now
 import json
@@ -17,15 +17,25 @@ from app.database import get_db
 from app.database.models.processing import RawMaterialPurchasing, GateEntry
 from app.database.models.criteria import (
     varieties, species, suppliers, hsn_codes, 
-    HOSO_HLSO_Yields, packing_styles, peeling_at
+    HOSO_HLSO_Yields, packing_styles, peeling_at, production_at, production_for
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
 from app.utils.global_filters import get_global_filters
+from app.services.default_masters import (
+    DEFAULT_PEELING_AT,
+    DEFAULT_PRODUCTION_FOR,
+    DEFAULT_SPECIES,
+    DEFAULT_SUPPLIERS,
+    DEFAULT_VARIETIES,
+    ensure_processing_masters,
+)
 from app.utils.edit_lock import is_edit_locked, edit_lock_message
 from app.utils.cancel_math import active_sum
+import logging
 
 router = APIRouter(tags=["RAW MATERIAL PURCHASING"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------
 # TODAY RANGE (9 AM TO NEXT DAY 9 AM)
@@ -173,8 +183,10 @@ def get_cached_hoso_summary_data(db: Session, company_code: str, user_allowed_lo
 
 def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_locations: list = None, global_p_for: str = None, global_loc: str = None):
     def build():
+        clean_company = str(company_code or "").strip().upper()
+
         gate_q = db.query(GateEntry).filter(
-            GateEntry.company_id == company_code,
+            func.upper(func.trim(GateEntry.company_id)) == clean_company,
             GateEntry.is_cancelled == False
         )
         if user_allowed_locations:
@@ -182,12 +194,35 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
             if allowed_clean:
                 gate_q = gate_q.filter(func.upper(func.trim(GateEntry.receiving_center)).in_(allowed_clean))
         if global_loc:
-            gate_q = gate_q.filter(func.trim(GateEntry.receiving_center) == func.trim(global_loc))
+            gate_q = gate_q.filter(
+                func.upper(func.trim(GateEntry.receiving_center)) == str(global_loc).strip().upper()
+            )
         if global_p_for:
-            gate_q = gate_q.filter(func.trim(GateEntry.production_for) == func.trim(global_p_for))
+            gate_q = gate_q.filter(
+                func.upper(func.trim(GateEntry.production_for)) == str(global_p_for).strip().upper()
+            )
 
         gate_entries = gate_q.order_by(GateEntry.id.desc()).all()
-        prod_for_list = sorted(list(set([g.production_for for g in gate_entries if g.production_for])))
+        
+        # Query production_for criteria table as well as historical gate entries
+        pf_q = db.query(production_for.production_for).filter(
+            func.upper(func.trim(production_for.company_id)) == clean_company
+        )
+        if global_p_for:
+            pf_q = pf_q.filter(
+                func.upper(func.trim(production_for.production_for)) == str(global_p_for).strip().upper()
+            )
+        master_prod_for = [p[0] for p in pf_q.all() if p[0]]
+        
+        prod_for_list = sorted(list(set(master_prod_for + [g.production_for for g in gate_entries if g.production_for])))
+        
+        # Fallback if global_p_for filter returned empty list (e.g. stale filter in localStorage)
+        if not prod_for_list and global_p_for:
+            all_pf = db.query(production_for.production_for).filter(
+                func.upper(func.trim(production_for.company_id)) == clean_company
+            ).all()
+            prod_for_list = sorted(list(set([p[0] for p in all_pf if p[0]])))
+
         prod_batch_map = {}
         batch_supplier_map = {}
         batch_list = []
@@ -200,28 +235,103 @@ def get_cached_rmp_page_masters(db: Session, company_code: str, user_allowed_loc
                     "receiving_center": g.receiving_center if g.receiving_center else ""
                 }
             if g.production_for:
-                prod_batch_map.setdefault(g.production_for, [])
-                if g.batch_number and g.batch_number not in prod_batch_map[g.production_for]:
-                    prod_batch_map[g.production_for].append(g.batch_number)
+                production_key = g.production_for.strip().upper()
+                prod_batch_map.setdefault(production_key, [])
+                if g.batch_number and g.batch_number not in prod_batch_map[production_key]:
+                    prod_batch_map[production_key].append(g.batch_number)
 
-        peeling_q = db.query(peeling_at).filter(peeling_at.company_id == company_code)
+        pa_q = db.query(production_at.production_at).filter(
+            func.upper(func.trim(production_at.company_id)) == clean_company
+        )
+        pe_q = db.query(peeling_at.peeling_at).filter(
+            func.upper(func.trim(peeling_at.company_id)) == clean_company
+        )
         if user_allowed_locations:
             allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
             if allowed_clean:
-                peeling_q = peeling_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+                pa_q = pa_q.filter(func.upper(func.trim(production_at.production_at)).in_(allowed_clean))
+                pe_q = pe_q.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
         if global_loc:
-            peeling_q = peeling_q.filter(func.trim(peeling_at.peeling_at) == func.trim(global_loc))
+            pa_q = pa_q.filter(
+                func.upper(func.trim(production_at.production_at)) == str(global_loc).strip().upper()
+            )
+            pe_q = pe_q.filter(
+                func.upper(func.trim(peeling_at.peeling_at)) == str(global_loc).strip().upper()
+            )
 
-        hsn_records = db.query(hsn_codes).filter(hsn_codes.company_id == company_code).all()
+        combined_peeling_locations = list(dict.fromkeys(
+            [p[0] for p in pa_q.order_by(production_at.production_at).all() if p[0]] +
+            [p[0] for p in pe_q.order_by(peeling_at.peeling_at).all() if p[0]]
+        ))
+
+        # Fallback if global_loc filter yielded 0 locations (e.g. stale filter in localStorage)
+        if not combined_peeling_locations and global_loc:
+            pa_q_all = db.query(production_at.production_at).filter(
+                func.upper(func.trim(production_at.company_id)) == clean_company
+            )
+            pe_q_all = db.query(peeling_at.peeling_at).filter(
+                func.upper(func.trim(peeling_at.company_id)) == clean_company
+            )
+            if user_allowed_locations:
+                allowed_clean = [loc.strip().upper() for loc in user_allowed_locations if loc.strip()]
+                if allowed_clean:
+                    pa_q_all = pa_q_all.filter(func.upper(func.trim(production_at.production_at)).in_(allowed_clean))
+                    pe_q_all = pe_q_all.filter(func.upper(func.trim(peeling_at.peeling_at)).in_(allowed_clean))
+            combined_peeling_locations = list(dict.fromkeys(
+                [p[0] for p in pa_q_all.order_by(production_at.production_at).all() if p[0]] +
+                [p[0] for p in pe_q_all.order_by(peeling_at.peeling_at).all() if p[0]]
+            ))
+
+        # A stale allowed_locations session value must not leave a tenant with
+        # no selectable processing location.  Fall back to that tenant's own
+        # master locations only when the permission-filtered result is empty.
+        if not combined_peeling_locations:
+            tenant_production_locations = db.query(production_at.production_at).filter(
+                func.upper(func.trim(production_at.company_id)) == clean_company
+            ).order_by(production_at.production_at).all()
+            tenant_peeling_locations = db.query(peeling_at.peeling_at).filter(
+                func.upper(func.trim(peeling_at.company_id)) == clean_company
+            ).order_by(peeling_at.peeling_at).all()
+            combined_peeling_locations = list(dict.fromkeys(
+                [p[0] for p in tenant_production_locations if p[0]] +
+                [p[0] for p in tenant_peeling_locations if p[0]]
+            ))
+
+        hsn_records = db.query(hsn_codes).filter(
+            func.upper(func.trim(hsn_codes.company_id)) == clean_company
+        ).all()
+
+        supplier_records = db.query(suppliers).filter(
+            func.upper(func.trim(suppliers.company_id)) == clean_company
+        ).order_by(suppliers.supplier_name).all()
+
+        variety_records = db.query(varieties).filter(
+            func.upper(func.trim(varieties.company_id)) == clean_company
+        ).order_by(varieties.variety_name).all()
+
+        species_records = db.query(species).filter(
+            species.species_name != None,
+            func.upper(func.trim(species.company_id)) == clean_company
+        ).order_by(species.species_name).all()
+
+        # Safety net for newly registered tenants or legacy staging schemas:
+        # never render an empty processing form while the idempotent seed is
+        # being recovered. Tenant database values always take precedence.
+        supplier_list = [s.supplier_name for s in supplier_records if s.supplier_name] or DEFAULT_SUPPLIERS
+        variety_list = [v.variety_name for v in variety_records if v.variety_name] or DEFAULT_VARIETIES
+        species_list = [s.species_name for s in species_records if s.species_name] or DEFAULT_SPECIES
+        combined_peeling_locations = [l for l in (combined_peeling_locations or DEFAULT_PEELING_AT) if l.upper().strip() not in {"MAIN PLANT", "MAIN UNIT", "N/A"}]
+        prod_for_list = prod_for_list or DEFAULT_PRODUCTION_FOR
+
         return {
             "batch_list": batch_list,
-            "supplier_list": [s.supplier_name for s in db.query(suppliers).filter(suppliers.company_id == company_code).all()],
-            "variety_list": [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()],
-            "species_list": [s.species_name for s in db.query(species).filter(species.species_name != None, species.company_id == company_code).all()],
-            "peeling_locations": [p.peeling_at for p in peeling_q.order_by(peeling_at.peeling_at).all()],
+            "supplier_list": supplier_list,
+            "variety_list": variety_list,
+            "species_list": species_list,
+            "peeling_locations": combined_peeling_locations,
             "prod_for_list": prod_for_list,
-            "hsn_list": [h.description for h in hsn_records],
-            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records}),
+            "hsn_list": [h.description for h in hsn_records if h.description],
+            "hsn_map_json": json.dumps({h.description: h.hsn_code for h in hsn_records if h.description}),
             "prod_batch_map_json": json.dumps(prod_batch_map),
             "batch_supplier_map_json": json.dumps(batch_supplier_map),
         }
@@ -247,10 +357,54 @@ def post_rmp_purchase_voucher(db: Session, entry: RawMaterialPurchasing, created
     entry.journal_id = voucher.id
     return voucher
 
+import threading
+
+_RMP_COLUMNS_ENSURED = False
+_RMP_COLUMNS_LOCK = threading.Lock()
+
+
+def ensure_rmp_columns_exist(db: Session):
+    global _RMP_COLUMNS_ENSURED
+    if _RMP_COLUMNS_ENSURED:
+        return
+
+    with _RMP_COLUMNS_LOCK:
+        if _RMP_COLUMNS_ENSURED:
+            return
+
+        try:
+            db.execute(text("""
+                ALTER TABLE raw_material_purchasing 
+                ADD COLUMN IF NOT EXISTS g1_expr VARCHAR(500),
+                ADD COLUMN IF NOT EXISTS g2_expr VARCHAR(500),
+                ADD COLUMN IF NOT EXISTS dc_expr VARCHAR(500);
+            """))
+            db.commit()
+            _RMP_COLUMNS_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Could not auto-add expression columns to raw_material_purchasing: %s", exc)
+
 # -----------------------------------------------------
 # REUSABLE PAGE RENDERER 
 # -----------------------------------------------------
 def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=None):
+    company_code = str(company_code or "").strip().upper()
+    ensure_rmp_columns_exist(db)
+    try:
+        ensure_processing_masters(
+            db,
+            company_code,
+            email=request.session.get("email", "system@bknr.com"),
+        )
+    except Exception:
+        # Existing master rows and the built-in lookup fallbacks keep the
+        # operational entry page usable while a legacy tenant master issue is
+        # investigated. A failed seed can leave PostgreSQL's transaction
+        # aborted, so reset it before running the normal read queries below.
+        db.rollback()
+        logger.exception("Unable to seed RMP lookup masters for tenant %s", company_code)
+
     # Fetch universal filters layer first
     global_production_for, global_location = get_global_filters(request)
     
@@ -262,36 +416,78 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
         user_allowed_locations = session_locations
 
     # 🟢 🔴 REFACTOR:             !
-    hoso_summary, drill_down = get_cached_hoso_summary_data(
-        db=db, 
-        company_code=company_code, 
-        user_allowed_locations=user_allowed_locations,
-        global_p_for=global_production_for,
-        global_loc=global_location
-    )
-    master_context = get_cached_rmp_page_masters(
-        db=db,
-        company_code=company_code,
-        user_allowed_locations=user_allowed_locations,
-        global_p_for=global_production_for,
-        global_loc=global_location,
-    )
-
-    start, end = get_today_range()
-    today_q = db.query(RawMaterialPurchasing).filter(
-        RawMaterialPurchasing.company_id == company_code,
-        and_(
-            RawMaterialPurchasing.date >= start.date(), 
-            RawMaterialPurchasing.date <= end.date()
+    try:
+        hoso_summary, drill_down = get_cached_hoso_summary_data(
+            db=db,
+            company_code=company_code,
+            user_allowed_locations=user_allowed_locations,
+            global_p_for=global_production_for,
+            global_loc=global_location,
         )
+    except Exception:
+        # Demand analytics must never block receiving raw material. This can
+        # occur with incomplete historical order/stock data in legacy tenants.
+        db.rollback()
+        logger.exception("Unable to calculate RMP HOSO summary for tenant %s", company_code)
+        hoso_summary, drill_down = [], {}
+
+    try:
+        master_context = get_cached_rmp_page_masters(
+            db=db,
+            company_code=company_code,
+            user_allowed_locations=user_allowed_locations,
+            global_p_for=global_production_for,
+            global_loc=global_location,
+        )
+    except Exception:
+        # Preserve the form using safe defaults if an optional legacy master
+        # table is unavailable. The error is retained in application logs.
+        db.rollback()
+        logger.exception("Unable to load RMP lookup masters for tenant %s", company_code)
+        master_context = {
+            "batch_list": [],
+            "supplier_list": DEFAULT_SUPPLIERS,
+            "variety_list": DEFAULT_VARIETIES,
+            "species_list": DEFAULT_SPECIES,
+            "peeling_locations": DEFAULT_PEELING_AT,
+            "prod_for_list": DEFAULT_PRODUCTION_FOR,
+            "hsn_list": [],
+            "hsn_map_json": "{}",
+            "prod_batch_map_json": "{}",
+            "batch_supplier_map_json": "{}",
+        }
+
+    # The operational grid shows only the active 9 AM-to-next-9 AM shift.
+    # Historical records remain available through the dedicated reports.
+    start, end = get_today_range()
+    report_q = db.query(RawMaterialPurchasing).filter(
+        func.upper(func.trim(RawMaterialPurchasing.company_id)) == company_code,
+        RawMaterialPurchasing.date >= start.date(),
+        RawMaterialPurchasing.date <= end.date(),
     )
     
-    if global_production_for:
-        today_q = today_q.filter(func.trim(RawMaterialPurchasing.production_for) == func.trim(global_production_for))
-    if global_location:
-        today_q = today_q.filter(func.trim(RawMaterialPurchasing.peeling_at) == func.trim(global_location))
+    if global_production_for and str(global_production_for).strip().upper() != "ALL":
+        report_q = report_q.filter(
+            func.upper(func.trim(RawMaterialPurchasing.production_for))
+            == str(global_production_for).strip().upper()
+        )
+    if global_location and str(global_location).strip().upper() != "ALL":
+        report_q = report_q.filter(
+            func.upper(func.trim(RawMaterialPurchasing.peeling_at))
+            == str(global_location).strip().upper()
+        )
         
-    today_data = today_q.order_by(RawMaterialPurchasing.id.desc()).all()
+    try:
+        report_data = report_q.order_by(
+            RawMaterialPurchasing.date.desc(), RawMaterialPurchasing.id.desc()
+        ).all()
+    except Exception:
+        # A partially migrated historical RMP row must not make the receiving
+        # form unavailable. The grid can be recovered from reports after the
+        # schema/data issue recorded in the server logs is corrected.
+        db.rollback()
+        logger.exception("Unable to load the active RMP grid for tenant %s", company_code)
+        report_data = []
 
     if request.query_params.get("format") == "json":
         hsn_map = master_context.get("hsn_map_json")
@@ -314,6 +510,9 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
                     "g1_qty": r.g1_qty,
                     "g2_qty": r.g2_qty,
                     "dc_qty": r.dc_qty,
+                    "g1_expr": r.g1_expr,
+                    "g2_expr": r.g2_expr,
+                    "dc_expr": r.dc_expr,
                     "received_qty": r.received_qty,
                     "rate_per_kg": r.rate_per_kg,
                     "amount": r.amount,
@@ -325,7 +524,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
                     "cancelled_by": r.cancelled_by,
                     "cancelled_at": r.cancelled_at.isoformat() if r.cancelled_at else None,
                     "email": r.email
-                } for r in today_data
+                } for r in report_data
             ],
             "supplier_list": master_context.get("supplier_list", []),
             "variety_list": master_context.get("variety_list", []),
@@ -342,7 +541,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
 
     context = {
         **master_context,
-        "today_data": today_data, "edit_data": edit_data,
+        "today_data": report_data, "edit_data": edit_data,
         "hoso_summary": hoso_summary, "drill_down_json": json.dumps(drill_down),
         "message": request.session.pop("message", None)
     }
@@ -358,7 +557,7 @@ def render_rmp_page(request: Request, db: Session, company_code: str, edit_data=
 # -----------------------------------------------------
 @router.get("/raw_material_purchasing", response_class=HTMLResponse)
 def show_rmp(request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return RedirectResponse("/auth/login", status_code=303)
     return render_rmp_page(request, db, company_code)
 
@@ -382,8 +581,10 @@ def save_rmp(
     peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
     hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
     g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
+    ensure_rmp_columns_exist(db)
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
     now = ist_now()
@@ -396,7 +597,8 @@ def save_rmp(
         production_for=production_for, 
         peeling_at=peeling_at, variety_name=variety_name,
         species=species, hsn_code=hsn_code, count=count, g1_qty=g1_qty, g2_qty=g2_qty,
-        dc_qty=dc_qty, received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
+        dc_qty=dc_qty, g1_expr=g1_expr or None, g2_expr=g2_expr or None, dc_expr=dc_expr or None,
+        received_qty=received, rate_per_kg=rate_per_kg, amount=amount,
         material_boxes=material_boxes, remarks=remarks, email=user_email,
         date=now.date(), time=now.time(), company_id=comp_code
     )
@@ -427,8 +629,10 @@ def update_rmp(
     peeling_at: str = Form(""), variety_name: str = Form(""), species: str = Form(""), 
     hsn_code: str = Form(""), count: str = Form(""), g1_qty: float = Form(0.0), 
     g2_qty: float = Form(0.0), dc_qty: float = Form(0.0), rate_per_kg: float = Form(0.0), 
+    g1_expr: str = Form(None), g2_expr: str = Form(None), dc_expr: str = Form(None),
     material_boxes: float = Form(0.0), remarks: str = Form(""), db: Session = Depends(get_db)
 ):
+    ensure_rmp_columns_exist(db)
     comp_code = request.session.get("company_code")
     user_email = request.session.get("email")
     entry = db.query(RawMaterialPurchasing).filter(RawMaterialPurchasing.id == id, RawMaterialPurchasing.company_id == comp_code).first()
@@ -451,6 +655,7 @@ def update_rmp(
         entry.peeling_at = peeling_at
         entry.variety_name, entry.species, entry.hsn_code = variety_name, species, hsn_code
         entry.count, entry.g1_qty, entry.g2_qty, entry.dc_qty = count, g1_qty, g2_qty, dc_qty
+        entry.g1_expr, entry.g2_expr, entry.dc_expr = g1_expr or None, g2_expr or None, dc_expr or None
         entry.received_qty = g1_qty + g2_qty + dc_qty
         entry.amount = round(total_billable_qty * rate_per_kg, 2)
         entry.rate_per_kg = rate_per_kg

@@ -20,6 +20,7 @@ from app.database.models.criteria import (
     peeling_rates, 
     species, 
     peeling_at,
+    production_at,
     packing_styles,
     production_for as ProductionForMaster
 )
@@ -93,11 +94,11 @@ def get_cached_masters(db: Session, company_id: str, force_refresh: bool = False
     pf_q = db.query(distinct(ProductionForMaster.production_for))
     if company_id:
         pf_q = pf_q.filter(func.upper(func.trim(ProductionForMaster.company_id)) == company_id.strip().upper())
-    pf_list = [p[0] for p in pf_q.all() if p[0]]
-    if not pf_list:
-        pf_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
-    if "General Stock" not in pf_list:
-        pf_list.append("General Stock")
+    raw_pf = [p[0] for p in pf_q.all() if p[0]]
+    if not raw_pf:
+        raw_pf = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).all() if p[0]]
+    excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+    pf_list = [p for p in raw_pf if p.upper().strip() not in excluded_names]
 
     return {"varieties": v_list, "contractors": c_list, "species": s_list, "prod_for_list": pf_list}
 
@@ -431,7 +432,12 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
         for r in variety_summary_q
     ]
 
-    pa_list = [pa[0] for pa in db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id).all() if pa[0]]
+    pa_q = db.query(production_at.production_at).filter(production_at.company_id == company_id)
+    pe_q = db.query(peeling_at.peeling_at).filter(peeling_at.company_id == company_id)
+    pa_list = list(dict.fromkeys(
+        [p[0] for p in pa_q.all() if p[0]] +
+        [p[0] for p in pe_q.all() if p[0]]
+    ))
     success_msg = request.session.pop("success_msg", None)
 
     if request.query_params.get("format") == "json":
@@ -453,6 +459,7 @@ def show_peeling(request: Request, db: Session = Depends(get_db)):
                     "variety_name": r.variety_name,
                     "hlso_qty": r.hlso_qty,
                     "peeled_qty": r.peeled_qty,
+                    "peeled_qty_expr": r.peeled_qty_expr,
                     "yield_percent": r.yield_percent,
                     "contractor_name": r.contractor_name,
                     "table_no": r.table_no,
@@ -569,7 +576,7 @@ def get_available_qty(
     species_name: str = Query(...), variety_name: str = Query(...),
     production_for: str = Query(...), request: Request = None, db: Session = Depends(get_db)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code: return {"available_qty": 0}
 
     global_p_for, global_loc = get_global_filters(request)
@@ -678,9 +685,9 @@ def save_peeling(
     batch_number: str = Form(...), in_count: str = Form(...), species: str = Form(...), variety: str = Form(...),
     hlso_qty: float = Form(...), peeled_qty: float = Form(...), yield_percent: str = Form(...), 
     contractor_name: str = Form(...), rate: float = Form(...), amount: float = Form(...),
-    table_no: str = Form(None)
+    table_no: str = Form(None), peeled_qty_expr: str = Form(None)
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code: return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -724,8 +731,9 @@ def save_peeling(
         current_ist = ist_now()
 
         new_entry = Peeling(
-            production_for=production_for, peeling_at=location, batch_number=clean_batch, hlso_count=clean_count,
-            species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, yield_percent=clean_yield,
+            peeling_at=location, production_for=production_for, batch_number=batch_number.strip(), hlso_count=in_count.strip(),
+            species=species, variety_name=variety, hlso_qty=hlso_qty, peeled_qty=peeled_qty, peeled_qty_expr=peeled_qty_expr or None,
+            yield_percent=clean_yield,
             contractor_name=contractor_name, table_no=table_no.strip() if table_no else None, rate=approved_rate, amount=calculated_amount,
             date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
         )
@@ -848,50 +856,65 @@ def delete_peeling(
 # =====================================================
 # TABLE REGISTRATION ENDPOINTS (Peeling)
 # =====================================================
+import threading
+
+_TABLE_REGISTRATIONS_SCHEMA_ENSURED = False
+_TABLE_REGISTRATIONS_SCHEMA_LOCK = threading.Lock()
+
+
 def ensure_table_registrations_schema(db: Session):
-    statements = [
-        """
-        CREATE TABLE IF NOT EXISTS table_registrations (
-            id SERIAL PRIMARY KEY,
-            company_id VARCHAR(50) NOT NULL,
-            date DATE NOT NULL,
-            department VARCHAR(50) NOT NULL,
-            table_no VARCHAR(50) NOT NULL,
-            worker_type VARCHAR(100) NOT NULL,
-            contractor_name VARCHAR(255),
-            no_of_workers INTEGER DEFAULT 0,
-            worker_ids TEXT,
-            production_at VARCHAR(255),
-            production_for VARCHAR(255),
-            status VARCHAR(50) DEFAULT 'Active',
-            created_by VARCHAR(255),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-        """,
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
-        "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
-    ]
-    for stmt in statements:
+    global _TABLE_REGISTRATIONS_SCHEMA_ENSURED
+    if _TABLE_REGISTRATIONS_SCHEMA_ENSURED:
+        return
+
+    with _TABLE_REGISTRATIONS_SCHEMA_LOCK:
+        if _TABLE_REGISTRATIONS_SCHEMA_ENSURED:
+            return
+
+        statements = [
+            """
+            CREATE TABLE IF NOT EXISTS table_registrations (
+                id SERIAL PRIMARY KEY,
+                company_id VARCHAR(50) NOT NULL,
+                date DATE NOT NULL,
+                department VARCHAR(50) NOT NULL,
+                table_no VARCHAR(50) NOT NULL,
+                worker_type VARCHAR(100) NOT NULL,
+                contractor_name VARCHAR(255),
+                no_of_workers INTEGER DEFAULT 0,
+                worker_ids TEXT,
+                production_at VARCHAR(255),
+                production_for VARCHAR(255),
+                status VARCHAR(50) DEFAULT 'Active',
+                created_by VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+            """,
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS company_id VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS date DATE",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS department VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS table_no VARCHAR(50)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_type VARCHAR(100)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS contractor_name VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS no_of_workers INTEGER DEFAULT 0",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS worker_ids TEXT",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_at VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS production_for VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS status VARCHAR(50) DEFAULT 'Active'",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_by VARCHAR(255)",
+            "ALTER TABLE table_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
+        ]
         try:
-            db.execute(text(stmt))
+            for stmt in statements:
+                db.execute(text(stmt))
             db.commit()
+            _TABLE_REGISTRATIONS_SCHEMA_ENSURED = True
         except Exception as e:
             db.rollback()
 
 @router.get("/peeling/table_registrations")
 def get_peeling_table_registrations(request: Request, date_val: str = Query(None), db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     
@@ -900,6 +923,7 @@ def get_peeling_table_registrations(request: Request, date_val: str = Query(None
         rows = db.query(TableRegistration).filter(
             func.trim(TableRegistration.company_id) == company_code,
             TableRegistration.date == target_date,
+            TableRegistration.department.in_(["De-Heading", "Peeling"]),
             TableRegistration.status == "Active"
         ).order_by(TableRegistration.id.desc()).all()
 
@@ -927,15 +951,27 @@ def get_peeling_table_registrations(request: Request, date_val: str = Query(None
         logger.error(f"Error in get_peeling_table_registrations: {e}")
         return JSONResponse({"table_registrations": []})
 
+def get_ordinal_suffix(n: int) -> str:
+    if 11 <= (n % 100) <= 13:
+        return f"{n}th"
+    return f"{n}" + {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+
+def get_base_table_name(raw_name: str) -> str:
+    cleaned = re.sub(r'\s*\(\d+(st|nd|rd|th)\)\s*$', '', (raw_name or '').strip(), flags=re.IGNORECASE)
+    if cleaned.isdigit():
+        return f"Table {cleaned}"
+    return cleaned
+
 @router.post("/peeling/table_registration")
 def save_peeling_table_registration(
     request: Request, db: Session = Depends(get_db),
     table_no: str = Form(...), worker_type: str = Form(...),
     contractor_name: str = Form(None), no_of_workers: str = Form("0"),
-    worker_ids: str = Form(None), production_at: str = Form(None),
-    production_for: str = Form(None)
+    worker_ids: str = Form(None), production_at: str = Form(...),
+    production_for: str = Form(None), overwrite: str = Form("false"),
+    confirm_shift: str = Form("false")
 ):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     email = request.session.get("email")
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
@@ -947,38 +983,48 @@ def save_peeling_table_registration(
         today_date = current_ist.date()
         now_naive = current_ist.replace(tzinfo=None) if hasattr(current_ist, 'tzinfo') and current_ist.tzinfo else current_ist
         clean_peeling_at = (production_at or "").strip()
-        raw_table_no = table_no.strip()
-        
         if not clean_peeling_at:
-            clean_table_no = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
-        elif raw_table_no.lower().startswith(clean_peeling_at.lower()):
-            after = raw_table_no[len(clean_peeling_at):].strip().lstrip("-_ ").strip()
-            if after and not after.lower().startswith("table"):
-                clean_table_no = f"{clean_peeling_at}-table {after}"
-            else:
-                clean_table_no = raw_table_no
-        else:
-            table_part = raw_table_no if raw_table_no.lower().startswith("table") else f"table {raw_table_no}"
-            clean_table_no = f"{clean_peeling_at}-{table_part}"
-
-        # 1. Prevent rapid double submit (within 5 seconds)
-        five_sec_ago = now_naive - dt.timedelta(seconds=5)
-        recent = db.query(TableRegistration).filter(
-            func.trim(TableRegistration.company_id) == company_code,
-            TableRegistration.date == today_date,
-            TableRegistration.department == "Peeling",
-            func.lower(func.trim(TableRegistration.table_no)) == clean_table_no.lower(),
-            TableRegistration.status != 'Cancelled',
-            TableRegistration.created_at >= five_sec_ago
-        ).first()
-        if recent:
-            return JSONResponse({"error": f"Table Number '{clean_table_no}' was just submitted!"}, status_code=400)
+            return JSONResponse({"error": "Peeling At / Location is required"}, status_code=400)
+        
+        base_name = get_base_table_name(table_no)
 
         validation_error = validate_kg_worker_table_registration(
-            db, company_code, worker_type, parsed_no_workers, worker_ids, production_at
+            db, company_code, worker_type, parsed_no_workers, worker_ids, clean_peeling_at
         )
         if validation_error:
             return JSONResponse({"error": validation_error}, status_code=400)
+
+        # Query all existing active table registrations today for this base table name
+        today_regs = db.query(TableRegistration).filter(
+            func.trim(TableRegistration.company_id) == company_code,
+            TableRegistration.date == today_date,
+            TableRegistration.status == 'Active'
+        ).all()
+
+        matching_regs = [r for r in today_regs if get_base_table_name(r.table_no).lower() == base_name.lower()]
+        existing_count = len(matching_regs)
+
+        is_confirmed = str(confirm_shift).lower() in ['true', '1', 'yes'] or str(overwrite).lower() in ['true', '1', 'yes']
+
+        if existing_count > 0 and not is_confirmed:
+            next_shift = existing_count + 1
+            next_table_name = f"{base_name} ({get_ordinal_suffix(next_shift)})"
+            last_reg = matching_regs[-1]
+            last_info = f"contractor '{last_reg.contractor_name}'" if last_reg.contractor_name else f"'{last_reg.worker_type}'"
+            return JSONResponse({
+                "already_exists": True,
+                "existing_count": existing_count,
+                "next_table_name": next_table_name,
+                "error": f"'{base_name}' is already registered today ({existing_count} time(s), last registered under {last_info}). Do you want to register Shift {next_shift} as '{next_table_name}'?"
+            }, status_code=409)
+
+        # Determine exact table name to register
+        if "(" in table_no and ")" in table_no:
+            clean_table_no = table_no.strip()
+        elif existing_count > 0:
+            clean_table_no = f"{base_name} ({get_ordinal_suffix(existing_count + 1)})"
+        else:
+            clean_table_no = base_name
 
         new_reg = TableRegistration(
             company_id=company_code,
@@ -989,14 +1035,14 @@ def save_peeling_table_registration(
             contractor_name=contractor_name.strip() if contractor_name else None,
             no_of_workers=parsed_no_workers,
             worker_ids=worker_ids.strip() if worker_ids else None,
-            production_at=production_at.strip() if production_at else None,
+            production_at=clean_peeling_at,
             production_for=production_for.strip() if production_for else None,
             created_by=email,
             created_at=now_naive
         )
         db.add(new_reg)
         db.commit()
-        return JSONResponse({"status": "ok", "id": new_reg.id})
+        return JSONResponse({"status": "ok", "table_no": clean_table_no, "id": new_reg.id})
     except Exception as e:
         db.rollback()
         logger.error(f"Error in save_peeling_table_registration: {e}", exc_info=True)
@@ -1004,7 +1050,7 @@ def save_peeling_table_registration(
 
 @router.post("/peeling/table_registration/delete/{id}")
 def delete_peeling_table_registration(id: int, request: Request, db: Session = Depends(get_db)):
-    company_code = request.session.get("company_code")
+    company_code = str(request.session.get("company_code") or "").strip().upper()
     if not company_code:
         return JSONResponse({"error": "Unauthorized"}, status_code=401)
     

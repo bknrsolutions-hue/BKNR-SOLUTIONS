@@ -16,6 +16,26 @@ def next_higher_rupee(value: float) -> float:
     return float(math.ceil(amount - 1e-9))
 
 
+def calculate_duty_credit(working_hours: float, req_hours: float = 8.0) -> float:
+    wh = float(working_hours or 0.0)
+    req = float(req_hours or 8.0)
+    raw_credit = wh / req if req > 0 else 0.0
+    if raw_credit < 0.5:
+        return 0.0
+    elif raw_credit < 1.0:
+        return 0.5
+    elif raw_credit < 1.5:
+        return 1.0
+    elif raw_credit < 2.0:
+        return 1.5
+    elif raw_credit < 2.5:
+        return 2.0
+    elif raw_credit < 3.0:
+        return 2.5
+    else:
+        return 3.0
+
+
 def effective_statutory_record(
     db: Session,
     company_id: str,

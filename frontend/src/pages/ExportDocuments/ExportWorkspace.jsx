@@ -33,7 +33,7 @@ const WORKSPACE_VIEWS = [
   { id: 'health', label: 'Health Certificate', shortLabel: 'Health', icon: BadgeCheck, component: HealthCertificates, permissions: ['health_certificate'] },
 ];
 
-export default function ExportWorkspace({ user }) {
+export default function ExportWorkspace({ user, setActivePage }) {
   const [activeView, setActiveView] = useState('overview');
   const userPermissions = Array.isArray(user?.permissions)
     ? user.permissions
@@ -70,8 +70,9 @@ export default function ExportWorkspace({ user }) {
       <main className="export-workspace-content">
         <Suspense fallback={<div className="export-workspace-loading">Loading {selected.label}…</div>}>
           <ActiveComponent
-            embedded={activeView === 'overview'}
-            pageTitle={activeView === 'overview' ? 'Shipment Overview' : undefined}
+            embedded={true}
+            pageTitle={selected.label}
+            setActivePage={setActivePage}
           />
         </Suspense>
       </main>

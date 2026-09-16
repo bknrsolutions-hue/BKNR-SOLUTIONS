@@ -5,15 +5,15 @@ import './LabourManagement.css';
 
 const today = () => new Date().toISOString().slice(0, 10);
 const cleanNameText = value => value.replace(/[^A-Za-z .'-]/g, '');
-const blankWorker = () => ({ worker_name: '', worker_type: 'KG Basis Company Worker', department: '', mobile: '', aadhar_number: '', gender: '', joining_date: today(), production_at: '', daily_salary: '', worker_category: '', bank_name: '', account_number: '', ifsc_code: '', address: '', remarks: '' });
+const blankWorker = (locs = []) => ({ worker_name: '', worker_type: 'KG Basis Company Worker', department: '', mobile: '', aadhar_number: '', gender: 'Male', joining_date: today(), production_at: locs.length ? locs[0] : '', daily_salary: '', worker_category: '', bank_name: '', account_number: '', ifsc_code: '', address: '', remarks: '' });
 
 export default function KgBasisCompanyLabour() {
   const [activeTab, setActiveTab] = useState('registration');
   const [registrationOpen, setRegistrationOpen] = useState(false);
   const [workers, setWorkers] = useState([]);
   const [attendance, setAttendance] = useState([]);
-  const [members, setMembers] = useState([blankWorker()]);
   const [locations, setLocations] = useState([]);
+  const [members, setMembers] = useState([blankWorker()]);
   const [dailyWorkerRates, setDailyWorkerRates] = useState([]);
   const [editingWorker, setEditingWorker] = useState(null);
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -51,7 +51,13 @@ export default function KgBasisCompanyLabour() {
       if (!response.ok || data.status !== 'success') throw new Error(data.error || 'Unable to load KG workers');
       setWorkers(data.workers || []);
       setAttendance(data.attendance || []);
-      setLocations(data.lookups?.locations || []);
+      const locs = data.lookups?.locations || [];
+      setLocations(locs);
+      setMembers(current => current.map(m => ({
+        ...m,
+        production_at: m.production_at || (locs.length ? locs[0] : ''),
+        gender: m.gender || 'Male',
+      })));
       setDailyWorkerRates(data.daily_worker_rates || []);
     } catch (error) {
       notify(error.message, 'error');
@@ -78,7 +84,13 @@ export default function KgBasisCompanyLabour() {
 
   const saveWorkers = async event => {
     event.preventDefault();
-    const invalidRow = members.findIndex(member => !/^[A-Za-z][A-Za-z .'-]*$/.test(String(member.worker_name || '').trim()));
+    const preparedMembers = members.map(m => ({
+      ...m,
+      production_at: (m.production_at || '').trim() || (locations.length ? locations[0] : ''),
+      gender: m.gender || 'Male',
+    })).map(normalizeRecordFields);
+
+    const invalidRow = preparedMembers.findIndex(member => !/^[A-Za-z][A-Za-z .'-]*$/.test(String(member.worker_name || '').trim()));
     if (invalidRow >= 0) {
       notify(`Worker ${invalidRow + 1}: Worker Name must contain text only`, 'error');
       return;
@@ -86,13 +98,13 @@ export default function KgBasisCompanyLabour() {
     setSaving(true);
     try {
       const response = await sessionFetch('/attendance/kg-basis-labour/registration/bulk', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members: members.map(normalizeRecordFields) })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ members: preparedMembers })
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Unable to save KG workers');
       const ids = (data.records || []).map(row => row.worker_id).join(', ');
       notify(`Saved ${data.records?.length || members.length} workers. IDs: ${ids}`);
-      setMembers([blankWorker()]);
+      setMembers([blankWorker(locations)]);
       setRegistrationOpen(false);
       await loadData();
     } catch (error) {
@@ -211,7 +223,7 @@ export default function KgBasisCompanyLabour() {
     </div>
 
     {activeTab === 'registration' ? <>
-      <div className="labour-section registration-toggle"><div className="labour-section-title"><div><h2>KG Basis Worker Registration</h2><p>Open the form only when new workers need to be registered.</p></div><button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : '+ New Registration'}</button></div></div>
+      <div className="labour-section registration-toggle"><div className="labour-section-title"><div><h2>KG Basis Worker Registration</h2><p>Open the form only when new workers need to be registered.</p></div><button type="button" className="labour-btn primary" onClick={() => setRegistrationOpen(open => !open)}>{registrationOpen ? 'Close Form' : 'Add New Entry'}</button></div></div>
       {registrationOpen && <form className="labour-section registration-form" onSubmit={saveWorkers}>
         <div className="registration-form-head"><div className="registration-form-icon"><i className="fa-solid fa-users" /></div><div className="registration-form-copy"><h2>Bulk KG Worker Registration</h2><p>Fill one section per worker. IDs are generated automatically.</p></div><div className="registration-form-badge">{members.length} Worker{members.length > 1 ? 's' : ''}</div><button type="button" className="labour-btn add-member-btn" onClick={() => setMembers(rows => [...rows, blankWorker()])}><i className="fa-solid fa-plus" /> Add Worker</button></div>
         <div className="registration-help"><span><i className="fa-solid fa-circle-info" /> Worker name and joining date are required.</span><span>ID format: Company + K + 5 digits</span></div>

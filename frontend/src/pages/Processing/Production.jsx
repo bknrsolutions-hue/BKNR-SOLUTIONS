@@ -139,15 +139,17 @@ export default function Production() {
     if (showEntryModal) {
       if (globalProductionFor && globalProductionFor !== 'ALL') {
         setFormCompany(globalProductionFor);
-      } else {
-        // Pre-populate with first company having active soaking entries
+      } else if (!formCompany) {
+        // Pre-populate with first company having active soaking entries or from master list
         const activeComps = Array.from(new Set(soakingData.map(s => s.production_for))).filter(Boolean);
         if (activeComps.length > 0) {
           setFormCompany(activeComps[0]);
+        } else if (prodForList.length > 0) {
+          setFormCompany(prodForList[0]);
         }
       }
     }
-  }, [showEntryModal, globalProductionFor, soakingData]);
+  }, [showEntryModal, globalProductionFor, soakingData, prodForList, formCompany]);
 
   // Handle cascading form company selection
   useEffect(() => {
@@ -158,7 +160,7 @@ export default function Production() {
 
     if (globalLocation && globalLocation !== 'ALL') {
       setFormLocation(globalLocation);
-    } else {
+    } else if (!formLocation) {
       const matchedLocations = Array.from(
         new Set(
           soakingData
@@ -169,11 +171,13 @@ export default function Production() {
 
       if (matchedLocations.length > 0) {
         setFormLocation(matchedLocations[0]);
+      } else if (prodAtList.length > 0) {
+        setFormLocation(prodAtList[0]);
       } else {
         setFormLocation('');
       }
     }
-  }, [formCompany, globalLocation, soakingData]);
+  }, [formCompany, formLocation, globalLocation, soakingData, prodAtList]);
 
   // Handle cascading form location selection to populate batches
   const getFilteredBatches = () => {
@@ -224,26 +228,58 @@ export default function Production() {
     if (matchedVarieties.length > 0) setFormVariety(matchedVarieties[0]);
   }, [formBatch, formCompany, formLocation]);
 
-  // Auto calculate production weight in KG
+  // Auto calculate production weight in KG (Gross & Net after Glaze %)
   useEffect(() => {
     const mcVal = parseFloat(formNoOfMc) || 0;
     const looseVal = parseFloat(formLoose) || 0;
-    const selectedStyle = packingStyles.find(p => p.packing_style === formPackingStyle);
 
-    if (!selectedStyle) {
+    if (!formPackingStyle) {
       setFormProductionQty('0.00');
       return;
     }
 
-    const mcWeight = parseFloat(selectedStyle.mc_weight) || 0;
-    const slabWeight = parseFloat(selectedStyle.slab_weight) || 0;
-    const totalQty = (mcVal * mcWeight) + (looseVal * slabWeight);
-    setFormProductionQty(totalQty.toFixed(2));
-  }, [formNoOfMc, formLoose, formPackingStyle, packingStyles]);
+    const selectedStyle = packingStyles.find(
+      p => (p.packing_style || '').trim().toLowerCase() === (formPackingStyle || '').trim().toLowerCase()
+    );
+
+    let mcWeight = selectedStyle ? (parseFloat(selectedStyle.mc_weight) || 0) : 0;
+    let slabWeight = selectedStyle ? (parseFloat(selectedStyle.slab_weight) || 0) : 0;
+
+    // Fallback: If mc_weight or slab_weight is missing or 0 in database, parse numeric values from packing style name (e.g. "10 x 2 KG" or "6 x 1.8 KG")
+    if (mcWeight <= 0 || slabWeight <= 0) {
+      const match = (formPackingStyle || '').match(/(\d+\.?\d*)\s*[xX*]\s*(\d+\.?\d*)/);
+      if (match) {
+        const count = parseFloat(match[1]) || 0;
+        const perSlab = parseFloat(match[2]) || 0;
+        if (slabWeight <= 0) slabWeight = perSlab;
+        if (mcWeight <= 0) mcWeight = count * perSlab;
+      } else {
+        const singleMatch = (formPackingStyle || '').match(/(\d+\.?\d*)/);
+        if (singleMatch && mcWeight <= 0) {
+          mcWeight = parseFloat(singleMatch[1]) || 0;
+        }
+      }
+    }
+
+    // Gross Packed Weight (MCs + Loose Slabs)
+    const grossQty = (mcVal * mcWeight) + (looseVal * slabWeight);
+
+    // Glaze Deduction (e.g. 20% Glaze -> Net Weight = Gross * 0.80)
+    let glazePercent = 0;
+    const glazeText = (formGlaze || '').toUpperCase().trim();
+    if (glazeText && !glazeText.includes('NWNC')) {
+      const match = glazeText.match(/(\d+\.?\d*)/);
+      if (match) glazePercent = parseFloat(match[1]) || 0;
+    }
+
+    const netQty = glazePercent > 0 ? grossQty * ((100 - glazePercent) / 100) : grossQty;
+    setFormProductionQty(netQty.toFixed(2));
+  }, [formNoOfMc, formLoose, formPackingStyle, formGlaze, packingStyles]);
 
   // Form submission handler
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
 
     if (
       !formCompany ||
@@ -601,7 +637,7 @@ export default function Production() {
             className="btn btn-primary"
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> NEW ENTRY
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -1065,10 +1101,10 @@ export default function Production() {
             <thead>
               <tr>
                 <th className="text-center" style={{ width: '60px' }}>ID</th>
-                <th className="text-left" style={{ width: '130px' }}>Company</th>
+                <th className="text-left" style={{ width: '130px' }}>Production For</th>
                 <th className="text-center" style={{ width: '100px' }}>Batch</th>
                 <th className="text-center" style={{ width: '90px' }}>Type</th>
-                <th className="text-left" style={{ width: '110px' }}>Loc</th>
+                <th className="text-left" style={{ width: '110px' }}>Production At</th>
                 <th className="text-center" style={{ width: '80px' }}>Sps</th>
                 <th className="text-left" style={{ width: '110px' }}>Brand</th>
                 <th className="text-left" style={{ width: '120px' }}>Variety</th>

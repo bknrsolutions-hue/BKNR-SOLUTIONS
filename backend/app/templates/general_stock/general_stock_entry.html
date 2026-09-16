@@ -654,7 +654,69 @@
     }
   </style>
   <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
-<link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+  <link rel="stylesheet" href="/static/css/bknr-standard.css?v=skel3">
+  <link rel="stylesheet" href="/static/css/bknr-columns.css">
+  <style>
+    /* Keep General Store Entry visually identical to the Stock Entry module. */
+    .header { padding: 16px 25px; }
+    .header-titles h2 { font-size: 16px; letter-spacing: 0; }
+
+    .form-container {
+      max-width: none;
+      margin: 15px;
+      padding: 20px;
+      border-radius: 12px;
+    }
+
+    .form-grid { grid-template-columns: repeat(6, 1fr); gap: 16px; }
+    .field { gap: 5px; }
+    .field label, label { font-size: 9px; }
+    .field input, .field select, input, select {
+      height: 38px;
+      padding: 0 12px;
+      font-size: 12px;
+      font-weight: 600;
+      background: var(--bg);
+    }
+
+    .table-header-bar { width: auto; max-width: none; margin: 20px 15px 5px; }
+    .table-wrap {
+      width: auto;
+      max-width: none;
+      margin: 0 15px 40px;
+      border-radius: 8px;
+      background: var(--card-bg) !important;
+    }
+    .stock-data-table { table-layout: fixed; text-align: center; }
+    .stock-data-table th,
+    .stock-data-table td {
+      padding: 10px 6px;
+      border: 1px solid var(--table-line) !important;
+      text-align: center;
+    }
+    .stock-data-table th {
+      background: var(--header-bg) !important;
+      color: var(--text) !important;
+      font-size: 9.5px !important;
+      font-weight: 800;
+    }
+    .stock-data-table td {
+      color: var(--text) !important;
+      font-size: 10px !important;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stock-data-table tbody tr:hover { background: var(--row-hover) !important; }
+
+    @media (max-width: 1400px) { .form-grid { grid-template-columns: repeat(4, 1fr); } }
+    @media (max-width: 1100px) { .form-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 768px) {
+      .form-grid { grid-template-columns: repeat(2, 1fr); }
+      .form-container { margin: 15px; }
+    }
+    @media (max-width: 500px) { .form-grid { grid-template-columns: 1fr !important; gap: 12px; } }
+  </style>
 </head>
 
 <body>

@@ -1,0 +1,214 @@
+/* PendingOrdersReport.css – Landscape Print & Density Optimizations */
+
+.pending-orders-exempt {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pending-orders-print-header {
+  display: none;
+}
+
+.pending-orders-print-signature {
+  display: none;
+}
+
+/* 🖨️ LANDSCAPE PRINT RULES */
+@page {
+  size: A4 landscape;
+  margin: 4mm 5mm;
+}
+
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 4mm 5mm;
+  }
+
+  /* Reset layout constraints for print */
+  html, body, #root, .app-container, .main-content, .layout-content, .report-viewer-card, .pending-orders-exempt {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    position: static !important;
+    display: block !important;
+    float: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* Hide screen-only controls */
+  header, .app-header, .sidebar, .sidebar-overlay, nav, aside, footer,
+  .no-print, .report-page-header, .erp-horizontal-filter-row,
+  .filter-bar, button, .btn, .clickable-count {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Print Title Banner */
+  .pending-orders-print-header {
+    display: block !important;
+    margin-bottom: 8px !important;
+    padding-bottom: 5px !important;
+    border-bottom: 2px solid #0f172a !important;
+  }
+
+  .po-print-company {
+    font-size: 15px !important;
+    font-weight: 900 !important;
+    color: #0f172a !important;
+    text-transform: uppercase !important;
+    margin: 0 0 2px 0 !important;
+    letter-spacing: 0.5px !important;
+  }
+
+  .po-print-title {
+    font-size: 11.5px !important;
+    font-weight: 800 !important;
+    color: #334155 !important;
+    text-transform: uppercase !important;
+    margin: 0 0 4px 0 !important;
+  }
+
+  .po-print-meta {
+    font-size: 8.5px !important;
+    color: #475569 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  /* Summaries Layout in Print */
+  .po-summary-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px !important;
+    margin-bottom: 8px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .po-summary-card {
+    border: 1px solid #64748b !important;
+    border-radius: 4px !important;
+    overflow: hidden !important;
+    background: #fff !important;
+  }
+
+  .po-summary-head {
+    background: #e2e8f0 !important;
+    padding: 3px 6px !important;
+    font-size: 8.5px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    border-bottom: 1px solid #64748b !important;
+  }
+
+  /* Table Container */
+  .table-responsive {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .bknr-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+  }
+
+  .bknr-table thead {
+    display: table-header-group !important;
+  }
+
+  .bknr-table tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .bknr-table th {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    font-size: 7.5px !important;
+    font-weight: 800 !important;
+    padding: 2.5px 3.5px !important;
+    border: 1px solid #94a3b8 !important;
+    white-space: nowrap !important;
+    text-transform: uppercase !important;
+  }
+
+  .bknr-table td {
+    font-size: 7px !important;
+    padding: 2.5px 3.5px !important;
+    border: 1px solid #cbd5e1 !important;
+    color: #000000 !important;
+    white-space: nowrap !important;
+  }
+
+  .po-cell-merged {
+    background: #f8fafc !important;
+    color: #0f172a !important;
+    font-weight: 700 !important;
+  }
+
+  .subtotal-row td {
+    background: #f1f5f9 !important;
+    font-weight: 800 !important;
+    border-top: 1.5px solid #64748b !important;
+    border-bottom: 1.5px solid #64748b !important;
+  }
+
+  tfoot tr td {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+    font-size: 8px !important;
+    font-weight: 900 !important;
+    border-top: 2px solid #0f172a !important;
+    border-bottom: 2px double #0f172a !important;
+  }
+
+  /* Signature Block */
+  .pending-orders-print-signature {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    margin-top: 24px !important;
+    padding-top: 10px !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .po-sig-col {
+    text-align: center !important;
+    width: 28% !important;
+  }
+
+  .po-sig-line {
+    border-bottom: 1.5px dashed #475569 !important;
+    margin-bottom: 4px !important;
+    height: 28px !important;
+  }
+
+  .po-sig-title {
+    font-size: 8.5px !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    text-transform: uppercase !important;
+  }
+
+  .po-sig-sub {
+    font-size: 7.5px !important;
+    color: #64748b !important;
+  }
+}

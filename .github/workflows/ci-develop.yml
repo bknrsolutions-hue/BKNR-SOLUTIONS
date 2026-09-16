@@ -4,9 +4,11 @@ on:
   push:
     branches:
       - develop
+      - staging
   pull_request:
     branches:
       - develop
+      - staging
 
 permissions:
   contents: read
@@ -60,6 +62,27 @@ jobs:
       - name: Initialize isolated test database
         working-directory: backend
         run: python scripts/init_test_database.py
+
+      - name: Show alembic heads & history
+        working-directory: backend
+        run: |
+          alembic heads
+          alembic history --verbose | sed -n '1,200p'
+
+      - name: Alembic upgrade head
+        working-directory: backend
+        run: |
+          alembic upgrade head
+
+      - name: Run P0 concurrency tests
+        working-directory: backend
+        run: |
+          mkdir -p test-results
+          pytest tests/concurrency/test_attendance_concurrency.py \
+            -q \
+            --junitxml=test-results/attendance_concurrency.xml
+
+      
 
       - name: Run backend automated tests
         working-directory: backend

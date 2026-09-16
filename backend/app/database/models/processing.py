@@ -135,6 +135,9 @@ class RawMaterialPurchasing(Base):
     g1_qty = Column(Float)
     g2_qty = Column(Float)
     dc_qty = Column(Float)
+    g1_expr = Column(String(500), nullable=True)  # e.g. '25+30+45'
+    g2_expr = Column(String(500), nullable=True)
+    dc_expr = Column(String(500), nullable=True)
 
     received_qty = Column(Float)
 
@@ -189,6 +192,7 @@ class DeHeading(Base):
     hoso_count = Column(String(50))
     hoso_qty = Column(Float)
     hlso_qty = Column(Float)
+    hlso_qty_expr = Column(String(500), nullable=True)  # e.g. '25+30+45'
     yield_percent = Column(Float)
     target_yield_percent = Column(Float)
     diff_qty = Column(Float)
@@ -259,6 +263,7 @@ class Grading(Base):
     variety_name = Column(String(100))
     graded_count = Column(String(50))
     quantity = Column(Float)
+    quantity_expr = Column(String(500), nullable=True)  # e.g. '25+30+45'
 
 
     email = Column(String)
@@ -297,6 +302,7 @@ class Peeling(Base):
 
     variety_name = Column(String(100))
     peeled_qty = Column(Float)
+    peeled_qty_expr = Column(String(500), nullable=True)  # e.g. '25+30+45'
 
     yield_percent = Column(Float)
     target_yield_percent = Column(Float)

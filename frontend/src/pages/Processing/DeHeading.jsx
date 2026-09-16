@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Scissors, Plus, Ban, Calendar, Clock, Mail, RefreshCw, ChevronDown, ChevronRight } from 'lucide-react';
 import { Chart, registerables } from 'chart.js';
 import { sessionFetch } from '../../utils/sessionFetch';
+import ExpressionWeightInput from '../../components/ExpressionWeightInput';
+import WeightBreakdownCell from '../../components/WeightBreakdownCell';
 Chart.register(...registerables);
 
 const uniqueValues = values => Array.from(
@@ -15,7 +17,9 @@ export default function DeHeading() {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
 
-  // Form states
+  // Form states (isolated from page filters)
+  const [modalProductionFor, setModalProductionFor] = useState('');
+  const [modalLocation, setModalLocation] = useState('');
   const [productionFor, setProductionFor] = useState('');
   const [deheadingAt, setDeheadingAt] = useState('');
   const [species, setSpecies] = useState('');
@@ -23,6 +27,7 @@ export default function DeHeading() {
   const [hosoCount, setHosoCount] = useState('');
   const [hosoQty, setHosoQty] = useState('');
   const [hlsoQty, setHlsoQty] = useState('');
+  const [hlsoQtyExpr, setHlsoQtyExpr] = useState('');  // raw expression e.g. '25+30*2'
   const [yieldPercent, setYieldPercent] = useState('0.00');
   const [contractor, setContractor] = useState('');
   const [ratePerKg, setRatePerKg] = useState(0);
@@ -98,21 +103,12 @@ export default function DeHeading() {
 
   const formattedPreviewTableNo = React.useMemo(() => {
     if (!regTableNo.trim()) return '';
-    const cleanLoc = (regPeelingAt || deheadingAt || '').trim();
     const raw = regTableNo.trim();
-    if (!cleanLoc) {
-      return raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
+    if (/^\d+$/.test(raw)) {
+      return `Table ${raw}`;
     }
-    if (raw.toLowerCase().startsWith(cleanLoc.toLowerCase())) {
-      const after = raw.slice(cleanLoc.length).trim().replace(/^[-_\s]+/, '').trim();
-      if (after && !after.toLowerCase().startsWith('table')) {
-        return `${cleanLoc}-table ${after}`;
-      }
-      return raw;
-    }
-    const tablePart = raw.toLowerCase().startsWith('table') ? raw : `table ${raw}`;
-    return `${cleanLoc}-${tablePart}`;
-  }, [regTableNo, regPeelingAt, deheadingAt]);
+    return raw;
+  }, [regTableNo]);
 
   const isTableAlreadyRegistered = React.useMemo(() => {
     if (!formattedPreviewTableNo) return false;
@@ -156,17 +152,19 @@ export default function DeHeading() {
         }
         const defaultContractors = ['KG BASIS', 'DAILY BASIS'];
         setContractorsList(Array.from(new Set([...defaultContractors, ...cList])));
+        const pList = data.prod_for_list || [];
+        const locList = data.peeling_locations || [];
         setSpeciesList(data.species || []);
-        setPeelingLocations(data.peeling_locations || []);
-        setProdForList(data.prod_for_list || []);
+        setPeelingLocations(locList);
+        setProdForList(pList);
         setTodayEntries(data.today_data || []);
         setHosoFloorBalance(data.hoso_floor_balance || []);
 
-        if (data.selected_production_for) setProductionFor(data.selected_production_for);
-        if (data.selected_location) {
-          setDeheadingAt(data.selected_location);
-          setRegPeelingAt(data.selected_location);
-        }
+        setFilterCompany(activeComp || data.selected_production_for || '');
+        setFilterLocation(activeLoc || data.selected_location || '');
+        setProductionFor(activeComp || data.selected_production_for || '');
+        setDeheadingAt(activeLoc || data.selected_location || '');
+        setRegPeelingAt(activeLoc || data.selected_location || '');
       } else {
         console.error('Failed to fetch De-heading data');
       }
@@ -183,6 +181,16 @@ export default function DeHeading() {
     }
   };
 
+  // Sync state defaults when modal opens or option lists update
+  useEffect(() => {
+    if (showModal) {
+      const activeComp = localStorage.getItem('production_for_filter') || filterCompany || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || filterLocation || '';
+      setModalProductionFor(activeComp || (prodForList.length > 0 ? prodForList[0] : ''));
+      setModalLocation(activeLoc || (peelingLocations.length > 0 ? peelingLocations[0] : ''));
+    }
+  }, [showModal, prodForList, peelingLocations, filterCompany, filterLocation]);
+
   useEffect(() => {
     const now = new Date();
     setDate(now.toISOString().split('T')[0]);
@@ -197,15 +205,15 @@ export default function DeHeading() {
     return () => window.removeEventListener('filter_change', handleGlobalFilterChange);
   }, []);
 
-  // Cascading lists load
+  // Cascading lists load for Entry Modal
   useEffect(() => {
     const loadBatches = async () => {
-      if (!productionFor || !deheadingAt) {
+      if (!modalProductionFor || !modalLocation) {
         setBatchesList([]);
         return;
       }
       try {
-        const res = await sessionFetch(`/processing/get_valid_batches/${encodeURIComponent(productionFor)}/${encodeURIComponent(deheadingAt)}`);
+        const res = await sessionFetch(`/processing/get_valid_batches/${encodeURIComponent(modalProductionFor)}/${encodeURIComponent(modalLocation)}`);
         if (res.ok) {
           const data = await res.json();
           setBatchesList(uniqueValues(data.batches).sort());
@@ -215,16 +223,16 @@ export default function DeHeading() {
       }
     };
     loadBatches();
-  }, [productionFor, deheadingAt]);
+  }, [modalProductionFor, modalLocation]);
 
   useEffect(() => {
     const loadCounts = async () => {
-      if (!productionFor || !deheadingAt || !batchNumber) {
+      if (!modalProductionFor || !modalLocation || !batchNumber) {
         setCountsList([]);
         return;
       }
       try {
-        const res = await sessionFetch(`/processing/get_hoso/${encodeURIComponent(productionFor)}/${encodeURIComponent(deheadingAt)}/${encodeURIComponent(batchNumber)}`);
+        const res = await sessionFetch(`/processing/get_hoso/${encodeURIComponent(modalProductionFor)}/${encodeURIComponent(modalLocation)}/${encodeURIComponent(batchNumber)}`);
         if (res.ok) {
           const data = await res.json();
           setCountsList(uniqueValues(data.counts).sort());
@@ -234,19 +242,19 @@ export default function DeHeading() {
       }
     };
     loadCounts();
-  }, [productionFor, deheadingAt, batchNumber]);
+  }, [modalProductionFor, modalLocation, batchNumber]);
 
   // Check Floor Quantity
   useEffect(() => {
     const checkFloor = async () => {
-      if (!deheadingAt || !batchNumber || !hosoCount || !species) {
+      if (!modalLocation || !batchNumber || !hosoCount || !species) {
         setFloorAvail(0);
         return;
       }
       try {
         const params = new URLSearchParams({ 
-          location: deheadingAt, 
-          production_for: productionFor,
+          location: modalLocation, 
+          production_for: modalProductionFor,
           batch: batchNumber, 
           count: hosoCount, 
           species_name: species 
@@ -261,7 +269,7 @@ export default function DeHeading() {
       }
     };
     checkFloor();
-  }, [productionFor, deheadingAt, batchNumber, hosoCount, species]);
+  }, [modalProductionFor, modalLocation, batchNumber, hosoCount, species]);
 
   // Fetch Contractor Rate
   useEffect(() => {
@@ -298,6 +306,7 @@ export default function DeHeading() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return;
     const reqQty = parseFloat(hosoQty) || 0;
     if (reqQty <= 0) {
       alert('Please enter a valid HOSO Quantity');
@@ -310,13 +319,14 @@ export default function DeHeading() {
 
     setLoading(true);
     const formData = new URLSearchParams();
-    formData.append('production_for', productionFor);
-    formData.append('deheading_at', deheadingAt);
+    formData.append('production_for', modalProductionFor);
+    formData.append('deheading_at', modalLocation);
     formData.append('batch_number', batchNumber);
     formData.append('hoso_count', hosoCount);
     formData.append('species', species);
     formData.append('hoso_qty', String(hosoQty));
     formData.append('hlso_qty', String(hlsoQty));
+    if (hlsoQtyExpr) formData.append('hlso_qty_expr', hlsoQtyExpr);
     formData.append('yield_percent', yieldPercent + '%');
     formData.append('contractor', contractor);
     formData.append('table_no', tableNo);
@@ -340,6 +350,7 @@ export default function DeHeading() {
         setHosoCount('');
         setHosoQty('');
         setHlsoQty('');
+        setHlsoQtyExpr('');
         setContractor('');
         setTableNo('');
         setRatePerKg(0);
@@ -365,13 +376,35 @@ export default function DeHeading() {
     }
 
     const cleanLocation = regPeelingAt || deheadingAt || '';
+    if (!cleanLocation.trim()) {
+      alert('Peeling At / Location is required!');
+      return;
+    }
     const formattedTableNo = formattedPreviewTableNo || regTableNo.trim();
 
-    const cleanCheck = formattedTableNo.toLowerCase();
-    const isDuplicate = registeredTables.some(t => t.table_no && t.table_no.trim().toLowerCase() === cleanCheck);
-    if (isDuplicate) {
-      alert(`Table Number '${formattedTableNo}' is already registered for today!`);
-      return;
+    const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+    const baseInput = getBaseName(formattedTableNo);
+    const existingMatches = registeredTables.filter(r => 
+      r.table_no && getBaseName(r.table_no).toLowerCase() === baseInput.toLowerCase()
+    );
+
+    let isConfirmedShift = false;
+    if (existingMatches.length > 0) {
+      const getOrdinal = (n) => {
+        if (11 <= (n % 100) && (n % 100) <= 13) return n + 'th';
+        return n + ({1:'st',2:'nd',3:'rd'}[n % 10] || 'th');
+      };
+      const nextShift = existingMatches.length + 1;
+      const baseCleanName = baseInput.match(/^\d+$/) ? `Table ${baseInput}` : baseInput;
+      const nextTableNo = `${baseCleanName} (${getOrdinal(nextShift)})`;
+      const lastReg = existingMatches[existingMatches.length - 1];
+      const lastInfo = lastReg.contractor_name ? `Contractor (${lastReg.contractor_name})` : lastReg.worker_type;
+
+      const confirmShift = window.confirm(
+        `Table '${baseCleanName}' is already registered today (${existingMatches.length} time(s), last under ${lastInfo}).\n\nDo you want to register Shift ${nextShift} as '${nextTableNo}'?`
+      );
+      if (!confirmShift) return;
+      isConfirmedShift = true;
     }
 
     if (regWorkerType !== 'Contractor') {
@@ -387,27 +420,44 @@ export default function DeHeading() {
     }
 
     setLoading(true);
-    const formData = new URLSearchParams();
-    formData.append('table_no', formattedTableNo);
-    formData.append('worker_type', regWorkerType);
-    if (regWorkerType === 'Contractor') {
-      formData.append('contractor_name', regContractor);
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-    } else {
-      formData.append('no_of_workers', String(regNoOfWorkers || 0));
-      formData.append('worker_ids', selectedWorkerIds.join(', '));
-    }
-    formData.append('production_at', cleanLocation);
-    formData.append('production_for', productionFor);
+    const postData = async (confirmFlag = false) => {
+      const formData = new URLSearchParams();
+      formData.append('table_no', formattedTableNo);
+      formData.append('worker_type', regWorkerType);
+      if (regWorkerType === 'Contractor') {
+        formData.append('contractor_name', regContractor);
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+      } else {
+        formData.append('no_of_workers', String(regNoOfWorkers || 0));
+        formData.append('worker_ids', selectedWorkerIds.join(', '));
+      }
+      formData.append('production_at', cleanLocation);
+      formData.append('production_for', productionFor);
+      if (confirmFlag) formData.append('confirm_shift', 'true');
 
-    try {
       const res = await sessionFetch('/processing/de_heading/table_registration', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: formData
       });
+
+      if (res.status === 409) {
+        const data = await res.json().catch(() => ({}));
+        if (data.already_exists) {
+          if (window.confirm(data.error || 'Table already registered today. Register for new shift?')) {
+            await postData(true);
+            return;
+          } else {
+            setLoading(false);
+            return;
+          }
+        }
+      }
+
       if (res.ok) {
-        alert('Table Registered Successfully!');
+        const resJson = await res.json().catch(() => ({}));
+        const registeredName = resJson.table_no || formattedTableNo;
+        alert(`Table '${registeredName}' Registered Successfully!`);
         setRegTableNo('');
         setRegContractor('');
         setRegNoOfWorkers('');
@@ -418,6 +468,10 @@ export default function DeHeading() {
         const data = await res.json().catch(() => ({ error: `Server error (${res.status})` }));
         alert(data.error || data.detail || data.message || 'Registration failed');
       }
+    };
+
+    try {
+      await postData(isConfirmedShift);
     } catch (err) {
       console.error(err);
       alert(err?.message || 'Error saving table registration');
@@ -487,11 +541,24 @@ export default function DeHeading() {
     }
   };
 
-  // Helper colors for chart locations
-  const getLocationColor = (loc) => {
-    const colors = ['#3b82f6', '#10b981', '#f59e0b', '#64748b', '#8b5cf6', '#ec4899', '#06b6d4'];
+  // Helper vibrant colors for chart locations
+  // Helper unique vibrant colors per Company (Production For)
+  const getCompanyColor = (companyName) => {
+    const colors = [
+      '#2563EB', // Royal Blue
+      '#059669', // Emerald Green
+      '#D97706', // Amber Gold
+      '#7C3AED', // Purple Violet
+      '#DB2777', // Rose Pink
+      '#0891B2', // Vibrant Cyan
+      '#EA580C', // Bright Orange
+      '#4F46E5', // Deep Indigo
+      '#0D9488', // Teal
+      '#DC2626', // Crimson Red
+    ];
     let hash = 0;
-    for (let i = 0; i < loc.length; i++) { hash = loc.charCodeAt(i) + ((hash << 5) - hash); }
+    const str = String(companyName || 'General Stock').trim().toUpperCase();
+    for (let i = 0; i < str.length; i++) { hash = str.charCodeAt(i) + ((hash << 5) - hash); }
     return colors[Math.abs(hash) % colors.length];
   };
 
@@ -501,10 +568,10 @@ export default function DeHeading() {
     let totals = 0;
     let countsSet = new Set();
     let batchesSet = new Set();
-    let chartMap = {}; // count -> { location -> qty }
+    let chartMap = {}; // count -> { company -> qty }
 
     hosoFloorBalance.forEach(item => {
-      const comp = item.production_for || 'General Stock';
+      const comp = item.production_for || '';
       const loc = item.peeling_at || 'Purchased Stock';
       const sp = item.species || '';
       const qty = parseFloat(item.available_qty) || 0;
@@ -521,13 +588,13 @@ export default function DeHeading() {
       batchesSet.add(item.batch);
 
       if (!chartMap[countVal]) chartMap[countVal] = {};
-      chartMap[countVal][loc] = (chartMap[countVal][loc] || 0) + qty;
+      chartMap[countVal][comp] = (chartMap[countVal][comp] || 0) + qty;
     });
 
     // Structure list hierarchically
     let hierarchy = {};
     filteredList.forEach(item => {
-      const comp = item.production_for || 'General Stock';
+      const comp = item.production_for || '';
       const loc = item.peeling_at || 'Purchased Stock';
       const qty = parseFloat(item.available_qty) || 0;
 
@@ -559,7 +626,7 @@ export default function DeHeading() {
     const counts = Object.keys(chartMap).sort();
     if (!balanceChartCanvasRef.current || !counts.length) return undefined;
 
-    const locations = Array.from(new Set(counts.flatMap(count => Object.keys(chartMap[count] || {}))));
+    const companies = Array.from(new Set(counts.flatMap(count => Object.keys(chartMap[count] || {}))));
     const rootStyles = getComputedStyle(document.documentElement);
     const textColor = rootStyles.getPropertyValue('--text-secondary').trim() || '#64748b';
     const gridColor = rootStyles.getPropertyValue('--border-light').trim() || 'rgba(148, 163, 184, 0.2)';
@@ -615,10 +682,10 @@ export default function DeHeading() {
       plugins: [barValueLabelsPlugin],
       data: {
         labels: counts,
-        datasets: locations.map(location => ({
-          label: location,
-          data: counts.map(count => Number(chartMap[count]?.[location] || 0)),
-          backgroundColor: getLocationColor(location),
+        datasets: companies.map(company => ({
+          label: company,
+          data: counts.map(count => Number(chartMap[count]?.[company] || 0)),
+          backgroundColor: getCompanyColor(company),
           borderWidth: 0,
           borderRadius: 3,
           barThickness: 16,
@@ -690,7 +757,7 @@ export default function DeHeading() {
     }
 
     return (
-      <div style={{ position: 'relative', width: '100%', height: '250px' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', minHeight: '250px', maxHeight: '300px', overflow: 'hidden' }}>
         <canvas ref={balanceChartCanvasRef} />
       </div>
     );
@@ -711,7 +778,7 @@ export default function DeHeading() {
             className="btn btn-primary" 
             style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={14} /> New Entry
+            <Plus size={14} /> Add New Entry
           </button>
           <button 
             onClick={fetchBackendData} 
@@ -761,6 +828,7 @@ export default function DeHeading() {
                     onChange={e => setRegPeelingAt(e.target.value)}
                     required
                   >
+                    <option value="">Select Peeling At / Location</option>
                     {peelingLocations.map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
 
@@ -975,18 +1043,28 @@ export default function DeHeading() {
                   </tr>
                 </thead>
                 <tbody>
-                  {registeredTables.length === 0 ? (
-                    <tr>
-                      <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
-                        No tables registered for today yet.
-                      </td>
-                    </tr>
-                  ) : (
-                    registeredTables.map((reg, idx) => {
+                  {(() => {
+                    const isLocMatch = (tableLoc, targetLoc) => {
+                      if (!targetLoc || !tableLoc) return true;
+                      const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                      return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                    };
+                    const displayedTables = registeredTables.filter(reg => isLocMatch(reg.production_at, filterLocation));
+                    if (displayedTables.length === 0) {
+                      return (
+                        <tr>
+                          <td colSpan="9" className="text-center" style={{ color: 'var(--text-secondary)', padding: '20px' }}>
+                            No tables registered for today in {filterLocation || 'selected location'}.
+                          </td>
+                        </tr>
+                      );
+                    }
+                    return displayedTables.map((reg, idx) => {
                       const isMatch = formattedPreviewTableNo && reg.table_no && reg.table_no.trim().toLowerCase() === formattedPreviewTableNo.toLowerCase();
                       return (
                         <tr key={reg.id} style={{ background: isMatch ? 'rgba(254, 240, 138, 0.4)' : 'transparent' }}>
-                          <td className="text-center" style={{ fontWeight: '700' }}>{registeredTables.length - idx}</td>
+                          <td className="text-center" style={{ fontWeight: '700' }}>{displayedTables.length - idx}</td>
                           <td className="text-center">{reg.date}</td>
                           <td className="text-left" style={{ fontWeight: '600' }}>{reg.production_at || '-'}</td>
                           <td className="text-center">
@@ -1019,8 +1097,8 @@ export default function DeHeading() {
                           </td>
                         </tr>
                       );
-                    })
-                  )}
+                    });
+                  })()}
                 </tbody>
               </table>
             </div>
@@ -1072,7 +1150,7 @@ export default function DeHeading() {
       {/* Main Grid Dashboard */}
       <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 0.65fr 1.35fr', gap: '16px', marginBottom: '25px', flexShrink: 0 }}>
         {/* HOSO Floor Balance Tree Panel */}
-        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
             HOSO Floor Balance
           </div>
@@ -1136,7 +1214,7 @@ export default function DeHeading() {
         </div>
 
         {/* Live Stats Panel */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', textAlign: 'center', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filtered Batches</div>
           <div style={{ fontSize: '16px', fontWeight: '900', color: 'var(--corp-dash)', margin: '8px 0 20px 0' }}>{uniqueBatches}</div>
           <div style={{ width: '80%', height: '1px', background: 'var(--border-light)', marginBottom: '20px' }} />
@@ -1145,11 +1223,11 @@ export default function DeHeading() {
         </div>
 
         {/* Chart Panel */}
-        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column' }}>
+        <div className="card" style={{ padding: '0px', display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
           <div style={{ padding: '12px', background: 'rgba(255,255,255,0.01)', borderBottom: '1px solid var(--border-light)', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--corp-dash)' }}>
             Count-Wise Stacked Balance (KG)
           </div>
-          <div style={{ flex: 1, padding: '10px', overflow: 'hidden' }}>
+          <div style={{ flex: 1, padding: '10px', overflow: 'hidden', position: 'relative', width: '100%', minHeight: '260px' }}>
             {renderCustomBarChart()}
           </div>
         </div>
@@ -1225,7 +1303,9 @@ export default function DeHeading() {
                         <td className="text-center">{row.batch_number} / {row.hoso_count}</td>
                         <td className="text-left">{row.species}</td>
                         <td className="text-right" style={{ fontWeight: '700', color: 'var(--corp-dash)' }}>{row.hoso_qty}</td>
-                        <td className="text-right" style={{ fontWeight: '700' }}>{row.hlso_qty}</td>
+                        <td className="text-right" style={{ fontWeight: '700' }}>
+                          <WeightBreakdownCell value={row.hlso_qty} expr={row.hlso_qty_expr} />
+                        </td>
                         <td className="text-center">{row.yield_percent}%</td>
                         <td className="text-left">{row.contractor}</td>
                         <td className="text-center">
@@ -1280,9 +1360,9 @@ export default function DeHeading() {
                   <label>Production For *</label>
                   <select 
                     className="form-control" 
-                    value={productionFor} 
+                    value={modalProductionFor} 
                     onChange={e => {
-                      setProductionFor(e.target.value);
+                      setModalProductionFor(e.target.value);
                       setBatchNumber('');
                       setHosoCount('');
                     }} 
@@ -1297,9 +1377,9 @@ export default function DeHeading() {
                   <label>Location *</label>
                   <select 
                     className="form-control" 
-                    value={deheadingAt} 
+                    value={modalLocation} 
                     onChange={e => {
-                      setDeheadingAt(e.target.value);
+                      setModalLocation(e.target.value);
                       setBatchNumber('');
                       setHosoCount('');
                     }} 
@@ -1319,21 +1399,64 @@ export default function DeHeading() {
                       const sel = e.target.value;
                       setTableNo(sel);
                       const reg = registeredTables.find(r => r.table_no === sel);
-                      if (reg && reg.contractor_name) {
-                        setContractor(reg.contractor_name);
+                      if (reg) {
+                        const wType = (reg.worker_type || '').toUpperCase();
+                        if (wType.includes('KG')) {
+                          setContractor('KG BASIS');
+                        } else if (wType.includes('DAILY')) {
+                          setContractor('DAILY BASIS');
+                        } else if (reg.contractor_name) {
+                          setContractor(reg.contractor_name);
+                        }
                       }
                     }}
                   >
                     <option value="">Select Table No</option>
-                    {registeredTables.length === 0 ? (
-                      <option value="" disabled>No tables created for today yet</option>
-                    ) : (
-                      registeredTables.map(r => (
+                    {(() => {
+                      const isLocMatch = (tableLoc, targetLoc) => {
+                        if (!targetLoc || !tableLoc) return true;
+                        const cleanA = String(tableLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        const cleanB = String(targetLoc).toLowerCase().replace(/[-_\s]+/g, '');
+                        return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+                      };
+                      const locFiltered = registeredTables.filter(r => isLocMatch(r.production_at, modalLocation));
+                      if (locFiltered.length === 0) {
+                        return <option value="" disabled>No tables created for today in {modalLocation || 'selected location'}</option>;
+                      }
+
+                      // 2-hour shift retirement for older shift tables when a newer shift is created
+                      const now = new Date();
+                      const getBaseName = (name) => String(name || '').replace(/\s*\(\d+(st|nd|rd|th)\)\s*$/i, '').trim();
+                      const groupedByBase = {};
+                      locFiltered.forEach(r => {
+                        const base = getBaseName(r.table_no).toLowerCase();
+                        if (!groupedByBase[base]) groupedByBase[base] = [];
+                        groupedByBase[base].push(r);
+                      });
+
+                      const activeShiftTables = [];
+                      Object.values(groupedByBase).forEach(regs => {
+                        regs.sort((a, b) => a.id - b.id);
+                        for (let i = 0; i < regs.length; i++) {
+                          const currentReg = regs[i];
+                          const newerReg = regs[i + 1];
+                          if (newerReg && newerReg.created_at) {
+                            const newerTime = new Date(newerReg.created_at);
+                            const diffHours = (now - newerTime) / (1000 * 60 * 60);
+                            if (diffHours >= 2) {
+                              continue; // Retire older shift 2 hours after newer shift creation
+                            }
+                          }
+                          activeShiftTables.push(currentReg);
+                        }
+                      });
+
+                      return activeShiftTables.map(r => (
                         <option key={r.id} value={r.table_no}>
                           {r.table_no} ({r.worker_type}{r.contractor_name ? ` - ${r.contractor_name}` : ''})
                         </option>
-                      ))
-                    )}
+                      ));
+                    })()}
                   </select>
                 </div>
 
@@ -1399,14 +1522,12 @@ export default function DeHeading() {
 
                 <div className="form-group">
                   <label>HLSO Qty (Out) *</label>
-                  <input 
-                    type="number" 
-                    step="0.01" 
-                    className="form-control" 
-                    value={hlsoQty} 
-                    onChange={e => setHlsoQty(e.target.value)} 
-                    placeholder="0.00" 
-                    required 
+                  <ExpressionWeightInput
+                    value={hlsoQty}
+                    onChange={setHlsoQty}
+                    onExprChange={setHlsoQtyExpr}
+                    placeholder="0.00 or 25+30-5*2"
+                    required
                   />
                 </div>
 

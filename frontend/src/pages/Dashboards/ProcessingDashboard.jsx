@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
+import { Chart, registerables } from 'chart.js';
 import FloorBalanceReport from '../Reports/FloorBalanceReport';
+import './ProcessingDashboard.css';
+
+Chart.register(...registerables);
 
 const todayIso = () => {
   const now = new Date();
@@ -19,7 +23,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   }, []);
 
   // Filters State
-  const [selectedDate, setSelectedDate] = useState(todayIso);
+  const [selectedDate, setSelectedDate] = useState(() => localStorage.getItem('dashboard_date_filter') || todayIso());
   const [selectedCompany, setSelectedCompany] = useState(() => localStorage.getItem('production_for_filter') || '');
   const [selectedLocation, setSelectedLocation] = useState(() => localStorage.getItem('plant_location_filter') || '');
 
@@ -43,10 +47,15 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   const getFilteredWorkers = () => {
     const list = data?.present_workers_list || [];
     const cat = workerModal.category;
-    if (!cat || cat === 'ALL') return list;
-    if (cat === 'ATT_INSIDE') return list.filter(w => w.status === 'OPEN');
-    if (cat === 'ATT_AWAY') return list.filter(w => w.status === 'AWAY');
-    if (cat === 'ATT_DOUBLE_OT') return list.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
+    const staffList = list.filter(w => w.category === 'STAFF');
+    if (!cat || cat === 'ALL') return staffList;
+    if (cat === 'ATT_INSIDE') return staffList.filter(w => w.status === 'OPEN');
+    if (cat === 'ATT_AWAY') return staffList.filter(w => w.status === 'AWAY');
+    if (cat === 'ATT_DOUBLE_OT') return staffList.filter(w => w.duty_type === 'DOUBLE' || w.hours >= 12);
+    if (cat.startsWith('SHIFT_')) {
+      const shiftName = cat.replace('SHIFT_', '');
+      return staffList.filter(w => w.shift_name && w.shift_name.trim().toUpperCase() === shiftName.trim().toUpperCase());
+    }
     return list.filter(w => w.category === cat);
   };
 
@@ -83,11 +92,22 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       })
       .then((resData) => {
         if (resData.status === 'success') {
-          setCompanies(resData.companies || []);
-          setLocations(resData.locations || []);
+          const excluded = ['MAIN PLANT', 'MAIN UNIT', 'GENERAL STOCK', 'N/A', 'NONE', 'NULL'];
+          setCompanies((resData.companies || []).filter(c => !excluded.includes(String(c).trim().toUpperCase())));
+          setLocations((resData.locations || []).filter(l => !excluded.includes(String(l).trim().toUpperCase())));
         }
       })
       .catch((err) => console.error(err));
+  }, []);
+
+  // Keep the selected day consistent when it is changed from another dashboard.
+  useEffect(() => {
+    const syncDashboardDate = (event) => {
+      const nextDate = event.detail?.date;
+      if (nextDate) setSelectedDate(nextDate);
+    };
+    window.addEventListener('dashboard_date_change', syncDashboardDate);
+    return () => window.removeEventListener('dashboard_date_change', syncDashboardDate);
   }, []);
 
   // Listen to parent global filter changes
@@ -104,14 +124,18 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
   // Fetch Dashboard Stats on Filter Change
   useEffect(() => {
-    if (!selectedDate) return;
+    if (!selectedDate) {
+      setSelectedDate(todayIso());
+      return;
+    }
 
     const controller = new AbortController();
     const loadingTimer = window.setTimeout(() => {
       setLoading(true);
       setError('');
     }, 200);
-    let url = `/dashboard/processing_dashboard?format=json&from_date=${selectedDate}&to_date=${selectedDate}&hour_date=${selectedDate}`;
+    const queryDate = selectedDate || todayIso();
+    let url = `/dashboard/processing_dashboard?format=json&from_date=${queryDate}&to_date=${queryDate}&hour_date=${queryDate}`;
     if (selectedCompany) url += `&production_for=${encodeURIComponent(selectedCompany)}`;
     if (selectedLocation) url += `&location=${encodeURIComponent(selectedLocation)}`;
 
@@ -160,73 +184,83 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   useEffect(() => {
     if (!data) return;
 
-    const currentTheme = theme || document.documentElement.getAttribute("data-theme") || 'dark';
-    const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
-    const labelColor = currentTheme === 'dark' ? '#94a3b8' : '#475569';
+    let isSubscribed = true;
 
-    const chartOptions = {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: {
-          beginAtZero: true,
-          grid: { color: gridColor },
-          ticks: {
-            color: labelColor,
-            font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
-          }
-        },
-        x: {
-          grid: { display: false },
-          ticks: {
-            color: labelColor,
-            font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+    const renderCharts = () => {
+      if (!isSubscribed) return;
+      const currentTheme = theme || document.documentElement.getAttribute("data-theme") || 'dark';
+      const gridColor = currentTheme === 'dark' ? '#334155' : '#e2e8f0';
+      const labelColor = currentTheme === 'dark' ? '#94a3b8' : '#475569';
+
+      const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: { color: gridColor },
+            ticks: {
+              color: labelColor,
+              font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+            }
+          },
+          x: {
+            grid: { display: false },
+            ticks: {
+              color: labelColor,
+              font: { family: 'Plus Jakarta Sans', size: 9, weight: 'bold' }
+            }
           }
         }
+      };
+
+      const labels = data.hourly_labels || Array.from({ length: 24 }, (_, i) => `${i}:00`);
+
+      // De-heading
+      if (dhChartInstance.current) dhChartInstance.current.destroy();
+      if (dhCanvasRef.current) {
+        dhChartInstance.current = new Chart(dhCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.dh_hourly_data || [], backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
+      }
+
+      // Peeling
+      if (peelingChartInstance.current) peelingChartInstance.current.destroy();
+      if (peelingCanvasRef.current) {
+        peelingChartInstance.current = new Chart(peelingCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.peeling_hourly_data || [], backgroundColor: '#10b981', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
+      }
+
+      // Production
+      if (prodChartInstance.current) prodChartInstance.current.destroy();
+      if (prodCanvasRef.current) {
+        prodChartInstance.current = new Chart(prodCanvasRef.current, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{ data: data.prod_hourly_data || [], backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
+          },
+          options: chartOptions
+        });
       }
     };
 
-    // De-heading
-    if (dhChartInstance.current) dhChartInstance.current.destroy();
-    if (dhCanvasRef.current && window.Chart) {
-      dhChartInstance.current = new window.Chart(dhCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.dh_hourly_data, backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
-    }
-
-    // Peeling
-    if (peelingChartInstance.current) peelingChartInstance.current.destroy();
-    if (peelingCanvasRef.current && window.Chart) {
-      peelingChartInstance.current = new window.Chart(peelingCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.peeling_hourly_data, backgroundColor: '#10b981', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
-    }
-
-    // Production
-    if (prodChartInstance.current) prodChartInstance.current.destroy();
-    if (prodCanvasRef.current && window.Chart) {
-      prodChartInstance.current = new window.Chart(prodCanvasRef.current, {
-        type: 'bar',
-        data: {
-          labels: data.hourly_labels,
-          datasets: [{ data: data.prod_hourly_data, backgroundColor: '#2563eb', borderWidth: 0, borderRadius: 7, borderSkipped: false, maxBarThickness: 34 }]
-        },
-        options: chartOptions
-      });
-    }
+    renderCharts();
 
     return () => {
+      isSubscribed = false;
       if (dhChartInstance.current) dhChartInstance.current.destroy();
       if (peelingChartInstance.current) peelingChartInstance.current.destroy();
       if (prodChartInstance.current) prodChartInstance.current.destroy();
@@ -363,7 +397,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
   }
 
   return (
-    <div className="module-shell" style={containerStyle}>
+    <div className="module-shell processing-dashboard" style={containerStyle}>
       {!isMobile && (
         <aside className="module-rail">
           <div className="rail-title">
@@ -447,29 +481,39 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
       )}
 
       <main className="module-main" style={isMobile ? { width: '100%', height: '100%', overflowY: 'auto' } : { height: '100%', overflowY: 'auto', paddingRight: '4px' }}>
-        <div style={{ padding: '12px 14px' }}>
+        <div className="processing-workspace">
 
           {/* Header Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
+          <div className="processing-page-header">
             <div>
-              <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <i className="fa-solid fa-industry" style={{ color: '#3b82f6' }}></i>
+              <h1>
+                <span className="processing-title-icon"><i className="fa-solid fa-industry"></i></span>
                 Processing Dashboard
               </h1>
-
             </div>
-            <div style={{ display: 'flex', gap: '6px' }}>
-              <div style={{ padding: '5px 10px', borderRadius: '6px', background: 'var(--ui-accent, #3b82f6)', color: '#fff', fontWeight: 700, fontSize: '10px' }}>
-                {selectedDate}
-              </div>
+            <div className="processing-header-status">
+              <span className="processing-live-dot"></span>
+              <span>Daily view</span>
+              <strong>{selectedDate}</strong>
             </div>
           </div>
 
           {/* Filters Toolbar */}
-          <div className="erp-horizontal-filter-row" style={filterToolbarStyle}>
+          <div className="erp-horizontal-filter-row processing-filter-bar" style={filterToolbarStyle}>
             <div style={filterGroupStyle}>
               <label style={filterLabelStyle}>Dashboard Date</label>
-              <input type="date" style={filterInputStyle} value={selectedDate} onChange={e => setSelectedDate(e.target.value)} />
+              <input
+                type="date"
+                style={filterInputStyle}
+                value={selectedDate}
+                onChange={e => {
+                  const val = e.target.value;
+                  const dashboardDate = val || todayIso();
+                  setSelectedDate(dashboardDate);
+                  localStorage.setItem('dashboard_date_filter', dashboardDate);
+                  window.dispatchEvent(new CustomEvent('dashboard_date_change', { detail: { date: dashboardDate } }));
+                }}
+              />
             </div>
             <div style={filterGroupStyle}>
               <label style={filterLabelStyle}>Production For (Company)</label>
@@ -505,12 +549,6 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
             </div>
           </div>
 
-          {loading && data && (
-            <div style={loadingOverlayStyle}>
-              <SkeletonBlock width="180px" height="10px" />
-            </div>
-          )}
-
           {error && (
             <div role="alert" style={errorPanelStyle}>
               <span><i className="fa-solid fa-triangle-exclamation"></i> {error}</span>
@@ -519,7 +557,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
           )}
 
           {/* KPI Cards Grid */}
-          <div className="kpi-grid">
+          <div className="kpi-grid processing-single-row">
             <div className="kpi-card kpi-blue" role="button" tabIndex="0" title="Open Gate Entry" onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') handleKpiClick('gate_entry', '/processing/gate_entry'); }} onClick={() => handleKpiClick('gate_entry', '/processing/gate_entry')}>
               <div className="kpi-header">
                 <h3>Gate Entries</h3>
@@ -613,7 +651,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
                 {liveFloorKpi}<span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', marginLeft: '2px' }}>kg</span>
               </div>
               <div style={{ fontSize: '9px', color: 'var(--text-tertiary)', marginTop: '4px', fontWeight: 700 }}>
-                {data?.floor_snapshot_date || selectedDate} · 09:00 IST
+                {data?.floor_snapshot_date || selectedDate} · {data?.floor_snapshot_time || 'LIVE STOCK'}
               </div>
             </div>
           </div>
@@ -621,7 +659,7 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
 
         {/* Live Attendance Swipe Module */}
         <div style={sectionHeaderStyle}>
-          <span>Staff Attendance — Selected Dashboard Date</span>
+          <span>Staff Attendance</span>
           <div style={sectionHeaderLineStyle}></div>
         </div>
         <div style={attendanceViewportStyle}>
@@ -699,7 +737,16 @@ export default function ProcessingDashboard({ theme, setActivePage }) {
             </div>
 
             {data?.shift_kpis?.map((sk, idx) => (
-              <div key={idx} style={{ ...attendanceCardStyle, width: '200px', flexDirection: 'column', alignItems: 'stretch', gap: '8px' }} className="card erp-inline-kpi-card kpi-blue">
+              <div
+                key={idx}
+                style={{ ...attendanceCardStyle, width: '200px', flexDirection: 'column', alignItems: 'stretch', gap: '8px', cursor: 'pointer' }}
+                className="card erp-inline-kpi-card kpi-blue"
+                role="button"
+                tabIndex="0"
+                title={`View ${sk.name} Workers List`}
+                onClick={() => openWorkerModal(`SHIFT_${sk.name.trim().toUpperCase()}`, `${sk.name} — Workers List`)}
+                onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') openWorkerModal(`SHIFT_${sk.name.trim().toUpperCase()}`, `${sk.name} — Workers List`); }}
+              >
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div style={kpiLabelStyle}>{sk.name}</div>
                   <div style={{ ...kpiIconWrapperStyle, width: '28px', height: '28px', fontSize: '13px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>

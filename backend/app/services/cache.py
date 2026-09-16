@@ -7,6 +7,8 @@ from fnmatch import fnmatch
 from typing import Any, Callable
 from uuid import UUID
 
+from app.config import IS_PRODUCTION
+
 try:
     import redis
 except Exception:  # pragma: no cover - optional production dependency
@@ -81,6 +83,9 @@ def cache_get(key: str) -> Any | None:
         except Exception:
             return None
 
+    if IS_PRODUCTION:
+        return None
+
     item = _memory_cache.get(key)
     if not item:
         return None
@@ -100,6 +105,8 @@ def cache_set(key: str, value: Any, ttl: int = DEFAULT_TTL_SECONDS) -> None:
             return
         except Exception:
             pass
+    if IS_PRODUCTION:
+        return
     _memory_cache[key] = (time.time() + ttl, raw)
 
 
@@ -121,6 +128,9 @@ def cache_delete_pattern(pattern: str) -> None:
             return
         except Exception:
             pass
+
+    if IS_PRODUCTION:
+        return
 
     for key in list(_memory_cache.keys()):
         if fnmatch(key, pattern):

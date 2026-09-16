@@ -130,7 +130,7 @@ def get_live_floor_balance_rows(
         ge_info = gate_entry_map.get(b_upper, {"gate_entry_date": "-", "holding_days": 0})
         res_rows.append({
             "location": row.location or "Floor",
-            "production_for": row.production_for or "General Stock",
+            "production_for": row.production_for or "",
             "batch": row.batch_number or "N/A",
             "source": row.source_type or "RMP",
             "species": row.species or "N/A",
@@ -204,7 +204,7 @@ def get_floor_balance_snapshot_rows(
         ge_info = gate_entry_map.get(b_upper, {"gate_entry_date": "-", "holding_days": 0})
         res_rows.append({
             "location": row.location or "Floor",
-            "production_for": row.production_for or "General Stock",
+            "production_for": row.production_for or "",
             "batch": row.batch_number or "N/A",
             "source": row.source_type or "RMP",
             "species": row.species or "N/A",

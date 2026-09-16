@@ -9,9 +9,7 @@ from typing import Optional
 from pathlib import Path
 from uuid import uuid4
 import logging, random, json, os, re, requests, secrets, time
-from dotenv import load_dotenv
-
-load_dotenv()
+from app.utils.mobile_utils import is_mobile_client
 
 from app.database import get_db
 from app.database.models.users import Company, User, OTPTable, UserLoginActivity
@@ -38,13 +36,34 @@ logger = logging.getLogger("BKNR_ERP.auth")
 
 OTP_EXPIRY_MIN = 10
 RESET_EXPIRY_MIN = 30
-TENANT_LOGO_DIR = Path("app/static/uploads/company_logos")
+APP_DIR = Path(__file__).resolve().parents[1]
+DEFAULT_LOGO_URL = "/static/images/svbk-it-solutions-logo-3d-transparent.png"
+TENANT_LOGO_DIR = APP_DIR / "static" / "uploads" / "company_logos"
 TENANT_LOGO_MAX_BYTES = 2 * 1024 * 1024
 TENANT_LOGO_TYPES = {
     "image/png": ("png", b"\x89PNG\r\n\x1a\n"),
     "image/jpeg": ("jpg", b"\xff\xd8\xff"),
     "image/webp": ("webp", b"RIFF"),
 }
+
+
+def get_company_logo_url(company) -> str:
+    """Return a browser-safe tenant logo URL, falling back if its file vanished."""
+    logo_url = str(getattr(company, "logo_path", "") or "").strip()
+    if not logo_url:
+        return DEFAULT_LOGO_URL
+
+    static_prefix = "/static/"
+    if not logo_url.startswith(static_prefix):
+        return DEFAULT_LOGO_URL
+
+    relative_path = Path(logo_url.removeprefix(static_prefix))
+    if relative_path.is_absolute() or ".." in relative_path.parts:
+        return DEFAULT_LOGO_URL
+
+    logo_file = APP_DIR / "static" / relative_path
+    return logo_url if logo_file.is_file() else DEFAULT_LOGO_URL
+
 
 def activate_exclusive_email_session(db: Session, email: str, session_id: str) -> None:
     normalized_email = str(email or "").strip().lower()
@@ -65,69 +84,76 @@ def require_auth(request: Request):
     return request.session
 
 def send_email(to_email: str, subject: str, html: str):
-    # Try using Brevo transactional HTTP API first if API key is present
-    if BREVO_API_KEY:
+    brevo_key = os.getenv("BREVO_API_KEY")
+    sender_email = os.getenv("SMTP_EMAIL", os.getenv("BREVO_SENDER_EMAIL", "bknr.solutions@gmail.com"))
+    sender_name = os.getenv("EMAIL_SENDER_NAME", os.getenv("BREVO_SENDER_NAME", "SVBK"))
+    if not sender_name or "bknr" in sender_name.lower():
+        sender_name = "SVBK"
+
+    # Try Brevo HTTP API first
+    if brevo_key:
         try:
             payload = {
-                "sender": {"name": SENDER_NAME, "email": SENDER_EMAIL},
+                "sender": {"name": sender_name, "email": sender_email},
                 "to": [{"email": to_email}],
                 "subject": subject,
                 "htmlContent": html
             }
             headers = {
                 "accept": "application/json",
-                "api-key": BREVO_API_KEY,
+                "api-key": brevo_key,
                 "content-type": "application/json"
             }
             res = requests.post(BREVO_URL, json=payload, headers=headers, timeout=10)
             if res.status_code in [200, 201, 202]:
-                logger.info("Email successfully sent via Brevo API")
+                logger.info("Email successfully sent to %s via Brevo API", to_email)
                 return
             else:
-                logger.warning("Brevo API rejected email with status %s", res.status_code)
+                logger.warning("Brevo API rejected email to %s with status %s: %s", to_email, res.status_code, res.text)
         except Exception as e:
             logger.warning("Brevo API request failed: %s", e)
 
-    # Fallback to standard SMTP if Brevo is not configured or fails
+    # Fallback to standard Gmail SMTP
     import smtplib
     from email.mime.text import MIMEText
     from email.mime.multipart import MIMEMultipart
 
-    SMTP_SERVER = "smtp.gmail.com"
-    SMTP_PORT = 587
-    sender_email = SENDER_EMAIL
-    sender_password = os.getenv("SMTP_PASSWORD")
-    sender_name = SENDER_NAME
+    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    raw_password = os.getenv("SMTP_PASSWORD", "")
+    sender_password = raw_password.replace(" ", "").strip()
 
     if not sender_password:
-        raise RuntimeError("Email delivery is not configured")
+        raise RuntimeError("Email delivery is not configured (SMTP_PASSWORD missing)")
 
     try:
-        server = smtplib.SMTP(SMTP_SERVER, SMTP_PORT)
-        server.starttls()
-        server.login(sender_email, sender_password)
-        
-        msg = MIMEMultipart()
-        msg['From'] = f"{sender_name} <{sender_email}>"
-        msg['To'] = to_email
-        msg['Subject'] = subject
-        msg.attach(MIMEText(html, 'html'))
-        
-        server.send_message(msg)
-        server.quit()
-        logger.info("Email successfully sent via Gmail SMTP fallback")
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT, timeout=12) as server:
+            server.starttls()
+            server.login(sender_email, sender_password)
+            msg = MIMEMultipart()
+            msg['From'] = f"{sender_name} <{sender_email}>"
+            msg['To'] = to_email
+            msg['Subject'] = subject
+            msg.attach(MIMEText(html, 'html'))
+            server.send_message(msg)
+        logger.info("Email successfully sent to %s via Gmail SMTP fallback", to_email)
     except Exception as e:
-        logger.error("SMTP email delivery failed: %s", e)
-        raise RuntimeError("Email delivery failed") from e
+        logger.error("SMTP email delivery failed to %s: %s", to_email, e)
+        raise RuntimeError(f"Email delivery failed: {e}") from e
 
 
-def send_security_email(to_email: str, subject: str, html: str, debug_secret: str, debug_label: str):
+def send_security_email(to_email: str, subject: str, html: str, debug_secret: str, debug_label: str) -> bool:
     try:
         send_email(to_email, subject, html)
+        return True
     except Exception as exc:
+        logger.error("Security email delivery failed for %s (%s): %s", to_email, debug_label, exc)
         if log_development_secret(debug_label, debug_secret):
-            return
-        logger.error("Security email delivery failed", exc_info=True)
+            return False
+        env = os.getenv("ENVIRONMENT", "development").strip().lower()
+        if env != "production" or os.getenv("ALLOW_OTP_FALLBACK", "false").strip().lower() in ("true", "1", "yes"):
+            logger.warning("OTP DELIVERY FALLBACK for %s (%s): %s", to_email, debug_label, debug_secret)
+            return False
         raise HTTPException(
             status_code=503,
             detail="Verification email could not be sent. Please try again later.",
@@ -207,6 +233,11 @@ class RegisterReq(BaseModel):
     address: str
     mobile: str = Field(..., pattern=r"^[0-9]{10}$")
     email: str = Field(..., pattern=r"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$")
+    bank_name: str = Field(..., min_length=2, max_length=150)
+    account_number: str = Field(..., min_length=4, max_length=50)
+    ifsc_code: str = Field(..., min_length=4, max_length=20)
+    swift_code: Optional[str] = Field(default="", max_length=30)
+    branch: Optional[str] = Field(default="", max_length=150)
 
 class OTPReq(BaseModel):
     email: str
@@ -214,7 +245,7 @@ class OTPReq(BaseModel):
 
 class PasswordReq(BaseModel):
     email: str
-    password: str
+    password: str = Field(..., min_length=8, max_length=128)
 
 class LoginReq(BaseModel):
     company_id: str
@@ -292,7 +323,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
             db.delete(existing_user)
             db.commit()
     
-    otp = str(random.randint(1000, 9999))
+    otp = str(secrets.randbelow(900000) + 100000)
     extra_data = data.model_dump() if hasattr(data, "model_dump") else data.dict()
     extra_data["mpeda_registration_code"] = mpeda_code
     db.query(OTPTable).filter(OTPTable.email == data.email).delete()
@@ -376,9 +407,34 @@ def set_password(data: PasswordReq, db: Session = Depends(get_db)):
         user.is_verified = True
     db.flush()
 
-    # 🌱 Seed default masters for new company
+    # 🌱 Seed default masters and mandatory bank account for new company
     try:
         seed_default_masters(db, company.company_code, email=extra.get("email", "system@bknr.com"))
+        
+        # Create default BankMaster record for registered tenant
+        from app.database.models.enterprise_finance import BankMaster
+        bank_name = str(extra.get("bank_name", "") or "").strip()
+        account_number = str(extra.get("account_number", "") or "").strip()
+        if bank_name and account_number:
+            existing_bank = db.query(BankMaster).filter(
+                BankMaster.company_id == company.company_code,
+                BankMaster.account_number == account_number
+            ).first()
+            if not existing_bank:
+                new_bank = BankMaster(
+                    company_id=company.company_code,
+                    bank_name=bank_name,
+                    account_number=account_number,
+                    ifsc_code=str(extra.get("ifsc_code", "") or "").strip(),
+                    swift_code=str(extra.get("swift_code", "") or "").strip(),
+                    branch=str(extra.get("branch", "") or "").strip(),
+                    account_type="EXPORT CURRENT",
+                    is_export_account=True,
+                    is_default=True,
+                    is_active=True,
+                    created_by=extra.get("email", "SYSTEM")
+                )
+                db.add(new_bank)
         db.commit()
     except Exception as e:
         db.rollback()
@@ -433,7 +489,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
 
     # 2. Check verification status
     if not getattr(user, "is_verified", False):
-        otp = str(random.randint(1000, 9999))
+        otp = str(secrets.randbelow(900000) + 100000)
         db.query(OTPTable).filter(OTPTable.email == user.email).delete()
         db.add(OTPTable(
             email=user.email,
@@ -458,7 +514,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         )
 
     # 3. Generate Login OTP for verified user
-    otp = str(random.randint(1000, 9999))
+    otp = str(secrets.randbelow(900000) + 100000)
     db.query(OTPTable).filter(OTPTable.email == user.email).delete()
     db.add(OTPTable(
         email=user.email,
@@ -469,7 +525,7 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
     ))
     db.commit()
 
-    send_security_email(
+    email_sent = send_security_email(
         user.email,
         f"{company.company_name} - Login Verification Code",
         otp_email_html(otp, "Verify your login", header_title=company.company_name),
@@ -477,11 +533,12 @@ def login(data: LoginReq, request: Request, db: Session = Depends(get_db)):
         "login OTP",
     )
 
-    return JSONResponse({
+    response_payload = {
         "status": "otp_required",
         "email": user.email,
-        "company_id": company.company_code
-    })
+        "company_id": company.company_code,
+    }
+    return JSONResponse(response_payload)
 
 
 class VerifyLoginOTPReq(BaseModel):
@@ -545,23 +602,20 @@ def verify_login_otp(data: VerifyLoginOTPReq, request: Request, db: Session = De
     activity = UserLoginActivity(user_id=user.id, company_id=company.company_code, login_at=get_ist_time(), session_hours="Active Now")
     db.add(activity)
     db.commit()
-    from app.main import is_mobile_client
-
     is_mobile = is_mobile_client(request)
-
 
     request.session.update({
         "email": user.email,
         "company_id": company.id,
         "company_code": company.company_code,
         "company_name": company.company_name,
-        "company_logo_url": company.logo_path,
+        "company_logo_url": get_company_logo_url(company),
         "mpeda_registration_code": company.mpeda_registration_code,
         "name": user.name,
         "role": user.role,
         "permissions": user.permissions,
         "setup_completed": True,
-        "last_activity": get_ist_time().timestamp(),
+        "last_activity": time.time(),
         "session_id": session_id,
         "is_mobile_app": is_mobile
     })
@@ -582,7 +636,6 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         last_activity = float(request.session.get("last_activity") or now_ts)
     except (TypeError, ValueError):
         last_activity = now_ts
-    from app.main import is_mobile_client
     is_mobile = is_mobile_client(request)
     if not is_mobile and (now_ts - last_activity > idle_timeout):
         request.session.clear()
@@ -622,7 +675,7 @@ def session_info(request: Request, db: Session = Depends(get_db)):
             mpeda_code = company.mpeda_registration_code if company else None
         if mpeda_code:
             request.session["mpeda_registration_code"] = mpeda_code
-        request.session["company_logo_url"] = company.logo_path if company else None
+        request.session["company_logo_url"] = get_company_logo_url(company)
     return {
         "authenticated": True,
         "email": request.session.get("email"),
@@ -630,7 +683,7 @@ def session_info(request: Request, db: Session = Depends(get_db)):
         "company_name": request.session.get("company_name"),
         "company_code": request.session.get("company_code"),
         "mpeda_registration_code": mpeda_code,
-        "company_logo_url": company.logo_path if company else None,
+        "company_logo_url": get_company_logo_url(company),
         "role": request.session.get("role"),
         "permissions": request.session.get("permissions") or [],
     }
@@ -680,7 +733,7 @@ def _profile_payload(request: Request, db: Session, company: Company, user: User
         "address": (employee.present_address if employee else "") or (employee.permanent_address if employee else "") or user.address or "",
         "company_name": company.company_name,
         "company_code": company.company_code,
-        "company_logo_url": company.logo_path,
+        "company_logo_url": get_company_logo_url(company),
         "role": user.role or "",
     }
 
@@ -695,7 +748,7 @@ def _require_tenant_logo_admin(request: Request, db: Session):
 @router.get("/tenant-logo")
 def tenant_logo(request: Request, db: Session = Depends(get_db)):
     company, _ = _current_profile(request, db)
-    return {"status": "success", "company_logo_url": company.logo_path}
+    return {"status": "success", "company_logo_url": get_company_logo_url(company)}
 
 @router.post("/tenant-logo")
 async def update_tenant_logo(
@@ -727,15 +780,15 @@ async def update_tenant_logo(
     old_logo = company.logo_path
     company.logo_path = f"/static/uploads/company_logos/{filename}"
     db.commit()
-    request.session["company_logo_url"] = company.logo_path
+    request.session["company_logo_url"] = get_company_logo_url(company)
     if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
-        old_path = Path("app") / old_logo.lstrip("/")
+        old_path = APP_DIR / "static" / old_logo.removeprefix("/static/")
         try:
             if old_path.is_file() and old_path != destination:
                 old_path.unlink()
         except OSError:
             logger.warning("Unable to remove previous tenant logo: %s", old_path)
-    return {"status": "success", "company_logo_url": company.logo_path}
+    return {"status": "success", "company_logo_url": get_company_logo_url(company)}
 
 @router.delete("/tenant-logo")
 def remove_tenant_logo(request: Request, db: Session = Depends(get_db)):
@@ -743,15 +796,15 @@ def remove_tenant_logo(request: Request, db: Session = Depends(get_db)):
     old_logo = company.logo_path
     company.logo_path = None
     db.commit()
-    request.session["company_logo_url"] = None
+    request.session["company_logo_url"] = DEFAULT_LOGO_URL
     if old_logo and old_logo.startswith("/static/uploads/company_logos/"):
-        old_path = Path("app") / old_logo.lstrip("/")
+        old_path = APP_DIR / "static" / old_logo.removeprefix("/static/")
         try:
             if old_path.is_file():
                 old_path.unlink()
         except OSError:
             logger.warning("Unable to remove tenant logo: %s", old_path)
-    return {"status": "success", "company_logo_url": None}
+    return {"status": "success", "company_logo_url": DEFAULT_LOGO_URL}
 
 @router.get("/profile", response_class=HTMLResponse)
 def profile_page(request: Request, format: str = "html", db: Session = Depends(get_db)):
@@ -860,6 +913,19 @@ def masters_check(request: Request, db: Session = Depends(get_db)):
     masters_empty = (has_species == 0 and has_glazes == 0)
     return {"masters_empty": masters_empty, "company_code": comp_code}
 
+@router.post("/seed-masters")
+def seed_masters(request: Request, db: Session = Depends(get_db)):
+    """Re-seed default masters for the logged-in company (idempotent — skips existing rows)."""
+    comp_code = str(request.session.get("company_code") or "").strip().upper()
+    if not comp_code:
+        return JSONResponse({"ok": False, "error": "Not authenticated"}, status_code=401)
+    email = request.session.get("email", "system@bknr.com")
+    try:
+        seed_default_masters(db, comp_code, email=email)
+        return JSONResponse({"ok": True, "company_code": comp_code, "message": "Masters seeded successfully"})
+    except Exception as exc:
+        return JSONResponse({"ok": False, "error": str(exc)}, status_code=500)
+
 @router.get("/auto-login")
 def auto_login(request: Request, db: Session = Depends(get_db)):
     if os.getenv("ENVIRONMENT", "development").lower() == "production":
@@ -956,12 +1022,31 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
         return JSONResponse({"status": "success", "companies": [], "locations": []})
 
     from app.database.models.criteria import peeling_at, production_at, production_for
-    from app.database.models.inventory_management import cold_storage
+    from app.database.models.inventory_management import cold_storage_holding
     from sqlalchemy import func
     from app.services.cache import cache_get_or_set
 
+    # Auto-purge stale master rows from database tables
+    try:
+        db.query(peeling_at).filter(
+            peeling_at.company_id == company_code,
+            func.upper(func.trim(peeling_at.peeling_at)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.query(production_at).filter(
+            production_at.company_id == company_code,
+            func.upper(func.trim(production_at.production_at)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.query(production_for).filter(
+            production_for.company_id == company_code,
+            func.upper(func.trim(production_for.production_for)).in_(["MAIN PLANT", "MAIN UNIT", "GENERAL STOCK"])
+        ).delete(synchronize_session=False)
+        db.commit()
+    except Exception as exc:
+        db.rollback()
+        logger.warning("Stale master DB cleanup skipped: %s", exc)
+
     def build_menu_filters():
-        companies = {
+        raw_companies = {
             str(value).strip()
             for (value,) in db.query(production_for.production_for).filter(
                 production_for.company_id == company_code,
@@ -969,7 +1054,10 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
             ).distinct().all()
             if value and str(value).strip()
         }
-        locations = {
+        excluded_company_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+        excluded_location_names = {"MAIN PLANT", "MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+        companies = {c for c in raw_companies if c.upper().strip() not in excluded_company_names}
+        raw_locations = {
             str(value).strip()
             for model, column in (
                 (production_at, production_at.production_at),
@@ -978,19 +1066,19 @@ def global_dropdowns(request: Request, db: Session = Depends(get_db)):
             for (value,) in db.query(column).filter(model.company_id == company_code).distinct().all()
             if value and str(value).strip()
         }
-        locations.update(
+        raw_locations.update(
             str(value).strip()
-            for (value,) in db.query(cold_storage.storage_name).filter(
-                cold_storage.company_id == company_code,
-                func.lower(cold_storage.is_active) == "active",
+            for (value,) in db.query(cold_storage_holding.cold_storage_name).filter(
+                cold_storage_holding.company_id == company_code,
             ).distinct().all()
             if value and str(value).strip()
         )
+        locations = {l for l in raw_locations if l.upper().strip() not in excluded_location_names}
         return {"companies": sorted(companies), "locations": sorted(locations)}
 
     try:
         menu_filters = cache_get_or_set(
-            f"bknr:menu:{company_code}:universal_filters:v2",
+            f"bknr:menu:{company_code}:universal_filters:v6",
             build_menu_filters,
             ttl=300,
         )

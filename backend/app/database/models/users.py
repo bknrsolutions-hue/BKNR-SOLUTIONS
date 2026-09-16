@@ -1,5 +1,5 @@
 from sqlalchemy.orm import relationship, deferred
-from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Date, DateTime, Text
+from sqlalchemy import Column, Integer, String, ForeignKey, Boolean, Date, DateTime, Text, UniqueConstraint
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from app.database import Base
@@ -83,6 +83,10 @@ class User(Base):
 
     # relationships
     company = relationship("Company", back_populates="users")
+
+    __table_args__ = (
+        UniqueConstraint("company_id", "email", name="uq_users_company_email"),
+    )
 
 
 # =================== OTP MODEL ===================

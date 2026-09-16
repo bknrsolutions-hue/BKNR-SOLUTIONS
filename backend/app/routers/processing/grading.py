@@ -1,10 +1,11 @@
 import json
+import logging
 import re
 from fastapi import APIRouter, Request, Form, Depends, HTTPException, Query
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse, HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import func, distinct
+from sqlalchemy import func, distinct, text
 from datetime import datetime, timedelta, date
 from app.utils.timezone import ist_now
 from app.services.floor_balance_sync import refresh_floor_balance
@@ -19,6 +20,7 @@ from app.database.models.criteria import (
     HOSO_HLSO_Yields, 
     packing_styles,
     peeling_at as PeelingAtMaster,
+    production_at as ProductionAtMaster,
     production_for as ProductionForMaster
 )
 from app.database.models.inventory_management import pending_orders, stock_entry
@@ -29,9 +31,17 @@ from app.services.hlso_grading_sync import consume_hlso_for_grading, rollback_gr
 # Universal Global Filters Helper
 from app.utils.global_filters import get_global_filters
 from app.utils.cancel_math import signed_sum
+from app.services.default_masters import (
+    DEFAULT_PEELING_AT,
+    DEFAULT_PRODUCTION_FOR,
+    DEFAULT_SPECIES,
+    DEFAULT_VARIETIES,
+    ensure_processing_masters,
+)
 
 router = APIRouter(tags=["GRADING"])
 templates = Jinja2Templates(directory="app/templates")
+logger = logging.getLogger(__name__)
 
 # -----------------------------------------------------
 # TODAY RANGE (9 AM → NEXT DAY 9 AM AUTOMATIC SHIFT)
@@ -49,6 +59,73 @@ def get_today_range():
 # -----------------------------------------------------
 @router.get("/grading", response_class=HTMLResponse)
 def show_grading(request: Request, db: Session = Depends(get_db)):
+    try:
+        return _render_grading_page(request, db)
+    except Exception:
+        # Historical order, stock, or pool data may be incomplete in a legacy
+        # tenant. It must not prevent the operational grading form from
+        # loading; retain the full exception in application logs instead.
+        db.rollback()
+        logger.exception(
+            "Unable to load grading data for tenant %s",
+            request.session.get("company_code", "unknown"),
+        )
+        fallback_context = {
+            "species_list": DEFAULT_SPECIES,
+            "variety_list": DEFAULT_VARIETIES,
+            "peeling_locations": DEFAULT_PEELING_AT,
+            "prod_for_list": DEFAULT_PRODUCTION_FOR,
+            "today_data": [],
+            "hlso_summary": [],
+            "hoso_summary": [],
+            "deheading_pending": [],
+            "drill_down": {"hlso": {}, "hoso": {}},
+        }
+        if request.query_params.get("format") == "json":
+            return JSONResponse(fallback_context)
+        return templates.TemplateResponse(
+            request=request,
+            name="processing/grading.html",
+            context={
+                **fallback_context,
+                "global_production_for": "",
+                "global_location": "",
+                "drill_down_json": json.dumps(fallback_context["drill_down"]),
+                "edit_data": None,
+                "message": "Grading summaries are temporarily unavailable; you can continue entering records.",
+            },
+        )
+
+
+import threading
+
+_GRADING_COLUMNS_ENSURED = False
+_GRADING_COLUMNS_LOCK = threading.Lock()
+
+
+def ensure_grading_columns_exist(db: Session):
+    global _GRADING_COLUMNS_ENSURED
+    if _GRADING_COLUMNS_ENSURED:
+        return
+
+    with _GRADING_COLUMNS_LOCK:
+        if _GRADING_COLUMNS_ENSURED:
+            return
+
+        try:
+            db.execute(text("""
+                ALTER TABLE grading 
+                ADD COLUMN IF NOT EXISTS quantity_expr VARCHAR(500);
+            """))
+            db.commit()
+            _GRADING_COLUMNS_ENSURED = True
+        except Exception as exc:
+            db.rollback()
+            logger.warning("Auto-adding quantity_expr column to grading failed: %s", exc)
+
+
+def _render_grading_page(request: Request, db: Session):
+    ensure_grading_columns_exist(db)
     # 1. 🟢 FETCH UNIVERSAL GLOBAL FILTERS CONTEXT
     global_production_for, global_location = get_global_filters(request)
     
@@ -61,7 +138,9 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     if not raw_company_code or not email:
         return RedirectResponse("/auth/login", status_code=303)
 
-    company_code = str(raw_company_code)
+    company_code = str(raw_company_code).strip().upper()
+    clean_company = company_code
+    ensure_processing_masters(db, clean_company, email=email)
 
     # 🟢 🔴 FETCH USER PERMITTED LOCATIONS FROM SESSION MULTIPLE CHECK
     session_locations = request.session.get("allowed_locations", [])
@@ -71,45 +150,64 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
         user_allowed_locations = [str(loc).strip().upper() for loc in session_locations if str(loc).strip()]
 
     # Master Data for Dropdowns filtered securely
-    species_list = [s.species_name for s in db.query(species).filter(species.company_id == company_code).all()]
-    variety_list = [v.variety_name for v in db.query(varieties).filter(varieties.company_id == company_code).all()]
+    species_list = [s.species_name for s in db.query(species).filter(func.upper(func.trim(species.company_id)) == clean_company).all()]
+    variety_list = [v.variety_name for v in db.query(varieties).filter(func.upper(func.trim(varieties.company_id)) == clean_company).all()]
     
-    # Peeling locations drop list protected with user permissions constraints (Form Independence)
-    pa_q = db.query(PeelingAtMaster.peeling_at).filter(PeelingAtMaster.company_id == company_code)
+    # Locations drop list combining peeling_at + production_at masters uniquely
+    pa_q = db.query(PeelingAtMaster.peeling_at).filter(func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company)
+    prod_loc_q = db.query(ProductionAtMaster.production_at).filter(func.upper(func.trim(ProductionAtMaster.company_id)) == clean_company)
     if user_allowed_locations:
         pa_q = pa_q.filter(func.upper(func.trim(PeelingAtMaster.peeling_at)).in_(user_allowed_locations))
-    peeling_locations = [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all()]
+        prod_loc_q = prod_loc_q.filter(func.upper(func.trim(ProductionAtMaster.production_at)).in_(user_allowed_locations))
 
-    prod_for_list = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(ProductionForMaster.company_id == company_code).order_by(ProductionForMaster.production_for).all() if p[0]]
-    if "General Stock" not in prod_for_list:
-        prod_for_list.append("General Stock")
+    raw_locations = (
+        [l.peeling_at for l in pa_q.order_by(PeelingAtMaster.peeling_at).all() if l.peeling_at] +
+        [l.production_at for l in prod_loc_q.order_by(ProductionAtMaster.production_at).all() if l.production_at]
+    )
+    peeling_locations = list(dict.fromkeys([loc.strip() for loc in raw_locations if loc and loc.strip()]))
+    if not peeling_locations:
+        all_pa = db.query(PeelingAtMaster.peeling_at).filter(func.upper(func.trim(PeelingAtMaster.company_id)) == clean_company).all()
+        all_prod_loc = db.query(ProductionAtMaster.production_at).filter(func.upper(func.trim(ProductionAtMaster.company_id)) == clean_company).all()
+        fallback_raw = [l.peeling_at for l in all_pa if l.peeling_at] + [l.production_at for l in all_prod_loc if l.production_at]
+        peeling_locations = list(dict.fromkeys([loc.strip() for loc in fallback_raw if loc and loc.strip()]))
 
-    # 2. Today's Grading Data (Locked into 9 AM Shift Window & Filtered via Global & Permission Matrices)
+    # Do not leave a new or legacy tenant with an unusable processing form if
+    # master-data seeding is still catching up. Stored tenant values win.
+    species_list = species_list or DEFAULT_SPECIES
+    variety_list = variety_list or DEFAULT_VARIETIES
+    peeling_locations = [l for l in (peeling_locations or DEFAULT_PEELING_AT) if l.upper().strip() not in {"MAIN PLANT", "MAIN UNIT", "N/A"}]
+
+    raw_pf = [p[0] for p in db.query(distinct(ProductionForMaster.production_for)).filter(func.upper(func.trim(ProductionForMaster.company_id)) == clean_company).order_by(ProductionForMaster.production_for).all() if p[0]]
+    excluded_names = {"MAIN UNIT", "GENERAL STOCK", "N/A", "NONE", "NULL"}
+    prod_for_list = [p for p in raw_pf if p.upper().strip() not in excluded_names]
+
+    # 2. Operational table data: current 9 AM-to-next-9 AM shift only.
+    # Historical records remain available through the dedicated reports.
     start, end = get_today_range()
-    today_q = db.query(Grading).filter(
-        Grading.company_id == company_code,
+    report_q = db.query(Grading).filter(
+        func.upper(func.trim(Grading.company_id)) == clean_company,
         Grading.date >= start.date(),
-        Grading.date <= end.date()
+        Grading.date <= end.date(),
     )
     
     # 🟢 Bypass "ALL" for Today's logic
     if g_prod_clean and g_prod_clean != "ALL":
-        today_q = today_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
+        report_q = report_q.filter(func.upper(func.trim(Grading.production_for)) == g_prod_clean)
         
     if g_loc_clean and g_loc_clean != "ALL":
-        today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
+        report_q = report_q.filter(func.upper(func.trim(Grading.peeling_at)) == g_loc_clean)
     elif user_allowed_locations:
-        today_q = today_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
+        report_q = report_q.filter(func.upper(func.trim(Grading.peeling_at)).in_(user_allowed_locations))
 
-    today_data = today_q.order_by(Grading.id.desc()).all()
+    today_data = report_q.order_by(Grading.date.desc(), Grading.id.desc()).all()
 
     # 3. 🟢 REQUIREMENT LOGIC - CRITICAL FIXED FILTER ENGINE 🟢
     p_orders_q = db.query(pending_orders).filter(
-        pending_orders.company_id == company_code,
+        func.upper(func.trim(pending_orders.company_id)) == clean_company,
         (pending_orders.progress_steps != 'completed') | (pending_orders.progress_steps.is_(None))
     )
 
-    stock_q = db.query(stock_entry).filter(stock_entry.company_id == company_code)
+    stock_q = db.query(stock_entry).filter(func.upper(func.trim(stock_entry.company_id)) == clean_company)
     
     # Production For Filter (Bypass "ALL")
     if g_prod_clean and g_prod_clean != "ALL":
@@ -128,9 +226,9 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
     p_orders = p_orders_q.all()
     all_stock = stock_q.all()
     
-    yield_records = db.query(HOSO_HLSO_Yields).filter(HOSO_HLSO_Yields.company_id == company_code).all()
-    p_styles = db.query(packing_styles).filter(packing_styles.company_id == company_code).all()
-    v_records = db.query(varieties).filter(varieties.company_id == company_code).all()
+    yield_records = db.query(HOSO_HLSO_Yields).filter(func.upper(func.trim(HOSO_HLSO_Yields.company_id)) == clean_company).all()
+    p_styles = db.query(packing_styles).filter(func.upper(func.trim(packing_styles.company_id)) == clean_company).all()
+    v_records = db.query(varieties).filter(func.upper(func.trim(varieties.company_id)) == clean_company).all()
 
     stock_pool = {}
     for s in all_stock:
@@ -214,7 +312,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
 
 
     pending_pool_q = db.query(HlsoForGrading).filter(
-        HlsoForGrading.company_id == company_code,
+        func.upper(func.trim(HlsoForGrading.company_id)) == clean_company,
         HlsoForGrading.status != "Completed",
         HlsoForGrading.available_qty > 0.01
     )
@@ -245,6 +343,7 @@ def show_grading(request: Request, db: Session = Depends(get_db)):
                     "variety_name": r.variety_name,
                     "graded_count": r.graded_count,
                     "quantity": r.quantity,
+                    "quantity_expr": r.quantity_expr,
                     "species": r.species,
                     "peeling_at": r.peeling_at,
                     "production_for": r.production_for,
@@ -381,6 +480,7 @@ def save_grading(
     request: Request, batch_number: str = Form(...), hoso_count: str = Form(...),
     variety_name: str = Form(...), graded_count: str = Form(...), quantity: float = Form(...),
     species_val: str = Form(...), peeling_at: str = Form(...), production_for: str = Form(...),
+    quantity_expr: str = Form(None),
     db: Session = Depends(get_db)
 ):
     company_code = request.session.get("company_code")
@@ -415,7 +515,7 @@ def save_grading(
 
     grading = Grading(
         batch_number=batch_number, hoso_count=hoso_count, variety_name=variety_name,
-        graded_count=graded_count, quantity=quantity, species=species_val,
+        graded_count=graded_count, quantity=quantity, quantity_expr=quantity_expr or None, species=species_val,
         peeling_at=peeling_at, production_for=production_for,
         date=current_ist.date(), time=current_ist.time(), email=email, company_id=company_code
     )

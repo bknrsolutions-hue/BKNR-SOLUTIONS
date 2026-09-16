@@ -42,7 +42,7 @@ def parse_base_count(grade_name: str) -> int:
         return BASE_COUNT[g_str]
     if g_str in ["BKN", "DC"]:
         return 180
-    nums = re.findall(r'\d+', g_str)
+    nums = re.findall(r"\d+", g_str)
     if nums:
         try:
             return int(nums[-1])
@@ -155,17 +155,17 @@ def sync_grade_to_hoso(db: Session, company_id: str, email: str):
 
     # 3️⃣ REBUILD
     for sp in species_list:
-        sp_name = getattr(sp, 'species_name', 'Vannamei') or 'Vannamei'
+        sp_name = getattr(sp, "species_name", "Vannamei") or "Vannamei"
         for g in grade_list:
-            g_name = getattr(g, 'grade_name', '')
+            g_name = getattr(g, "grade_name", "")
             base = parse_base_count(g_name)
             if not base:
                 continue
 
             for v in variety_list:
-                v_name = getattr(v, 'variety_name', 'HLSO') or 'HLSO'
+                v_name = getattr(v, "variety_name", "HLSO") or "HLSO"
                 for z in glaze_list:
-                    z_name = getattr(z, 'glaze_name', 'NWNC') or 'NWNC'
+                    z_name = getattr(z, "glaze_name", "NWNC") or "NWNC"
 
                     combo_key = (company_id, sp_name, g_name, v_name, z_name)
                     if combo_key in seen_combos:
@@ -185,31 +185,36 @@ def sync_grade_to_hoso(db: Session, company_id: str, email: str):
                     except Exception:
                         glaze_factor = 1.0
 
+                    is_hoso_var = "HOSO" in str(v_name or "").upper()
+
                     # Safe peeling yield
                     try:
                         peel_num = float(getattr(v, 'peeling_yield', 100) or 100)
-                        peel = peel_num / 100.0 if peel_num > 0 else 1.0
+                        peel = 1.0 if is_hoso_var else (peel_num / 100.0 if peel_num > 0 else 1.0)
                     except Exception:
                         peel = 1.0
 
                     # Safe soaking yield
                     try:
                         soak_num = float(getattr(v, 'soaking_yield', 100) or 100)
-                        soak = soak_num / 100.0 if soak_num > 0 else 1.0
+                        soak = 1.0 if is_hoso_var else (soak_num / 100.0 if soak_num > 0 else 1.0)
                     except Exception:
                         soak = 1.0
 
-                    # ✅ HLSO FORMULA
-                    hlso = math.floor(base / glaze_factor / peel / soak)
+                    # ✅ HLSO FORMULA (base / glaze_factor * peel * soak)
+                    hlso = math.floor(base / glaze_factor * peel * soak)
 
-                    # ✅ HOSO COUNT LOOKUP
-                    hoso_count_val = yield_map.get((sp_name, hlso))
+                    # ✅ HOSO COUNT LOOKUP (For HOSO variety, HOSO count and HLSO count are SAME)
+                    if is_hoso_var:
+                        hoso_count_val = hlso
+                    else:
+                        hoso_count_val = yield_map.get((sp_name, hlso)) or hlso
 
-                    # ✅ NW GRADE FROM HLSO
+                    # ✅ NW GRADE FROM HLSO / HOSO COUNT
                     nw_grade = (
                         g_name
                         if g_name in ["BKN", "DC"]
-                        else get_nw_grade_from_hlso(hlso)
+                        else get_nw_grade_from_hlso(hoso_count_val if is_hoso_var else hlso)
                     )
 
                     db.add(

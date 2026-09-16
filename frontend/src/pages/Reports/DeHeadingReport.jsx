@@ -409,12 +409,32 @@ export default function DeHeadingReport({ activeRoute }) {
                               {fmt.pct(yld)}
                             </td>
 
-                            <td className="text-center" style={{ color: diffPct >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                              {fmt.pct(diffPct)}
+                            <td className="text-center">
+                              <span style={{
+                                background: diffPct >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                color: diffPct >= 0 ? '#059669' : '#dc2626',
+                                border: diffPct >= 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                fontWeight: '800',
+                                display: 'inline-block'
+                              }}>
+                                {diffPct >= 0 ? `+${fmt.pct(diffPct)}` : fmt.pct(diffPct)}
+                              </span>
                             </td>
 
-                            <td className="text-right" style={{ color: diffKg >= 0 ? '#10b981' : '#ef4444', fontWeight: 700 }}>
-                              {fmt.number(diffKg)}
+                            <td className="text-right">
+                              <span style={{
+                                background: diffKg >= 0 ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                                color: diffKg >= 0 ? '#059669' : '#dc2626',
+                                border: diffKg >= 0 ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                fontWeight: '800',
+                                display: 'inline-block'
+                              }}>
+                                {diffKg > 0 ? `+${fmt.number(diffKg)}` : fmt.number(diffKg)}
+                              </span>
                             </td>
 
                             <td className="text-right">

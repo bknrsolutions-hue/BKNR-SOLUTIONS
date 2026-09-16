@@ -52,6 +52,8 @@
 
             --kpi-prod-bg: #f5f3ff;
             --kpi-prod-text: #312e81;
+            --kpi-shadow: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.02);
+            --card-radius: 10px;
         }
 
         [data-theme="dark"] {
@@ -84,139 +86,231 @@
 
             --kpi-prod-bg: rgba(124, 58, 237, 0.15);
             --kpi-prod-text: #a78bfa;
+            --kpi-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
         
         body { 
             background-color: var(--bg-light); 
             color: var(--text-main); 
-            padding: 8px; 
-            font-size: 9.5px; 
-            line-height: 1.3;
+            padding: 12px; 
+            font-size: 10px; 
+            line-height: 1.35;
             transition: background 0.3s, color 0.3s;
         }
         
-        /* Premium Compact Header */
+        /* Premium Header */
         .report-header { 
             display: flex; justify-content: space-between; align-items: center; 
-            margin-bottom: 8px; background: var(--card-bg); padding: 8px 12px; 
-            border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-            border-left: 4px solid var(--accent); 
+            margin-bottom: 12px; background: var(--card-bg); padding: 10px 16px; 
+            border-radius: var(--card-radius); box-shadow: var(--kpi-shadow);
+            border: 1px solid var(--border);
+            border-left: 5px solid var(--accent); 
             transition: background 0.3s, border-color 0.3s;
         }
-        .report-header h1 { margin: 0; font-size: 13px; color: var(--brand); font-weight: 800; letter-spacing: -0.5px; text-transform: uppercase; }
+        .report-header-title { display: flex; align-items: center; gap: 10px; }
+        .report-header-badge { width: 32px; height: 32px; border-radius: 8px; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); display: grid; place-items: center; font-size: 15px; }
+        .report-header h1 { margin: 0; font-size: 14px; color: var(--brand); font-weight: 800; letter-spacing: -0.3px; text-transform: uppercase; }
+        .report-header p { margin: 2px 0 0; font-size: 9.5px; color: var(--text-muted); font-weight: 600; }
         
-        /* 🟢 FILTERS BAR - SOAKING REPORT EXACT MATCH COLORS & SIZES WITH MOBILE SCROLL SUPPORT */
+        /* 🟢 FILTERS BAR */
         .filter-card { 
-            background: var(--card-bg); padding: 10px 12px; border-radius: 8px; 
-            margin-bottom: 12px; border: 1px solid var(--border); 
+            position: relative;
+            z-index: 20;
+            background: var(--card-bg); padding: 14px 16px; border-radius: var(--card-radius); 
+            margin-bottom: 18px; border: 1px solid var(--border); box-shadow: var(--kpi-shadow);
             transition: background 0.3s, border-color 0.3s;
         }
         .filter-grid { 
-            display: flex; flex-wrap: nowrap !important; overflow-x: auto !important; gap: 12px; align-items: flex-end;
-            -webkit-overflow-scrolling: touch; justify-content: flex-start; scrollbar-width: thin; padding-bottom: 4px;
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(175px, 1fr)); 
+            gap: 12px; align-items: flex-end; width: 100%;
         }
-        .filter-grid::-webkit-scrollbar { height: 4px; }
-        .filter-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-        @media (min-width: 768px) { 
+        @media (max-width: 640px) { 
             .filter-grid { 
-                display: grid; 
-                grid-template-columns: repeat(4, 1fr) auto; 
-                overflow-x: visible !important; 
-                padding-bottom: 0; 
-                flex-wrap: wrap !important;
+                grid-template-columns: 1fr;
             } 
         }
         
-        .fbox-item { display: flex; flex-direction: column; gap: 2px; min-width: 120px; flex: 1; flex-shrink: 0 !important; }
-        @media(max-width: 600px) { .fbox-item { min-width: 110px; } }
+        .fbox-item { display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; min-width: 0; width: 100%; box-sizing: border-box; }
         
-        .fbox-item label { font-size: 8px; font-weight: 700; color: var(--brand); text-transform: uppercase; }
+        .fbox-item label { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
 
         select, input { 
-            width: 100%; padding: 3px 5px; font-size: 10px; font-weight: 500; border: 1px solid var(--border); border-radius: 4px; 
-            background-color: var(--card-bg); color: var(--text); outline: none; height: 24px !important; transition: all 0.2s ease;
+            width: 100%; padding: 0 10px; font-size: 11px; font-weight: 600; border: 1px solid var(--border); border-radius: 6px; 
+            background-color: var(--card-bg); color: var(--text-main); outline: none; height: 34px !important; min-height: 34px !important;
+            box-sizing: border-box !important; vertical-align: middle; line-height: normal; transition: all 0.2s ease;
+            text-overflow: ellipsis; white-space: nowrap;
         }
-        select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1); }
+        select option { background-color: var(--card-bg); color: var(--text-main); padding: 6px 10px; font-size: 11px; }
+        select:focus, input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent); }
         
-        .btn-filter-action { background: var(--accent); color: white; border: none; padding: 4px 12px; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 10px; height: 24px; text-transform: uppercase; display: inline-flex; align-items: center; justify-content: center; }
-        .btn-reset-action { text-decoration: none; background: #e2e8f0; color: #1e293b; padding: 4px 12px; border-radius: 4px; font-weight: 700; font-size: 10px; text-align: center; height: 24px; display: inline-flex; align-items: center; justify-content: center; text-transform: uppercase; }
+        .btn-filter-action { background: var(--accent); color: white; border: none; padding: 0 18px; border-radius: 6px; cursor: pointer; font-weight: 800; font-size: 10px; height: 34px !important; min-height: 34px !important; box-sizing: border-box !important; text-transform: uppercase; letter-spacing: 0.4px; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: 0.2s; box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 30%, transparent); }
+        .btn-filter-action:hover { transform: translateY(-1px); background: color-mix(in srgb, var(--accent) 88%, black); }
+        .btn-reset-action { text-decoration: none; background: var(--th-bg); border: 1px solid var(--border); color: var(--text-main); padding: 0 16px; border-radius: 6px; font-weight: 750; font-size: 10px; text-align: center; height: 34px !important; min-height: 34px !important; box-sizing: border-box !important; display: inline-flex; align-items: center; justify-content: center; line-height: 1; text-transform: uppercase; transition: 0.2s; }
+        .btn-reset-action:hover { background: var(--border); }
 
-        .full-width-container { display: flex; flex-direction: column; gap: 8px; margin-bottom: 8px; width: 100%; }
+        .full-width-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; width: 100%; }
 
-        /* Premium Horizontal KPI grid */
-        .horizontal-kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 6px; margin-bottom: 4px; width: 100%; }
-        
-        .kpi-column-card {
-            background: var(--card-bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
-            display: flex; flex-direction: column; gap: 2px; transition: 0.3s;
+        /* 🟢 5-Column Table Card Matrix (Label on Left, Value on Right) */
+        .batch-summary-table-card {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1.5px solid var(--border, #94a3b8);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            margin-bottom: 14px;
+            box-shadow: var(--kpi-shadow);
         }
-        .kpi-column-card .kpi-label { font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; }
-        .kpi-column-card .kpi-val { font-size: 10.5px; font-weight: 800; color: var(--text-main); white-space: nowrap; }
+        .matrix-5col-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        .matrix-5col-table tr {
+            border-bottom: none;
+        }
+        .cell-5col {
+            width: 20%;
+            padding: 10px 12px;
+            border-right: 1.5px solid var(--border, #cbd5e1);
+            border-bottom: 1.5px solid var(--border, #cbd5e1);
+            vertical-align: middle;
+            transition: background 0.2s ease;
+        }
+        .cell-5col:last-child {
+            border-right: none;
+        }
+        .matrix-5col-table tr:last-child .cell-5col {
+            border-bottom: none;
+        }
+        .matrix-5col-table tr:hover td {
+            background-color: color-mix(in srgb, var(--th-bg) 60%, transparent);
+        }
+        .flex-cell-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            width: 100%;
+        }
+        .flex-cell-label {
+            font-size: 10.5px;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            white-space: nowrap;
+            opacity: 0.9;
+        }
+        .flex-cell-val {
+            font-size: 13px;
+            font-weight: 850;
+            color: #0f172a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+        }
+        @media (max-width: 1024px) {
+            .cell-5col { width: 33.333%; }
+        }
+        @media (max-width: 640px) {
+            .cell-5col { width: 100%; display: block; border-right: none !important; }
+        }
 
         /* Recon Container */
-        .recon-wrap { background: var(--card-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border); width: 100%; overflow: hidden; transition: 0.3s;}
+        .recon-wrap { background: var(--card-bg); padding: 12px; border-radius: var(--card-radius); border: 1px solid var(--border); width: 100%; overflow: hidden; transition: 0.3s; box-shadow: var(--kpi-shadow); }
         
         /* Section Titles */
-        .section-title { margin: 12px 0 6px 0; font-size: 10.5px; font-weight: 800; color: var(--brand); display: flex; align-items: center; gap: 6px; text-transform: uppercase; border-left: 3px solid var(--orange); padding-left: 6px; letter-spacing: 0.5px; }
+        .section-title { 
+            margin: 16px 0 8px 0; font-size: 11px; font-weight: 800; color: var(--brand); 
+            display: flex; align-items: center; gap: 8px; text-transform: uppercase; 
+            border-left: 4px solid var(--orange); padding: 2px 0 2px 8px; letter-spacing: 0.5px; 
+        }
         
         /* Compact Table System */
-        .table-wrap { background: var(--card-bg); border-radius: 8px; border: 1px solid var(--border); width: 100%; margin-bottom: 10px; overflow-x: auto; transition: 0.3s; -webkit-overflow-scrolling: touch; }
+        .table-wrap { 
+            background: var(--card-bg); border-radius: var(--card-radius); border: 1px solid var(--border); 
+            width: 100%; margin-bottom: 12px; overflow-x: auto; transition: 0.3s; 
+            -webkit-overflow-scrolling: touch; box-shadow: var(--kpi-shadow);
+        }
         
         table { width: 100%; border-collapse: collapse; table-layout: auto; }
         
-        th { background: var(--th-bg); padding: 6px 8px; text-align: left; font-size: 10px; color: var(--text-muted); border-bottom: 2px solid var(--border); text-transform: uppercase; font-weight: 700; white-space: nowrap; transition: 0.3s;}
+        th { 
+            background: var(--th-bg); padding: 8px 10px; text-align: left; font-size: 9.5px; 
+            color: var(--text-muted); border-bottom: 2px solid var(--border); text-transform: uppercase; 
+            font-weight: 800; letter-spacing: 0.3px; white-space: nowrap; transition: 0.3s;
+        }
         
         .text-center { text-align: center !important; }
         .text-right { text-align: right !important; }
         
-        td { padding: 5px 8px; border-bottom: 1px solid var(--td-border); font-size: 9.5px; vertical-align: middle; font-weight: 600; white-space: nowrap; color: var(--text-main); transition: 0.3s;}
+        td { padding: 6px 10px; border-bottom: 1px solid var(--td-border); font-size: 10px; vertical-align: middle; font-weight: 600; white-space: nowrap; color: var(--text-main); transition: 0.3s;}
         
-        tr:hover td { background-color: var(--th-bg); }
+        tr:hover td { background-color: color-mix(in srgb, var(--th-bg) 60%, transparent); }
         
         .qty-column { font-weight: 800; color: var(--text-main); background: transparent; text-align: right !important; }
-        .money-column { color: var(--success); font-weight: 700; text-align: right !important; }
+        .money-column { color: var(--success); font-weight: 800; text-align: right !important; }
         
-        .subtotal-row { background: var(--subtotal-bg) !important; font-weight: 800; border-top: 1.5px solid var(--subtotal-border); border-bottom: 1.5px solid var(--subtotal-border); color: var(--subtotal-text); }
-        .subtotal-row td { font-weight: 800; color: var(--subtotal-text) !important; padding: 6px 8px; }
+        .subtotal-row { background: var(--subtotal-bg) !important; font-weight: 800; border-top: 2px solid var(--subtotal-border); border-bottom: 2px solid var(--subtotal-border); color: var(--subtotal-text); }
+        .subtotal-row td { font-weight: 800; color: var(--subtotal-text) !important; padding: 7px 10px; }
         
-        .tag { background: var(--tag-bg); color: var(--text-main); padding: 1px 5px; border-radius: 4px; font-weight: 700; font-size: 8.5px; border: 1px solid var(--border); display: inline-block; }
-        .sl-no { font-weight: 700; color: var(--text-muted); text-align: center !important; width: 30px; background: var(--th-bg); }
+        .tag { background: var(--tag-bg); color: var(--text-main); padding: 2px 7px; border-radius: 5px; font-weight: 750; font-size: 9px; border: 1px solid var(--border); display: inline-block; }
+        .badge { background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); padding: 2px 7px; border-radius: 5px; font-weight: 800; font-size: 8.5px; border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent); display: inline-block; }
+        .sl-no { font-weight: 750; color: var(--text-muted); text-align: center !important; width: 32px; background: var(--th-bg); }
         
         .diff-pos { color: var(--success) !important; font-weight: 800; }
         .diff-neg { color: var(--danger) !important; font-weight: 800; }
 
         /* Compact Cards View Layout */
-        .cards-view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px; margin-bottom: 10px; width: 100%; }
-        .report-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; border-left: 3px solid var(--orange); transition: 0.3s;}
-        .card-top { background: var(--th-bg); padding: 6px 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
-        .left-info { display: flex; flex-direction: column; font-weight: 800; font-size: 9.5px; color: var(--text-main); }
-        .card-body { padding: 8px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
-        .card-body-summary { display: flex; justify-content: space-between; font-size: 9.5px; border-bottom: 1px dashed var(--border); padding-bottom: 4px; }
-        .card-body-title { font-size: 8.5px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; }
+        .cards-view-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px; margin-bottom: 12px; width: 100%; }
+        .report-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--card-radius); display: flex; flex-direction: column; overflow: hidden; border-left: 4px solid var(--orange); transition: all 0.25s ease; box-shadow: var(--kpi-shadow); }
+        .report-card:hover { transform: translateY(-2px); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.09); }
+        .card-top { background: var(--th-bg); padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .left-info { display: flex; flex-direction: column; font-weight: 800; font-size: 10px; color: var(--text-main); }
+        .card-body { padding: 10px; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+        .card-body-summary { display: flex; justify-content: space-between; font-size: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 6px; }
+        .card-body-title { font-size: 9px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; margin-top: 2px; letter-spacing: 0.3px; }
         .card-details-table { width: 100%; border-collapse: collapse; }
-        .card-details-table th { background: var(--th-bg); padding: 4px; font-size: 8.5px; font-weight: 700; border-bottom: 1px solid var(--border); }
+        .card-details-table th { background: var(--th-bg); padding: 5px; font-size: 9px; font-weight: 800; border-bottom: 1px solid var(--border); }
         .card-subtotal-row { background: var(--th-bg); font-weight: 800; }
-        .card-footer { background: var(--th-bg); padding: 6px 8px; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(2, 1fr); gap: 4px; }
-        .footer-item { font-size: 9px; font-weight: 600; color: var(--text-muted); }
-        .footer-item b { color: var(--text-main); font-weight: 700; }
+        .card-footer { background: var(--th-bg); padding: 8px 10px; border-top: 1px solid var(--border); display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .footer-item { font-size: 9.5px; font-weight: 600; color: var(--text-muted); }
+        .footer-item b { color: var(--text-main); font-weight: 800; }
+
+        /* 🖊️ Signature Block */
+        .report-signature-block { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 40px; padding: 20px 10px 10px 10px; width: 100%; page-break-inside: avoid; }
+        .sig-col { text-align: center; flex: 1; max-width: 220px; }
+        .sig-line { border-bottom: 1.5px dashed var(--text-muted, #64748b); margin-bottom: 8px; height: 40px; }
+        .sig-title { font-size: 11px; font-weight: 800; color: var(--brand, #0f172a); text-transform: uppercase; letter-spacing: 0.5px; }
+        .sig-subtitle { font-size: 9.5px; font-weight: 600; color: var(--text-muted, #64748b); margin-top: 2px; }
 
         /* Strict Print Engine */
         @media print { 
-            .filter-card, button, .no-print, .btn, .dropdown, form, nav, footer { display: none !important; } 
-            html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; background: var(--card-bg) !important; color: #000 !important; font-size: 8.5px !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-            .container, .container-fluid, .row, .col-12, main, #wrapper { width: 100% !important; max-width: 100% !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+            html, body, .container, .container-fluid, .row, .col-12, main, #wrapper, .full-width-container { 
+                margin: 0 !important; padding: 0 !important; top: 0 !important; position: static !important; 
+                height: auto !important; max-height: none !important; overflow: visible !important; 
+                background: #ffffff !important; color: #000 !important; 
+            } 
+            .no-print, .filter-card, .batch-summary-filters, .erp-horizontal-filter-row, .report-filter-bar, #filterForm, button, .btn, .dropdown, form, nav, footer, .btn-filter-action, .btn-reset-action, header, aside, .report-header-badge, p { 
+                display: none !important; height: 0 !important; margin: 0 !important; padding: 0 !important; 
+            } 
+            .report-header { padding: 0 0 6px 0 !important; margin: 0 0 10px 0 !important; border-bottom: 2px solid #0f172a !important; display: block !important; }
+            .company-name-print-header { font-size: 18px !important; font-weight: 900 !important; color: #0f172a !important; margin: 0 0 2px 0 !important; text-transform: uppercase !important; display: block !important; }
+            .batch-summary-print-title { font-size: 12px !important; font-weight: 800 !important; color: #475569 !important; margin: 0 !important; text-transform: uppercase !important; display: block !important; }
             table { width: 100% !important; table-layout: auto !important; page-break-inside: auto; }
             tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-            td, th { font-size: 8px !important; padding: 3px 4px !important; word-wrap: break-word !important; white-space: normal !important; }
-            th { font-size: 8.5px !important; background-color: #333 !important; color: #fff !important; }
-            .horizontal-kpi-grid { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: 4px !important; }
-            .cards-view-grid { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 6px !important; }
-            .table-wrap, .kpi-column-card, .recon-wrap, .report-card, .section-title { border: 1px solid #aaa !important; box-shadow: none !important; page-break-inside: avoid !important; margin-bottom: 8px !important; }
+            td, th { font-size: 9.5px !important; padding: 4px 6px !important; word-wrap: break-word !important; }
+            .batch-summary-table-card, .table-wrap, .recon-wrap, .report-card, .section-title { border: 1.5px solid #64748b !important; box-shadow: none !important; page-break-inside: avoid !important; margin-bottom: 10px !important; }
             .section-title { page-break-after: avoid !important; }
-            div, section, main, article { overflow: visible !important; }
+            .report-signature-block { margin-top: 35px !important; padding-top: 15px !important; page-break-inside: avoid !important; display: flex !important; }
+            .sig-line { border-bottom: 1.5px dashed #000000 !important; }
+            .sig-title { color: #000000 !important; font-size: 10.5px !important; }
+            .sig-subtitle { color: #334155 !important; font-size: 9px !important; }
         }
     </style>
     <link rel="stylesheet" href="/static/css/global-loader.css?v=skel8">
@@ -241,10 +335,16 @@
     {% set kpi_gross.total = kpi_gross.total + r_gross %}
 {% endfor %}
 
-<div class="report-header">
-    <h1><i class="fas fa-database" style="color: var(--accent);"></i>  Batch wise Analysis</h1>
-    <button onclick="window.print()" class="no-print" style="background:var(--accent); color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700; font-size:9.5px; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-        <i class="fas fa-print"></i> PRINT
+<div class="report-header batch-summary-header-banner">
+    <div class="report-header-title">
+        <div class="report-header-badge no-print"><i class="fas fa-cubes"></i></div>
+        <div>
+            <h1 class="company-name-print-header" style="margin: 0; font-size: 18px; font-weight: 900; color: var(--brand); text-transform: uppercase;">{{ selected_company or 'BKNR SEAFOODS PRIVATE LIMITED' }}</h1>
+            <h3 class="batch-summary-print-title" style="margin: 2px 0 0; font-size: 12px; color: var(--text-muted); font-weight: 800; text-transform: uppercase;">BATCH WISE ANALYSIS REPORT</h3>
+        </div>
+    </div>
+    <button onclick="window.print()" class="no-print" style="background:var(--accent); color:white; border:none; padding:7px 16px; border-radius:6px; cursor:pointer; font-weight:800; font-size:10px; box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 30%, transparent); display: inline-flex; align-items: center; gap: 6px; text-transform: uppercase;">
+        <i class="fas fa-print"></i> Print Matrix
     </button>
 </div>
 
@@ -293,51 +393,176 @@
 <div class="full-width-container">
     
     <div class="section-title" style="margin-top:0px;"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> BATCH MATRIX METRICS</div>
-    <div class="horizontal-kpi-grid">
-        <div class="kpi-column-card" style="border-top: 2px solid var(--accent);">
-            <div class="kpi-label">Batch Number</div>
-            <div class="kpi-val" style="color: var(--accent);">{{ selected_batch }}</div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Supplier | Location</div>
-            <div class="kpi-val">{{ card.supplier_name or 'N/A' }} | {{ card.purchasing_location or 'N/A' }}</div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Receiving At | Vehicle</div>
-            <div class="kpi-val">{{ card.receiving_center or 'N/A' }} | {{ card.vehicle_number or 'N/A' }}</div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Boxes | Challan | Gatepass</div>
-            <div class="kpi-val" style="font-size:9.5px;">{{ card.total_boxes or '0' }} Box | {{ card.challan_number or 'N/A' }} | {{ card.gate_pass_number or 'N/A' }}</div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">RM Total Qty / Amount</div>
-            <div class="kpi-val">{{ "%.2f"|format(card.rmp_qty or 0) }} KG | <span style="color:var(--success)">₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</span></div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">De-Heading Qty / Amount</div>
-            <div class="kpi-val">{{ "%.2f"|format(card.deheading_qty or 0) }} KG | <span style="color:var(--success)">₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</span></div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Grading | Peeling Qty / Amount</div>
-            <div class="kpi-val" style="font-size:9.5px;">{{ "%.2f"|format(card.grading_qty or 0) }} K | {{ "%.2f"|format(card.peeling_qty or 0) }} K | <span style="color:var(--success)">₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</span></div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Soaking | Chem | Salt</div>
-            <div class="kpi-val" style="font-size:9.5px;">{{ "%.2f"|format(card.soaking_qty or 0) }} KG | C: {{ "%.2f"|format(card.chemical_qty or 0) }} | S: {{ "%.2f"|format(card.salt_qty or 0) }}</div>
-        </div>
-        <div class="kpi-column-card" style="background:var(--kpi-prod-bg); border-top: 2px solid #6d28d9;">
-            <div class="kpi-label" style="color:#6d28d9;">Gross Prod | Net Prod | Stock Qty</div>
-            <div class="kpi-val" style="color: var(--kpi-prod-text);">{{ "%.2f"|format(kpi_gross.total) }} G | {{ "%.2f"|format(card.production_qty or 0) }} N | {{ "%.2f"|format(card.stock_qty or 0) }} S</div>
-        </div>
-        <div class="kpi-column-card">
-            <div class="kpi-label">Stock Inventory Value</div>
-            <div class="kpi-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</div>
-        </div>
-        <div class="kpi-column-card" style="background:#fff1f2; border: 1px solid #fca5a5;">
-            <div class="kpi-label" style="color:var(--danger)">Floor Balance Qty | Value</div>
-            <div class="kpi-val" style="color:var(--danger)">{{ "%.2f"|format(card.floor_qty or 0) }} KG | ₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</div>
-        </div>
+    <div class="batch-summary-table-card">
+        <table class="matrix-5col-table">
+            <tbody>
+                <!-- Row 1 -->
+                <tr>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Batch No:</span>
+                            <strong class="flex-cell-val" style="color:var(--accent)">{{ selected_batch }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Supplier:</span>
+                            <strong class="flex-cell-val">{{ card.supplier_name or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Location:</span>
+                            <strong class="flex-cell-val">{{ card.purchasing_location or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Receiving At:</span>
+                            <strong class="flex-cell-val">{{ card.receiving_center or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Vehicle No:</span>
+                            <strong class="flex-cell-val">{{ card.vehicle_number or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 2 -->
+                <tr>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Total Boxes:</span>
+                            <strong class="flex-cell-val">{{ card.total_boxes or '0' }} Box</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Challan No:</span>
+                            <strong class="flex-cell-val">{{ card.challan_number or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gate Pass:</span>
+                            <strong class="flex-cell-val">{{ card.gate_pass_number or 'N/A' }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.rmp_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">RM Amount:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.rmp_amount or 0) }}</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 3 -->
+                <tr>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">De-Heading Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.deheading_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">De-Heading Amt:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.deheading_amount or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Grading Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.grading_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.peeling_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Peeling Amt:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.peeling_amount or 0) }}</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 4 -->
+                <tr>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Soaking Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.soaking_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Chemical:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.chemical_qty or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Salt Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.salt_qty or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Gross Prod:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(kpi_gross.total) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Net Prod:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.production_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                </tr>
+                <!-- Row 5 -->
+                <tr>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Qty:</span>
+                            <strong class="flex-cell-val">{{ "%.2f"|format(card.stock_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Stock Value:</span>
+                            <strong class="flex-cell-val" style="color:var(--success)">₹ {{ "{:,.2f}".format(card.stock_amount or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Floor Bal Qty:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger)">{{ "%.2f"|format(card.floor_qty or 0) }} KG</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Floor Bal Value:</span>
+                            <strong class="flex-cell-val" style="color:var(--danger)">₹ {{ "{:,.2f}".format(card.floor_amount or 0) }}</strong>
+                        </div>
+                    </td>
+                    <td class="cell-5col">
+                        <div class="flex-cell-item">
+                            <span class="flex-cell-label">Process Type:</span>
+                            <strong class="flex-cell-val">{{ selected_prod_type or 'RMP' }}</strong>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="recon-wrap">
@@ -349,6 +574,7 @@
                     <tr>
                         <th rowspan="2" style="background:#f8fafc; vertical-align: middle;">Species</th>
                         <th rowspan="2" style="background:#f8fafc; vertical-align: middle;">Variety</th>
+                        <th rowspan="2" class="text-right" style="background:#e0f2fe; vertical-align: middle; color:#0369a1; font-weight:800;">RMP Received</th>
                         <th colspan="3" class="text-center" style="background: #f1f5f9;">DE-HEADING</th>
                         <th colspan="3" class="text-center" style="background: #fff7ed;">PEELING</th>
                         <th colspan="3" class="text-center" style="background: #f0fdf4;">PRODUCTION</th>
@@ -366,13 +592,19 @@
                     {% for r in rows.peeling %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
                     {% for r in rows.production %}{% set combo = (r.species|upper|trim) ~ "||" ~ (r.variety_name or r.variety)|upper|trim %}{% if combo not in grouping %}{% set _ = grouping.append(combo) %}{% endif %}{% endfor %}
 
-                    {% set tot_recon = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0) %}
+                    {% set tot_recon = namespace(rmp=0.0, di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0) %}
                     {% for item in grouping %}
                         {% set parts = item.split("||") %}
                         {% set s_match = parts[0] %}
                         {% set v_match = parts[1] %}
                         
-                        {% set ns = namespace(di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0, prod_target_yield=0.0, soak_rejection=0.0) %}
+                        {% set ns = namespace(rmp=0.0, di=0.0, do=0.0, pi=0.0, po=0.0, si=0.0, pro=0.0, d_diff=0.0, d_expected=0.0, p_diff=0.0, p_expected=0.0, total_prod_diff=0.0, prod_expected=0.0, prod_target_yield=0.0, soak_rejection=0.0) %}
+
+                        {% for r in rows.rmp %}
+                            {% if (r.species|upper|trim == s_match) and ((r.variety_name or r.variety)|upper|trim == v_match) %}
+                                {% set ns.rmp = ns.rmp + (r.received_qty|default(0)|float) %}
+                            {% endif %}
+                        {% endfor %}
 
                         {% if v_match == "HOSO" or v_match == "FRESH" %}
                             {% for r in rows.deheading %}
@@ -417,6 +649,7 @@
                             {% set ns.total_prod_diff = ns.pro - ns.prod_expected %}
                         {% endif %}
                         
+                        {% set tot_recon.rmp = tot_recon.rmp + ns.rmp %}
                         {% set tot_recon.di = tot_recon.di + ns.di %}
                         {% set tot_recon.do = tot_recon.do + ns.do %}
                         {% set tot_recon.pi = tot_recon.pi + ns.pi %}
@@ -427,6 +660,7 @@
                         <tr style="border-bottom: 1px solid var(--border);">
                             <td style="font-weight: 800;">{{ s_match }}</td>
                             <td><span class="tag">{{ v_match }}</span></td>
+                            <td class="text-right" style="font-weight:800; color:#0284c7; background:#f0f9ff;">{{ "%.2f"|format(ns.rmp) }}</td>
                             
                             <td class="text-right">{{ "%.2f"|format(ns.di) }}</td>
                             <td class="text-right">{{ "%.2f"|format(ns.do) }}</td>
@@ -468,6 +702,7 @@
                     {% endfor %}
                     <tr class="subtotal-row">
                         <td colspan="2" style="text-align:right;">TOTAL:</td>
+                        <td class="text-right" style="font-weight:800; color:#0284c7; background:#e0f2fe;">{{ "%.2f"|format(tot_recon.rmp) }}</td>
                         <td class="text-right">{{ "%.2f"|format(tot_recon.di) }}</td>
                         <td class="text-right">{{ "%.2f"|format(tot_recon.do) }}</td>
                         <td class="text-right">{% if tot_recon.di > 0 %}{{ "%.2f"|format((tot_recon.do / tot_recon.di) * 100) }}%{% else %}0%{% endif %}</td>
@@ -1010,13 +1245,22 @@
                     </tr>
                 {% endif %}
             {% endfor %}
-            <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b;">
-                <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">GRAND TOTAL PRODUCTION:</td>
+            <tr class="subtotal-row" style="background:#fffbeb !important; border-top:2px double #f59e0b; font-weight:800;">
+                <td colspan="14" style="text-align:right; font-weight:800; color:#b45309;">SUBTOTAL PRODUCTION SUMMARY:</td>
                 <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.mc }}</td>
                 <td class="text-right" style="font-weight:800; color:#b45309;">{{ grand_prod.loose }}</td>
                 <td class="text-right" style="font-weight:800; color:#312e81; background:#eeebff;">{{ "%.2f"|format(grand_prod.gross) }}</td>
-                <td class="qty-column" style="color:#b45309; background:#fff9db;">{{ "%.2f"|format(grand_prod.qty) }}</td>
-                <td colspan="3"></td>
+                <td class="qty-column" style="color:#b45309; background:#fff9db; font-weight:800;">{{ "%.2f"|format(grand_prod.qty) }}</td>
+                <td class="text-right" style="font-weight:800; color:#b45309;">
+                    {% set first_sub = (subtotals.values()|list)[0] if subtotals else {} %}
+                    {% if first_sub.actual_yield is defined %}{{ first_sub.actual_yield }}% ({{ first_sub.diff_yield_perc }}%){% else %}-{% endif %}
+                </td>
+                <td class="text-right" style="font-weight:800; color:#b45309;">
+                    {% if first_sub.diff_qty is defined %}{{ first_sub.diff_qty }}{% else %}-{% endif %}
+                </td>
+                <td style="font-size: 8.5px; text-align: left; padding-left: 6px; font-weight:700; color:#64748b;">
+                    {% if first_sub.soaking_in is defined %}In: {{ first_sub.soaking_in }} | Target: {{ first_sub.target_yield }}%{% else %}-{% endif %}
+                </td>
             </tr>
         </tbody>
     </table>
@@ -1161,8 +1405,24 @@
     </table>
 </div>
 
+<!-- 🖊️ Signatures Block (Incharge & Manager Signatures) -->
+<div class="report-signature-block">
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">PREPARED BY</div>
+    </div>
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">VERIFIED BY</div>
+    </div>
+    <div class="sig-col">
+        <div class="sig-line"></div>
+        <div class="sig-title">AUTHORIZED SIGNATURE</div>
+    </div>
+</div>
+
 {% else %}
-<div style="text-align:center; padding:80px 20px; color:#94a3b8;"><i class="fas fa-search" style="font-size:28px; margin-bottom:8px; opacity:0.3; color: var(--accent);"></i><p style="font-size: 11px; font-weight: 600;">Select Filters to generate the full batch analysis report.</p></div>
+<div style="text-align:center; padding:80px 20px; color:#94a3b8;"><i class="fas fa-search" style="font-size:28px; margin-bottom:8px; opacity:0.3; color: var(--accent);"></i><p style="font-size: 11px; font-weight: 600;">Please select the Financial Year, Production Company, and Batch Number in the report to view the Batch Summary.</p></div>
 {% endif %}
 
 <script>

@@ -438,15 +438,14 @@ def save_user(
         password=password, role=role, access=access, creating=True,
     )
 
-    # Unique parameters verification strictly mapped bounded to target tenant ecosystem identity boundary
+    # Unique parameters verification strictly mapped bounded to system-wide email unique constraint
     if db.query(User).filter(
-        func.lower(func.trim(User.email)) == values["email"],
-        User.company_id == company.id,
+        func.lower(func.trim(User.email)) == values["email"]
     ).first():
-        return JSONResponse({"status": "error", "msg": "Email already exists for this company."}, status_code=409)
+        return JSONResponse({"status": "error", "msg": "Email already exists in the system."}, status_code=409)
 
-    if db.query(User).filter(User.mobile == values["mobile"]).first():
-        return JSONResponse({"status": "error", "msg": "Mobile number is already assigned to another account."}, status_code=409)
+    if db.query(User).filter(User.mobile == values["mobile"], User.company_id == company.id).first():
+        return JSONResponse({"status": "error", "msg": "Mobile number is already assigned to another account in this company."}, status_code=409)
 
     otp = str(random.randint(100000, 999999))
     pending = {
@@ -529,13 +528,12 @@ def verify_add_user_otp(
     if pending.get("purpose") != "add_user" or pending.get("company_id") != company.id or pending.get("email") != normalized_email:
         return JSONResponse({"status": "error", "msg": "Pending user data is invalid. Submit the form again."}, status_code=400)
     if db.query(User).filter(
-        func.lower(func.trim(User.email)) == normalized_email,
-        User.company_id == company.id,
+        func.lower(func.trim(User.email)) == normalized_email
     ).first():
         otp_record.is_used = True
         db.commit()
         return JSONResponse({"status": "error", "msg": "User with this email already exists."}, status_code=409)
-    if db.query(User).filter(User.mobile == pending.get("mobile")).first():
+    if db.query(User).filter(User.mobile == pending.get("mobile"), User.company_id == company.id).first():
         return JSONResponse({"status": "error", "msg": "Mobile number is already assigned to another account."}, status_code=409)
     user = User(
         company_id=company.id, name=pending["name"], designation=pending["designation"],
@@ -544,9 +542,13 @@ def verify_add_user_otp(
         data_management_access=bool(pending.get("data_management_access")),
         is_verified=True, is_active=True, created_at=ist_now(),
     )
-    db.add(user)
-    otp_record.is_used = True
-    db.commit()
+    try:
+        db.add(user)
+        otp_record.is_used = True
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        return JSONResponse({"status": "error", "msg": f"Account with email '{normalized_email}' already exists."}, status_code=409)
     return JSONResponse({"status": "success", "msg": f"User '{user.name}' created successfully.", "user": _serialize_user(user)})
 
 

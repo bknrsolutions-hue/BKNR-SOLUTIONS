@@ -23,6 +23,20 @@ ALTER TABLE IF EXISTS production_requirements
     ADD COLUMN IF NOT EXISTS time VARCHAR(50),
     ADD COLUMN IF NOT EXISTS email VARCHAR(255);
 
+ALTER TABLE IF EXISTS raw_material_purchasing
+    ADD COLUMN IF NOT EXISTS g1_expr VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS g2_expr VARCHAR(500),
+    ADD COLUMN IF NOT EXISTS dc_expr VARCHAR(500);
+
+ALTER TABLE IF EXISTS de_heading
+    ADD COLUMN IF NOT EXISTS hlso_qty_expr VARCHAR(500);
+
+ALTER TABLE IF EXISTS grading
+    ADD COLUMN IF NOT EXISTS quantity_expr VARCHAR(500);
+
+ALTER TABLE IF EXISTS peeling
+    ADD COLUMN IF NOT EXISTS peeled_qty_expr VARCHAR(500);
+
 CREATE INDEX IF NOT EXISTS ix_de_heading_table_no
     ON de_heading (table_no);
 CREATE INDEX IF NOT EXISTS ix_production_requirements_company_id

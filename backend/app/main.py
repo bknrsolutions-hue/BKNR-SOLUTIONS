@@ -34,6 +34,7 @@ from app.config import (
     SESSION_SECRET_KEY,
 )
 from app.utils.access_control import has_permission, required_permission_for_path
+from app.utils.mobile_utils import is_mobile_client
 from sqlalchemy import func
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -59,36 +60,6 @@ SESSION_IDLE_TIMEOUT_SECONDS = int(
     os.getenv("SESSION_IDLE_TIMEOUT_SECONDS", str(30 * 60))
 )
 SCREEN_POPUP_SETTING_KEY = "screen_popup_broadcast"
-
-
-def is_mobile_client(request: Request) -> bool:
-    """
-    Checks if a request comes from the Mobile Native App or Mobile WebView wrapper.
-    Mobile client requests bypass the 30-minute idle session auto-logout.
-    """
-    if request.session.get("is_mobile_app") is True or request.session.get("is_mobile") is True:
-        return True
-
-    headers = request.headers
-    if headers.get("x-mobile-app", "").lower() in ("true", "1", "yes"):
-        request.session["is_mobile_app"] = True
-        return True
-    if headers.get("x-client-platform", "").lower() in ("mobile", "android", "ios", "react-native", "expo"):
-        request.session["is_mobile_app"] = True
-        return True
-
-    qp = request.query_params
-    if qp.get("is_mobile_app") == "true" or qp.get("mobile") == "true" or qp.get("x-mobile-app") == "true":
-        request.session["is_mobile_app"] = True
-        return True
-
-    ua = headers.get("user-agent", "").lower()
-    if any(token in ua for token in ["bknr", "expo", "okhttp", "reactnative", "cordova", "capacitor", "wv", "mobile_native"]):
-        request.session["is_mobile_app"] = True
-        return True
-
-    return False
-
 
 
 def get_screen_popup_config(db):
@@ -184,6 +155,9 @@ scheduler = None
 
 def start_snapshot_scheduler():
     global scheduler
+    if not BackgroundScheduler:
+        logger.warning("APScheduler is not installed or available. Snapshot scheduler skipped.")
+        return
     if scheduler and scheduler.running:
         return
 
@@ -228,9 +202,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             "/auth/login", "/auth/landing", "/auth/register", "/auth/verify-otp",
             "/auth/set-password", "/auth/verify-login-otp", "/auth/session-info",
             "/auth/forgot-password", "/auth/reset-password", "/auth/auto-login",
-            "/auth/logout",
+            "/auth/logout", "/index.html", "/processing.html", "/inventory.html",
+            "/hrms.html", "/export.html", "/finance.html", "/quality.html",
+            "/website_styles.css",
         ]
-        prefix_paths = ["/app/", "/static/", "/create-all", "/admin/maintenance"]
+        prefix_paths = ["/app/", "/static/", "/website-assets/", "/create-all", "/admin/maintenance"]
 
         # Check deployment token header bypass
         deploy_token = request.headers.get("X-Deploy-Token")
@@ -479,10 +455,13 @@ def on_startup():
         # Prefer Alembic (`alembic upgrade head`) for schema changes.
         def migrate_with_retry():
             from app.database.migration import run_migration
+            from app.services.bill_accounting import ensure_bill_accounting_schema
 
             for attempt in range(1, 4):
                 try:
                     run_migration()
+                    with SessionLocal() as db:
+                        ensure_bill_accounting_schema(db)
                     logger.info("Legacy startup migration completed on attempt %s", attempt)
                     return
                 except Exception as exc:
@@ -513,9 +492,12 @@ def on_shutdown():
 # =====================================================
 static_path = os.path.join(os.path.dirname(__file__), "static")
 templates_path = os.path.join(os.path.dirname(__file__), "templates")
+frontend_public_path = Path(__file__).resolve().parents[2] / "frontend" / "public"
 os.makedirs(static_path, exist_ok=True)
 os.makedirs(templates_path, exist_ok=True)
 application.mount("/static", StaticFiles(directory=static_path), name="static")
+application.mount("/website-assets", StaticFiles(directory=str(frontend_public_path)), name="website-assets")
+#application.mount("/brain-images", StaticFiles(directory="/Users/nagaraju/.gemini/antigravity-ide/brain/4ed93a22-66c9-4303-ad31-25037d673a72"), name="brain-images")
 templates = Jinja2Templates(directory=templates_path)
 
 # ✅ VERY IMPORTANT:  ‌  ,
@@ -554,6 +536,7 @@ from app.routers.export_documents import router as export_documents_router
 from app.routers.admin_feature_flags import router as feature_flags_router
 from app.routers.admin_maintenance import router as maintenance_router
 from app.routers.admin_deploy import router as deploy_router
+from app.routers.crm_quotation_router import router as crm_quotation_router
 from app.routers.page_tokens import router as page_tokens_router
 
 #
@@ -586,6 +569,7 @@ application.include_router(export_documents_router, prefix="/export_documents")
 application.include_router(feature_flags_router)
 application.include_router(maintenance_router)
 application.include_router(deploy_router)
+application.include_router(crm_quotation_router)
 application.include_router(page_tokens_router)  # opaque page-token resolver
 
 
@@ -598,10 +582,47 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, JSON
 async def serve_brand_dp():
     return FileResponse("app/static/brand-dp-3d.png", media_type="image/png")
 
+@application.get("/favicon.ico", include_in_schema=False)
+async def serve_favicon():
+    return FileResponse("app/static/icon-192.png", media_type="image/png")
+
 @application.get("/svbk-it-solutions-logo-3d.png")
 @application.get("/svbk-it-solutions-logo-3d-transparent.png")
 async def serve_brand_logo():
     return FileResponse("app/static/images/svbk-it-solutions-logo-3d.png", media_type="image/png")
+
+@application.get("/website_styles.css")
+async def serve_website_styles():
+    # Compatibility response for a retired static marketing stylesheet.
+    return Response(content="", media_type="text/css")
+
+@application.get("/index.html", response_class=HTMLResponse)
+async def serve_index_page():
+    return RedirectResponse("/app/", status_code=303)
+
+@application.get("/processing.html", response_class=HTMLResponse)
+async def serve_processing_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/inventory.html", response_class=HTMLResponse)
+async def serve_inventory_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/hrms.html", response_class=HTMLResponse)
+async def serve_hrms_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/export.html", response_class=HTMLResponse)
+async def serve_export_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/finance.html", response_class=HTMLResponse)
+async def serve_finance_page():
+    return RedirectResponse("/", status_code=303)
+
+@application.get("/quality.html", response_class=HTMLResponse)
+async def serve_quality_page():
+    return RedirectResponse("/", status_code=303)
 
 @application.get("/tally_dashboard", response_class=HTMLResponse)
 async def legacy_tally_dashboard_redirect():
@@ -609,10 +630,15 @@ async def legacy_tally_dashboard_redirect():
 
 
 @application.get("/", response_class=HTMLResponse)
-async def login_page(request: Request):
-    # The production web entry is the React application. Authentication still
-    # uses the same signed backend session and API endpoints.
-    return RedirectResponse("/app/", status_code=303)
+async def landing_page(request: Request):
+    """Serve the existing public/login website from the login template."""
+    if request.session.get("email"):
+        return RedirectResponse("/home", status_code=303)
+    return templates.TemplateResponse(
+        request=request,
+        name="login.html",
+        context={"request": request, "show_login": False},
+    )
 
 
 @application.head("/")
@@ -746,7 +772,12 @@ async def home_page(request: Request):
 @application.get("/health/live")
 def health_live():
     """Liveness check - is server running?"""
-    return {"status": "alive", "service": "BKNR_ERP"}
+    revision = os.getenv("RENDER_GIT_COMMIT", "").strip()
+    return {
+        "status": "alive",
+        "service": "BKNR_ERP",
+        "revision": revision[:12] if revision else "local",
+    }
 
 
 @application.get("/health/ready")
@@ -902,7 +933,17 @@ def record_version(request: Request, payload: dict = Body(default={})):
 # while allowing compiled chunk assets to be cached long-term.
 class NoCacheStaticFiles(StaticFiles):
     async def get_response(self, path: str, scope) -> Response:
-        response = await super().get_response(path, scope)
+        try:
+            response = await super().get_response(path, scope)
+        except Exception:
+            if not (path.startswith("assets/") or path.endswith((".js", ".css", ".png", ".jpg", ".svg", ".woff2"))):
+                response = await super().get_response("index.html", scope)
+            else:
+                raise
+
+        if response.status_code == 404 and not (path.startswith("assets/") or path.endswith((".js", ".css", ".png", ".jpg", ".svg", ".woff2"))):
+            response = await super().get_response("index.html", scope)
+
         if response.status_code == 200:
             content_type = response.headers.get("content-type", "")
             if "text/html" in content_type.lower() or path == "" or path.endswith(".html"):

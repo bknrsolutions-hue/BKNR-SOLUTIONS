@@ -29,7 +29,7 @@ from app.database.models.enterprise_finance import VoucherHeader
 from app.database.models.users import Company
 from app.services.bill_accounting import amount_line, cancel_linked_bill_voucher, ensure_bill_accounting_schema, post_contractor_source_charge
 from app.services.posting_engine import PostingEngineService
-from app.services.payroll_statutory import calculate_pf_esi, effective_statutory_record
+from app.services.payroll_statutory import calculate_duty_credit, calculate_pf_esi, effective_statutory_record
 from app.services.salary_advance_recovery import preview_monthly_advance_recovery
 from app.utils.timezone import ist_now
 
@@ -176,8 +176,14 @@ def get_salary_report(
 ):
     company_id = request.session.get("company_code")
     if not company_id: return JSONResponse({"error": "Unauthorized"}, status_code=401)
-    ensure_bill_accounting_schema(db)
-    company = db.query(Company).filter(Company.company_code == company_id).first()
+    company = db.query(Company).filter(
+        or_(
+            func.upper(func.trim(Company.company_code)) == str(company_id or "").strip().upper(),
+            func.lower(func.trim(Company.company_name)) == str(company_id or "").strip().lower()
+        )
+    ).first()
+    if not company:
+        company = db.query(Company).first()
 
     year, month_no = map(int, month.split("-"))
     days_in_month = calendar.monthrange(year, month_no)[1]
@@ -244,24 +250,7 @@ def get_salary_report(
             shift_name = rec.shift_name or "GENERAL"
             req_hours = shift_map.get(shift_name, 8.0)
             wh = float(rec.working_hours or 0)
-            
-            # 🟢 CORPORATE FIXED SLAB DUTY CREDIT
-            raw_credit = wh / req_hours if req_hours > 0 else 0
-            
-            if raw_credit < 0.5:
-                duty_credit = 0.0
-            elif raw_credit < 1.0:
-                duty_credit = 0.5
-            elif raw_credit < 1.5:
-                duty_credit = 1.0
-            elif raw_credit < 2.0:
-                duty_credit = 1.5
-            elif raw_credit < 2.5:
-                duty_credit = 2.0
-            elif raw_credit < 3.0:
-                duty_credit = 2.5
-            else:
-                duty_credit = 3.0
+            duty_credit = calculate_duty_credit(wh, req_hours)
 
             d_status = str(getattr(rec, "duty_status", "APPROVED") or "APPROVED").strip().upper()
             d_type = str(getattr(rec, "duty_type", "") or "").strip().upper()
@@ -469,16 +458,7 @@ def attendance_popup(emp_id: str, month: str, day: int = None, request: Request 
         shift_name = r.shift_name or "GENERAL"
         req_hours = shift_map.get(shift_name, 8.0)
         wh = float(r.working_hours or 0)
-        
-        # 🟢 SYNCHRONIZED FIXED SLAB DUTY CREDIT FOR POPUP
-        raw_credit = wh / req_hours if req_hours > 0 else 0
-        if raw_credit < 0.5: duty_credit = 0.0
-        elif raw_credit < 1.0: duty_credit = 0.5
-        elif raw_credit < 1.5: duty_credit = 1.0
-        elif raw_credit < 2.0: duty_credit = 1.5
-        elif raw_credit < 2.5: duty_credit = 2.0
-        elif raw_credit < 3.0: duty_credit = 2.5
-        else: duty_credit = 3.0
+        duty_credit = calculate_duty_credit(wh, req_hours)
 
         d_status = str(getattr(r, "duty_status", "") or "APPROVED").strip().upper()
         d_type = str(getattr(r, "duty_type", "") or "").strip().upper()

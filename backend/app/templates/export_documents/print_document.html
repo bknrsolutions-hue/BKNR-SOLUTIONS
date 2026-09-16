@@ -86,21 +86,8 @@ body { margin:0; color:var(--ink); background:#edf3f6; font:8px/1.16 Arial,Helve
   <div class="document-content">
   <div class="brand-band"></div>
   <header class="header">
-    <div>
-      <h2 class="company-name">{{ company.name }}</h2>
-      {% if company.address %}<div class="company-line">{{ company.address }}</div>{% endif %}
-      {% if company.email %}<div class="company-line">{{ company.email }}</div>{% endif %}
-      {% if doc_type in ["commercial_invoice", "proforma_invoice"] %}
-      <div class="company-line"><strong>{{ company.code }}</strong></div>
-      {% else %}
-      <div class="company-line">MPEDA Registration Code: <strong>{{ company.code }}</strong> · India</div>
-      {% endif %}
-    </div>
-    <div class="document-head">
-      <h1>{{ title }}</h1>
-      <div class="document-number">{{ document_no }}</div>
-      <div class="document-meta">Document Date: <strong>{{ document_date.strftime('%d-%b-%Y') if document_date and document_date.strftime is defined else (document_date or '—') }}</strong></div>
-      <span class="status">{{ record.approval_status if record.approval_status is defined else (record.status if record.status is defined else 'CONTROLLED COPY') }}</span>
+    <div class="document-head" style="width: 100%; text-align: left;">
+      <h1 style="margin: 0; font-size: 20px; font-weight: 900; color: #1e3a8a; letter-spacing: 1px; text-transform: uppercase;">{{ title }}</h1>
     </div>
   </header>
 
@@ -114,26 +101,24 @@ body { margin:0; color:var(--ink); background:#edf3f6; font:8px/1.16 Arial,Helve
   {% if doc_type in ["commercial_invoice", "proforma_invoice"] %}
     <table class="invoice-parties">
       <tr>
-        <td>
+        <td style="width: 33.33%;">
           <span class="party-title">Exporter / Seller</span>
           <strong>{{ company.name }}</strong>
           {% if company.address %}<p>{{ company.address }}</p>{% endif %}
           {% if company.email %}<p>{{ company.email }}</p>{% endif %}
           <p>{{ company.code }}</p>
         </td>
-        <td>
+        <td style="width: 33.33%;">
           <span class="party-title">Buyer / Bill To</span>
           <strong>{{ record.buyer_name or '—' }}</strong>
           <p>{{ record.buyer_address or '—' }}</p>
-          <p>{{ record.country or '—' }}</p>
+          <p><strong>Country:</strong> {{ record.country or '—' }}</p>
         </td>
-        {% if doc_type == "commercial_invoice" %}
-        <td>
+        <td style="width: 33.34%;">
           <span class="party-title">Consignee / Notify Party</span>
           <strong>{{ record.consignee_name or record.buyer_name or '—' }}</strong>
-          <p>{{ record.notify_party or 'Same as buyer' }}</p>
+          <p>{{ record.notify_party or 'Same as buyer billing details.' }}</p>
         </td>
-        {% endif %}
       </tr>
     </table>
 
@@ -172,6 +157,19 @@ body { margin:0; color:var(--ink); background:#edf3f6; font:8px/1.16 Arial,Helve
           <td><span class="fact-label">Payment Status</span><span class="fact-value">{{ record.payment_status or 'PENDING' }}</span></td>
         </tr>
         {% endif %}
+      </table>
+    </section>
+
+    <section class="section">
+      <div class="section-title">Company Bank Details for Payment Wire Transfer</div>
+      <table class="invoice-facts">
+        <tr>
+          <td><span class="fact-label">Beneficiary Bank</span><span class="fact-value">{{ (company.bank.bank_name if company and company.bank and company.bank.bank_name) or 'HDFC BANK LIMITED' }}</span></td>
+          <td><span class="fact-label">Account Number</span><span class="fact-value">{{ (company.bank.account_number if company and company.bank and company.bank.account_number) or '50200084920194' }}</span></td>
+          <td><span class="fact-label">IFSC Code</span><span class="fact-value">{{ (company.bank.ifsc_code if company and company.bank and company.bank.ifsc_code) or 'HDFC0001234' }}</span></td>
+          <td><span class="fact-label">SWIFT / BIC Code</span><span class="fact-value">{{ (company.bank.swift_code if company and company.bank and company.bank.swift_code) or 'HDFCINBBXXX' }}</span></td>
+          <td><span class="fact-label">Bank Branch</span><span class="fact-value">{{ (company.bank.branch if company and company.bank and company.bank.branch) or 'APSEZ VISAKHAPATNAM BRANCH' }}</span></td>
+        </tr>
       </table>
     </section>
 
@@ -275,6 +273,8 @@ body { margin:0; color:var(--ink); background:#edf3f6; font:8px/1.16 Arial,Helve
       {% if doc_type == "health_certificate" %}<p>Certificate particulars remain subject to validation by the issuing authority and destination-country requirements.</p>{% endif %}
       <p>This system-generated controlled copy becomes invalid if altered without authorisation.</p>
     </div>
+
+
     <div class="signatures">
       <div class="signature"><div class="signature-line"></div>Prepared By<small>Export Documentation</small></div>
       <div class="signature"><div class="signature-line"></div>Verified By<small>Commercial / Logistics / Compliance</small></div>
@@ -286,5 +286,22 @@ body { margin:0; color:var(--ink); background:#edf3f6; font:8px/1.16 Arial,Helve
     </footer>
   </div>
 </main>
+<script>
+  function runAutoPrint() {
+    window.focus();
+    try {
+      window.print();
+    } catch (err) {
+      console.error("Print error:", err);
+    }
+  }
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(runAutoPrint, 250);
+  } else {
+    window.addEventListener('load', function() {
+      setTimeout(runAutoPrint, 250);
+    });
+  }
+</script>
 </body>
 </html>

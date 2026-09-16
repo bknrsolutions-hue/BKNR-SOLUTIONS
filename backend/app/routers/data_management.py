@@ -18,9 +18,11 @@ import pandas as pd
 import numpy as np
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
-from datetime import datetime
+import math
+from datetime import date, time, datetime, timedelta
 from zoneinfo import ZoneInfo
 import re
+from sqlalchemy.types import Date, Time, DateTime, Integer, BigInteger, SmallInteger, Float, Numeric, Boolean, String, Text
 
 # =====================================================
 # 🟢 1. ALL MODELS IMPORTS
@@ -620,6 +622,292 @@ async def inspect_excel_file(excel_file: UploadFile = File(...)):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+def coerce_cell_value(val, col_obj):
+    if val is None or pd.isna(val):
+        return None
+
+    col_type = getattr(col_obj, 'type', None)
+    if col_type is None:
+        if isinstance(val, float) and math.isnan(val):
+            return None
+        return val
+
+    # 1. TIME Column
+    if isinstance(col_type, Time):
+        if isinstance(val, time) and not isinstance(val, datetime):
+            return val
+        if isinstance(val, (datetime, pd.Timestamp)):
+            return val.time()
+        if isinstance(val, timedelta):
+            total_sec = int(val.total_seconds()) % 86400
+            h = total_sec // 3600
+            m = (total_sec % 3600) // 60
+            s = total_sec % 60
+            micro = val.microseconds
+            return time(h, m, s, micro)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            for fmt in ("%H:%M:%S", "%H:%M", "%I:%M %p", "%I:%M:%S %p", "%H:%M:%S.%f"):
+                try:
+                    return datetime.strptime(val_str, fmt).time()
+                except ValueError:
+                    pass
+            try:
+                dt = pd.to_datetime(val_str)
+                return dt.time()
+            except Exception:
+                return None
+        return None
+
+    # 2. DATE Column
+    if isinstance(col_type, Date) and not isinstance(col_type, DateTime):
+        if isinstance(val, date) and not isinstance(val, datetime):
+            return val
+        if isinstance(val, (datetime, pd.Timestamp)):
+            return val.date()
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            try:
+                return pd.to_datetime(val_str).date()
+            except Exception:
+                return None
+        return None
+
+    # 3. DATETIME Column
+    if isinstance(col_type, DateTime):
+        if isinstance(val, pd.Timestamp):
+            return val.to_pydatetime()
+        if isinstance(val, datetime):
+            return val
+        if isinstance(val, date):
+            return datetime.combine(val, time.min)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            try:
+                return pd.to_datetime(val_str).to_pydatetime()
+            except Exception:
+                return None
+        return None
+
+    # 4. BOOLEAN Column
+    if isinstance(col_type, Boolean):
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return bool(val)
+        if isinstance(val, str):
+            val_str = val.strip().lower()
+            if not val_str or val_str in ('none', 'nan', 'null', '-'):
+                return None
+            return val_str in ('true', '1', 'yes', 't', 'y')
+        return bool(val)
+
+    # 5. INTEGER Column
+    if isinstance(col_type, (Integer, BigInteger, SmallInteger)):
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return int(val)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'null', '-'):
+                return None
+            try:
+                return int(float(val_str))
+            except ValueError:
+                return None
+
+    # 6. FLOAT / NUMERIC Column
+    if isinstance(col_type, (Float, Numeric)):
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return float(val)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'null', '-'):
+                return None
+            try:
+                return float(val_str)
+            except ValueError:
+                return None
+
+    # 7. STRING / TEXT Column
+    if isinstance(col_type, (String, Text)):
+        if isinstance(val, float) and math.isnan(val):
+            return None
+        val_str = str(val).strip()
+        if val_str.lower() in ('nan', 'none', 'null'):
+            return None
+        return val_str
+
+    if isinstance(val, float) and math.isnan(val):
+        return None
+    return val
+
+
+def ensure_date_obj(val):
+    if isinstance(val, date) and not isinstance(val, datetime):
+        return val
+    if isinstance(val, (datetime, pd.Timestamp)):
+        return val.date()
+    if isinstance(val, str) and val.strip():
+        try:
+            return pd.to_datetime(val.strip()).date()
+        except Exception:
+            pass
+    return ist_now().date()
+
+
+def sync_imported_data_to_modules(db: Session, comp_code: str, table_name: str, records: list):
+    """
+    Ensures that imported records trigger corresponding accounts flow
+    (journals, vouchers, contractor charges) and floor balance stock updates.
+    """
+    if not records:
+        return
+
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        from app.services.bill_accounting import post_contractor_source_charge, post_vendor_bill, purchase_stock_account, resolve_posting_ledger
+        from app.services.floor_balance_sync import refresh_floor_balance
+    except Exception as e:
+        logger.error(f"Error importing sync modules: {e}")
+        return
+
+    batches_to_refresh = set()
+
+    for rec in records:
+        b_num = getattr(rec, "batch_number", None)
+        if b_num:
+            batches_to_refresh.add(str(b_num).strip())
+
+        # 1. DE-HEADING
+        if table_name == "DeHeading":
+            rec_id = getattr(rec, "id", None)
+            contractor = getattr(rec, "contractor", None)
+            amount = float(getattr(rec, "amount", 0) or 0)
+            rec_date = ensure_date_obj(getattr(rec, "date", None))
+            hoso_qty = float(getattr(rec, "hoso_qty", 0) or 0)
+            rate = float(getattr(rec, "rate_per_kg", 0) or 0)
+            email = getattr(rec, "email", "SYSTEM") or "SYSTEM"
+
+            if rec_id and contractor and amount > 0:
+                try:
+                    voucher = post_contractor_source_charge(
+                        db, comp_code, rec_date, f"DEH-{rec_id}",
+                        contractor, "De-Heading", amount, 0, email, hoso_qty, rate
+                    )
+                    if voucher and hasattr(rec, "journal_id"):
+                        rec.journal_id = getattr(voucher, "id", None)
+                except Exception as e:
+                    logger.error(f"Error posting contractor charge for imported DeHeading {rec_id}: {e}")
+
+        # 2. PEELING
+        elif table_name == "Peeling":
+            rec_id = getattr(rec, "id", None)
+            contractor = getattr(rec, "contractor_name", None)
+            amount = float(getattr(rec, "amount", 0) or 0)
+            rec_date = ensure_date_obj(getattr(rec, "date", None))
+            peeled_qty = float(getattr(rec, "peeled_qty", 0) or 0)
+            rate = float(getattr(rec, "rate_per_kg", 0) or 0)
+            email = getattr(rec, "email", "SYSTEM") or "SYSTEM"
+
+            if rec_id and contractor and amount > 0:
+                try:
+                    voucher = post_contractor_source_charge(
+                        db, comp_code, rec_date, f"PEL-{rec_id}",
+                        contractor, "Peeling", amount, 0, email, peeled_qty, rate
+                    )
+                    if voucher and hasattr(rec, "journal_id"):
+                        rec.journal_id = getattr(voucher, "id", None)
+                except Exception as e:
+                    logger.error(f"Error posting contractor charge for imported Peeling {rec_id}: {e}")
+
+        # 3. DAILY ATTENDANCE (Contractor Labour)
+        elif table_name == "DailyAttendance":
+            rec_id = getattr(rec, "id", None)
+            contractor = getattr(rec, "contractor_name", None)
+            amount = float(getattr(rec, "calculated_amount", 0) or getattr(rec, "approved_duty_credit", 0) or 0)
+            duty_date = ensure_date_obj(getattr(rec, "duty_date", None))
+            email = getattr(rec, "email", "SYSTEM") or "SYSTEM"
+
+            if rec_id and contractor and amount > 0:
+                try:
+                    voucher = post_contractor_source_charge(
+                        db, comp_code, duty_date, f"ATT-{rec_id}",
+                        contractor, "Contract Labour", amount, 0, email
+                    )
+                    if voucher and hasattr(rec, "journal_id"):
+                        rec.journal_id = getattr(voucher, "id", None)
+                except Exception as e:
+                    logger.error(f"Error posting contractor charge for imported DailyAttendance {rec_id}: {e}")
+
+        # 4. PURCHASE INVOICE
+        elif table_name == "PurchaseInvoice":
+            rec_id = getattr(rec, "id", None)
+            inv_no = getattr(rec, "invoice_no", None)
+            vendor_id = getattr(rec, "vendor_id", None)
+            grand_total = float(getattr(rec, "grand_total", 0) or 0)
+            tax_amount = float(getattr(rec, "tax_amount", 0) or 0)
+            taxable_val = float(getattr(rec, "qty", 0) or 0) * float(getattr(rec, "base_price", 0) or 0)
+            inv_date = ensure_date_obj(getattr(rec, "invoice_date", None))
+            email = getattr(rec, "email", "SYSTEM") or "SYSTEM"
+
+            if inv_no and grand_total > 0 and not getattr(rec, "journal_id", None):
+                try:
+                    from app.database.models.criteria import vendors
+                    v_row = db.query(vendors).filter(vendors.id == vendor_id, vendors.company_id == comp_code).first() if vendor_id else None
+                    v_name = v_row.name if v_row else f"Vendor {vendor_id or 'Import'}"
+                    p_name = getattr(rec, "product_name", "Purchase Product") or "Purchase Product"
+                    default_post = purchase_stock_account(p_name)
+                    post_ledger = resolve_posting_ledger(
+                        db, comp_code, None,
+                        default_post["ledger_name"], default_post["group_name"],
+                        default_post["group_type"], default_post["parent_group_name"]
+                    )
+                    voucher = post_vendor_bill(
+                        db, comp_code, inv_date, str(inv_no).upper(), v_name,
+                        post_ledger["ledger_name"], taxable_val, tax_amount, grand_total,
+                        f"Imported Purchase invoice {inv_no}", email,
+                        expense_group_name=post_ledger["group_name"],
+                        expense_group_type=post_ledger["group_type"],
+                        expense_parent_group_name=post_ledger["parent_group_name"],
+                        voucher_type="Purchase"
+                    )
+                    if voucher:
+                        rec.journal_id = voucher.id
+                        rec.status = "POSTED"
+                except Exception as e:
+                    logger.error(f"Error posting vendor bill for imported PurchaseInvoice {rec_id}: {e}")
+
+    try:
+        db.commit()
+    except Exception as e:
+        logger.error(f"Error committing synced journal_ids: {e}")
+
+    # 5. REFRESH FLOOR BALANCE
+    if table_name in ["DeHeading", "Peeling", "RawMaterialPurchasing", "Grading", "Reprocess", "Soaking", "Production"]:
+        try:
+            if batches_to_refresh:
+                for b in batches_to_refresh:
+                    refresh_floor_balance(db, comp_code, batch_number=b)
+            else:
+                refresh_floor_balance(db, comp_code)
+        except Exception as e:
+            logger.error(f"Error refreshing floor balance for {table_name}: {e}")
+
+
 @router.post("/data-management/execute-import")
 async def execute_dynamic_import(payload: ImportMappingPayload, request: Request, db: Session = Depends(get_db)):
     comp_code = get_comp_code(request)
@@ -636,22 +924,28 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
         df = pd.read_excel(filepath, sheet_name=payload.sheet_name)
         df = df.where(pd.notnull(df), None)
 
+        model_cols = {c.name: c for c in ModelClass.__table__.columns}
         records_to_insert = []
         for index, row in df.iterrows():
             record_data = {}
             for db_col, excel_col in payload.mapping.items():
                 if excel_col and excel_col in df.columns:
                     val = row[excel_col]
-                    record_data[db_col] = val
+                    col_obj = model_cols.get(db_col)
+                    coerced = coerce_cell_value(val, col_obj)
+                    if coerced is not None:
+                        record_data[db_col] = coerced
 
-            if hasattr(ModelClass, "company_id") and "company_id" not in record_data:
-                # 🌟 FIX: Directly assign VNBK2162 to company_id
+            if hasattr(ModelClass, "company_id"):
                 record_data["company_id"] = comp_code
 
             records_to_insert.append(ModelClass(**record_data))
 
         db.add_all(records_to_insert)
         db.commit()
+
+        # 🌟 Sync imported data with accounts flow (vouchers/journals) & floor balance stock
+        sync_imported_data_to_modules(db, comp_code, payload.table_name, records_to_insert)
 
         if os.path.exists(filepath):
             os.remove(filepath)

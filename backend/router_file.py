@@ -4,15 +4,149 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
+from app.utils.timezone import ist_now
 
 import os
+import math
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import date, time, datetime, timedelta
 import random
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from sqlalchemy.types import Date, Time, DateTime, Integer, BigInteger, SmallInteger, Float, Numeric, Boolean, String, Text
+
+def coerce_cell_value(val, col_obj):
+    if val is None or pd.isna(val):
+        return None
+
+    col_type = getattr(col_obj, 'type', None)
+    if col_type is None:
+        if isinstance(val, float) and math.isnan(val):
+            return None
+        return val
+
+    # 1. TIME Column
+    if isinstance(col_type, Time):
+        if isinstance(val, time) and not isinstance(val, datetime):
+            return val
+        if isinstance(val, (datetime, pd.Timestamp)):
+            return val.time()
+        if isinstance(val, timedelta):
+            total_sec = int(val.total_seconds()) % 86400
+            h = total_sec // 3600
+            m = (total_sec % 3600) // 60
+            s = total_sec % 60
+            micro = val.microseconds
+            return time(h, m, s, micro)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            for fmt in ("%H:%M:%S", "%H:%M", "%I:%M %p", "%I:%M:%S %p", "%H:%M:%S.%f"):
+                try:
+                    return datetime.strptime(val_str, fmt).time()
+                except ValueError:
+                    pass
+            try:
+                dt = pd.to_datetime(val_str)
+                return dt.time()
+            except Exception:
+                return None
+        return None
+
+    # 2. DATE Column
+    if isinstance(col_type, Date) and not isinstance(col_type, DateTime):
+        if isinstance(val, date) and not isinstance(val, datetime):
+            return val
+        if isinstance(val, (datetime, pd.Timestamp)):
+            return val.date()
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            try:
+                return pd.to_datetime(val_str).date()
+            except Exception:
+                return None
+        return None
+
+    # 3. DATETIME Column
+    if isinstance(col_type, DateTime):
+        if isinstance(val, pd.Timestamp):
+            return val.to_pydatetime()
+        if isinstance(val, datetime):
+            return val
+        if isinstance(val, date):
+            return datetime.combine(val, time.min)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'nat', 'null', '-'):
+                return None
+            try:
+                return pd.to_datetime(val_str).to_pydatetime()
+            except Exception:
+                return None
+        return None
+
+    # 4. BOOLEAN Column
+    if isinstance(col_type, Boolean):
+        if isinstance(val, bool):
+            return val
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return bool(val)
+        if isinstance(val, str):
+            val_str = val.strip().lower()
+            if not val_str or val_str in ('none', 'nan', 'null', '-'):
+                return None
+            return val_str in ('true', '1', 'yes', 't', 'y')
+        return bool(val)
+
+    # 5. INTEGER Column
+    if isinstance(col_type, (Integer, BigInteger, SmallInteger)):
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return int(val)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'null', '-'):
+                return None
+            try:
+                return int(float(val_str))
+            except ValueError:
+                return None
+
+    # 6. FLOAT / NUMERIC Column
+    if isinstance(col_type, (Float, Numeric)):
+        if isinstance(val, (int, float)):
+            if math.isnan(val):
+                return None
+            return float(val)
+        if isinstance(val, str):
+            val_str = val.strip()
+            if not val_str or val_str.lower() in ('none', 'nan', 'null', '-'):
+                return None
+            try:
+                return float(val_str)
+            except ValueError:
+                return None
+
+    # 7. STRING / TEXT Column
+    if isinstance(col_type, (String, Text)):
+        if isinstance(val, float) and math.isnan(val):
+            return None
+        val_str = str(val).strip()
+        if val_str.lower() in ('nan', 'none', 'null'):
+            return None
+        return val_str
+
+    if isinstance(val, float) and math.isnan(val):
+        return None
+    return val
 
 # =====================================================
 # 🟢 1. ALL MODELS IMPORTS
@@ -347,21 +481,21 @@ async def execute_dynamic_import(payload: ImportMappingPayload, request: Request
             return {"success": False, "error": "Invalid database table selected."}
 
         df = pd.read_excel(filepath, sheet_name=payload.sheet_name)
-        df = df.replace({pd.NaT: None, np.nan: None})
+        df = df.where(pd.notnull(df), None)
 
+        model_cols = {c.name: c for c in ModelClass.__table__.columns}
         records_to_insert = []
         for index, row in df.iterrows():
             record_data = {}
             for db_col, excel_col in payload.mapping.items():
                 if excel_col and excel_col in df.columns:
                     val = row[excel_col]
-                    
-                    if isinstance(val, (pd.Timestamp, datetime)):
-                        record_data[db_col] = val.to_pydatetime().date()
-                    else:
-                        record_data[db_col] = val
+                    col_obj = model_cols.get(db_col)
+                    coerced = coerce_cell_value(val, col_obj)
+                    if coerced is not None:
+                        record_data[db_col] = coerced
 
-            if hasattr(ModelClass, "company_id") and "company_id" not in record_data:
+            if hasattr(ModelClass, "company_id"):
                 if payload.table_name in ["GeneralStock", "GeneralStoreItems"]:
                     try:
                         record_data["company_id"] = int(comp_code.replace("BKNR", ""))

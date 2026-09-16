@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Boxes, Plus, Ban, RefreshCw, ArrowDownToLine, ArrowUpFromLine } from 'lucide-react';
 
 export default function StockEntry() {
@@ -45,6 +45,7 @@ export default function StockEntry() {
   // Stock OUT rows
   const [outRows, setOutRows] = useState([]);
   const [availableStock, setAvailableStock] = useState([]);
+  const [hasSearched, setHasSearched] = useState(false);
   const [outFilters, setOutFilters] = useState({ brand: '', species: '', variety: '', grade: '', prodAt: '', prodFor: '' });
 
   const fetchData = async () => {
@@ -83,22 +84,42 @@ export default function StockEntry() {
   };
 
   useEffect(() => {
+    if (showForm) {
+      const activeComp = localStorage.getItem('production_for_filter') || '';
+      const activeLoc = localStorage.getItem('plant_location_filter') || '';
+      if (!prodFor && prodForList.length > 0) {
+        setProdFor(prodForList.includes(activeComp) ? activeComp : prodForList[0]);
+      }
+      if (!prodAt && productionPlaces.length > 0) {
+        setProdAt(productionPlaces.includes(activeLoc) ? activeLoc : productionPlaces[0]);
+      }
+    }
+  }, [showForm, prodForList, productionPlaces, prodFor, prodAt]);
+
+  useEffect(() => {
     fetchData();
     const h = () => fetchData();
     window.addEventListener('filter_change', h);
     return () => window.removeEventListener('filter_change', h);
   }, []);
 
-  // Fetch coldstores when prodAt changes
+  // Fetch coldstores when prodAt changes or on initial mount
   useEffect(() => {
-    if (!prodAt) { setLocations([]); return; }
-    fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(prodAt)}`, { credentials: 'include' })
+    fetch(`/inventory/get_matched_coldstores?production_at=${encodeURIComponent(prodAt || '')}`, { credentials: 'include' })
       .then(r => r.json())
-      .then(d => setLocations(d.locations || []));
+      .then(d => {
+        const locs = d.locations || [];
+        setLocations(locs);
+        if (locs.length > 0 && (!location || !locs.includes(location))) {
+          setLocation(locs[0]);
+        }
+      })
+      .catch(err => console.error('Failed to load coldstore locations:', err));
   }, [prodAt]);
 
   const handleStockIn = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
     const fd = new URLSearchParams();
     fd.append('batch_number', batchNumber);
@@ -136,42 +157,65 @@ export default function StockEntry() {
   };
 
   const fetchAvailableStock = async () => {
-    const q = new URLSearchParams();
-    if (outFilters.brand) q.set('brand', outFilters.brand);
-    if (outFilters.species) q.set('species', outFilters.species);
-    if (outFilters.variety) q.set('variety', outFilters.variety);
-    if (outFilters.grade) q.set('grade', outFilters.grade);
-    if (outFilters.prodAt) q.set('production_at', outFilters.prodAt);
-    if (outFilters.prodFor) q.set('production_for', outFilters.prodFor);
-    const res = await fetch(`/inventory/stock_out_report?${q}`, { credentials: 'include' });
-    const d = await res.json();
-    setAvailableStock(d);
-    setOutRows(d.map(r => ({ ...r, out_mc: 0, out_loose: 0 })));
+    setLoading(true);
+    setHasSearched(true);
+    try {
+      const q = new URLSearchParams();
+      if (outFilters.prodFor) q.set('production_for', outFilters.prodFor);
+      if (outFilters.prodAt) q.set('production_at', outFilters.prodAt);
+      if (outFilters.brand) q.set('brand', outFilters.brand);
+      if (outFilters.freezer) q.set('freezer', outFilters.freezer);
+      if (outFilters.packStyle) q.set('packing_style', outFilters.packStyle);
+      if (outFilters.glaze) q.set('glaze', outFilters.glaze);
+      if (outFilters.species) q.set('species', outFilters.species);
+      if (outFilters.variety) q.set('variety', outFilters.variety);
+      if (outFilters.grade) q.set('grade', outFilters.grade);
+      if (outFilters.purpose) q.set('purpose', outFilters.purpose);
+      if (outFilters.poNumber) q.set('po_number', outFilters.poNumber);
+
+      const res = await fetch(`/inventory/stock_out_report?${q}`, { credentials: 'include' });
+      if (res.ok) {
+        const d = await res.json();
+        setAvailableStock(d || []);
+        setOutRows((d || []).map(r => ({ ...r, out_mc: 0, out_loose: 0 })));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleStockOut = async (e) => {
     e.preventDefault();
+    if (loading) return;
     setLoading(true);
-    const validRows = outRows.filter(r => r.out_mc > 0 || r.out_loose > 0);
-    if (!validRows.length) { setMsg('❌ Please enter MC or Loose quantity to move OUT'); setLoading(false); return; }
+    const validRows = outRows.filter(r => (parseInt(r.out_mc) || 0) > 0 || (parseInt(r.out_loose) || 0) > 0);
+    if (!validRows.length) {
+      setMsg('❌ Please enter OUT MC or OUT Loose for at least one batch row.');
+      setLoading(false);
+      return;
+    }
     const fd = new URLSearchParams();
-    fd.append('production_for', outFilters.prodFor);
-    fd.append('brand', outFilters.brand);
-    fd.append('production_at', outFilters.prodAt);
-    fd.append('freezer', freezer);
-    fd.append('packing_style', packStyle);
-    fd.append('glaze', glaze);
-    fd.append('species', outFilters.species || specie);
-    fd.append('variety', outFilters.variety || variety);
-    fd.append('grade', outFilters.grade || grade);
-    fd.append('purpose', purpose);
-    fd.append('po_number', poNumber);
+    fd.append('production_for', outFilters.prodFor || '');
+    fd.append('production_at', outFilters.prodAt || '');
+    fd.append('brand', outFilters.brand || '');
+    fd.append('freezer', outFilters.freezer || '');
+    fd.append('packing_style', outFilters.packStyle || '');
+    fd.append('glaze', outFilters.glaze || '');
+    fd.append('species', outFilters.species || '');
+    fd.append('variety', outFilters.variety || '');
+    fd.append('grade', outFilters.grade || '');
+    fd.append('purpose', outFilters.purpose || '');
+    fd.append('po_number', outFilters.poNumber || '');
+
     validRows.forEach(r => {
       fd.append('out_batch', r.batch);
       fd.append('out_location', r.location);
-      fd.append('out_mc', r.out_mc || 0);
-      fd.append('out_loose', r.out_loose || 0);
+      fd.append('out_mc', parseInt(r.out_mc) || 0);
+      fd.append('out_loose', parseInt(r.out_loose) || 0);
     });
+
     try {
       await fetch('/inventory/stock_out_save', {
         method: 'POST',
@@ -247,18 +291,25 @@ export default function StockEntry() {
       {showForm && mode === 'IN' && (
         <form onSubmit={handleStockIn} className="card" style={{ flexShrink: 0 }}>
           <h3 style={fh}>STOCK IN — COLD STORAGE ENTRY</h3>
-          <div className="form-grid">
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
             <Sel label="Production For *" value={prodFor} onChange={setProdFor} options={prodForList} required />
             <Sel label="Production At *" value={prodAt} onChange={setProdAt} options={productionPlaces} required />
-            <Sel label="Coldstore Location *" value={location} onChange={setLocation} options={locations} required />
-            <div className="form-group">
-              <label>Batch Number *</label>
-              <select className="form-control" value={batchNumber} onChange={e => setBatchNumber(e.target.value)} required>
-                <option value="">Select Batch</option>
-                {batches.filter(b => !prodFor || b.production_for === prodFor).map(b =>
-                  <option key={b.batch_number} value={b.batch_number}>{b.batch_number}</option>)}
-              </select>
-            </div>
+            <SearchableSelect
+              label="Coldstore Location *"
+              value={location}
+              onChange={setLocation}
+              options={locations}
+              placeholder="Search or Select Location"
+              required
+            />
+            <SearchableSelect
+              label="Batch Number *"
+              value={batchNumber}
+              onChange={setBatchNumber}
+              options={batches.filter(b => !prodFor || b.production_for === prodFor).map(b => b.batch_number).filter(Boolean)}
+              placeholder="Search or Select Batch"
+              required
+            />
             <Sel label="Type of Production *" value={typeOfProd} onChange={setTypeOfProd} options={productionTypes} required />
             <Sel label="Brand *" value={brand} onChange={setBrand} options={brands} required />
             <Sel label="Species *" value={specie} onChange={setSpecie} options={species} required />
@@ -285,7 +336,7 @@ export default function StockEntry() {
       {showForm && mode === 'OUT' && (
         <form onSubmit={handleStockOut} className="card" style={{ flexShrink: 0 }}>
           <h3 style={fh}>STOCK OUT — COLD STORAGE DISPATCH</h3>
-          <div className="form-grid">
+          <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 12 }}>
             <Sel label="Production For" value={outFilters.prodFor} onChange={v => setOutFilters(f => ({ ...f, prodFor: v }))} options={prodForList} />
             <Sel label="Production At" value={outFilters.prodAt} onChange={v => setOutFilters(f => ({ ...f, prodAt: v }))} options={productionPlaces} />
             <Sel label="Brand" value={outFilters.brand} onChange={v => setOutFilters(f => ({ ...f, brand: v }))} options={brands} />
@@ -301,6 +352,11 @@ export default function StockEntry() {
           <button type="button" className="btn btn-primary" style={{ marginTop: 12 }} onClick={fetchAvailableStock}>
             Search Available Stock
           </button>
+          {hasSearched && outRows.length === 0 && (
+            <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 8, background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', fontWeight: 800, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+              ⚠️ NOT AVAILABLE (No matching available stock found for selected criteria)
+            </div>
+          )}
           {outRows.length > 0 && (
             <div style={{ marginTop: 16, overflowX: 'auto' }}>
               <table className="bknr-table">
@@ -327,12 +383,12 @@ export default function StockEntry() {
                 <button type="submit" className="btn btn-primary" disabled={loading} style={{ background: '#ef4444', borderColor: '#ef4444' }}>
                   <ArrowUpFromLine size={14} /> Save
                 </button>
-                <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+                <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setHasSearched(false); }}>Cancel</button>
               </div>
             </div>
           )}
           {outRows.length === 0 && <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
-            <button type="button" className="btn btn-clear" onClick={() => setShowForm(false)}>Cancel</button>
+            <button type="button" className="btn btn-clear" onClick={() => { setShowForm(false); setHasSearched(false); }}>Cancel</button>
           </div>}
         </form>
       )}
@@ -404,6 +460,119 @@ function Sel({ label, value, onChange, options = [], required = false }) {
         <option value="">— Select —</option>
         {options.map(o => <option key={o} value={o}>{o}</option>)}
       </select>
+    </div>
+  );
+}
+
+function SearchableSelect({ label, value, onChange, options = [], placeholder = 'Select...', required = false }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState(value || '');
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    setSearch(value || '');
+  }, [value]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setOpen(false);
+        setSearch(value || '');
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [value]);
+
+  const uniqueOptions = Array.from(new Set(options.filter(Boolean)));
+  const filteredOptions = uniqueOptions.filter(opt =>
+    String(opt).toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="form-group" ref={containerRef} style={{ position: 'relative' }}>
+      <label>{label}</label>
+      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+        <input
+          type="text"
+          className="form-control"
+          value={search}
+          placeholder={placeholder}
+          required={required}
+          autoComplete="off"
+          onFocus={() => setOpen(true)}
+          onChange={e => {
+            const val = e.target.value;
+            setSearch(val);
+            setOpen(true);
+            const exact = uniqueOptions.find(o => String(o).toLowerCase() === val.trim().toLowerCase());
+            onChange(exact || val);
+          }}
+          style={{ width: '100%', paddingRight: '28px' }}
+        />
+        <span
+          onClick={() => setOpen(!open)}
+          style={{
+            position: 'absolute',
+            right: 10,
+            cursor: 'pointer',
+            color: 'var(--text-tertiary, #94a3b8)',
+            display: 'flex',
+            alignItems: 'center',
+            fontSize: 10,
+            userSelect: 'none'
+          }}
+        >
+          ▼
+        </span>
+      </div>
+      {open && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
+            zIndex: 99999,
+            maxHeight: 200,
+            overflowY: 'auto',
+            background: 'var(--surface-panel, #1e293b)',
+            border: '1px solid var(--border-light, #334155)',
+            borderRadius: 8,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            marginTop: 4
+          }}
+        >
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((opt, i) => (
+              <div
+                key={i}
+                style={{
+                  padding: '8px 12px',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: opt === value ? 700 : 400,
+                  background: opt === value ? 'color-mix(in srgb, var(--corp-ops, #2563eb) 20%, transparent)' : 'transparent',
+                  color: opt === value ? 'var(--corp-ops, #60a5fa)' : 'var(--text-primary, #f8fafc)',
+                  borderBottom: '1px solid var(--border-light, rgba(255,255,255,0.05))'
+                }}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(opt);
+                  setSearch(opt);
+                  setOpen(false);
+                }}
+              >
+                {opt}
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text-tertiary, #94a3b8)' }}>
+              No matching records
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

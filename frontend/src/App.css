@@ -44,10 +44,16 @@
   --row-hover: rgba(255, 255, 255, 0.02);
 }
 
-/* Standard enterprise form columns: 3 desktop, 2 tablet, 1 mobile. */
-.main-content .attendance-modal-content .attendance-form-grid,
-.main-content .export-workspace-content .attendance-form-grid {
+/* Standard enterprise form columns: 3 desktop, 2 tablet, 1 mobile. Export Documents use 6 columns. */
+.main-content .attendance-modal-content:not(.export-document-page *) .attendance-form-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+}
+
+.main-content .export-document-page .attendance-form-grid,
+.main-content .export-workspace-content .attendance-form-grid,
+.export-document-page .attendance-modal-content .attendance-form-grid {
+  grid-template-columns: repeat(6, minmax(130px, 1fr)) !important;
+  gap: 8px 12px !important;
 }
 
 .main-content .attendance-modal-content .attendance-form-grid > .attendance-form-section-title,
@@ -57,7 +63,10 @@
 .main-content .attendance-modal-content .attendance-form-grid > .requirement-save-row,
 .main-content .export-workspace-content .attendance-form-grid > .attendance-form-section-title,
 .main-content .export-workspace-content .attendance-form-grid > .pi-span-4,
-.main-content .export-workspace-content .attendance-form-grid > .full-width {
+.main-content .export-workspace-content .attendance-form-grid > .full-width,
+.export-document-page .full-width,
+.export-document-page .pi-span-4,
+.export-document-page .pi-full-row {
   grid-column: 1 / -1 !important;
 }
 
@@ -125,20 +134,26 @@
               border-color 0.3s ease !important;
 }
 
+html,
 body {
   font-family: 'Plus Jakarta Sans', sans-serif;
   background: var(--bg-app);
   color: var(--text-primary);
-  height: 100vh;
-  overflow: hidden;
+  height: 100vh !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
   transition: background 0.3s ease, background-color 0.3s ease, color 0.3s ease;
 }
 
 #root {
   display: flex;
-  height: 100vh;
-  width: 100vw;
-  overflow: hidden;
+  height: 100vh !important;
+  width: 100vw !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
 
 /* Scrollbars */
@@ -161,10 +176,11 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  padding: 16px;
-  gap: 16px;
+  padding: 0;
+  gap: 0;
   position: relative;
   width: 100%;
+  height: 100vh;
   background: var(--bg-app);
   transition: background 0.3s ease, background-color 0.3s ease;
 }
@@ -175,11 +191,12 @@ body {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
-  border-radius: var(--radius-panel);
+  border-radius: 0;
   background: var(--surface-panel);
-  border: 1px solid var(--border-light);
-  box-shadow: var(--shadow-soft);
+  border: none;
+  box-shadow: none;
   padding: 0;
+  width: 100%;
   transition: background 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
@@ -249,7 +266,8 @@ body {
 
 .report-viewer-card .erp-horizontal-filter-row {
   flex: 0 0 auto;
-  max-height: 48px;
+  max-height: none !important;
+  overflow-y: visible !important;
 }
 
 .report-viewer-card .erp-report-kpi-row {
@@ -857,15 +875,55 @@ body {
 
 .auth-card {
   width: 100%;
-  max-width: 420px;
-  padding: 40px;
+  max-width: 480px;
+  padding: 28px;
   background: var(--surface-panel);
   border: 1px solid var(--border-light);
   border-radius: var(--radius-panel);
   box-shadow: var(--shadow-float);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
+  overflow: hidden;
+}
+
+.erp-rig-banner {
+  position: relative;
+  width: 100%;
+  height: 210px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #091833, #050d1a);
+  border: 1px solid rgba(57, 123, 216, 0.35);
+  box-shadow: 0 12px 32px rgba(4, 10, 24, 0.45);
+}
+
+.erp-rig-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.erp-rig-overlay {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  pointer-events: none;
+}
+
+.erp-rig-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(10, 24, 51, 0.75);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  backdrop-filter: blur(6px);
 }
 
 /* =========================================================
@@ -988,6 +1046,25 @@ body {
 /* =========================================================
    🌟 APP CONTAINER & HEADER
 ========================================================= */
+/* HIDE ALL MENU HEADERS WHEN EDIT MODAL POPUP IS OPEN */
+body:has(.attendance-modal-overlay) .app-header,
+body:has(.attendance-modal-overlay) .top-navbar-bar,
+body:has(.attendance-modal-overlay) .app-back-strip,
+body:has(.attendance-modal-overlay) header.no-print,
+body.modal-open .app-header,
+body.modal-open .top-navbar-bar,
+body.modal-open .app-back-strip,
+body.modal-open header.no-print {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: none !important;
+}
+
 .app-header {
     height: var(--header-h); background: var(--glass-bg); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); 
     display: flex; align-items: center; justify-content: space-between; padding: 0 24px;
@@ -1625,19 +1702,6 @@ body {
     line-height: 18px;
 }
 
-.icon-action-btn.action-support > i.fa-support-agent {
-    width: 18px;
-    height: 18px;
-    flex-basis: 18px;
-    border: 1px solid color-mix(in srgb, var(--action-color) 70%, #ffffff);
-    border-radius: 50%;
-    background-image: url('/support-agent.png');
-    background-position: center 30%;
-    background-size: 112%;
-    box-shadow: 0 1px 4px color-mix(in srgb, var(--action-color) 35%, transparent);
-    vertical-align: initial;
-}
-
 .icon-action-btn[class*="action-"] .icon-action-label {
     color: color-mix(in srgb, var(--action-color) 78%, var(--text-secondary));
 }
@@ -2177,7 +2241,7 @@ body {
 
 /* Reports are the sizing reference for Bills, HRMS and Attendance list pages. */
 .main-content > .attendance-container {
-  padding: 10px !important;
+  padding: 4px 8px !important;
   gap: 0 !important;
 }
 
@@ -2253,6 +2317,192 @@ body {
 ) tbody td {
   border-bottom: 1px solid var(--table-line, var(--border-light)) !important;
   color: var(--text-primary) !important;
+}
+
+/* Shared screen alignment contract: all React modules and backend iframes use
+   the same canvas, gutters, and overflow behavior. */
+:root {
+  --app-gutter: clamp(10px, 1.6vw, 24px);
+  --app-content-max: 1680px;
+}
+
+.app-container {
+  padding: var(--app-gutter);
+  gap: var(--app-gutter);
+}
+
+.main-content,
+.embedded-app-content {
+  min-width: 0;
+  min-height: 0;
+  isolation: isolate;
+}
+
+.main-content > *,
+.embedded-app-content > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.main-content > :is(div, section, article),
+.embedded-app-content > :is(div, section, article) {
+  width: 100%;
+}
+
+.main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content, .export-document-page, .sales-dispatch-report, .user-profile-page, .requirement-forms-page, .requirement-document-page, .gs-items-page, .export-workspace) {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 !important;
+  margin-inline: 0 !important;
+  padding: 4px 6px !important;
+  box-sizing: border-box !important;
+}
+
+/* Quotation Page Mobile Compact Responsive Workspace Layout */
+.quotation-split-workspace {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.quotation-left-panel {
+  width: 70%;
+  flex: 0 0 70%;
+  min-width: 0;
+}
+
+.quotation-right-panel {
+  width: 30%;
+  flex: 0 0 30%;
+  min-width: 0;
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+}
+
+.quotation-header-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px 10px;
+}
+
+@media (max-width: 1100px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  .quotation-split-workspace {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .quotation-left-panel,
+  .quotation-right-panel {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    position: static !important;
+    max-height: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .quotation-header-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 6px 6px !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .attendance-page-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+  }
+
+  .attendance-page-header h1 {
+    font-size: 15px !important;
+  }
+
+  .attendance-page-header p {
+    font-size: 10px !important;
+  }
+
+  .attendance-page-header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .attendance-page-header-actions .attendance-btn,
+  .attendance-page-header .attendance-btn,
+  .attendance-modal-footer .attendance-btn,
+  .attendance-btn {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+    height: 28px !important;
+    min-height: 28px !important;
+    white-space: nowrap !important;
+    border-radius: 6px !important;
+  }
+
+  .attendance-page-header-actions .attendance-btn svg,
+  .attendance-page-header .attendance-btn svg,
+  .attendance-modal-footer .attendance-btn svg,
+  .attendance-btn svg {
+    width: 13px !important;
+    height: 13px !important;
+  }
+}
+
+.main-content :is(.table-responsive, .enterprise-table-wrap, .attendance-table-container, .report-table-wrap) {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.main-content :is(.form-grid, .attendance-form-grid, .enterprise-form-grid, .master-form-grid) > * {
+  min-width: 0;
+}
+
+.main-content iframe {
+  display: block;
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .app-container {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .main-content {
+    border-radius: 8px;
+  }
+
+  .main-content :is(.page-shell, .page-container, .report-page, .attendance-container, .enterprise-dashboard, .admin-console, .export-workspace-content) {
+    width: 100%;
+  }
+}
+
+@media (max-width: 600px) {
+  .app-container {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .main-content {
+    border-inline: 0;
+    border-radius: 0;
+  }
+
+  .app-back-strip {
+    padding-inline: 4px;
+  }
 }
 
 /* Daily Attendance has a custom terminal layout; keep its table viewport compact too. */
@@ -2615,24 +2865,6 @@ body {
   .main-content :is(.kpi-card, .erp-report-kpi-card, .tally-kpi-card, .supporting-summary-card, .admin-kpi, .erp-inline-kpi-card, .attendance-card[role="button"]) { transition: none !important; }
 }
 }
-.fa-solid.fa-support-agent {
-  position: relative;
-  display: inline-block;
-  width: 2.15em;
-  height: 2.15em;
-  line-height: 1;
-  vertical-align: -0.58em;
-  border: 1px solid color-mix(in srgb, #06b6d4 55%, var(--border-light));
-  border-radius: 50%;
-  background: url('/support-agent.png') center 34% / cover no-repeat;
-  box-shadow: 0 1px 4px rgb(6 182 212 / 30%);
-}
-
-.fa-solid.fa-support-agent::before,
-.fa-solid.fa-support-agent::after {
-  content: none;
-}
-
 /* Mobile header: company identity on top, controls in one aligned row below. */
 @media (max-width: 767px) {
   :root {
@@ -2744,12 +2976,6 @@ body {
     flex-basis: 16px;
     font-size: 12px;
     line-height: 16px;
-  }
-
-  .header-right-actions .icon-action-btn.action-support > i.fa-support-agent {
-    width: 16px;
-    height: 16px;
-    flex-basis: 16px;
   }
 
   .header-right-actions .corp-profile-btn {
@@ -2979,10 +3205,26 @@ body {
   user-select: none;
 }
 
-.react-support-drawer-head > div {
+.react-support-drawer-identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.react-support-drawer-identity > div {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.support-drawer-agent-avatar {
+  width: 31px;
+  height: 31px;
+  flex: 0 0 31px;
+  object-fit: cover;
+  object-position: center 26%;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: 50%;
 }
 
 .react-support-drawer-head span {
@@ -3040,18 +3282,17 @@ body.support-drawer-dragging * {
   right: 20px;
   bottom: 20px;
   z-index: 100002;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   width: 72px;
   height: 72px;
   padding: 0;
-  overflow: visible;
-  border: 0;
-  color: var(--text-primary);
-  background: transparent;
-  box-shadow: none;
+  overflow: hidden;
+  border: 1px solid #60a5fa;
+  border-radius: 999px;
+  color: #fff;
+  background: #2563eb;
+  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.32);
   cursor: pointer;
   touch-action: none;
   user-select: none;
@@ -3067,18 +3308,13 @@ body.support-drawer-dragging * {
   display: none;
 }
 
-.floating-support-launcher i {
-  display: grid;
-  flex: 0 0 69px;
-  width: 69px;
-  height: 69px;
-  place-items: center;
-  border: 1px solid #60a5fa;
-  border-radius: 999px;
-  color: #fff;
-  background: #2563eb;
-  box-shadow: 0 12px 30px rgba(37, 99, 235, 0.32);
-  font-size: 24px;
+.floating-support-avatar {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 26%;
+  pointer-events: none;
 }
 
 body.floating-support-dragging,
@@ -3105,9 +3341,8 @@ body.floating-support-dragging * {
 }
 
 .react-support-drawer .support-drawer-page .ticket-layout {
+  display: flex;
   flex: 1 1 auto;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(135px, 32%) minmax(0, 1fr);
   height: auto;
   min-height: 0;
   overflow: hidden;
@@ -3115,8 +3350,22 @@ body.floating-support-dragging * {
 
 .react-support-drawer .support-drawer-page .ticket-layout > .admin-card {
   display: flex;
+  width: 100%;
+  flex: 1 1 auto;
   min-height: 0;
   flex-direction: column;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout .support-chat-panel {
+  display: none !important;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout.chat-active .support-ticket-list-panel {
+  display: none !important;
+}
+
+.react-support-drawer .support-drawer-page .ticket-layout.chat-active .support-chat-panel {
+  display: flex !important;
 }
 
 .react-support-drawer .support-drawer-page .ticket-list {
@@ -3189,5 +3438,64 @@ body.floating-support-dragging * {
 
   .react-support-drawer .support-drawer-page .support-mode-tabs {
     margin-bottom: 6px;
+  }
+}
+
+/* 🖨️ Global Rock-Solid Full-Page Print Rules (Prints All Pages, No Truncation, No Blank Page 1) */
+@media print {
+  @page {
+    margin: 6mm !important;
+    size: auto;
+  }
+
+  html, body, #root, .app-container, .main-content, .layout-content, .report-viewer-card, .batch-summary-report, .report-viewer-wrapper, .app-layout, .embedded-app-shell, .embedded-app-content {
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    overflow-x: visible !important;
+    overflow-y: visible !important;
+    position: static !important;
+    float: none !important;
+    display: block !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  header, .app-header, .sidebar, .sidebar-overlay, .top-header, .header, .report-header, .report-viewer-header, .batch-summary-header, .app-back-strip, nav, aside, footer, .no-print, .report-filter-bar, .erp-horizontal-filter-row, .batch-summary-filters, button, .btn, .batch-summary-empty {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+  }
+
+  .table-responsive, .table-wrap, .bknr-table-wrapper {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+
+  table {
+    page-break-inside: auto;
+    width: 100% !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .batch-summary-table-card, .batch-reconciliation-card, .batch-table-card, .section-title {
+    page-break-inside: avoid !important;
+    border: 1.5px solid #64748b !important;
+    box-shadow: none !important;
   }
 }

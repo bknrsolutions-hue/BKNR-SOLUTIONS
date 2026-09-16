@@ -247,10 +247,7 @@ def processing_dashboard(
     active_punched_emp_ids = [
         r[0] for r in db.query(DailyAttendance.employee_id).filter(
             DailyAttendance.company_id == company_id,
-            or_(
-                DailyAttendance.duty_date == to_date,
-                DailyAttendance.status != "CLOSED"
-            )
+            DailyAttendance.duty_date.between(from_date, to_date)
         ).all()
     ]
 
@@ -269,13 +266,32 @@ def processing_dashboard(
     ).all()
     employee_ids = [row.employee_id for row in employee_rows]
 
+    # Total Staff is intentionally based on Staff Registration, not on the
+    # active-attendance population. Location filtering is strictly the
+    # employee's registered production location.
+    registered_employee_q = db.query(
+        EmployeeRegistration.employee_id,
+        EmployeeRegistration.employee_name,
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+        EmployeeRegistration.employee_type,
+        EmployeeRegistration.contractor_name,
+        EmployeeRegistration.mobile,
+    ).filter(EmployeeRegistration.company_id == company_id)
+    if g_loc_clean and g_loc_clean != "ALL":
+        registered_employee_q = registered_employee_q.filter(
+            func.upper(func.trim(EmployeeRegistration.production_at)) == g_loc_clean
+        )
+    registered_employee_rows = registered_employee_q.order_by(
+        EmployeeRegistration.department,
+        EmployeeRegistration.designation,
+        EmployeeRegistration.employee_id,
+    ).all()
+
     att_rows_q = db.query(DailyAttendance).filter(
         DailyAttendance.company_id == company_id,
         DailyAttendance.employee_id.in_(employee_ids),
-        or_(
-            DailyAttendance.duty_date == to_date,
-            DailyAttendance.status != "CLOSED"
-        )
+        DailyAttendance.duty_date.between(from_date, to_date)
     )
 
     if g_loc_clean and g_loc_clean != "ALL":
@@ -293,7 +309,9 @@ def processing_dashboard(
     for attendance in att_rows_q.order_by(DailyAttendance.first_in, DailyAttendance.id).all():
         attendance_by_employee[attendance.employee_id] = attendance
 
-    att_stats = {"total": len(employee_ids), "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
+    total_registered_staff = len(registered_employee_rows)
+
+    att_stats = {"total": total_registered_staff, "inside": 0, "away": 0, "half": 0, "single": 0, "double": 0}
     dept_map, desg_map = {}, {}
 
     for da in attendance_by_employee.values():
@@ -315,7 +333,7 @@ def processing_dashboard(
     present_employee_ids = set(attendance_by_employee)
     present_workers_list = []
 
-    for row in employee_rows:
+    for row in registered_employee_rows:
         emp_id = row.employee_id
         emp_name = getattr(row, "employee_name", None) or emp_id
         dept = str(row.department or "GENERAL").strip() or "GENERAL"
@@ -337,42 +355,12 @@ def processing_dashboard(
         elif wt_clean in ["TEMP", "TEMPORARY"]:
             cat = "TEMP_WORKERS"
 
-        status_str = "ABSENT"
-        first_in = "-"
-        last_out = "-"
-        hours = 0.0
-        duty_type = "SINGLE"
-
-        if att:
-            status_str = str(att.status or "PRESENT").strip().upper()
-            fi_str = str(att.first_in or "")
-            lo_str = str(att.last_out or "")
-            first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
-            last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
-            hours = float(att.working_hours or 0)
-            duty_type = str(att.duty_type or "SINGLE").strip().upper()
-
         attendance_key = "present" if emp_id in present_employee_ids else "absent"
         for m, key in [(dept_map, dept), (desg_map, desg)]:
             if key not in m:
                 m[key] = {"present": 0, "absent": 0}
             m[key][attendance_key] += 1
 
-        present_workers_list.append({
-            "employee_id": emp_id,
-            "name": emp_name,
-            "department": dept,
-            "designation": desg,
-            "category": cat,
-            "contractor": contractor,
-            "mobile": mobile,
-            "status": status_str,
-            "is_present": emp_id in present_employee_ids,
-            "first_in": first_in,
-            "last_out": last_out,
-            "hours": hours,
-            "duty_type": duty_type
-        })
 
     # =====================================================
     # 5.5 SHIFT-WISE KPI ENGINE & DOUBLE DUTIES / OT
@@ -409,10 +397,7 @@ def processing_dashboard(
         today_att_q = db.query(DailyAttendance).filter(
             DailyAttendance.company_id == company_id,
             DailyAttendance.shift_name == s_name,
-            or_(
-                DailyAttendance.duty_date == to_date,
-                DailyAttendance.status != "CLOSED"
-            )
+            DailyAttendance.duty_date.between(from_date, to_date)
         )
         if global_location and global_location.upper() != "ALL":
             today_att_q = today_att_q.filter(
@@ -422,7 +407,12 @@ def processing_dashboard(
                     func.trim(DailyAttendance.production_at) == ""
                 )
             )
-        today_rows = today_att_q.all()
+        # A worker can have legacy duplicate punch rows. Keep the latest row
+        # per worker so shift totals match the dashboard attendance totals.
+        today_by_employee = {}
+        for attendance in today_att_q.order_by(DailyAttendance.id).all():
+            today_by_employee[attendance.employee_id] = attendance
+        today_rows = list(today_by_employee.values())
         
         # Yesterday's present list (Expectations list)
         yesterday_att_q = db.query(DailyAttendance).filter(
@@ -495,10 +485,7 @@ def processing_dashboard(
     # Calculate double duties & OT count
     double_ot_q = db.query(DailyAttendance).filter(
         DailyAttendance.company_id == company_id,
-        or_(
-            DailyAttendance.duty_date == to_date,
-            DailyAttendance.status != "CLOSED"
-        ),
+        DailyAttendance.duty_date.between(from_date, to_date),
         or_(
             DailyAttendance.duty_type == "DOUBLE",
             DailyAttendance.calculated_ot_hours > 0,
@@ -513,7 +500,7 @@ def processing_dashboard(
                 func.trim(DailyAttendance.production_at) == ""
             )
         )
-    double_ot_val = double_ot_q.count()
+    double_ot_val = double_ot_q.with_entities(func.count(distinct(DailyAttendance.employee_id))).scalar() or 0
 
     # =====================================================
     # 5.6 WORKFORCE CATEGORY METRICS & PEELING LABOUR DATA
@@ -533,7 +520,7 @@ def processing_dashboard(
 
     contract_att_rows = db.query(ContractLabourAttendance).filter(
         ContractLabourAttendance.company_id == company_id,
-        ContractLabourAttendance.attendance_date == to_date
+        ContractLabourAttendance.attendance_date.between(from_date, to_date)
     ).all()
     contract_present_cnt = len(set(c.labour_id for c in contract_att_rows if c.labour_id)) if contract_att_rows else len(contract_att_rows)
 
@@ -551,23 +538,23 @@ def processing_dashboard(
 
     kg_att_rows = db.query(KgBasisWorkerAttendance).filter(
         KgBasisWorkerAttendance.company_id == company_id,
-        KgBasisWorkerAttendance.attendance_date == to_date
+        KgBasisWorkerAttendance.attendance_date.between(from_date, to_date)
     ).all()
 
     kg_work_rows = db.query(KgBasisCompanyLabour).filter(
         KgBasisCompanyLabour.company_id == company_id,
-        KgBasisCompanyLabour.work_date == to_date
+        KgBasisCompanyLabour.work_date.between(from_date, to_date)
     ).all()
 
     kg_dh_rows = db.query(DeHeading).filter(
         DeHeading.company_id == company_id,
-        DeHeading.date == to_date,
+        DeHeading.date.between(from_date, to_date),
         or_(DeHeading.is_cancelled == False, DeHeading.is_cancelled == None)
     ).all()
 
     kg_peel_rows = db.query(Peeling).filter(
         Peeling.company_id == company_id,
-        Peeling.date == to_date,
+        Peeling.date.between(from_date, to_date),
         or_(Peeling.is_cancelled == False, Peeling.is_cancelled == None)
     ).all()
 
@@ -615,19 +602,19 @@ def processing_dashboard(
 
     day_kg_att_present = db.query(KgBasisWorkerAttendance).filter(
         KgBasisWorkerAttendance.company_id == company_id,
-        KgBasisWorkerAttendance.attendance_date == to_date,
+        KgBasisWorkerAttendance.attendance_date.between(from_date, to_date),
         KgBasisWorkerAttendance.worker_id.in_(list(day_worker_ids))
     ).all() if day_worker_ids else []
 
     day_emp_att_present = db.query(DailyAttendance).filter(
         DailyAttendance.company_id == company_id,
-        DailyAttendance.duty_date == to_date,
+        DailyAttendance.duty_date.between(from_date, to_date),
         DailyAttendance.employee_id.in_(list(day_worker_ids))
     ).all() if day_worker_ids else []
 
     day_temp_workers = db.query(DailyTemporaryWorker).filter(
         DailyTemporaryWorker.company_id == company_id,
-        DailyTemporaryWorker.work_date == to_date,
+        DailyTemporaryWorker.work_date.between(from_date, to_date),
         DailyTemporaryWorker.worker_type == "DAY WORKER"
     ).all()
 
@@ -641,10 +628,10 @@ def processing_dashboard(
 
     day_basis_present_cnt = len(day_present_names)
 
-    # 4. DAILY TEMP WORKERS (STRICTLY FROM VisitorEntry FOR to_date - NO EXTRA)
+    # 4. DAILY TEMP WORKERS (STRICTLY FROM VisitorEntry FOR date range - NO EXTRA)
     visitor_rows = db.query(VisitorEntry).filter(
         VisitorEntry.company_id == company_id,
-        VisitorEntry.visit_date == to_date
+        VisitorEntry.visit_date.between(from_date, to_date)
     ).all()
 
     temp_registered_cnt = len(visitor_rows)
@@ -669,8 +656,9 @@ def processing_dashboard(
     # Build multi-source present_workers_list combining active entries strictly
     present_workers_list = []
 
-    # Source 1: Regular Staff (from EmployeeRegistration + DailyAttendance)
-    for row in employee_rows:
+    # Source 1: Staff Registration list, with selected-date attendance where
+    # it exists. This is the same population used by Total Staff.
+    for row in registered_employee_rows:
         emp_id = row.employee_id
         emp_name = getattr(row, "employee_name", None) or emp_id
         dept = str(row.department or "GENERAL").strip() or "GENERAL"
@@ -684,32 +672,35 @@ def processing_dashboard(
         last_out = "-"
         hours = 0.0
         duty_type = "SINGLE"
+        shift_name = ""
 
         if att:
             status_str = str(att.status or "PRESENT").strip().upper()
             fi_str = str(att.first_in or "")
-            lo_str = str(att.last_out or "")
+            lo_str = str(att.exit_time or "")
             first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
             last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
             hours = float(att.working_hours or 0)
             duty_type = str(att.duty_type or "SINGLE").strip().upper()
+            shift_name = str(att.shift_name or "").strip().upper()
 
-        if emp_id in present_employee_ids:
-            present_workers_list.append({
-                "employee_id": emp_id,
-                "name": emp_name,
-                "department": dept,
-                "designation": desg,
-                "category": "STAFF",
-                "contractor": contractor,
-                "mobile": mobile,
-                "status": status_str,
-                "is_present": True,
-                "first_in": first_in,
-                "last_out": last_out,
-                "hours": hours,
-                "duty_type": duty_type
-            })
+        # Staff without a selected-date attendance row are explicitly absent.
+        present_workers_list.append({
+            "employee_id": emp_id,
+            "name": emp_name,
+            "department": dept,
+            "designation": desg,
+            "category": "STAFF",
+            "contractor": contractor,
+            "mobile": mobile,
+            "status": status_str,
+            "is_present": emp_id in present_employee_ids,
+            "first_in": first_in,
+            "last_out": last_out,
+            "hours": hours,
+            "duty_type": duty_type,
+            "shift_name": shift_name
+        })
 
     # Source 2: Contract Labour Attendance (strictly from contract_labour_attendance)
     for c_att in contract_att_rows:
@@ -728,7 +719,8 @@ def processing_dashboard(
             "first_in": in_t,
             "last_out": out_t,
             "hours": 8.0,
-            "duty_type": "SINGLE"
+            "duty_type": "SINGLE",
+            "shift_name": str(getattr(c_att, 'shift_name', '') or "").strip().upper()
         })
 
     # Source 3: KG Basis Workers (STRICTLY KG ONLY - NO DAY BASIS)
@@ -752,7 +744,8 @@ def processing_dashboard(
             "first_in": in_t,
             "last_out": out_t,
             "hours": 8.0,
-            "duty_type": "SINGLE"
+            "duty_type": "SINGLE",
+            "shift_name": ""
         })
 
     for idx, kg_row in enumerate(kg_work_rows):
@@ -774,7 +767,8 @@ def processing_dashboard(
                 "first_in": in_t,
                 "last_out": out_t,
                 "hours": float(kg_row.quantity_kg or 0),
-                "duty_type": "SINGLE"
+                "duty_type": "SINGLE",
+                "shift_name": ""
             })
 
     for dh in kg_dh_rows:
@@ -794,7 +788,8 @@ def processing_dashboard(
                 "first_in": "-",
                 "last_out": "-",
                 "hours": float(dh.hlso_qty or 0),
-                "duty_type": "SINGLE"
+                "duty_type": "SINGLE",
+                "shift_name": ""
             })
 
     for peel in kg_peel_rows:
@@ -814,7 +809,8 @@ def processing_dashboard(
                 "first_in": "-",
                 "last_out": "-",
                 "hours": float(peel.peeled_qty or 0),
-                "duty_type": "SINGLE"
+                "duty_type": "SINGLE",
+                "shift_name": ""
             })
 
     # Source 4: Day Basis Workers
@@ -834,12 +830,13 @@ def processing_dashboard(
             "first_in": in_t,
             "last_out": out_t,
             "hours": 8.0,
-            "duty_type": "SINGLE"
+            "duty_type": "SINGLE",
+            "shift_name": ""
         })
 
     for emp_att in day_emp_att_present:
         fi_str = str(emp_att.first_in or "")
-        lo_str = str(emp_att.last_out or "")
+        lo_str = str(emp_att.exit_time or "")
         first_in = fi_str[11:16] if len(fi_str) >= 16 else fi_str or "-"
         last_out = lo_str[11:16] if len(lo_str) >= 16 else lo_str or "-"
         present_workers_list.append({
@@ -855,7 +852,8 @@ def processing_dashboard(
             "first_in": first_in,
             "last_out": last_out,
             "hours": float(emp_att.working_hours or 0),
-            "duty_type": str(emp_att.duty_type or "SINGLE").strip().upper()
+            "duty_type": str(emp_att.duty_type or "SINGLE").strip().upper(),
+            "shift_name": str(getattr(emp_att, 'shift_name', '') or "").strip().upper()
         })
 
     for day_w in day_temp_workers:
@@ -874,7 +872,8 @@ def processing_dashboard(
             "first_in": in_t,
             "last_out": out_t,
             "hours": float(day_w.day_charge or 0),
-            "duty_type": "SINGLE"
+            "duty_type": "SINGLE",
+            "shift_name": ""
         })
 
     # Source 5: Daily Temp Workers (STRICTLY FROM VisitorEntry FOR to_date - NO EXTRA)
@@ -894,7 +893,8 @@ def processing_dashboard(
             "first_in": in_t,
             "last_out": out_t,
             "hours": 0.0,
-            "duty_type": "SINGLE"
+            "duty_type": "SINGLE",
+            "shift_name": ""
         })
 
     peeling_contractor_rows = db.query(
@@ -904,7 +904,7 @@ def processing_dashboard(
         func.sum(Peeling.amount).label("total_cost")
     ).filter(
         Peeling.company_id == company_id,
-        Peeling.date == to_date,
+        Peeling.date.between(from_date, to_date),
         Peeling.is_cancelled.is_not(True)
     ).group_by(Peeling.contractor_name).all()
 
@@ -919,17 +919,31 @@ def processing_dashboard(
     ]
 
     # =====================================================
-    # 6. FLOOR BALANCE TOTAL (SELECTED DATE, 9 AM IST SNAPSHOT)
+    # 6. FLOOR BALANCE TOTAL (LIVE FOR TODAY, 9 AM IST SNAPSHOT FOR PAST)
     # =====================================================
-    floor_snapshot_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
-        db,
-        company_id,
-        to_date,
-        production_for=global_production_for,
-        location=global_location,
-        allowed_locations=user_allowed_locations,
-    )
-    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_snapshot_rows), 2)
+    if to_date >= today:
+        from app.services.floor_balance import get_live_floor_balance_rows
+        floor_rows = get_live_floor_balance_rows(
+            db,
+            company_id,
+            production_for=global_production_for,
+            location=global_location,
+            allowed_locations=user_allowed_locations,
+        )
+        floor_snapshot_date = today
+        snapshot_time_label = "LIVE STOCK"
+    else:
+        floor_rows, floor_snapshot_date = get_floor_balance_snapshot_rows(
+            db,
+            company_id,
+            to_date,
+            production_for=global_production_for,
+            location=global_location,
+            allowed_locations=user_allowed_locations,
+        )
+        snapshot_time_label = "09:00 IST"
+
+    floor_total = round(sum(float(row.get("available_qty") or 0) for row in floor_rows), 2)
 
     # 7. RESPONSE PAYLOAD
     if request.query_params.get("format") == "json":
@@ -944,7 +958,7 @@ def processing_dashboard(
             "production_today": round(production_today, 2),
             "floor_total": floor_total,
             "floor_snapshot_date": str(floor_snapshot_date) if floor_snapshot_date else "",
-            "floor_snapshot_time": "09:00 IST",
+            "floor_snapshot_time": snapshot_time_label,
             "rm_summary": rm_summary,
             "hourly_labels": hourly_labels,
             "dh_hourly_data": dh_hourly,
