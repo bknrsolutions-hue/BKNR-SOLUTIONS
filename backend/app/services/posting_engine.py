@@ -10,6 +10,7 @@ from app.database.models.enterprise_finance import (
     AccountGroup, LedgerMaster, VoucherType, VoucherHeader, VoucherDetail,
     CostCenter, CurrencyMaster, ExchangeRate, FinanceAuditTrail, FinancialYearMaster
 )
+from sqlalchemy.exc import IntegrityError
 
 logger = logging.getLogger(__name__)
 
@@ -221,8 +222,24 @@ class PostingEngineService:
             created_by=created_by,
             created_at=datetime.utcnow()
         )
-        db.add(header)
-        db.flush()
+        # Use a nested transaction (SAVEPOINT) to isolate header creation so a concurrency
+        # conflict does not rollback the caller's outer transaction.
+        try:
+            with db.begin_nested():
+                db.add(header)
+                db.flush()
+        except IntegrityError:
+            # Nested transaction rolled back due to unique conflict. Try to resolve
+            # deterministically by returning the existing voucher with same reference_no.
+            if reference_no:
+                existing = db.query(VoucherHeader).filter(
+                    VoucherHeader.company_id == company_id,
+                    VoucherHeader.reference_no == reference_no,
+                ).first()
+                if existing:
+                    return existing
+            # If no existing voucher found, re-raise the integrity error
+            raise
 
         for d, ledger in zip(details, resolved_ledgers):
             detail = VoucherDetail(
